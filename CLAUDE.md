@@ -47,3 +47,18 @@ Current mode: **design-first** (until the end of P1). The artifact is the source
   2. Push the branch.
   3. Open a PR against `main`.
   Never leave finished work only as local commits, and never push straight to `main`.
+
+## Definition of done
+A task is finished only when **all** of these are true. Until then, keep working or say clearly what blocks it.
+1. The work is committed on its branch in `.worktrees/<name>`.
+2. `./scripts/ci.sh` passes locally.
+3. The branch is pushed, and a PR against `main` is open. One task means one PR.
+4. The PR description has these sections:
+   - **Summary:** what changed and why.
+   - **Checks:** what was run and its result.
+   - **Not yet verified:** anything untested.
+   - **How to review:** where to look first, or how to try it.
+5. CI on the PR is green. Check with `gh pr checks`.
+6. The last message to the user starts with **"Ready for review:"** followed by the PR link and a two-line summary.
+
+If any step can't be completed, the task is **not** done. Say "Not ready:" and the reason instead.
