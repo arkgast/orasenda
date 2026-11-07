@@ -1,0 +1,19 @@
+<!-- @dsCard group="Timer" height=760 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>FullScreenFocus</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    return h('div', null,
+      h(O.FullScreenFocus, { remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25, task: 'Chapter 3 outline', clock: '09:41', onExit: ack('Exit confirmed. The session keeps running.') }),
+      notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

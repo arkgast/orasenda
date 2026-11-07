@@ -1,0 +1,23 @@
+<!-- @dsCard group="Navigation" height=500 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>CommandPalette</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    var a = React.useState(false), open = a[0], setOpen = a[1];
+    function close() { setOpen(false); }
+    return h('div', { className: 'os-col' },
+      h('p', null, 'Type to filter, use the arrow keys, then press Enter.'),
+      h('div', null, h(O.Button, { onClick: function () { setOpen(true); } }, 'Open commands')),
+      open ? h(O.CommandPalette, { commands: [{ id: 'today', label: 'Go to Today', hint: 'Your next block and priorities' }, { id: 'capture', label: 'Capture a thought', hint: 'Saves to the Inbox' }, { id: 'pause', label: 'Pause focus', hint: 'Keeps your place' }], onSelect: function (id) { setNotice('Command chosen · ' + id); }, onClose: close }) : null,
+      notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>
