@@ -1,0 +1,16 @@
+# Orasenda
+
+A calm, minimal, local-first app for focus, time blocking and tasks. Features:
+- Pomodoro-style timer with a full-screen clock
+- Kanban board with time tracked per task
+- Built-in calendar for time blocking
+- Routines and habits, with evidence-informed templates
+- Opt-in app tracking and kind distraction blocking
+
+**Status:** specification. Implementation has not started.
+
+- [Product spec](docs/SPEC.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Decision log](docs/DECISIONS.md)
+
+> Wellness suggestions in Orasenda are not medical advice.
