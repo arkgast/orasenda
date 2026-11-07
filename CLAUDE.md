@@ -41,3 +41,9 @@ Current mode: **design-first** (until the end of P1). The artifact is the source
 - This repo uses baton (`.baton/config.json`):
   spec → plan → backlog → implement → verify → review → integrate.
 - Checks run through `./scripts/ci.sh`.
+- **Worktrees always live inside this repo, at `.worktrees/<name>`** (git-ignored). Never create them outside the repo. Commits in the main checkout are refused.
+- **Every change ends in a pull request.**
+  1. Commit on a branch in its worktree.
+  2. Push the branch.
+  3. Open a PR against `main`.
+  Never leave finished work only as local commits, and never push straight to `main`.
