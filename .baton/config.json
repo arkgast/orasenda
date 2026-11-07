@@ -1,0 +1,53 @@
+{
+  "project": "orasenda",
+  "stacks": [],
+  "tasks": {
+    "provider": "github",
+    "repo": "arkgast/orasenda"
+  },
+  "git": {
+    "baseBranch": "main",
+    "branchPrefix": "task",
+    "worktreeRoot": "../{repo}-worktrees",
+    "mergeStrategy": "squash"
+  },
+  "setup": [],
+  "validate": [
+    {
+      "name": "ci",
+      "run": "./scripts/ci.sh"
+    }
+  ],
+  "workflow": {
+    "phases": [
+      "spec",
+      "plan",
+      "backlog",
+      "implement",
+      "verify",
+      "review",
+      "integrate"
+    ],
+    "custom": {},
+    "requireSpec": true,
+    "requireTdd": true,
+    "requireReview": true,
+    "baselineOnStart": true
+  },
+  "hooks": {
+    "factGate": false,
+    "worktreeOnly": true
+  },
+  "release": {
+    "enabled": false,
+    "publish": []
+  },
+  "docs": {
+    "specs": "docs/specs",
+    "plans": "docs/plans",
+    "commonIssues": "docs/common-issues.md"
+  },
+  "conventions": [
+    "docs/conventions.md"
+  ]
+}
