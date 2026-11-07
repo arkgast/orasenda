@@ -1,0 +1,20 @@
+<!-- @dsCard group="Timer" height=1000 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>TimerRing</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    return h('div', { className: 'os-col' },
+      h('div', { className: 'os-row', style: { padding: 0 } },
+        h(O.TimerRing, { remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25, task: 'Draft chapter 3: organise the long opening argument and notes for the research team' }),
+        h(O.TimerRing, { remaining: '01:48', remainingLabel: '1 minute 48 seconds', progress: 0.94, mode: 'warning', task: 'Finish the thought' }),
+        h(O.TimerRing, { remaining: '12:16', remainingLabel: '12 minutes 16 seconds', progress: 0.51, mode: 'paused', task: 'Chapter 3 outline' })),
+      h(O.TimerRing, { remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25, size: 560, clock: '09:41', task: 'Chapter 3 outline' }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

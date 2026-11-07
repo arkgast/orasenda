@@ -1,0 +1,19 @@
+<!-- @dsCard group="Fields" height=340 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Input</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var b = React.useState('Draft the opening argument for chapter 3.'), value = b[0], setValue = b[1];
+    return h('div', { className: 'os-col', style: { maxWidth: 'var(--panel-width)' } },
+      h(O.Input, { label: 'Session intent', value: value, onChange: function (e) { setValue(e.target.value); }, helper: 'Name one thing you want to finish.' }),
+      h(O.Input, { label: 'Estimate in sessions', type: 'number', defaultValue: 0, min: 1, error: 'Use at least one session, or leave the estimate empty.' }),
+      h(O.Input, { label: 'Project', value: 'Writing', readOnly: true, disabled: true }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

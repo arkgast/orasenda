@@ -12,5 +12,6 @@ A calm, minimal, local-first app for focus, time blocking and tasks. Features:
 - [Product spec](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Decision log](docs/DECISIONS.md)
+- [Design system (Claude Design)](https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73), the source of truth for tokens, components and UI rules
 
 > Wellness suggestions in Orasenda are not medical advice.

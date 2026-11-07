@@ -1,0 +1,17 @@
+<!-- @dsCard group="Routines" height=120 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>WellnessNote</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    return h('div', { className: 'os-col' },
+      h(O.WellnessNote, { as: 'p' }),
+      h(O.WellnessNote, null, 'Optional practice. Evidence is limited; keep what helps you.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!-- @dsCard group="Feedback" height=270 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>InlineNotice</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    return h('div', { className: 'os-col' },
+      h(O.InlineNotice, { tone: 'warning' }, 'Two minutes left. Finish the thought.'),
+      h(O.InlineNotice, { actionLabel: 'Plan a pause', onAction: ack('Pause planned.') }, 'Four hours of deep work today. A pause now will keep tomorrow good.'),
+      h(O.InlineNotice, { actionLabel: 'Break it down', onAction: ack('Breakdown opened.') }, 'This task is over four sessions. It may be easier as smaller steps.'),
+      notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

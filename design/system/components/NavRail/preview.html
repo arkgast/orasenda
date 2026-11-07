@@ -1,0 +1,18 @@
+<!-- @dsCard group="Navigation" height=420 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>NavRail</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var nav = React.useState('today'), page = nav[0], setPage = nav[1];
+    return h('div', { className: 'os-row', style: { alignItems: 'flex-start' } },
+      h(O.NavRail, { current: page, onNavigate: setPage }),
+      h('p', { className: 'os-muted' }, 'Current page: ' + page));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

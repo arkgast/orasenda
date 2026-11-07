@@ -22,7 +22,7 @@
 
 ## How we proceed
 1. **Done:** the spec docs are written (`docs/SPEC.md`, `docs/ROADMAP.md`, `docs/DECISIONS.md`, `README.md`).
-2. **Design:** take SPEC sections 1–3 into Claude Design for tokens and key screens.
+2. **Design:** done. The [Orasenda design system](https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73) holds the tokens, 23 components and the brand guide. All future screens and code build from it.
 3. **Tech phase (P0):** a focused session that produces decision records for the stack, storage, distribution and blocking approach, plus the macOS spike.
 4. **Backlog:**
    - turn each roadmap phase into a GitHub milestone with small issues (user stories plus acceptance criteria taken from SPEC.md);
