@@ -21,3 +21,14 @@ Project rules for every contributor and agent. They override baton's general gui
   on them.
 - All checks live in `scripts/ci.sh`. baton `validate` and GitHub Actions both run it; add new
   checks there, fastest first.
+
+## Code structure (ADR-001, ADR-007)
+- `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
+  `cfg(target_os)`, and never calls `SystemTime::now()`: time is passed in.
+- Every new Rust dependency of core must `cargo check` for `aarch64-apple-ios` and
+  `aarch64-linux-android`. `scripts/ci.sh` enforces it.
+- `apps/orasenda/src/bindings.ts` and `apps/orasenda/src/styles/tokens.css` are generated. Never
+  edit them by hand; regenerate and commit.
+- Every new Tauri command is added to the `AppManifest` list in `build.rs` and granted in a
+  capability. Commands not listed there are open to every window.
+- Accessibility lint errors (Biome `a11y` group) block, like any other error.

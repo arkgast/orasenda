@@ -8,7 +8,7 @@ Orasenda is one calm, minimal app for planning time, managing tasks and protecti
 
 **Decisions made so far:**
 - **Audience:** personal use first, public launch later.
-- **First platform:** macOS desktop.
+- **Platforms:** macOS 13+ first (gating CI); Windows 11 next (advisory CI); iOS and Android projects scaffolded and smoke-tested by hand, with no mobile features until P10. See ADR-001.
 - **Data:** stored locally first, with optional end-to-end encrypted sync later.
 - **Calendar:** built-in, paired with a kanban board that tracks time on each task.
 
@@ -221,14 +221,14 @@ No user accounts until the sync phase.
 
 ## 7. Open Questions for the Tech Phase
 - How app blocking can work on macOS without MDM, and how to resist the app being quit (a helper agent?).
-- The stack that best shares code across desktop, web and mobile.
+- ~~The stack that best shares code across desktop, web and mobile.~~ Answered by ADR-001.
 - Local storage and the future sync design (a CRDT or event log behind end-to-end encryption).
 - Notarized direct download vs the Mac App Store.
 - Business model.
 
 ## 8. Out of Scope for Now
 - External calendar sync
-- Mobile and web apps
+- Mobile and web features (the mobile projects are scaffolded and smoke-tested from P0)
 - The music library
 - yt-dlp
 - Public template gallery

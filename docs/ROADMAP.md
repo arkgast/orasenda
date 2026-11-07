@@ -6,7 +6,7 @@
 
 | Phase | Name | Scope | Exit criteria |
 |---|---|---|---|
-| **P0** | Foundations | Tech decisions recorded in `DECISIONS.md` (stack, storage, distribution, blocking approach), with a **spike** proving foreground-app detection and an overlay on macOS. Design pass in Claude Design: tokens, Today, Timer, Board, Full-screen. Repo, CI and lint set up. | Decisions approved, spike works, design tokens ready |
+| **P0** | Foundations | Tech decisions recorded in `DECISIONS.md` (stack, storage, distribution, blocking approach), with a **spike** proving foreground-app detection and an overlay on macOS. Design pass in Claude Design: tokens, Today, Timer, Board, Full-screen. Repo, CI and lint set up. **App shell:** Tauri 2 + React + Rust core, macOS gating CI, Windows advisory CI, mobile projects smoke-tested. | Decisions approved, spike works, design tokens ready, shell passes `ci` on macOS |
 | **P1** | Focus Core | Timer presets, menu-bar and mini timer, 2-minute start, flow extension, capture pad, 2-minute warning, full-screen, deep-hours cap, local store, export, import, automatic backups | Usable daily as a focus timer |
 | **P2** | Tasks | Kanban with WIP limits, Deep/Shallow, estimates with buffer, time per task, breakdown prompt, Frog, quick-add hotkey | Every session is linked to a task, with estimated vs actual time |
 | **P3** | Plan the Day | Built-in calendar, drag-to-block, overflow block, block-starts-session prompt, energy-aware suggestions, realistic finish time, reshuffle, onboarding | Full day planned and executed in the app |

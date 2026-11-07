@@ -1,6 +1,6 @@
 # Orasenda
 
-Orasenda is a calm, local-first macOS focus and time-management app.
+Orasenda is a calm, local-first focus and time-management app: macOS first, Windows next, iOS and Android later (see ADR-001 in `docs/DECISIONS.md`).
 
 ## Sources of truth
 - What we build and why: `docs/SPEC.md`. Phases: `docs/ROADMAP.md`. Decisions: `docs/DECISIONS.md`.
