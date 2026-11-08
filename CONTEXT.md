@@ -7,6 +7,7 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 |---|---|---|
 | Session | One timed run of focus (later also of a break): a start time, a planned length, pauses and an end. Stored as a `focus_session` row once it has ended. | A time block on the calendar (a plan, not a run) |
 | Preset | A named set of lengths: Classic 25/5, 50/10, Deep Block 90, Custom. Choosing one does not start anything. | The session itself |
+| Quick start | The "Just 2 minutes" button: a session with the `quick` preset, a fixed 2 minutes, never the selected default. | A Custom preset (user-chosen lengths, 5 minutes or more) |
 | Phase | What a session is for: `focus` now, `break` from sub-project B. | The session's state (idle, running, paused) |
 | Planned end | Start time plus planned length plus the total paused time. A session ends at its planned end even if the app notices late. | The moment the app noticed the end |
 | Milestone | A one-shot transition the engine reports: started, paused, resumed, ended, recovered. There is at most one per transition and none per tick. | A tick (the once-a-second refresh of the view) |
@@ -16,7 +17,8 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Syncable | An entity that will travel between devices: every field write appends to `change_log`. | Device-only |
 | Device-only | An entity that stays on this device and never writes `change_log`: the active session, window positions, bypass reasons, raw usage. | Private or secret data (a separate question) |
 | Change log | The `change_log` table: one row per changed field of a syncable entity, stamped with a hybrid logical clock and the device id (ADR-002). | An audit log for the user |
-| Degraded | The app running with its store unavailable: the timer works in memory, nothing is saved, Today says so once. | A crash |
+| Degraded | The app running with its store unavailable or newer than the build: the timer works in memory, nothing is saved, Today keeps a standing line and announces it once. | A crash |
+| Pending milestone | A milestone that happened before any window was listening (at launch); `timer_state` returns and drains it. | An event (delivered live) |
 | Ended early | A session the user ended with *End session*; recorded with `end_reason: stopped` and its real focused minutes. | A failed or abandoned session (words the app never uses) |
 
 ## Relationships
