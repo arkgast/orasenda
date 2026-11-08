@@ -78,6 +78,23 @@ impl SpikeState {
         }
     }
 
+    /// The app with this pid quit. `previous` is forgotten when it was that app. Returns
+    /// whether it was the overlay's target; the caller then closes the overlay.
+    #[cfg_attr(
+        not(any(test, target_os = "macos")),
+        expect(dead_code, reason = "called by the macOS wiring (#16)")
+    )]
+    pub(crate) fn app_terminated(&mut self, pid: i32) -> bool {
+        if self
+            .previous
+            .as_ref()
+            .is_some_and(|previous| previous.pid == pid)
+        {
+            self.previous = None;
+        }
+        self.target.as_ref().is_some_and(|target| target.pid == pid)
+    }
+
     pub(crate) fn rule(&self) -> &BlockRule {
         &self.rule
     }
@@ -410,6 +427,26 @@ mod tests {
         assert_eq!(state.extra_allow(), ["com.apple.mobilephone"]);
         assert_eq!(state.on_foreground(phone.clone(), OWN, 2_000), None);
         assert_eq!(state.previous(), Some(&phone));
+    }
+
+    #[test]
+    fn app_terminated_reports_the_target_and_forgets_previous() {
+        let (mut state, editor) = state_after_editor();
+        let a = app("com.x.a", "A", 1);
+        state.on_foreground(a.clone(), OWN, 2_000);
+
+        // Another app quitting changes nothing.
+        assert!(!state.app_terminated(99));
+        assert_eq!(state.previous(), Some(&editor));
+        assert_eq!(state.target(), Some(&a));
+
+        // The previous app quitting: it is forgotten, the overlay stays.
+        assert!(!state.app_terminated(editor.pid));
+        assert_eq!(state.previous(), None);
+        assert_eq!(state.target(), Some(&a));
+
+        // The target quitting: reported, so the caller closes the overlay.
+        assert!(state.app_terminated(a.pid));
     }
 
     /// A platform that does nothing.

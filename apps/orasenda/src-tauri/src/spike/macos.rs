@@ -149,13 +149,11 @@ fn on_foreground(app: &AppHandle, usage: &UsageNotifier, front: AppRef) {
     }
 }
 
-/// An app quit (main thread): when it is the overlay's target, the overlay closes.
+/// An app quit (main thread): `previous` forgets it, and when it is the overlay's target,
+/// the overlay closes.
 fn on_terminated(app: &AppHandle, pid: i32) {
     let spike = app.state::<Spike>();
-    let is_target = spike
-        .state()
-        .target()
-        .is_some_and(|target| target.pid == pid);
+    let is_target = spike.state().app_terminated(pid);
     if is_target {
         eprintln!("spike: the target quit, closing the overlay");
         close_overlay(app, &spike);
