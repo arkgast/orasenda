@@ -55,7 +55,6 @@ pub const SAFETY_ALLOWLIST: &[&str] = &[
     "com.apple.loginwindow",
     "com.apple.accessibility.AccessibilityInspector",
     "com.apple.dock",
-    "com.veloud.orasenda",
 ];
 
 /// `Intercept` only for an app with a bundle ID that is a target and is neither Orasenda
@@ -141,6 +140,24 @@ impl Gate {
         (id != self.own_bundle_id && !SAFETY_ALLOWLIST.contains(&id)).then_some(id)
     }
 
+    /// Decides what to do when `app` comes to the foreground; `decision` is [`decide`]'s
+    /// verdict for it. Only a countable app (bundled, not Orasenda, not on the safety
+    /// allowlist) can end an allowance or close an overlay.
+    ///
+    /// Phase 1, overlay open (see [`Gate::overlay_open`]):
+    /// - the overlay's own target, Orasenda, an allowlisted or unbundled app: `Ignore`;
+    /// - another countable app that is intercepted and not allowed: `Show` (retarget);
+    /// - any other countable app: `CloseOverlay`. The allowance survives only if this app
+    ///   is the allowed one; otherwise it is reset.
+    ///
+    /// Phase 2, overlay closed:
+    /// - a countable app other than the allowed one resets the allowance;
+    /// - an intercepted app that is not allowed: `Show`;
+    /// - anything else, including the allowed app: `Ignore`.
+    ///
+    /// Caller meaning: `Show` opens (or retargets) the overlay and then calls
+    /// [`Gate::overlay_open`]; `Ignore` does nothing; `CloseOverlay` closes it and then calls
+    /// [`Gate::overlay_closed`].
     pub fn on_foreground(&mut self, app: &AppRef, decision: Decision) -> GateAction {
         let countable = self.countable(app);
         if let Some(target) = self.open_for.as_deref() {
