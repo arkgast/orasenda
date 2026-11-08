@@ -4,6 +4,8 @@
 //! `yieldActivationToApplication` hint in [`MacAppControl::activate`].
 
 use std::path::Path;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
@@ -33,9 +35,34 @@ impl AppControl for MacAppControl {
     /// `Refused` when `-[NSRunningApplication hide]` returns NO. On macOS 27 it returns NO
     /// even when the app does hide (see `docs/common-issues.md`), so `Refused` here does not
     /// prove the app is still visible.
+    ///
+    /// An app that already reports hidden can still be on screen: Mission Control switches
+    /// to a hidden full-screen app's Space and activates it without unhiding it, and a plain
+    /// `hide` is then a no-op that leaves the user on that Space (#56). Such an app is
+    /// unhidden and hidden again on thread `hide-again`, which waits for the unhide to land
+    /// (an immediate `hide` is dropped). That needs the main run loop to turn, so it cannot
+    /// wait here; this returns `Ok` once the thread is started, and the thread logs when the
+    /// unhide never lands. Back to focus clicked again within about 1 s, while a `hide-again`
+    /// thread still runs, can leave the app visible but inactive; the next Back to focus
+    /// hides it.
     fn hide(&self, pid: i32) -> Result<(), PlatformError> {
         let app = regular_app(pid)?;
-        refused_unless(app.hide())
+        if !app.isHidden() {
+            return refused_unless(app.hide());
+        }
+        thread::Builder::new()
+            .name("hide-again".into())
+            .spawn(move || {
+                if hide_again(&*app, UNHIDE_POLL, UNHIDE_TIMEOUT) {
+                    let name = app_ref(&app).name;
+                    eprintln!(
+                        "platform-macos: could not re-hide {name}: it stayed hidden for {} s",
+                        UNHIDE_TIMEOUT.as_secs()
+                    );
+                }
+            })
+            .map(drop)
+            .map_err(|error| PlatformError::Other(format!("could not start hide-again: {error}")))
     }
 
     fn terminate(&self, pid: i32) -> Result<(), PlatformError> {
@@ -61,6 +88,46 @@ impl AppControl for MacAppControl {
         };
         refused_unless(sent)
     }
+}
+
+/// How often [`hide_again`] checks whether the unhide landed.
+const UNHIDE_POLL: Duration = Duration::from_millis(10);
+/// How long [`hide_again`] waits for the unhide before hiding anyway (it lands in ~10 ms).
+const UNHIDE_TIMEOUT: Duration = Duration::from_secs(1);
+
+/// The `NSRunningApplication` calls [`hide_again`] makes, so their order is testable.
+trait Hideable {
+    fn is_hidden(&self) -> bool;
+    fn unhide(&self) -> bool;
+    fn hide(&self) -> bool;
+}
+
+impl Hideable for NSRunningApplication {
+    fn is_hidden(&self) -> bool {
+        self.isHidden()
+    }
+    fn unhide(&self) -> bool {
+        NSRunningApplication::unhide(self)
+    }
+    fn hide(&self) -> bool {
+        NSRunningApplication::hide(self)
+    }
+}
+
+/// Unhides `app`, waits (polling every `poll`, at most `timeout`) until it no longer
+/// reports hidden, then hides it, so the app goes through a real hide. Returns whether it
+/// timed out (the app still reported hidden, so the `hide` was likely a no-op). Both BOOLs
+/// are unreliable on macOS 27 and are ignored. Blocks: never call it on the main thread.
+fn hide_again(app: &impl Hideable, poll: Duration, timeout: Duration) -> bool {
+    app.unhide();
+    let start = Instant::now();
+    let mut hidden = app.is_hidden();
+    while hidden && start.elapsed() < timeout {
+        thread::sleep(poll);
+        hidden = app.is_hidden();
+    }
+    app.hide();
+    hidden
 }
 
 /// Converts a running app into the core's [`AppRef`]; the name falls back to the bundle ID.
@@ -187,6 +254,72 @@ mod tests {
         assert_eq!(regular_app(pid).err(), Some(not_regular.clone()));
         assert_eq!(MacAppControl.hide(pid), Err(not_regular.clone()));
         assert_eq!(MacAppControl.terminate(pid), Err(not_regular));
+    }
+
+    /// Records the calls [`hide_again`] makes. It stops reporting hidden after `unhide`
+    /// once `hidden_checks_after_unhide` more checks have run (never when `None`).
+    struct FakeApp {
+        hidden_checks_after_unhide: Option<usize>,
+        calls: std::cell::RefCell<Vec<&'static str>>,
+    }
+
+    impl FakeApp {
+        fn new(hidden_checks_after_unhide: Option<usize>) -> FakeApp {
+            FakeApp {
+                hidden_checks_after_unhide,
+                calls: Default::default(),
+            }
+        }
+        fn calls(&self) -> Vec<&'static str> {
+            self.calls.borrow().clone()
+        }
+    }
+
+    impl Hideable for FakeApp {
+        fn is_hidden(&self) -> bool {
+            let mut calls = self.calls.borrow_mut();
+            let checks = calls.iter().filter(|call| **call == "is_hidden").count();
+            calls.push("is_hidden");
+            match self.hidden_checks_after_unhide {
+                Some(limit) if calls.contains(&"unhide") => checks < limit,
+                _ => true,
+            }
+        }
+        fn unhide(&self) -> bool {
+            self.calls.borrow_mut().push("unhide");
+            false
+        }
+        fn hide(&self) -> bool {
+            self.calls.borrow_mut().push("hide");
+            false
+        }
+    }
+
+    #[test]
+    fn hide_again_hides_only_once_the_unhide_landed() {
+        // Mission Control can show and activate a hidden full-screen app without unhiding
+        // it; a plain `hide` is then a no-op and you stay on its Space (#56). A `hide` sent
+        // right after `unhide` is dropped too, so it waits for the unhide.
+        let app = FakeApp::new(Some(2));
+        assert!(!hide_again(&app, Duration::ZERO, Duration::from_secs(5)));
+        assert_eq!(
+            app.calls(),
+            ["unhide", "is_hidden", "is_hidden", "is_hidden", "hide"]
+        );
+    }
+
+    #[test]
+    fn hide_again_hides_anyway_after_the_timeout() {
+        let app = FakeApp::new(None);
+        assert!(hide_again(
+            &app,
+            Duration::from_millis(1),
+            Duration::from_millis(20)
+        ));
+        let calls = app.calls();
+        assert_eq!(calls.first(), Some(&"unhide"));
+        assert_eq!(calls.last(), Some(&"hide"));
+        assert!(calls.iter().filter(|call| **call == "is_hidden").count() >= 2);
     }
 
     #[test]
