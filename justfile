@@ -36,6 +36,7 @@ lint:
 test:
     cargo test --workspace --locked
     pnpm --filter orasenda test
+    pnpm --filter @orasenda/tokens test
 
 # Regenerate packages/tokens/tokens.css from design/system/tokens.json.
 tokens:
