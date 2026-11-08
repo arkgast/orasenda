@@ -130,7 +130,35 @@ mod tests {
     fn running_apps_contains_regular_apps() {
         let apps = MacAppControl.running_apps();
         assert!(!apps.is_empty());
-        assert!(apps.iter().all(|a| !a.name.is_empty()));
+        for app in &apps {
+            assert!(!app.name.is_empty());
+            assert_ne!(app.bundle_id.as_deref(), Some("com.apple.dock"));
+            // An app that quit since the listing is skipped rather than failing the test.
+            let Some(running) =
+                NSRunningApplication::runningApplicationWithProcessIdentifier(app.pid)
+            else {
+                continue;
+            };
+            assert_eq!(
+                running.activationPolicy(),
+                NSApplicationActivationPolicy::Regular,
+                "{} is not a regular app",
+                app.name
+            );
+        }
+    }
+
+    #[test]
+    fn hide_non_regular_app_is_refused() {
+        let pid = NSWorkspace::sharedWorkspace()
+            .runningApplications()
+            .iter()
+            .find(|app| !app.isTerminated() && !is_regular(app))
+            .map(|app| app.processIdentifier())
+            .expect("a running non-regular app");
+        // The guard refuses before any AppKit action is attempted.
+        assert_eq!(regular_app(pid).err(), Some(PlatformError::Refused));
+        assert_eq!(MacAppControl.hide(pid), Err(PlatformError::Refused));
     }
 
     #[test]
