@@ -41,7 +41,7 @@ impl SpikeState {
 
     /// What to do after a foreground change ([`Gate::on_foreground`]).
     #[cfg_attr(
-        not(test),
+        not(any(test, target_os = "macos")),
         expect(dead_code, reason = "called by the macOS wiring (#16)")
     )]
     pub(crate) fn gate_on_foreground(&mut self, app: &AppRef, decision: Decision) -> GateAction {
@@ -52,7 +52,7 @@ impl SpikeState {
     /// `overlay-show` to emit. `previous` is left unchanged. A target without a bundle ID is
     /// never intercepted, so it is refused: nothing changes and `None` is returned.
     #[cfg_attr(
-        not(test),
+        not(any(test, target_os = "macos")),
         expect(dead_code, reason = "called by the macOS wiring (#16)")
     )]
     pub(crate) fn open_overlay(&mut self, target: AppRef) -> Option<OverlayShow> {
@@ -136,7 +136,7 @@ impl Spike {
 
     /// Installs the platform once. Refused when the spike is disabled.
     #[cfg_attr(
-        not(test),
+        not(any(test, target_os = "macos")),
         expect(dead_code, reason = "called by the macOS wiring (#16)")
     )]
     pub(crate) fn install(&self, platform: Box<dyn SpikePlatform>) -> Result<(), InstallError> {

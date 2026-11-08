@@ -6,6 +6,10 @@
 //! they return `Disabled`.
 
 pub(crate) mod commands;
+#[cfg(target_os = "macos")]
+mod macos;
+#[cfg(target_os = "macos")]
+mod overlay;
 pub(crate) mod state;
 
 use orasenda_core::{AppRef, BlockAction, PlatformError};
@@ -35,9 +39,7 @@ pub(crate) fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> 
         return Ok(());
     }
     #[cfg(target_os = "macos")]
-    {
-        // Filled by the macOS wiring task (#16).
-    }
+    macos::setup(app)?;
     Ok(())
 }
 

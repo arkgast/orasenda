@@ -2063,6 +2063,7 @@ name = "orasenda"
 version = "0.1.0"
 dependencies = [
  "orasenda-core",
+ "orasenda-platform-macos",
  "serde",
  "serde_json",
  "specta",
