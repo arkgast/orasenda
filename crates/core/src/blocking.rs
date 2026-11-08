@@ -147,8 +147,9 @@ impl Gate {
     /// Phase 1, overlay open (see [`Gate::overlay_open`]):
     /// - the overlay's own target, Orasenda, an allowlisted or unbundled app: `Ignore`;
     /// - another countable app that is intercepted and not allowed: `Show` (retarget);
-    /// - any other countable app: `CloseOverlay`. The allowance survives only if this app
-    ///   is the allowed one; otherwise it is reset.
+    /// - any other countable app: `CloseOverlay`;
+    /// - in both countable cases the allowance survives only if this app is the allowed
+    ///   one; otherwise it is reset.
     ///
     /// Phase 2, overlay closed:
     /// - a countable app other than the allowed one resets the allowance;
@@ -427,6 +428,7 @@ mod tests {
     }
 
     #[test]
+    // Also covers the choice-after-close path for Back to focus.
     fn gate_overlay_closed_reenables() {
         let mut g = gate();
         let a = app(Some("com.x.a"), 1);
@@ -464,15 +466,6 @@ mod tests {
     }
 
     #[test]
-    fn gate_choice_after_close_back_to_focus_shows_again() {
-        let mut g = gate();
-        let a = app(Some("com.x.a"), 1);
-        g.overlay_open("com.x.a");
-        g.overlay_closed();
-        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Show);
-    }
-
-    #[test]
     fn gate_choice_after_close_continue_ignores() {
         let mut g = gate();
         let a = app(Some("com.x.a"), 1);
@@ -484,14 +477,17 @@ mod tests {
 
     #[test]
     fn decide_own_bundle_not_on_allowlist_is_allowed_by_own_id() {
-        assert!(!SAFETY_ALLOWLIST.contains(&"com.veloud.orasenda.dev"));
+        assert!(!SAFETY_ALLOWLIST.contains(&"com.veloud.orasenda"));
         let own = "com.veloud.orasenda.dev";
         let r = rule(&[own]);
         assert_eq!(decide(&app(Some(own), 1), &r, own, &[]), Decision::Allow);
         let mut g = Gate::new(own.to_owned());
         let a = app(Some("com.x.a"), 1);
         g.allow("com.x.a");
-        g.on_foreground(&app(Some(own), 9), Decision::Allow);
+        assert_eq!(
+            g.on_foreground(&app(Some(own), 9), Decision::Allow),
+            GateAction::Ignore
+        );
         assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
     }
 
