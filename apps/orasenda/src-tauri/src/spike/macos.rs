@@ -136,7 +136,7 @@ fn on_foreground(app: &AppHandle, usage: &UsageNotifier, front: AppRef) {
         let own = spike.own_bundle_id();
         let decision = decide(&front, &state.rule, own, &state.extra_allow);
         let previous = state.previous.take();
-        state.previous = next_previous(previous, &front, decision, own, &state.extra_allow);
+        state.previous = next_previous(previous, &front, decision, own);
         match state.gate_on_foreground(&front, decision) {
             GateAction::Show => state.open_overlay(front).map(Step::Show),
             GateAction::CloseOverlay => Some(Step::Close),
@@ -344,20 +344,21 @@ fn last_segment(tracker: &UsageTracker) -> (usize, Option<UsageSegment>) {
 }
 
 /// The `previous` app after `app` came to the front with `decision`: `app` itself when it is
-/// countable (has a bundle ID, is not Orasenda, the safety allowlist or `extra_allow`) and
-/// was not intercepted; otherwise `previous` is kept.
+/// countable and was not intercepted; otherwise `previous` is kept.
+///
+/// Countable is the gate's notion (`Gate::countable` in core, which is private): a bundle
+/// ID that is neither Orasenda's nor on the safety allowlist. `extra_allow` apps (Phone)
+/// are countable; `decide` already lets them through.
 fn next_previous(
     previous: Option<AppRef>,
     app: &AppRef,
     decision: Decision,
     own_bundle_id: &str,
-    extra_allow: &[String],
 ) -> Option<AppRef> {
-    let countable = app.bundle_id.as_deref().is_some_and(|id| {
-        id != own_bundle_id
-            && !SAFETY_ALLOWLIST.contains(&id)
-            && !extra_allow.iter().any(|allowed| allowed == id)
-    });
+    let countable = app
+        .bundle_id
+        .as_deref()
+        .is_some_and(|id| id != own_bundle_id && !SAFETY_ALLOWLIST.contains(&id));
     if countable && decision == Decision::Allow {
         Some(app.clone())
     } else {
@@ -414,7 +415,6 @@ mod tests {
     #[test]
     fn previous_skips_self_allowlisted_unbundled_and_targets() {
         let editor = app(Some("com.x.editor"), "Editor", 1);
-        let extra = vec!["com.apple.mobilephone".to_owned()];
         let start = Some(editor.clone());
         let skipped = [
             (app(Some(OWN), "Orasenda", 2), Decision::Allow),
@@ -422,27 +422,29 @@ mod tests {
                 app(Some(SAFETY_ALLOWLIST[0]), "Allowlisted", 3),
                 Decision::Allow,
             ),
-            (
-                app(Some("com.apple.mobilephone"), "Phone", 4),
-                Decision::Allow,
-            ),
             (app(None, "tool", 5), Decision::Allow),
             (app(Some("com.x.game"), "Game", 6), Decision::Intercept),
         ];
         for (skip, decision) in skipped {
             assert_eq!(
-                next_previous(start.clone(), &skip, decision, OWN, &extra),
+                next_previous(start.clone(), &skip, decision, OWN),
                 start,
                 "{skip:?}"
             );
         }
+        // An `extra_allow` app (Phone) is countable, like for the gate: it can be previous.
+        let phone = app(Some("com.apple.mobilephone"), "Phone", 4);
+        assert_eq!(
+            next_previous(start.clone(), &phone, Decision::Allow, OWN),
+            Some(phone)
+        );
         let browser = app(Some("com.x.browser"), "Browser", 7);
         assert_eq!(
-            next_previous(start, &browser, Decision::Allow, OWN, &extra),
+            next_previous(start, &browser, Decision::Allow, OWN),
             Some(browser.clone())
         );
         assert_eq!(
-            next_previous(None, &browser, Decision::Allow, OWN, &extra),
+            next_previous(None, &browser, Decision::Allow, OWN),
             Some(browser)
         );
     }
