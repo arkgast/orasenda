@@ -30,6 +30,9 @@ impl AppControl for MacAppControl {
             .collect()
     }
 
+    /// `Refused` when `-[NSRunningApplication hide]` returns NO. On macOS 27 it returns NO
+    /// even when the app does hide (see `docs/common-issues.md`), so `Refused` here does not
+    /// prove the app is still visible.
     fn hide(&self, pid: i32) -> Result<(), PlatformError> {
         let app = regular_app(pid)?;
         refused_unless(app.hide())
