@@ -58,7 +58,8 @@ function ConnectionFallback({ onReturn }: { onReturn: () => void }) {
 
 /**
  * The overlay window's page: nothing until `overlay-show`, then the design system's
- * `IntentPrompt` for that app, without a Wait button (the wait comes in P6). Tells the backend
+ * two-step `IntentPrompt` for that app, without a Wait button (the wait comes in P6); Continue
+ * always carries the reason picked on step 2. Tells the backend
  * it is ready once its listener is attached, so a show sent before that is re-sent, not lost.
  * One choice is sent per show; a failed one can be sent again, so the window never traps the user.
  */
@@ -107,7 +108,7 @@ export function Overlay() {
       open
       app={show.appName}
       onReturn={onReturn}
-      onContinue={(reason) => choose({ kind: "continue", reason: reason ?? null })}
+      onContinue={(reason) => choose({ kind: "continue", reason })}
     />
   );
 }

@@ -84,43 +84,116 @@ test("overlay_return_and_escape_send_return", async () => {
   ]);
 });
 
-test("overlay_continue_sends_reason_or_null", async () => {
-  const calls = overlayBackend();
-  await renderOverlay();
-  await show("Safari");
-
-  fireEvent.click(screen.getByRole("button", { name: "I need Safari now" }));
+/** Shows the prompt for `appName` and opens step 2 with "I need <app> now". */
+async function showReasons(appName: string): Promise<void> {
+  await show(appName);
   await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Safari" }));
+    fireEvent.click(screen.getByRole("button", { name: `I need ${appName} now` }));
   });
-  // One choice per show: the reason is checked on the next one.
-  await show("Safari");
-  fireEvent.click(screen.getByRole("button", { name: "I need Safari now" }));
-  fireEvent.click(screen.getByRole("radio", { name: "Work" }));
-  await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Safari" }));
-  });
+}
 
-  expect(argsOf(calls, "spike_overlay_choice")).toEqual([
-    { choice: { kind: "continue", reason: null } },
-    { choice: { kind: "continue", reason: "Work" } },
-  ]);
-});
-
-test("overlay_second_show_resets_reason", async () => {
+test("overlay_step_one_has_back_to_focus_as_only_primary", async () => {
   overlayBackend();
   await renderOverlay();
   await show("Safari");
-  fireEvent.click(screen.getByRole("button", { name: "I need Safari now" }));
+
+  const back = screen.getByRole("button", { name: "Back to focus" });
+  const need = screen.getByRole("button", { name: "I need Safari now" });
+  expect(screen.getAllByRole("button")).toEqual([back, need]);
+  expect(back).toHaveClass("os-btn-primary");
+  expect(need).not.toHaveClass("os-btn-primary");
+  expect(back).toHaveFocus();
+  expect(need).not.toHaveAttribute("aria-expanded");
+  expect(screen.queryByRole("radio")).toBeNull();
+});
+
+test("overlay_step_two_shows_only_reasons_continue_and_back", async () => {
+  overlayBackend();
+  await renderOverlay();
+  await showReasons("Safari");
+
+  const continueButton = screen.getByRole("button", { name: "Continue to Safari" });
+  const back = screen.getByRole("button", { name: "Back to focus" });
+  expect(screen.getAllByRole("button")).toEqual([continueButton, back]);
+  expect(back).toHaveClass("os-btn-primary");
+  expect(continueButton).not.toHaveClass("os-btn-primary");
+  expect(screen.getByRole("group", { name: "What do you need Safari for?" })).toBeInTheDocument();
+  const radios = screen.getAllByRole("radio");
+  expect(radios.map((radio) => radio.getAttribute("value"))).toEqual([
+    "Work",
+    "Quick check",
+    "Other",
+  ]);
+  expect(radios.some((radio) => (radio as HTMLInputElement).checked)).toBe(false);
+  expect(radios[0]).toHaveFocus();
+});
+
+test("overlay_continue_without_reason_is_unavailable_and_sends_nothing", async () => {
+  const calls = overlayBackend();
+  await renderOverlay();
+  await showReasons("Safari");
+
+  const continueButton = screen.getByRole("button", { name: "Continue to Safari" });
+  expect(continueButton).toHaveAttribute("aria-disabled", "true");
+  expect(continueButton).toHaveAccessibleDescription(
+    "Pick one to continue. Your reason stays on this device.",
+  );
+  await act(async () => {
+    fireEvent.click(continueButton);
+  });
+
+  expect(argsOf(calls, "spike_overlay_choice")).toEqual([]);
+});
+
+test("overlay_continue_sends_picked_reason", async () => {
+  const calls = overlayBackend();
+  await renderOverlay();
+  await showReasons("Safari");
+
+  // Clicking Continue before a reason sends nothing and does not use up the show's one choice.
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Safari" }));
+  });
+  fireEvent.click(screen.getByRole("radio", { name: "Quick check" }));
+  const continueButton = screen.getByRole("button", { name: "Continue to Safari" });
+  expect(continueButton).not.toHaveAttribute("aria-disabled");
+  expect(continueButton).not.toHaveAttribute("aria-describedby");
+  await act(async () => {
+    fireEvent.click(continueButton);
+  });
+
+  expect(argsOf(calls, "spike_overlay_choice")).toEqual([
+    { choice: { kind: "continue", reason: "Quick check" } },
+  ]);
+});
+
+test("overlay_escape_on_step_two_sends_return", async () => {
+  const calls = overlayBackend();
+  await renderOverlay();
+  await showReasons("Safari");
+  fireEvent.click(screen.getByRole("radio", { name: "Work" }));
+
+  await act(async () => {
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+  });
+
+  expect(argsOf(calls, "spike_overlay_choice")).toEqual([{ choice: { kind: "return" } }]);
+});
+
+test("overlay_second_show_resets_to_step_one", async () => {
+  overlayBackend();
+  await renderOverlay();
+  await showReasons("Safari");
   fireEvent.click(screen.getByRole("radio", { name: "Work" }));
   expect(screen.getByRole("radio", { name: "Work" })).toBeChecked();
 
   await show("Safari");
 
-  expect(screen.queryByRole("radio", { name: "Work" })).toBeNull();
-  expect(screen.getByRole("button", { name: "I need Safari now" })).toHaveAttribute(
+  expect(screen.queryByRole("radio")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Continue to Safari" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Back to focus" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "I need Safari now" })).not.toHaveAttribute(
     "aria-expanded",
-    "false",
   );
 });
 
