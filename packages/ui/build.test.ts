@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, expect, test } from "vitest";
-import { generateTypes } from "./build.ts";
+import { arg, generateTypes } from "./build.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), "ui-css-"));
@@ -86,6 +86,25 @@ test("components_d_ts_is_current", () => {
 });
 
 test("generate_types_rejects_relative_imports", () => {
-  expect(() => generateTypes("import type { X } from './x';\n")).toThrow(/relative import/);
+  for (const relative of [
+    "import type { X } from './x';\n",
+    'export * from "../y";\n',
+    "import './side-effect';\n",
+    "type T = import('./x').X;\n",
+    '/// <reference path="./x.d.ts" />\n',
+  ]) {
+    expect(() => generateTypes(relative), relative).toThrow(/relative import/);
+  }
   expect(generateTypes("import type * as React from 'react';\n")).toContain("from 'react'");
+});
+
+test("arg_requires_a_value_when_the_flag_is_present", () => {
+  expect(arg(["node", "build.ts"], "--out", "default")).toBe("default");
+  expect(arg(["node", "build.ts", "--out", "x.css"], "--out", "default")).toBe("x.css");
+  expect(() => arg(["node", "build.ts", "--out"], "--out", "default")).toThrow(
+    /--out needs a value/,
+  );
+  expect(() => arg(["node", "build.ts", "--out", "--out-types", "x"], "--out", "d")).toThrow(
+    /--out needs a value/,
+  );
 });

@@ -43,7 +43,8 @@ test:
 tokens:
     pnpm --filter @orasenda/tokens build
 
-# Regenerate packages/ui/components.css from design/system/components/bundle.css.
+# Regenerate packages/ui/components.css and components.d.ts from design/system/components/
+# (bundle.css and index.d.ts).
 ui-css:
     pnpm --filter @orasenda/ui build
 
@@ -64,9 +65,9 @@ ci:
     git diff --exit-code -- packages/tokens/tokens.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
-    @echo "==> ui (components.css is up to date)"
+    @echo "==> ui (components.css and components.d.ts are up to date)"
     "{{ just_executable() }}" ui-css
-    git diff --exit-code -- packages/ui/components.css
+    git diff --exit-code -- packages/ui/components.css packages/ui/components.d.ts
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
     @echo "==> ui (tests)"
