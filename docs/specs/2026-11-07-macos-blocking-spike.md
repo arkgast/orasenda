@@ -253,6 +253,6 @@ It is a separate process with its own install, signing and launch story (login i
 None.
 
 ## Implementation status
-- [ ] Plan: `docs/plans/2026-11-07-macos-blocking-spike.md`
+- [x] Plan: `docs/plans/2026-11-07-macos-blocking-spike.md`
 - [ ] Issues: to be created by `baton:backlog`
 - Blocked on the app shell: #6, #8, #9 merged.
