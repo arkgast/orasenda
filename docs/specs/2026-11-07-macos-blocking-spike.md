@@ -1,6 +1,6 @@
 # macOS detection-and-overlay spike — Spec
 
-- Status: draft
+- Status: approved (2026-11-07, by the owner's delegate)
 - Date: 2026-11-07
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP P0](../ROADMAP.md), [SPEC §2.6–2.7](../SPEC.md), [app shell spec](2026-11-07-app-shell.md), [ADR-001](../DECISIONS.md#adr-001-tech-stack-and-code-sharing), [ADR-004](../DECISIONS.md#adr-004-macos-app-blocking-approach), [ADR-005](../DECISIONS.md#adr-005-macos-usage-tracking-approach-and-permissions), [ADR-010](../DECISIONS.md#adr-010-platform-code-layout), design system [`IntentPrompt`](../../design/system/components/IntentPrompt/README.md)
@@ -153,7 +153,7 @@ State (`SpikeState`: rule, gate, tracker, current target) sits in one `Mutex` in
 - **Overlay strategy.** The spike first tries `LevelAndCollection`: window level `NSScreenSaverWindowLevel`, collection behavior `canJoinAllSpaces | fullScreenAuxiliary | stationary | ignoresCycle`. If the overlay does not appear above a full-screen target, it tries `NonActivatingPanel`: a dynamic `NSPanel` subclass, declared with `objc2`'s `define_class!`, that overrides `canBecomeKeyWindow` → YES (a borderless panel returns NO, which would break focus and Escape), is swapped in with `object_setClass`, and gets the `nonactivatingPanel` style mask, the approach the `tauri-nspanel` plugin uses (the plugin itself is git-only and not added). The swap drops tao's window-class overrides; the findings record any lost behavior. then `AccessoryPolicy` (`NSApplication.setActivationPolicy(.accessory)` while the overlay shows, `.regular` after). The findings record which worked, and the winner becomes the default. If none works, the spike **stops and reports**: the findings say "Tauri overlay not viable above full-screen apps", ADR-004 is accepted with a native AppKit overlay as the required direction, and building it becomes its own spec. Detection, hiding, closing and tracking are still completed and accepted (decided by the owner).
 - **Orasenda's own activation** (the overlay or main window taking focus) produces a foreground event for `com.veloud.orasenda`: `decide` returns `Allow`, the tracker records it like any app.
 - **No bundle ID** (command-line tools, some helpers): never intercepted; tracked with the name only.
-- **Target reactivates while the overlay is open:** `Gate` returns `false`; no second `show`.
+- **Target reactivates while the overlay is open:** `Gate::on_foreground` returns `Ignore`; no second `show`.
 - **Target quits while the overlay is open** (`NSWorkspaceDidTerminateApplicationNotification` for the target's pid): the overlay hides and `Gate::overlay_closed` runs.
 - **Another app comes to the front while the overlay is open** (e.g. a notification click): if it is countable, the overlay hides and `Gate::overlay_closed` runs, so keystrokes never go to an app hidden behind the overlay; Orasenda's own activation and allowlisted apps leave it open.
 - **Rule changes while the overlay is open:** the open overlay stays; the new rule applies from the next foreground change.
@@ -171,7 +171,7 @@ None. Usage segments live in memory (at most 500) and disappear when the app qui
 ## Testing strategy
 **Rust — `crates/core`** (`cargo test`):
 - `decide`: target → `Intercept`; non-target → `Allow`; each `SAFETY_ALLOWLIST` entry targeted → `Allow`; own bundle ID targeted → `Allow`; missing bundle ID → `Allow`; `extra_allow` → `Allow`; empty rule → `Allow`.
-- `Gate`: continue suppresses the same app; a different countable app in between resets it; Orasenda's own activation, an allowlisted app and an app without a bundle ID do not reset it; a countable app arriving while the overlay is open reports `close_overlay`; an open overlay suppresses a repeat; `overlay_closed` re-enables.
+- `Gate`: continue suppresses the same app; a different countable app in between resets it; Orasenda's own activation, an allowlisted app and an app without a bundle ID do not reset it; a countable app arriving while the overlay is open returns `CloseOverlay`; an open overlay suppresses a repeat; `overlay_closed` re-enables.
 - `UsageTracker`: switch closes and opens segments; idle ≥ threshold closes at `at_ms − idle_ms`; activity after idle reopens; idle below threshold does nothing; out-of-order timestamp is clamped; 501st segment drops the oldest.
 - Serialization: `BlockAction` lowercase, `OverlayChoice` tagged `kind`, `SpikeError` as `{ kind, message }`.
 
@@ -207,8 +207,8 @@ None. Usage segments live in memory (at most 500) and disappear when the app qui
 | 8 | Idle 3 min, then move the mouse | segment closed at idle start, new one opened |
 | 9 | 5 min with the flag on, no overlay | CPU < 1 % average |
 | 10 | Flag off; release build | no panel, no overlay, no observer |
-| 12 | A notification or another app comes to the front while the overlay is open | overlay hides |
 | 11 | Light and dark appearance | overlay and panel render from tokens |
+| 12 | A notification or another app comes to the front while the overlay is open | overlay hides |
 
 ## Dependencies to vet (`baton:deps`, read from crates.io on 2026-11-07)
 Matched to the versions Tauri 2.12.5 already depends on (`objc2 ^0.6`, `objc2-app-kit ^0.3.2`, `objc2-foundation ^0.3.2`), so no second copy enters the tree. All need Rust ≥ 1.71 and none is yanked. The implementing task vets each one (add in a copy + `cargo audit`), enabling only the Cargo features for the classes it uses.
