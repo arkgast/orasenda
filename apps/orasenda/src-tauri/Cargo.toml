@@ -22,5 +22,8 @@ specta-typescript.workspace = true
 tauri.workspace = true
 tauri-specta.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+orasenda-platform-macos = { path = "../../../crates/platform-macos" }
+
 [dev-dependencies]
 serde_json.workspace = true

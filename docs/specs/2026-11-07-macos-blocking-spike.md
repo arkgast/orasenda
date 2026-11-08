@@ -114,7 +114,7 @@ apps/orasenda/
   overlay.html, src/overlay.tsx          overlay entry next to index.html (second Vite input), renders IntentPrompt
   src-tauri/tauri.spike.conf.json        ad-hoc signing + hardened runtime for the spike bundle only
   src/spike/{DevPanel.tsx, useSpike.ts}  dev panel, rendered by App.tsx only when spike_status() is enabled
-  src-tauri/src/spike/{mod.rs, commands.rs, overlay.rs, wiring.rs}
+  src-tauri/src/spike/{mod.rs, commands.rs, state.rs, macos.rs, overlay.rs}
   src-tauri/capabilities/overlay.json
 docs/spikes/2026-11-07-macos-blocking.md   findings: manual matrix, measurements, conclusions
 ```
@@ -133,7 +133,7 @@ docs/spikes/2026-11-07-macos-blocking.md   findings: manual matrix, measurements
 - `overlay-show` with `OverlayShow { app_name: String }` (serialized `appName`; the pid stays in Rust) — to window `overlay` only (`emit_to`).
 - `spike-usage-changed` (no payload) — to window `main`, at most once per second; the panel then calls `spike_usage`.
 
-**Wiring (app crate, `spike/wiring.rs`).** In `setup()`, when enabled and on macOS:
+**Wiring (app crate, `spike/macos.rs`).** In `setup()`, when enabled and on macOS:
 1. Create window `overlay` hidden: `overlay.html` (at the app root next to `index.html`, a second input in Vite's `build.rolldownOptions.input`, so it is served at `/overlay.html`), no decorations, not resizable, `always_on_top`, `skip_taskbar`, `visible_on_all_workspaces`, **opaque** background, sized by `cover_main_screen` when shown. Transparent windows on macOS need Tauri's app-wide `macOSPrivateApi`, which would apply to release builds too, so the spike does not enable it (author's call); an opaque overlay also hides the distraction completely. Call `configure_overlay(ns_window, LevelAndCollection)`.
 2. On the main thread, `MacForeground::subscribe(sink)`. The sink records `Instant::now()`, then calls `UsageTracker::on_foreground` and `decide` with the current rule, then `Gate::on_foreground`. When the gate says show, the app crate (on the main thread) calls `cover_main_screen`, emits `overlay-show`, calls `show()` and `focus_overlay`, and logs the elapsed milliseconds (`eprintln!("spike: overlay {} ms", …)`) for the findings.
    The overlay page calls `spike_overlay_ready` once its listener is attached; until then the app crate keeps the pending `OverlayShow` and re-emits it on ready, so the first event is never lost.
