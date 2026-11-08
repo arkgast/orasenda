@@ -83,8 +83,8 @@ ci:
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/bindings.ts
     git diff --exit-code -- apps/orasenda/src/bindings.ts
-    @echo "==> core mobile (cargo check for iOS and Android)"
-    cargo check -p orasenda-core --locked {{ mobile_targets }}
+    @echo "==> mobile (cargo check core and app for iOS and Android)"
+    cargo check -p orasenda-core -p orasenda --locked {{ mobile_targets }}
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
