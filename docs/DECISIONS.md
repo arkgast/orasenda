@@ -12,10 +12,8 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 - **Consequences:** trade-offs and follow-ups
 
 ## Pending (to resolve in P0 Foundations)
-- ADR-004: macOS app-blocking approach (detection, overlay, hide or close, anti-quit helper)
-- ADR-005: macOS usage-tracking approach and permissions
-
-Resolved by the P0 detection-and-overlay spike. ADR-007 and later numbers are taken by the entries below.
+- ADR-004 and ADR-005 are *proposed* below. The P0 detection-and-overlay spike ([spec](specs/2026-11-07-macos-blocking-spike.md)) accepts them from its findings.
+- The anti-quit helper (strong lock, P7) is left open in ADR-004 and gets its own spike before P7.
 
 ## ADR-001: Tech stack and code sharing
 - **Date:** 2026-11-07
@@ -100,3 +98,38 @@ Resolved by the P0 detection-and-overlay spike. ADR-007 and later numbers are ta
   3. **FSL-1.1:** forbids competing use for two years; not open source.
 - **Decision:** Option 2. `LICENSE` is MPL-2.0; contributions are signed off under the DCO 1.1; `TRADEMARKS.md` reserves the name and logo, so forks rename. The sync server stays closed source in a private repo, and `crates/sync-protocol` will be Apache-2.0. Copyright is held by Arnold Gandarillas Castillo until Veloud is a registered company.
 - **Consequences:** no licence can stop a rebranded fork from building its own sync; the trademark, the official server and trust are what protect paid sync. A lawyer should review the licence files and a trademark search for "Orasenda" should run before the public launch. Third-party notices are generated for bundled dependencies and fonts.
+
+## ADR-010: Platform code layout
+- **Date:** 2026-11-07
+- **Status:** accepted
+- **Context:** ADR-001 keeps `crates/core` free of Tauri and OS code and left the layout of OS integrations (foreground-app detection, overlays, hiding apps, idle time) to the P0 spike. Windows follows macOS, and core logic such as "should this app be intercepted?" must be testable without an OS.
+- **Options considered:**
+  1. **Traits in core, one `crates/platform-<os>` per OS, wired by the app crate:** core holds pure types and traits (`ForegroundSource`, `AppControl`, `IdleSource`); `crates/platform-macos` implements them with `objc2`; the app crate picks the implementation with `cfg(target_os)` and target-specific dependencies.
+  2. **Modules inside the app crate** (`src-tauri/src/platform/<os>`): fewer crates, but OS code is tied to Tauri and hard to test or reuse.
+  3. **A Tauri plugin per capability:** plugin permissions and boilerplate; still tied to Tauri.
+- **Decision:** Option 1. Core defines the traits and never depends on `objc2`, `windows` or any OS crate and never uses `cfg(target_os)`. Each platform crate compiles to an empty crate on other targets (`#![cfg(target_os = "...")]`). The app crate is the only place that chooses an implementation. macOS bindings use the `objc2` family at the versions Tauri already depends on.
+- **Consequences:** product logic can be unit-tested with fake sources. Adding Windows means a `crates/platform-windows` against the same traits. Traits may grow as P5–P7 need more; changing them is a core change and goes through review. Spec: [docs/specs/2026-11-07-macos-blocking-spike.md](specs/2026-11-07-macos-blocking-spike.md).
+
+## ADR-004: macOS app-blocking approach
+- **Date:** 2026-11-07
+- **Status:** proposed (accepted by the P0 spike from its findings)
+- **Context:** SPEC §2.7 blocks distracting apps with a calm overlay, hiding or optionally closing them, without MDM and, ideally, without system permissions. The app is distributed outside the Mac App Store (ADR-003), so the sandbox does not apply.
+- **Options considered:**
+  1. **Detect with `NSWorkspace` activation notifications; overlay with a Tauri window raised above full-screen apps; hide or terminate with `NSRunningApplication`:** no permission expected; reuses the design system's `IntentPrompt`.
+  2. **Same detection, native `NSPanel` overlay:** most likely to float above everything; rebuilds the UI in AppKit.
+  3. **Accessibility API (`AXUIElement`) to watch and act on windows:** finer control (per window), but needs the Accessibility permission and reads more than needed.
+  4. **Screen Time / Family Controls:** not available to macOS apps outside the Family Controls entitlement and MDM-style setup.
+- **Decision:** proposed: option 1, with option 2's non-activating panel as the fallback the spike tests. To be confirmed or changed from the spike's findings ([docs/spikes/2026-11-07-macos-blocking.md](spikes/2026-11-07-macos-blocking.md)).
+- **Consequences:** if a Tauri window cannot rise above full-screen apps, the overlay becomes native. The anti-quit helper for the strong lock is **not** decided here; it gets its own spike before P7. Notarized, Developer ID-signed behavior must be re-checked before the private beta (the spike uses ad-hoc signing).
+
+## ADR-005: macOS usage-tracking approach and permissions
+- **Date:** 2026-11-07
+- **Status:** proposed (accepted by the P0 spike from its findings)
+- **Context:** SPEC §2.6 records the foreground app and its duration, pauses on idle, and never records titles, keystrokes or content. Permissions are requested only when needed, and ideally none are needed.
+- **Options considered:**
+  1. **Foreground changes from `NSWorkspace` notifications, idle from `CGEventSourceSecondsSinceLastEventType`:** event-driven, no permission expected, only app identity and time.
+  2. **Polling `frontmostApplication`:** simple, but wakes the CPU and adds latency.
+  3. **`CGWindowList` or the Accessibility API:** window-level data, needs Screen Recording or Accessibility, and collects more than the privacy promise allows.
+- **Decision:** proposed: option 1, with segments built in `crates/core` and time passed in. To be confirmed from the spike's findings.
+- **Consequences:** domains come only from the browser extension (P7). Private-window exclusion depends on the extension. Storage, retention and export follow ADR-002 in P5.
+

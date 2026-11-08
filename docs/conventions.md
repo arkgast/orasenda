@@ -32,3 +32,7 @@ Project rules for every contributor and agent. They override baton's general gui
 - Every new Tauri command is added to the `AppManifest` list in `build.rs` and granted in a
   capability. Commands not listed there are open to every window.
 - Accessibility lint errors (Biome `a11y` group) block, like any other error.
+- OS code lives only in `crates/platform-<os>` (ADR-010). Core never depends on `objc2`,
+  `windows` or another OS crate; the app crate is the only place that picks an implementation.
+- Every AppKit call runs on the main thread (`MainThreadMarker`); never hold a lock across one.
+- Spike code runs only behind `spike::enabled()` (debug build and `ORASENDA_SPIKE=1`).
