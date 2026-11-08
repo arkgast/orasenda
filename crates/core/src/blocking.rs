@@ -419,6 +419,66 @@ mod tests {
     }
 
     #[test]
+    fn gate_open_overlay_allowed_app_forward_closes_and_keeps_allowance() {
+        let mut g = gate();
+        let b = app(Some("com.x.b"), 2);
+        g.allow("com.x.b");
+        g.overlay_open("com.x.a");
+        assert_eq!(
+            g.on_foreground(&b, Decision::Intercept),
+            GateAction::CloseOverlay
+        );
+        g.overlay_closed();
+        assert_eq!(g.on_foreground(&b, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn gate_open_overlay_other_countable_app_resets_allowance() {
+        let mut g = gate();
+        let b = app(Some("com.x.b"), 2);
+        g.allow("com.x.b");
+        g.overlay_open("com.x.a");
+        assert_eq!(
+            g.on_foreground(&app(Some("com.x.c"), 3), Decision::Allow),
+            GateAction::CloseOverlay
+        );
+        g.overlay_closed();
+        assert_eq!(g.on_foreground(&b, Decision::Intercept), GateAction::Show);
+    }
+
+    #[test]
+    fn gate_choice_after_close_back_to_focus_shows_again() {
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        g.overlay_open("com.x.a");
+        g.overlay_closed();
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Show);
+    }
+
+    #[test]
+    fn gate_choice_after_close_continue_ignores() {
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        g.overlay_open("com.x.a");
+        g.allow("com.x.a");
+        g.overlay_closed();
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn decide_own_bundle_not_on_allowlist_is_allowed_by_own_id() {
+        assert!(!SAFETY_ALLOWLIST.contains(&"com.veloud.orasenda.dev"));
+        let own = "com.veloud.orasenda.dev";
+        let r = rule(&[own]);
+        assert_eq!(decide(&app(Some(own), 1), &r, own, &[]), Decision::Allow);
+        let mut g = Gate::new(own.to_owned());
+        let a = app(Some("com.x.a"), 1);
+        g.allow("com.x.a");
+        g.on_foreground(&app(Some(own), 9), Decision::Allow);
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
     fn block_action_serializes_lowercase() {
         assert_eq!(serde_json::to_value(BlockAction::Hide).unwrap(), "hide");
         assert_eq!(serde_json::to_value(BlockAction::Close).unwrap(), "close");
