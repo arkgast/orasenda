@@ -13,7 +13,7 @@ use objc2_foundation::{NSNotification, NSNotificationName};
 use orasenda_core::blocking::AppRef;
 use orasenda_core::platform::{ForegroundSource, PlatformError};
 
-use crate::control::app_ref;
+use crate::{control::app_ref, main_thread};
 
 /// Reports the frontmost app and its changes.
 ///
@@ -56,10 +56,6 @@ impl ForegroundSource for MacForeground {
         observe(mtm, name, move |app| sink(app_ref(&app)));
         Ok(())
     }
-}
-
-fn main_thread() -> Result<MainThreadMarker, PlatformError> {
-    MainThreadMarker::new().ok_or_else(|| PlatformError::Other("not on main thread".into()))
 }
 
 /// Registers `handler` for the `NSWorkspace` notification `name`, passing the app from its

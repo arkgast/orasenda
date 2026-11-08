@@ -12,6 +12,12 @@ mod overlay;
 pub use control::{MacAppControl, phone_bundle_id};
 pub use foreground::MacForeground;
 pub use idle::MacIdle;
-pub use overlay::{
-    OverlayStrategy, configure_overlay, cover_main_screen, focus_overlay, restore_activation_policy,
-};
+pub use overlay::{configure_overlay, cover_main_screen, focus_overlay};
+
+use objc2::MainThreadMarker;
+use orasenda_core::platform::PlatformError;
+
+/// The main-thread marker, or `Other("not on main thread")` elsewhere.
+pub(crate) fn main_thread() -> Result<MainThreadMarker, PlatformError> {
+    MainThreadMarker::new().ok_or_else(|| PlatformError::Other("not on main thread".into()))
+}
