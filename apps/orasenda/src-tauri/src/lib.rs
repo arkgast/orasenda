@@ -26,6 +26,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::app_info,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
+            spike::commands::spike_rule,
             spike::commands::spike_set_rule,
             spike::commands::spike_usage,
             spike::commands::spike_overlay_ready,
@@ -173,6 +174,7 @@ mod tests {
         for granted in [
             "allow-spike-status",
             "allow-spike-running-apps",
+            "allow-spike-rule",
             "allow-spike-set-rule",
             "allow-spike-usage",
         ] {

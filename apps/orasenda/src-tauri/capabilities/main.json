@@ -9,6 +9,7 @@
     "allow-app-info",
     "allow-spike-status",
     "allow-spike-running-apps",
+    "allow-spike-rule",
     "allow-spike-set-rule",
     "allow-spike-usage"
   ]

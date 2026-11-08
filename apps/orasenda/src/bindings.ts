@@ -11,6 +11,8 @@ export const commands = {
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
 	spikeRunningApps: () => typedError<AppRef_Serialize[], SpikeError>(__TAURI_INVOKE("spike_running_apps")),
+	/**  The current block rule (it survives a webview reload). */
+	spikeRule: () => typedError<BlockRule, SpikeError>(__TAURI_INVOKE("spike_rule")),
 	/**  Replaces the block rule; it applies from the next foreground change. */
 	spikeSetRule: (rule: BlockRule) => typedError<null, SpikeError>(__TAURI_INVOKE("spike_set_rule", { rule })),
 	/**  Usage segments, newest first, at most 20. */

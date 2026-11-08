@@ -145,6 +145,12 @@ pub(crate) fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError>
     Ok(())
 }
 
+pub(crate) fn rule(spike: &Spike) -> Result<BlockRule, SpikeError> {
+    platform(spike)?;
+    let rule = spike.state().rule.clone();
+    Ok(rule)
+}
+
 /// At most this many segments go to the dev panel.
 const USAGE_LIMIT: usize = 20;
 
@@ -252,6 +258,13 @@ pub fn spike_status(spike: State<'_, Spike>) -> SpikeStatus {
 #[specta::specta]
 pub fn spike_running_apps(spike: State<'_, Spike>) -> Result<Vec<AppRef>, SpikeError> {
     running_apps(&spike)
+}
+
+/// The current block rule (it survives a webview reload).
+#[tauri::command]
+#[specta::specta]
+pub fn spike_rule(spike: State<'_, Spike>) -> Result<BlockRule, SpikeError> {
+    rule(&spike)
 }
 
 /// Replaces the block rule; it applies from the next foreground change.
@@ -442,6 +455,24 @@ mod tests {
             overlay_choice(&spike, OverlayChoice::Return),
             Err(SpikeError::Disabled)
         );
+    }
+
+    #[test]
+    fn spike_rule_disabled_without_flag() {
+        assert_eq!(rule(&Spike::new(false, OWN)), Err(SpikeError::Disabled));
+        assert_eq!(rule(&Spike::new(true, OWN)), Err(SpikeError::Unsupported));
+    }
+
+    #[test]
+    fn spike_rule_returns_the_set_rule() {
+        let (spike, _) = spike_with(Vec::new());
+        assert_eq!(rule(&spike), Ok(BlockRule::default()));
+        let new = BlockRule {
+            targets: ["com.x.a".to_owned()].into(),
+            action: BlockAction::Close,
+        };
+        set_rule(&spike, new.clone()).unwrap();
+        assert_eq!(rule(&spike), Ok(new));
     }
 
     #[test]
