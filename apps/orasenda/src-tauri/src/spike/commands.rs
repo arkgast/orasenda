@@ -4,7 +4,9 @@
 //! The `#[tauri::command]` functions are thin: the logic lives in plain functions over
 //! [`Spike`], so it is tested with a fake [`SpikePlatform`].
 
-use orasenda_core::{AppRef, BlockRule, PlatformError, SAFETY_ALLOWLIST, UsageSegment};
+use orasenda_core::{
+    AppRef, BlockRule, Decision, PlatformError, SAFETY_ALLOWLIST, UsageSegment, decide,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -185,15 +187,21 @@ pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(),
 }
 
 /// Hides or closes the target, closes the overlay, then lands in the previous app if it is
-/// still running, otherwise in Orasenda's main window.
+/// still running and the current rule does not intercept it, otherwise in Orasenda's main
+/// window. Activating an intercepted app (the target itself, when `previous` was recorded
+/// before the rule changed) would unhide it and reopen the overlay in a loop (#41).
 fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), SpikeError> {
     let (target, previous, action) = {
         let state = spike.state();
-        (
-            state.target().cloned(),
-            state.previous.clone(),
-            state.rule.action,
-        )
+        let previous = state.previous.clone().filter(|previous| {
+            decide(
+                previous,
+                &state.rule,
+                spike.own_bundle_id(),
+                &state.extra_allow,
+            ) == Decision::Allow
+        });
+        (state.target().cloned(), previous, state.rule.action)
     };
     if let Some(target) = &target
         && let Err(error) = platform.hide_or_close(target.pid, action)
@@ -672,6 +680,36 @@ mod tests {
         open_overlay(&spike, &target, None, BlockAction::Hide);
         overlay_choice(&spike, OverlayChoice::Return).unwrap();
         assert_eq!(calls(&log).last(), Some(&Call::ShowMain));
+    }
+
+    #[test]
+    fn return_never_activates_an_app_the_rule_intercepts() {
+        // `previous` was recorded before the rule changed: it is the target itself, or
+        // another app that is now a target. Activating it unhides it and reopens the
+        // overlay (#41), so Return lands in the main window instead.
+        let target = app(Some("com.x.game"), "Game", 10);
+        let other = app(Some("com.x.chat"), "Chat", 30);
+        for previous in [target.clone(), other.clone()] {
+            let (spike, log) = spike_with(vec![target.clone(), other.clone()]);
+            open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
+            spike
+                .state()
+                .rule
+                .targets
+                .extend(other.bundle_id.iter().cloned());
+
+            assert_eq!(overlay_choice(&spike, OverlayChoice::Return), Ok(()));
+
+            assert_eq!(
+                calls(&log),
+                [
+                    Call::HideOrClose(10, BlockAction::Hide),
+                    Call::HideOverlay,
+                    Call::ShowMain,
+                ],
+                "previous {previous:?}"
+            );
+        }
     }
 
     #[test]
