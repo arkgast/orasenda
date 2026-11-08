@@ -30,3 +30,13 @@ test("components_css_is_deterministic", () => {
   expect(build("b.css")).toBe(a);
   expect(readFileSync(join(here, "components.css"), "utf8")).toBe(a);
 });
+
+test("os_choice_checkbox_is_not_a_round_dot", () => {
+  const css = readFileSync(join(here, "components.css"), "utf8");
+  const rule = /\.os-choice input\[type="checkbox"\]\s*\{([^}]*)\}/.exec(css);
+  expect(rule, "checkbox rule missing").not.toBeNull();
+  const radius = /border-radius:\s*([^;]+);/.exec(rule?.[1] ?? "");
+  expect(radius?.[1]).toBeDefined();
+  expect(radius?.[1]).not.toContain("var(--radius-pill)");
+  expect(css).toMatch(/\.os-choice input\[type="checkbox"\]:checked::before/);
+});
