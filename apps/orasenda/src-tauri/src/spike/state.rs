@@ -449,6 +449,21 @@ mod tests {
         assert!(state.app_terminated(a.pid));
     }
 
+    #[test]
+    fn app_terminated_when_previous_is_the_target() {
+        // #41 shape: X was previous, then the rule targeted X and its overlay opened.
+        let mut state = SpikeState::new(OWN);
+        let x = app("com.x.game", "Game", 8);
+        assert_eq!(state.on_foreground(x.clone(), OWN, 1_000), None);
+        assert_eq!(state.previous(), Some(&x));
+        state.set_rule(targets(&["com.x.game"]));
+        assert_eq!(state.on_foreground(x.clone(), OWN, 2_000), show("Game"));
+        assert_eq!(state.target(), Some(&x));
+
+        assert!(state.app_terminated(x.pid));
+        assert_eq!(state.previous(), None);
+    }
+
     /// A platform that does nothing.
     struct Nothing;
 
