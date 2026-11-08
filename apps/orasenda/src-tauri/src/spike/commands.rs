@@ -102,14 +102,14 @@ fn platform(spike: &Spike) -> Result<&dyn SpikePlatform, SpikeError> {
     spike.platform().ok_or(SpikeError::Unsupported)
 }
 
-pub fn status(spike: &Spike) -> SpikeStatus {
+pub(crate) fn status(spike: &Spike) -> SpikeStatus {
     SpikeStatus {
         enabled: spike.enabled(),
         platform_supported: spike.platform().is_some(),
     }
 }
 
-pub fn running_apps(spike: &Spike) -> Result<Vec<AppRef>, SpikeError> {
+pub(crate) fn running_apps(spike: &Spike) -> Result<Vec<AppRef>, SpikeError> {
     let platform = platform(spike)?;
     let apps = platform.running_apps();
     let extra_allow = spike.state().extra_allow.clone();
@@ -139,7 +139,7 @@ fn selectable_apps(apps: Vec<AppRef>, own_bundle_id: &str, extra_allow: &[String
     apps
 }
 
-pub fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError> {
+pub(crate) fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError> {
     platform(spike)?;
     spike.state().rule = rule;
     Ok(())
@@ -148,7 +148,7 @@ pub fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError> {
 /// At most this many segments go to the dev panel.
 const USAGE_LIMIT: usize = 20;
 
-pub fn usage(spike: &Spike) -> Result<Vec<UsageSegment>, SpikeError> {
+pub(crate) fn usage(spike: &Spike) -> Result<Vec<UsageSegment>, SpikeError> {
     platform(spike)?;
     let state = spike.state();
     Ok(state
@@ -161,16 +161,16 @@ pub fn usage(spike: &Spike) -> Result<Vec<UsageSegment>, SpikeError> {
         .collect())
 }
 
-pub fn overlay_ready(spike: &Spike) -> Result<(), SpikeError> {
+pub(crate) fn overlay_ready(spike: &Spike) -> Result<(), SpikeError> {
     let platform = platform(spike)?;
-    let pending = spike.state().pending_show.clone();
+    let pending = spike.state().pending_show();
     if let Some(show) = pending {
         platform.show_overlay(show).map_err(platform_error)?;
     }
     Ok(())
 }
 
-pub fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(), SpikeError> {
+pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(), SpikeError> {
     let platform = platform(spike)?;
     match choice {
         OverlayChoice::Return => back_to_focus(spike, platform),
@@ -184,7 +184,7 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
     let (target, previous, action) = {
         let state = spike.state();
         (
-            state.target.clone(),
+            state.target().cloned(),
             state.previous.clone(),
             state.rule.action,
         )
@@ -195,7 +195,7 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
         eprintln!("spike: could not {action:?} {}: {error}", target.name);
     }
     let hidden = platform.hide_overlay();
-    close_overlay(spike);
+    spike.state().close_overlay();
     hidden.map_err(platform_error)?;
 
     let running = previous.filter(|previous| {
@@ -223,32 +223,17 @@ fn continue_to_target(
     platform: &dyn SpikePlatform,
     reason: Option<String>,
 ) -> Result<(), SpikeError> {
-    let target = {
-        let mut state = spike.state();
-        let target = state.target.clone();
-        if let Some(id) = target.as_ref().and_then(|t| t.bundle_id.as_deref()) {
-            state.gate.allow(id);
-        }
-        target
-    };
+    let target = spike.state().allow_target();
     if let Some(target) = &target {
         eprintln!("spike: continue to {}, reason: {reason:?}", target.name);
     }
     let hidden = platform.hide_overlay();
-    close_overlay(spike);
+    spike.state().close_overlay();
     hidden.map_err(platform_error)?;
     match target {
         Some(target) => platform.activate(target.pid).map_err(platform_error),
         None => Ok(()),
     }
-}
-
-/// Forgets the open overlay: the gate re-enables and nothing is pending.
-fn close_overlay(spike: &Spike) {
-    let mut state = spike.state();
-    state.gate.overlay_closed();
-    state.target = None;
-    state.pending_show = None;
 }
 
 fn platform_error(error: PlatformError) -> SpikeError {
@@ -428,12 +413,7 @@ mod tests {
             action,
         };
         state.previous = previous.cloned();
-        state.target = Some(target.clone());
-        let id = target.bundle_id.as_deref().unwrap();
-        state.gate.overlay_open(id);
-        state.pending_show = Some(OverlayShow {
-            app_name: target.name.clone(),
-        });
+        state.open_overlay(target.clone());
     }
 
     #[test]
@@ -629,11 +609,11 @@ mod tests {
             ]
         );
         let mut state = spike.state();
-        assert_eq!(state.target, None);
-        assert_eq!(state.pending_show, None);
+        assert_eq!(state.target(), None);
+        assert_eq!(state.pending_show(), None);
         // The gate is closed: the target shows the overlay again.
         assert_eq!(
-            state.gate.on_foreground(&target, Decision::Intercept),
+            state.gate_on_foreground(&target, Decision::Intercept),
             GateAction::Show
         );
     }
@@ -680,11 +660,11 @@ mod tests {
 
         assert_eq!(calls(&log), [Call::HideOverlay, Call::Activate(10)]);
         let mut state = spike.state();
-        assert_eq!(state.target, None);
-        assert_eq!(state.pending_show, None);
+        assert_eq!(state.target(), None);
+        assert_eq!(state.pending_show(), None);
         // Allowed and closed: the target comes back without an overlay.
         assert_eq!(
-            state.gate.on_foreground(&target, Decision::Intercept),
+            state.gate_on_foreground(&target, Decision::Intercept),
             GateAction::Ignore
         );
         // The reason is not kept anywhere in the state.
@@ -694,10 +674,10 @@ mod tests {
     /// The gate is closed and nothing is pending for the overlay.
     fn assert_overlay_closed(spike: &Spike, target: &AppRef) {
         let mut state = spike.state();
-        assert_eq!(state.target, None);
-        assert_eq!(state.pending_show, None);
+        assert_eq!(state.target(), None);
+        assert_eq!(state.pending_show(), None);
         assert_eq!(
-            state.gate.on_foreground(target, Decision::Intercept),
+            state.gate_on_foreground(target, Decision::Intercept),
             GateAction::Show
         );
     }
@@ -748,8 +728,8 @@ mod tests {
                 "{choice:?}"
             );
             let state = spike.state();
-            assert_eq!(state.target, None, "{choice:?}");
-            assert_eq!(state.pending_show, None, "{choice:?}");
+            assert_eq!(state.target(), None, "{choice:?}");
+            assert_eq!(state.pending_show(), None, "{choice:?}");
         }
     }
 

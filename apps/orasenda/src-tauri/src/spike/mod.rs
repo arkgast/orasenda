@@ -5,16 +5,16 @@
 //! without an installed [`SpikePlatform`] they return `Unsupported`, and with the flag off
 //! they return `Disabled`.
 
-pub mod commands;
-pub mod state;
+pub(crate) mod commands;
+pub(crate) mod state;
 
 use orasenda_core::{AppRef, BlockAction, PlatformError};
 use serde::{Deserialize, Serialize};
 
-pub use state::{Spike, SpikeState};
+pub(crate) use state::Spike;
 
 /// Whether the spike runs: a debug build and `ORASENDA_SPIKE=1`.
-pub fn enabled() -> bool {
+pub(crate) fn enabled() -> bool {
     enabled_from(
         cfg!(debug_assertions),
         std::env::var("ORASENDA_SPIKE").ok().as_deref(),
@@ -22,13 +22,13 @@ pub fn enabled() -> bool {
 }
 
 /// [`enabled`] with its inputs passed in, so it is testable without touching the environment.
-pub fn enabled_from(debug_build: bool, flag: Option<&str>) -> bool {
+pub(crate) fn enabled_from(debug_build: bool, flag: Option<&str>) -> bool {
     debug_build && flag == Some("1")
 }
 
 /// Starts the spike. Does nothing when it is disabled or not on macOS; the macOS branch
 /// (overlay window, foreground observer, idle thread) installs a [`SpikePlatform`].
-pub fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::Manager;
 
     if !app.state::<Spike>().enabled() {
@@ -43,8 +43,8 @@ pub fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 /// The side effects the spike needs from the OS and the windows. The macOS implementation
 /// reaches AppKit through `run_on_main_thread`; on other OS, or when the spike is disabled,
-/// none is installed. Callers never hold the [`SpikeState`] lock while calling these.
-pub trait SpikePlatform: Send + Sync {
+/// none is installed. Callers never hold the [`state::SpikeState`] lock while calling these.
+pub(crate) trait SpikePlatform: Send + Sync {
     /// Regular (user-facing) running apps, unfiltered and unsorted.
     fn running_apps(&self) -> Vec<AppRef>;
     /// Hides or asks to quit the app with this pid.

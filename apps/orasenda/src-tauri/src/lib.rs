@@ -2,7 +2,7 @@
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
 mod commands;
-pub mod spike;
+pub(crate) mod spike;
 mod ticker;
 
 use serde::{Deserialize, Serialize};
