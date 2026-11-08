@@ -108,3 +108,26 @@ test("late_rule_read_does_not_override_user_change", async () => {
 
   expect(result.current.rule).toEqual(mine);
 });
+
+test("use_spike_rule_read_failure_flags_rule_read", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  mockBackend({
+    spike_status: () => ({ enabled: true, platformSupported: true }),
+    spike_running_apps: () => [],
+    spike_usage: () => [],
+    spike_rule: () => Promise.reject({ kind: "platform", message: "refused" }),
+    spike_set_rule: () => null,
+  });
+  const { result } = renderHook(() => useSpike());
+  await waitFor(() => expect(result.current.errors.ruleRead).toBe(true));
+
+  expect(error).toHaveBeenCalledTimes(1);
+  expect(error.mock.calls[0]?.[0]).toBe("spike_rule failed");
+  expect(result.current.rule).toEqual({ targets: [], action: "hide" });
+  expect(result.current.errors.rule).toBe(false);
+
+  await act(async () => {
+    await result.current.setRule({ targets: [], action: "close" });
+  });
+  expect(result.current.errors.ruleRead).toBe(false);
+});

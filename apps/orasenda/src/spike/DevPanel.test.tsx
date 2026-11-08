@@ -257,3 +257,13 @@ test("dev_panel_shows_the_backend_rule_after_a_reload", async () => {
   expect(screen.getByRole("checkbox", { name: "Safari" })).not.toBeChecked();
   expect(screen.getByRole("radio", { name: "Quit the app" })).toBeChecked();
 });
+
+test("dev_panel_rule_read_failure_shows_note", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  spikeBackend({ replies: { spike_rule: rejects() } });
+  await renderPanel();
+
+  expect(screen.getByText("Rule unavailable.")).toHaveClass("spike-note");
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.queryByText("That change was not saved.")).toBeNull();
+});

@@ -11,7 +11,7 @@ import {
 import { subscribe } from "../subscribe";
 
 /** Which of the last requests failed; each resets on that request's next success. */
-export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean };
+export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean; ruleRead: boolean };
 
 /** A new rule, or a change to the latest requested one (so fast changes build on each other). */
 export type RuleChange = BlockRule | ((latest: BlockRule) => BlockRule);
@@ -56,7 +56,12 @@ export function useSpike(): Spike {
   const [apps, setApps] = useState<AppRef[]>([]);
   const [rule, setAcceptedRule] = useState<BlockRule>(DEFAULT_RULE);
   const [usage, setUsage] = useState<UsageSegment[]>([]);
-  const [errors, setErrors] = useState<SpikeErrors>({ apps: false, usage: false, rule: false });
+  const [errors, setErrors] = useState<SpikeErrors>({
+    apps: false,
+    usage: false,
+    rule: false,
+    ruleRead: false,
+  });
   const mounted = useRef(false);
   const accepted = useRef<BlockRule>(DEFAULT_RULE);
   const requested = useRef<BlockRule>(DEFAULT_RULE);
@@ -100,6 +105,7 @@ export function useSpike(): Spike {
         requested.current = accepted.current;
       }
       setError("rule", !outcome.ok);
+      if (outcome.ok) setError("ruleRead", false);
     },
     [setError],
   );
@@ -111,12 +117,16 @@ export function useSpike(): Spike {
     const initial = requested.current;
     void run("spike_rule", () => commands.spikeRule()).then((outcome) => {
       // A change made before the read answered wins over it.
-      if (!outcome.ok || !mounted.current || requested.current !== initial) return;
+      if (!outcome.ok) {
+        setError("ruleRead", true);
+        return;
+      }
+      if (!mounted.current || requested.current !== initial) return;
       requested.current = outcome.data;
       accepted.current = outcome.data;
       setAcceptedRule(outcome.data);
     });
-  }, [enabled]);
+  }, [enabled, setError]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -101,6 +101,7 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
       {status.platformSupported ? null : (
         <p className="spike-note">This system has no blocking support yet.</p>
       )}
+      {errors.ruleRead ? <p className="spike-note">Rule unavailable.</p> : null}
 
       <fieldset className="os-choice-group">
         <legend>Apps to intercept</legend>
