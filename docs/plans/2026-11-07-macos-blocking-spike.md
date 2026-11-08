@@ -80,7 +80,7 @@ S1 ───────────────────────> S4 ─
 - Priority: 0
 - Depends on: #6
 - Owns: `crates/core/src/blocking.rs`, `crates/core/src/usage.rs`, `crates/core/src/platform.rs`
-- Touches (read-only or additive): `crates/core/src/lib.rs` (adds `pub mod` lines and re-exports), `justfile` (boundary step also rejects lines starting with `objc2`, `block2`, `windows`)
+- Touches (read-only or additive): `crates/core/src/lib.rs` (adds `pub mod` lines and re-exports), `justfile` (boundary step also rejects lines starting with `objc2`, `block2`, and the exact crates `windows`/`windows-core`)
 - Interfaces:
   - Consumes: `orasenda-core` crate and `just ci` (#6)
   - Produces:
@@ -98,10 +98,10 @@ S1 ───────────────────────> S4 ─
   - [ ] `./scripts/ci.sh` passes; `gh pr checks <pr> --required` passes.
 - Tests first:
   - `decide_target_intercepts`, `decide_non_target_allows`, `decide_allowlist_never_intercepts` (each entry), `decide_own_bundle_allows`, `decide_missing_bundle_allows`, `decide_extra_allow_allows`, `decide_empty_rule_allows`
-  - `gate_continue_suppresses_same_app`, `gate_other_countable_app_resets_allowance`, `gate_self_allowlisted_or_unbundled_do_not_reset`, `gate_open_overlay_ignores_repeat`, `gate_countable_app_while_open_closes_overlay`, `gate_overlay_closed_reenables`
+  - `gate_continue_suppresses_same_app`, `gate_other_countable_app_resets_allowance`, `gate_self_allowlisted_or_unbundled_do_not_reset`, `gate_open_overlay_ignores_repeat`, `gate_countable_app_while_open_closes_overlay`, `gate_other_target_while_open_retargets`, `gate_overlay_closed_reenables`
   - `tracker_switch_closes_and_opens`, `tracker_idle_closes_at_idle_start`, `tracker_activity_after_idle_reopens`, `tracker_idle_below_threshold_noop`, `tracker_out_of_order_clamped`, `tracker_caps_at_500`
   - `block_action_serializes_lowercase`, `app_ref_serializes_camel_case`, `usage_segment_exports_numbers_as_f64` (exports the type with `specta_typescript` in a dev-only test, or asserts the attribute via `specta::Type` datatype)
-- Notes: `serde_json` is already a dev-dependency (#6). `start_ms` and `end_ms` carry `#[specta(type = f64)]`
+- Notes: `serde_json` is already a dev-dependency (#6). `start_ms` carries `#[specta(type = f64)]`, `end_ms` carries `#[specta(type = Option<f64>)]`
   (specta refuses to export `u64` by default; epoch ms ≪ 2^53, so this is lossless); `pid` is `i32`.
   All IPC types use `rename_all = "camelCase"`.
 
@@ -195,13 +195,13 @@ S1 ───────────────────────> S4 ─
   - Produces: `MacSpikePlatform` implementing `SpikePlatform`; `const OVERLAY_STRATEGY: OverlayStrategy` in `spike/overlay.rs`
 - Acceptance:
   - [ ] Setup (flag on, macOS): hidden opaque `overlay` window loading `overlay.html` (no decorations, not resizable, always on top, skip taskbar, visible on all workspaces) configured with `OVERLAY_STRATEGY` (`LevelAndCollection` first); `extra_allow` filled from `phone_bundle_id()`.
-  - [ ] Foreground sink: record arrival `Instant`, `UsageTracker::on_foreground`, remember `previous` (last countable app before a target), `decide`, `Gate::on_foreground`; on `Show`: `cover_main_screen`, emit `overlay-show` to `overlay` (or keep it pending until ready), `show`, `focus_overlay`, log `spike: overlay <ms> ms`; on `CloseOverlay`: hide the overlay and `Gate::overlay_closed`.
+  - [ ] Foreground sink: record arrival `Instant`, `UsageTracker::on_foreground`, remember `previous` (last countable app before a target that was not itself intercepted), `decide`, `Gate::on_foreground`; on `Show`: `cover_main_screen`, emit `overlay-show` to `overlay` (or keep it pending until ready), `show`, `focus_overlay`, log `spike: overlay <ms> ms`; on `CloseOverlay`: hide the overlay and `Gate::overlay_closed`; a `Show` while the overlay is already visible re-targets it (replace `target`, re-emit `overlay-show`); `previous` skips intercepted apps too.
   - [ ] Termination sink: when the target's pid quits while the overlay is open, hide it and `Gate::overlay_closed`.
   - [ ] Thread `spike-idle`: every 5 s `MacIdle::idle_ms()` → `on_idle_sample`. `spike-usage-changed` is emitted to `main` at most once per second (coalesced).
   - [ ] All window work runs via `run_on_main_thread`; no lock held across it.
   - [ ] `tauri.spike.conf.json` sets `bundle.macOS.signingIdentity` `"-"` and `hardenedRuntime` `true`; `pnpm --filter orasenda tauri build --debug --bundles app --config src-tauri/tauri.spike.conf.json` produces `Orasenda.app`, and `open --env ORASENDA_SPIKE=1 --stderr /tmp/orasenda-spike.log …/Orasenda.app` launches it with the flag on (checked by hand, noted in the PR).
   - [ ] `just ci` passes, including the debug no-bundle build; `gh pr checks <pr> --required` passes.
-- Tests first: `usage_changed_is_coalesced_to_one_per_second` (the coalescer is a pure helper taking `Instant`s), `previous_skips_self_allowlisted_and_unbundled` (pure helper). The rest is proven by S7's matrix.
+- Tests first: `usage_changed_is_coalesced_to_one_per_second` (the coalescer is a pure helper taking `Instant`s), `previous_skips_self_allowlisted_unbundled_and_targets` (pure helper). The rest is proven by S7's matrix.
 - Notes: the strategy is a single `const` so S7 can switch it in one line.
 
 ### S6: Overlay page and dev panel  (#17)

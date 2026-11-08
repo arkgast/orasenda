@@ -77,8 +77,8 @@ All in `crates/core` (module `blocking` and module `usage`), pure, no `SystemTim
 - `Decision` — `Allow | Intercept`.
 - `SAFETY_ALLOWLIST: &[&str]` — the list above.
 - `decide(app: &AppRef, rule: &BlockRule, own_bundle_id: &str, extra_allow: &[String]) -> Decision` — `Allow` when the bundle ID is missing, equals `own_bundle_id`, is in `SAFETY_ALLOWLIST` or `extra_allow`, or is not a target; otherwise `Intercept`.
-- `Gate` — tracks the *Continue* allowance: `Gate::new(own_bundle_id: String)`; `Gate::on_foreground(&mut self, app: &AppRef, decision: Decision) -> GateAction` says what to do. It returns `Ignore` for the app most recently allowed by `Gate::allow(bundle_id)` until a different *countable* app comes to the front — one with a bundle ID that is neither Orasenda's own nor on the safety allowlist (so the overlay's own activation does not reset the allowance) — and `Ignore` while an overlay is already open for that app (`Gate::overlay_open`, `Gate::overlay_closed`). `GateAction` is `Show | Ignore | CloseOverlay`; `CloseOverlay` when a countable app other than the target arrives while the overlay is open.
-- `UsageSegment { bundle_id: Option<String>, name: String, start_ms: u64, end_ms: Option<u64> }` — `end_ms: None` while open.
+- `Gate` — tracks the *Continue* allowance: `Gate::new(own_bundle_id: String)`; `Gate::on_foreground(&mut self, app: &AppRef, decision: Decision) -> GateAction` says what to do. It returns `Ignore` for the app most recently allowed by `Gate::allow(bundle_id)` until a different *countable* app comes to the front — one with a bundle ID that is neither Orasenda's own nor on the safety allowlist (so the overlay's own activation does not reset the allowance) — and `Ignore` while an overlay is already open for that app (`Gate::overlay_open`, `Gate::overlay_closed`). `GateAction` is `Show | Ignore | CloseOverlay`. While the overlay is open: the same target returns `Ignore`; a *different* intercepted app (one with `Decision::Intercept` that is not the allowed app) returns `Show` — the overlay re-targets to it and the caller records it with `Gate::overlay_open`; any other countable app returns `CloseOverlay`.
+- `UsageSegment { bundle_id: Option<String>, name: String, start_ms: u64, end_ms: Option<u64> }` — `end_ms: None` while open. Exported to TypeScript as `startMs: number`, `endMs: number | null` (`#[specta(type = f64)]` / `#[specta(type = Option<f64>)]`; epoch ms ≪ 2^53).
 - `UsageTracker::new(idle_threshold_ms: u64)` with `on_foreground(app: &AppRef, at_ms: u64)`, `on_idle_sample(idle_ms: u64, at_ms: u64)`, `segments() -> &[UsageSegment]`. Rules: a foreground change closes the open segment at `at_ms` and opens one for the new app; an idle sample ≥ threshold closes the open segment at `at_ms − idle_ms` (the moment input stopped) and marks the tracker idle; the next sample below the threshold while idle reopens a segment for the last foreground app at `at_ms − idle_ms`; a timestamp earlier than the open segment's start is clamped to that start (never a negative duration). Constant `IDLE_THRESHOLD_MS = 120_000`. Keeps at most 500 segments (oldest dropped).
 - Traits (module `platform`):
   - `trait ForegroundSource { fn frontmost(&self) -> Option<AppRef>; fn subscribe(&self, sink: Box<dyn Fn(AppRef) + Send + Sync>) -> Result<(), PlatformError>; }`
@@ -138,7 +138,7 @@ docs/spikes/2026-11-07-macos-blocking.md   findings: manual matrix, measurements
    The overlay page calls `spike_overlay_ready` once its listener is attached; until then the app crate keeps the pending `OverlayShow` and re-emits it on ready, so the first event is never lost.
 3. Start thread `spike-idle`: every 5 s, `MacIdle::idle_ms()` → `UsageTracker::on_idle_sample`.
 4. `spike_overlay_choice`:
-   - `return` → `hide` or `terminate` the target per the rule's action, `overlay.hide()`, `Gate::overlay_closed`, then `activate` the *previous app* (the last countable foreground app before the target, kept in `SpikeState`) if it is still running, otherwise show Orasenda's main window. The user lands back where they were.
+   - `return` → `hide` or `terminate` the target per the rule's action, `overlay.hide()`, `Gate::overlay_closed`, then `activate` the *previous app* (the last countable foreground app before the target that was not itself intercepted, kept in `SpikeState`; unchanged when the overlay re-targets) if it is still running, otherwise show Orasenda's main window. The user lands back where they were.
    - `continue` → `Gate::allow(bundle_id)`, `overlay.hide()`, `Gate::overlay_closed`, then `activate` the target so the user lands in it without ⌘Tab; the reason is logged with `eprintln!` (not stored).
 
    (Landing behavior is the author's call.)
@@ -155,7 +155,7 @@ State (`SpikeState`: rule, gate, tracker, current target) sits in one `Mutex` in
 - **No bundle ID** (command-line tools, some helpers): never intercepted; tracked with the name only.
 - **Target reactivates while the overlay is open:** `Gate::on_foreground` returns `Ignore`; no second `show`.
 - **Target quits while the overlay is open** (`NSWorkspaceDidTerminateApplicationNotification` for the target's pid): the overlay hides and `Gate::overlay_closed` runs.
-- **Another app comes to the front while the overlay is open** (e.g. a notification click): if it is countable, the overlay hides and `Gate::overlay_closed` runs, so keystrokes never go to an app hidden behind the overlay; Orasenda's own activation and allowlisted apps leave it open.
+- **Another app comes to the front while the overlay is open** (e.g. a notification click): if it is countable and not itself intercepted, the overlay hides and `Gate::overlay_closed` runs, so keystrokes never go to an app hidden behind the overlay; if it is another target, the overlay stays up and re-targets (`overlay-show` is emitted with the new name, `SpikeState.target` is replaced, `previous` is unchanged); Orasenda's own activation and allowlisted apps leave it open.
 - **Rule changes while the overlay is open:** the open overlay stays; the new rule applies from the next foreground change.
 - **`hide` / `terminate` fails** (returns `false`, or the pid no longer exists): `PlatformError::Refused` / `NotFound` is logged, the overlay still hides, and the case goes in the findings.
 - **App refuses to quit** (unsaved-changes dialog): Orasenda does not retry; the app's own dialog stays.
@@ -171,7 +171,7 @@ None. Usage segments live in memory (at most 500) and disappear when the app qui
 ## Testing strategy
 **Rust — `crates/core`** (`cargo test`):
 - `decide`: target → `Intercept`; non-target → `Allow`; each `SAFETY_ALLOWLIST` entry targeted → `Allow`; own bundle ID targeted → `Allow`; missing bundle ID → `Allow`; `extra_allow` → `Allow`; empty rule → `Allow`.
-- `Gate`: continue suppresses the same app; a different countable app in between resets it; Orasenda's own activation, an allowlisted app and an app without a bundle ID do not reset it; a countable app arriving while the overlay is open returns `CloseOverlay`; an open overlay suppresses a repeat; `overlay_closed` re-enables.
+- `Gate`: continue suppresses the same app; a different countable app in between resets it; Orasenda's own activation, an allowlisted app and an app without a bundle ID do not reset it; a countable app arriving while the overlay is open returns `CloseOverlay`; an open overlay suppresses a repeat; `overlay_closed` re-enables; a different target arriving while the overlay is open returns `Show` (re-target), and the same target afterwards returns `Ignore`.
 - `UsageTracker`: switch closes and opens segments; idle ≥ threshold closes at `at_ms − idle_ms`; activity after idle reopens; idle below threshold does nothing; out-of-order timestamp is clamped; 501st segment drops the oldest.
 - Serialization: `BlockAction` lowercase, `OverlayChoice` tagged `kind`, `SpikeError` as `{ kind, message }`.
 
@@ -190,7 +190,7 @@ None. Usage segments live in memory (at most 500) and disappear when the app qui
 - Overlay: calls `spike_overlay_ready` on mount; a second `overlay-show` resets a revealed reason group; renders nothing before `overlay-show`; after it, shows the app name; *Back to focus* and Escape call `spike_overlay_choice` with `{ kind: "return" }`; *Continue* with a reason calls it with `{ kind: "continue", reason }`.
 - Dev panel: not rendered when `spike_status` reports disabled; checking an app calls `spike_set_rule` with that bundle ID; the open segment renders "now".
 
-**`ci.sh`:** `packages/ui/components.css` staleness check (and Biome ignores that generated file); `cargo tree -p orasenda-core` boundary also rejects `objc2`; `cargo clippy` and `cargo test` cover the new crate on macOS. No change to the Windows job: the crate is empty there.
+**`ci.sh`:** `packages/ui/components.css` staleness check (and Biome ignores that generated file); `cargo tree -p orasenda-core` boundary also rejects the `objc2` and `block2` families and the `windows`/`windows-core` crates by exact name (not `windows-sys`, `windows-targets` or `windows-link`, which pure crates pull in under `cfg(windows)`); `cargo clippy` and `cargo test` cover the new crate on macOS. No change to the Windows job: the crate is empty there.
 
 **Manual macOS matrix** (filled in `docs/spikes/2026-11-07-macos-blocking.md`, for `tauri dev` and for the spike bundle described in goal 2):
 | # | Check | Expected |
@@ -209,6 +209,7 @@ None. Usage segments live in memory (at most 500) and disappear when the app qui
 | 10 | Flag off; release build | no panel, no overlay, no observer |
 | 11 | Light and dark appearance | overlay and panel render from tokens |
 | 12 | A notification or another app comes to the front while the overlay is open | overlay hides |
+| 12b | ⌘Tab from one target straight to another while the overlay is open | overlay stays, shows the new app's name |
 
 ## Dependencies to vet (`baton:deps`, read from crates.io on 2026-11-07)
 Matched to the versions Tauri 2.12.5 already depends on (`objc2 ^0.6`, `objc2-app-kit ^0.3.2`, `objc2-foundation ^0.3.2`), so no second copy enters the tree. All need Rust ≥ 1.71 and none is yanked. The implementing task vets each one (add in a copy + `cargo audit`), enabling only the Cargo features for the classes it uses.
