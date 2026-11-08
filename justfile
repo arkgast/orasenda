@@ -67,6 +67,8 @@ ci:
     @echo "==> ui (components.css is up to date)"
     "{{ just_executable() }}" ui-css
     git diff --exit-code -- packages/ui/components.css
+    @echo "==> ui (typecheck)"
+    pnpm --filter @orasenda/ui typecheck
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
     @echo "==> typecheck (tsc)"

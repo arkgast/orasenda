@@ -18,3 +18,10 @@ test("intent_prompt_without_on_wait_has_no_wait_button", () => {
   expect(screen.queryByText(/wait 10 minutes/i)).toBeNull();
   expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
 });
+
+test("exports_every_namespace_member", () => {
+  const exported = Object.keys(ui)
+    .filter((k) => typeof (ui as Record<string, unknown>)[k] === "function")
+    .sort();
+  expect(exported).toEqual(Object.keys(window.Orasenda).sort());
+});
