@@ -15,6 +15,7 @@
       "!apps/orasenda/src/bindings.ts",
       "!packages/tokens/tokens.css",
       "!packages/ui/components.css",
+      "!packages/ui/components.d.ts",
       "!**/src-tauri/gen",
       "!**/dist",
       "!**/target"

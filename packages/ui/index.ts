@@ -2,7 +2,7 @@
 import "./react-global.ts";
 import "../../design/system/components/bundle.js";
 
-export type * from "../../design/system/components/index.d.ts";
+export type * from "./components.d.ts";
 
 export const {
   Button,
