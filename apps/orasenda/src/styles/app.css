@@ -1,0 +1,58 @@
+/* Shell styles. Every length, color and font comes from the design system tokens. */
+@import "@orasenda/tokens/tokens.css";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-font-weight);
+}
+
+.app {
+  padding: var(--space-6);
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.app-title {
+  margin: 0;
+  font-size: var(--type-heading-font-size);
+  line-height: var(--type-heading-line-height);
+  font-weight: var(--type-heading-font-weight);
+}
+
+.app-separator {
+  color: var(--ink-muted);
+}
+
+.app-info {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-font-weight);
+}
+
+.app-clock {
+  display: block;
+  min-block-size: var(--type-timer-md-line-height);
+  margin-block-start: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--type-timer-md-font-size);
+  line-height: var(--type-timer-md-line-height);
+  font-weight: var(--type-timer-md-font-weight);
+  letter-spacing: var(--type-timer-md-letter-spacing);
+  font-variant-numeric: var(--type-timer-md-font-variant-numeric);
+}

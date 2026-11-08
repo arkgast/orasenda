@@ -35,6 +35,9 @@ export function App({ locale, timeZone }: Props) {
     <main className="app">
       <header className="app-header">
         <h1 className="app-title">Orasenda</h1>
+        <span className="app-separator" aria-hidden="true">
+          ·
+        </span>
         <p className="app-info">
           {info.status === "ok" ? info.line : null}
           {info.status === "error" ? "version unavailable" : null}
