@@ -1,3 +1,11 @@
 // App commands, one list for `build.rs` (the `AppManifest`) and the crate (the manifest test).
 // Every command here must be registered in `specta_builder()` and granted in a capability.
-pub const COMMANDS: &[&str] = &["app_info"];
+pub const COMMANDS: &[&str] = &[
+    "app_info",
+    "spike_status",
+    "spike_running_apps",
+    "spike_set_rule",
+    "spike_usage",
+    "spike_overlay_ready",
+    "spike_overlay_choice",
+];

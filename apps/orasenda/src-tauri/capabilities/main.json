@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "What the main window's webview may do: call app_info and listen to events.",
+  "description": "What the main window's webview may do: call app_info and the dev panel's spike commands, and listen to events.",
   "windows": ["main"],
-  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten", "allow-app-info"]
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-app-info",
+    "allow-spike-status",
+    "allow-spike-running-apps",
+    "allow-spike-set-rule",
+    "allow-spike-usage"
+  ]
 }

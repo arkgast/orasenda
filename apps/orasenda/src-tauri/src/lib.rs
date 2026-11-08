@@ -2,6 +2,7 @@
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
 mod commands;
+pub(crate) mod spike;
 mod ticker;
 
 use serde::{Deserialize, Serialize};
@@ -21,8 +22,20 @@ pub struct ClockTick {
 /// Every command and event the webview can use. `run()` and the bindings export share it.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![commands::app_info])
-        .events(tauri_specta::collect_events![ClockTick])
+        .commands(tauri_specta::collect_commands![
+            commands::app_info,
+            spike::commands::spike_status,
+            spike::commands::spike_running_apps,
+            spike::commands::spike_set_rule,
+            spike::commands::spike_usage,
+            spike::commands::spike_overlay_ready,
+            spike::commands::spike_overlay_choice,
+        ])
+        .events(tauri_specta::collect_events![
+            ClockTick,
+            spike::OverlayShow,
+            spike::SpikeUsageChanged,
+        ])
 }
 
 /// Where the generated TypeScript contract lives: `apps/orasenda/src/bindings.ts`.
@@ -48,11 +61,16 @@ pub fn run() {
         eprintln!("could not export TypeScript bindings: {error}");
     }
 
+    let context = tauri::generate_context!();
+    let spike = spike::Spike::new(spike::enabled(), &context.config().identifier);
+
     tauri::Builder::default()
+        .manage(spike)
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
             ticker::spawn(app.handle().clone())?;
+            spike::setup(app)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -60,7 +78,7 @@ pub fn run() {
                 ticker::emit_now(window.app_handle());
             }
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running Orasenda");
 }
 
@@ -111,6 +129,64 @@ mod tests {
             serde_json::json!({ "epochMs": 1_794_009_600_123_u64 })
         );
         assert_eq!(ClockTick::NAME, "clock-tick");
+    }
+
+    /// The permission identifiers a capability file grants, and the windows it applies to.
+    fn capability(file: &str) -> (Vec<String>, Vec<String>) {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("capabilities")
+            .join(file);
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let json: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let strings = |key: &str| -> Vec<String> {
+            json[key]
+                .as_array()
+                .unwrap_or_else(|| panic!("{file}: no {key} array"))
+                .iter()
+                .map(|value| value.as_str().unwrap().to_string())
+                .collect()
+        };
+        (strings("windows"), strings("permissions"))
+    }
+
+    #[test]
+    fn overlay_capability_grants_only_overlay_choice() {
+        let (windows, mut permissions) = capability("overlay.json");
+        assert_eq!(windows, ["overlay"]);
+        permissions.sort();
+        assert_eq!(
+            permissions,
+            [
+                "allow-spike-overlay-choice",
+                "allow-spike-overlay-ready",
+                "core:event:allow-listen",
+                "core:event:allow-unlisten",
+            ]
+        );
+    }
+
+    #[test]
+    fn main_capability_includes_spike_commands() {
+        let (windows, permissions) = capability("main.json");
+        assert_eq!(windows, ["main"]);
+        for granted in [
+            "allow-spike-status",
+            "allow-spike-running-apps",
+            "allow-spike-set-rule",
+            "allow-spike-usage",
+        ] {
+            assert!(
+                permissions.iter().any(|p| p == granted),
+                "main lacks {granted}"
+            );
+        }
+        for withheld in ["allow-spike-overlay-choice", "allow-spike-overlay-ready"] {
+            assert!(
+                !permissions.iter().any(|p| p == withheld),
+                "main has {withheld}"
+            );
+        }
     }
 
     /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.

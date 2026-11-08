@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-spike-set-rule"
+description = "Enables the spike_set_rule command without any pre-configured scope."
+commands.allow = ["spike_set_rule"]
+
+[[permission]]
+identifier = "deny-spike-set-rule"
+description = "Denies the spike_set_rule command without any pre-configured scope."
+commands.deny = ["spike_set_rule"]

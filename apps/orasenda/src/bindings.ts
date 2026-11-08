@@ -7,11 +7,25 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 export const commands = {
 	/**  Name, version and platform of the running app. */
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	/**  Whether the spike runs and the platform is supported. Never errors. */
+	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
+	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
+	spikeRunningApps: () => typedError<AppRef_Serialize[], SpikeError>(__TAURI_INVOKE("spike_running_apps")),
+	/**  Replaces the block rule; it applies from the next foreground change. */
+	spikeSetRule: (rule: BlockRule) => typedError<null, SpikeError>(__TAURI_INVOKE("spike_set_rule", { rule })),
+	/**  Usage segments, newest first, at most 20. */
+	spikeUsage: () => typedError<UsageSegment_Serialize[], SpikeError>(__TAURI_INVOKE("spike_usage")),
+	/**  The overlay page is listening; re-emits the pending `overlay-show`, if any. */
+	spikeOverlayReady: () => typedError<null, SpikeError>(__TAURI_INVOKE("spike_overlay_ready")),
+	/**  *Back to focus* or *Continue* from the overlay. */
+	spikeOverlayChoice: (choice: OverlayChoice_Deserialize) => typedError<null, SpikeError>(__TAURI_INVOKE("spike_overlay_choice", { choice })),
 };
 
 /** Events */
 export const events = {
 	clockTick: makeEvent<ClockTick, ClockTick>("clock-tick"),
+	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
+	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
 };
 
 /* Types */
@@ -26,6 +40,32 @@ export type AppInfo = {
 	arch: string,
 };
 
+/**  A running app as the OS reports it. */
+export type AppRef = AppRef_Serialize | AppRef_Deserialize;
+
+/**  A running app as the OS reports it. */
+export type AppRef_Deserialize = {
+	bundleId?: string | null,
+	name: string,
+	pid: number,
+};
+
+/**  A running app as the OS reports it. */
+export type AppRef_Serialize = {
+	bundleId: string | null,
+	name: string,
+	pid: number,
+};
+
+/**  What to do to an intercepted app, serialized lowercase. */
+export type BlockAction = "hide" | "close";
+
+/**  Which apps (by bundle ID) to intercept, and how. */
+export type BlockRule = {
+	targets: string[],
+	action: BlockAction,
+};
+
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
 export type ClockTick = {
 	/**  UTC milliseconds since the Unix epoch. Exported as `number`: lossless below 2^53. */
@@ -35,7 +75,77 @@ export type ClockTick = {
 /**  Operating system family, serialized lowercase (`"macos"`, …). */
 export type Os = "macos" | "windows" | "linux" | "ios" | "android" | "other";
 
+/**  What the user chose in the overlay. */
+export type OverlayChoice = OverlayChoice_Serialize | OverlayChoice_Deserialize;
+
+/**  What the user chose in the overlay. */
+export type OverlayChoice_Deserialize = 
+/**  *Back to focus*. */
+{ kind: "return" } | 
+/**  *Continue*, with the optional reason (logged, never stored). */
+{ kind: "continue"; reason?: string | null };
+
+/**  What the user chose in the overlay. */
+export type OverlayChoice_Serialize = 
+/**  *Back to focus*. */
+{ kind: "return" } | 
+/**  *Continue*, with the optional reason (logged, never stored). */
+{ kind: "continue"; reason: string | null };
+
+/**  Sent to window `overlay` when it should prompt for an app. The pid stays in Rust. */
+export type OverlayShow = {
+	appName: string,
+};
+
+/**  Why a spike command failed, with a message for the log. */
+export type SpikeError = {
+	kind: SpikeErrorKind,
+	message: string,
+};
+
+/**  Which spike error: `disabled` wins over `unsupported`. */
+export type SpikeErrorKind = "disabled" | "unsupported" | "platform";
+
+/**  Whether the spike runs, and whether this OS has an implementation installed. */
+export type SpikeStatus = {
+	enabled: boolean,
+	platformSupported: boolean,
+};
+
+/**  Sent to window `main` when usage changed; the dev panel then calls `spike_usage`. */
+export type SpikeUsageChanged = null;
+
+/**  A stretch of time one app was in front. `end_ms` is `None` while open. */
+export type UsageSegment = UsageSegment_Serialize | UsageSegment_Deserialize;
+
+/**  A stretch of time one app was in front. `end_ms` is `None` while open. */
+export type UsageSegment_Deserialize = {
+	bundleId?: string | null,
+	name: string,
+	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
+	startMs: number,
+	endMs?: number | null,
+};
+
+/**  A stretch of time one app was in front. `end_ms` is `None` while open. */
+export type UsageSegment_Serialize = {
+	bundleId: string | null,
+	name: string,
+	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
+	startMs: number,
+	endMs: number | null,
+};
+
 /* Tauri Specta runtime */
+async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
+    try {
+        return { status: "ok", data: await result };
+    } catch (e) {
+        if (e instanceof Error) throw e;
+        return { status: "error", error: e as any };
+    }
+}
+
 type EventEmit<T> = [T] extends [null] ? () => Promise<void> : (payload: T) => Promise<void>;
 
 type EventEmitTo<T> = [T] extends [null] ? (target: __TAURI_EVENT.EventTarget | string) => Promise<void> : (target: __TAURI_EVENT.EventTarget | string, payload: T) => Promise<void>;
