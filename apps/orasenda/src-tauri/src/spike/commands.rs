@@ -188,8 +188,9 @@ pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(),
 
 /// Hides or closes the target, closes the overlay, then lands in the previous app if the
 /// current rule does not intercept it, otherwise (or when it cannot be activated, e.g. it
-/// quit) in Orasenda's main window. Activating an intercepted app (the target itself, when `previous` was recorded
-/// before the rule changed) would unhide it and reopen the overlay in a loop (#41).
+/// quit) in Orasenda's main window. Activating an intercepted app (the target itself, when
+/// `previous` was recorded before the rule changed) would unhide it and reopen the overlay in a
+/// loop (#41).
 fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), SpikeError> {
     let (target, previous, action) = {
         let state = spike.state();
