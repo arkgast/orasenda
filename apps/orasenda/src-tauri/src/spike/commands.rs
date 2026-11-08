@@ -116,13 +116,14 @@ pub fn running_apps(spike: &Spike) -> Result<Vec<AppRef>, SpikeError> {
     Ok(selectable_apps(apps, spike.own_bundle_id(), &extra_allow))
 }
 
-/// Apps the dev panel may offer as targets: not Orasenda, not on the safety allowlist or
+/// Apps the dev panel may offer as targets: with a bundle ID (the rule targets bundle IDs;
+/// apps without one are never intercepted), not Orasenda, not on the safety allowlist or
 /// `extra_allow`, sorted by name (case-insensitive).
 fn selectable_apps(apps: Vec<AppRef>, own_bundle_id: &str, extra_allow: &[String]) -> Vec<AppRef> {
     let mut apps: Vec<AppRef> = apps
         .into_iter()
         .filter(|app| {
-            app.bundle_id.as_deref().is_none_or(|id| {
+            app.bundle_id.as_deref().is_some_and(|id| {
                 id != own_bundle_id
                     && !SAFETY_ALLOWLIST.contains(&id)
                     && !extra_allow.iter().any(|allowed| allowed == id)
@@ -203,11 +204,16 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
             .iter()
             .any(|app| app.pid == previous.pid)
     });
-    match running {
-        Some(previous) => platform.activate(previous.pid),
-        None => platform.show_main(),
+    if let Some(previous) = running {
+        match platform.activate(previous.pid) {
+            Ok(()) => return Ok(()),
+            Err(error) => eprintln!("spike: could not activate {}: {error}", previous.name),
+        }
     }
-    .map_err(platform_error)
+    platform.show_main().map_err(|error| {
+        eprintln!("spike: could not show the main window: {error}");
+        platform_error(error)
+    })
 }
 
 /// Allows the target until another countable app comes to the front, closes the overlay
@@ -314,10 +320,20 @@ mod tests {
         ShowMain,
     }
 
+    /// Which fake calls fail with `PlatformError::Refused` (they are still recorded).
+    #[derive(Debug, Clone, Copy, Default)]
+    struct Failing {
+        hide_or_close: bool,
+        activate: bool,
+        hide_overlay: bool,
+        show_main: bool,
+    }
+
     /// Records every call and fails the test if the state lock is held during one.
     struct Fake {
         spike: Weak<Spike>,
         running: Vec<AppRef>,
+        failing: Failing,
         calls: Arc<Mutex<Vec<Call>>>,
     }
 
@@ -325,8 +341,19 @@ mod tests {
         fn record(&self, call: Call) -> Result<(), PlatformError> {
             let spike = self.spike.upgrade().expect("spike alive");
             assert!(!spike.is_locked(), "state lock held during {call:?}");
+            let fails = match call {
+                Call::HideOrClose(..) => self.failing.hide_or_close,
+                Call::Activate(_) => self.failing.activate,
+                Call::HideOverlay => self.failing.hide_overlay,
+                Call::ShowMain => self.failing.show_main,
+                Call::ShowOverlay(_) => false,
+            };
             self.calls.lock().unwrap().push(call);
-            Ok(())
+            if fails {
+                Err(PlatformError::Refused)
+            } else {
+                Ok(())
+            }
         }
     }
 
@@ -363,11 +390,21 @@ mod tests {
 
     /// An enabled spike with a fake that reports `running` as the running apps.
     fn spike_with(running: Vec<AppRef>) -> (Arc<Spike>, Arc<Mutex<Vec<Call>>>) {
-        let spike = Arc::new(Spike::new(true, OWN));
+        spike_failing(running, Failing::default(), OWN)
+    }
+
+    /// Like [`spike_with`], with failing calls and Orasenda's own bundle ID chosen.
+    fn spike_failing(
+        running: Vec<AppRef>,
+        failing: Failing,
+        own: &str,
+    ) -> (Arc<Spike>, Arc<Mutex<Vec<Call>>>) {
+        let spike = Arc::new(Spike::new(true, own));
         let calls = Arc::new(Mutex::new(Vec::new()));
         let fake = Fake {
             spike: Arc::downgrade(&spike),
             running,
+            failing,
             calls: Arc::clone(&calls),
         };
         spike.install(Box::new(fake)).unwrap();
@@ -433,6 +470,7 @@ mod tests {
         let fake = Fake {
             spike: Arc::downgrade(&spike),
             running: Vec::new(),
+            failing: Failing::default(),
             calls: Arc::default(),
         };
         assert!(spike.install(Box::new(fake)).is_err());
@@ -528,14 +566,20 @@ mod tests {
 
     #[test]
     fn running_apps_sorted_and_filtered() {
-        let (spike, _) = spike_with(vec![
-            app(Some("com.x.zed"), "Zed", 1),
-            app(Some(OWN), "Orasenda", 2),
-            app(Some("com.apple.FaceTime"), "FaceTime", 3),
-            app(Some("com.x.arc"), "arc", 4),
-            app(Some("com.apple.mobilephone"), "Phone", 5),
-            app(Some("com.x.mail"), "Mail", 6),
-        ]);
+        // An own ID that is not on the safety allowlist, so the own-bundle filter is tested.
+        let (spike, _) = spike_failing(
+            vec![
+                app(Some("com.x.zed"), "Zed", 1),
+                app(Some("com.x.self"), "Orasenda", 2),
+                app(Some("com.apple.FaceTime"), "FaceTime", 3),
+                app(Some("com.x.arc"), "arc", 4),
+                app(Some("com.apple.mobilephone"), "Phone", 5),
+                app(Some("com.x.mail"), "Mail", 6),
+                app(None, "tool", 7),
+            ],
+            Failing::default(),
+            "com.x.self",
+        );
         spike.state().extra_allow = vec!["com.apple.mobilephone".into()];
         let names: Vec<String> = running_apps(&spike)
             .unwrap()
@@ -645,6 +689,105 @@ mod tests {
         );
         // The reason is not kept anywhere in the state.
         assert!(!format!("{state:?}").contains("reply to a message"));
+    }
+
+    /// The gate is closed and nothing is pending for the overlay.
+    fn assert_overlay_closed(spike: &Spike, target: &AppRef) {
+        let mut state = spike.state();
+        assert_eq!(state.target, None);
+        assert_eq!(state.pending_show, None);
+        assert_eq!(
+            state.gate.on_foreground(target, Decision::Intercept),
+            GateAction::Show
+        );
+    }
+
+    #[test]
+    fn return_when_hide_or_close_fails_still_hides_overlay() {
+        let target = app(Some("com.x.game"), "Game", 10);
+        let previous = app(Some("com.x.editor"), "Editor", 20);
+        let failing = Failing {
+            hide_or_close: true,
+            ..Failing::default()
+        };
+        let (spike, log) = spike_failing(vec![target.clone(), previous.clone()], failing, OWN);
+        open_overlay(&spike, &target, Some(&previous), BlockAction::Close);
+
+        assert_eq!(overlay_choice(&spike, OverlayChoice::Return), Ok(()));
+
+        assert_eq!(
+            calls(&log),
+            [
+                Call::HideOrClose(10, BlockAction::Close),
+                Call::HideOverlay,
+                Call::Activate(20),
+            ]
+        );
+        assert_overlay_closed(&spike, &target);
+    }
+
+    #[test]
+    fn hide_overlay_failure_still_closes_gate() {
+        let target = app(Some("com.x.game"), "Game", 10);
+        let failing = Failing {
+            hide_overlay: true,
+            ..Failing::default()
+        };
+        for choice in [
+            OverlayChoice::Return,
+            OverlayChoice::Continue { reason: None },
+        ] {
+            let (spike, _) = spike_failing(vec![target.clone()], failing, OWN);
+            open_overlay(&spike, &target, None, BlockAction::Hide);
+
+            assert!(
+                matches!(
+                    overlay_choice(&spike, choice.clone()),
+                    Err(SpikeError::Platform(_))
+                ),
+                "{choice:?}"
+            );
+            let state = spike.state();
+            assert_eq!(state.target, None, "{choice:?}");
+            assert_eq!(state.pending_show, None, "{choice:?}");
+        }
+    }
+
+    #[test]
+    fn return_when_activate_previous_fails_shows_main() {
+        let target = app(Some("com.x.game"), "Game", 10);
+        let previous = app(Some("com.x.editor"), "Editor", 20);
+        let failing = Failing {
+            activate: true,
+            ..Failing::default()
+        };
+        let (spike, log) = spike_failing(vec![target.clone(), previous.clone()], failing, OWN);
+        open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
+
+        assert_eq!(overlay_choice(&spike, OverlayChoice::Return), Ok(()));
+        assert_eq!(
+            calls(&log),
+            [
+                Call::HideOrClose(10, BlockAction::Hide),
+                Call::HideOverlay,
+                Call::Activate(20),
+                Call::ShowMain,
+            ]
+        );
+        assert_overlay_closed(&spike, &target);
+
+        // When the main window fails too, the error is returned.
+        let failing = Failing {
+            activate: true,
+            show_main: true,
+            ..Failing::default()
+        };
+        let (spike, _) = spike_failing(vec![target.clone(), previous.clone()], failing, OWN);
+        open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
+        assert!(matches!(
+            overlay_choice(&spike, OverlayChoice::Return),
+            Err(SpikeError::Platform(_))
+        ));
     }
 
     #[test]
