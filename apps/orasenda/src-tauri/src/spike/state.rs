@@ -49,20 +49,19 @@ impl SpikeState {
     }
 
     /// Opens the overlay for `target`, or re-targets the open one, and returns the
-    /// `overlay-show` to emit. `previous` is left unchanged.
+    /// `overlay-show` to emit. `previous` is left unchanged. A target without a bundle ID is
+    /// never intercepted, so it is refused: nothing changes and `None` is returned.
     #[cfg_attr(
         not(test),
         expect(dead_code, reason = "called by the macOS wiring (#16)")
     )]
-    pub(crate) fn open_overlay(&mut self, target: AppRef) -> OverlayShow {
-        if let Some(id) = target.bundle_id.as_deref() {
-            self.gate.overlay_open(id);
-        }
+    pub(crate) fn open_overlay(&mut self, target: AppRef) -> Option<OverlayShow> {
+        self.gate.overlay_open(target.bundle_id.as_deref()?);
         let show = OverlayShow {
             app_name: target.name.clone(),
         };
         self.target = Some(target);
-        show
+        Some(show)
     }
 
     /// Forgets the open overlay: the gate re-enables and nothing is pending.
@@ -186,7 +185,7 @@ mod tests {
         let b = app("com.x.b", "B", 2);
         assert_eq!(state.pending_show(), None);
 
-        let show = state.open_overlay(a.clone());
+        let show = state.open_overlay(a.clone()).unwrap();
         assert_eq!(show.app_name, "A");
         assert_eq!(state.target(), Some(&a));
         assert_eq!(state.pending_show(), Some(show));
@@ -196,7 +195,7 @@ mod tests {
             state.gate_on_foreground(&b, Decision::Intercept),
             GateAction::Show
         );
-        let show = state.open_overlay(b.clone());
+        let show = state.open_overlay(b.clone()).unwrap();
         assert_eq!(state.target(), Some(&b));
         assert_eq!(state.pending_show(), Some(show));
         assert_eq!(
@@ -211,6 +210,19 @@ mod tests {
             state.gate_on_foreground(&b, Decision::Intercept),
             GateAction::Show
         );
+    }
+
+    #[test]
+    fn open_overlay_refuses_bundleless_target() {
+        let mut state = SpikeState::new(OWN);
+        let unbundled = AppRef {
+            bundle_id: None,
+            name: "tool".to_owned(),
+            pid: 3,
+        };
+        assert_eq!(state.open_overlay(unbundled), None);
+        assert_eq!(state.target(), None);
+        assert_eq!(state.pending_show(), None);
     }
 
     /// A platform that does nothing.
