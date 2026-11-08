@@ -1,0 +1,16 @@
+[package]
+name = "orasenda-platform-macos"
+description = "macOS implementations of the orasenda-core platform traits (empty on other targets)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+orasenda-core = { path = "../core" }
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = ["NSArray", "NSDictionary", "NSEnumerator", "NSError", "NSNotification", "NSOperation", "NSString", "NSURL", "block2"] }
+objc2-app-kit = { workspace = true, features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace", "libc"] }
+objc2-core-graphics = { workspace = true, features = ["CGEventSource", "CGEventTypes"] }
+block2.workspace = true
