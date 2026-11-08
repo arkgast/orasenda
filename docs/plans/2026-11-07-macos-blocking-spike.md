@@ -100,8 +100,8 @@ S1 ───────────────────────> S4 ─
   - `decide_target_intercepts`, `decide_non_target_allows`, `decide_allowlist_never_intercepts` (each entry), `decide_own_bundle_allows`, `decide_missing_bundle_allows`, `decide_extra_allow_allows`, `decide_empty_rule_allows`
   - `gate_continue_suppresses_same_app`, `gate_other_countable_app_resets_allowance`, `gate_self_allowlisted_or_unbundled_do_not_reset`, `gate_open_overlay_ignores_repeat`, `gate_countable_app_while_open_closes_overlay`, `gate_other_target_while_open_retargets`, `gate_overlay_closed_reenables`
   - `tracker_switch_closes_and_opens`, `tracker_idle_closes_at_idle_start`, `tracker_activity_after_idle_reopens`, `tracker_idle_below_threshold_noop`, `tracker_out_of_order_clamped`, `tracker_caps_at_500`
-  - `block_action_serializes_lowercase`, `app_ref_serializes_camel_case`, `usage_segment_exports_numbers_as_f64` (exports the type with `specta_typescript` in a dev-only test, or asserts the attribute via `specta::Type` datatype)
-- Notes: `serde_json` is already a dev-dependency (#6). `start_ms` carries `#[specta(type = f64)]`, `end_ms` carries `#[specta(type = Option<f64>)]`
+  - `block_action_serializes_lowercase`, `app_ref_serializes_camel_case`, `usage_segment_exports_ms_as_number` (exports the type with `specta_typescript` in a dev-only test, or asserts the attribute via `specta::Type` datatype)
+- Notes: `serde_json` is already a dev-dependency (#6). `start_ms` carries `#[specta(type = specta_typescript::Number)]`, `end_ms` carries `#[specta(type = Option<specta_typescript::Number>)]` (ADR-007)
   (specta refuses to export `u64` by default; epoch ms ≪ 2^53, so this is lossless); `pid` is `i32`.
   All IPC types use `rename_all = "camelCase"`.
 
@@ -257,7 +257,7 @@ S1 ───────────────────────> S4 ─
 | Edge cases: quit target, other app while open, rule change, refused hide/terminate | S2 (`gate_countable_app_while_open_closes_overlay`), S5b (`CloseOverlay`, termination sink), S7 (row 12) |
 | Conventions additions | already in `docs/conventions.md` (merged with the spec) |
 | Failure mode: overlay page not yet listening on first show | S6: `overlay_calls_ready_on_mount`; S5a: `ready_reemits_pending_show` |
-| Failure mode: `u64` fields rejected by the bindings export | S2: `usage_segment_exports_numbers_as_f64` |
+| Failure mode: `u64` fields rejected by the bindings export | S2: `usage_segment_exports_ms_as_number` |
 | Failure mode: `hide` on a pid that no longer exists | S3a: `hide_unknown_pid_is_not_found` |
 | Failure mode: reason group carries over between shows | S6: `overlay_second_show_resets_reason` |
 | Failure mode: `NSRunningApplication` called from a test thread | S3a: `running_apps_runs_off_main_thread` |
