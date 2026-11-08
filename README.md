@@ -7,7 +7,8 @@ A calm, minimal, local-first app for focus, time blocking and tasks. Features:
 - Routines and habits, with evidence-informed templates
 - Opt-in app tracking and kind distraction blocking
 
-**Status:** specification. Implementation has not started.
+**Status:** early development. The P0 foundations (the Tauri app shell and the macOS blocking spike)
+are built; the app is not ready for everyday use yet. See the [Roadmap](docs/ROADMAP.md).
 
 - [Product spec](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
@@ -26,7 +27,8 @@ For the desktop app (macOS):
 - pnpm 12, the version pinned in the `packageManager` field of `package.json`.
 - [just](https://just.systems).
 - [gitleaks](https://github.com/gitleaks/gitleaks) 8.30 or newer, used by `just ci`.
-- Xcode (the full app, not only the Command Line Tools).
+- Xcode (the full app, not only the Command Line Tools). `just ci` checks the core crate for iOS,
+  which needs the iOS SDK.
 
 For iOS, also:
 - An iOS Simulator runtime, installed from Xcode.
@@ -48,8 +50,8 @@ export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 export NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
 ```
-The Tauri CLI adds the other Android Rust targets (`armv7-linux-androideabi`, `i686-linux-android`,
-`x86_64-linux-android`) when it needs them.
+The Tauri CLI adds the other Rust targets it needs, for example `aarch64-apple-ios-sim` and
+`x86_64-linux-android`, the first time it builds for them.
 
 ### Commands
 - `just dev` runs the desktop app with hot reload.
@@ -57,10 +59,14 @@ The Tauri CLI adds the other Android Rust targets (`armv7-linux-androideabi`, `i
 - `just ci` runs every check that CI runs.
 - `pnpm --filter orasenda tauri ios dev` runs the app in the iOS Simulator. Add a device name to
   pick one, for example `pnpm --filter orasenda tauri ios dev "iPhone 16"`.
-- `pnpm --filter orasenda tauri android dev` runs the app on an Android emulator or a connected
-  device.
+- `pnpm --filter orasenda tauri android dev` runs the app on an Android emulator.
 
 `just --list` shows every recipe.
+
+Mobile builds do not start yet: the app crate has no mobile entry point (#48). Until that is fixed,
+`tauri ios dev` and `tauri android dev` stop with a build error. The mobile dev commands target the
+iOS Simulator and the Android emulator only for now; running the dev server for a physical device is
+not set up yet (#49).
 
 ### Mobile projects and signing
 The Xcode and Android Studio projects live in `apps/orasenda/src-tauri/gen/apple` and
@@ -73,7 +79,10 @@ in your shell only:
 export APPLE_DEVELOPMENT_TEAM=<team id>
 ```
 Never commit a development team, certificate or keystore, and don't add the team to
-`tauri.conf.json`.
+`tauri.conf.json`. The Tauri CLI may write the team into
+`apps/orasenda/src-tauri/gen/apple/orasenda.xcodeproj/project.pbxproj` when
+`APPLE_DEVELOPMENT_TEAM` is set. Don't commit that change: run
+`git restore apps/orasenda/src-tauri/gen/apple` before committing.
 
 ## Licence
 Orasenda is free and open source under the [Mozilla Public License 2.0](LICENSE).
