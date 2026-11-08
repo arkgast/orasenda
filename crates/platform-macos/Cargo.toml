@@ -11,6 +11,6 @@ publish.workspace = true
 orasenda-core = { path = "../core" }
 objc2.workspace = true
 objc2-foundation = { workspace = true, features = ["NSArray", "NSDictionary", "NSEnumerator", "NSError", "NSNotification", "NSOperation", "NSString", "NSURL", "block2"] }
-objc2-app-kit = { workspace = true, features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace", "libc"] }
+objc2-app-kit = { workspace = true, features = ["NSApplication", "NSPanel", "NSResponder", "NSRunningApplication", "NSScreen", "NSWindow", "NSWorkspace", "libc"] }
 objc2-core-graphics = { workspace = true, features = ["CGEventSource", "CGEventTypes"] }
 block2.workspace = true
