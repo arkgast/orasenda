@@ -29,10 +29,7 @@ export type Spike = {
   refreshApps(): Promise<void>;
 };
 
-/**
- * The backend's `BlockRule::default()`. The rule only lives in memory and there is no getter
- * yet (#36), so the panel starts here after a webview reload.
- */
+/** The backend's `BlockRule::default()`: what the panel shows until `spike_rule` answers. */
 const DEFAULT_RULE: BlockRule = { targets: [], action: "hide" };
 
 type Result<T> = { status: "ok"; data: T } | { status: "error"; error: SpikeError };
@@ -52,7 +49,7 @@ async function run<T>(name: string, command: () => Promise<Result<T>>): Promise<
 
 /**
  * State for the spike's dev panel. Asks `spike_status` on mount; only when the spike is enabled
- * does it load the running apps and usage, and refetch usage on every `spike-usage-changed`.
+ * does it read the backend rule, load the running apps and usage, and refetch usage on every `spike-usage-changed`.
  */
 export function useSpike(): Spike {
   const [status, setStatus] = useState<SpikeStatus | null>(null);
@@ -108,6 +105,18 @@ export function useSpike(): Spike {
   );
 
   const enabled = status?.enabled === true;
+
+  useEffect(() => {
+    if (!enabled) return;
+    const initial = requested.current;
+    void run("spike_rule", () => commands.spikeRule()).then((outcome) => {
+      // A change made before the read answered wins over it.
+      if (!outcome.ok || !mounted.current || requested.current !== initial) return;
+      requested.current = outcome.data;
+      accepted.current = outcome.data;
+      setAcceptedRule(outcome.data);
+    });
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled) return;

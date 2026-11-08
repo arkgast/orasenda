@@ -22,6 +22,7 @@ function spikeBackend({
     spike_status: () => ({ enabled, platformSupported: true }),
     spike_running_apps: () => apps,
     spike_usage: () => usage,
+    spike_rule: () => ({ targets: [], action: "hide" }),
     spike_set_rule: () => null,
     ...replies,
   });
@@ -244,4 +245,15 @@ test("dev_panel_set_rule_failure_shows_note", async () => {
   expect(argsOf(calls, "spike_set_rule").at(-1)).toEqual({
     rule: { targets: ["com.apple.Safari"], action: "hide" },
   });
+});
+
+test("dev_panel_shows_the_backend_rule_after_a_reload", async () => {
+  spikeBackend({
+    replies: { spike_rule: () => ({ targets: ["com.apple.Notes"], action: "close" }) },
+  });
+  await renderPanel();
+
+  expect(screen.getByRole("checkbox", { name: "Notes" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Safari" })).not.toBeChecked();
+  expect(screen.getByRole("radio", { name: "Quit the app" })).toBeChecked();
 });

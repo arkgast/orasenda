@@ -28,6 +28,7 @@ function mockBackend(
       if (cmd === "app_info") return appInfo();
       if (cmd === "spike_status") return { enabled: spikeEnabled, platformSupported: true };
       if (spikeEnabled && (cmd === "spike_running_apps" || cmd === "spike_usage")) return [];
+      if (spikeEnabled && cmd === "spike_rule") return { targets: [], action: "hide" };
       throw new Error(`unexpected command ${cmd}`);
     },
     { shouldMockEvents: true },
