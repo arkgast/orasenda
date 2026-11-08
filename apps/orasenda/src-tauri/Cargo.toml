@@ -1,0 +1,26 @@
+[package]
+name = "orasenda"
+description = "Orasenda app shell: Tauri glue around orasenda-core."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "orasenda_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+orasenda-core = { path = "../../../crates/core" }
+serde.workspace = true
+specta.workspace = true
+specta-typescript.workspace = true
+tauri.workspace = true
+tauri-specta.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
