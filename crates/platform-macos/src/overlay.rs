@@ -178,9 +178,9 @@ fn main_thread() -> Result<MainThreadMarker, PlatformError> {
 
 /// The window behind `ns_window`. Only called after [`main_thread`] succeeded.
 fn window<'a>(ns_window: *mut c_void) -> Result<&'a NSWindow, PlatformError> {
-    // SAFETY: the caller's `# Safety` contract of the public function: `ns_window` is null (handled by `as_ref`) or points to a
-    // live Objective-C object for the duration of the call. The reference does not outlive
-    // the public function that received the pointer.
+    // SAFETY: the caller's `# Safety` contract of the public function: `ns_window` is null
+    // (handled by `as_ref`) or points to a live Objective-C object for the duration of the
+    // call. The reference does not outlive the public function that received the pointer.
     let object = unsafe { ns_window.cast::<AnyObject>().as_ref() }
         .ok_or_else(|| PlatformError::Other("null NSWindow pointer".into()))?;
     object
@@ -329,6 +329,7 @@ fn inherits_from(class: &AnyClass, ancestor: &AnyClass) -> bool {
 mod tests {
     use super::*;
     use objc2::runtime::ClassBuilder;
+    use std::ffi::CStr;
 
     fn not_on_main_thread() -> PlatformError {
         PlatformError::Other("not on main thread".into())
@@ -385,13 +386,16 @@ mod tests {
         );
     }
 
-    /// An `NSWindow` subclass with extra ivars, like tao's `TaoWindow`.
-    fn window_class_with_ivars() -> &'static AnyClass {
-        // Tests run in parallel: register the class exactly once.
-        static CLASS: std::sync::OnceLock<&'static AnyClass> = std::sync::OnceLock::new();
-        CLASS.get_or_init(|| {
-            let mut builder =
-                ClassBuilder::new(c"OrasendaTestWindowWithIvars", NSWindow::class()).unwrap();
+    type ClassCell = std::sync::OnceLock<&'static AnyClass>;
+
+    /// An `NSWindow` subclass with extra ivars, like tao's `TaoWindow`, registered once.
+    ///
+    /// Each test that builds a padded panel class gets its own window class (`name`):
+    /// `panel_class_for`'s look-up-then-register is not atomic, so two parallel tests must
+    /// never pad the same class.
+    fn window_class_with_ivars(cell: &'static ClassCell, name: &CStr) -> &'static AnyClass {
+        cell.get_or_init(|| {
+            let mut builder = ClassBuilder::new(name, NSWindow::class()).unwrap();
             builder.add_ivar::<[u64; 5]>(c"state");
             builder.register()
         })
@@ -399,7 +403,8 @@ mod tests {
 
     #[test]
     fn panel_class_for_a_larger_window_class_matches_its_size() {
-        let current = window_class_with_ivars();
+        static CLASS: ClassCell = ClassCell::new();
+        let current = window_class_with_ivars(&CLASS, c"OrasendaTestWindowForPadding");
         assert!(current.instance_size() > OverlayPanel::class().instance_size());
 
         let panel = panel_class_for(current).unwrap();
@@ -435,7 +440,8 @@ mod tests {
     #[test]
     fn swap_to_panel_class_keeps_the_subclass_ivars() {
         const SENTINEL: [u64; 5] = [0xDEAD_BEEF, 1, 2, 3, 0xFEED_FACE];
-        let class = window_class_with_ivars();
+        static CLASS: ClassCell = ClassCell::new();
+        let class = window_class_with_ivars(&CLASS, c"OrasendaTestWindowForSwap");
         let offset = class.instance_variable(c"state").unwrap().offset();
         // SAFETY: a raw, zeroed instance of an `NSWindow` subclass: never initialized, so no
         // window method may run on it. Only the isa (`downcast_ref`, `object_setClass`) and
