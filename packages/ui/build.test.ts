@@ -81,6 +81,24 @@ test("os_choice_shape_check_rejects_round_or_tickless_checkbox", () => {
   expect(() => checkChoiceShapes(flat)).toThrow();
 });
 
+test("os_choice_checked_stays_visible_in_forced_colors", () => {
+  const css = readFileSync(join(here, "components.css"), "utf8");
+  const start = css.indexOf("@media (forced-colors: active)");
+  expect(start, "forced-colors block missing").toBeGreaterThanOrEqual(0);
+  const block = css.slice(start);
+  const checked = ruleBody(block, ".os-choice input:checked");
+  expect(checked, "checked choice rule missing in forced-colors block").toBeDefined();
+  expect(declaration(checked, "forced-color-adjust")).toBe("none");
+  expect(declaration(checked, "background")).toBe("Highlight");
+  expect(declaration(checked, "box-shadow")).toContain("Canvas");
+  const tick = ruleBody(block, '.os-choice input[type="checkbox"]:checked::before');
+  expect(declaration(tick, "border-color")).toBe("HighlightText");
+  const focus = ruleBody(block, ".os-choice input:checked:focus-visible");
+  expect(declaration(focus, "outline-color")).toBe("Highlight");
+  const disabled = ruleBody(block, ".os-choice input:checked:disabled");
+  expect(declaration(disabled, "background")).toBe("GrayText");
+});
+
 test("components_d_ts_is_current", () => {
   expect(readFileSync(join(here, "components.d.ts"), "utf8")).toBe(build("c").types);
 });

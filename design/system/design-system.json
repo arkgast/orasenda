@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-08T08:02:19Z",
+    "at": "2026-11-08T22:04:10Z",
     "via": "Claude Code",
-    "note": "Choice card documents the focus ring and checkbox radius; on-focus and radius-sm usage name the choice checkbox (#43)."
+    "note": "Choice in forced-colors mode: checked focus ring uses Highlight and a disabled checked chip uses GrayText (#45 review)."
   }
 }
