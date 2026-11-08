@@ -24,6 +24,10 @@ lint:
 test:
     cargo test --workspace --locked
 
+# Regenerate packages/tokens/tokens.css from design/system/tokens.json.
+tokens:
+    pnpm --filter @orasenda/tokens build
+
 # Every check, fastest first. Stops at the first failure.
 ci:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
@@ -36,6 +40,11 @@ ci:
     pnpm exec biome ci .
     @echo "==> core boundary (no tauri, tao or wry)"
     "{{ just_executable() }}" core-boundary
+    @echo "==> tokens (tokens.css is up to date)"
+    "{{ just_executable() }}" tokens
+    git diff --exit-code -- packages/tokens/tokens.css
+    @echo "==> tokens (tests)"
+    pnpm --filter @orasenda/tokens test
     @echo "==> lint (clippy)"
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
