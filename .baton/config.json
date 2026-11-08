@@ -1,6 +1,6 @@
 {
   "project": "orasenda",
-  "stacks": [],
+  "stacks": ["typescript", "react", "rust"],
   "tasks": {
     "provider": "github",
     "repo": "arkgast/orasenda"
