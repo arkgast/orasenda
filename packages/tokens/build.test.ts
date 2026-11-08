@@ -1,17 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const realTokens = join(here, "..", "..", "design", "system", "tokens.json");
-const tokens = JSON.parse(readFileSync(realTokens, "utf8"));
+// biome-ignore lint/suspicious/noExplicitAny: test fixtures are mutated freely
+type Loose = Record<string, any>;
+const tokens: Loose = JSON.parse(readFileSync(realTokens, "utf8"));
+
+const scratch = mkdtempSync(join(tmpdir(), "tokens-"));
+after(() => rmSync(scratch, { recursive: true, force: true }));
 
 function build(input: string = realTokens) {
-  const out = join(mkdtempSync(join(tmpdir(), "tokens-")), "tokens.css");
+  const out = join(scratch, "tokens.css");
   const run = spawnSync(
     process.execPath,
     [join(here, "build.ts"), "--tokens", input, "--out", out],
@@ -42,18 +47,13 @@ test("emits_dark_color_under_prefers_color_scheme_dark", () => {
 
 test("emits_every_token_in_tokens_json", () => {
   const { css } = build();
-  const names: string[] = [
-    ...tokens.color.tokens,
-    ...tokens.spacing.tokens,
-    ...tokens.radius.tokens,
-    ...tokens.shadow.tokens,
-    ...tokens.duration.tokens,
-    ...tokens.easing.tokens,
-    ...tokens.size.tokens,
-    ...tokens["z-index"].tokens,
-  ].map((t) => t.name);
+  const names: unknown[] = Object.values(tokens)
+    .filter((g: Loose) => Array.isArray(g?.tokens))
+    .flatMap((g: Loose) => g.tokens)
+    .map((t: Loose) => t.name);
   assert.ok(names.length > 60);
   for (const name of names) {
+    assert.equal(typeof name, "string");
     assert.ok(css.includes(`--${name}:`), `missing --${name}`);
   }
   assert.match(css, /--z-overlay: 1000;/);
@@ -68,8 +68,17 @@ test("emits_type_style_properties", () => {
   assert.match(css, /--type-timer-md-font-weight: 400;/);
   assert.match(css, /--type-label-letter-spacing: 0.06em;/);
   assert.match(css, /--type-timer-md-font-variant-numeric: tabular-nums;/);
+  const css_names: Record<string, string> = {
+    fontSize: "font-size",
+    lineHeight: "line-height",
+    fontWeight: "font-weight",
+    letterSpacing: "letter-spacing",
+    fontVariantNumeric: "font-variant-numeric",
+  };
   for (const g of tokens.type.groups)
-    for (const s of g.styles) assert.ok(css.includes(`--type-${s.name}-font-size:`), s.name);
+    for (const s of g.styles)
+      for (const [key, css_name] of Object.entries(css_names))
+        if (key in s) assert.ok(css.includes(`--type-${s.name}-${css_name}:`), `${s.name} ${key}`);
 });
 
 test("emits_font_families", () => {
@@ -86,14 +95,60 @@ test("token_without_dark_value_has_no_dark_override", () => {
   assert.doesNotMatch(dark, /--z-rail:/);
 });
 
-test("unknown_token_shape_fails_with_message", () => {
+function buildBad(mutate: (t: Loose) => void) {
   const bad = structuredClone(tokens);
-  bad.spacing.tokens[0].value = { nope: true };
-  const file = join(mkdtempSync(join(tmpdir(), "bad-")), "tokens.json");
+  mutate(bad);
+  const file = join(scratch, "bad.json");
   writeFileSync(file, JSON.stringify(bad));
-  const { run } = build(file);
+  return build(file).run;
+}
+
+function assertFails(mutate: (t: Loose) => void, needle: RegExp) {
+  const run = buildBad(mutate);
   assert.notEqual(run.status, 0);
-  assert.match(run.stderr, /space-1/);
+  assert.match(run.stderr, needle);
+}
+
+test("unknown_token_shape_fails_with_message", () => {
+  assertFails((t) => {
+    t.spacing.tokens[0].value = { nope: true };
+  }, /space-1/);
+});
+
+test("unknown_reference_fails_naming_token", () => {
+  assertFails((t) => {
+    t.color.tokens.find((c: Loose) => c.name === "selection").value.light = "{focus-sfot}";
+  }, /selection.*focus-sfot/);
+});
+
+test("unbalanced_brace_fails_naming_token", () => {
+  assertFails((t) => {
+    t.shadow.tokens[0].value.light = "0 0 0 2px {focus";
+  }, /shadow-raised/);
+});
+
+test("unknown_top_level_group_fails", () => {
+  assertFails((t) => {
+    t.motion = { tokens: [] };
+  }, /motion/);
+});
+
+test("unknown_type_style_key_fails", () => {
+  assertFails((t) => {
+    t.type.groups[0].styles[0].textTransform = "uppercase";
+  }, /timer-xl.*textTransform/);
+});
+
+test("nameless_token_fails", () => {
+  assertFails((t) => {
+    delete t.radius.tokens[0].name;
+  }, /radius/);
+});
+
+test("type_group_without_styles_fails", () => {
+  assertFails((t) => {
+    delete t.type.groups[1].styles;
+  }, /Text/);
 });
 
 test("output_is_deterministic", () => {

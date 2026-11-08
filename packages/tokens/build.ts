@@ -17,20 +17,42 @@ function fail(message: string): never {
   throw new Error(message);
 }
 
-function scalar(name: string, v: unknown): string {
+const GROUPS = ["color", "shadow", "spacing", "radius", "duration", "easing", "size", "z-index"];
+const THEMED = ["color", "shadow"];
+const STYLE_PROPS: [string, string][] = [
+  ["fontSize", "font-size"],
+  ["lineHeight", "line-height"],
+  ["fontWeight", "font-weight"],
+  ["letterSpacing", "letter-spacing"],
+  ["fontVariantNumeric", "font-variant-numeric"],
+];
+const STYLE_META = ["name", "sample", "usage"];
+
+function scalar(name: string, v: unknown, known: Set<string>): string {
   if (typeof v === "number" && Number.isFinite(v)) return String(v);
-  if (typeof v === "string" && v !== "") {
-    return v.replace(/^\{([\w-]+)\}$/, "var(--$1)");
+  if (typeof v !== "string" || v === "") {
+    return fail(`token "${name}" has an unknown value shape: ${JSON.stringify(v)}`);
   }
-  return fail(`token "${name}" has an unknown value shape: ${JSON.stringify(v)}`);
+  const out = v.replace(/\{([^{}]*)\}/g, (_, ref: string) => {
+    if (!known.has(ref)) fail(`token "${name}" references unknown token "{${ref}}"`);
+    return `var(--${ref})`;
+  });
+  if (/[{}]/.test(out)) fail(`token "${name}" has an unbalanced brace in ${JSON.stringify(v)}`);
+  return out;
 }
 
-function themed(name: string, v: unknown): { light: string; dark: string } {
+function themed(name: string, v: unknown, known: Set<string>) {
   const o = v as Json | null;
   if (o && typeof o === "object" && "light" in o && "dark" in o) {
-    return { light: scalar(name, o.light), dark: scalar(name, o.dark) };
+    return { light: scalar(name, o.light, known), dark: scalar(name, o.dark, known) };
   }
   return fail(`token "${name}" needs {light, dark} values, got ${JSON.stringify(v)}`);
+}
+
+function tokenName(where: string, tok: unknown): string {
+  const name = (tok as Json | null)?.name;
+  if (typeof name !== "string" || name === "") fail(`a token in "${where}" has no string name`);
+  return name;
 }
 
 function list(t: Json, group: string): Json[] {
@@ -39,45 +61,55 @@ function list(t: Json, group: string): Json[] {
   return g.tokens as Json[];
 }
 
-export function generate(t: Json): string {
+function styles(t: Json): Json[] {
+  const type = t.type as Json | undefined;
+  if (!type || !Array.isArray(type.groups)) fail('tokens.json has no "type.groups" list');
+  return (type.groups as Json[]).flatMap((g, i) => {
+    if (!g || !Array.isArray(g.styles)) fail(`type group ${i} ("${g?.name}") has no "styles" list`);
+    return g.styles as Json[];
+  });
+}
+
+function generate(t: Json): string {
+  for (const key of Object.keys(t)) {
+    if (key !== "type" && !GROUPS.includes(key)) fail(`unknown top-level group "${key}"`);
+  }
+  const known = new Set<string>();
+  for (const group of GROUPS) {
+    for (const tok of list(t, group)) known.add(tokenName(group, tok));
+  }
   const light: Decl[] = [];
   const dark: Decl[] = [];
 
-  for (const group of ["color", "shadow"]) {
+  for (const group of GROUPS) {
     for (const tok of list(t, group)) {
-      const name = String(tok.name);
-      const v = themed(name, tok.value);
-      light.push([name, v.light]);
-      dark.push([name, v.dark]);
-    }
-  }
-  for (const group of ["spacing", "radius", "duration", "easing", "size", "z-index"]) {
-    for (const tok of list(t, group)) {
-      const name = String(tok.name);
-      light.push([name, scalar(name, tok.value)]);
+      const name = tokenName(group, tok);
+      if (THEMED.includes(group)) {
+        const v = themed(name, tok.value, known);
+        light.push([name, v.light]);
+        dark.push([name, v.dark]);
+      } else {
+        light.push([name, scalar(name, tok.value, known)]);
+      }
     }
   }
 
-  const type = t.type as Json | undefined;
-  const families = (type?.families ?? fail('tokens.json has no "type.families"')) as Json;
+  const type = t.type as Json;
+  const families = type.families as Json | undefined;
+  if (!families || typeof families !== "object") fail('tokens.json has no "type.families"');
   for (const key of Object.keys(families)) {
-    light.push([`font-${key}`, scalar(`font-${key}`, families[key])]);
+    light.push([`font-${key}`, scalar(`font-${key}`, families[key], known)]);
   }
-  const props: [string, string][] = [
-    ["fontSize", "font-size"],
-    ["lineHeight", "line-height"],
-    ["fontWeight", "font-weight"],
-    ["letterSpacing", "letter-spacing"],
-    ["fontVariantNumeric", "font-variant-numeric"],
-  ];
-  const groups = (type?.groups ?? fail('tokens.json has no "type.groups"')) as Json[];
-  for (const g of groups) {
-    for (const style of g.styles as Json[]) {
-      const name = String(style.name);
-      for (const [key, css] of props) {
-        if (style[key] !== undefined) {
-          light.push([`type-${name}-${css}`, scalar(`type-${name}`, style[key])]);
-        }
+  for (const style of styles(t)) {
+    const name = tokenName("type styles", style);
+    for (const key of Object.keys(style)) {
+      if (!STYLE_META.includes(key) && !STYLE_PROPS.some(([k]) => k === key)) {
+        fail(`type style "${name}" has unknown property "${key}"`);
+      }
+    }
+    for (const [key, css] of STYLE_PROPS) {
+      if (style[key] !== undefined) {
+        light.push([`type-${name}-${css}`, scalar(`type-${name}`, style[key], known)]);
       }
     }
   }
