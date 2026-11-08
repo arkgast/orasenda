@@ -24,6 +24,7 @@ export interface RoutineItemProps { label: string; detail?: string; done?: boole
 export declare function RoutineItem(props: RoutineItemProps): React.ReactElement;
 export interface WellnessNoteProps { children?: React.ReactNode; as?: 'span' | 'p' }
 export declare function WellnessNote(props: WellnessNoteProps): React.ReactElement;
+/** The Wait button renders only when onWait is passed; the reason group and Continue only when onContinue is passed. */
 export interface IntentPromptProps { open?: boolean; app?: string; title?: string; message?: string; waitLabel?: string; onReturn?: () => void; onWait?: () => void; onContinue?: (reason?: string) => void }
 export declare function IntentPrompt(props: IntentPromptProps): React.ReactElement;
 /** Escape and the cancel button call onCancel. destructive styles confirm as critical and adds the scrim. */

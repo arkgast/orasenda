@@ -25,9 +25,9 @@
     "sections": []
   },
   "lastChange": {
-    "by": "Claude",
-    "at": "2026-11-07T17:46:33Z",
+    "by": "Arnold Gandarillas Castillo",
+    "at": "2026-11-08T04:03:39Z",
     "via": "Claude Code",
-    "note": "Fable review, Codex implementation, Fable coordination: 23 components, state rules, accessibility fixes."
+    "note": "IntentPrompt renders the Wait button only when onWait is passed (#12)."
   }
 }
