@@ -16,10 +16,10 @@ const MAX_SEGMENTS: usize = 500;
 pub struct UsageSegment {
     pub bundle_id: Option<String>,
     pub name: String,
-    /// UTC epoch milliseconds, far below 2^53, so exact as an `f64` in TypeScript.
-    #[specta(type = f64)]
+    /// UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007).
+    #[specta(type = specta_typescript::Number)]
     pub start_ms: u64,
-    #[specta(type = Option<f64>)]
+    #[specta(type = Option<specta_typescript::Number>)]
     pub end_ms: Option<u64>,
 }
 
@@ -169,8 +169,8 @@ mod tests {
     }
 
     #[test]
-    fn usage_segment_exports_numbers_as_f64() {
-        use specta::datatype::{DataType, Fields, Primitive};
+    fn usage_segment_exports_ms_as_number() {
+        use specta::datatype::{DataType, Fields};
 
         let mut types = specta::Types::default();
         <UsageSegment as Type>::definition(&mut types);
@@ -192,11 +192,9 @@ mod tests {
                 .and_then(|(_, f)| f.ty.clone())
                 .unwrap_or_else(|| panic!("no field {name}"))
         };
-        assert_eq!(ty("start_ms"), DataType::Primitive(Primitive::f64));
-        assert_eq!(
-            ty("end_ms"),
-            DataType::Nullable(Box::new(DataType::Primitive(Primitive::f64)))
-        );
+        let number = <specta_typescript::Number as Type>::definition(&mut specta::Types::default());
+        assert_eq!(ty("start_ms"), number);
+        assert_eq!(ty("end_ms"), DataType::Nullable(Box::new(number)));
     }
 
     #[test]
