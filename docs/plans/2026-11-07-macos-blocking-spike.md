@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-07-macos-blocking-spike.md](../specs/2026-11-07-macos-blocking-spike.md)
 - Date: 2026-11-07
-- Status: draft
+- Status: in backlog (#12–#20)
 
 ## Overview
 Nine tasks. S1 (the `IntentPrompt` change, design-first) has no dependency and can start now.
@@ -61,7 +61,7 @@ S1 ───────────────────────> S4 ─
 
 ## Tasks
 
-### S1: IntentPrompt shows Wait only when `onWait` is passed
+### S1: IntentPrompt shows Wait only when `onWait` is passed  (#12)
 - Priority: 0
 - Depends on: none
 - Owns: `design/system/**`
@@ -76,7 +76,7 @@ S1 ───────────────────────> S4 ─
 - Tests first: none automated (the design system has no test suite). The PR shows the artifact's IntentPrompt preview with and without `onWait`, in light and dark.
 - Notes: CLAUDE.md "Keeping the design system in sync" applies: artifact first, then the repo copy; never edit `design/system/` by hand alone. The builder must be a Claude session with the Artifact tool: `read` the artifact URL, change only `IntentPrompt`, publish to the same URL, then refresh `design/system/` from the published files (`read` with `paths`). If republishing reformats `bundle.js` beyond the change, keep it and explain the noise in the PR.
 
-### S2: Core blocking, usage and platform traits
+### S2: Core blocking, usage and platform traits  (#19)
 - Priority: 0
 - Depends on: #6
 - Owns: `crates/core/src/blocking.rs`, `crates/core/src/usage.rs`, `crates/core/src/platform.rs`
@@ -105,7 +105,7 @@ S1 ───────────────────────> S4 ─
   (specta refuses to export `u64` by default; epoch ms ≪ 2^53, so this is lossless); `pid` is `i32`.
   All IPC types use `rename_all = "camelCase"`.
 
-### S3a: `crates/platform-macos`: apps, foreground and idle
+### S3a: `crates/platform-macos`: apps, foreground and idle  (#13)
 - Priority: 0
 - Depends on: S2
 - Owns: `crates/platform-macos/Cargo.toml`, `crates/platform-macos/src/{lib.rs, foreground.rs, control.rs, idle.rs}`
@@ -125,7 +125,7 @@ S1 ───────────────────────> S4 ─
 - Tests first (macOS only): `idle_ms_is_available`, `running_apps_contains_regular_apps`, `running_apps_runs_off_main_thread`, `subscribe_off_main_thread_errors`, `hide_unknown_pid_is_not_found`, `phone_bundle_id_missing_file_is_none` (reads from a path parameter in a private helper), `frontmost_returns_some` (`#[ignore]`, manual)
 - Notes: run `baton:deps` for each crate (spec table: objc2 0.6.5, objc2-foundation/app-kit/core-graphics 0.3.2, block2 0.6.2), matched to the versions in `cargo tree -p orasenda` so no second copy appears. `unsafe` blocks get a `// SAFETY:` comment. Never use `forceTerminate`.
 
-### S3b: `crates/platform-macos`: overlay window control
+### S3b: `crates/platform-macos`: overlay window control  (#20)
 - Priority: 0
 - Depends on: S3a
 - Owns: `crates/platform-macos/src/overlay.rs`
@@ -143,7 +143,7 @@ S1 ───────────────────────> S4 ─
 - Tests first (macOS only): `configure_overlay_off_main_thread_errors`, `cover_main_screen_off_main_thread_errors`, `focus_overlay_off_main_thread_errors`. Behavior over full-screen apps is proven by S7, not by unit tests.
 - Notes: keep each strategy in its own function so S7 can compare them; document in comments what each changes on the `NSWindow`.
 
-### S4: `packages/ui` wrapper
+### S4: `packages/ui` wrapper  (#14)
 - Priority: 0
 - Depends on: S1, #8
 - Owns: `packages/ui/**`
@@ -160,7 +160,7 @@ S1 ───────────────────────> S4 ─
 - Tests first: `exports_intent_prompt_and_button`, `intent_prompt_renders_with_global_react`, `intent_prompt_without_on_wait_has_no_wait_button`, `components_css_has_no_import_or_url`, `components_css_is_deterministic`
 - Notes: tests run with Vitest + jsdom + Testing Library from #8 (dev dependencies of this package, same versions). Polyfill `HTMLDialogElement.showModal/close` in the test setup if jsdom lacks it.
 
-### S5a: Spike commands, state and capabilities (every OS)
+### S5a: Spike commands, state and capabilities (every OS)  (#15)
 - Priority: 0
 - Depends on: S2, #8
 - Owns: `apps/orasenda/src-tauri/src/spike/{mod.rs, commands.rs, state.rs}`, `apps/orasenda/src-tauri/capabilities/overlay.json`
@@ -179,12 +179,13 @@ S1 ───────────────────────> S4 ─
   - [ ] All commands exist on every OS; `bindings.ts` regenerated on the Windows job is identical (its staleness step passes there, or the advisory failure is unrelated and reported).
   - [ ] Flag off: commands other than `spike_status` return `Disabled`; `spike::setup` starts nothing.
   - [ ] `spike_overlay_choice` logic lives here, against `SpikePlatform`: `return` → `hide_or_close` the target, `hide_overlay`, `Gate::overlay_closed`, then `activate(previous)` if it is running else `show_main`; `continue` → `Gate::allow`, `hide_overlay`, `Gate::overlay_closed`, `activate(target)`; the reason is logged, never stored.
+  - [ ] `spike_running_apps` returns regular apps sorted by name, excluding Orasenda and the safety allowlist (filtering in core-side logic, testable with the fake).
   - [ ] `spike_overlay_ready` re-emits a pending `OverlayShow`.
   - [ ] `./scripts/ci.sh` passes; `gh pr checks <pr> --required` passes.
-- Tests first (with a fake `SpikePlatform`): `spike_disabled_without_flag`, `disabled_wins_over_unsupported`, `overlay_capability_grants_only_overlay_choice`, `main_capability_includes_spike_commands`, `manifest_commands_match_specta_builder` (existing, now with spike commands), `overlay_choice_serializes_tagged`, `spike_error_serializes_kind_message`, `return_hides_target_then_activates_previous`, `return_without_running_previous_shows_main`, `continue_allows_and_activates_target`, `ready_reemits_pending_show`
+- Tests first (with a fake `SpikePlatform`): `spike_disabled_without_flag`, `disabled_wins_over_unsupported`, `overlay_capability_grants_only_overlay_choice`, `main_capability_includes_spike_commands`, `manifest_commands_match_specta_builder` (existing, now with spike commands), `overlay_choice_serializes_tagged`, `spike_error_serializes_kind_message`, `return_hides_target_then_activates_previous`, `return_without_running_previous_shows_main`, `running_apps_sorted_and_filtered`, `continue_allows_and_activates_target`, `ready_reemits_pending_show`
 - Notes: commands are synchronous; anything that touches AppKit goes through `SpikePlatform`, whose macOS implementation (S5b) uses `run_on_main_thread`. Never hold the `SpikeState` lock while calling `SpikePlatform`.
 
-### S5b: macOS spike wiring and spike bundle
+### S5b: macOS spike wiring and spike bundle  (#16)
 - Priority: 0
 - Depends on: S3b, S5a
 - Owns: `apps/orasenda/src-tauri/src/spike/{macos.rs, overlay.rs}`, `apps/orasenda/src-tauri/tauri.spike.conf.json`
@@ -203,7 +204,7 @@ S1 ───────────────────────> S4 ─
 - Tests first: `usage_changed_is_coalesced_to_one_per_second` (the coalescer is a pure helper taking `Instant`s), `previous_skips_self_allowlisted_and_unbundled` (pure helper). The rest is proven by S7's matrix.
 - Notes: the strategy is a single `const` so S7 can switch it in one line.
 
-### S6: Overlay page and dev panel
+### S6: Overlay page and dev panel  (#17)
 - Priority: 0
 - Depends on: S4, S5a, #9
 - Owns: `apps/orasenda/overlay.html`, `apps/orasenda/src/overlay.tsx`, `apps/orasenda/src/overlay.test.tsx`, `apps/orasenda/src/spike/**`
@@ -219,7 +220,7 @@ S1 ───────────────────────> S4 ─
   - [ ] `./scripts/ci.sh` passes; `gh pr checks <pr> --required` passes.
 - Tests first: `overlay_renders_nothing_before_show`, `overlay_calls_ready_on_mount`, `overlay_shows_app_name`, `overlay_return_and_escape_send_return`, `overlay_continue_sends_reason_or_null`, `overlay_second_show_resets_reason`, `dev_panel_hidden_when_disabled`, `dev_panel_check_sets_rule`, `dev_panel_action_radio_sets_rule`, `dev_panel_open_segment_shows_now`, `dev_panel_shows_idle_gap_rows`, `use_spike_refetches_usage_on_event`
 
-### S7: Run the matrix, write the findings, accept ADR-004/005 (manual, real hardware)
+### S7: Run the matrix, write the findings, accept ADR-004/005 (manual, real hardware)  (#18)
 - Priority: 0
 - Depends on: S5b, S6
 - Owns: `docs/spikes/2026-11-07-macos-blocking.md`, `docs/DECISIONS.md` (ADR-004, ADR-005 entries and the Pending section)

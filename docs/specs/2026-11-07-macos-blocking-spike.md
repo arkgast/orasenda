@@ -254,5 +254,6 @@ None.
 
 ## Implementation status
 - [x] Plan: `docs/plans/2026-11-07-macos-blocking-spike.md`
-- [ ] Issues: to be created by `baton:backlog`
+- [x] Issues: #12 (S1), #19 (S2), #13 (S3a), #20 (S3b), #14 (S4), #15 (S5a), #16 (S5b), #17 (S6), #18 (S7)
 - Blocked on the app shell: #6, #8, #9 merged.
+- The plan splits the spec's `spike/wiring.rs` into `spike/state.rs` (S5a) and `spike/macos.rs` + `spike/overlay.rs` (S5b); behavior is unchanged.
