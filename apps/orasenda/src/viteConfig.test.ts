@@ -1,10 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-async function loadServer(): Promise<{ host?: unknown; hmr?: unknown; port?: number }> {
+async function loadServer() {
   vi.resetModules();
-  const mod = await import("../vite.config");
-  const config = mod.default as { server?: { host?: unknown; hmr?: unknown; port?: number } };
-  return config.server ?? {};
+  return (await import("../vite.config")).default.server ?? {};
 }
 
 describe("vite dev server", () => {
@@ -13,6 +11,14 @@ describe("vite dev server", () => {
   });
 
   it("keeps localhost and the default HMR socket when TAURI_DEV_HOST is unset", async () => {
+    vi.stubEnv("TAURI_DEV_HOST", undefined);
+    const server = await loadServer();
+    expect(server.port).toBe(1420);
+    expect(server.host).toBe(false);
+    expect(server.hmr).toBeUndefined();
+  });
+
+  it("keeps localhost and the default HMR socket when TAURI_DEV_HOST is empty", async () => {
     vi.stubEnv("TAURI_DEV_HOST", "");
     const server = await loadServer();
     expect(server.port).toBe(1420);

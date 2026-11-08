@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-// The Tauri CLI sets TAURI_DEV_HOST when the app runs on a physical iOS device, which must reach the dev server over the network.
+// The Tauri CLI sets TAURI_DEV_HOST for a physical iOS device or with `--host`; the device must reach the dev server over the network.
 const host = process.env.TAURI_DEV_HOST;
 
 // Tauri expects a fixed dev port (tauri.conf.json `devUrl`) and a WebKit target (macOS 13+, iOS 16+).
