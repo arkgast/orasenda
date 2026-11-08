@@ -1,0 +1,17 @@
+{
+  "name": "@orasenda/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MPL-2.0",
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./tokens.css"
+  },
+  "files": [
+    "tokens.css"
+  ],
+  "scripts": {
+    "build": "node build.ts",
+    "test": "node --test"
+  }
+}
