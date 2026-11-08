@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-07-macos-blocking-spike.md](../specs/2026-11-07-macos-blocking-spike.md)
 - Date: 2026-11-07
-- Status: S1–S6 merged; S7 (#18, manual) open
+- Status: S1–S7 done; S7 (#18) ran a reduced matrix, the rest is #61
 
 ## Overview
 Nine tasks. S1 (the `IntentPrompt` change, design-first) has no dependency and can start now.

@@ -11,13 +11,12 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 - **Decision:**
 - **Consequences:** trade-offs and follow-ups
 
-## Pending (to resolve in P0 Foundations)
-- ADR-004 and ADR-005 are *proposed* below. The P0 detection-and-overlay spike ([spec](specs/2026-11-07-macos-blocking-spike.md)) accepts them from its findings.
+## Pending
 - The anti-quit helper (strong lock, P7) is left open in ADR-004 and gets its own spike before P7.
 
 ## ADR-001: Tech stack and code sharing
 - **Date:** 2026-11-07
-- **Status:** accepted (revisit if the P0 detection-and-overlay spike shows Tauri cannot host it)
+- **Status:** accepted (the P0 spike confirmed Tauri hosts the overlay as a non-activating panel; see ADR-004)
 - **Context:** SPEC §7 asks for the stack that best shares code across desktop, web and mobile. The hardest features are native: foreground-app detection, overlays, an anti-quit helper, idle detection. Timers, blocking and tracking must keep running while the window is hidden, but WebKit throttles timers in hidden pages and macOS App Nap throttles hidden apps. Targets: macOS first, Windows next, iOS and Android later, a web app in P10.
 - **Options considered:**
   1. **Tauri 2 + React + a Rust core:** native APIs reachable from Rust on every OS; the same Rust runs on iOS and Android through Tauri mobile; small, fast app. Each OS renders with its own webview (WebKit, WebView2), and Tauri mobile is younger than desktop.
@@ -111,25 +110,35 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 - **Consequences:** product logic can be unit-tested with fake sources. Adding Windows means a `crates/platform-windows` against the same traits. Traits may grow as P5–P7 need more; changing them is a core change and goes through review. Spec: [docs/specs/2026-11-07-macos-blocking-spike.md](specs/2026-11-07-macos-blocking-spike.md).
 
 ## ADR-004: macOS app-blocking approach
-- **Date:** 2026-11-07
-- **Status:** proposed (accepted by the P0 spike from its findings)
+- **Date:** 2026-11-07 (accepted 2026-11-08)
+- **Status:** accepted
 - **Context:** SPEC §2.7 blocks distracting apps with a calm overlay, hiding or optionally closing them, without MDM and, ideally, without system permissions. The app is distributed outside the Mac App Store (ADR-003), so the sandbox does not apply.
 - **Options considered:**
   1. **Detect with `NSWorkspace` activation notifications; overlay with a Tauri window raised above full-screen apps; hide or terminate with `NSRunningApplication`:** no permission expected; reuses the design system's `IntentPrompt`.
   2. **Same detection, native `NSPanel` overlay:** most likely to float above everything; rebuilds the UI in AppKit.
   3. **Accessibility API (`AXUIElement`) to watch and act on windows:** finer control (per window), but needs the Accessibility permission and reads more than needed.
   4. **Screen Time / Family Controls:** not available to macOS apps outside the Family Controls entitlement and MDM-style setup.
-- **Decision:** proposed: option 1, with option 2's non-activating panel as the fallback the spike tests. To be confirmed or changed from the spike's findings ([docs/spikes/2026-11-07-macos-blocking.md](spikes/2026-11-07-macos-blocking.md)).
-- **Consequences:** if a Tauri window cannot rise above full-screen apps, the overlay becomes native. The anti-quit helper for the strong lock is **not** decided here; it gets its own spike before P7. Notarized, Developer ID-signed behavior must be re-checked before the private beta (the spike uses ad-hoc signing).
+- **Decision:** option 1, with option 2's non-activating panel applied to Tauri's window.
+  - Detect with `NSWorkspace` activation notifications.
+  - Show the overlay as a Tauri webview window turned into a non-activating `NSPanel` (`OverlayStrategy::NonActivatingPanel`). The UI stays `IntentPrompt`; nothing is rebuilt in AppKit. A window level and collection behavior alone (`LevelAndCollection`) do not show above full-screen apps.
+  - Hide or terminate with `NSRunningApplication`. Close mode stays: apps quit normally, and an app with unsaved changes shows its own dialog.
+  - Evidence: the spike's findings ([docs/spikes/2026-11-07-macos-blocking.md](spikes/2026-11-07-macos-blocking.md)), from a reduced matrix the owner chose to close P0. Detection worked for every switch method tried, the panel showed above full-screen apps in 2–40 ms, and no permission was needed.
+- **Consequences:**
+  - The anti-quit helper for the strong lock is **not** decided here; it gets its own spike before P7.
+  - Notarized, Developer ID-signed behavior must be re-checked before the private beta (the spike used ad-hoc signing). That re-check and the deferred matrix rows are #61.
+  - On macOS 27, `hide` returns NO even when it works; Orasenda must not trust it (see `docs/common-issues.md`).
+  - Back to focus still leaves you on a full-screen target's Space after a trackpad swipe (#59).
+  - The panel is a class swap under tao; re-verify on every tao/objc2 upgrade (see `crates/platform-macos/src/overlay.rs`).
+  - Keyboard, Escape and VoiceOver on the panel are unverified (#61).
 
 ## ADR-005: macOS usage-tracking approach and permissions
-- **Date:** 2026-11-07
-- **Status:** proposed (accepted by the P0 spike from its findings)
+- **Date:** 2026-11-07 (accepted 2026-11-08)
+- **Status:** accepted
 - **Context:** SPEC §2.6 records the foreground app and its duration, pauses on idle, and never records titles, keystrokes or content. Permissions are requested only when needed, and ideally none are needed.
 - **Options considered:**
   1. **Foreground changes from `NSWorkspace` notifications, idle from `CGEventSourceSecondsSinceLastEventType`:** event-driven, no permission expected, only app identity and time.
   2. **Polling `frontmostApplication`:** simple, but wakes the CPU and adds latency.
   3. **`CGWindowList` or the Accessibility API:** window-level data, needs Screen Recording or Accessibility, and collects more than the privacy promise allows.
-- **Decision:** proposed: option 1, with segments built in `crates/core` and time passed in. To be confirmed from the spike's findings.
+- **Decision:** option 1, with segments built in `crates/core` and time passed in. The spike's findings ([docs/spikes/2026-11-07-macos-blocking.md](spikes/2026-11-07-macos-blocking.md)) confirm it: no permission or prompt, CPU 0.22 % on average over 5 minutes with the flag on, and idle closes the open segment at idle start while the next input opens a new one.
 - **Consequences:** domains come only from the browser extension (P7). Private-window exclusion depends on the extension. Storage, retention and export follow ADR-002 in P5.
 
