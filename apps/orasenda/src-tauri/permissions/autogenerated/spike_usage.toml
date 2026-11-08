@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-spike-usage"
+description = "Enables the spike_usage command without any pre-configured scope."
+commands.allow = ["spike_usage"]
+
+[[permission]]
+identifier = "deny-spike-usage"
+description = "Denies the spike_usage command without any pre-configured scope."
+commands.deny = ["spike_usage"]

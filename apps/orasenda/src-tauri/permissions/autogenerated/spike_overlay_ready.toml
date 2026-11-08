@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-spike-overlay-ready"
+description = "Enables the spike_overlay_ready command without any pre-configured scope."
+commands.allow = ["spike_overlay_ready"]
+
+[[permission]]
+identifier = "deny-spike-overlay-ready"
+description = "Denies the spike_overlay_ready command without any pre-configured scope."
+commands.deny = ["spike_overlay_ready"]

@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "overlay",
+  "description": "What the spike's overlay webview may do: report it is ready, send the user's choice and listen to overlay-show.",
+  "windows": ["overlay"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-spike-overlay-ready",
+    "allow-spike-overlay-choice"
+  ]
+}
