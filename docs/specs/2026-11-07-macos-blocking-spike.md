@@ -258,5 +258,7 @@ None.
 ## Implementation status
 - [x] Plan: `docs/plans/2026-11-07-macos-blocking-spike.md`
 - [x] Issues: #12 (S1), #19 (S2), #13 (S3a), #20 (S3b), #14 (S4), #15 (S5a), #16 (S5b), #17 (S6), #18 (S7)
-- Blocked on the app shell: #6, #8, #9 merged.
+- [x] S1 #12 (PR #22), S2 #19 (PR #24, plus #31 for the `number` export), S3a #13 (PR #27), S3b #20 (PR #33), S4 #14 (PR #28), S5a #15 (PR #34), S5b #16 (PR #37), S6 #17 (PR #38) merged.
+- [ ] S7 #18: the manual matrix on real hardware, findings and ADR-004/005 (needs a human).
+- Human-only checks (themes, keyboard, VoiceOver, spike bundle launch) are tracked in #30.
 - The plan splits the spec's `spike/wiring.rs` into `spike/state.rs` (S5a) and `spike/macos.rs` + `spike/overlay.rs` (S5b); behavior is unchanged.
