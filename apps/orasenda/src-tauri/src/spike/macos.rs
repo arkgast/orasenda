@@ -149,7 +149,12 @@ fn on_foreground(app: &AppHandle, usage: &UsageNotifier, front: AppRef) {
             let name = show.app_name.clone();
             match present_overlay(app, show) {
                 Ok(()) => eprintln!("spike: overlay {} ms", arrived.elapsed().as_millis()),
-                Err(error) => eprintln!("spike: could not show the overlay for {name}: {error}"),
+                Err(error) => {
+                    eprintln!("spike: could not show the overlay for {name}: {error}");
+                    // Otherwise the gate keeps it open and ignores the target from now on;
+                    // closing lets the next activation retry.
+                    close_overlay(app, &spike);
+                }
             }
         }
         Some(Step::Close) => close_overlay(app, &spike),
@@ -225,12 +230,27 @@ fn present_overlay(app: &AppHandle, show: OverlayShow) -> Result<(), PlatformErr
 /// Hides the overlay (and gives Orasenda its Dock icon back under `AccessoryPolicy`).
 fn hide_overlay_window(app: &AppHandle) -> Result<(), PlatformError> {
     on_main(app, |app| {
-        overlay_window(app)?.hide().map_err(tauri_error)?;
-        if OVERLAY_STRATEGY == OverlayStrategy::AccessoryPolicy {
-            restore_activation_policy()?;
-        }
-        Ok(())
+        hide_then_restore(
+            || overlay_window(app)?.hide().map_err(tauri_error),
+            || {
+                if OVERLAY_STRATEGY == OverlayStrategy::AccessoryPolicy {
+                    restore_activation_policy()
+                } else {
+                    Ok(())
+                }
+            },
+        )
     })
+}
+
+/// Runs `hide`, then `restore` even when `hide` failed; the first error wins.
+fn hide_then_restore(
+    hide: impl FnOnce() -> Result<(), PlatformError>,
+    restore: impl FnOnce() -> Result<(), PlatformError>,
+) -> Result<(), PlatformError> {
+    let hidden = hide();
+    let restored = restore();
+    hidden.and(restored)
 }
 
 fn overlay_window(app: &AppHandle) -> Result<WebviewWindow, PlatformError> {
@@ -447,6 +467,25 @@ mod tests {
             next_previous(None, &browser, Decision::Allow, OWN),
             Some(browser)
         );
+    }
+
+    #[test]
+    fn restore_runs_after_a_failed_hide_and_first_error_wins() {
+        let restored = std::cell::Cell::new(false);
+        let result = hide_then_restore(
+            || Err(PlatformError::NotFound),
+            || {
+                restored.set(true);
+                Err(PlatformError::Refused)
+            },
+        );
+        assert!(restored.get());
+        assert_eq!(result, Err(PlatformError::NotFound));
+        assert_eq!(
+            hide_then_restore(|| Ok(()), || Err(PlatformError::Refused)),
+            Err(PlatformError::Refused)
+        );
+        assert_eq!(hide_then_restore(|| Ok(()), || Ok(())), Ok(()));
     }
 
     #[test]
