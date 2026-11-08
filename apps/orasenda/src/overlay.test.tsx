@@ -2,14 +2,14 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { events } from "./bindings";
+import { events, type SpikeError } from "./bindings";
 import { Overlay } from "./spike/Overlay";
 import { argsOf, type Call, mockBackend } from "./spike/testing";
 
-function overlayBackend(): Call[] {
+function overlayBackend(choice: () => unknown = () => null): Call[] {
   return mockBackend({
     spike_overlay_ready: () => null,
-    spike_overlay_choice: () => null,
+    spike_overlay_choice: choice,
   });
 }
 
@@ -141,6 +141,80 @@ test("overlay_second_choice_is_ignored", async () => {
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to focus" }));
   });
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);
+});
+
+const PLATFORM_ERROR: SpikeError = { kind: "platform", message: "refused" };
+
+async function clickBack(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Back to focus" }));
+  });
+}
+
+test("overlay_choice_resent_after_error_result", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  // Tauri rejects a command that returns Err, which the bindings turn into status "error".
+  const calls = overlayBackend(() => Promise.reject(PLATFORM_ERROR));
+  await renderOverlay();
+  await show("Safari");
+
+  await clickBack();
+  // The window may still cover the screen: Escape must be able to try again.
+  await act(async () => {
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+  });
+
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);
+});
+
+test("overlay_choice_resent_after_thrown_failure", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const calls = overlayBackend(() => {
+    throw new Error("ipc down");
+  });
+  await renderOverlay();
+  await show("Safari");
+
+  await clickBack();
+  await clickBack();
+
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);
+});
+
+test("overlay_choice_ignores_clicks_after_success", async () => {
+  const calls = overlayBackend();
+  await renderOverlay();
+  await show("Safari");
+
+  await clickBack();
+  await clickBack();
+
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(1);
+});
+
+test("overlay_late_failure_of_earlier_show_does_not_rearm_choice", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let rejectFirst: (error: SpikeError) => void = () => {};
+  let replies = 0;
+  const calls = overlayBackend(() => {
+    replies += 1;
+    if (replies > 1) return null;
+    return new Promise((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+  });
+  await renderOverlay();
+  await show("Safari");
+  await clickBack();
+  await show("Mail");
+  await clickBack();
+
+  await act(async () => {
+    rejectFirst(PLATFORM_ERROR);
+  });
+  await clickBack();
+
   expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);
 });
 
