@@ -727,9 +727,27 @@ mod tests {
                 ),
                 "{choice:?}"
             );
-            let state = spike.state();
+            let mut state = spike.state();
             assert_eq!(state.target(), None, "{choice:?}");
             assert_eq!(state.pending_show(), None, "{choice:?}");
+            // The gate itself is closed: Return re-enables the target; Continue allows it,
+            // and another target still shows.
+            let expected = match choice {
+                OverlayChoice::Return => GateAction::Show,
+                OverlayChoice::Continue { .. } => GateAction::Ignore,
+            };
+            assert_eq!(
+                state.gate_on_foreground(&target, Decision::Intercept),
+                expected,
+                "{choice:?}"
+            );
+            if let OverlayChoice::Continue { .. } = choice {
+                let other = app(Some("com.x.other"), "Other", 11);
+                assert_eq!(
+                    state.gate_on_foreground(&other, Decision::Intercept),
+                    GateAction::Show
+                );
+            }
         }
     }
 
