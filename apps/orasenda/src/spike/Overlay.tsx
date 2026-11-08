@@ -6,7 +6,10 @@ import { subscribe } from "../subscribe";
 /** The latest `overlay-show`; `count` keys the prompt so every show starts fresh. */
 type Show = { count: number; appName: string };
 
-/** Runs a spike command and logs a failure; the overlay has nothing better to show for one. */
+/**
+ * Runs a spike command and logs a failure; the overlay has nothing better to show for one.
+ * Resolves to whether the command succeeded.
+ */
 async function logFailure(
   name: string,
   run: () => Promise<{ status: "ok" } | { status: "error"; error: unknown }>,
