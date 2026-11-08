@@ -16,13 +16,15 @@
 ## Environment
 - MacBook Pro, Apple M4 Max, 48 GB; macOS 27.0.1 (build 26A434).
 - The spike bundle: `pnpm --filter orasenda tauri build --debug --bundles app` with `src-tauri/tauri.spike.conf.json`. Ad-hoc signed (`Signature=adhoc`, identifier `com.veloud.orasenda`), hardened runtime.
-- Launched with `open -n --env ORASENDA_SPIKE=1 …/Orasenda.app`, or by running the bundle's executable directly with `ORASENDA_SPIKE=1`. Logs come from the bundle's stderr.
+- Launch method per session:
+  - Launched by Launch Services with `open -n --env ORASENDA_SPIKE=1 …/Orasenda.app`: the permissions check (row 6), the `LevelAndCollection` session and the first `NonActivatingPanel` sessions. Log: `/tmp/orasenda-spike.log`.
+  - The bundle's executable run directly from a terminal with `ORASENDA_SPIKE=1`: the diag-56 and fix-56 sessions (the #56 retests). Log: `~/fix56.log` for fix-56. These count for function and timing, not for permissions.
 - Run by the owner on 2026-11-08, across several sessions (including the #56 and #57 retests).
 
 ## Method: a reduced matrix
 The owner chose a reduced matrix to close P0:
 - Only the rows needed to decide ADR-004 and ADR-005 were run.
-- They were run once, in the Launch Services spike bundle. Nothing was run under `tauri dev`.
+- They were run once, in the spike bundle (see [Environment](#environment) for how each session was launched). Nothing was run under `tauri dev`.
 - Timings are informal samples from the log, not the protocol of 10 per layout.
 - The other rows are deferred to a pass before the private beta: **#61**.
 
@@ -34,14 +36,14 @@ Row numbers match the spec's [Testing strategy](../specs/2026-11-07-macos-blocki
 | 1 | Detection by ⌘Tab, Dock click, window click, Alfred, Mission Control, Space swipe | Pass | The overlay appeared every time, and each switch is in the dev panel's Recent usage. Mission Control and the swipe were seen during the #56 retests. Spotlight was not tried on its own (#61). |
 | 2 | Target in a normal window | Pass | Both strategies show above it. |
 | 2 | Target full screen on its own Space | Pass with `NonActivatingPanel` | `LevelAndCollection` fails: see [Overlay strategy](#overlay-strategy). |
-| 2 | Timing | Pass | 2–46 ms, see [Timings](#timings). |
+| 2 | Timing | Pass | 1–46 ms, see [Timings](#timings). |
 | 2 | Space unchanged | Pass | With `NonActivatingPanel` over full-screen Firefox, the Space stays the same. |
-| 2 | Escape without a click | Pass | Owner, in an earlier session; re-checked with the panel in #61. |
+| 2 | Escape without a click | Pass (strategy not recorded); with `NonActivatingPanel`: deferred (#61) | Owner, in an earlier session. |
 | 2 | Stage Manager | Deferred | #61 |
 | 2b | Second display | Deferred | #61 |
-| 3 | Back to focus, Hide mode, windowed and full screen | Pass, one open case | See [Back to focus](#back-to-focus). |
+| 3 | Back to focus, Hide mode, windowed and full screen | Pass, one open case | Via ⌘Tab, the Dock and (after #56) Mission Control, full-screen Firefox is hidden and the owner lands back in the previous app (Chrome); nothing of Firefox is left on screen. Via a trackpad swipe they stay on Firefox's Space (#59). See [Back to focus](#back-to-focus). |
 | 3 | Back to focus, Close mode | Pass | Targets quit normally. An app with unsaved changes shows its own save dialog; Orasenda forces nothing. |
-| 4 | Continue | Pass after #57 | Continue works. Re-ticking the app after Continue did not block it again; fixed by #57 (PR #58). The full row 4 sequence is deferred (#61). |
+| 4 | Continue | Partial | Continue works; the re-tick bug is fixed by #57 (PR #58), not re-checked on hardware. The full row 4 sequence and the re-tick re-check are deferred (#61). |
 | 4b | Back to focus lands in the previous app | Pass, informally | Via ⌘Tab, the Dock and (after #56) Mission Control. Formal run deferred (#61). |
 | 5 | Safety allowlist; Orasenda itself | Deferred | #61 |
 | 6 | Privacy & Security; any prompt | Pass | Orasenda is absent from Accessibility, Screen Recording, Input Monitoring and Automation. No prompt at any time. |
@@ -59,37 +61,40 @@ Row numbers match the spec's [Testing strategy](../specs/2026-11-07-macos-blocki
 
 **Winner: `NonActivatingPanel`.** It is now the default in `apps/orasenda/src-tauri/src/spike/overlay.rs`. The Tauri overlay is viable; no native AppKit overlay is needed.
 
-The panel swap drops tao's window-class overrides. No lost behavior was noticed in this run: Back to focus and Continue work from the panel. Escape was checked in an earlier session, before the strategy was recorded per session, so it is re-checked with the panel in #61 along with keyboard and VoiceOver.
+The panel swap drops tao's window-class overrides. No lost behavior was noticed in this run: Back to focus and Continue work from the panel. Escape was checked in an earlier session whose strategy was not recorded, so Escape with the panel is deferred to #61, along with keyboard and VoiceOver.
 
 ## Timings
-`spike: overlay N ms`: from the activation notification to `show()` returning.
+`spike: overlay N ms`: from the activation notification to the overlay being shown and focused (the clock covers `present_overlay`).
 
 | Strategy | Samples | Median | Min | Max |
 |---|---|---|---|---|
-| `LevelAndCollection` (one session) | 27 | 9 ms | 1 ms | 46 ms |
-| `NonActivatingPanel` (sessions before #56's fix) | 41 | 12 ms | 3 ms | 40 ms |
-| `NonActivatingPanel` (#56 retest) | 16 | 11 ms | 2 ms | 28 ms |
+| `LevelAndCollection` (one session, `/tmp/orasenda-spike.log`) | 27 | 9 ms | 1 ms | 46 ms |
+| `NonActivatingPanel` (sessions in `/tmp/orasenda-spike.log`) | 41 | 12 ms | 3 ms | 40 ms |
+| `NonActivatingPanel` (fix-56 retest, `~/fix56.log`) | 16 | 11 ms | 2 ms | 28 ms |
 | `NonActivatingPanel` (all) | 57 | 12 ms | 2 ms | 40 ms |
 
 An earlier `LevelAndCollection` session (on #18) logged 10 more samples, from 0 to 18 ms.
+
+The diag-56 build (`NonActivatingPanel` with extra diagnostic logging) logged 11 samples, median 23 ms, max 33 ms. They are not counted above because the extra logging runs inside the timed path.
 
 All samples are far below the 500 ms target. They are informal: layouts were mixed, not 10 per layout. The protocol run is in #61.
 
 ## Back to focus
 - **Hide mode** hides the target and returns to the previous app, via ⌘Tab and the Dock, for windowed and full-screen targets.
-- **Mission Control to a full-screen target** looped: Back to focus showed the overlay again. Fixed by #56 (PR #60, in review when this was written): when the app already reports hidden, Orasenda unhides it, then hides it. Confirmed on the owner's hardware.
+- **What a hidden full-screen app leaves on screen:** nothing. Via ⌘Tab, the Dock and (after #56) Mission Control, Back to focus hides full-screen Firefox and moves the owner back to the previous app (Chrome). Via a trackpad swipe they stay on Firefox's Space (#59, below).
+- **Mission Control to a full-screen target** looped: Back to focus showed the overlay again. Fixed by #56 (PR #60): when the app already reports hidden, Orasenda unhides it, then hides it. Confirmed on the owner's hardware.
 - **Trackpad swipe to a full-screen target:** Back to focus leaves you on that Space. Open as #59. It does not block ADR-004.
 - **Close mode** quits targets normally. Apps with unsaved changes show their own save dialog, and Orasenda does not force anything. Close mode stays.
 - On macOS 27, `hide` returns NO even when it hides (#41, [common issues](../common-issues.md)). The log notes it and moves on.
 - **Observation:** when Orasenda itself was full screen, Back to focus landed on the desktop rather than on Orasenda's Space. A nice-to-have, tracked in #61.
 
 ## Continue
-Continue closes the overlay and lands in the target. After Continue, ticking the app again did not block it; #57 ends the allowance when the allowed app's rule changes (PR #58, merged).
+Continue closes the overlay and lands in the target. After Continue, ticking the app again did not block it; #57 ends the allowance when the allowed app's rule changes (PR #58, merged). The fix is covered by core tests but was not re-checked on hardware; that re-check is in #61.
 
 ## Permissions
 Orasenda is absent from Privacy & Security → Accessibility, Screen Recording, Input Monitoring and Automation. No prompt appeared at any time: not for detection, hiding, closing, idle time or the overlay.
 
-This was the ad-hoc-signed bundle launched by Launch Services, so macOS attributed any prompt to Orasenda itself, not to a terminal. A Developer ID-signed, notarized build is re-checked before the private beta (ADR-004, #61).
+This was observed in the session launched with `open -n --env ORASENDA_SPIKE=1 …` (Launch Services), with the ad-hoc-signed bundle, so macOS attributed any prompt to Orasenda itself, not to a terminal. A Developer ID-signed, notarized build is re-checked before the private beta (ADR-004, #61).
 
 ## Idle
 The dev panel showed:
@@ -116,7 +121,8 @@ The Phone app's bundle ID is `com.apple.mobilephone`, from the setup log line `s
 - Row 1, partly: Spotlight, Mission Control and a Space swipe, each recorded on its own.
 - Row 2: Stage Manager, and the timing protocol (10 samples per layout).
 - Row 2b: second display.
-- Rows 4 and 4b, run formally.
+- Rows 4 and 4b, run formally, including the re-tick after Continue (#57) on hardware.
+- Escape with the `NonActivatingPanel` overlay.
 - Row 5: the safety allowlist and Orasenda itself.
 - Row 7: keyboard and VoiceOver, on the overlay and the dev panel.
 - Row 10: flag off and a release build.

@@ -16,7 +16,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-001: Tech stack and code sharing
 - **Date:** 2026-11-07
-- **Status:** accepted (revisit if the P0 detection-and-overlay spike shows Tauri cannot host it)
+- **Status:** accepted (the P0 spike confirmed Tauri hosts the overlay as a non-activating panel; see ADR-004)
 - **Context:** SPEC §7 asks for the stack that best shares code across desktop, web and mobile. The hardest features are native: foreground-app detection, overlays, an anti-quit helper, idle detection. Timers, blocking and tracking must keep running while the window is hidden, but WebKit throttles timers in hidden pages and macOS App Nap throttles hidden apps. Targets: macOS first, Windows next, iOS and Android later, a web app in P10.
 - **Options considered:**
   1. **Tauri 2 + React + a Rust core:** native APIs reachable from Rust on every OS; the same Rust runs on iOS and Android through Tauri mobile; small, fast app. Each OS renders with its own webview (WebKit, WebView2), and Tauri mobile is younger than desktop.
@@ -128,6 +128,8 @@ Architecture and product decisions, one entry each, newest last. Use the templat
   - Notarized, Developer ID-signed behavior must be re-checked before the private beta (the spike used ad-hoc signing). That re-check and the deferred matrix rows are #61.
   - On macOS 27, `hide` returns NO even when it works; Orasenda must not trust it (see `docs/common-issues.md`).
   - Back to focus still leaves you on a full-screen target's Space after a trackpad swipe (#59).
+  - The panel is a class swap under tao; re-verify on every tao/objc2 upgrade (see `crates/platform-macos/src/overlay.rs`).
+  - Keyboard, Escape and VoiceOver on the panel are unverified (#61).
 
 ## ADR-005: macOS usage-tracking approach and permissions
 - **Date:** 2026-11-07 (accepted 2026-11-08)
