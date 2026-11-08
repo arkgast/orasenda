@@ -34,5 +34,6 @@ Project rules for every contributor and agent. They override baton's general gui
 - Accessibility lint errors (Biome `a11y` group) block, like any other error.
 - OS code lives only in `crates/platform-<os>` (ADR-010). Core never depends on `objc2`,
   `windows` or another OS crate; the app crate is the only place that picks an implementation.
-- Every AppKit call runs on the main thread (`MainThreadMarker`); never hold a lock across one.
+- `NSWindow`, `NSApplication` and `NSScreen` calls and observer registration run on the main
+  thread (`MainThreadMarker`); never hold a lock across an AppKit call.
 - Spike code runs only behind `spike::enabled()` (debug build and `ORASENDA_SPIKE=1`).
