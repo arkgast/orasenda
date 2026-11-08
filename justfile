@@ -10,6 +10,18 @@ mobile_targets := "--target aarch64-apple-ios --target aarch64-linux-android"
 default:
     @"{{ just_executable() }}" --list
 
+# Run the app with hot reload (Vite dev server and a debug Tauri build).
+dev:
+    pnpm --filter orasenda tauri dev
+
+# Build the app (release; on macOS a .app and .dmg under target/release/bundle).
+build:
+    pnpm --filter orasenda tauri build
+
+# Regenerate apps/orasenda/src/bindings.ts from the Rust commands and events.
+bindings:
+    cargo test -p orasenda --locked export_bindings
+
 # Format Rust and TypeScript in place.
 fmt:
     cargo fmt --all
@@ -23,6 +35,8 @@ lint:
 # Run every test suite.
 test:
     cargo test --workspace --locked
+    pnpm --filter orasenda test
+    pnpm --filter @orasenda/tokens test
 
 # Regenerate packages/tokens/tokens.css from design/system/tokens.json.
 tokens:
@@ -45,12 +59,21 @@ ci:
     git diff --exit-code -- packages/tokens/tokens.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
+    @echo "==> typecheck (tsc)"
+    pnpm --filter orasenda typecheck
+    @echo "==> test (vitest)"
+    pnpm --filter orasenda test
     @echo "==> lint (clippy)"
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
+    @echo "==> bindings (committed and current)"
+    git ls-files --error-unmatch apps/orasenda/src/bindings.ts
+    git diff --exit-code -- apps/orasenda/src/bindings.ts
     @echo "==> core mobile (cargo check for iOS and Android)"
     cargo check -p orasenda-core --locked {{ mobile_targets }}
+    @echo "==> app build (debug, no bundle)"
+    pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
 # Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
 [private]

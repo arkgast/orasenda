@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Orasenda</title>
+  <rect width="1024" height="1024" rx="224" fill="#121a1d"/>
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#e3ebe8" stroke-width="56"/>
+  <path d="M512 330 V512 L640 600" fill="none" stroke="#e3ebe8" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
