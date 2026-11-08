@@ -63,15 +63,17 @@ The Tauri CLI adds the other Rust targets it needs, for example `aarch64-apple-i
 
 `just --list` shows every recipe.
 
-Mobile builds do not start yet: the app crate has no mobile entry point (#48). Until that is fixed,
-`tauri ios dev` and `tauri android dev` stop with a build error. The mobile dev commands target the
-iOS Simulator and the Android emulator only for now; running the dev server for a physical device is
-not set up yet (#49).
+The mobile dev commands target the iOS Simulator and the Android emulator only for now; running the
+dev server for a physical device is not set up yet (#49).
 
 ### Mobile projects and signing
 The Xcode and Android Studio projects live in `apps/orasenda/src-tauri/gen/apple` and
 `apps/orasenda/src-tauri/gen/android`. They are the output of `tauri ios init` and
 `tauri android init`. Keep changes to them small, so they can be regenerated.
+
+Opening `apps/orasenda/src-tauri/gen/android` in Android Studio needs a release that supports AGP
+9.3.1. Command-line builds don't need Android Studio. If Android Studio offers to upgrade AGP,
+decline: the project stays as `tauri android init` generated it.
 
 The iOS Simulator needs no signing. To run on a physical iPhone, set your Apple development team
 in your shell only:
