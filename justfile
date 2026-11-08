@@ -5,12 +5,10 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set windows-shell := ["bash", "-euo", "pipefail", "-c"]
 set script-interpreter := ["bash", "-euo", "pipefail"]
 
-# Commits to scan for secrets start after this ref (CI passes the PR base or the pushed range).
-base := env("CI_BASE_REF", "origin/main")
 mobile_targets := "--target aarch64-apple-ios --target aarch64-linux-android"
 
 default:
-    @just --list
+    @"{{ just_executable() }}" --list
 
 # Format Rust and TypeScript in place.
 fmt:
@@ -28,8 +26,8 @@ test:
 
 # Every check, fastest first. Stops at the first failure.
 ci:
-    @echo "==> secrets (gitleaks, commits {{ base }}..HEAD)"
-    gitleaks git --no-banner --redact --log-opts="{{ base }}..HEAD"
+    @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
+    @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
     @echo "==> install (pnpm, frozen lockfile)"
     pnpm install --frozen-lockfile --prefer-offline
     @echo "==> format (rustfmt)"
@@ -50,8 +48,13 @@ ci:
 [script]
 core-boundary:
     tree="$(cargo tree -p orasenda-core --locked --target all -e normal,build,dev --prefix none --format '{p}')"
-    if offenders="$(grep -E '^(tauri|tao|wry)' <<<"$tree")"; then
+    status=0
+    offenders="$(grep -E '^(tauri|tao|wry)' <<<"$tree")" || status=$?
+    if [ "$status" -eq 0 ]; then
         echo "orasenda-core must not depend on tauri, tao or wry (ADR-001):" >&2
         echo "$offenders" >&2
         exit 1
+    elif [ "$status" -ne 1 ]; then
+        echo "core boundary check failed: grep exited $status" >&2
+        exit "$status"
     fi
