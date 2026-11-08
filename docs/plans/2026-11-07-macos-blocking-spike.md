@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-07-macos-blocking-spike.md](../specs/2026-11-07-macos-blocking-spike.md)
 - Date: 2026-11-07
-- Status: in backlog (#12–#20)
+- Status: S1–S6 merged; S7 (#18, manual) open
 
 ## Overview
 Nine tasks. S1 (the `IntentPrompt` change, design-first) has no dependency and can start now.
