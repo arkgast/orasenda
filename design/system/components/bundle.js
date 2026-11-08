@@ -144,7 +144,12 @@
     var stepState = R.useState(1), step = p.onContinue ? stepState[0] : 1, setStep = stepState[1];
     var reasonState = R.useState(""), reason = reasonState[0], setReason = reasonState[1];
     var name = R.useId(), hintId = R.useId(), group = R.useRef(null);
-    R.useEffect(function () { if (!open) { setStep(1); setReason(""); } }, [open]);
+    // Reopening or a new app starts again at step 1. Reset during render (previous-value pattern), not in an effect, so no stale step is ever shown.
+    var shownState = R.useState({ open: open, app: app }), shown = shownState[0];
+    if (shown.open !== open || shown.app !== app) {
+      shownState[1]({ open: open, app: app });
+      if ((open && !shown.open) || app !== shown.app) { setStep(1); setReason(""); }
+    }
     // Entering step 2 the "I need" button unmounts, so focus moves to the first reason; VoiceOver reads it with the group's question.
     R.useEffect(function () {
       var first = step === 2 && group.current ? group.current.querySelector("input") : null;
@@ -156,7 +161,7 @@
       step === 1 ? h("div", { key: "step1", className: "os-intent-actions" },
         back,
         p.onWait ? h(Button, { key: "wait", variant: "quiet", onClick: p.onWait }, p.waitLabel || "Wait 10 minutes, then decide") : null,
-        p.onContinue ? h(Button, { key: "need", variant: "ghost", onClick: function () { setReason(""); setStep(2); } }, "I need " + app + " now") : null) : null,
+        p.onContinue ? h(Button, { key: "need", variant: "ghost", onClick: function () { setStep(2); } }, "I need " + app + " now") : null) : null,
       step === 2 ? h("div", { key: "step2", className: "os-intent-reasons" },
         h("fieldset", { ref: group, className: "os-choice-group", "aria-describedby": hintId },
           h("legend", null, "What do you need " + app + " for?"),
