@@ -1,6 +1,8 @@
 include!("commands.list.rs");
 
 /// Common Controls v6 manifest that tauri-build would otherwise embed (#32).
+/// Verbatim copy of tauri-build 2.7.4 `src/windows-app-manifest.xml`; re-diff
+/// it against that file whenever tauri-build is upgraded.
 const WINDOWS_MANIFEST: &str = "windows-app-manifest.xml";
 
 fn main() {
