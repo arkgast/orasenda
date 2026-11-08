@@ -28,7 +28,7 @@ pub enum SpikeError {
     /// No spike implementation for this OS.
     Unsupported,
     /// The OS call failed.
-    Platform(String),
+    Platform(PlatformError),
 }
 
 /// What the user chose in the overlay.
@@ -46,7 +46,7 @@ impl std::fmt::Display for SpikeError {
         match self {
             SpikeError::Disabled => f.write_str("the spike is disabled"),
             SpikeError::Unsupported => f.write_str("the spike is not supported on this platform"),
-            SpikeError::Platform(message) => f.write_str(message),
+            SpikeError::Platform(error) => error.fmt(f),
         }
     }
 }
@@ -186,10 +186,11 @@ pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(),
     }
 }
 
-/// Hides or closes the target, closes the overlay, then lands in the previous app if it is
-/// still running and the current rule does not intercept it, otherwise in Orasenda's main
-/// window. Activating an intercepted app (the target itself, when `previous` was recorded
-/// before the rule changed) would unhide it and reopen the overlay in a loop (#41).
+/// Hides or closes the target, closes the overlay, then lands in the previous app if the
+/// current rule does not intercept it, otherwise (or when it cannot be activated, e.g. it
+/// quit) in Orasenda's main window. Activating an intercepted app (the target itself, when
+/// `previous` was recorded before the rule changed) would unhide it and reopen the overlay in a
+/// loop (#41).
 fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), SpikeError> {
     let (target, previous, action) = {
         let state = spike.state();
@@ -212,13 +213,7 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
     spike.state().close_overlay();
     hidden.map_err(platform_error)?;
 
-    let running = previous.filter(|previous| {
-        platform
-            .running_apps()
-            .iter()
-            .any(|app| app.pid == previous.pid)
-    });
-    if let Some(previous) = running {
+    if let Some(previous) = previous {
         match platform.activate(previous.pid) {
             Ok(()) => return Ok(()),
             Err(error) => eprintln!("spike: could not activate {}: {error}", previous.name),
@@ -256,13 +251,16 @@ fn continue_to_target(
     spike.state().close_overlay();
     hidden.map_err(platform_error)?;
     match target {
-        Some(target) => platform.activate(target.pid).map_err(platform_error),
+        Some(target) => platform.activate(target.pid).map_err(|error| {
+            eprintln!("spike: could not activate {}: {error}", target.name);
+            platform_error(error)
+        }),
         None => Ok(()),
     }
 }
 
 fn platform_error(error: PlatformError) -> SpikeError {
-    SpikeError::Platform(error.to_string())
+    SpikeError::Platform(error)
 }
 
 /// Whether the spike runs and the platform is supported. Never errors.
@@ -384,7 +382,12 @@ mod tests {
             self.record(Call::HideOrClose(pid, action))
         }
         fn activate(&self, pid: i32) -> Result<(), PlatformError> {
-            self.record(Call::Activate(pid))
+            self.record(Call::Activate(pid))?;
+            if self.running.iter().any(|app| app.pid == pid) {
+                Ok(())
+            } else {
+                Err(PlatformError::NotFound)
+            }
         }
         fn show_overlay(&self, show: OverlayShow) -> Result<(), PlatformError> {
             self.record(Call::ShowOverlay(show))
@@ -579,7 +582,8 @@ mod tests {
             "unsupported"
         );
         assert_eq!(
-            serde_json::to_value(SpikeError::Platform("boom".into())).unwrap(),
+            serde_json::to_value(SpikeError::Platform(PlatformError::Other("boom".into())))
+                .unwrap(),
             serde_json::json!({ "kind": "platform", "message": "boom" })
         );
     }
@@ -689,6 +693,7 @@ mod tests {
             [
                 Call::HideOrClose(10, BlockAction::Hide),
                 Call::HideOverlay,
+                Call::Activate(20),
                 Call::ShowMain,
             ]
         );
@@ -698,6 +703,23 @@ mod tests {
         open_overlay(&spike, &target, None, BlockAction::Hide);
         overlay_choice(&spike, OverlayChoice::Return).unwrap();
         assert_eq!(calls(&log).last(), Some(&Call::ShowMain));
+    }
+
+    #[test]
+    fn continue_when_activate_fails_returns_the_error() {
+        let target = app(Some("com.x.game"), "Game", 10);
+        let failing = Failing {
+            activate: true,
+            ..Failing::default()
+        };
+        let (spike, log) = spike_failing(vec![target.clone()], failing, OWN);
+        open_overlay(&spike, &target, None, BlockAction::Hide);
+
+        assert_eq!(
+            overlay_choice(&spike, OverlayChoice::Continue { reason: None }),
+            Err(SpikeError::Platform(PlatformError::Refused))
+        );
+        assert_eq!(calls(&log), [Call::HideOverlay, Call::Activate(10)]);
     }
 
     #[test]
@@ -856,11 +878,9 @@ mod tests {
             let (spike, _) = spike_failing(vec![target.clone()], failing, OWN);
             open_overlay(&spike, &target, None, BlockAction::Hide);
 
-            assert!(
-                matches!(
-                    overlay_choice(&spike, choice.clone()),
-                    Err(SpikeError::Platform(_))
-                ),
+            assert_eq!(
+                overlay_choice(&spike, choice.clone()),
+                Err(SpikeError::Platform(PlatformError::Refused)),
                 "{choice:?}"
             );
             let mut state = spike.state();
@@ -918,10 +938,10 @@ mod tests {
         };
         let (spike, _) = spike_failing(vec![target.clone(), previous.clone()], failing, OWN);
         open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
-        assert!(matches!(
+        assert_eq!(
             overlay_choice(&spike, OverlayChoice::Return),
-            Err(SpikeError::Platform(_))
-        ));
+            Err(SpikeError::Platform(PlatformError::Refused))
+        );
     }
 
     #[test]
