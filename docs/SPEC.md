@@ -7,9 +7,11 @@
 Orasenda is one calm, minimal app for planning time, managing tasks and protecting focus. It replaces a patchwork of tools: a pomodoro timer, a time-blocking calendar, a kanban board, a screen-time tracker, an app blocker, a habit tracker and focus sound. Its practices draw on *Deep Work*, *Atomic Habits*, *Indistractable*, *Four Thousand Weeks* and Huberman-inspired protocols, applied with respect for the user's autonomy and privacy.
 
 **Decisions made so far:**
-- **Audience:** personal use first, public launch later.
+- **Audience:** people with ADHD and knowledge workers on Mac who want a kind, private focus tool. Personal use first, then a private beta, then a public v1 after P4 (see ROADMAP releases).
 - **Platforms:** macOS 13+ first (gating CI); Windows 11 next (advisory CI); iOS and Android projects scaffolded and smoke-tested by hand, with no mobile features until P10. See ADR-001.
-- **Data:** stored locally first, with optional end-to-end encrypted sync later.
+- **Data:** stored locally first, with optional paid end-to-end encrypted sync later (ADR-002, ADR-006).
+- **Licence:** open source under MPL-2.0; the name is a trademark (ADR-009).
+- **Telemetry:** none (ADR-008).
 - **Calendar:** built-in, paired with a kanban board that tracks time on each task.
 
 ## 1. Product principles
@@ -208,7 +210,7 @@ No user accounts until the sync phase.
 - Public copy says "Pomodoro-style" (the Pomodoro Technique is a registered mark of Francesco Cirillo).
 - A persistent wellness disclaimer on routines, NSDR and sound.
 - yt-dlp is excluded until the Music Integration phase and is never in store builds.
-- **Distribution decision (tech phase):** a notarized direct download vs the Mac App Store. The App Store sandbox likely rules out tracking and blocking.
+- **Distribution:** a notarized direct download first; app stores later (ADR-003). The App Store sandbox likely rules out tracking and blocking.
 
 ## 6. Success Metrics (neutral, well-being aware)
 - **North star:** deep hours per week compared with the user's goal.
@@ -227,7 +229,7 @@ No user accounts until the sync phase.
 - Business model.
 
 ## 8. Out of Scope for Now
-- External calendar sync
+- Two-way external calendar sync (read-only import on the device comes in P3)
 - Mobile and web features (the mobile projects are scaffolded and smoke-tested from P0)
 - The music library
 - yt-dlp
