@@ -52,6 +52,8 @@ ui-css:
 ci:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
+    @echo "==> docs-only classifier (tests)"
+    ./scripts/docs-only.test.sh
     @echo "==> install (pnpm, frozen lockfile)"
     pnpm install --frozen-lockfile --prefer-offline
     @echo "==> format (rustfmt)"
