@@ -111,6 +111,11 @@ impl Gate {
 
     /// The rule changed from `old` to `new`: if the app allowed by *Continue* was added to or
     /// removed from the targets, its allowance ends. The open overlay is left alone.
+    ///
+    /// Both directions count. Removal: the user unticked and re-ticked the app (#57).
+    /// Addition: the app can be allowed while untargeted (unticked while its overlay was
+    /// open, then *Continue*), and ticking it is a fresh decision to block it. Changes that
+    /// leave the app's entry alone (other apps, Hide/Close) keep the allowance.
     pub fn rule_changed(&mut self, old: &BlockRule, new: &BlockRule) {
         if self
             .allowed
@@ -317,8 +322,39 @@ mod tests {
         g.allow("com.x.a");
         g.on_foreground(&app(Some(OWN), 9), Decision::Allow);
         g.rule_changed(&rule(&["com.x.a"]), &rule(&["com.x.a", "com.x.b"]));
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn gate_identical_rule_keeps_allowance() {
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        g.allow("com.x.a");
         g.rule_changed(&rule(&["com.x.a"]), &rule(&["com.x.a"]));
         assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn gate_action_change_keeps_allowance() {
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        let close = BlockRule {
+            action: BlockAction::Close,
+            ..rule(&["com.x.a"])
+        };
+        g.allow("com.x.a");
+        g.rule_changed(&rule(&["com.x.a"]), &close);
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn gate_adding_the_allowed_app_ends_allowance() {
+        // Continue after the app was unticked while its overlay was open, then ticked again.
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        g.allow("com.x.a");
+        g.rule_changed(&rule(&[]), &rule(&["com.x.a"]));
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Show);
     }
 
     #[test]
