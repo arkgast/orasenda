@@ -4,8 +4,6 @@
 mod commands;
 mod ticker;
 
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
@@ -28,10 +26,12 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 }
 
 /// Where the generated TypeScript contract lives: `apps/orasenda/src/bindings.ts`.
-fn bindings_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/bindings.ts")
+#[cfg(any(test, all(debug_assertions, desktop)))]
+fn bindings_path() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/bindings.ts")
 }
 
+#[cfg(any(test, all(debug_assertions, desktop)))]
 fn export_bindings(builder: &tauri_specta::Builder<tauri::Wry>) -> Result<(), String> {
     builder
         .export(specta_typescript::Typescript::default(), bindings_path())
@@ -52,7 +52,7 @@ pub fn run() {
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
-            ticker::spawn(app.handle().clone());
+            ticker::spawn(app.handle().clone())?;
             Ok(())
         })
         .on_window_event(|window, event| {
