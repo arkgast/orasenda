@@ -53,6 +53,11 @@ fn export_bindings(builder: &tauri_specta::Builder<tauri::Wry>) -> Result<(), St
 }
 
 /// Starts the app.
+///
+/// On mobile, `mobile_entry_point` exports the symbols the native shells call into:
+/// `start_app` for iOS and the `Java_*` JNI bindings for Android. The Tauri CLI rejects a
+/// mobile library that lacks them.
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = specta_builder();
 
