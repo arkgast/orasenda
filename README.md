@@ -63,8 +63,10 @@ The Tauri CLI adds the other Rust targets it needs, for example `aarch64-apple-i
 
 `just --list` shows every recipe.
 
-The mobile dev commands target the iOS Simulator and the Android emulator only for now; running the
-dev server for a physical device is not set up yet (#49).
+To run on a physical device, connect it and pass its name to the same command. The Tauri CLI sets
+`TAURI_DEV_HOST` to your computer's network address for a device, and `vite.config.ts` then serves
+the frontend on that address (HMR on port 1421). Keep the device and the computer on the same network.
+Without `TAURI_DEV_HOST`, the dev server stays on localhost.
 
 ### Mobile projects and signing
 The Xcode and Android Studio projects live in `apps/orasenda/src-tauri/gen/apple` and
