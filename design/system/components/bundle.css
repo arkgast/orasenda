@@ -215,4 +215,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-choice input:checked { forced-color-adjust: none; background: Highlight; border-color: Highlight; box-shadow: inset 0 0 0 2px Canvas; }
   .os-choice input[type="checkbox"]:checked { box-shadow: none; }
   .os-choice input[type="checkbox"]:checked::before { border-color: HighlightText; }
+  .os-choice input:checked:focus-visible { outline-color: Highlight; }
+  .os-choice input:checked:disabled { background: GrayText; border-color: GrayText; }
 }
