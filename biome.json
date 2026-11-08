@@ -14,6 +14,7 @@
       "!.baton",
       "!apps/orasenda/src/bindings.ts",
       "!packages/tokens/tokens.css",
+      "!packages/ui/components.css",
       "!**/src-tauri/gen",
       "!**/dist",
       "!**/target"

@@ -37,10 +37,15 @@ test:
     cargo test --workspace --locked
     pnpm --filter orasenda test
     pnpm --filter @orasenda/tokens test
+    pnpm --filter @orasenda/ui test
 
 # Regenerate packages/tokens/tokens.css from design/system/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
+
+# Regenerate packages/ui/components.css from design/system/components/bundle.css.
+ui-css:
+    pnpm --filter @orasenda/ui build
 
 # Every check, fastest first. Stops at the first failure.
 ci:
@@ -59,6 +64,11 @@ ci:
     git diff --exit-code -- packages/tokens/tokens.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
+    @echo "==> ui (components.css is up to date)"
+    "{{ just_executable() }}" ui-css
+    git diff --exit-code -- packages/ui/components.css
+    @echo "==> ui (tests)"
+    pnpm --filter @orasenda/ui test
     @echo "==> typecheck (tsc)"
     pnpm --filter orasenda typecheck
     @echo "==> test (vitest)"
