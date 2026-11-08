@@ -10,18 +10,16 @@
 set -euo pipefail
 
 classify() {
-  local path any=false
+  local path any=false docs=true
+  # Read to the end even after a code path: stopping early would break the writer's pipe.
   while IFS= read -r -d '' path; do
     any=true
     case "$path" in
       docs/* | *.md) ;;
-      *)
-        echo false
-        return
-        ;;
+      *) docs=false ;;
     esac
   done
-  echo "$any"
+  if [ "$any" = true ] && [ "$docs" = true ]; then echo true; else echo false; fi
 }
 
 if [ "${1:-}" = --classify ]; then
@@ -33,11 +31,12 @@ docs_only=false
 if [ "${GITHUB_EVENT_NAME:-}" = pull_request ]; then
   # --no-renames: a moved file lists its old path as a deletion, so code renamed into docs/ or to *.md still counts as code.
   # -z: paths are NUL-separated and never quoted, so unusual names are matched as they are.
-  if files="$(git diff --name-only --no-renames -z "${CI_BASE_REF:?}"...HEAD | tr '\0' '\001')" && [ -n "$files" ]; then
+  changed="$(mktemp)"
+  trap 'rm -f "$changed"' EXIT
+  if git diff --name-only --no-renames -z "${CI_BASE_REF:?}"...HEAD > "$changed" && [ -s "$changed" ]; then
     echo "Changed files:"
-    printf '%s' "$files" | tr '\001' '\n'
-    echo
-    docs_only="$(printf '%s' "$files" | tr '\001' '\0' | classify)"
+    tr '\0' '\n' < "$changed"
+    docs_only="$(classify < "$changed")"
   else
     echo "No changed files found, or the diff failed: running every check."
   fi

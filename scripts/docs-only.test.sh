@@ -16,6 +16,12 @@ expect "lookalikes" false "$(classify notmd docs.txt)"
 expect "unusual names" true "$(classify $'docs/we ird "quoted" \xc3\xa9.txt' $'a\nb.md')"
 expect "unusual code name" false "$(classify $'we ird "q".ts')"
 
+# Many paths: a code path first must not break the pipe to the reader.
+many_code="$({ printf 'crates/core/src/first.rs\0'; for i in $(seq 3000); do printf 'docs/n%s.md\0' "$i"; done; } | "$script" --classify; echo "rc=$?")"
+expect "thousands of paths, code first" $'false\nrc=0' "$many_code"
+many_docs="$(for i in $(seq 3000); do printf 'docs/n%s.md\0' "$i"; done | "$script" --classify; echo "rc=$?")"
+expect "thousands of docs paths" $'true\nrc=0' "$many_docs"
+
 # Real repo: renames must not hide the old code path.
 tmp="$(mktemp -d)"
 out="$(mktemp)"

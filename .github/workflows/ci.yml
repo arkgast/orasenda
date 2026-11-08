@@ -38,10 +38,6 @@ jobs:
       # and passes, because branch protection requires the `ci` context. Do not use workflow-level
       # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
       # Fails closed: pushes, an empty diff or a failed diff all run everything.
-      # Docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh, but this job still runs
-      # and passes, because branch protection requires the `ci` context. Do not use workflow-level
-      # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
-      # Fails closed: pushes, an empty diff or a failed diff all run everything.
       - name: Decide whether this PR only changes docs
         id: scope
         run: ./scripts/docs-only.sh
