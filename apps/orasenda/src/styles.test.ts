@@ -100,7 +100,7 @@ test("info_line_uses_body_sm_in_ink_muted", () => {
   expect(info.get("color")).toBe("var(--ink-muted)");
 });
 
-test("clock_uses_mono_timer_md_tabular_digits_and_reserves_space", () => {
+test("clock_uses_mono_timer_md_tabular_digits", () => {
   const clock = rule(".app-clock");
   expect(clock.get("font-family")).toBe("var(--font-mono)");
   expect(clock.get("font-size")).toBe("var(--type-timer-md-font-size)");
@@ -108,8 +108,13 @@ test("clock_uses_mono_timer_md_tabular_digits_and_reserves_space", () => {
   expect(clock.get("font-weight")).toBe("var(--type-timer-md-font-weight)");
   expect(clock.get("letter-spacing")).toBe("var(--type-timer-md-letter-spacing)");
   expect(clock.get("font-variant-numeric")).toBe("var(--type-timer-md-font-variant-numeric)");
-  // An empty clock keeps its line box, and as a block it spans the row, so the first tick
-  // shifts nothing.
-  expect(clock.get("display")).toBe("block");
-  expect(clock.get("min-block-size")).toBe("var(--type-timer-md-line-height)");
+});
+
+// The clock and "clock unavailable" share this box: an empty clock keeps its line, and as a block
+// it spans the row, so neither the first tick nor a failure shifts anything.
+test("clock_slot_reserves_the_clock_space", () => {
+  const slot = rule(".app-clock-slot");
+  expect(slot.get("display")).toBe("block");
+  expect(slot.get("min-block-size")).toBe("var(--type-timer-md-line-height)");
+  expect(slot.get("margin-block-start")).toBe("var(--space-4)");
 });

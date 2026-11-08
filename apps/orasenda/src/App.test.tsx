@@ -19,7 +19,7 @@ let clockHandlers: Array<(event: unknown) => void>;
 type Invoke = (cmd: string, args?: unknown, options?: unknown) => Promise<unknown>;
 type Internals = { invoke: Invoke; callbacks: Map<number, (event: unknown) => void> };
 
-function mockBackend(appInfo: () => Promise<AppInfo>): void {
+function mockBackend(appInfo: () => Promise<AppInfo>, { failListen = false } = {}): void {
   mockIPC(
     (cmd) => {
       if (cmd === "app_info") return appInfo();
@@ -33,6 +33,9 @@ function mockBackend(appInfo: () => Promise<AppInfo>): void {
   internals.invoke = async (cmd, args, options) => {
     const fields = args as { event?: string; eventId?: number; handler?: number };
     const isClockListen = fields.event === "clock-tick" && cmd === "plugin:event|listen";
+    if (isClockListen && failListen) {
+      throw new Error("core:event:allow-listen not granted");
+    }
     if (isClockListen) {
       const handler = internals.callbacks.get(fields.handler as number);
       if (handler) clockHandlers.push(handler);
@@ -103,6 +106,7 @@ test("clock_is_empty_before_first_tick", async () => {
   await screen.findByText("0.1.0 · macOS aarch64");
 
   expect(clock(container)).toBeEmptyDOMElement();
+  expect(clock(container)).toHaveClass("app-clock-slot");
   expect(clock(container)).not.toHaveAttribute("dateTime");
 });
 
@@ -163,6 +167,25 @@ test("tick_to_cleaned_up_subscription_is_ignored", async () => {
 
   expect(commits).toEqual([]);
   expect(clock(container)).toHaveTextContent(/^02:32\s?PM$/);
+});
+
+test("rejected_clock_listen_shows_clock_unavailable", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  mockBackend(async () => INFO, { failListen: true });
+  const { container, unmount } = render(<App locale="en-US" timeZone="UTC" />);
+
+  const slot = await screen.findByText("clock unavailable");
+  expect(slot.tagName).toBe("P");
+  expect(slot).toHaveClass("app-info", "app-clock-slot");
+  expect(slot).not.toHaveAttribute("role");
+  expect(slot).not.toHaveAttribute("aria-live");
+  expect(container.querySelector("time")).toBeNull();
+  expect(screen.getByRole("heading", { level: 1, name: "Orasenda" })).toBeInTheDocument();
+
+  // Cleanup after a failed subscription has nothing to unlisten and logs nothing more.
+  unmount();
+  await act(async () => {});
+  expect(error).toHaveBeenCalledTimes(1);
 });
 
 test("emit_after_unmount_is_ignored", async () => {

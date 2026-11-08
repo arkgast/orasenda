@@ -13,7 +13,7 @@ type InfoState = { status: "loading" } | { status: "ok"; line: string } | { stat
 
 export function App({ locale, timeZone }: Props) {
   const [info, setInfo] = useState<InfoState>({ status: "loading" });
-  const now = useClock();
+  const clock = useClock();
 
   useEffect(() => {
     let cancelled = false;
@@ -43,13 +43,15 @@ export function App({ locale, timeZone }: Props) {
           {info.status === "error" ? "version unavailable" : null}
         </p>
       </header>
-      {now === null ? (
-        <time className="app-clock" />
-      ) : (
-        <time className="app-clock" dateTime={new Date(now).toISOString()}>
-          {formatClock(now, locale, timeZone)}
+      {clock.status === "waiting" ? <time className="app-clock app-clock-slot" /> : null}
+      {clock.status === "ok" ? (
+        <time className="app-clock app-clock-slot" dateTime={new Date(clock.epochMs).toISOString()}>
+          {formatClock(clock.epochMs, locale, timeZone)}
         </time>
-      )}
+      ) : null}
+      {clock.status === "error" ? (
+        <p className="app-info app-clock-slot">clock unavailable</p>
+      ) : null}
     </main>
   );
 }

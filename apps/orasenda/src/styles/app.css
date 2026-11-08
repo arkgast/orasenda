@@ -45,10 +45,14 @@ body {
   font-weight: var(--type-body-sm-font-weight);
 }
 
-.app-clock {
+/* The clock's box, shared by the clock and "clock unavailable" so nothing shifts. */
+.app-clock-slot {
   display: block;
   min-block-size: var(--type-timer-md-line-height);
   margin-block-start: var(--space-4);
+}
+
+.app-clock {
   font-family: var(--font-mono);
   font-size: var(--type-timer-md-font-size);
   line-height: var(--type-timer-md-line-height);
