@@ -27,7 +27,7 @@ use orasenda_core::platform::PlatformError;
 
 use crate::main_thread;
 
-/// Makes the window the overlay: [`level_and_collection`], then [`non_activating_panel`], in
+/// Makes the window the overlay: `level_and_collection`, then `non_activating_panel`, in
 /// that order. Main thread only.
 ///
 /// # Safety

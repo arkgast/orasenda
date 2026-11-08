@@ -4,8 +4,6 @@ use std::ptr::NonNull;
 
 use block2::RcBlock;
 use objc2::MainThreadMarker;
-
-use crate::main_thread;
 use objc2::rc::Retained;
 use objc2_app_kit::{
     NSRunningApplication, NSWorkspace, NSWorkspaceApplicationKey,
@@ -15,7 +13,7 @@ use objc2_foundation::{NSNotification, NSNotificationName};
 use orasenda_core::blocking::AppRef;
 use orasenda_core::platform::{ForegroundSource, PlatformError};
 
-use crate::control::app_ref;
+use crate::{control::app_ref, main_thread};
 
 /// Reports the frontmost app and its changes.
 ///
