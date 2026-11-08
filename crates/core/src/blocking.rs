@@ -129,8 +129,15 @@ impl Gate {
         if let Some(target) = self.open_for.as_deref() {
             return match countable {
                 Some(id) if id != target => {
-                    self.allowed = None;
-                    GateAction::CloseOverlay
+                    let still_allowed = self.allowed.as_deref() == Some(id);
+                    if !still_allowed {
+                        self.allowed = None;
+                    }
+                    if decision == Decision::Intercept && !still_allowed {
+                        GateAction::Show
+                    } else {
+                        GateAction::CloseOverlay
+                    }
                 }
                 _ => GateAction::Ignore,
             };
@@ -293,6 +300,20 @@ mod tests {
         g.overlay_open("com.x.a");
         assert_eq!(
             g.on_foreground(&app(Some("com.x.b"), 2), Decision::Allow),
+            GateAction::CloseOverlay
+        );
+    }
+
+    #[test]
+    fn gate_other_target_while_open_retargets() {
+        let mut g = gate();
+        g.overlay_open("com.x.a");
+        let b = app(Some("com.x.b"), 2);
+        assert_eq!(g.on_foreground(&b, Decision::Intercept), GateAction::Show);
+        g.overlay_open("com.x.b");
+        assert_eq!(g.on_foreground(&b, Decision::Intercept), GateAction::Ignore);
+        assert_eq!(
+            g.on_foreground(&app(Some("com.x.c"), 3), Decision::Allow),
             GateAction::CloseOverlay
         );
     }

@@ -38,7 +38,7 @@ ci:
     cargo fmt --all --check
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
-    @echo "==> core boundary (no tauri, tao, wry, objc2, block2 or windows)"
+    @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows or windows-core)"
     "{{ just_executable() }}" core-boundary
     @echo "==> tokens (tokens.css is up to date)"
     "{{ just_executable() }}" tokens
@@ -52,15 +52,15 @@ ci:
     @echo "==> core mobile (cargo check for iOS and Android)"
     cargo check -p orasenda-core --locked {{ mobile_targets }}
 
-# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2 or windows on any target.
+# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
 [private]
 [script]
 core-boundary:
     tree="$(cargo tree -p orasenda-core --locked --target all -e normal,build,dev --prefix none --format '{p}')"
     status=0
-    offenders="$(grep -E '^(tauri|tao|wry|objc2|block2|windows)' <<<"$tree")" || status=$?
+    offenders="$(grep -E '^(tauri|tao|wry|objc2|block2)|^windows(-core)? v' <<<"$tree")" || status=$?
     if [ "$status" -eq 0 ]; then
-        echo "orasenda-core must not depend on tauri, tao, wry, objc2, block2 or windows (ADR-001, ADR-010):" >&2
+        echo "orasenda-core must not depend on tauri, tao, wry, objc2, block2, windows or windows-core (ADR-001, ADR-010):" >&2
         echo "$offenders" >&2
         exit 1
     elif [ "$status" -ne 1 ]; then

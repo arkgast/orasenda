@@ -19,7 +19,7 @@ pub struct UsageSegment {
     /// UTC epoch milliseconds, far below 2^53, so exact as an `f64` in TypeScript.
     #[specta(type = f64)]
     pub start_ms: u64,
-    #[specta(type = f64)]
+    #[specta(type = Option<f64>)]
     pub end_ms: Option<u64>,
 }
 
@@ -170,10 +170,44 @@ mod tests {
 
     #[test]
     fn usage_segment_exports_numbers_as_f64() {
+        use specta::datatype::{DataType, Fields, Primitive};
+
         let mut types = specta::Types::default();
         <UsageSegment as Type>::definition(&mut types);
-        let dt = format!("{:?}", types.into_sorted_iter().collect::<Vec<_>>());
-        assert!(dt.contains("f64"), "{dt}");
-        assert!(!dt.contains("u64"), "{dt}");
+        let named = types
+            .into_sorted_iter()
+            .find(|n| n.name == "UsageSegment")
+            .expect("UsageSegment registered");
+        let Some(DataType::Struct(st)) = &named.ty else {
+            panic!("not a struct: {named:?}");
+        };
+        let Fields::Named(fields) = &st.fields else {
+            panic!("not named fields");
+        };
+        let ty = |name: &str| {
+            fields
+                .fields
+                .iter()
+                .find(|(n, _)| n == name)
+                .and_then(|(_, f)| f.ty.clone())
+                .unwrap_or_else(|| panic!("no field {name}"))
+        };
+        assert_eq!(ty("start_ms"), DataType::Primitive(Primitive::f64));
+        assert_eq!(
+            ty("end_ms"),
+            DataType::Nullable(Box::new(DataType::Primitive(Primitive::f64)))
+        );
+    }
+
+    #[test]
+    fn tracker_foreground_during_idle_resets_idle() {
+        let mut t = UsageTracker::new(IDLE_THRESHOLD_MS);
+        t.on_foreground(&app("a"), 1000);
+        t.on_idle_sample(130_000, 200_000);
+        t.on_foreground(&app("b"), 210_000);
+        t.on_idle_sample(1_000, 215_000);
+        assert_eq!(t.segments().len(), 2);
+        assert_eq!(span(&t, 0), (1000, Some(70_000)));
+        assert_eq!(span(&t, 1), (210_000, None));
     }
 }
