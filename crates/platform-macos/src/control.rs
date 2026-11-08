@@ -30,6 +30,9 @@ impl AppControl for MacAppControl {
             .collect()
     }
 
+    /// `Refused` when `-[NSRunningApplication hide]` returns NO. On macOS 27 it returns NO
+    /// even when the app does hide (see `docs/common-issues.md`), so `Refused` here does not
+    /// prove the app is still visible.
     fn hide(&self, pid: i32) -> Result<(), PlatformError> {
         let app = regular_app(pid)?;
         refused_unless(app.hide())
@@ -81,8 +84,12 @@ fn is_regular(app: &NSRunningApplication) -> bool {
     app.activationPolicy() == NSApplicationActivationPolicy::Regular
 }
 
-/// The running regular app with this pid: `NotFound` when there is none, `Refused` when the
-/// process is not a regular app (agents and background apps are never acted on).
+/// Why [`regular_app`] turned a pid down: it is not a regular app.
+const NOT_REGULAR: &str = "not a regular app";
+
+/// The running regular app with this pid: `NotFound` when there is none,
+/// `Other("not a regular app")` when the process is not a regular app (agents and background
+/// apps are never acted on). Not `Refused`, which `hide` gives for AppKit's unreliable NO.
 fn regular_app(pid: i32) -> Result<Retained<NSRunningApplication>, PlatformError> {
     let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
         .ok_or(PlatformError::NotFound)?;
@@ -90,7 +97,7 @@ fn regular_app(pid: i32) -> Result<Retained<NSRunningApplication>, PlatformError
         return Err(PlatformError::NotFound);
     }
     if !is_regular(&app) {
-        return Err(PlatformError::Refused);
+        return Err(PlatformError::Other(NOT_REGULAR.into()));
     }
     Ok(app)
 }
@@ -167,16 +174,19 @@ mod tests {
     }
 
     #[test]
-    fn hide_non_regular_app_is_refused() {
+    fn hide_non_regular_app_is_not_a_regular_app() {
         let pid = NSWorkspace::sharedWorkspace()
             .runningApplications()
             .iter()
             .find(|app| !app.isTerminated() && !is_regular(app))
             .map(|app| app.processIdentifier())
             .expect("a running non-regular app");
-        // The guard refuses before any AppKit action is attempted.
-        assert_eq!(regular_app(pid).err(), Some(PlatformError::Refused));
-        assert_eq!(MacAppControl.hide(pid), Err(PlatformError::Refused));
+        // The guard refuses before any AppKit action is attempted, with its own error, so it
+        // is never confused with hide's unreliable NO (`Refused`).
+        let not_regular = PlatformError::Other(NOT_REGULAR.into());
+        assert_eq!(regular_app(pid).err(), Some(not_regular.clone()));
+        assert_eq!(MacAppControl.hide(pid), Err(not_regular.clone()));
+        assert_eq!(MacAppControl.terminate(pid), Err(not_regular));
     }
 
     #[test]

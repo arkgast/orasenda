@@ -4,7 +4,9 @@
 //! The `#[tauri::command]` functions are thin: the logic lives in plain functions over
 //! [`Spike`], so it is tested with a fake [`SpikePlatform`].
 
-use orasenda_core::{AppRef, BlockRule, PlatformError, SAFETY_ALLOWLIST, UsageSegment};
+use orasenda_core::{
+    AppRef, BlockAction, BlockRule, Decision, PlatformError, SAFETY_ALLOWLIST, UsageSegment, decide,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -185,20 +187,26 @@ pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(),
 }
 
 /// Hides or closes the target, closes the overlay, then lands in the previous app if it is
-/// still running, otherwise in Orasenda's main window.
+/// still running and the current rule does not intercept it, otherwise in Orasenda's main
+/// window. Activating an intercepted app (the target itself, when `previous` was recorded
+/// before the rule changed) would unhide it and reopen the overlay in a loop (#41).
 fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), SpikeError> {
     let (target, previous, action) = {
         let state = spike.state();
-        (
-            state.target().cloned(),
-            state.previous.clone(),
-            state.rule.action,
-        )
+        let previous = state.previous.clone().filter(|previous| {
+            decide(
+                previous,
+                &state.rule,
+                spike.own_bundle_id(),
+                &state.extra_allow,
+            ) == Decision::Allow
+        });
+        (state.target().cloned(), previous, state.rule.action)
     };
     if let Some(target) = &target
         && let Err(error) = platform.hide_or_close(target.pid, action)
     {
-        eprintln!("spike: could not {action:?} {}: {error}", target.name);
+        eprintln!("{}", hide_or_close_failure(&target.name, action, &error));
     }
     let hidden = platform.hide_overlay();
     spike.state().close_overlay();
@@ -220,6 +228,17 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
         eprintln!("spike: could not show the main window: {error}");
         platform_error(error)
     })
+}
+
+/// The log line for a failed hide or close of `name`. A hide's `Refused` is AppKit's NO,
+/// which macOS 27 returns even when the app hides, so it is not reported as a failure.
+fn hide_or_close_failure(name: &str, action: BlockAction, error: &PlatformError) -> String {
+    match (action, error) {
+        (BlockAction::Hide, PlatformError::Refused) => format!(
+            "spike: hide returned NO for {name} (unreliable on macOS 27; see docs/common-issues.md)"
+        ),
+        _ => format!("spike: could not {action:?} {name}: {error}"),
+    }
 }
 
 /// Allows the target until another countable app comes to the front, closes the overlay
@@ -672,6 +691,60 @@ mod tests {
         open_overlay(&spike, &target, None, BlockAction::Hide);
         overlay_choice(&spike, OverlayChoice::Return).unwrap();
         assert_eq!(calls(&log).last(), Some(&Call::ShowMain));
+    }
+
+    #[test]
+    fn hide_refused_is_logged_as_unreliable_other_failures_keep_their_wording() {
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Hide, &PlatformError::Refused),
+            "spike: hide returned NO for Ghostty (unreliable on macOS 27; see docs/common-issues.md)"
+        );
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Close, &PlatformError::Refused),
+            "spike: could not Close Ghostty: the OS refused the request"
+        );
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Hide, &PlatformError::NotFound),
+            "spike: could not Hide Ghostty: app not found"
+        );
+        assert_eq!(
+            hide_or_close_failure(
+                "Agent",
+                BlockAction::Hide,
+                &PlatformError::Other("not a regular app".into())
+            ),
+            "spike: could not Hide Agent: not a regular app"
+        );
+    }
+
+    #[test]
+    fn return_never_activates_an_app_the_rule_intercepts() {
+        // `previous` was recorded before the rule changed: it is the target itself, or
+        // another app that is now a target. Activating it unhides it and reopens the
+        // overlay (#41), so Return lands in the main window instead.
+        let target = app(Some("com.x.game"), "Game", 10);
+        let other = app(Some("com.x.chat"), "Chat", 30);
+        for previous in [target.clone(), other.clone()] {
+            let (spike, log) = spike_with(vec![target.clone(), other.clone()]);
+            open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
+            spike
+                .state()
+                .rule
+                .targets
+                .extend(other.bundle_id.iter().cloned());
+
+            assert_eq!(overlay_choice(&spike, OverlayChoice::Return), Ok(()));
+
+            assert_eq!(
+                calls(&log),
+                [
+                    Call::HideOrClose(10, BlockAction::Hide),
+                    Call::HideOverlay,
+                    Call::ShowMain,
+                ],
+                "previous {previous:?}"
+            );
+        }
     }
 
     #[test]
