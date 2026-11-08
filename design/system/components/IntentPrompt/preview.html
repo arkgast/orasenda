@@ -9,12 +9,14 @@
   function Demo() {
     var n = React.useState(''), notice = n[0], setNotice = n[1];
     function ack(what) { return function () { setNotice(what); }; }
-    var a = React.useState(false), open = a[0], setOpen = a[1];
-    function close() { setOpen(false); }
+    var a = React.useState(null), open = a[0], setOpen = a[1];
+    function close() { setOpen(null); }
     return h('div', { className: 'os-col' },
       h('p', null, 'You opened YouTube during a focus session.'),
-      h('div', null, h(O.Button, { onClick: function () { setOpen(true); } }, 'Show the gentle pause')),
-      open ? h(O.IntentPrompt, { app: 'YouTube', onReturn: close, onWait: function () { setNotice('Ten-minute wait started.'); close(); }, onContinue: function (reason) { setNotice('Continuing' + (reason ? ' · ' + reason : '') + '.'); close(); } }) : null,
+      h('div', { className: 'os-row' },
+        h(O.Button, { onClick: function () { setOpen('wait'); } }, 'Show the gentle pause'),
+        h(O.Button, { variant: 'quiet', onClick: function () { setOpen('nowait'); } }, 'Show it without Wait')),
+      open ? h(O.IntentPrompt, { app: 'YouTube', onReturn: close, onWait: open === 'wait' ? function () { setNotice('Ten-minute wait started.'); close(); } : undefined, onContinue: function (reason) { setNotice('Continuing' + (reason ? ' · ' + reason : '') + '.'); close(); } }) : null,
       notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));

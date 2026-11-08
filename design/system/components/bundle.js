@@ -141,7 +141,7 @@
       h("div", { className: "os-breath", "aria-hidden": "true" }, h("i")),
       h("div", { className: "os-intent-actions" },
         h(Button, { variant: "primary", size: "lg", onClick: p.onReturn, "data-initial-focus": true }, "Back to focus"),
-        h(Button, { variant: "ghost", onClick: p.onWait }, p.waitLabel || "Wait 10 minutes, then decide"),
+        p.onWait ? h(Button, { variant: "ghost", onClick: p.onWait }, p.waitLabel || "Wait 10 minutes, then decide") : null,
         p.onContinue ? h(Button, { variant: "ghost", "aria-expanded": reveal[0], onClick: function () { reveal[1](!reveal[0]); } }, "I need " + (p.app || "this app") + " now") : null),
       reveal[0] ? h("div", { className: "os-stack" }, h("fieldset", { className: "os-choice-group" }, h("legend", null, "Reason (optional, kept on this device)"),
         ["Work", "Quick check", "Other"].map(function (v) { return h("label", { className: "os-choice", key: v }, h("input", { type: "radio", name: name, value: v, checked: reason[0] === v, onChange: function () { reason[1](v); } }), v); })),
