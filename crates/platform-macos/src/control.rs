@@ -50,13 +50,17 @@ impl AppControl for MacAppControl {
         if !app.isHidden() {
             return refused_unless(app.hide());
         }
+        eprintln!(
+            "platform-macos: {} already hidden, re-hiding on thread hide-again",
+            app_ref(&app).name
+        );
         thread::Builder::new()
             .name("hide-again".into())
             .spawn(move || {
                 if hide_again(&*app, UNHIDE_POLL, UNHIDE_TIMEOUT) {
                     let name = app_ref(&app).name;
                     eprintln!(
-                        "platform-macos: could not re-hide {name}: it stayed hidden for {} s",
+                        "platform-macos: re-hide of {name}: the unhide did not land within {} s; hide sent anyway",
                         UNHIDE_TIMEOUT.as_secs()
                     );
                 }
@@ -83,7 +87,7 @@ impl AppControl for MacAppControl {
                 NSApplicationActivationOptions::empty(),
             )
         } else {
-            #[allow(deprecated)]
+            #[allow(deprecated)] // Deprecated in macOS 14; this branch only runs before 14.
             app.activateWithOptions(NSApplicationActivationOptions::ActivateAllWindows)
         };
         refused_unless(sent)
