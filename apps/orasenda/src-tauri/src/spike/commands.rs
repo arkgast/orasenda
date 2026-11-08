@@ -5,7 +5,7 @@
 //! [`Spike`], so it is tested with a fake [`SpikePlatform`].
 
 use orasenda_core::{
-    AppRef, BlockRule, Decision, PlatformError, SAFETY_ALLOWLIST, UsageSegment, decide,
+    AppRef, BlockAction, BlockRule, Decision, PlatformError, SAFETY_ALLOWLIST, UsageSegment, decide,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -206,7 +206,7 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
     if let Some(target) = &target
         && let Err(error) = platform.hide_or_close(target.pid, action)
     {
-        eprintln!("spike: could not {action:?} {}: {error}", target.name);
+        eprintln!("{}", hide_or_close_failure(&target.name, action, &error));
     }
     let hidden = platform.hide_overlay();
     spike.state().close_overlay();
@@ -228,6 +228,17 @@ fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), Spik
         eprintln!("spike: could not show the main window: {error}");
         platform_error(error)
     })
+}
+
+/// The log line for a failed hide or close of `name`. A hide's `Refused` is AppKit's NO,
+/// which macOS 27 returns even when the app hides, so it is not reported as a failure.
+fn hide_or_close_failure(name: &str, action: BlockAction, error: &PlatformError) -> String {
+    match (action, error) {
+        (BlockAction::Hide, PlatformError::Refused) => format!(
+            "spike: hide returned NO for {name} (unreliable on macOS 27; see docs/common-issues.md)"
+        ),
+        _ => format!("spike: could not {action:?} {name}: {error}"),
+    }
 }
 
 /// Allows the target until another countable app comes to the front, closes the overlay
@@ -680,6 +691,30 @@ mod tests {
         open_overlay(&spike, &target, None, BlockAction::Hide);
         overlay_choice(&spike, OverlayChoice::Return).unwrap();
         assert_eq!(calls(&log).last(), Some(&Call::ShowMain));
+    }
+
+    #[test]
+    fn hide_refused_is_logged_as_unreliable_other_failures_keep_their_wording() {
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Hide, &PlatformError::Refused),
+            "spike: hide returned NO for Ghostty (unreliable on macOS 27; see docs/common-issues.md)"
+        );
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Close, &PlatformError::Refused),
+            "spike: could not Close Ghostty: the OS refused the request"
+        );
+        assert_eq!(
+            hide_or_close_failure("Ghostty", BlockAction::Hide, &PlatformError::NotFound),
+            "spike: could not Hide Ghostty: app not found"
+        );
+        assert_eq!(
+            hide_or_close_failure(
+                "Agent",
+                BlockAction::Hide,
+                &PlatformError::Other("not a regular app".into())
+            ),
+            "spike: could not Hide Agent: not a regular app"
+        );
     }
 
     #[test]
