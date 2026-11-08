@@ -7,7 +7,11 @@
 mod control;
 mod foreground;
 mod idle;
+mod overlay;
 
 pub use control::{MacAppControl, phone_bundle_id};
 pub use foreground::MacForeground;
 pub use idle::MacIdle;
+pub use overlay::{
+    OverlayStrategy, configure_overlay, cover_main_screen, focus_overlay, restore_activation_policy,
+};

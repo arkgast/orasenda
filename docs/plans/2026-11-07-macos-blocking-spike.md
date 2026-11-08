@@ -132,15 +132,16 @@ S1 ───────────────────────> S4 ─
 - Touches (read-only or additive): `crates/platform-macos/src/lib.rs` (adds `mod overlay` and re-exports), `crates/platform-macos/Cargo.toml` (extra objc2-app-kit features only)
 - Interfaces:
   - Consumes: `PlatformError` from `crates/core` (S2); the crate from S3a
-  - Produces: `enum OverlayStrategy { LevelAndCollection, NonActivatingPanel, AccessoryPolicy }`; `configure_overlay(ns_window: *mut c_void, strategy: OverlayStrategy) -> Result<(), PlatformError>`; `cover_main_screen(ns_window: *mut c_void) -> Result<(), PlatformError>`; `focus_overlay(ns_window: *mut c_void) -> Result<(), PlatformError>`; `restore_activation_policy() -> Result<(), PlatformError>`
+  - Produces: `enum OverlayStrategy { LevelAndCollection, NonActivatingPanel, AccessoryPolicy }`; `unsafe fn configure_overlay(ns_window: *mut c_void, strategy: OverlayStrategy) -> Result<(), PlatformError>`; `unsafe fn cover_main_screen(ns_window: *mut c_void) -> Result<(), PlatformError>`; `unsafe fn focus_overlay(ns_window: *mut c_void) -> Result<(), PlatformError>`; `restore_activation_policy() -> Result<(), PlatformError>`. The three `ns_window` functions carry a `# Safety` section: null or a live `NSWindow` for the duration of the call.
 - Acceptance:
   - [ ] Every function requires the main thread (`MainThreadMarker::new()` → `Other("not on main thread")` otherwise).
   - [ ] `LevelAndCollection`: level `NSScreenSaverWindowLevel`, collection behavior `canJoinAllSpaces | fullScreenAuxiliary | stationary | ignoresCycle`.
   - [ ] `NonActivatingPanel`: a `define_class!` `NSPanel` subclass overriding `canBecomeKeyWindow` → YES, swapped in with `object_setClass`, plus the `nonactivatingPanel` style mask.
   - [ ] `AccessoryPolicy`: `.accessory` while shown; `restore_activation_policy` sets `.regular`.
   - [ ] `cover_main_screen` sets the frame natively from `NSScreen::mainScreen`; `focus_overlay` uses cooperative activation on 14+ and `activateIgnoringOtherApps` on 13.
+  - [ ] The three `ns_window` functions are `pub unsafe fn` with a `# Safety` section; null and non-`NSWindow` pointers return `Other(..)`, never UB.
   - [ ] `./scripts/ci.sh` passes; `gh pr checks <pr> --required` passes.
-- Tests first (macOS only): `configure_overlay_off_main_thread_errors`, `cover_main_screen_off_main_thread_errors`, `focus_overlay_off_main_thread_errors`. Behavior over full-screen apps is proven by S7, not by unit tests.
+- Tests first (macOS only): `configure_overlay_off_main_thread_errors`, `cover_main_screen_off_main_thread_errors`, `focus_overlay_off_main_thread_errors`. Behavior over full-screen apps is proven by S7, not by unit tests. Tests call the functions with `ptr::null_mut()` inside `unsafe` (null is allowed by the contract).
 - Notes: keep each strategy in its own function so S7 can compare them; document in comments what each changes on the `NSWindow`.
 
 ### S4: `packages/ui` wrapper  (#14)
@@ -203,6 +204,7 @@ S1 ───────────────────────> S4 ─
   - [ ] `just ci` passes, including the debug no-bundle build; `gh pr checks <pr> --required` passes.
 - Tests first: `usage_changed_is_coalesced_to_one_per_second` (the coalescer is a pure helper taking `Instant`s), `previous_skips_self_allowlisted_unbundled_and_targets` (pure helper). The rest is proven by S7's matrix.
 - Notes: the strategy is a single `const` so S7 can switch it in one line.
+- Notes: `configure_overlay`, `cover_main_screen` and `focus_overlay` are `unsafe fn`. Do not store the result of `WebviewWindow::ns_window()`; obtain it and call the platform function inside one `unsafe` block per call, with `// SAFETY: ns_window() returns the live window's NSWindow; we are on the main thread via run_on_main_thread and the pointer does not outlive this block.`
 
 ### S6: Overlay page and dev panel  (#17)
 - Priority: 0
