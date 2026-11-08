@@ -47,7 +47,7 @@ Runs alongside the phases; it must be live before the public v1 launch.
 ## How we proceed
 1. **Done:** the spec docs are written (`docs/SPEC.md`, `docs/ROADMAP.md`, `docs/DECISIONS.md`, `README.md`).
 2. **Design:** done. The [Orasenda design system](https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73) holds the tokens, 23 components and the brand guide. All future screens and code build from it.
-3. **Tech phase (P0):** decision records for the stack (ADR-001), storage (ADR-002), distribution (ADR-003), business model (ADR-006), typed IPC (ADR-007), telemetry (ADR-008) and licence (ADR-009); the app shell; then the macOS spike for blocking and tracking (ADR-004, ADR-005).
+3. **Tech phase (P0):** done (2026-11-08, #62). Decision records for the stack (ADR-001), storage (ADR-002), distribution (ADR-003), business model (ADR-006), typed IPC (ADR-007), telemetry (ADR-008) and licence (ADR-009); the app shell; then the macOS spike for blocking and tracking (ADR-004, ADR-005). Still open from P0: the pre-beta matrix pass (#61) and the manual acceptance checks (#30).
 4. **Backlog:**
    - turn each roadmap phase into a GitHub milestone with small issues (user stories plus acceptance criteria taken from SPEC.md);
    - the baton skills available here (`baton:plan` → `baton:backlog` → `baton:implement` → `baton:verify` → `baton:review`) can run this loop once the repo is set up (git and `.baton/config.json`).
