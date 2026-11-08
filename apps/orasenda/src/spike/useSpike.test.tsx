@@ -1,0 +1,47 @@
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
+import { events, type UsageSegment_Serialize } from "../bindings";
+import { argsOf, mockBackend } from "./testing";
+import { useSpike } from "./useSpike";
+
+const FIRST: UsageSegment_Serialize = {
+  bundleId: "com.apple.Safari",
+  name: "Safari",
+  startMs: Date.UTC(2026, 10, 8, 14, 2),
+  endMs: null,
+};
+const SECOND: UsageSegment_Serialize = {
+  bundleId: "com.apple.Notes",
+  name: "Notes",
+  startMs: Date.UTC(2026, 10, 8, 14, 9),
+  endMs: null,
+};
+
+afterEach(async () => {
+  cleanup();
+  await act(async () => {});
+  clearMocks();
+  vi.restoreAllMocks();
+});
+
+test("use_spike_refetches_usage_on_event", async () => {
+  let usage = [FIRST];
+  const calls = mockBackend({
+    spike_status: () => ({ enabled: true, platformSupported: true }),
+    spike_running_apps: () => [],
+    spike_usage: () => usage,
+  });
+  const { result } = renderHook(() => useSpike());
+  await waitFor(() => expect(result.current.usage).toEqual([FIRST]));
+  // Let `listen` resolve before emitting.
+  await act(async () => {});
+
+  usage = [SECOND, { ...FIRST, endMs: SECOND.startMs }];
+  await act(async () => {
+    await events.spikeUsageChanged.emit();
+  });
+
+  await waitFor(() => expect(result.current.usage).toEqual(usage));
+  expect(argsOf(calls, "spike_usage")).toHaveLength(2);
+});

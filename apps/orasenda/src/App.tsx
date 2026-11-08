@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { commands } from "./bindings";
 import { formatClock, infoLine } from "./format";
+import { DevPanel } from "./spike/DevPanel";
 import { useClock } from "./useClock";
 
 type Props = {
@@ -52,6 +53,7 @@ export function App({ locale, timeZone }: Props) {
       {clock.status === "error" ? (
         <p className="app-info app-clock-slot">clock unavailable</p>
       ) : null}
+      <DevPanel locale={locale} timeZone={timeZone} />
     </main>
   );
 }

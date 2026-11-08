@@ -1,0 +1,49 @@
+/* Dev panel for the blocking spike. Choices and buttons come from the design system classes. */
+@import "@orasenda/tokens/tokens.css";
+
+.spike-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-inline-size: var(--content-width);
+  margin-block-start: var(--space-6);
+  padding-block-start: var(--space-5);
+  border-block-start: var(--line) solid thin;
+}
+
+.spike-heading {
+  margin: 0;
+  font-size: var(--type-title-font-size);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-font-weight);
+}
+
+.spike-subheading {
+  margin: 0;
+  font-size: var(--type-label-font-size);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-font-weight);
+  letter-spacing: var(--type-label-letter-spacing);
+}
+
+.spike-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+}
+
+.spike-usage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.spike-usage-idle {
+  color: var(--ink-muted);
+}
