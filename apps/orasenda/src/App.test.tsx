@@ -19,10 +19,15 @@ let clockHandlers: Array<(event: unknown) => void>;
 type Invoke = (cmd: string, args?: unknown, options?: unknown) => Promise<unknown>;
 type Internals = { invoke: Invoke; callbacks: Map<number, (event: unknown) => void> };
 
-function mockBackend(appInfo: () => Promise<AppInfo>, { failListen = false } = {}): void {
+function mockBackend(
+  appInfo: () => Promise<AppInfo>,
+  { failListen = false, spikeEnabled = false } = {},
+): void {
   mockIPC(
     (cmd) => {
       if (cmd === "app_info") return appInfo();
+      if (cmd === "spike_status") return { enabled: spikeEnabled, platformSupported: true };
+      if (spikeEnabled && (cmd === "spike_running_apps" || cmd === "spike_usage")) return [];
       throw new Error(`unexpected command ${cmd}`);
     },
     { shouldMockEvents: true },
@@ -197,4 +202,12 @@ test("emit_after_unmount_is_ignored", async () => {
 
   await expect(tick(TICK_MS)).resolves.toBeUndefined();
   expect(liveClockListeners.size).toBe(0);
+});
+
+test("enabled_spike_shows_dev_panel", async () => {
+  mockBackend(async () => INFO, { spikeEnabled: true });
+  render(<App locale="en-US" timeZone="UTC" />);
+
+  expect(await screen.findByRole("group", { name: "Apps to intercept" })).toBeInTheDocument();
+  expect(screen.getAllByRole("main")).toHaveLength(1);
 });

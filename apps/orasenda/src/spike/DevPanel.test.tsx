@@ -1,9 +1,9 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import type { AppRef_Serialize, UsageSegment_Serialize } from "../bindings";
+import type { AppRef_Serialize, SpikeError, UsageSegment_Serialize } from "../bindings";
 import { DevPanel } from "./DevPanel";
-import { argsOf, type Call, mockBackend } from "./testing";
+import { argsOf, type Call, mockBackend, type Replies } from "./testing";
 
 const SAFARI: AppRef_Serialize = { bundleId: "com.apple.Safari", name: "Safari", pid: 101 };
 const NOTES: AppRef_Serialize = { bundleId: "com.apple.Notes", name: "Notes", pid: 102 };
@@ -16,13 +16,22 @@ function spikeBackend({
   enabled = true,
   apps = [SAFARI, NOTES],
   usage = [] as UsageSegment_Serialize[],
+  replies = {} as Replies,
 } = {}): Call[] {
   return mockBackend({
     spike_status: () => ({ enabled, platformSupported: true }),
     spike_running_apps: () => apps,
     spike_usage: () => usage,
     spike_set_rule: () => null,
+    ...replies,
   });
+}
+
+const PLATFORM_ERROR: SpikeError = { kind: "platform", message: "refused" };
+
+/** A reply that rejects the way a Tauri command error does: with the serialized error. */
+function rejects(): () => Promise<never> {
+  return () => Promise.reject(PLATFORM_ERROR);
 }
 
 async function renderPanel(): Promise<HTMLElement> {
@@ -132,4 +141,107 @@ test("dev_panel_shows_idle_gap_rows", async () => {
     "idle · 14:05–14:09",
     "Safari · 14:02–14:05",
   ]);
+});
+
+test("dev_panel_shows_ongoing_idle_row", async () => {
+  spikeBackend({
+    usage: [{ bundleId: "com.apple.Notes", name: "Notes", startMs: at(14, 9), endMs: at(14, 15) }],
+  });
+  await renderPanel();
+
+  expect(usageRows()).toEqual(["idle · 14:15–now", "Notes · 14:09–14:15"]);
+});
+
+test("dev_panel_uncheck_removes_target", async () => {
+  const calls = spikeBackend();
+  await renderPanel();
+  const safari = screen.getByRole("checkbox", { name: "Safari" });
+
+  await act(async () => {
+    fireEvent.click(safari);
+  });
+  await act(async () => {
+    fireEvent.click(safari);
+  });
+
+  expect(argsOf(calls, "spike_set_rule")).toEqual([
+    { rule: { targets: ["com.apple.Safari"], action: "hide" } },
+    { rule: { targets: [], action: "hide" } },
+  ]);
+  expect(safari).not.toBeChecked();
+});
+
+test("dev_panel_fast_changes_build_on_each_other", async () => {
+  const pending: Array<() => void> = [];
+  const calls = spikeBackend({
+    replies: {
+      spike_set_rule: () => new Promise((resolve) => pending.push(() => resolve(null))),
+    },
+  });
+  await renderPanel();
+
+  // Notes is checked before the reply for Safari arrives.
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox", { name: "Safari" }));
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox", { name: "Notes" }));
+  });
+  await act(async () => {
+    for (const resolve of pending) resolve();
+  });
+
+  expect(argsOf(calls, "spike_set_rule")).toEqual([
+    { rule: { targets: ["com.apple.Safari"], action: "hide" } },
+    { rule: { targets: ["com.apple.Safari", "com.apple.Notes"], action: "hide" } },
+  ]);
+  expect(screen.getByRole("checkbox", { name: "Safari" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Notes" })).toBeChecked();
+});
+
+test("dev_panel_apps_failure_shows_note", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  spikeBackend({ replies: { spike_running_apps: rejects(), spike_usage: rejects() } });
+  await renderPanel();
+
+  const group = screen.getByRole("group", { name: "Apps to intercept" });
+  expect(within(group).getByText("Apps unavailable.")).toHaveClass("spike-note");
+  expect(within(group).queryByText("No apps to show.")).toBeNull();
+  expect(screen.getByText("Usage unavailable.")).toHaveClass("spike-note");
+  expect(screen.queryByText("Nothing recorded yet.")).toBeNull();
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(error).toHaveBeenCalledTimes(2);
+});
+
+test("dev_panel_set_rule_failure_shows_note", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  let fail = true;
+  const calls = spikeBackend({
+    replies: { spike_set_rule: () => (fail ? Promise.reject(PLATFORM_ERROR) : null) },
+  });
+  await renderPanel();
+  const apps = screen.getByRole("group", { name: "Apps to intercept" });
+  const actions = screen.getByRole("group", { name: "When I go back to focus" });
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("radio", { name: "Quit the app" }));
+  });
+
+  const note = screen.getByText("That change was not saved.");
+  expect(note).toHaveClass("spike-note");
+  expect(actions.nextElementSibling).toBe(note);
+  expect(apps.nextElementSibling).not.toBe(note);
+  // The controls stay on the last accepted rule.
+  expect(screen.getByRole("radio", { name: "Hide the app" })).toBeChecked();
+  expect(error).toHaveBeenCalledTimes(1);
+
+  fail = false;
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox", { name: "Safari" }));
+  });
+
+  expect(screen.queryByText("That change was not saved.")).toBeNull();
+  expect(argsOf(calls, "spike_set_rule").at(-1)).toEqual({
+    rule: { targets: ["com.apple.Safari"], action: "hide" },
+  });
 });

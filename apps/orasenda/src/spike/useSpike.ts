@@ -8,6 +8,13 @@ import {
   type SpikeStatus,
   type UsageSegment,
 } from "../bindings";
+import { subscribe } from "../subscribe";
+
+/** Which of the last requests failed; each resets on that request's next success. */
+export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean };
+
+/** A new rule, or a change to the latest requested one (so fast changes build on each other). */
+export type RuleChange = BlockRule | ((latest: BlockRule) => BlockRule);
 
 export type Spike = {
   /** `null` until `spike_status` answers (and when it could not be asked). */
@@ -17,25 +24,30 @@ export type Spike = {
   rule: BlockRule;
   /** Newest first, at most 20. */
   usage: UsageSegment[];
-  setRule(rule: BlockRule): Promise<void>;
+  errors: SpikeErrors;
+  setRule(rule: RuleChange): Promise<void>;
   refreshApps(): Promise<void>;
 };
 
-/** The backend's `BlockRule::default()`; the rule only lives in memory, so it starts here. */
+/**
+ * The backend's `BlockRule::default()`. The rule only lives in memory and there is no getter
+ * yet (#36), so the panel starts here after a webview reload.
+ */
 const DEFAULT_RULE: BlockRule = { targets: [], action: "hide" };
 
 type Result<T> = { status: "ok"; data: T } | { status: "error"; error: SpikeError };
+type Outcome<T> = { ok: true; data: T } | { ok: false };
 
-/** Runs a spike command: its data, or `undefined` after logging why it failed. */
-async function run<T>(name: string, command: () => Promise<Result<T>>): Promise<T | undefined> {
+/** Runs a spike command; a failure is logged to `console.error`. */
+async function run<T>(name: string, command: () => Promise<Result<T>>): Promise<Outcome<T>> {
   try {
     const result = await command();
-    if (result.status === "ok") return result.data;
+    if (result.status === "ok") return { ok: true, data: result.data };
     console.error(`${name} failed`, result.error);
   } catch (error: unknown) {
     console.error(`${name} failed`, error);
   }
-  return undefined;
+  return { ok: false };
 }
 
 /**
@@ -45,9 +57,16 @@ async function run<T>(name: string, command: () => Promise<Result<T>>): Promise<
 export function useSpike(): Spike {
   const [status, setStatus] = useState<SpikeStatus | null>(null);
   const [apps, setApps] = useState<AppRef[]>([]);
-  const [rule, setRuleState] = useState<BlockRule>(DEFAULT_RULE);
+  const [rule, setAcceptedRule] = useState<BlockRule>(DEFAULT_RULE);
   const [usage, setUsage] = useState<UsageSegment[]>([]);
+  const [errors, setErrors] = useState<SpikeErrors>({ apps: false, usage: false, rule: false });
   const mounted = useRef(false);
+  const accepted = useRef<BlockRule>(DEFAULT_RULE);
+  const requested = useRef<BlockRule>(DEFAULT_RULE);
+
+  const setError = useCallback((key: keyof SpikeErrors, failed: boolean) => {
+    if (mounted.current) setErrors((current) => ({ ...current, [key]: failed }));
+  }, []);
 
   useEffect(() => {
     mounted.current = true;
@@ -56,8 +75,8 @@ export function useSpike(): Spike {
       (next) => {
         if (!cancelled) setStatus(next);
       },
-      // `spike_status` never errors, so this is the IPC itself; the panel just stays away.
-      (error: unknown) => console.warn("spike_status failed", error),
+      // `spike_status` never errors, so this is the IPC itself; the panel stays away.
+      (error: unknown) => console.error("spike_status failed", error),
     );
     return () => {
       mounted.current = false;
@@ -66,15 +85,27 @@ export function useSpike(): Spike {
   }, []);
 
   const refreshApps = useCallback(async () => {
-    const next = await run("spike_running_apps", () => commands.spikeRunningApps());
-    if (next && mounted.current) setApps(next);
-  }, []);
+    const outcome = await run("spike_running_apps", () => commands.spikeRunningApps());
+    if (outcome.ok && mounted.current) setApps(outcome.data);
+    setError("apps", !outcome.ok);
+  }, [setError]);
 
-  const setRule = useCallback(async (next: BlockRule) => {
-    // `spike_set_rule` answers `null` when it took the rule.
-    const accepted = await run("spike_set_rule", () => commands.spikeSetRule(next));
-    if (accepted === null && mounted.current) setRuleState(next);
-  }, []);
+  const setRule = useCallback(
+    async (change: RuleChange) => {
+      const next = typeof change === "function" ? change(requested.current) : change;
+      requested.current = next;
+      const outcome = await run("spike_set_rule", () => commands.spikeSetRule(next));
+      if (outcome.ok) {
+        accepted.current = next;
+        if (mounted.current) setAcceptedRule(next);
+      } else if (requested.current === next) {
+        // Nothing newer was asked for: build the next change on what the backend has.
+        requested.current = accepted.current;
+      }
+      setError("rule", !outcome.ok);
+    },
+    [setError],
+  );
 
   const enabled = status?.enabled === true;
 
@@ -82,28 +113,21 @@ export function useSpike(): Spike {
     if (!enabled) return;
     let cancelled = false;
     const refreshUsage = async () => {
-      const next = await run("spike_usage", () => commands.spikeUsage());
-      if (next && !cancelled) setUsage(next);
+      const outcome = await run("spike_usage", () => commands.spikeUsage());
+      if (cancelled) return;
+      if (outcome.ok) setUsage(outcome.data);
+      setError("usage", !outcome.ok);
     };
     void refreshApps();
     void refreshUsage();
-    const listening = events.spikeUsageChanged.listen(() => {
-      if (!cancelled) void refreshUsage();
+    const unsubscribe = subscribe("spike-usage-changed", events.spikeUsageChanged.listen, () => {
+      void refreshUsage();
     });
-    listening.catch((error: unknown) => console.error("spike-usage-changed listen failed", error));
     return () => {
       cancelled = true;
-      listening.then(
-        // `UnlistenFn` is typed `() => void` but returns a promise at runtime.
-        (unlisten) =>
-          Promise.resolve(unlisten()).catch((error: unknown) =>
-            console.error("spike-usage-changed unlisten failed", error),
-          ),
-        // Already logged above; there is nothing to unlisten.
-        () => {},
-      );
+      unsubscribe();
     };
-  }, [enabled, refreshApps]);
+  }, [enabled, refreshApps, setError]);
 
-  return { status, apps, rule, usage, setRule, refreshApps };
+  return { status, apps, rule, usage, errors, setRule, refreshApps };
 }

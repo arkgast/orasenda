@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { events } from "./bindings";
+import { subscribe } from "./subscribe";
 
 /**
  * The wall clock from Rust: `waiting` before the first `clock-tick`, `ok` with the latest tick's
@@ -17,28 +18,18 @@ export type ClockState =
 export function useClock(): ClockState {
   const [clock, setClock] = useState<ClockState>({ status: "waiting" });
 
-  useEffect(() => {
-    let cancelled = false;
-    const listening = events.clockTick.listen((event) => {
-      if (!cancelled) setClock({ status: "ok", epochMs: event.payload.epochMs });
-    });
-    listening.catch((error: unknown) => {
-      console.error("clock-tick listen failed", error);
-      if (!cancelled) setClock({ status: "error" });
-    });
-    return () => {
-      cancelled = true;
-      listening.then(
-        // `UnlistenFn` is typed `() => void` but returns a promise at runtime.
-        (unlisten) =>
-          Promise.resolve(unlisten()).catch((error: unknown) =>
-            console.error("clock-tick unlisten failed", error),
-          ),
-        // Already logged and shown as `error` above; there is nothing to unlisten.
-        () => {},
-      );
-    };
-  }, []);
+  useEffect(
+    () =>
+      subscribe(
+        "clock-tick",
+        events.clockTick.listen,
+        ({ epochMs }) => setClock({ status: "ok", epochMs }),
+        {
+          onError: () => setClock({ status: "error" }),
+        },
+      ),
+    [],
+  );
 
   return clock;
 }

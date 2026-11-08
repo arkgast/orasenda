@@ -45,3 +45,17 @@ test("use_spike_refetches_usage_on_event", async () => {
   await waitFor(() => expect(result.current.usage).toEqual(usage));
   expect(argsOf(calls, "spike_usage")).toHaveLength(2);
 });
+
+test("use_spike_status_failure_logs_error", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  mockBackend({
+    spike_status: () => {
+      throw new Error("IPC unavailable");
+    },
+  });
+  const { result } = renderHook(() => useSpike());
+  await act(async () => {});
+
+  expect(result.current.status).toBeNull();
+  expect(error).toHaveBeenCalledTimes(1);
+});

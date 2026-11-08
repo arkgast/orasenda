@@ -72,6 +72,8 @@ test("overlay_return_and_escape_send_return", async () => {
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to focus" }));
   });
+  // One choice per show: Escape is checked on the next one.
+  await show("Safari");
   await act(async () => {
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
   });
@@ -91,6 +93,9 @@ test("overlay_continue_sends_reason_or_null", async () => {
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue to Safari" }));
   });
+  // One choice per show: the reason is checked on the next one.
+  await show("Safari");
+  fireEvent.click(screen.getByRole("button", { name: "I need Safari now" }));
   fireEvent.click(screen.getByRole("radio", { name: "Work" }));
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue to Safari" }));
@@ -117,4 +122,46 @@ test("overlay_second_show_resets_reason", async () => {
     "aria-expanded",
     "false",
   );
+});
+
+test("overlay_second_choice_is_ignored", async () => {
+  const calls = overlayBackend();
+  await renderOverlay();
+  await show("Safari");
+
+  const back = screen.getByRole("button", { name: "Back to focus" });
+  await act(async () => {
+    fireEvent.click(back);
+    fireEvent.click(back);
+  });
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(1);
+
+  // The next show re-arms the choice.
+  await show("Mail");
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Back to focus" }));
+  });
+  expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);
+});
+
+test("overlay_listen_failure_renders_return_button", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const calls = mockBackend(
+    { spike_overlay_ready: () => null, spike_overlay_choice: () => null },
+    { failListen: "overlay-show" },
+  );
+  await renderOverlay();
+
+  expect(screen.getByText("The overlay could not connect.")).toBeInTheDocument();
+  const back = screen.getByRole("button", { name: "Back to focus" });
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+  expect(back).toHaveClass("os-btn");
+  expect(back).toHaveFocus();
+  expect(argsOf(calls, "spike_overlay_ready")).toHaveLength(0);
+  expect(error).toHaveBeenCalled();
+
+  await act(async () => {
+    fireEvent.keyDown(document, { key: "Escape" });
+  });
+  expect(argsOf(calls, "spike_overlay_choice")).toEqual([{ choice: { kind: "return" } }]);
 });

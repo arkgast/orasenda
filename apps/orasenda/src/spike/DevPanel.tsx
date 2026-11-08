@@ -1,8 +1,8 @@
-import { Button, type ButtonProps } from "@orasenda/ui";
-import { type ButtonHTMLAttributes, type ReactElement, useId } from "react";
+import { useId, useState } from "react";
 import type { BlockAction, UsageSegment } from "../bindings";
 import { formatClock } from "../format";
-import { useSpike } from "./useSpike";
+import { Button } from "./ui";
+import { type RuleChange, useSpike } from "./useSpike";
 import "@orasenda/ui/components.css";
 import "./spike.css";
 
@@ -11,12 +11,6 @@ export type DevPanelProps = {
   locale?: string;
   timeZone?: string;
 };
-
-// design/system/components/index.d.ts imports `react` from a folder where it does not resolve,
-// so `ButtonProps` loses the native button attributes; restore them for this call site.
-const NativeButton = Button as (
-  props: ButtonProps & ButtonHTMLAttributes<HTMLButtonElement>,
-) => ReactElement;
 
 const ACTIONS: ReadonlyArray<{ action: BlockAction; label: string }> = [
   { action: "hide", label: "Hide the app" },
@@ -74,7 +68,9 @@ function usageRows(usage: UsageSegment[]): UsageRow[] {
  * usage. Renders nothing unless `spike_status` reports the spike enabled.
  */
 export function DevPanel({ locale, timeZone }: DevPanelProps) {
-  const { status, apps, rule, usage, setRule, refreshApps } = useSpike();
+  const { status, apps, rule, usage, errors, setRule, refreshApps } = useSpike();
+  // The group whose control changed last: a failed change is noted under it.
+  const [changed, setChanged] = useState<"apps" | "action">("apps");
   const headingId = useId();
   const usageId = useId();
   const actionName = useId();
@@ -82,10 +78,19 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
   if (!status?.enabled) return null;
 
   const time = (epochMs: number) => formatClock(epochMs, locale, timeZone);
-  const toggle = (bundleId: string, checked: boolean) => {
-    const targets = rule.targets.filter((target) => target !== bundleId);
-    void setRule({ ...rule, targets: checked ? [...targets, bundleId] : targets });
+  const change = (group: "apps" | "action", next: RuleChange) => {
+    setChanged(group);
+    void setRule(next);
   };
+  const toggle = (bundleId: string, checked: boolean) =>
+    change("apps", (latest) => {
+      const targets = latest.targets.filter((target) => target !== bundleId);
+      return { ...latest, targets: checked ? [...targets, bundleId] : targets };
+    });
+  const notSaved = (group: "apps" | "action") =>
+    errors.rule && changed === group ? (
+      <p className="spike-note">That change was not saved.</p>
+    ) : null;
   const rows = usageRows(usage);
 
   return (
@@ -99,7 +104,8 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
 
       <fieldset className="os-choice-group">
         <legend>Apps to intercept</legend>
-        {apps.length === 0 ? <p className="spike-note">No apps to show.</p> : null}
+        {errors.apps ? <p className="spike-note">Apps unavailable.</p> : null}
+        {!errors.apps && apps.length === 0 ? <p className="spike-note">No apps to show.</p> : null}
         {apps.map((app) => (
           <label key={app.pid} className="os-choice">
             <input
@@ -114,8 +120,9 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
           </label>
         ))}
       </fieldset>
+      {notSaved("apps")}
       <div>
-        <NativeButton onClick={() => void refreshApps()}>Refresh apps</NativeButton>
+        <Button onClick={() => void refreshApps()}>Refresh apps</Button>
       </div>
 
       <fieldset className="os-choice-group">
@@ -127,19 +134,22 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
               name={actionName}
               value={action}
               checked={rule.action === action}
-              onChange={() => void setRule({ ...rule, action })}
+              onChange={() => change("action", (latest) => ({ ...latest, action }))}
             />
             {label}
           </label>
         ))}
       </fieldset>
+      {notSaved("action")}
 
       <h3 id={usageId} className="spike-subheading">
         Recent usage
       </h3>
-      {rows.length === 0 ? (
+      {errors.usage ? <p className="spike-note">Usage unavailable.</p> : null}
+      {!errors.usage && rows.length === 0 ? (
         <p className="spike-note">Nothing recorded yet.</p>
-      ) : (
+      ) : null}
+      {rows.length === 0 ? null : (
         <ul className="spike-usage" aria-labelledby={usageId}>
           {rows.map((row) => (
             <li key={row.key} className={row.idle ? "spike-usage-idle" : undefined}>
