@@ -8,29 +8,99 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  JUST_VERSION: 1.59.0
+  # PRs: scan the PR's commits. Pushes to main: scan the pushed commits.
+  CI_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+
 jobs:
+  # Required check: branch protection expects the context `ci`, so keep this id and name
+  # and no matrix.
   ci:
-    runs-on: ubuntu-latest
-    env:
-      GITLEAKS_VERSION: 8.30.1
+    name: ci
+    runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: ${{ env.JUST_VERSION }}
+
       - name: Install gitleaks
         run: |
           cd "$RUNNER_TEMP"
           base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
-          curl -fsSLO "${base}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          archive="gitleaks_${GITLEAKS_VERSION}_darwin_arm64.tar.gz"
+          curl -fsSLO "${base}/${archive}"
           curl -fsSLO "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
-          grep "linux_x64.tar.gz" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
-          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" gitleaks
+          grep " ${archive}\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | shasum -a 256 -c -
+          tar -xzf "${archive}" gitleaks
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Run checks
-        env:
-          # PRs: scan the PR's commits. Pushes to main: scan the pushed commits.
-          CI_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: ./scripts/ci.sh
+
+  # Advisory: not a required check. A red result is the signal; no continue-on-error.
+  windows:
+    name: windows (advisory)
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: ${{ env.JUST_VERSION }}
+
+      - name: Install gitleaks
+        run: |
+          cd "$RUNNER_TEMP"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          archive="gitleaks_${GITLEAKS_VERSION}_windows_x64.zip"
+          curl -fsSLO "${base}/${archive}"
+          curl -fsSLO "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${archive}\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
+          unzip -o "${archive}" gitleaks.exe
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Run checks
         run: ./scripts/ci.sh
