@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-08T08:02:19Z",
+    "at": "2026-11-08T21:55:24Z",
     "via": "Claude Code",
-    "note": "Choice card documents the focus ring and checkbox radius; on-focus and radius-sm usage name the choice checkbox (#43)."
+    "note": "Choice keeps the checked radio dot and checkbox fill in forced-colors mode (Highlight, Canvas ring, HighlightText tick) (#45)."
   }
 }

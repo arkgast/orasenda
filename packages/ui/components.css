@@ -211,4 +211,8 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-timer .track { stroke-dasharray: 2 4; }
   .os-chip, .os-pomo, .os-dot-done { border: 1px solid; }
   .os-dot-done::after { content: "✓"; font-size: 11px; }
+  /* Keep the checked radio dot and the checkbox fill: forced colors would repaint them as Canvas (#45). */
+  .os-choice input:checked { forced-color-adjust: none; background: Highlight; border-color: Highlight; box-shadow: inset 0 0 0 2px Canvas; }
+  .os-choice input[type="checkbox"]:checked { box-shadow: none; }
+  .os-choice input[type="checkbox"]:checked::before { border-color: HighlightText; }
 }
