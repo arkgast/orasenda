@@ -1,8 +1,7 @@
-import { IntentPrompt } from "@orasenda/ui";
+import { Button, IntentPrompt } from "@orasenda/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { commands, events, type OverlayChoice_Deserialize } from "../bindings";
 import { subscribe } from "../subscribe";
-import { Button } from "./ui";
 
 /** The latest `overlay-show`; `count` keys the prompt so every show starts fresh. */
 type Show = { count: number; appName: string };
