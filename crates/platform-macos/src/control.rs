@@ -41,7 +41,10 @@ impl AppControl for MacAppControl {
     /// `hide` is then a no-op that leaves the user on that Space (#56). Such an app is
     /// unhidden and hidden again on thread `hide-again`, which waits for the unhide to land
     /// (an immediate `hide` is dropped). That needs the main run loop to turn, so it cannot
-    /// wait here; this returns `Ok` once the thread is started.
+    /// wait here; this returns `Ok` once the thread is started, and the thread logs when the
+    /// unhide never lands. Back to focus clicked again within about 1 s, while a `hide-again`
+    /// thread still runs, can leave the app visible but inactive; the next Back to focus
+    /// hides it.
     fn hide(&self, pid: i32) -> Result<(), PlatformError> {
         let app = regular_app(pid)?;
         if !app.isHidden() {
@@ -49,7 +52,15 @@ impl AppControl for MacAppControl {
         }
         thread::Builder::new()
             .name("hide-again".into())
-            .spawn(move || hide_again(&*app, UNHIDE_POLL, UNHIDE_TIMEOUT))
+            .spawn(move || {
+                if hide_again(&*app, UNHIDE_POLL, UNHIDE_TIMEOUT) {
+                    let name = app_ref(&app).name;
+                    eprintln!(
+                        "platform-macos: could not re-hide {name}: it stayed hidden for {} s",
+                        UNHIDE_TIMEOUT.as_secs()
+                    );
+                }
+            })
             .map(drop)
             .map_err(|error| PlatformError::Other(format!("could not start hide-again: {error}")))
     }
@@ -104,15 +115,19 @@ impl Hideable for NSRunningApplication {
 }
 
 /// Unhides `app`, waits (polling every `poll`, at most `timeout`) until it no longer
-/// reports hidden, then hides it, so the app goes through a real hide. Both BOOLs are
-/// unreliable on macOS 27 and are ignored. Blocks: never call it on the main thread.
-fn hide_again(app: &impl Hideable, poll: Duration, timeout: Duration) {
+/// reports hidden, then hides it, so the app goes through a real hide. Returns whether it
+/// timed out (the app still reported hidden, so the `hide` was likely a no-op). Both BOOLs
+/// are unreliable on macOS 27 and are ignored. Blocks: never call it on the main thread.
+fn hide_again(app: &impl Hideable, poll: Duration, timeout: Duration) -> bool {
     app.unhide();
     let start = Instant::now();
-    while app.is_hidden() && start.elapsed() < timeout {
+    let mut hidden = app.is_hidden();
+    while hidden && start.elapsed() < timeout {
         thread::sleep(poll);
+        hidden = app.is_hidden();
     }
     app.hide();
+    hidden
 }
 
 /// Converts a running app into the core's [`AppRef`]; the name falls back to the bundle ID.
@@ -286,7 +301,7 @@ mod tests {
         // it; a plain `hide` is then a no-op and you stay on its Space (#56). A `hide` sent
         // right after `unhide` is dropped too, so it waits for the unhide.
         let app = FakeApp::new(Some(2));
-        hide_again(&app, Duration::ZERO, Duration::from_secs(5));
+        assert!(!hide_again(&app, Duration::ZERO, Duration::from_secs(5)));
         assert_eq!(
             app.calls(),
             ["unhide", "is_hidden", "is_hidden", "is_hidden", "hide"]
@@ -296,7 +311,11 @@ mod tests {
     #[test]
     fn hide_again_hides_anyway_after_the_timeout() {
         let app = FakeApp::new(None);
-        hide_again(&app, Duration::from_millis(1), Duration::from_millis(20));
+        assert!(hide_again(
+            &app,
+            Duration::from_millis(1),
+            Duration::from_millis(20)
+        ));
         let calls = app.calls();
         assert_eq!(calls.first(), Some(&"unhide"));
         assert_eq!(calls.last(), Some(&"hide"));
