@@ -581,7 +581,8 @@ mod tests {
             "unsupported"
         );
         assert_eq!(
-            serde_json::to_value(SpikeError::Platform(PlatformError::Other("boom".into()))).unwrap(),
+            serde_json::to_value(SpikeError::Platform(PlatformError::Other("boom".into())))
+                .unwrap(),
             serde_json::json!({ "kind": "platform", "message": "boom" })
         );
     }
