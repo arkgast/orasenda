@@ -1,7 +1,7 @@
+import { Button } from "@orasenda/ui";
 import { useId, useState } from "react";
 import type { BlockAction, UsageSegment } from "../bindings";
 import { formatClock } from "../format";
-import { Button } from "./ui";
 import { type RuleChange, useSpike } from "./useSpike";
 import "@orasenda/ui/components.css";
 import "./spike.css";
