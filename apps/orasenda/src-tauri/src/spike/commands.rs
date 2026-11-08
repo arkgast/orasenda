@@ -114,7 +114,7 @@ pub(crate) fn status(spike: &Spike) -> SpikeStatus {
 pub(crate) fn running_apps(spike: &Spike) -> Result<Vec<AppRef>, SpikeError> {
     let platform = platform(spike)?;
     let apps = platform.running_apps();
-    let extra_allow = spike.state().extra_allow.clone();
+    let extra_allow = spike.state().extra_allow().to_vec();
     Ok(selectable_apps(apps, spike.own_bundle_id(), &extra_allow))
 }
 
@@ -149,7 +149,7 @@ pub(crate) fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError>
 
 pub(crate) fn rule(spike: &Spike) -> Result<BlockRule, SpikeError> {
     platform(spike)?;
-    let rule = spike.state().rule.clone();
+    let rule = spike.state().rule().clone();
     Ok(rule)
 }
 
@@ -193,15 +193,15 @@ pub(crate) fn overlay_choice(spike: &Spike, choice: OverlayChoice) -> Result<(),
 fn back_to_focus(spike: &Spike, platform: &dyn SpikePlatform) -> Result<(), SpikeError> {
     let (target, previous, action) = {
         let state = spike.state();
-        let previous = state.previous.clone().filter(|previous| {
+        let previous = state.previous().cloned().filter(|previous| {
             decide(
                 previous,
-                &state.rule,
+                state.rule(),
                 spike.own_bundle_id(),
-                &state.extra_allow,
+                state.extra_allow(),
             ) == Decision::Allow
         });
-        (state.target().cloned(), previous, state.rule.action)
+        (state.target().cloned(), previous, state.rule().action)
     };
     if let Some(target) = &target
         && let Err(error) = platform.hide_or_close(target.pid, action)
@@ -440,11 +440,16 @@ mod tests {
         action: BlockAction,
     ) {
         let mut state = spike.state();
-        state.rule = BlockRule {
+        // `previous` comes forward before the rule targets anything, so it is recorded
+        // even when it is the target itself.
+        if let Some(previous) = previous {
+            assert_eq!(state.on_foreground(previous.clone(), OWN, 0), None);
+            assert_eq!(state.previous(), Some(previous));
+        }
+        state.set_rule(BlockRule {
             targets: target.bundle_id.iter().cloned().collect(),
             action,
-        };
-        state.previous = previous.cloned();
+        });
         state.open_overlay(target.clone());
     }
 
@@ -610,7 +615,9 @@ mod tests {
             Failing::default(),
             "com.x.self",
         );
-        spike.state().extra_allow = vec!["com.apple.mobilephone".into()];
+        spike
+            .state()
+            .set_extra_allow(vec!["com.apple.mobilephone".into()]);
         let names: Vec<String> = running_apps(&spike)
             .unwrap()
             .into_iter()
@@ -627,7 +634,7 @@ mod tests {
             action: BlockAction::Close,
         };
         set_rule(&spike, rule.clone()).unwrap();
-        assert_eq!(spike.state().rule, rule);
+        assert_eq!(spike.state().rule(), &rule);
 
         for i in 0..25u64 {
             spike
@@ -727,11 +734,11 @@ mod tests {
         for previous in [target.clone(), other.clone()] {
             let (spike, log) = spike_with(vec![target.clone(), other.clone()]);
             open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
-            spike
-                .state()
-                .rule
-                .targets
-                .extend(other.bundle_id.iter().cloned());
+            let mut state = spike.state();
+            let mut rule = state.rule().clone();
+            rule.targets.extend(other.bundle_id.iter().cloned());
+            state.set_rule(rule);
+            drop(state);
 
             assert_eq!(overlay_choice(&spike, OverlayChoice::Return), Ok(()));
 
@@ -783,7 +790,7 @@ mod tests {
         let (spike, _log) = spike_with(vec![target.clone()]);
         open_overlay(&spike, &target, None, BlockAction::Hide);
         overlay_choice(&spike, OverlayChoice::Continue { reason: None }).unwrap();
-        let ticked = spike.state().rule.clone();
+        let ticked = spike.state().rule().clone();
         assert_eq!(
             spike.state().gate_on_foreground(&own, Decision::Allow),
             GateAction::Ignore
