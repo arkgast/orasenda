@@ -11,7 +11,7 @@ import {
 import { subscribe } from "../subscribe";
 
 /** Which of the last requests failed; each resets on that request's next success. */
-export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean };
+export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean; ruleRead: boolean };
 
 /** A new rule, or a change to the latest requested one (so fast changes build on each other). */
 export type RuleChange = BlockRule | ((latest: BlockRule) => BlockRule);
@@ -29,10 +29,7 @@ export type Spike = {
   refreshApps(): Promise<void>;
 };
 
-/**
- * The backend's `BlockRule::default()`. The rule only lives in memory and there is no getter
- * yet (#36), so the panel starts here after a webview reload.
- */
+/** The backend's `BlockRule::default()`: what the panel shows until `spike_rule` answers. */
 const DEFAULT_RULE: BlockRule = { targets: [], action: "hide" };
 
 type Result<T> = { status: "ok"; data: T } | { status: "error"; error: SpikeError };
@@ -52,14 +49,19 @@ async function run<T>(name: string, command: () => Promise<Result<T>>): Promise<
 
 /**
  * State for the spike's dev panel. Asks `spike_status` on mount; only when the spike is enabled
- * does it load the running apps and usage, and refetch usage on every `spike-usage-changed`.
+ * does it read the backend rule, load the running apps and usage, and refetch usage on every `spike-usage-changed`.
  */
 export function useSpike(): Spike {
   const [status, setStatus] = useState<SpikeStatus | null>(null);
   const [apps, setApps] = useState<AppRef[]>([]);
   const [rule, setAcceptedRule] = useState<BlockRule>(DEFAULT_RULE);
   const [usage, setUsage] = useState<UsageSegment[]>([]);
-  const [errors, setErrors] = useState<SpikeErrors>({ apps: false, usage: false, rule: false });
+  const [errors, setErrors] = useState<SpikeErrors>({
+    apps: false,
+    usage: false,
+    rule: false,
+    ruleRead: false,
+  });
   const mounted = useRef(false);
   const accepted = useRef<BlockRule>(DEFAULT_RULE);
   const requested = useRef<BlockRule>(DEFAULT_RULE);
@@ -103,11 +105,28 @@ export function useSpike(): Spike {
         requested.current = accepted.current;
       }
       setError("rule", !outcome.ok);
+      if (outcome.ok) setError("ruleRead", false);
     },
     [setError],
   );
 
   const enabled = status?.enabled === true;
+
+  useEffect(() => {
+    if (!enabled) return;
+    const initial = requested.current;
+    void run("spike_rule", () => commands.spikeRule()).then((outcome) => {
+      // A change made before the read answered wins over it.
+      if (!outcome.ok) {
+        setError("ruleRead", true);
+        return;
+      }
+      if (!mounted.current || requested.current !== initial) return;
+      requested.current = outcome.data;
+      accepted.current = outcome.data;
+      setAcceptedRule(outcome.data);
+    });
+  }, [enabled, setError]);
 
   useEffect(() => {
     if (!enabled) return;

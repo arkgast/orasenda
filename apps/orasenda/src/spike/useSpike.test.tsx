@@ -1,7 +1,7 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { events, type UsageSegment_Serialize } from "../bindings";
+import { type BlockRule, events, type UsageSegment_Serialize } from "../bindings";
 import { argsOf, mockBackend } from "./testing";
 import { useSpike } from "./useSpike";
 
@@ -31,6 +31,7 @@ test("use_spike_refetches_usage_on_event", async () => {
     spike_status: () => ({ enabled: true, platformSupported: true }),
     spike_running_apps: () => [],
     spike_usage: () => usage,
+    spike_rule: () => ({ targets: [], action: "hide" }),
   });
   const { result } = renderHook(() => useSpike());
   await waitFor(() => expect(result.current.usage).toEqual([FIRST]));
@@ -58,4 +59,75 @@ test("use_spike_status_failure_logs_error", async () => {
 
   expect(result.current.status).toBeNull();
   expect(error).toHaveBeenCalledTimes(1);
+});
+
+test("use_spike_reads_backend_rule_on_mount", async () => {
+  const backend = { targets: ["com.apple.Safari"], action: "close" } as const;
+  const calls = mockBackend({
+    spike_status: () => ({ enabled: true, platformSupported: true }),
+    spike_running_apps: () => [],
+    spike_usage: () => [],
+    spike_rule: () => backend,
+    spike_set_rule: () => null,
+  });
+  const { result } = renderHook(() => useSpike());
+  await waitFor(() => expect(result.current.rule).toEqual(backend));
+
+  // A change builds on the backend rule, not on the default.
+  await act(async () => {
+    await result.current.setRule((latest) => ({ ...latest, action: "hide" }));
+  });
+  expect(argsOf(calls, "spike_set_rule")).toEqual([
+    { rule: { targets: ["com.apple.Safari"], action: "hide" } },
+  ]);
+});
+
+test("late_rule_read_does_not_override_user_change", async () => {
+  let answer: () => void = () => {};
+  mockBackend({
+    spike_status: () => ({ enabled: true, platformSupported: true }),
+    spike_running_apps: () => [],
+    spike_usage: () => [],
+    spike_rule: () =>
+      new Promise((resolve) => {
+        answer = () => resolve({ targets: ["com.apple.Safari"], action: "close" });
+      }),
+    spike_set_rule: () => null,
+  });
+  const { result } = renderHook(() => useSpike());
+  await waitFor(() => expect(result.current.status?.enabled).toBe(true));
+  await act(async () => {});
+
+  const mine: BlockRule = { targets: ["com.apple.Notes"], action: "hide" };
+  await act(async () => {
+    await result.current.setRule(mine);
+  });
+  await act(async () => {
+    answer();
+  });
+
+  expect(result.current.rule).toEqual(mine);
+});
+
+test("use_spike_rule_read_failure_flags_rule_read", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  mockBackend({
+    spike_status: () => ({ enabled: true, platformSupported: true }),
+    spike_running_apps: () => [],
+    spike_usage: () => [],
+    spike_rule: () => Promise.reject({ kind: "platform", message: "refused" }),
+    spike_set_rule: () => null,
+  });
+  const { result } = renderHook(() => useSpike());
+  await waitFor(() => expect(result.current.errors.ruleRead).toBe(true));
+
+  expect(error).toHaveBeenCalledTimes(1);
+  expect(error.mock.calls[0]?.[0]).toBe("spike_rule failed");
+  expect(result.current.rule).toEqual({ targets: [], action: "hide" });
+  expect(result.current.errors.rule).toBe(false);
+
+  await act(async () => {
+    await result.current.setRule({ targets: [], action: "close" });
+  });
+  expect(result.current.errors.ruleRead).toBe(false);
 });

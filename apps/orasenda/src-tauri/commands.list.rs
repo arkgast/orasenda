@@ -4,6 +4,7 @@ pub const COMMANDS: &[&str] = &[
     "app_info",
     "spike_status",
     "spike_running_apps",
+    "spike_rule",
     "spike_set_rule",
     "spike_usage",
     "spike_overlay_ready",
