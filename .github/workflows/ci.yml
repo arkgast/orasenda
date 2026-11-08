@@ -34,19 +34,52 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # Docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh, but this job still runs
+      # and passes, because branch protection requires the `ci` context. Do not use workflow-level
+      # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
+      # Fails closed: pushes, an empty diff or a failed diff all run everything.
+      - name: Decide whether this PR only changes docs
+        id: scope
+        run: |
+          docs_only=false
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            if files="$(git diff --name-only "$CI_BASE_REF"...HEAD)" && [ -n "$files" ]; then
+              echo "Changed files:"
+              echo "$files"
+              docs_only=true
+              while IFS= read -r file; do
+                case "$file" in
+                  docs/* | *.md) ;;
+                  *) docs_only=false ;;
+                esac
+              done <<<"$files"
+            else
+              echo "No changed files found, or the diff failed: running every check."
+            fi
+          else
+            echo "Not a pull request: running every check."
+          fi
+          echo "docs_only=$docs_only"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        if: steps.scope.outputs.docs_only != 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version-file: .node-version
           cache: pnpm
 
       - name: Install Rust toolchain (rust-toolchain.toml)
+        if: steps.scope.outputs.docs_only != 'true'
         run: rustup toolchain install
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: steps.scope.outputs.docs_only != 'true'
 
       - name: Install just
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 5
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,7 +117,13 @@ jobs:
           ./gitleaks version
 
       - name: Run checks
+        if: steps.scope.outputs.docs_only != 'true'
         run: ./scripts/ci.sh
+
+      # On the docs-only path `just ci` does not run, so run its gitleaks command directly.
+      - name: Scan for secrets (docs-only PR)
+        if: steps.scope.outputs.docs_only == 'true'
+        run: gitleaks git --no-banner --redact --log-opts="${CI_BASE_REF}..HEAD"
 
   # Advisory: not a required check. A red result is the signal; no continue-on-error.
   windows:
@@ -100,19 +139,52 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # Docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh, but this job still runs
+      # and passes, because branch protection requires the `ci` context. Do not use workflow-level
+      # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
+      # Fails closed: pushes, an empty diff or a failed diff all run everything.
+      - name: Decide whether this PR only changes docs
+        id: scope
+        run: |
+          docs_only=false
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            if files="$(git diff --name-only "$CI_BASE_REF"...HEAD)" && [ -n "$files" ]; then
+              echo "Changed files:"
+              echo "$files"
+              docs_only=true
+              while IFS= read -r file; do
+                case "$file" in
+                  docs/* | *.md) ;;
+                  *) docs_only=false ;;
+                esac
+              done <<<"$files"
+            else
+              echo "No changed files found, or the diff failed: running every check."
+            fi
+          else
+            echo "Not a pull request: running every check."
+          fi
+          echo "docs_only=$docs_only"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        if: steps.scope.outputs.docs_only != 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version-file: .node-version
           cache: pnpm
 
       - name: Install Rust toolchain (rust-toolchain.toml)
+        if: steps.scope.outputs.docs_only != 'true'
         run: rustup toolchain install
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: steps.scope.outputs.docs_only != 'true'
 
       - name: Install just
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 5
         env:
           GH_TOKEN: ${{ github.token }}
@@ -150,4 +222,10 @@ jobs:
           ./gitleaks.exe version
 
       - name: Run checks
+        if: steps.scope.outputs.docs_only != 'true'
         run: ./scripts/ci.sh
+
+      # On the docs-only path `just ci` does not run, so run its gitleaks command directly.
+      - name: Scan for secrets (docs-only PR)
+        if: steps.scope.outputs.docs_only == 'true'
+        run: gitleaks git --no-banner --redact --log-opts="${CI_BASE_REF}..HEAD"
