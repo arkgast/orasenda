@@ -1,5 +1,6 @@
 //! The macOS spike wiring: the overlay window, the foreground and termination observers,
-//! the idle sampler and the coalesced `spike-usage-changed` events.
+//! the idle sampler and the coalesced `spike-usage-changed` events. The overlay is a Tauri
+//! window made into a non-activating panel, the approach ADR-004 decided.
 //!
 //! Threading: the observers and `setup` run on the main thread, and so do the synchronous
 //! spike commands. All window and AppKit work goes through [`on_main`]
@@ -15,13 +16,12 @@ use orasenda_core::{
     PlatformError, SAFETY_ALLOWLIST, UsageSegment, UsageTracker, decide,
 };
 use orasenda_platform_macos::{
-    MacAppControl, MacForeground, MacIdle, OverlayStrategy, configure_overlay, cover_main_screen,
-    focus_overlay, phone_bundle_id, restore_activation_policy,
+    MacAppControl, MacForeground, MacIdle, configure_overlay, cover_main_screen, focus_overlay,
+    phone_bundle_id,
 };
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use tauri_specta::Event;
 
-use super::overlay::OVERLAY_STRATEGY;
 use super::{OverlayShow, Spike, SpikePlatform, SpikeUsageChanged};
 
 /// The overlay window's label (granted by `capabilities/overlay.json`).
@@ -71,7 +71,7 @@ pub(crate) fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> 
     }))?;
     spawn_idle_sampler(handle, usage)?;
 
-    eprintln!("spike: setup done, overlay strategy {OVERLAY_STRATEGY:?}, extra allow {phone:?}");
+    eprintln!("spike: setup done, extra allow {phone:?}");
     Ok(())
 }
 
@@ -183,24 +183,13 @@ fn close_overlay(app: &AppHandle, spike: &Spike) {
     spike.state().close_overlay();
 }
 
-/// Applies the overlay strategy to the new window. `LevelAndCollection` always applies;
-/// `NonActivatingPanel` is layered on it here, `AccessoryPolicy` while the overlay shows.
+/// Makes the new window the overlay: level and collection behavior, then the non-activating
+/// panel (ADR-004).
 fn configure_overlay_window(app: &AppHandle) -> Result<(), PlatformError> {
     let window = overlay_window(app)?;
     // SAFETY: ns_window() returns the live window's NSWindow; we are on the main thread via
     // run_on_main_thread and the pointer does not outlive this block.
-    unsafe {
-        configure_overlay(
-            window.ns_window().map_err(tauri_error)?,
-            OverlayStrategy::LevelAndCollection,
-        )
-    }?;
-    if OVERLAY_STRATEGY == OverlayStrategy::NonActivatingPanel {
-        // SAFETY: ns_window() returns the live window's NSWindow; we are on the main thread
-        // via run_on_main_thread and the pointer does not outlive this block.
-        unsafe { configure_overlay(window.ns_window().map_err(tauri_error)?, OVERLAY_STRATEGY) }?;
-    }
-    Ok(())
+    unsafe { configure_overlay(window.ns_window().map_err(tauri_error)?) }
 }
 
 /// Covers the main screen, emits `overlay-show`, shows and focuses the overlay. Until the
@@ -209,13 +198,6 @@ fn configure_overlay_window(app: &AppHandle) -> Result<(), PlatformError> {
 fn present_overlay(app: &AppHandle, show: OverlayShow) -> Result<(), PlatformError> {
     on_main(app, move |app| {
         let window = overlay_window(app)?;
-        if OVERLAY_STRATEGY == OverlayStrategy::AccessoryPolicy {
-            // SAFETY: ns_window() returns the live window's NSWindow; we are on the main
-            // thread via run_on_main_thread and the pointer does not outlive this block.
-            unsafe {
-                configure_overlay(window.ns_window().map_err(tauri_error)?, OVERLAY_STRATEGY)
-            }?;
-        }
         // SAFETY: ns_window() returns the live window's NSWindow; we are on the main thread via
         // run_on_main_thread and the pointer does not outlive this block.
         unsafe { cover_main_screen(window.ns_window().map_err(tauri_error)?) }?;
@@ -227,30 +209,9 @@ fn present_overlay(app: &AppHandle, show: OverlayShow) -> Result<(), PlatformErr
     })
 }
 
-/// Hides the overlay (and gives Orasenda its Dock icon back under `AccessoryPolicy`).
+/// Hides the overlay window.
 fn hide_overlay_window(app: &AppHandle) -> Result<(), PlatformError> {
-    on_main(app, |app| {
-        hide_then_restore(
-            || overlay_window(app)?.hide().map_err(tauri_error),
-            || {
-                if OVERLAY_STRATEGY == OverlayStrategy::AccessoryPolicy {
-                    restore_activation_policy()
-                } else {
-                    Ok(())
-                }
-            },
-        )
-    })
-}
-
-/// Runs `hide`, then `restore` even when `hide` failed; the first error wins.
-fn hide_then_restore(
-    hide: impl FnOnce() -> Result<(), PlatformError>,
-    restore: impl FnOnce() -> Result<(), PlatformError>,
-) -> Result<(), PlatformError> {
-    let hidden = hide();
-    let restored = restore();
-    hidden.and(restored)
+    on_main(app, |app| overlay_window(app)?.hide().map_err(tauri_error))
 }
 
 fn overlay_window(app: &AppHandle) -> Result<WebviewWindow, PlatformError> {
@@ -467,25 +428,6 @@ mod tests {
             next_previous(None, &browser, Decision::Allow, OWN),
             Some(browser)
         );
-    }
-
-    #[test]
-    fn restore_runs_after_a_failed_hide_and_first_error_wins() {
-        let restored = std::cell::Cell::new(false);
-        let result = hide_then_restore(
-            || Err(PlatformError::NotFound),
-            || {
-                restored.set(true);
-                Err(PlatformError::Refused)
-            },
-        );
-        assert!(restored.get());
-        assert_eq!(result, Err(PlatformError::NotFound));
-        assert_eq!(
-            hide_then_restore(|| Ok(()), || Err(PlatformError::Refused)),
-            Err(PlatformError::Refused)
-        );
-        assert_eq!(hide_then_restore(|| Ok(()), || Ok(())), Ok(()));
     }
 
     #[test]

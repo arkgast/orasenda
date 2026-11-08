@@ -4,6 +4,8 @@ use std::ptr::NonNull;
 
 use block2::RcBlock;
 use objc2::MainThreadMarker;
+
+use crate::main_thread;
 use objc2::rc::Retained;
 use objc2_app_kit::{
     NSRunningApplication, NSWorkspace, NSWorkspaceApplicationKey,
@@ -56,10 +58,6 @@ impl ForegroundSource for MacForeground {
         observe(mtm, name, move |app| sink(app_ref(&app)));
         Ok(())
     }
-}
-
-fn main_thread() -> Result<MainThreadMarker, PlatformError> {
-    MainThreadMarker::new().ok_or_else(|| PlatformError::Other("not on main thread".into()))
 }
 
 /// Registers `handler` for the `NSWorkspace` notification `name`, passing the app from its

@@ -10,35 +10,25 @@
 //! the duration of the call (see each `# Safety` section). Null is an error, and an object
 //! that is not an `NSWindow` is refused before any window method is called.
 //!
-//! The three [`OverlayStrategy`] values are the spike's attempts at staying above a
-//! full-screen app. Each lives in its own function and changes only what its comment says,
-//! so the manual matrix can compare them one by one or stacked.
+//! The overlay is a Tauri webview window made into a non-activating `NSPanel` (ADR-004).
+//! [`configure_overlay`] stacks the two layers it needs: a screen-saver window level and a
+//! collection behavior that joins every Space, then the panel class and style mask.
 
 use std::ffi::{CString, c_void};
 
 use objc2::runtime::{AnyClass, AnyObject};
-use objc2::{ClassType, MainThreadMarker, MainThreadOnly, available, define_class, ffi};
+use objc2::{ClassType, MainThreadOnly, available, define_class, ffi};
 use objc2_app_kit::{
-    NSApplication, NSApplicationActivationPolicy, NSPanel, NSResponder, NSScreen,
-    NSScreenSaverWindowLevel, NSWindow, NSWindowCollectionBehavior, NSWindowStyleMask,
+    NSApplication, NSPanel, NSResponder, NSScreen, NSScreenSaverWindowLevel, NSWindow,
+    NSWindowCollectionBehavior, NSWindowStyleMask,
 };
 use objc2_foundation::NSObject;
 use orasenda_core::platform::PlatformError;
 
-/// How [`configure_overlay`] keeps the overlay above other apps.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OverlayStrategy {
-    /// Screen-saver window level and a collection behavior that joins every Space,
-    /// including a full-screen app's own Space.
-    LevelAndCollection,
-    /// Turns the window into a non-activating `NSPanel` that can still become key.
-    NonActivatingPanel,
-    /// Makes Orasenda an accessory app (no Dock icon, no menu bar) while the overlay shows;
-    /// [`restore_activation_policy`] undoes it.
-    AccessoryPolicy,
-}
+use crate::main_thread;
 
-/// Applies `strategy` to the overlay window. Main thread only.
+/// Makes the window the overlay: [`level_and_collection`], then [`non_activating_panel`], in
+/// that order. Main thread only.
 ///
 /// # Safety
 ///
@@ -48,16 +38,11 @@ pub enum OverlayStrategy {
 /// such as a cached `WebviewWindow::ns_window()` value after the window was destroyed, is
 /// undefined behavior. Calling off the main thread is an error, not UB: the pointer is not
 /// read before the main-thread check.
-pub unsafe fn configure_overlay(
-    ns_window: *mut c_void,
-    strategy: OverlayStrategy,
-) -> Result<(), PlatformError> {
-    let mtm = main_thread()?;
-    match strategy {
-        OverlayStrategy::LevelAndCollection => level_and_collection(window(ns_window)?),
-        OverlayStrategy::NonActivatingPanel => non_activating_panel(window(ns_window)?),
-        OverlayStrategy::AccessoryPolicy => accessory_policy(mtm),
-    }
+pub unsafe fn configure_overlay(ns_window: *mut c_void) -> Result<(), PlatformError> {
+    main_thread()?;
+    let window = window(ns_window)?;
+    level_and_collection(window)?;
+    non_activating_panel(window)
 }
 
 /// Sets the window's frame to `NSScreen::mainScreen` (the screen with the key window), in
@@ -107,14 +92,7 @@ pub unsafe fn focus_overlay(ns_window: *mut c_void) -> Result<(), PlatformError>
     Ok(())
 }
 
-/// Sets Orasenda back to a regular app (Dock icon, menu bar) after
-/// [`OverlayStrategy::AccessoryPolicy`]. Main thread only; `Refused` if AppKit declines.
-pub fn restore_activation_policy() -> Result<(), PlatformError> {
-    let mtm = main_thread()?;
-    set_activation_policy(mtm, NSApplicationActivationPolicy::Regular)
-}
-
-/// `LevelAndCollection` changes on the `NSWindow`:
+/// The base layer, changes on the `NSWindow`:
 /// - `level` → `NSScreenSaverWindowLevel` (1000), above the menu bar, the Dock and normal and
 ///   floating windows of every app;
 /// - `collectionBehavior` → `canJoinAllSpaces` (shown on every Space, so no Space switch),
@@ -131,7 +109,7 @@ fn level_and_collection(window: &NSWindow) -> Result<(), PlatformError> {
     Ok(())
 }
 
-/// `NonActivatingPanel` changes on the `NSWindow`:
+/// The panel layer, changes on the `NSWindow`:
 /// - its class becomes an [`OverlayPanel`] (an `NSPanel` subclass whose `canBecomeKeyWindow`
 ///   is YES; a borderless panel returns NO, which would break focus and Escape). This drops
 ///   tao's `TaoWindow` overrides (`canBecomeMainWindow`, `canBecomeKeyWindow` from its
@@ -139,41 +117,17 @@ fn level_and_collection(window: &NSWindow) -> Result<(), PlatformError> {
 ///   behavior lost;
 /// - `styleMask` gains `nonactivatingPanel`, so the panel can take key status without
 ///   activating Orasenda by itself. [`focus_overlay`] still activates the app, so the
-///   matrix records the combined effect, not this flag alone.
+///   findings record the combined effect, not this flag alone.
 ///
 /// Setting `nonactivatingPanel` after the window was created may not update the window
 /// server's prevents-activation state (`tauri-nspanel` also calls the private
-/// `_setPreventsActivation:`); if this strategy seems to do nothing in the matrix, check
-/// that first.
+/// `_setPreventsActivation:`); if the panel seems to do nothing, check that first.
 ///
-/// Level and collection behavior are left as they are: stack it on `LevelAndCollection`.
+/// Level and collection behavior are left as they are: it stacks on [`level_and_collection`].
 fn non_activating_panel(window: &NSWindow) -> Result<(), PlatformError> {
     swap_to_panel_class(window)?;
     window.setStyleMask(window.styleMask() | NSWindowStyleMask::NonactivatingPanel);
     Ok(())
-}
-
-/// `AccessoryPolicy` changes nothing on the `NSWindow`: it sets the app's activation policy
-/// to `.accessory` (no Dock icon or menu bar), which AppKit lets float over a full-screen app
-/// more readily than a regular app. [`restore_activation_policy`] sets `.regular` again once
-/// the overlay hides.
-fn accessory_policy(mtm: MainThreadMarker) -> Result<(), PlatformError> {
-    set_activation_policy(mtm, NSApplicationActivationPolicy::Accessory)
-}
-
-fn set_activation_policy(
-    mtm: MainThreadMarker,
-    policy: NSApplicationActivationPolicy,
-) -> Result<(), PlatformError> {
-    if NSApplication::sharedApplication(mtm).setActivationPolicy(policy) {
-        Ok(())
-    } else {
-        Err(PlatformError::Refused)
-    }
-}
-
-fn main_thread() -> Result<MainThreadMarker, PlatformError> {
-    MainThreadMarker::new().ok_or_else(|| PlatformError::Other("not on main thread".into()))
 }
 
 /// The window behind `ns_window`. Only called after [`main_thread`] succeeded.
@@ -189,7 +143,7 @@ fn window<'a>(ns_window: *mut c_void) -> Result<&'a NSWindow, PlatformError> {
 }
 
 define_class!(
-    /// The class the overlay window is switched to by `NonActivatingPanel`. It adds no
+    /// The class the overlay window is switched to by [`non_activating_panel`]. It adds no
     /// instance variables, so its layout is exactly `NSPanel`'s, which equals `NSWindow`'s
     /// (`NSPanel` declares no ivars of its own).
     #[unsafe(super(NSPanel, NSWindow, NSResponder, NSObject))]
@@ -337,18 +291,11 @@ mod tests {
 
     #[test]
     fn configure_overlay_off_main_thread_errors() {
-        for strategy in [
-            OverlayStrategy::LevelAndCollection,
-            OverlayStrategy::NonActivatingPanel,
-            OverlayStrategy::AccessoryPolicy,
-        ] {
-            // SAFETY: null is allowed by the contract (the main-thread check runs first).
-            assert_eq!(
-                unsafe { configure_overlay(std::ptr::null_mut(), strategy) },
-                Err(not_on_main_thread()),
-                "{strategy:?}"
-            );
-        }
+        // SAFETY: null is allowed by the contract (the main-thread check runs first).
+        assert_eq!(
+            unsafe { configure_overlay(std::ptr::null_mut()) },
+            Err(not_on_main_thread())
+        );
     }
 
     #[test]
@@ -367,11 +314,6 @@ mod tests {
             unsafe { focus_overlay(std::ptr::null_mut()) },
             Err(not_on_main_thread())
         );
-    }
-
-    #[test]
-    fn restore_activation_policy_off_main_thread_errors() {
-        assert_eq!(restore_activation_policy(), Err(not_on_main_thread()));
     }
 
     #[test]

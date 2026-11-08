@@ -8,8 +8,6 @@
 pub(crate) mod commands;
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_os = "macos")]
-mod overlay;
 pub(crate) mod state;
 
 use orasenda_core::{AppRef, BlockAction, PlatformError};
