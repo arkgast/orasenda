@@ -122,8 +122,8 @@ export type UsageSegment = UsageSegment_Serialize | UsageSegment_Deserialize;
 export type UsageSegment_Deserialize = {
 	bundleId?: string | null,
 	name: string,
-	/**  UTC epoch milliseconds, far below 2^53, so exact as an `f64` in TypeScript. */
-	startMs: number | null,
+	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
+	startMs: number,
 	endMs?: number | null,
 };
 
@@ -131,8 +131,8 @@ export type UsageSegment_Deserialize = {
 export type UsageSegment_Serialize = {
 	bundleId: string | null,
 	name: string,
-	/**  UTC epoch milliseconds, far below 2^53, so exact as an `f64` in TypeScript. */
-	startMs: number | null,
+	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
+	startMs: number,
 	endMs: number | null,
 };
 
