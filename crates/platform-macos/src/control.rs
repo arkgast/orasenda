@@ -110,16 +110,34 @@ pub fn phone_bundle_id() -> Option<String> {
     bundle_id_from_info_plist(Path::new(PHONE_INFO_PLIST))
 }
 
-/// `CFBundleIdentifier` from an `Info.plist`, or `None` when the file is missing or unreadable.
+/// `CFBundleIdentifier` from an `Info.plist`, or `None` when the file is missing. A file that
+/// exists but cannot be read, or has no string `CFBundleIdentifier`, is logged and gives `None`.
 fn bundle_id_from_info_plist(path: &Path) -> Option<String> {
-    let url = NSURL::from_file_path(path)?;
+    read_bundle_id(path).unwrap_or_else(|reason| {
+        eprintln!("platform-macos: {}: {reason}", path.display());
+        None
+    })
+}
+
+/// `Ok(None)` when `path` does not exist; `Err` with the reason when it exists but is
+/// unreadable, is not a plist dictionary, or its `CFBundleIdentifier` is missing or not a string.
+fn read_bundle_id(path: &Path) -> Result<Option<String>, String> {
+    if !path.exists() {
+        return Ok(None);
+    }
+    let url = NSURL::from_file_path(path).ok_or("not a file path")?;
     // SAFETY: values are typed as `AnyObject`, which every plist value is, so the
     // dictionary's element types are correct.
     let plist =
         unsafe { NSDictionary::<NSString, AnyObject>::dictionaryWithContentsOfURL_error(&url) }
-            .ok()?;
-    let value = plist.objectForKey(&NSString::from_str("CFBundleIdentifier"))?;
-    value.downcast::<NSString>().ok().map(|s| s.to_string())
+            .map_err(|err| format!("cannot read plist: {}", err.localizedDescription()))?;
+    let value = plist
+        .objectForKey(&NSString::from_str("CFBundleIdentifier"))
+        .ok_or("no CFBundleIdentifier")?;
+    let id = value
+        .downcast::<NSString>()
+        .map_err(|_| "CFBundleIdentifier is not a string")?;
+    Ok(Some(id.to_string()))
 }
 
 #[cfg(test)]
@@ -199,5 +217,42 @@ mod tests {
             .as_deref(),
             Some("com.apple.calculator")
         );
+    }
+
+    fn temp_plist(name: &str, contents: &str) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "orasenda-platform-macos-{}-{name}.plist",
+            std::process::id()
+        ));
+        std::fs::write(&path, contents).unwrap();
+        path
+    }
+
+    #[test]
+    fn read_bundle_id_missing_file_is_ok_none() {
+        assert_eq!(
+            read_bundle_id(Path::new("/nonexistent/Phone.app/Contents/Info.plist")),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn read_bundle_id_unparsable_file_is_an_error() {
+        let path = temp_plist("garbage", "this is not a plist");
+        let result = read_bundle_id(&path);
+        std::fs::remove_file(&path).unwrap();
+        assert!(result.is_err(), "{result:?}");
+    }
+
+    #[test]
+    fn read_bundle_id_non_string_value_is_an_error() {
+        let path = temp_plist(
+            "integer",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>CFBundleIdentifier</key><integer>42</integer></dict></plist>"#,
+        );
+        let result = read_bundle_id(&path);
+        std::fs::remove_file(&path).unwrap();
+        assert!(result.is_err(), "{result:?}");
     }
 }
