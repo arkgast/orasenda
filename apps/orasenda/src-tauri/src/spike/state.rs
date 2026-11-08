@@ -3,10 +3,23 @@
 use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
 
 use orasenda_core::{
-    AppRef, BlockRule, Decision, Gate, GateAction, IDLE_THRESHOLD_MS, UsageTracker,
+    AppRef, BlockRule, Decision, Gate, GateAction, IDLE_THRESHOLD_MS, UsageTracker, decide,
 };
 
 use super::{OverlayShow, SpikePlatform};
+
+/// What the foreground sink does once the state lock is released.
+#[cfg_attr(
+    not(any(test, target_os = "macos")),
+    expect(dead_code, reason = "built by the macOS wiring (#16)")
+)]
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Step {
+    /// Show the overlay with this `overlay-show`, or re-target the visible one.
+    Show(OverlayShow),
+    /// Hide the overlay, then [`SpikeState::close_overlay`].
+    Close,
+}
 
 /// Everything the spike tracks, behind one `Mutex` (see [`Spike::state`]).
 ///
@@ -15,13 +28,15 @@ use super::{OverlayShow, SpikePlatform};
 /// the three never drift apart.
 #[derive(Debug)]
 pub(crate) struct SpikeState {
-    pub(crate) rule: BlockRule,
+    rule: BlockRule,
+    /// Written directly by the idle sampler and the usage tests: it has no invariant to
+    /// protect.
     pub(crate) tracker: UsageTracker,
     /// The last countable foreground app that was not itself intercepted; *Back to focus*
     /// lands here.
-    pub(crate) previous: Option<AppRef>,
+    previous: Option<AppRef>,
     /// Bundle IDs allowed on top of the safety allowlist (the Phone app, when present).
-    pub(crate) extra_allow: Vec<String>,
+    extra_allow: Vec<String>,
     gate: Gate,
     /// The app the open overlay is showing for.
     target: Option<AppRef>,
@@ -37,6 +52,70 @@ impl SpikeState {
             gate: Gate::new(own_bundle_id.to_owned()),
             target: None,
         }
+    }
+
+    /// A foreground change at `now_ms`, in this order: track it, [`decide`], update
+    /// `previous`, ask the gate, then open (or re-target) the overlay. Returns what the
+    /// caller does once the lock is released.
+    ///
+    /// `previous` becomes `front` when the gate counts it ([`Gate::countable`]: bundled, not
+    /// Orasenda, not on the safety allowlist) and it was not intercepted. `extra_allow` apps
+    /// (Phone) count: `decide` already lets them through.
+    #[cfg_attr(
+        not(any(test, target_os = "macos")),
+        expect(dead_code, reason = "called by the macOS wiring (#16)")
+    )]
+    pub(crate) fn on_foreground(&mut self, front: AppRef, own: &str, now_ms: u64) -> Option<Step> {
+        self.tracker.on_foreground(&front, now_ms);
+        let decision = decide(&front, &self.rule, own, &self.extra_allow);
+        if decision == Decision::Allow && self.gate.countable(&front).is_some() {
+            self.previous = Some(front.clone());
+        }
+        match self.gate_on_foreground(&front, decision) {
+            GateAction::Show => self.open_overlay(front).map(Step::Show),
+            GateAction::CloseOverlay => Some(Step::Close),
+            GateAction::Ignore => None,
+        }
+    }
+
+    /// The app with this pid quit. `previous` is forgotten when it was that app. Returns
+    /// whether it was the overlay's target; the caller then closes the overlay.
+    #[cfg_attr(
+        not(any(test, target_os = "macos")),
+        expect(dead_code, reason = "called by the macOS wiring (#16)")
+    )]
+    pub(crate) fn app_terminated(&mut self, pid: i32) -> bool {
+        if self
+            .previous
+            .as_ref()
+            .is_some_and(|previous| previous.pid == pid)
+        {
+            self.previous = None;
+        }
+        self.target.as_ref().is_some_and(|target| target.pid == pid)
+    }
+
+    pub(crate) fn rule(&self) -> &BlockRule {
+        &self.rule
+    }
+
+    /// The last countable foreground app that was not itself intercepted.
+    pub(crate) fn previous(&self) -> Option<&AppRef> {
+        self.previous.as_ref()
+    }
+
+    /// Bundle IDs allowed on top of the safety allowlist.
+    pub(crate) fn extra_allow(&self) -> &[String] {
+        &self.extra_allow
+    }
+
+    /// Replaces the bundle IDs allowed on top of the safety allowlist.
+    #[cfg_attr(
+        not(any(test, target_os = "macos")),
+        expect(dead_code, reason = "called by the macOS wiring (#16)")
+    )]
+    pub(crate) fn set_extra_allow(&mut self, extra_allow: Vec<String>) {
+        self.extra_allow = extra_allow;
     }
 
     /// What to do after a foreground change ([`Gate::on_foreground`]).
@@ -171,7 +250,7 @@ impl Spike {
 
 #[cfg(test)]
 mod tests {
-    use orasenda_core::{Decision, GateAction};
+    use orasenda_core::{Decision, GateAction, SAFETY_ALLOWLIST};
 
     use super::*;
 
@@ -230,6 +309,159 @@ mod tests {
         assert_eq!(state.open_overlay(unbundled), None);
         assert_eq!(state.target(), None);
         assert_eq!(state.pending_show(), None);
+    }
+
+    fn targets(ids: &[&str]) -> BlockRule {
+        BlockRule {
+            targets: ids.iter().map(|id| (*id).to_owned()).collect(),
+            ..BlockRule::default()
+        }
+    }
+
+    fn show(name: &str) -> Option<Step> {
+        Some(Step::Show(OverlayShow {
+            app_name: name.to_owned(),
+        }))
+    }
+
+    /// A state whose rule targets A and B, with Editor in front (so it is `previous`).
+    fn state_after_editor() -> (SpikeState, AppRef) {
+        let mut state = SpikeState::new(OWN);
+        state.set_rule(targets(&["com.x.a", "com.x.b"]));
+        let editor = app("com.x.editor", "Editor", 10);
+        assert_eq!(state.on_foreground(editor.clone(), OWN, 1_000), None);
+        assert_eq!(state.previous(), Some(&editor));
+        (state, editor)
+    }
+
+    #[test]
+    fn foreground_is_tracked_even_when_intercepted() {
+        let (mut state, _) = state_after_editor();
+        state.on_foreground(app("com.x.a", "A", 1), OWN, 5_000);
+        let names: Vec<&str> = state
+            .tracker
+            .segments()
+            .iter()
+            .map(|segment| segment.name.as_str())
+            .collect();
+        assert_eq!(names, ["Editor", "A"]);
+    }
+
+    #[test]
+    fn intercepted_target_opens_overlay_and_leaves_previous() {
+        let (mut state, editor) = state_after_editor();
+        let a = app("com.x.a", "A", 1);
+        assert_eq!(state.on_foreground(a.clone(), OWN, 2_000), show("A"));
+        assert_eq!(state.target(), Some(&a));
+        assert_eq!(state.previous(), Some(&editor));
+        // The target again while its overlay is open: nothing to do.
+        assert_eq!(state.on_foreground(a, OWN, 3_000), None);
+        assert_eq!(state.previous(), Some(&editor));
+    }
+
+    #[test]
+    fn retarget_returns_show_and_leaves_previous() {
+        let (mut state, editor) = state_after_editor();
+        state.on_foreground(app("com.x.a", "A", 1), OWN, 2_000);
+        let b = app("com.x.b", "B", 2);
+        assert_eq!(state.on_foreground(b.clone(), OWN, 3_000), show("B"));
+        assert_eq!(state.target(), Some(&b));
+        assert_eq!(
+            state.pending_show(),
+            Some(OverlayShow {
+                app_name: "B".into()
+            })
+        );
+        assert_eq!(state.previous(), Some(&editor));
+    }
+
+    #[test]
+    fn own_activation_leaves_previous() {
+        let (mut state, editor) = state_after_editor();
+        let own = app(OWN, "Orasenda", 3);
+        assert_eq!(state.on_foreground(own.clone(), OWN, 2_000), None);
+        assert_eq!(state.previous(), Some(&editor));
+        // Also while the overlay is open (it activates Orasenda's panel).
+        state.on_foreground(app("com.x.a", "A", 1), OWN, 3_000);
+        assert_eq!(state.on_foreground(own, OWN, 4_000), None);
+        assert_eq!(state.previous(), Some(&editor));
+    }
+
+    #[test]
+    fn allowlisted_and_unbundled_apps_leave_previous() {
+        let (mut state, editor) = state_after_editor();
+        let allowlisted = app(SAFETY_ALLOWLIST[0], "Allowlisted", 4);
+        let unbundled = AppRef {
+            bundle_id: None,
+            name: "tool".to_owned(),
+            pid: 5,
+        };
+        for other in [allowlisted, unbundled] {
+            assert_eq!(
+                state.on_foreground(other.clone(), OWN, 2_000),
+                None,
+                "{other:?}"
+            );
+            assert_eq!(state.previous(), Some(&editor), "{other:?}");
+        }
+    }
+
+    #[test]
+    fn countable_app_while_open_becomes_previous_and_closes() {
+        let (mut state, _) = state_after_editor();
+        state.on_foreground(app("com.x.a", "A", 1), OWN, 2_000);
+        let browser = app("com.x.browser", "Browser", 6);
+        assert_eq!(
+            state.on_foreground(browser.clone(), OWN, 3_000),
+            Some(Step::Close)
+        );
+        assert_eq!(state.previous(), Some(&browser));
+    }
+
+    #[test]
+    fn extra_allow_app_becomes_previous() {
+        let (mut state, _) = state_after_editor();
+        let phone = app("com.apple.mobilephone", "Phone", 7);
+        state.set_rule(targets(&["com.x.a", "com.apple.mobilephone"]));
+        state.set_extra_allow(vec!["com.apple.mobilephone".to_owned()]);
+        assert_eq!(state.extra_allow(), ["com.apple.mobilephone"]);
+        assert_eq!(state.on_foreground(phone.clone(), OWN, 2_000), None);
+        assert_eq!(state.previous(), Some(&phone));
+    }
+
+    #[test]
+    fn app_terminated_reports_the_target_and_forgets_previous() {
+        let (mut state, editor) = state_after_editor();
+        let a = app("com.x.a", "A", 1);
+        state.on_foreground(a.clone(), OWN, 2_000);
+
+        // Another app quitting changes nothing.
+        assert!(!state.app_terminated(99));
+        assert_eq!(state.previous(), Some(&editor));
+        assert_eq!(state.target(), Some(&a));
+
+        // The previous app quitting: it is forgotten, the overlay stays.
+        assert!(!state.app_terminated(editor.pid));
+        assert_eq!(state.previous(), None);
+        assert_eq!(state.target(), Some(&a));
+
+        // The target quitting: reported, so the caller closes the overlay.
+        assert!(state.app_terminated(a.pid));
+    }
+
+    #[test]
+    fn app_terminated_when_previous_is_the_target() {
+        // #41 shape: X was previous, then the rule targeted X and its overlay opened.
+        let mut state = SpikeState::new(OWN);
+        let x = app("com.x.game", "Game", 8);
+        assert_eq!(state.on_foreground(x.clone(), OWN, 1_000), None);
+        assert_eq!(state.previous(), Some(&x));
+        state.set_rule(targets(&["com.x.game"]));
+        assert_eq!(state.on_foreground(x.clone(), OWN, 2_000), show("Game"));
+        assert_eq!(state.target(), Some(&x));
+
+        assert!(state.app_terminated(x.pid));
+        assert_eq!(state.previous(), None);
     }
 
     /// A platform that does nothing.

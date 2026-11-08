@@ -12,8 +12,8 @@ use std::time::{Duration, Instant, SystemTime};
 
 use orasenda_core::clock::epoch_ms;
 use orasenda_core::{
-    AppControl, AppRef, BlockAction, Decision, ForegroundSource, GateAction, IdleSource,
-    PlatformError, SAFETY_ALLOWLIST, UsageSegment, UsageTracker, decide,
+    AppControl, AppRef, BlockAction, ForegroundSource, IdleSource, PlatformError, UsageSegment,
+    UsageTracker,
 };
 use orasenda_platform_macos::{
     MacAppControl, MacForeground, MacIdle, configure_overlay, cover_main_screen, focus_overlay,
@@ -22,6 +22,7 @@ use orasenda_platform_macos::{
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use tauri_specta::Event;
 
+use super::state::Step;
 use super::{OverlayShow, Spike, SpikePlatform, SpikeUsageChanged};
 
 /// The overlay window's label (granted by `capabilities/overlay.json`).
@@ -51,7 +52,9 @@ pub(crate) fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> 
 
     let phone = phone_bundle_id();
     let spike = app.state::<Spike>();
-    spike.state().extra_allow = phone.iter().cloned().collect();
+    spike
+        .state()
+        .set_extra_allow(phone.iter().cloned().collect());
     spike
         .install(Box::new(MacSpikePlatform {
             app: handle.clone(),
@@ -117,32 +120,16 @@ impl SpikePlatform for MacSpikePlatform {
     }
 }
 
-/// What the foreground sink does once the state lock is released.
-enum Step {
-    Show(OverlayShow),
-    Close,
-}
-
-/// A foreground change (main thread): track it, update `previous`, ask the gate, then show,
-/// re-target or close the overlay without holding the lock.
+/// A foreground change (main thread): the state decides under the lock
+/// ([`SpikeState::on_foreground`](super::state::SpikeState::on_foreground)), then the
+/// overlay is shown, re-targeted or closed without holding it.
 fn on_foreground(app: &AppHandle, usage: &UsageNotifier, front: AppRef) {
     let arrived = Instant::now();
     let spike = app.state::<Spike>();
-    let step = {
-        let mut state = spike.state();
-        state
-            .tracker
-            .on_foreground(&front, epoch_ms(SystemTime::now()));
-        let own = spike.own_bundle_id();
-        let decision = decide(&front, &state.rule, own, &state.extra_allow);
-        let previous = state.previous.take();
-        state.previous = next_previous(previous, &front, decision, own);
-        match state.gate_on_foreground(&front, decision) {
-            GateAction::Show => state.open_overlay(front).map(Step::Show),
-            GateAction::CloseOverlay => Some(Step::Close),
-            GateAction::Ignore => None,
-        }
-    };
+    let step =
+        spike
+            .state()
+            .on_foreground(front, spike.own_bundle_id(), epoch_ms(SystemTime::now()));
     usage.changed();
     match step {
         Some(Step::Show(show)) => {
@@ -162,13 +149,11 @@ fn on_foreground(app: &AppHandle, usage: &UsageNotifier, front: AppRef) {
     }
 }
 
-/// An app quit (main thread): when it is the overlay's target, the overlay closes.
+/// An app quit (main thread): `previous` forgets it, and when it is the overlay's target,
+/// the overlay closes.
 fn on_terminated(app: &AppHandle, pid: i32) {
     let spike = app.state::<Spike>();
-    let is_target = spike
-        .state()
-        .target()
-        .is_some_and(|target| target.pid == pid);
+    let is_target = spike.state().app_terminated(pid);
     if is_target {
         eprintln!("spike: the target quit, closing the overlay");
         close_overlay(app, &spike);
@@ -324,29 +309,6 @@ fn last_segment(tracker: &UsageTracker) -> (usize, Option<UsageSegment>) {
     (segments.len(), segments.last().cloned())
 }
 
-/// The `previous` app after `app` came to the front with `decision`: `app` itself when it is
-/// countable and was not intercepted; otherwise `previous` is kept.
-///
-/// Countable is the gate's notion (`Gate::countable` in core, which is private): a bundle
-/// ID that is neither Orasenda's nor on the safety allowlist. `extra_allow` apps (Phone)
-/// are countable; `decide` already lets them through.
-fn next_previous(
-    previous: Option<AppRef>,
-    app: &AppRef,
-    decision: Decision,
-    own_bundle_id: &str,
-) -> Option<AppRef> {
-    let countable = app
-        .bundle_id
-        .as_deref()
-        .is_some_and(|id| id != own_bundle_id && !SAFETY_ALLOWLIST.contains(&id));
-    if countable && decision == Decision::Allow {
-        Some(app.clone())
-    } else {
-        previous
-    }
-}
-
 /// The shortest gap between two `spike-usage-changed` events.
 const USAGE_CHANGED_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -382,53 +344,6 @@ impl UsageCoalescer {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const OWN: &str = "com.veloud.orasenda";
-
-    fn app(id: Option<&str>, name: &str, pid: i32) -> AppRef {
-        AppRef {
-            bundle_id: id.map(str::to_owned),
-            name: name.to_owned(),
-            pid,
-        }
-    }
-
-    #[test]
-    fn previous_skips_self_allowlisted_unbundled_and_targets() {
-        let editor = app(Some("com.x.editor"), "Editor", 1);
-        let start = Some(editor.clone());
-        let skipped = [
-            (app(Some(OWN), "Orasenda", 2), Decision::Allow),
-            (
-                app(Some(SAFETY_ALLOWLIST[0]), "Allowlisted", 3),
-                Decision::Allow,
-            ),
-            (app(None, "tool", 5), Decision::Allow),
-            (app(Some("com.x.game"), "Game", 6), Decision::Intercept),
-        ];
-        for (skip, decision) in skipped {
-            assert_eq!(
-                next_previous(start.clone(), &skip, decision, OWN),
-                start,
-                "{skip:?}"
-            );
-        }
-        // An `extra_allow` app (Phone) is countable, like for the gate: it can be previous.
-        let phone = app(Some("com.apple.mobilephone"), "Phone", 4);
-        assert_eq!(
-            next_previous(start.clone(), &phone, Decision::Allow, OWN),
-            Some(phone)
-        );
-        let browser = app(Some("com.x.browser"), "Browser", 7);
-        assert_eq!(
-            next_previous(start, &browser, Decision::Allow, OWN),
-            Some(browser.clone())
-        );
-        assert_eq!(
-            next_previous(None, &browser, Decision::Allow, OWN),
-            Some(browser)
-        );
-    }
 
     #[test]
     fn usage_changed_is_coalesced_to_one_per_second() {
