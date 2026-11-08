@@ -26,7 +26,7 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-08T04:01:08Z",
+    "at": "2026-11-08T04:03:39Z",
     "via": "Claude Code",
     "note": "IntentPrompt renders the Wait button only when onWait is passed (#12)."
   }

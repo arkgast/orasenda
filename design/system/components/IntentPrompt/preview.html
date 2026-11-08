@@ -13,7 +13,7 @@
     function close() { setOpen(null); }
     return h('div', { className: 'os-col' },
       h('p', null, 'You opened YouTube during a focus session.'),
-      h('div', { className: 'os-row' },
+      h('div', { className: 'os-actions' },
         h(O.Button, { onClick: function () { setOpen('wait'); } }, 'Show the gentle pause'),
         h(O.Button, { variant: 'quiet', onClick: function () { setOpen('nowait'); } }, 'Show it without Wait')),
       open ? h(O.IntentPrompt, { app: 'YouTube', onReturn: close, onWait: open === 'wait' ? function () { setNotice('Ten-minute wait started.'); close(); } : undefined, onContinue: function (reason) { setNotice('Continuing' + (reason ? ' · ' + reason : '') + '.'); close(); } }) : null,
