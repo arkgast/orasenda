@@ -46,7 +46,7 @@ Don'ts that would have caused real bugs: no `filter` or `opacity` to make states
 - `radius-sm` for fields and choices, `radius-md` for buttons, cards and blocks, `radius-lg` for dialogs and wells, `radius-pill` for chips and the primary Start.
 - Numbers: `rail-width` 64px, `window-min-width` × `window-min-height` 900×600 (scroll below it; never clip controls), `content-width` 720px on Today, `column-width` 280px on Board, `panel-width` 420px for dialogs and the capture pad, `timer-size` 280px and `timer-full-size` 560px.
 - The day calendar is 2px per minute: a 15-minute block is 30px and becomes a one-line compact block; a 30-minute block is 60px and fits two lines. The floor is `hit-floor` (24px); blocks never overlap to grow their targets. The editor provides keyboard reschedule.
-- Anything clicked is at least `hit-min` (44×44px): buttons, fields, routine rows, radio choices, command rows, rail items. `control-sm` (28px) is the chip height and is never a target.
+- Anything clicked is at least `hit-min` (44×44px): buttons, fields, routine rows, radio and checkbox choices, command rows, rail items. `control-sm` (28px) is the chip height and is never a target.
 
 ## States
 
@@ -58,7 +58,7 @@ Don'ts that would have caused real bugs: no `filter` or `opacity` to make states
 | TaskCard (with `onOpen`) | `surface-sunken` then `selection` | dashed border | `selected`: `selection` + "Selected"; `active`: `focus` bar + "In progress" |
 | TimeBlock (with `onSelect`) | title underlined | dashed border | `selected`: dashed border + "Selected"; `now`: `focus` bar + "Now" |
 | RoutineItem | `surface-sunken` then `selection` | dashed border | done: filled `break` check, `ink-muted` label, no strike-through |
-| Input, TextArea, radio choice | `focus` border | `ink-muted` text, dashed border | checked choice: `selection` ground, filled `focus` dot |
+| Input, TextArea, radio and checkbox choice | `focus` border | `ink-muted` text, dashed border | checked choice: `selection` ground; a radio shows a filled `focus` dot in a circle, a checkbox an `on-focus` tick in a filled `focus` square |
 | NavRail item, command row | `surface-sunken` | omitted, not greyed | `selection` ground + `focus` side bar + `aria-current` or "Selected" |
 | Timers | none | none | `warning`: triangle + "Almost up"; `paused`: bars + frozen arc; `idle`: hollow circle + "No session" |
 
