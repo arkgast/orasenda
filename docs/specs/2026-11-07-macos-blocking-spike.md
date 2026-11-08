@@ -121,7 +121,7 @@ docs/spikes/2026-11-07-macos-blocking.md   findings: manual matrix, measurements
 
 **Switch.** `spike::enabled() -> bool` is `cfg!(debug_assertions) && std::env::var("ORASENDA_SPIKE").as_deref() == Ok("1")`, read once in `setup()`. When it is false nothing below is started. All spike commands exist in every build and on every OS so `bindings.ts` is identical everywhere; on non-macOS targets they return `SpikeError::Unsupported`.
 
-**Commands** (all synchronous `#[tauri::command] #[specta::specta]` functions that do any AppKit work through `run_on_main_thread`, errors are `SpikeError { Disabled, Unsupported, Platform(String) }`, serialized as `{ kind, message }`; when both apply, `Disabled` wins):
+**Commands** (all synchronous `#[tauri::command] #[specta::specta]` functions that do any AppKit work through `run_on_main_thread`, errors are `SpikeError { Disabled, Unsupported, Platform(PlatformError) }`, serialized as `{ kind, message }`; when both apply, `Disabled` wins):
 - `spike_status() -> SpikeStatus { enabled: bool, platform_supported: bool }` — never errors.
 - `spike_running_apps() -> Result<Vec<AppRef>, SpikeError>` — regular apps, sorted by name, Orasenda and the safety allowlist excluded.
 - `spike_rule() -> Result<BlockRule, SpikeError>` — the current rule; the panel reads it on mount, since the rule survives a webview reload.

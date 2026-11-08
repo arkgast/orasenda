@@ -28,7 +28,7 @@ pub enum SpikeError {
     /// No spike implementation for this OS.
     Unsupported,
     /// The OS call failed.
-    Platform(String),
+    Platform(PlatformError),
 }
 
 /// What the user chose in the overlay.
@@ -46,7 +46,7 @@ impl std::fmt::Display for SpikeError {
         match self {
             SpikeError::Disabled => f.write_str("the spike is disabled"),
             SpikeError::Unsupported => f.write_str("the spike is not supported on this platform"),
-            SpikeError::Platform(message) => f.write_str(message),
+            SpikeError::Platform(error) => error.fmt(f),
         }
     }
 }
@@ -259,7 +259,7 @@ fn continue_to_target(
 }
 
 fn platform_error(error: PlatformError) -> SpikeError {
-    SpikeError::Platform(error.to_string())
+    SpikeError::Platform(error)
 }
 
 /// Whether the spike runs and the platform is supported. Never errors.
@@ -581,7 +581,7 @@ mod tests {
             "unsupported"
         );
         assert_eq!(
-            serde_json::to_value(SpikeError::Platform("boom".into())).unwrap(),
+            serde_json::to_value(SpikeError::Platform(PlatformError::Other("boom".into()))).unwrap(),
             serde_json::json!({ "kind": "platform", "message": "boom" })
         );
     }
@@ -715,7 +715,7 @@ mod tests {
 
         assert_eq!(
             overlay_choice(&spike, OverlayChoice::Continue { reason: None }),
-            Err(SpikeError::Platform("the OS refused the request".into()))
+            Err(SpikeError::Platform(PlatformError::Refused))
         );
         assert_eq!(calls(&log), [Call::HideOverlay, Call::Activate(10)]);
     }
@@ -876,11 +876,9 @@ mod tests {
             let (spike, _) = spike_failing(vec![target.clone()], failing, OWN);
             open_overlay(&spike, &target, None, BlockAction::Hide);
 
-            assert!(
-                matches!(
-                    overlay_choice(&spike, choice.clone()),
-                    Err(SpikeError::Platform(_))
-                ),
+            assert_eq!(
+                overlay_choice(&spike, choice.clone()),
+                Err(SpikeError::Platform(PlatformError::Refused)),
                 "{choice:?}"
             );
             let mut state = spike.state();
@@ -938,10 +936,10 @@ mod tests {
         };
         let (spike, _) = spike_failing(vec![target.clone(), previous.clone()], failing, OWN);
         open_overlay(&spike, &target, Some(&previous), BlockAction::Hide);
-        assert!(matches!(
+        assert_eq!(
             overlay_choice(&spike, OverlayChoice::Return),
-            Err(SpikeError::Platform(_))
-        ));
+            Err(SpikeError::Platform(PlatformError::Refused))
+        );
     }
 
     #[test]
