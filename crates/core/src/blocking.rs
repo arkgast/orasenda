@@ -135,7 +135,11 @@ impl Gate {
         self.open_for = None;
     }
 
-    fn countable<'a>(&self, app: &'a AppRef) -> Option<&'a str> {
+    /// The app's bundle ID when it counts as a real switch: bundled, not Orasenda and not
+    /// on the safety allowlist. Only a countable app can end an allowance or close the
+    /// overlay; the spike also records only countable apps as the *Back to focus*
+    /// destination. `extra_allow` apps (Phone) are countable.
+    pub fn countable<'a>(&self, app: &'a AppRef) -> Option<&'a str> {
         let id = app.bundle_id.as_deref()?;
         (id != self.own_bundle_id && !SAFETY_ALLOWLIST.contains(&id)).then_some(id)
     }
