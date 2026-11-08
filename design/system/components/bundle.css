@@ -149,6 +149,11 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .os-intent { text-align: center; align-items: center; }
 .os-intent-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+/* Step 2: the reason group is the step's question, so its legend reads as a heading; the hint names what unlocks Continue. */
+.os-intent-reasons { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; }
+.os-intent .os-choice-group { justify-content: center; }
+.os-intent .os-choice-group legend { width: 100%; padding: 0; margin-bottom: var(--space-3); font-size: 17px; line-height: 24px; font-weight: 600; color: var(--ink); }
+.os-intent-hint { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
 .os-breath { width: 96px; height: 96px; border-radius: var(--radius-pill); background: var(--focus-soft); display: grid; place-items: center; flex: none; }
 .os-breath i { display: block; width: 48px; height: 48px; border-radius: var(--radius-pill); background: var(--focus); animation: os-breathe var(--duration-breath) var(--easing-calm) infinite; }
 @keyframes os-breathe { 0%, 100% { transform: scale(0.7); } 50% { transform: scale(1.4); } }

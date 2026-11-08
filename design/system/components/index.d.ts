@@ -24,8 +24,10 @@ export interface RoutineItemProps { label: string; detail?: string; done?: boole
 export declare function RoutineItem(props: RoutineItemProps): React.ReactElement;
 export interface WellnessNoteProps { children?: React.ReactNode; as?: 'span' | 'p' }
 export declare function WellnessNote(props: WellnessNoteProps): React.ReactElement;
-/** The Wait button renders only when onWait is passed; the reason group and Continue only when onContinue is passed. */
-export interface IntentPromptProps { open?: boolean; app?: string; title?: string; message?: string; waitLabel?: string; onReturn?: () => void; onWait?: () => void; onContinue?: (reason?: string) => void }
+/** The reasons offered on step 2, in order. */
+export type IntentReason = 'Work' | 'Quick check' | 'Other';
+/** Two steps. Wait renders on step 1 only when onWait is passed; "I need <app> now" and step 2 only when onContinue is passed. onContinue always receives the picked reason. */
+export interface IntentPromptProps { open?: boolean; app?: string; title?: string; message?: string; waitLabel?: string; onReturn?: () => void; onWait?: () => void; onContinue?: (reason: IntentReason) => void }
 export declare function IntentPrompt(props: IntentPromptProps): React.ReactElement;
 /** Escape and the cancel button call onCancel. destructive styles confirm as critical and adds the scrim. */
 export interface DialogProps { open?: boolean; title: string; description?: string; children?: React.ReactNode; confirmLabel: string; cancelLabel?: string; onCancel: () => void; onConfirm: () => void; destructive?: boolean; scrim?: boolean; loading?: boolean }
