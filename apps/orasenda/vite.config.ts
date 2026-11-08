@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -12,6 +13,13 @@ export default defineConfig({
   },
   build: {
     target: "safari16",
+    rolldownOptions: {
+      // Setting `input` replaces the default entry, so the main page is listed too.
+      input: {
+        main: resolve(import.meta.dirname, "index.html"),
+        overlay: resolve(import.meta.dirname, "overlay.html"),
+      },
+    },
   },
   test: {
     environment: "jsdom",

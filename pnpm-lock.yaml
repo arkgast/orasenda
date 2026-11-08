@@ -175,6 +175,9 @@ importers:
       '@orasenda/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+      '@orasenda/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tauri-apps/api':
         specifier: 2.12.4
         version: 2.12.4

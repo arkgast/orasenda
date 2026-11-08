@@ -1,0 +1,17 @@
+/* Overlay window page. The window is opaque: the page is the surface, the prompt sits on it. */
+@import "@orasenda/tokens/tokens.css";
+
+:root {
+  color-scheme: light dark;
+  background: var(--surface);
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-font-weight);
+}
