@@ -18,3 +18,8 @@ keystore.properties
 
 /.tauri
 /tauri.settings.gradle
+/.idea/
+.kotlin/
+/gradle/gradle-daemon-jvm.properties
+*.jks
+*.keystore
