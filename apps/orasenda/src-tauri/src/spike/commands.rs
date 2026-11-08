@@ -143,7 +143,7 @@ fn selectable_apps(apps: Vec<AppRef>, own_bundle_id: &str, extra_allow: &[String
 
 pub(crate) fn set_rule(spike: &Spike, rule: BlockRule) -> Result<(), SpikeError> {
     platform(spike)?;
-    spike.state().rule = rule;
+    spike.state().set_rule(rule);
     Ok(())
 }
 
@@ -773,6 +773,31 @@ mod tests {
         );
         // The reason is not kept anywhere in the state.
         assert!(!format!("{state:?}").contains("reply to a message"));
+    }
+
+    #[test]
+    fn re_ticking_the_allowed_app_ends_continue() {
+        // #57: Continue to the target, go to Orasenda, untick and tick it again, back to it.
+        let target = app(Some("com.x.game"), "Game", 10);
+        let own = app(Some(OWN), "Orasenda", 1);
+        let (spike, _log) = spike_with(vec![target.clone()]);
+        open_overlay(&spike, &target, None, BlockAction::Hide);
+        overlay_choice(&spike, OverlayChoice::Continue { reason: None }).unwrap();
+        let ticked = spike.state().rule.clone();
+        assert_eq!(
+            spike.state().gate_on_foreground(&own, Decision::Allow),
+            GateAction::Ignore
+        );
+
+        set_rule(&spike, BlockRule::default()).unwrap();
+        set_rule(&spike, ticked).unwrap();
+
+        assert_eq!(
+            spike
+                .state()
+                .gate_on_foreground(&target, Decision::Intercept),
+            GateAction::Show
+        );
     }
 
     /// The gate is closed and nothing is pending for the overlay.

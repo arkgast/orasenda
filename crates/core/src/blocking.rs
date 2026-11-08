@@ -109,6 +109,18 @@ impl Gate {
         self.allowed = Some(bundle_id.to_owned());
     }
 
+    /// The rule changed from `old` to `new`: if the app allowed by *Continue* was added to or
+    /// removed from the targets, its allowance ends. The open overlay is left alone.
+    pub fn rule_changed(&mut self, old: &BlockRule, new: &BlockRule) {
+        if self
+            .allowed
+            .as_deref()
+            .is_some_and(|id| old.targets.contains(id) != new.targets.contains(id))
+        {
+            self.allowed = None;
+        }
+    }
+
     /// Records that the overlay is showing for this app.
     pub fn overlay_open(&mut self, bundle_id: &str) {
         self.open_for = Some(bundle_id.to_owned());
@@ -279,6 +291,49 @@ mod tests {
             g.on_foreground(&other, Decision::Allow);
             assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
         }
+    }
+
+    #[test]
+    fn gate_rule_change_for_allowed_app_ends_allowance() {
+        // #57: Continue, go to Orasenda, untick then tick the app, back to it -> overlay.
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        let ticked = rule(&["com.x.a"]);
+        let unticked = rule(&[]);
+        g.allow("com.x.a");
+        assert_eq!(
+            g.on_foreground(&app(Some(OWN), 9), Decision::Allow),
+            GateAction::Ignore
+        );
+        g.rule_changed(&ticked, &unticked);
+        g.rule_changed(&unticked, &ticked);
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Show);
+    }
+
+    #[test]
+    fn gate_rule_change_for_other_app_keeps_allowance() {
+        let mut g = gate();
+        let a = app(Some("com.x.a"), 1);
+        g.allow("com.x.a");
+        g.on_foreground(&app(Some(OWN), 9), Decision::Allow);
+        g.rule_changed(&rule(&["com.x.a"]), &rule(&["com.x.a", "com.x.b"]));
+        g.rule_changed(&rule(&["com.x.a"]), &rule(&["com.x.a"]));
+        assert_eq!(g.on_foreground(&a, Decision::Intercept), GateAction::Ignore);
+    }
+
+    #[test]
+    fn gate_rule_change_keeps_open_overlay() {
+        let mut g = gate();
+        g.overlay_open("com.x.a");
+        g.rule_changed(&rule(&["com.x.a"]), &rule(&[]));
+        assert_eq!(
+            g.on_foreground(&app(Some("com.x.a"), 1), Decision::Allow),
+            GateAction::Ignore
+        );
+        assert_eq!(
+            g.on_foreground(&app(Some(OWN), 9), Decision::Allow),
+            GateAction::Ignore
+        );
     }
 
     #[test]

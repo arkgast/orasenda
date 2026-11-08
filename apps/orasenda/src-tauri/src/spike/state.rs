@@ -48,6 +48,13 @@ impl SpikeState {
         self.gate.on_foreground(app, decision)
     }
 
+    /// Replaces the rule. Adding or removing the app allowed by *Continue* ends its
+    /// allowance ([`Gate::rule_changed`]); the open overlay stays.
+    pub(crate) fn set_rule(&mut self, rule: BlockRule) {
+        self.gate.rule_changed(&self.rule, &rule);
+        self.rule = rule;
+    }
+
     /// Opens the overlay for `target`, or re-targets the open one, and returns the
     /// `overlay-show` to emit. `previous` is left unchanged. A target without a bundle ID is
     /// never intercepted, so it is refused: nothing changes and `None` is returned.
