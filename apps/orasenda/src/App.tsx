@@ -1,8 +1,57 @@
-// Placeholder until the shell UI lands (#9).
-export function App() {
+import { useEffect, useState } from "react";
+import { commands } from "./bindings";
+import { formatClock, infoLine } from "./format";
+import { useClock } from "./useClock";
+
+type Props = {
+  /** Locale and time zone for the clock; the system's when omitted (tests pin them). */
+  locale?: string;
+  timeZone?: string;
+};
+
+type InfoState = { status: "loading" } | { status: "ok"; line: string } | { status: "error" };
+
+export function App({ locale, timeZone }: Props) {
+  const [info, setInfo] = useState<InfoState>({ status: "loading" });
+  const clock = useClock();
+
+  useEffect(() => {
+    let cancelled = false;
+    commands.appInfo().then(
+      (appInfo) => {
+        if (!cancelled) setInfo({ status: "ok", line: infoLine(appInfo) });
+      },
+      (error: unknown) => {
+        console.error("app_info failed", error);
+        if (!cancelled) setInfo({ status: "error" });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <main>
-      <h1>Orasenda</h1>
+    <main className="app">
+      <header className="app-header">
+        <h1 className="app-title">Orasenda</h1>
+        <span className="app-separator" aria-hidden="true">
+          ·
+        </span>
+        <p className="app-info">
+          {info.status === "ok" ? info.line : null}
+          {info.status === "error" ? "version unavailable" : null}
+        </p>
+      </header>
+      {clock.status === "waiting" ? <time className="app-clock app-clock-slot" /> : null}
+      {clock.status === "ok" ? (
+        <time className="app-clock app-clock-slot" dateTime={new Date(clock.epochMs).toISOString()}>
+          {formatClock(clock.epochMs, locale, timeZone)}
+        </time>
+      ) : null}
+      {clock.status === "error" ? (
+        <p className="app-info app-clock-slot">clock unavailable</p>
+      ) : null}
     </main>
   );
 }
