@@ -218,7 +218,7 @@ S1 ───────────────────────> S4 ─
   - [ ] `overlay.html` sits next to `index.html`; `build.rolldownOptions.input` lists **both** `index.html` and `overlay.html` as absolute paths (setting `input` replaces the default entry); the debug build serves `/index.html` and `/overlay.html`.
   - [ ] Overlay: opaque `surface` background; `IntentPrompt` keyed per show, no `onWait`, `app` = `appName`; calls `spike_overlay_ready` once mounted; `undefined` reason sent as `null`.
   - [ ] Dev panel: rendered only when enabled; "Apps to intercept" checkboxes and "When I go back to focus" radios (*Hide the app* / *Quit the app*) use `.os-choice-group` / `.os-choice`; "Refresh apps" is the design system `Button`; usage list shows "name · start–end", "now" for the open segment, and idle gaps; times formatted like the shell clock.
-  - [ ] No hex, px or font names in new CSS; both themes checked; keyboard and VoiceOver checked on the panel and the overlay.
+  - [ ] No hex, px or font names in new CSS (styles.test.ts); both themes, keyboard and VoiceOver on the panel and the overlay are human checks, tracked in #30.
   - [ ] `./scripts/ci.sh` passes; `gh pr checks <pr> --required` passes.
 - Tests first: `overlay_renders_nothing_before_show`, `overlay_calls_ready_on_mount`, `overlay_shows_app_name`, `overlay_return_and_escape_send_return`, `overlay_continue_sends_reason_or_null`, `overlay_second_show_resets_reason`, `dev_panel_hidden_when_disabled`, `dev_panel_check_sets_rule`, `dev_panel_action_radio_sets_rule`, `dev_panel_open_segment_shows_now`, `dev_panel_shows_idle_gap_rows`, `use_spike_refetches_usage_on_event`
 
