@@ -57,16 +57,47 @@ function parseDraft(draft: Draft): CustomSpec | null {
   return { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
 }
 
+/** `true` when `Keys` lists every key of `T`; any key left out makes it `false`. */
+export type CoversEveryKey<T, Keys extends readonly (keyof T)[]> = [
+  Exclude<keyof T, Keys[number]>,
+] extends [never]
+  ? true
+  : false;
+
+/** Fails to compile unless `Check` is `true`. */
+type AssertTrue<Check extends true> = Check;
+
+/** Every `CustomSpec` field, compared by `sameCustom`. */
+export const CUSTOM_KEYS = [
+  "focusMin",
+  "breakMin",
+] as const satisfies readonly (keyof CustomSpec)[];
+
+/**
+ * Every `TimerSettings` field, compared by `sameSettings`. A field added to the generated type
+ * must be listed here, or a change to only that field would never be sent (#114).
+ */
+export const SETTINGS_KEYS = [
+  "preset",
+  "custom",
+  "notifySessionEnd",
+] as const satisfies readonly (keyof TimerSettings)[];
+
+// Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field these lists miss.
+export type CustomKeysAreComplete = AssertTrue<CoversEveryKey<CustomSpec, typeof CUSTOM_KEYS>>;
+export type SettingsKeysAreComplete = AssertTrue<
+  CoversEveryKey<TimerSettings, typeof SETTINGS_KEYS>
+>;
+
 function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
-  return a.focusMin === b.focusMin && a.breakMin === b.breakMin;
+  return CUSTOM_KEYS.every((key) => a[key] === b[key]);
 }
 
 function sameSettings(a: TimerSettings | null, b: TimerSettings | null): boolean {
   if (!a || !b) return a === b;
-  return (
-    a.preset === b.preset &&
-    sameCustom(a.custom, b.custom) &&
-    a.notifySessionEnd === b.notifySessionEnd
+  // `custom` is the one object field; a new object field needs its own compare here.
+  return SETTINGS_KEYS.every((key) =>
+    key === "custom" ? sameCustom(a.custom, b.custom) : a[key] === b[key],
   );
 }
 
