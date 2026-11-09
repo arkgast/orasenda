@@ -74,9 +74,9 @@ Seen twice in P1-A: Today rolled back over a later settings save that was still 
   rejected, so the screen kept a value Rust never saved, and Rust could still apply overlapping
   saves in either order. Chaining (#115) fixed both.
 - Use a sequence number only when the calls cannot be chained, such as views published by both
-  the scheduler thread and commands, which no single caller can wait on (#93). Stamp each result with a number taken where it was computed
-  (under the lock, or when the call was sent) and drop anything older than the last one applied
-  (#93).
+  the scheduler thread and commands, which no single caller can wait on (#93). Stamp each result
+  with a number taken where it was computed (under the lock, or when the call was sent) and drop
+  anything older than the last one applied.
 - Check-and-apply happens under one small mutex (not an atomic) that is never held while
   waiting on the main thread.
 - Test it with two threads (or two pending promises) forced into the stale order with barriers
