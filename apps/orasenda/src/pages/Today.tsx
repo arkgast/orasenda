@@ -57,6 +57,19 @@ function parseDraft(draft: Draft): CustomSpec | null {
   return { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
 }
 
+function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
+  return a.focusMin === b.focusMin && a.breakMin === b.breakMin;
+}
+
+function sameSettings(a: TimerSettings | null, b: TimerSettings | null): boolean {
+  if (!a || !b) return a === b;
+  return (
+    a.preset === b.preset &&
+    sameCustom(a.custom, b.custom) &&
+    a.notifySessionEnd === b.notifySessionEnd
+  );
+}
+
 function logFailure(name: string) {
   return (error: unknown) => console.error(`${name} failed`, error);
 }
@@ -78,14 +91,27 @@ export function Today() {
   // `settings` is what the page shows; `intended` holds the same value, set synchronously, so a
   // change made while an earlier settings_set is in flight builds on it, never on a stale render.
   // `accepted` is the last value Rust took, which a failed write rolls back to.
+  // Saves are chained, never overlapped (docs/conventions.md, "Newest wins"): at most one
+  // settings_set is in flight (`saving`), and when it answers, the latest `intended` is sent next
+  // if Rust doesn't hold it yet. So Rust applies saves in the order they were meant, and every
+  // answer is judged against a settled store.
   const [settings, setSettings] = useState<TimerSettings | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const intended = useRef<TimerSettings | null>(null);
   const accepted = useRef<TimerSettings | null>(null);
+  const saving = useRef(false);
+  const mounted = useRef(true);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
   const [showRangeHelp, setShowRangeHelp] = useState(false);
   const [starting, setStarting] = useState(false);
   const presetName = useId();
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,28 +154,46 @@ export function Today() {
     setDraft(draftOf(last.custom));
   };
 
-  const save = (next: TimerSettings) => {
-    intend(next);
-    commands.settingsSet(next).then(
-      (result) => {
+  /** Sends the latest intent when nothing is in flight and Rust doesn't hold it yet. */
+  const flush = () => {
+    const next = intended.current;
+    if (saving.current || !mounted.current || !next || sameSettings(next, accepted.current)) {
+      return;
+    }
+    saving.current = true;
+    const settled = () => {
+      saving.current = false;
+      flush();
+    };
+    const failed = (error: unknown) => {
+      console.error("settings_set failed", error);
+      // Changes queued behind this save are dropped too: the screen shows what Rust holds.
+      if (mounted.current) rollBack();
+    };
+    commands
+      .settingsSet(next)
+      .then((result) => {
         if (result.status === "ok") {
           accepted.current = next;
-          setShowRangeHelp(false);
+          if (mounted.current && sameSettings(intended.current, next)) setShowRangeHelp(false);
         } else if (result.error.kind === "invalidSpec") {
-          // Keep the typed draft beside the helper, but never resend the rejected spec.
+          if (!mounted.current) return;
           const latest = intended.current;
-          if (latest && accepted.current) intend({ ...latest, custom: accepted.current.custom });
+          // A spec typed since this one was sent replaces it, and its own save decides.
+          if (!latest || !sameCustom(latest.custom, next.custom) || !accepted.current) return;
+          // Keep the typed draft beside the helper, but never resend the rejected spec.
+          intend({ ...latest, custom: accepted.current.custom });
           setShowRangeHelp(true);
         } else {
-          console.error("settings_set failed", result.error);
-          rollBack();
+          failed(result.error);
         }
-      },
-      (error: unknown) => {
-        console.error("settings_set failed", error);
-        rollBack();
-      },
-    );
+      }, failed)
+      .finally(settled);
+  };
+
+  const save = (next: TimerSettings) => {
+    intend(next);
+    flush();
   };
 
   const choosePreset = (preset: Preset) => {
