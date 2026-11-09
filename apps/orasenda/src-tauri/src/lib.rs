@@ -87,7 +87,7 @@ pub fn run() {
         .manage(spike)
         .manage(session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
-        .manage(notifications::Notifications::default())
+        .manage(notifications::Notifications)
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
