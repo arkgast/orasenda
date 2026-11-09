@@ -30,8 +30,8 @@ const DEFAULT_PRESET: Preset = "classic";
 // field failed, so the helpers are chosen from the spec that was sent.
 const FOCUS_RANGE = { min: 5, max: 180 };
 const BREAK_RANGE = { min: 1, max: 60 };
-const FOCUS_RANGE_HELP = "Between 5 and 180 minutes.";
-const BREAK_RANGE_HELP = "Between 1 and 60 minutes.";
+const FOCUS_RANGE_HELP = `Between ${FOCUS_RANGE.min} and ${FOCUS_RANGE.max} minutes.`;
+const BREAK_RANGE_HELP = `Between ${BREAK_RANGE.min} and ${BREAK_RANGE.max} minutes.`;
 
 type RangeHelp = { focus: boolean; break: boolean };
 const NO_RANGE_HELP: RangeHelp = { focus: false, break: false };
@@ -373,8 +373,8 @@ export function Today() {
                 label="Focus minutes"
                 type="number"
                 inputMode="numeric"
-                min={5}
-                max={180}
+                min={FOCUS_RANGE.min}
+                max={FOCUS_RANGE.max}
                 value={draft.focus}
                 helper={rangeHelp.focus ? FOCUS_RANGE_HELP : undefined}
                 onChange={(event) => setDraft({ ...draft, focus: event.target.value })}
@@ -387,8 +387,8 @@ export function Today() {
                 label="Break minutes"
                 type="number"
                 inputMode="numeric"
-                min={1}
-                max={60}
+                min={BREAK_RANGE.min}
+                max={BREAK_RANGE.max}
                 value={draft.break}
                 helper={rangeHelp.break ? BREAK_RANGE_HELP : undefined}
                 onChange={(event) => setDraft({ ...draft, break: event.target.value })}
