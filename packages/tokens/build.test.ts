@@ -154,3 +154,10 @@ test("type_group_without_styles_fails", () => {
 test("output_is_deterministic", () => {
   assert.equal(build().css, build().css);
 });
+
+test("emits_a_font_shorthand_per_type_style", () => {
+  const { root } = blocks(build().css);
+  assert.match(root, /--type-body-sm: 400 13px\/18px var\(--font-sans\);/);
+  assert.match(root, /--type-timer-xl: 300 168px\/1 var\(--font-mono\);/);
+  assert.match(root, /--type-body-alt: 400 15px\/24px var\(--font-alt\);/);
+});

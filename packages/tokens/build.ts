@@ -61,12 +61,12 @@ function list(t: Json, group: string): Json[] {
   return g.tokens as Json[];
 }
 
-function styles(t: Json): Json[] {
+function styles(t: Json): { style: Json; family: unknown }[] {
   const type = t.type as Json | undefined;
   if (!type || !Array.isArray(type.groups)) fail('tokens.json has no "type.groups" list');
   return (type.groups as Json[]).flatMap((g, i) => {
     if (!g || !Array.isArray(g.styles)) fail(`type group ${i} ("${g?.name}") has no "styles" list`);
-    return g.styles as Json[];
+    return (g.styles as Json[]).map((style) => ({ style, family: g.family }));
   });
 }
 
@@ -100,7 +100,7 @@ function generate(t: Json): string {
   for (const key of Object.keys(families)) {
     light.push([`font-${key}`, scalar(`font-${key}`, families[key], known)]);
   }
-  for (const style of styles(t)) {
+  for (const { style, family } of styles(t)) {
     const name = tokenName("type styles", style);
     for (const key of Object.keys(style)) {
       if (!STYLE_META.includes(key) && !STYLE_PROPS.some(([k]) => k === key)) {
@@ -111,6 +111,14 @@ function generate(t: Json): string {
       if (style[key] !== undefined) {
         light.push([`type-${name}-${css}`, scalar(`type-${name}`, style[key], known)]);
       }
+    }
+    const { fontWeight: w, fontSize: sz, lineHeight: lh } = style;
+    if (w !== undefined && sz !== undefined && lh !== undefined) {
+      if (typeof family !== "string" || !(family in families)) {
+        fail(`type style "${name}" has an unknown group family ${JSON.stringify(family)}`);
+      }
+      const shorthand = `${scalar(name, w, known)} ${scalar(name, sz, known)}/${scalar(name, lh, known)} var(--font-${family})`;
+      light.push([`type-${name}`, shorthand]);
     }
   }
 
