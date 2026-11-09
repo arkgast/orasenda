@@ -16,14 +16,17 @@ tauri-build.workspace = true
 
 [dependencies]
 orasenda-core = { path = "../../../crates/core" }
+orasenda-store = { path = "../../../crates/store" }
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 tauri.workspace = true
 tauri-specta.workspace = true
+uuid.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 orasenda-platform-macos = { path = "../../../crates/platform-macos" }
 
 [dev-dependencies]
+orasenda-store = { path = "../../../crates/store", features = ["test-hooks"] }
 serde_json.workspace = true

@@ -27,3 +27,6 @@ objc2-user-notifications = { version = "0.3.2", default-features = false, featur
 block2 = { version = "0.6.2", default-features = false, features = ["std"] }
 # SQLite for crates/store only (ADR-002); bundled so iOS and Android build it from source.
 rusqlite = { version = "0.41.1", default-features = false, features = ["bundled"] }
+# App crate only: UUIDv7 session ids and the UUIDv4 device id. Unifies with the copy
+# Tauri already pulls.
+uuid = { version = "1.29.2", features = ["v7", "v4", "serde"] }
