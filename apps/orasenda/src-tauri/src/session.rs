@@ -99,6 +99,23 @@ pub struct SessionService {
     notifications: Option<NotificationStatus>,
     pending: Vec<MilestoneEvent>,
     platform: Platform,
+    recover_owed: RecoverOwed,
+}
+
+/// Launch reads that failed at the database level and are still owed (architect ruling on
+/// #91). `tick` retries them, at most one read attempt a tick.
+#[derive(Debug, Default, Clone, Copy)]
+struct RecoverOwed {
+    /// The settings were not read; a settings write clears this half.
+    settings: bool,
+    /// The `active_session` row was not read; a write records any session it finds there.
+    snapshot: bool,
+}
+
+impl RecoverOwed {
+    fn any(self) -> bool {
+        self.settings || self.snapshot
+    }
 }
 
 /// Settings keys (spec: Store).
@@ -132,13 +149,14 @@ impl SessionService {
                 (None, StoreStatus::Unavailable)
             }
         };
-        let settings = match &store {
-            Some(store) => {
-                let (settings, read_failed) = load_settings(store);
-                if read_failed {
-                    store_status = StoreStatus::Unavailable;
-                }
-                settings
+        let mut recover_owed = RecoverOwed::default();
+        let settings = match store.as_ref().map(|store| store.read(read_settings)) {
+            Some(Ok(settings)) => settings,
+            Some(Err(error)) => {
+                eprintln!("settings: could not be read ({error}); using the defaults for now");
+                recover_owed.settings = true;
+                store_status = StoreStatus::Unavailable;
+                TimerSettings::default()
             }
             None => TimerSettings::default(),
         };
@@ -153,41 +171,101 @@ impl SessionService {
             notifications: None,
             pending: Vec::new(),
             platform,
+            recover_owed,
         };
-        service.recover(now_ms);
+        if let Some(read) = service
+            .store
+            .as_ref()
+            .map(|store| store.read(active_session::get::<Session>))
+        {
+            service.recover(read, now_ms);
+        }
         service
     }
 
-    fn recover(&mut self, now_ms: u64) {
-        let Some(store) = &self.store else {
-            return;
-        };
-        let mut snapshot = match store.read(active_session::get::<Session>) {
+    /// Relaunch recovery from a read of `active_session`. True when it wrote (a session that
+    /// ended while Orasenda was closed).
+    fn recover(&mut self, read: Result<Option<Session>, StoreError>, now_ms: u64) -> bool {
+        let mut snapshot = match read {
             Ok(Some(snapshot)) => snapshot,
-            Ok(None) => return,
+            Ok(None) => return false,
             // Left in place: a later build may read it, and nothing here can repair it.
             Err(StoreError::Json(error)) => {
-                eprintln!("store: the saved session could not be read ({error}); starting idle");
-                return;
+                eprintln!("store: the saved session could not be decoded ({error}); starting idle");
+                return false;
             }
             Err(error) => {
-                eprintln!("store: the saved session could not be read ({error}); starting idle");
+                eprintln!("store: the saved session could not be read ({error}); retrying");
+                self.recover_owed.snapshot = true;
                 self.store_status = StoreStatus::Unavailable;
-                return;
+                return false;
             }
         };
         if let Some(Milestone::Ended(record)) = snapshot.advance(now_ms) {
-            self.pending.push(MilestoneEvent {
-                kind: MilestoneKind::Recovered,
-                end_reason: Some(record.end_reason),
-                session_id: Some(record.id.clone()),
-            });
+            self.pending.push(recovered(&record));
             self.persist(now_ms, Some(record));
-            return;
+            return true;
         }
         self.engine = snapshot;
         if !self.engine.is_idle() {
             self.keep_awake = self.begin_keep_awake();
+        }
+        false
+    }
+
+    /// Retries the owed launch reads in one read transaction. The snapshot is read only
+    /// while nothing has happened since launch (engine idle, nothing owed to the store);
+    /// otherwise the next write records it. True when recovery wrote.
+    fn retry_recovery(&mut self, now_ms: u64) -> bool {
+        let owed = self.recover_owed;
+        let want_snapshot = owed.snapshot
+            && self.engine.is_idle()
+            && !self.snapshot_dirty
+            && self.unsaved.is_empty();
+        if !owed.settings && !want_snapshot {
+            return false;
+        }
+        let Some(store) = &self.store else {
+            return false;
+        };
+        let read = store.read(|txn| {
+            let settings = if owed.settings {
+                Some(read_settings(txn)?)
+            } else {
+                None
+            };
+            // A decode error is kept apart: it is not a read failure (see `recover`).
+            let snapshot = want_snapshot.then(|| active_session::get::<Session>(txn));
+            if let Some(Err(error)) = &snapshot
+                && !matches!(error, StoreError::Json(_))
+            {
+                return Err(error.clone());
+            }
+            Ok((settings, snapshot))
+        });
+        // Still failing: already logged when the debt began.
+        let Ok((settings, snapshot)) = read else {
+            return false;
+        };
+        if let Some(settings) = settings {
+            self.settings = settings;
+            self.recover_owed.settings = false;
+        }
+        let mut wrote = false;
+        if let Some(snapshot) = snapshot {
+            self.recover_owed.snapshot = false;
+            wrote = self.recover(snapshot, now_ms);
+        }
+        self.refresh_status();
+        wrote
+    }
+
+    /// Back to `ok` once nothing is owed to or from the store.
+    fn refresh_status(&mut self) {
+        let owes_nothing =
+            !self.recover_owed.any() && !self.snapshot_dirty && self.unsaved.is_empty();
+        if owes_nothing && self.store.is_some() {
+            self.store_status = StoreStatus::Ok;
         }
     }
 
@@ -223,11 +301,12 @@ impl SessionService {
     }
 
     /// The scheduler's once-a-second step: advance; write an end together with anything
-    /// owed, or else retry what is owed. At most one write attempt.
+    /// owed, or else retry owed launch reads and then what is owed to the store. At most one
+    /// read and one write attempt.
     pub fn tick(&mut self, now_ms: u64) -> Effects {
         let was_idle = self.engine.is_idle();
         let mut outcome = Outcome::default();
-        if !self.advance(now_ms, &mut outcome) {
+        if !self.advance(now_ms, &mut outcome) && !self.retry_recovery(now_ms) {
             self.flush(now_ms);
         }
         self.effects(now_ms, was_idle, outcome, Ok(()))
@@ -327,6 +406,9 @@ impl SessionService {
             message: "settings couldn't be saved".into(),
         })?;
         self.settings = settings;
+        // The user's choice now wins over the values the launch could not read.
+        self.recover_owed.settings = false;
+        self.refresh_status();
         Ok(())
     }
 
@@ -435,22 +517,43 @@ impl SessionService {
             return Err(StoreError::Closed);
         };
         let (unsaved, engine) = (&self.unsaved, &self.engine);
+        let row_unread = self.recover_owed.snapshot;
         let written = store.write(now_ms, |txn| {
+            // The launch read of the row failed: whatever session it holds predates this
+            // run, so it is recorded as ended before the row is replaced.
+            let found = if row_unread {
+                unread_row(txn, now_ms)?
+            } else {
+                RowFound::Nothing
+            };
+            if let RowFound::Ended(record) = &found {
+                focus_sessions::insert(txn, record)?;
+            }
             for record in unsaved {
                 focus_sessions::insert(txn, record)?;
             }
             if engine.is_idle() {
-                active_session::clear(txn)?;
+                // An undecodable row is left in place, as at launch.
+                if !matches!(found, RowFound::Undecodable) {
+                    active_session::clear(txn)?;
+                }
             } else {
                 active_session::put(txn, engine)?;
             }
-            extra(txn)
+            extra(txn)?;
+            Ok(found)
+        });
+        let written = written.map(|found| {
+            self.recover_owed.snapshot = false;
+            if let RowFound::Ended(record) = found {
+                self.pending.push(recovered(&record));
+            }
         });
         match &written {
             Ok(()) => {
                 self.unsaved.clear();
                 self.snapshot_dirty = false;
-                self.store_status = StoreStatus::Ok;
+                self.refresh_status();
             }
             Err(error) => {
                 // Logged once per entry into the degraded state, not per retry.
@@ -499,54 +602,75 @@ impl SessionService {
     }
 }
 
+/// What a write found in an `active_session` row whose launch read failed.
+enum RowFound {
+    Nothing,
+    /// The session it held, recorded as ended: `completed` at its planned end if that has
+    /// passed, otherwise `stopped` with its focused time (another session may now be live,
+    /// so it cannot be restored).
+    Ended(SessionRecord),
+    Undecodable,
+}
+
+fn unread_row(txn: &Txn, now_ms: u64) -> Result<RowFound, StoreError> {
+    let mut session = match active_session::get::<Session>(txn) {
+        Ok(Some(session)) => session,
+        Ok(None) => return Ok(RowFound::Nothing),
+        Err(StoreError::Json(error)) => {
+            eprintln!("store: the saved session could not be decoded ({error}); leaving it");
+            return Ok(RowFound::Undecodable);
+        }
+        Err(error) => return Err(error),
+    };
+    if let Some(Milestone::Ended(record)) = session.advance(now_ms) {
+        return Ok(RowFound::Ended(record));
+    }
+    // An idle snapshot has nothing to record.
+    Ok(session
+        .stop(now_ms)
+        .map_or(RowFound::Nothing, RowFound::Ended))
+}
+
+/// The `recovered` milestone for a session that ended while Orasenda was closed.
+fn recovered(record: &SessionRecord) -> MilestoneEvent {
+    MilestoneEvent {
+        kind: MilestoneKind::Recovered,
+        end_reason: Some(record.end_reason),
+        session_id: Some(record.id.clone()),
+    }
+}
+
 /// Reads the settings. A value that fails to decode, a saved `Quick` and an out-of-range
-/// Custom are logged and replaced by their default in memory, never rewritten. The flag is
-/// true when the database itself failed a read, which the view shows as `unavailable`.
-fn load_settings(store: &Store) -> (TimerSettings, bool) {
+/// Custom are logged and replaced by their default in memory, never rewritten. A database
+/// error fails the whole read.
+fn read_settings(txn: &Txn) -> Result<TimerSettings, StoreError> {
     let defaults = TimerSettings::default();
-    let mut read_failed = false;
-    let mut preset = load_setting(store, KEY_PRESET, defaults.preset, &mut read_failed);
+    let mut preset = read_setting(txn, KEY_PRESET, defaults.preset)?;
     if preset == Preset::Quick {
         eprintln!("settings: {KEY_PRESET} is quick, which is never saved; using the default");
         preset = defaults.preset;
     }
-    let mut custom = load_setting(store, KEY_CUSTOM, defaults.custom, &mut read_failed);
+    let mut custom = read_setting(txn, KEY_CUSTOM, defaults.custom)?;
     if custom.validate().is_err() {
         eprintln!("settings: {KEY_CUSTOM} is out of range; using the default");
         custom = defaults.custom;
     }
-    let notify_session_end = load_setting(
-        store,
-        KEY_NOTIFY,
-        defaults.notify_session_end,
-        &mut read_failed,
-    );
-    let settings = TimerSettings {
+    Ok(TimerSettings {
         preset,
         custom,
-        notify_session_end,
-    };
-    (settings, read_failed)
+        notify_session_end: read_setting(txn, KEY_NOTIFY, defaults.notify_session_end)?,
+    })
 }
 
-fn load_setting<T: DeserializeOwned>(
-    store: &Store,
-    key: &str,
-    default: T,
-    read_failed: &mut bool,
-) -> T {
-    match store.read(|txn| settings::get::<T>(txn, key)) {
-        Ok(Some(value)) => value,
-        Ok(None) => default,
+fn read_setting<T: DeserializeOwned>(txn: &Txn, key: &str, default: T) -> Result<T, StoreError> {
+    match settings::get::<T>(txn, key) {
+        Ok(Some(value)) => Ok(value),
+        Ok(None) => Ok(default),
         Err(StoreError::Json(error)) => {
             eprintln!("settings: {key} could not be decoded ({error}); using the default");
-            default
+            Ok(default)
         }
-        Err(error) => {
-            eprintln!("settings: {key} could not be read ({error}); using the default");
-            *read_failed = true;
-            default
-        }
+        Err(error) => Err(error),
     }
 }
 
@@ -606,8 +730,9 @@ pub(crate) fn run_action_on<H: Host>(
         });
     };
     let effects = lock(service).apply(action, host.now_ms(), new_session_id);
+    // Taken first: the action is committed whatever happens while publishing.
     let result = effects.result.clone();
-    scheduler::publish(host, effects);
+    scheduler::publish_caught(host, effects);
     result
 }
 
@@ -620,8 +745,9 @@ pub(crate) fn run_state<H: Host>(host: &H) -> TimerState {
             pending: Vec::new(),
         };
     };
+    // `pending` is already drained into `state`, so a panic while publishing must not lose it.
     let (state, effects) = lock(service).state(host.now_ms());
-    scheduler::publish(host, effects);
+    scheduler::publish_caught(host, effects);
     state
 }
 
@@ -1972,6 +2098,211 @@ mod tests {
         assert!(poisoner.join().is_err());
         assert!(service.is_poisoned());
         assert_eq!(lock(&service).view(T0).state, EngineState::Idle);
+    }
+
+    /// A store holding FiftyTen settings and a running session `a` started at `T0`, opened
+    /// again with reads failing.
+    fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
+        let mut s = service();
+        let saved = TimerSettings {
+            preset: Preset::FiftyTen,
+            ..TimerSettings::default()
+        };
+        s.set_settings(saved, T0).expect("settings save");
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let store = s.store.take().expect("store");
+        store.fail_reads(true);
+        SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::NotDetermined, false).platform,
+            now_ms,
+        )
+    }
+
+    fn row_a() -> SessionRecord {
+        // `has_row` probes by id only.
+        SessionRecord {
+            id: SessionId("a".into()),
+            preset: Preset::Classic,
+            phase: orasenda_core::Phase::Focus,
+            planned_ms: CLASSIC_MS,
+            started_ms: T0,
+            ended_ms: T0,
+            paused_total_ms: 0,
+            focused_ms: 0,
+            end_reason: EndReason::Stopped,
+            extensions: 0,
+        }
+    }
+
+    #[test]
+    fn launch_with_reads_failing_starts_idle_on_defaults_and_unavailable() {
+        let mut s = relaunch_with_reads_failing(T0 + MINUTE);
+        let view = s.view(T0 + MINUTE);
+        assert_eq!(view.state, EngineState::Idle);
+        assert_eq!(view.store, StoreStatus::Unavailable);
+        assert_eq!(s.settings(), TimerSettings::default());
+        assert!(s.keep_awake.is_none());
+        assert!(s.pending.is_empty());
+        let still = s.tick(T0 + 2 * MINUTE);
+        assert_eq!(still.view.state, EngineState::Idle);
+        assert_eq!(still.view.store, StoreStatus::Unavailable);
+        db(&s).fail_reads(false);
+        assert!(
+            snapshot(db(&s)).is_some(),
+            "the unread row is left in place"
+        );
+    }
+
+    #[test]
+    fn reads_recover_and_the_next_tick_runs_recovery() {
+        let mut s = relaunch_with_reads_failing(T0 + MINUTE);
+        db(&s).fail_reads(false);
+        let effects = s.tick(T0 + 2 * MINUTE);
+        assert_eq!(effects.view.store, StoreStatus::Ok);
+        assert_eq!(effects.view.state, EngineState::Running);
+        assert_eq!(effects.view.session_id, Some(SessionId("a".into())));
+        assert_eq!(effects.view.remaining_ms, CLASSIC_MS - 2 * MINUTE);
+        assert!(s.keep_awake.is_some());
+        assert_eq!(s.settings().preset, Preset::FiftyTen);
+
+        let mut late = relaunch_with_reads_failing(T0 + MINUTE);
+        db(&late).fail_reads(false);
+        let effects = late.tick(T0 + 60 * MINUTE);
+        assert_eq!(effects.view.store, StoreStatus::Ok);
+        assert_eq!(effects.view.state, EngineState::Idle);
+        assert_eq!(
+            late.pending,
+            [milestone(
+                MilestoneKind::Recovered,
+                Some(EndReason::Completed),
+                "a"
+            )]
+        );
+        assert!(has_row(db(&late), &row_a()));
+        assert_eq!(snapshot(db(&late)), None);
+    }
+
+    #[test]
+    fn start_while_row_unread_then_flush_records_the_pre_quit_session() {
+        let mut s = relaunch_with_reads_failing(T0 + MINUTE);
+        db(&s).fail_writes(true);
+        let started = s.apply(start(Preset::Classic), T0 + 3 * MINUTE, id("b"));
+        assert_eq!(started.result, Ok(started.view.clone()));
+        assert_eq!(started.view.store, StoreStatus::Unavailable);
+        db(&s).fail_reads(false);
+        db(&s).fail_writes(false);
+        let flushed = s.tick(T0 + 4 * MINUTE);
+        assert_eq!(flushed.view.store, StoreStatus::Ok);
+        assert_eq!(flushed.view.session_id, Some(SessionId("b".into())));
+        assert!(has_row(db(&s), &row_a()));
+        assert_eq!(
+            snapshot(db(&s)).and_then(|session| session.view(T0).session_id),
+            Some(SessionId("b".into()))
+        );
+        assert_eq!(
+            s.pending,
+            [milestone(
+                MilestoneKind::Recovered,
+                Some(EndReason::Stopped),
+                "a"
+            )]
+        );
+        let back = relaunch(&mut s, T0 + 5 * MINUTE);
+        assert_eq!(
+            back.view(T0 + 5 * MINUTE).session_id,
+            Some(SessionId("b".into()))
+        );
+    }
+
+    #[test]
+    fn start_while_row_unread_records_a_finished_pre_quit_session_as_completed() {
+        let mut s = relaunch_with_reads_failing(T0 + 60 * MINUTE);
+        let started = s.apply(start(Preset::Classic), T0 + 60 * MINUTE, id("b"));
+        assert_eq!(started.view.state, EngineState::Running);
+        assert_eq!(
+            s.pending,
+            [milestone(
+                MilestoneKind::Recovered,
+                Some(EndReason::Completed),
+                "a"
+            )]
+        );
+        db(&s).fail_reads(false);
+        assert!(has_row(db(&s), &row_a()));
+        assert_eq!(
+            snapshot(db(&s)).and_then(|session| session.view(T0).session_id),
+            Some(SessionId("b".into()))
+        );
+        // Settings are still owed; the next tick reads them and the status returns to ok.
+        let next = s.tick(T0 + 61 * MINUTE);
+        assert_eq!(next.view.store, StoreStatus::Ok);
+        assert_eq!(s.settings().preset, Preset::FiftyTen);
+    }
+
+    #[test]
+    fn settings_saved_while_unread_win_over_stored_ones() {
+        let mut s = relaunch_with_reads_failing(T0 + 60 * MINUTE);
+        let chosen = TimerSettings {
+            preset: Preset::DeepBlock,
+            ..TimerSettings::default()
+        };
+        s.set_settings(chosen.clone(), T0 + 60 * MINUTE)
+            .expect("writes still work");
+        db(&s).fail_reads(false);
+        s.tick(T0 + 61 * MINUTE);
+        assert_eq!(s.settings(), chosen);
+        assert_eq!(s.view(T0 + 61 * MINUTE).store, StoreStatus::Ok);
+    }
+
+    /// Panics on every render.
+    struct PanickingSurface;
+
+    impl NativeSurface for PanickingSurface {
+        fn render(&self, _view: &TimerView) {
+            panic!("a surface failed");
+        }
+    }
+
+    fn with_panicking_surface(host: &TestHost) {
+        host.0
+            .surfaces
+            .0
+            .lock()
+            .expect("surfaces")
+            .push(Arc::new(PanickingSurface));
+    }
+
+    #[test]
+    fn run_action_returns_its_result_when_publish_panics() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        with_panicking_surface(&host);
+        let started = run_action_on(&host, start(Preset::Classic)).expect("the start committed");
+        assert_eq!(started.state, EngineState::Running);
+        let paused = run_action_on(&host, Action::Pause).expect("the pause committed");
+        assert_eq!(paused.state, EngineState::Paused);
+    }
+
+    #[test]
+    fn run_state_returns_pending_when_publish_panics() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let mut back = relaunch(&mut s, T0 + 60 * MINUTE);
+        back.apply(start(Preset::Classic), T0 + 60 * MINUTE, id("b"));
+        let Fakes { log, notifier, .. } = fakes(NotificationStatus::Denied, false);
+        let host = TestHost::with(back, log, notifier);
+        host.set_now(T0 + 60 * MINUTE);
+        with_panicking_surface(&host);
+        let state = run_state(&host);
+        assert_eq!(state.view.state, EngineState::Running);
+        assert_eq!(
+            state.pending,
+            [milestone(
+                MilestoneKind::Recovered,
+                Some(EndReason::Completed),
+                "a"
+            )]
+        );
     }
 
     #[test]

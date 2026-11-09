@@ -171,6 +171,15 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     }
 }
 
+/// [`publish`] for a command, whose action is already committed: a panic while publishing
+/// (a surface, an emit) is logged instead of turning that result into a failure.
+pub(crate) fn publish_caught<H: Host>(host: &H, effects: Effects) {
+    let published = panic::catch_unwind(AssertUnwindSafe(|| publish(host, effects)));
+    if published.is_err() {
+        eprintln!("session: publishing a command's effects panicked; its result stands");
+    }
+}
+
 /// Re-reads the status off-lock (a permission granted later in System Settings counts),
 /// publishes a change, then posts when granted.
 fn notify_end<H: Host>(host: &H) {
