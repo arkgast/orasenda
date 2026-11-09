@@ -1,4 +1,4 @@
-import type { CustomSpec, TimerSettings } from "./bindings";
+import type { CustomSpec, Settings } from "./bindings";
 import { commands } from "./bindings";
 
 // The settings save chain (docs/conventions.md, "Newest wins"; #101, #113).
@@ -30,30 +30,26 @@ export const CUSTOM_KEYS = [
 ] as const satisfies readonly (keyof CustomSpec)[];
 
 /**
- * Every `TimerSettings` field, compared by `sameSettings`. A field added to the generated type
+ * Every `Settings` field, compared by `sameSettings`. A field added to the generated type
  * must be listed here, or a change to only that field would never be sent (#114).
  */
 export const SETTINGS_KEYS = [
+  "theme",
   "preset",
   "custom",
   "notifySessionEnd",
-] as const satisfies readonly (keyof TimerSettings)[];
+] as const satisfies readonly (keyof Settings)[];
 
 // Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field these lists miss.
 export type CustomKeysAreComplete = AssertTrue<CoversEveryKey<CustomSpec, typeof CUSTOM_KEYS>>;
-export type SettingsKeysAreComplete = AssertTrue<
-  CoversEveryKey<TimerSettings, typeof SETTINGS_KEYS>
->;
+export type SettingsKeysAreComplete = AssertTrue<CoversEveryKey<Settings, typeof SETTINGS_KEYS>>;
 
 // A new non-`custom` field must be a primitive, or `sameSettings` would compare it by reference;
 // an object field fails to compile here until it gets its own compare.
 export type OtherSettingsArePrimitive = AssertTrue<
-  [
-    Exclude<
-      TimerSettings[Exclude<keyof TimerSettings, "custom">],
-      string | number | boolean | null
-    >,
-  ] extends [never]
+  [Exclude<Settings[Exclude<keyof Settings, "custom">], string | number | boolean | null>] extends [
+    never,
+  ]
     ? true
     : false
 >;
@@ -62,7 +58,7 @@ export function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
   return CUSTOM_KEYS.every((key) => a[key] === b[key]);
 }
 
-function sameSettings(a: TimerSettings | null, b: TimerSettings | null): boolean {
+function sameSettings(a: Settings | null, b: Settings | null): boolean {
   if (!a || !b) return a === b;
   // `custom` is the one object field; a new object field needs its own compare here.
   return SETTINGS_KEYS.every((key) =>
@@ -73,7 +69,7 @@ function sameSettings(a: TimerSettings | null, b: TimerSettings | null): boolean
 /** What the live page is told. */
 export type SettingsListener = {
   /** The settings to show. `resetDraft`: the Custom fields must show `settings.custom`. */
-  shown: (settings: TimerSettings, resetDraft: boolean) => void;
+  shown: (settings: Settings, resetDraft: boolean) => void;
   /** The latest intent was written: earlier range helpers no longer apply. */
   accepted: () => void;
   /** Rust refused this spec as out of range; the draft stays as typed. */
@@ -83,12 +79,12 @@ export type SettingsListener = {
 };
 
 let listener: SettingsListener | null = null;
-let intended: TimerSettings | null = null;
-let accepted: TimerSettings | null = null;
+let intended: Settings | null = null;
+let accepted: Settings | null = null;
 let busy = false;
 let getWanted = false;
 // The intent a get in flight was sent under; `null` when no get is in flight.
-let getSentUnder: { intent: TimerSettings | null } | null = null;
+let getSentUnder: { intent: Settings | null } | null = null;
 // Bumped by the test reset: a reply from an earlier generation is dropped.
 let generation = 0;
 
@@ -105,7 +101,7 @@ export function register(next: SettingsListener): () => void {
 }
 
 /** The latest intent (what a change builds on), or `null` before the first load. */
-export function latest(): TimerSettings | null {
+export function latest(): Settings | null {
   return intended;
 }
 
@@ -120,7 +116,7 @@ export function load(): void {
 }
 
 /** Makes `next` the latest intent, tells the live page, and sends it when the lane is free. */
-export function save(next: TimerSettings): void {
+export function save(next: Settings): void {
   intended = next;
   listener?.shown(next, false);
   pump();
@@ -154,7 +150,7 @@ function pump(): void {
   }
 }
 
-function sendSave(next: TimerSettings): void {
+function sendSave(next: Settings): void {
   busy = true;
   const mine = generation;
   const failed = (error: unknown) => {

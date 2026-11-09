@@ -5,10 +5,10 @@ import type {
   MilestoneEvent_Serialize,
   MilestoneKind,
   Preset,
+  Settings,
   StartRequest_Deserialize,
   StoreStatus,
   TimerCommandError,
-  TimerSettings,
   TimerView_Serialize,
 } from "../bindings";
 import { commands } from "../bindings";
@@ -96,7 +96,7 @@ export function Today() {
     },
   });
   // `settings` is what the page shows; the save chain lives in ../settingsQueue.
-  const [settings, setSettings] = useState<TimerSettings | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
   const [rangeHelp, setRangeHelp] = useState<RangeHelp>(NO_RANGE_HELP);

@@ -3,7 +3,7 @@
 // against the queue so the test outlives the Today redesign (#129).
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { TimerSettings } from "./bindings";
+import type { Settings } from "./bindings";
 import { argsOf, deferred, mockBackend, SETTINGS, settle } from "./pages/testing";
 import {
   load,
@@ -33,9 +33,9 @@ function listener() {
 
 // Each settings_get call is held; held[i] answers the i-th call.
 function heldGets() {
-  const held: ReturnType<typeof deferred<TimerSettings>>[] = [];
+  const held: ReturnType<typeof deferred<Settings>>[] = [];
   const reply = () => {
-    const d = deferred<TimerSettings>();
+    const d = deferred<Settings>();
     held.push(d);
     return d.promise;
   };
@@ -71,7 +71,7 @@ test("strict_mode_mount_sends_one_settings_get", async () => {
 });
 
 test("remount_after_a_change_queues_one_more_get", async () => {
-  const CHANGED: TimerSettings = { ...SETTINGS, preset: "fifty_ten" };
+  const CHANGED: Settings = { ...SETTINGS, preset: "fifty_ten" };
   const gets = heldGets();
   const saving = deferred<null>();
   const backend = mockBackend({

@@ -1,7 +1,7 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { TimerSettings } from "../bindings";
+import type { Settings } from "../bindings";
 import { resetSettingsQueueForTests } from "../settingsQueue";
 import { resetTimerQueueForTests } from "../timerQueue";
 import { Today } from "./Today";
@@ -31,7 +31,7 @@ async function renderToday(replies: Replies = {}) {
   return { backend, ...view };
 }
 
-function savedSettings(settings: Partial<TimerSettings>): Replies {
+function savedSettings(settings: Partial<Settings>): Replies {
   return { settings_get: () => ({ ...SETTINGS, ...settings }) };
 }
 
@@ -360,7 +360,7 @@ test("preset_radio_reflects_saved_settings", async () => {
 test("custom_shows_two_inputs_and_invalid_spec_shows_helper", async () => {
   const { backend } = await renderToday({
     settings_set: (args) =>
-      (args as { settings: TimerSettings }).settings.custom.focusMin > 180
+      (args as { settings: Settings }).settings.custom.focusMin > 180
         ? Promise.reject(INVALID_SPEC)
         : null,
   });
@@ -402,6 +402,7 @@ test("custom_inputs_commit_on_blur_not_per_keystroke", async () => {
   expect(argsOf(backend.calls, "settings_set")).toEqual([
     {
       settings: {
+        theme: "system",
         preset: "custom",
         custom: { focusMin: 60, breakMin: 10 },
         notifySessionEnd: true,
@@ -409,6 +410,7 @@ test("custom_inputs_commit_on_blur_not_per_keystroke", async () => {
     },
     {
       settings: {
+        theme: "system",
         preset: "custom",
         custom: { focusMin: 60, breakMin: 15 },
         notifySessionEnd: true,
@@ -453,6 +455,7 @@ test("preset_change_after_custom_commit_keeps_the_edit", async () => {
   expect(argsOf(backend.calls, "settings_set")).toEqual([
     {
       settings: {
+        theme: "system",
         preset: "custom",
         custom: { focusMin: 60, breakMin: 10 },
         notifySessionEnd: true,
@@ -460,6 +463,7 @@ test("preset_change_after_custom_commit_keeps_the_edit", async () => {
     },
     {
       settings: {
+        theme: "system",
         preset: "classic",
         custom: { focusMin: 60, breakMin: 10 },
         notifySessionEnd: true,
@@ -472,7 +476,7 @@ test("committing_the_saved_spec_again_clears_the_helper", async () => {
   const { backend } = await renderToday({
     ...savedSettings({ preset: "custom" }),
     settings_set: (args) =>
-      (args as { settings: TimerSettings }).settings.custom.focusMin > 180
+      (args as { settings: Settings }).settings.custom.focusMin > 180
         ? Promise.reject(INVALID_SPEC)
         : null,
   });
@@ -518,7 +522,7 @@ test("failed_settings_set_rolls_back_to_the_accepted_settings", async () => {
     ...savedSettings({ preset: "custom" }),
     // Only the first save (Custom, 60 minutes) is written; every later one fails.
     settings_set: (args) => {
-      const { preset, custom } = (args as { settings: TimerSettings }).settings;
+      const { preset, custom } = (args as { settings: Settings }).settings;
       return preset === "custom" && custom.focusMin === 60
         ? null
         : Promise.reject({ kind: "write", message: "disk full" });
@@ -568,9 +572,9 @@ function heldSaves(): { held: Held[]; reply: () => Promise<null> } {
   };
 }
 
-function settingsSent(backend: { calls: { cmd: string; args: unknown }[] }): TimerSettings[] {
+function settingsSent(backend: { calls: { cmd: string; args: unknown }[] }): Settings[] {
   return argsOf(backend.calls, "settings_set").map(
-    (args) => (args as { settings: TimerSettings }).settings,
+    (args) => (args as { settings: Settings }).settings,
   );
 }
 
@@ -595,7 +599,12 @@ test("one_save_in_flight_and_the_latest_intent_follows_it", async () => {
 
   // Only the first save is in flight; the screen already shows the latest intent.
   expect(settingsSent(backend)).toEqual([
-    { preset: "custom", custom: { focusMin: 60, breakMin: 10 }, notifySessionEnd: true },
+    {
+      theme: "system",
+      preset: "custom",
+      custom: { focusMin: 60, breakMin: 10 },
+      notifySessionEnd: true,
+    },
   ]);
   expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
 
@@ -603,6 +612,7 @@ test("one_save_in_flight_and_the_latest_intent_follows_it", async () => {
   // Only the latest intent follows, not each step on the way to it.
   expect(settingsSent(backend)).toHaveLength(2);
   expect(settingsSent(backend)[1]).toEqual({
+    theme: "system",
     preset: "fifty_ten",
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
@@ -703,6 +713,7 @@ test("out_of_range_spec_replaced_while_in_flight_is_not_kept", async () => {
   fireEvent.click(screen.getByRole("radio", { name: "Classic 25/5" }));
   await settle();
   expect(settingsSent(backend)[2]).toEqual({
+    theme: "system",
     preset: "classic",
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
@@ -735,6 +746,7 @@ test("out_of_range_spec_after_an_accepted_save_keeps_that_save", async () => {
   fireEvent.click(screen.getByRole("radio", { name: "Classic 25/5" }));
   await settle();
   expect(settingsSent(backend)[2]).toEqual({
+    theme: "system",
     preset: "classic",
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
@@ -760,6 +772,7 @@ test("unmount_with_a_chained_save_still_sends_the_latest_intent", async () => {
 
   expect(settingsSent(backend)).toHaveLength(2);
   expect(settingsSent(backend)[1]).toEqual({
+    theme: "system",
     preset: "fifty_ten",
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
@@ -771,7 +784,7 @@ test("unmount_with_a_chained_save_still_sends_the_latest_intent", async () => {
 
 /** A backend whose settings_get returns what the last answered settings_set wrote. */
 function statefulBackend() {
-  let stored: TimerSettings = { ...SETTINGS, preset: "custom" };
+  let stored: Settings = { ...SETTINGS, preset: "custom" };
   const held: Held[] = [];
   const backend = mockBackend({
     settings_get: () => stored,
@@ -779,7 +792,7 @@ function statefulBackend() {
       new Promise<null>((done, fail) => {
         held.push({
           resolve: () => {
-            stored = (args as { settings: TimerSettings }).settings;
+            stored = (args as { settings: Settings }).settings;
             done(null);
           },
           reject: fail,
@@ -895,7 +908,7 @@ const FOCUS_HELP = RANGE_HELP;
 const BREAK_HELP = "Between 1 and 60 minutes.";
 
 function rejectOutOfRange(args: unknown) {
-  const { focusMin, breakMin } = (args as { settings: TimerSettings }).settings.custom;
+  const { focusMin, breakMin } = (args as { settings: Settings }).settings.custom;
   const focusBad = focusMin < 5 || focusMin > 180;
   const breakBad = breakMin < 1 || breakMin > 60;
   return focusBad || breakBad ? Promise.reject(INVALID_SPEC) : null;
