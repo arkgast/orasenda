@@ -26,7 +26,15 @@ const PRESETS: ReadonlyArray<{ preset: Preset; label: string }> = [
 // The preset Rust uses when nothing is saved; Start uses it until `settings_get` answers.
 const DEFAULT_PRESET: Preset = "classic";
 
-const RANGE_HELP = "Between 5 and 180 minutes.";
+// Mirrors `CustomSpec::validate` in crates/core/src/timer/mod.rs: the refusal does not say which
+// field failed, so the helpers are chosen from the spec that was sent.
+const FOCUS_RANGE = { min: 5, max: 180 };
+const BREAK_RANGE = { min: 1, max: 60 };
+const FOCUS_RANGE_HELP = "Between 5 and 180 minutes.";
+const BREAK_RANGE_HELP = "Between 1 and 60 minutes.";
+
+type RangeHelp = { focus: boolean; break: boolean };
+const NO_RANGE_HELP: RangeHelp = { focus: false, break: false };
 
 const EXPLANATION = "Orasenda can tell you when a session ends, even when its window is hidden.";
 
@@ -102,6 +110,17 @@ export type OtherSettingsArePrimitive = AssertTrue<
     : false
 >;
 
+/**
+ * The helpers to show for a refused spec. When neither field is out of range locally (no spec
+ * was sent, or the bounds drifted from core's), both show so the refusal is never silent.
+ */
+function rangeHelpFor(custom: CustomSpec | null | undefined): RangeHelp {
+  if (!custom) return { focus: true, break: true };
+  const focus = custom.focusMin < FOCUS_RANGE.min || custom.focusMin > FOCUS_RANGE.max;
+  const brk = custom.breakMin < BREAK_RANGE.min || custom.breakMin > BREAK_RANGE.max;
+  return focus || brk ? { focus, break: brk } : { focus: true, break: true };
+}
+
 function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
   return CUSTOM_KEYS.every((key) => a[key] === b[key]);
 }
@@ -121,7 +140,7 @@ function logFailure(name: string) {
 /**
  * Today: the ring, the mode, the preset choice and the one primary action. Every time string on
  * it comes formatted from Rust (the view or the clock tick); the only local state is the
- * one-shot notice, the saved settings, the Custom drafts and whether the range helper shows.
+ * one-shot notice, the saved settings, the Custom drafts and which range helpers show.
  */
 export function Today() {
   const clock = useClock();
@@ -146,7 +165,7 @@ export function Today() {
   const saving = useRef(false);
   const mounted = useRef(true);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
-  const [showRangeHelp, setShowRangeHelp] = useState(false);
+  const [rangeHelp, setRangeHelp] = useState<RangeHelp>(NO_RANGE_HELP);
   const [starting, setStarting] = useState(false);
   const presetName = useId();
 
@@ -219,7 +238,7 @@ export function Today() {
       .then((result) => {
         if (result.status === "ok") {
           accepted.current = next;
-          if (mounted.current && sameSettings(intended.current, next)) setShowRangeHelp(false);
+          if (mounted.current && sameSettings(intended.current, next)) setRangeHelp(NO_RANGE_HELP);
         } else if (result.error.kind === "invalidSpec") {
           if (!mounted.current) return;
           const latest = intended.current;
@@ -227,7 +246,7 @@ export function Today() {
           if (!latest || !sameCustom(latest.custom, next.custom) || !accepted.current) return;
           // Keep the typed draft beside the helper, but never resend the rejected spec.
           intend({ ...latest, custom: accepted.current.custom });
-          setShowRangeHelp(true);
+          setRangeHelp(rangeHelpFor(next.custom));
         } else {
           failed(result.error);
         }
@@ -252,7 +271,7 @@ export function Today() {
     if (!latest || !custom) return;
     if (custom.focusMin === latest.custom.focusMin && custom.breakMin === latest.custom.breakMin) {
       // Back to a spec Rust has (or is saving): an earlier range helper no longer applies.
-      setShowRangeHelp(false);
+      setRangeHelp(NO_RANGE_HELP);
       return;
     }
     save({ ...latest, custom });
@@ -264,9 +283,9 @@ export function Today() {
       .timerStart(request)
       .then((result) => {
         if (result.status === "ok") {
-          setShowRangeHelp(false);
+          setRangeHelp(NO_RANGE_HELP);
         } else if (result.error.kind === "invalidSpec") {
-          setShowRangeHelp(true);
+          setRangeHelp(rangeHelpFor(request.custom));
         } else {
           console.error("timer_start failed", result.error);
         }
@@ -357,7 +376,7 @@ export function Today() {
                 min={5}
                 max={180}
                 value={draft.focus}
-                helper={showRangeHelp ? RANGE_HELP : undefined}
+                helper={rangeHelp.focus ? FOCUS_RANGE_HELP : undefined}
                 onChange={(event) => setDraft({ ...draft, focus: event.target.value })}
                 onBlur={commitCustom}
                 onKeyDown={(event) => {
@@ -371,6 +390,7 @@ export function Today() {
                 min={1}
                 max={60}
                 value={draft.break}
+                helper={rangeHelp.break ? BREAK_RANGE_HELP : undefined}
                 onChange={(event) => setDraft({ ...draft, break: event.target.value })}
                 onBlur={commitCustom}
                 onKeyDown={(event) => {
