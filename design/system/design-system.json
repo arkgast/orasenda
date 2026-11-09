@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-09T01:53:16Z",
+    "at": "2026-11-09T01:59:58Z",
     "via": "Claude Code",
-    "note": "MenuBarTimer: Menu-bar glyphs note for the native NSStatusItem (template images per mode, 18 pt, no digits while idle) (#86)."
+    "note": "MenuBarTimer glyphs: static focus circle, 14 pt shape on an 18 pt canvas, plain system title (not tabular), VoiceOver label; README type note names the native exception (#86)."
   }
 }
