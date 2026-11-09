@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-08T22:37:12Z",
+    "at": "2026-11-09T01:53:16Z",
     "via": "Claude Code",
-    "note": "IntentPrompt in two steps: Back to focus is the only primary in both; step 2 shows only the reasons, Continue to <app> (aria-disabled until a reason) and Back to focus (#55)."
+    "note": "MenuBarTimer: Menu-bar glyphs note for the native NSStatusItem (template images per mode, 18 pt, no digits while idle) (#86)."
   }
 }
