@@ -152,6 +152,7 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     let Effects {
         view,
         was_idle,
+        store_changed,
         milestones,
         ended,
         notify_session_end,
@@ -160,7 +161,7 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         seq,
         ..
     } = effects;
-    if !was_idle || view.state != EngineState::Idle {
+    if !was_idle || view.state != EngineState::Idle || store_changed {
         publish_view(host, seq, &view);
     }
     let completed = ended.is_some_and(|record| record.end_reason == EndReason::Completed);
@@ -295,7 +296,7 @@ mod tests {
     use orasenda_core::{EndReason, EngineState, NotificationStatus, Preset};
 
     use super::*;
-    use crate::ipc::MilestoneKind;
+    use crate::ipc::{MilestoneKind, StoreStatus};
     use crate::session::test_support::Event;
     use crate::session::test_support::*;
     use crate::session::{Action, NativeSurface, lock, run_action_on};
@@ -543,6 +544,28 @@ mod tests {
         host.log().take();
         iterate(&host);
         assert_eq!(ticks(&host.log().take()).len(), 1);
+    }
+
+    /// While idle, the tick whose flush brings the store back to `ok` publishes exactly one
+    /// `timer-tick` with `store: ok`, so the "can't save" line goes; the next unchanged
+    /// tick publishes none (#104).
+    #[test]
+    fn idle_flush_back_to_ok_publishes_one_timer_tick() {
+        let host = launched(NotificationStatus::Denied);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        db(&lock(&host.0.service)).fail_writes(true);
+        run_action_on(&host, Action::Stop).expect("stops");
+        host.log().take();
+        iterate(&host);
+        assert_eq!(ticks(&host.log().take()), [], "still failing");
+        db(&lock(&host.0.service)).fail_writes(false);
+        iterate(&host);
+        let back = ticks(&host.log().take());
+        assert_eq!(back.len(), 1, "{back:?}");
+        assert_eq!(back[0].state, EngineState::Idle);
+        assert_eq!(back[0].store, StoreStatus::Ok);
+        iterate(&host);
+        assert_eq!(ticks(&host.log().take()), []);
     }
 
     #[test]
