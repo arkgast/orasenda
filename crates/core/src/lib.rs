@@ -21,6 +21,7 @@ pub use platform::{
 };
 pub use timer::{
     CustomSpec, EndReason, EngineState, EngineView, Milestone, Phase, Preset, PresetSpec,
-    QUICK_START_MS, SessionId, SessionRecord, TimerError,
+    QUICK_START_MS, Session, SessionId, SessionRecord, TimerError, format_clock, format_remaining,
+    spoken_remaining,
 };
 pub use usage::{IDLE_THRESHOLD_MS, UsageSegment, UsageTracker};

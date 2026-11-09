@@ -3,6 +3,12 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+pub mod engine;
+pub mod format;
+
+pub use engine::Session;
+pub use format::{format_clock, format_remaining, spoken_remaining};
+
 /// Length of a Quick start focus block, in milliseconds.
 pub const QUICK_START_MS: u64 = 120_000;
 
