@@ -33,7 +33,7 @@ Don'ts that would have caused real bugs: no `filter` or `opacity` to make states
 ## Type
 
 - `body` in Atkinson Hyperlegible Next (`--font-sans`) for running text, task titles, buttons and fields. `title` for screens and dialogs, `heading` for sections and columns, `body-sm` for metadata and helpers, `label` in uppercase for chips, `caption` for counts and rail labels. `display` at most once per screen.
-- Every countdown, clock and duration is `--font-mono` (Atkinson Hyperlegible Mono) with tabular digits and zero tracking: `timer-xl` full screen, `timer-lg` in the Today ring, `timer-md` in the floating timer and the full-screen clock, `timer-sm` in the menu bar. Full-screen digits shrink with the ring; a countdown is never clipped.
+- Every countdown, clock and duration is `--font-mono` (Atkinson Hyperlegible Mono) with tabular digits and zero tracking: `timer-xl` full screen, `timer-lg` in the Today ring, `timer-md` in the floating timer and the full-screen clock, `timer-sm` in the `MenuBarTimer` component. The native menu-bar item is the exception: its title is plain system text (see `MenuBarTimer`, Menu-bar glyphs). Full-screen digits shrink with the ring; a countdown is never clipped.
 - Formats: a countdown is `18:42`; a wall clock is `09:41` in the user's locale; a tracked duration is `0h 52m`; a duration choice is `25 min`; task metadata is `Est 3 · Done 1 · 0h 25m`. Seconds appear only in countdowns.
 - Pass a spoken `remainingLabel` ("18 minutes 42 seconds") to timers. Timers are `aria-live="off"`; milestones are announced once by the host.
 - The reading-comfort setting (`[data-reading-comfort="true"]`) swaps `body`, `body-sm`, `heading` and `title` to `--font-alt` (Lexend). It never touches timer digits.
