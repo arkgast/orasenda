@@ -21,6 +21,10 @@ Project rules for every contributor and agent. They override baton's general gui
   on them.
 - All checks live in the `ci` recipe of the `justfile`; `scripts/ci.sh` runs `just ci`, and baton
   `validate` and GitHub Actions both run that script. Add new checks to the recipe, fastest first.
+- A plan task's Touches list every file outside its Owns that its change or its tests need: the
+  TypeScript tests that build an IPC type it changes, the test hooks it needs in another crate,
+  and the spec line for a failure case it settles. Two P1-A tasks (#87, #91) each needed an
+  architect ruling for an ownership exception because the plan left one out.
 
 ## Code structure (ADR-001, ADR-007)
 - `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
