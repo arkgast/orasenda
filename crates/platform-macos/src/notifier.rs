@@ -35,7 +35,8 @@ pub struct MacNotifier;
 
 impl Notifier for MacNotifier {
     /// Blocks until the notification center answers, at most 3 s; `Unavailable` when it does
-    /// not. `Provisional` and `Ephemeral` count as `Granted`. Never call it on the main thread.
+    /// not, or answers with a status this build does not know. `Provisional` and `Ephemeral`
+    /// count as `Granted`. Never call it on the main thread.
     fn status(&self) -> NotificationStatus {
         let (tx, rx) = mpsc::channel();
         let handler = RcBlock::new(move |settings: NonNull<UNNotificationSettings>| {
@@ -125,8 +126,14 @@ fn notification_status(status: UNAuthorizationStatus) -> NotificationStatus {
     match status {
         UNAuthorizationStatus::NotDetermined => NotificationStatus::NotDetermined,
         UNAuthorizationStatus::Denied => NotificationStatus::Denied,
-        // Authorized, Provisional, Ephemeral, and any later "allowed" kind.
-        _ => NotificationStatus::Granted,
+        UNAuthorizationStatus::Authorized
+        | UNAuthorizationStatus::Provisional
+        | UNAuthorizationStatus::Ephemeral => NotificationStatus::Granted,
+        // A kind added by a later macOS: whether it allows posting is unknown.
+        UNAuthorizationStatus(raw) => {
+            eprintln!("platform-macos: unknown notification authorization status {raw}");
+            NotificationStatus::Unavailable
+        }
     }
 }
 
@@ -142,6 +149,34 @@ mod tests {
     use std::sync::mpsc;
 
     use super::*;
+
+    #[test]
+    fn authorization_status_maps_known_values_and_unknown_to_unavailable() {
+        let cases = [
+            (
+                UNAuthorizationStatus::NotDetermined,
+                NotificationStatus::NotDetermined,
+            ),
+            (UNAuthorizationStatus::Denied, NotificationStatus::Denied),
+            (
+                UNAuthorizationStatus::Authorized,
+                NotificationStatus::Granted,
+            ),
+            (
+                UNAuthorizationStatus::Provisional,
+                NotificationStatus::Granted,
+            ),
+            (
+                UNAuthorizationStatus::Ephemeral,
+                NotificationStatus::Granted,
+            ),
+            // A value a later macOS might add is not assumed to allow notifications.
+            (UNAuthorizationStatus(99), NotificationStatus::Unavailable),
+        ];
+        for (status, expected) in cases {
+            assert_eq!(notification_status(status), expected, "{status:?}");
+        }
+    }
 
     #[test]
     fn status_times_out_to_unavailable() {
