@@ -32,7 +32,7 @@ Project rules for every contributor and agent. They override baton's general gui
 - `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
   `cfg(target_os)`, and never calls `SystemTime::now()`: time is passed in.
 - Every new Rust dependency of core must `cargo check` for `aarch64-apple-ios` and
-  `aarch64-linux-android`. `scripts/ci.sh` enforces it.
+  `aarch64-linux-android`. `scripts/ci.sh` enforces it on macOS only.
 - `apps/orasenda/src/bindings.ts` and `packages/tokens/tokens.css` are generated. Never
   edit them by hand; regenerate and commit.
 - Every new Tauri command is added to the `AppManifest` list in `build.rs` and granted in a

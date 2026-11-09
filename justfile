@@ -138,9 +138,16 @@ core-boundary:
 # target needs the NDK's clang and llvm-ar. NDK lookup, first match wins: ANDROID_NDK_HOME,
 # NDK_HOME, ANDROID_NDK_LATEST_HOME, then the newest folder under
 # ${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/.
+# Runs only on macOS: the iOS check builds Objective-C and needs Xcode; on other hosts it skips, and
+# the required macOS ci job covers both targets (#78).
 [private]
 [script]
 mobile:
+    host="$(uname -s)"
+    if [ "$host" != Darwin ]; then
+        echo "mobile: skipped on $host; iOS needs Xcode, and the required macOS ci job checks iOS and Android"
+        exit 0
+    fi
     ndk="${ANDROID_NDK_HOME:-${NDK_HOME:-${ANDROID_NDK_LATEST_HOME:-}}}"
     if [ -z "$ndk" ]; then
         installed=()
