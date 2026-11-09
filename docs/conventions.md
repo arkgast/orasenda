@@ -41,9 +41,12 @@ Project rules for every contributor and agent. They override baton's general gui
 - `NSWindow`, `NSApplication` and `NSScreen` calls and observer registration run on the main
   thread (`MainThreadMarker`); never hold a lock across an AppKit call.
 - Spike code runs only behind `spike::enabled()` (debug build and `ORASENDA_SPIKE=1`).
-- Time strings are formatted in Rust; the webview never computes time (ADR-011).
-- `crates/store` is the only crate with SQLite; `just core-boundary` rejects `rusqlite` elsewhere in core.
-- Device-only tables never write `change_log`; a repository says which it is in its module doc (ADR-012).
+- Time strings are formatted in Rust; the webview never computes time (ADR-011). The one
+  exception is spike code (`formatClock` in `format.ts`).
+- `crates/store` is the only crate with SQLite; `just core-boundary` rejects `rusqlite` elsewhere
+  in core.
+- Device-only tables never write `change_log`; a repository says which it is in its module doc
+  (ADR-012).
 
 ## Failures are never silent success
 Seen three times in the P1-A wave 2 reviews: `PRAGMA journal_mode = wal` answered and ignored

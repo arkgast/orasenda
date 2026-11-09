@@ -145,7 +145,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-011: Time and scheduling
 - **Date:** 2026-11-08
-- **Status:** accepted (2026-11-09, #TBD)
+- **Status:** accepted (2026-11-09, #110)
 - **Context:** P1 adds the first timed product behaviour (focus sessions; later breaks, the two-minute cue, routines and blocks). ADR-001 keeps `SystemTime::now()` out of core and puts time in Rust because WebKit throttles hidden pages and App Nap throttles hidden apps. A countdown must stay true while the window is hidden, across sleep and across a relaunch, and every surface (Today, menu bar, later the mini timer and full screen) must show the same digits. WKWebView also ignores the macOS 24-hour setting (`docs/spikes/2026-11-07-macos-blocking.md`).
 - **Options considered:**
   1. **Pure engines in core fed with `now_ms`, one scheduler thread in the app crate, the wall clock as the only time base, Rust formats every time string:** no drift from missed ticks, survives relaunch, one formatter for every surface; a backward clock change makes the remaining time grow.
@@ -162,7 +162,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-012: Store crate API
 - **Date:** 2026-11-08
-- **Status:** accepted (2026-11-09, #TBD)
+- **Status:** accepted (2026-11-09, #110)
 - **Context:** ADR-002 fixes the storage shape (SQLite in `crates/store`, UUIDv7 ids, tombstones, one `change_log` row per changed field, syncable versus device-only entities, versioned migrations) but not how code uses it. Every P1 sub-project adds tables, so the API pattern must be settled with the first one.
 - **Options considered:**
   1. **One `Store` with a mutex-guarded connection, closure-scoped transactions, repository modules, and a typed `log_fields` that appends the change-log rows for a row the repository just wrote, in the same transaction; device-only repositories skip the log by type:** small, testable with an in-memory database, hard to bypass the log by accident.
@@ -179,7 +179,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-013: One Rust state, many surfaces
 - **Date:** 2026-11-08
-- **Status:** accepted (2026-11-09, #TBD)
+- **Status:** accepted (2026-11-09, #110)
 - **Context:** The timer shows on Today, in the menu bar and, from the next sub-projects, in a floating window, in full screen and in notifications. The spike already runs a second webview window with its own capability file (`apps/orasenda/src-tauri/src/spike/macos.rs`). Two surfaces that each keep their own timer would disagree.
 - **Options considered:**
   1. **One owner in Rust managed state; every surface subscribes to the same events and sends the same commands; native surfaces are driven from Rust directly:** one truth, idempotent commands, windows never talk to each other.
