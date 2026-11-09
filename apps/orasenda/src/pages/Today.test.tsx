@@ -426,3 +426,120 @@ test("preset_change_calls_settings_set", async () => {
     { settings: { ...SETTINGS, preset: "fifty_ten" } },
   ]);
 });
+
+// Review round 1
+
+test("preset_change_after_custom_commit_keeps_the_edit", async () => {
+  // The blur's settings_set is still in flight when the preset changes.
+  const saving = deferred<null>();
+  let call = 0;
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "custom" }),
+    settings_set: () => (call++ === 0 ? saving.promise : null),
+  });
+  const focus = screen.getByLabelText("Focus minutes");
+
+  fireEvent.change(focus, { target: { value: "60" } });
+  fireEvent.blur(focus);
+  fireEvent.click(screen.getByRole("radio", { name: "Classic 25/5" }));
+  await act(async () => saving.resolve(null));
+  await settle();
+
+  expect(argsOf(backend.calls, "settings_set")).toEqual([
+    {
+      settings: {
+        preset: "custom",
+        custom: { focusMin: 60, breakMin: 10 },
+        notifySessionEnd: true,
+      },
+    },
+    {
+      settings: {
+        preset: "classic",
+        custom: { focusMin: 60, breakMin: 10 },
+        notifySessionEnd: true,
+      },
+    },
+  ]);
+});
+
+test("committing_the_saved_spec_again_clears_the_helper", async () => {
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "custom" }),
+    settings_set: (args) =>
+      (args as { settings: TimerSettings }).settings.custom.focusMin > 180
+        ? Promise.reject(INVALID_SPEC)
+        : null,
+  });
+  const focus = screen.getByLabelText("Focus minutes");
+
+  fireEvent.change(focus, { target: { value: "200" } });
+  fireEvent.blur(focus);
+  await settle();
+  expect(screen.getByText(RANGE_HELP)).toBeInTheDocument();
+
+  fireEvent.change(focus, { target: { value: "45" } });
+  fireEvent.blur(focus);
+  await settle();
+
+  expect(screen.queryByText(RANGE_HELP)).toBeNull();
+  // 45 is what Rust already has: nothing more to save.
+  expect(argsOf(backend.calls, "settings_set")).toHaveLength(1);
+});
+
+test("rejected_settings_get_shows_presets_unavailable", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({
+    settings_get: () => {
+      throw new Error("settings_get not allowed");
+    },
+  });
+
+  const line = screen.getByText("Presets unavailable.");
+  expect(line.tagName).toBe("P");
+  expect(line).toHaveClass("app-muted");
+  expect(line).not.toHaveAttribute("role");
+  expect(screen.queryByRole("group", { name: "Preset" })).toBeNull();
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(statusNodes()).toHaveLength(0);
+  // Start still works with the default preset.
+  expect(screen.getByRole("button", { name: "Start focus" })).toBeInTheDocument();
+  expect(error).toHaveBeenCalledTimes(1);
+});
+
+test("failed_settings_set_rolls_back_to_the_accepted_settings", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "custom" }),
+    // Only the first save (Custom, 60 minutes) is written; every later one fails.
+    settings_set: (args) => {
+      const { preset, custom } = (args as { settings: TimerSettings }).settings;
+      return preset === "custom" && custom.focusMin === 60
+        ? null
+        : Promise.reject({ kind: "write", message: "disk full" });
+    },
+  });
+  const focus = screen.getByLabelText("Focus minutes");
+  fireEvent.change(focus, { target: { value: "60" } });
+  fireEvent.blur(focus);
+  await settle();
+
+  // Accepted: custom 60. Now a write fails for a preset change and a custom edit.
+  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
+  await settle();
+  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
+
+  fireEvent.change(screen.getByLabelText("Focus minutes"), { target: { value: "70" } });
+  fireEvent.blur(screen.getByLabelText("Focus minutes"));
+  await settle();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
+  expect(screen.queryByText(RANGE_HELP)).toBeNull();
+
+  expect(argsOf(backend.calls, "settings_set")).toHaveLength(3);
+  expect(error).toHaveBeenCalledTimes(2);
+  expect(error).toHaveBeenCalledWith("settings_set failed", {
+    kind: "write",
+    message: "disk full",
+  });
+});

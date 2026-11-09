@@ -1,5 +1,5 @@
 import { Button, InlineNotice, Input, ModeChip, StartButton, TimerRing } from "@orasenda/ui";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   CustomSpec,
   MilestoneEvent_Serialize,
@@ -75,7 +75,13 @@ export function Today() {
       setNotice(text ? { text, sessionId: event.sessionId } : null);
     },
   });
+  // `settings` is what the page shows; `intended` holds the same value, set synchronously, so a
+  // change made while an earlier settings_set is in flight builds on it, never on a stale render.
+  // `accepted` is the last value Rust took, which a failed write rolls back to.
   const [settings, setSettings] = useState<TimerSettings | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
+  const intended = useRef<TimerSettings | null>(null);
+  const accepted = useRef<TimerSettings | null>(null);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
   const [showRangeHelp, setShowRangeHelp] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -83,11 +89,19 @@ export function Today() {
 
   useEffect(() => {
     let cancelled = false;
-    commands.settingsGet().then((saved) => {
-      if (cancelled) return;
-      setSettings(saved);
-      setDraft(draftOf(saved.custom));
-    }, logFailure("settings_get"));
+    commands.settingsGet().then(
+      (saved) => {
+        if (cancelled) return;
+        intended.current = saved;
+        accepted.current = saved;
+        setSettings(saved);
+        setDraft(draftOf(saved.custom));
+      },
+      (error: unknown) => {
+        console.error("settings_get failed", error);
+        if (!cancelled) setSettingsFailed(true);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -102,39 +116,58 @@ export function Today() {
     setNotice(null);
   }
 
-  const save = (next: TimerSettings, onSaved: () => void) => {
-    commands.settingsSet(next).then((result) => {
-      if (result.status === "ok") {
-        setShowRangeHelp(false);
-        onSaved();
-      } else if (result.error.kind === "invalidSpec") {
-        setShowRangeHelp(true);
-      } else {
-        console.error("settings_set failed", result.error);
-      }
-    }, logFailure("settings_set"));
+  const intend = (next: TimerSettings) => {
+    intended.current = next;
+    setSettings(next);
+  };
+
+  const rollBack = () => {
+    const last = accepted.current;
+    if (!last) return;
+    intend(last);
+    setDraft(draftOf(last.custom));
+  };
+
+  const save = (next: TimerSettings) => {
+    intend(next);
+    commands.settingsSet(next).then(
+      (result) => {
+        if (result.status === "ok") {
+          accepted.current = next;
+          setShowRangeHelp(false);
+        } else if (result.error.kind === "invalidSpec") {
+          // Keep the typed draft beside the helper, but never resend the rejected spec.
+          const latest = intended.current;
+          if (latest && accepted.current) intend({ ...latest, custom: accepted.current.custom });
+          setShowRangeHelp(true);
+        } else {
+          console.error("settings_set failed", result.error);
+          rollBack();
+        }
+      },
+      (error: unknown) => {
+        console.error("settings_set failed", error);
+        rollBack();
+      },
+    );
   };
 
   const choosePreset = (preset: Preset) => {
-    if (!settings) return;
-    const next = { ...settings, preset };
-    setSettings(next);
-    save(next, () => {});
+    const latest = intended.current;
+    if (!latest) return;
+    save({ ...latest, preset });
   };
 
   const commitCustom = () => {
     const custom = parseDraft(draft);
-    if (!settings || !custom) return;
-    if (
-      custom.focusMin === settings.custom.focusMin &&
-      custom.breakMin === settings.custom.breakMin
-    )
+    const latest = intended.current;
+    if (!latest || !custom) return;
+    if (custom.focusMin === latest.custom.focusMin && custom.breakMin === latest.custom.breakMin) {
+      // Back to a spec Rust has (or is saving): an earlier range helper no longer applies.
+      setShowRangeHelp(false);
       return;
-    // `settings.custom` changes only once Rust accepts it, so a later preset change never
-    // resends a rejected spec.
-    save({ ...settings, custom }, () =>
-      setSettings((latest) => (latest ? { ...latest, custom } : latest)),
-    );
+    }
+    save({ ...latest, custom });
   };
 
   const start = (request: StartRequest_Deserialize) => {
@@ -209,6 +242,7 @@ export function Today() {
       {/* One slot; a new text is a new node, so each notice is announced once. */}
       {shownNotice ? <InlineNotice key={shownNotice}>{shownNotice}</InlineNotice> : null}
 
+      {view && settingsFailed ? <p className="app-muted">Presets unavailable.</p> : null}
       {view && settings ? (
         <div className="today-presets">
           <fieldset className="os-choice-group">
