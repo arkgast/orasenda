@@ -67,6 +67,11 @@ impl Session {
     }
 
     /// Pauses a running session; `elapsed` stops moving until [`Session::resume`].
+    ///
+    /// Precondition: the caller calls [`Session::advance`] with the same `now_ms` first. This
+    /// method does not check the planned end itself, so a session already past it would be
+    /// treated as still counting. T7's session service runs advance-then-act on every command
+    /// (the plan's threading and scheduler notes).
     pub fn pause(&mut self, now_ms: u64) -> Result<(), TimerError> {
         match self {
             Session::Idle => Err(TimerError::NothingRunning),
@@ -97,6 +102,11 @@ impl Session {
 
     /// Resumes a paused session, adding the pause to `paused_total_ms` (which moves the planned
     /// end). A clock set back during the pause adds nothing.
+    ///
+    /// Precondition: the caller calls [`Session::advance`] with the same `now_ms` first. This
+    /// method does not check the planned end itself, so a session already past it would be
+    /// treated as still counting. T7's session service runs advance-then-act on every command
+    /// (the plan's threading and scheduler notes).
     pub fn resume(&mut self, now_ms: u64) -> Result<(), TimerError> {
         match self {
             Session::Idle => Err(TimerError::NothingRunning),
@@ -129,6 +139,11 @@ impl Session {
 
     /// Ends the session early. The record carries the focused time at `now_ms` (pauses
     /// excluded), `end_reason: Stopped`, and ends at `now_ms` but never before its start.
+    ///
+    /// Precondition: the caller calls [`Session::advance`] with the same `now_ms` first. This
+    /// method does not check the planned end itself, so a session already past it would be
+    /// treated as still counting. T7's session service runs advance-then-act on every command
+    /// (the plan's threading and scheduler notes).
     pub fn stop(&mut self, now_ms: u64) -> Result<SessionRecord, TimerError> {
         let (id, preset, phase, started_ms, planned_ms, paused_total_ms) = match self {
             Session::Idle => return Err(TimerError::NothingRunning),
@@ -665,6 +680,21 @@ mod tests {
         assert_eq!(r.focused_ms, 14 * MIN + 500);
         assert_eq!(r.paused_total_ms, 2 * MIN);
         assert_eq!(r.end_reason, EndReason::Stopped);
+    }
+
+    #[test]
+    fn advance_then_pause_past_planned_end_ends_instead() {
+        // The caller's advance-then-act order: a command arriving after the planned end
+        // first ends the session as completed, then finds nothing to act on.
+        let late = T0 + 30 * MIN;
+        let mut s = classic_at(T0);
+        let r = ended(s.advance(late));
+        assert_eq!(r.end_reason, EndReason::Completed);
+        assert_eq!(r.ended_ms, T0 + 25 * MIN);
+        assert_eq!(r.focused_ms, 25 * MIN);
+        assert_eq!(s.pause(late), Err(TimerError::NothingRunning));
+        assert_eq!(s.stop(late), Err(TimerError::NothingRunning));
+        assert!(s.is_idle());
     }
 
     #[test]
