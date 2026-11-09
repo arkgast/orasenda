@@ -7,13 +7,19 @@
 //! the centre 28×28 px (2.8 px per unit, a 4 px margin). `tray-icon` sizes the image to 18 pt
 //! high. The title is `remaining` in the system font, or none when idle.
 //!
+//! The tooltip carries the design system's spoken name ("Focus, 24 minutes 59 seconds
+//! remaining", "No session") and changes with the title. It is a stopgap for VoiceOver: the
+//! real accessibility label on the status item is #107.
+//!
 //! Threading (plan, Impact "Threading"): every tray, menu and window call runs on the main
 //! thread with no lock held. [`Tray::render`] only records the wanted state under `Tray`'s own
 //! small mutex and posts one non-blocking task to the main thread; that task takes the wanted
 //! state and the drawn state under the same mutex, releases it, then calls `set_title`,
 //! `set_icon` and `set_menu` for what changed. Because every draw runs on the main thread, one
 //! after another, the drawn state always matches the menu bar, and a tick costs one
-//! `set_title`. Menu actions run `run_action` on a `spawn_blocking` thread.
+//! `set_title` and one `set_tooltip`. A failed call is logged and the draw is posted again, at
+//! most [`DRAW_RETRIES`] times for one view. Which view is newest is decided before `render`
+//! by `scheduler::publish_view`. Menu actions run `run_action` on a `spawn_blocking` thread.
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -68,6 +74,17 @@ pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph) {
     }
 }
 
+/// The item's spoken name (design system `MenuBarTimer`, "Menu-bar glyphs"): the mode word
+/// and `remainingLabel`, or "No session" when idle. Set as the tooltip.
+pub(crate) fn tray_label(view: &TimerView) -> String {
+    let mode = match view.mode {
+        Mode::Focus => "Focus",
+        Mode::Paused => "Paused",
+        Mode::Idle => return "No session".to_string(),
+    };
+    format!("{mode}, {} remaining", view.remaining_label)
+}
+
 /// The menu for `view`, top to bottom. *Pause*/*Resume* and *End session* only while a
 /// session runs or is paused.
 pub(crate) fn menu_items(view: &TimerView) -> Vec<&'static str> {
@@ -82,6 +99,7 @@ pub(crate) fn menu_items(view: &TimerView) -> Vec<&'static str> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Drawn {
     title: Option<String>,
+    label: String,
     glyph: Glyph,
     items: Vec<&'static str>,
 }
@@ -91,6 +109,7 @@ impl Drawn {
         let (title, glyph) = tray_title_and_icon(view);
         Drawn {
             title,
+            label: tray_label(view),
             glyph,
             items: menu_items(view),
         }
@@ -103,6 +122,7 @@ pub(crate) trait TrayHandle: Send + Sync + 'static {
     /// Runs `task` on the main thread: inline when called there, else posted without waiting.
     fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
     fn set_title(&self, title: Option<&str>) -> Result<(), String>;
+    fn set_tooltip(&self, label: &str) -> Result<(), String>;
     /// Swaps the glyph, keeping it a template image.
     fn set_glyph(&self, glyph: Glyph) -> Result<(), String>;
     fn set_menu(&self, items: &[&'static str]) -> Result<(), String>;
@@ -114,7 +134,12 @@ struct TrayState {
     wanted: Option<Drawn>,
     /// What the menu bar shows; `None` after a failed call, so the next draw redoes it all.
     drawn: Option<Drawn>,
+    /// Draws posted again for the current `wanted` after a failure.
+    retries: u32,
 }
+
+/// How many times a failed draw is posted again for one view.
+pub(crate) const DRAW_RETRIES: u32 = 3;
 
 /// The menu-bar item as a [`NativeSurface`].
 pub struct Tray {
@@ -130,6 +155,7 @@ impl Tray {
             state: Arc::new(Mutex::new(TrayState {
                 wanted: None,
                 drawn: Some(Drawn::of(shown)),
+                retries: 0,
             })),
         }
     }
@@ -141,20 +167,27 @@ fn lock_state(state: &Mutex<TrayState>) -> MutexGuard<'_, TrayState> {
 
 impl NativeSurface for Tray {
     fn render(&self, view: &TimerView) {
-        lock_state(&self.state).wanted = Some(Drawn::of(view));
-        let handle = Arc::clone(&self.handle);
-        let state = Arc::clone(&self.state);
-        let posted = self
-            .handle
-            .on_main_thread(Box::new(move || draw(handle.as_ref(), &state)));
-        if let Err(error) = posted {
-            eprintln!("tray: could not reach the main thread: {error}");
+        {
+            let mut state = lock_state(&self.state);
+            state.wanted = Some(Drawn::of(view));
+            state.retries = 0;
         }
+        post_draw(&self.handle, &self.state);
+    }
+}
+
+/// Posts one [`draw`] to the main thread, without waiting for it.
+fn post_draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
+    let task_handle = Arc::clone(handle);
+    let state = Arc::clone(state);
+    let posted = handle.on_main_thread(Box::new(move || draw(&task_handle, &state)));
+    if let Err(error) = posted {
+        eprintln!("tray: could not reach the main thread: {error}");
     }
 }
 
 /// On the main thread: take the wanted state under the lock, release it, then make the calls.
-fn draw(handle: &dyn TrayHandle, state: &Mutex<TrayState>) {
+fn draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
     let (wanted, drawn) = {
         let mut state = lock_state(state);
         let Some(wanted) = state.wanted.take() else {
@@ -168,6 +201,9 @@ fn draw(handle: &dyn TrayHandle, state: &Mutex<TrayState>) {
     if drawn.as_ref().map(|d| &d.title) != Some(&wanted.title) {
         ok &= report("set_title", handle.set_title(wanted.title.as_deref()));
     }
+    if drawn.as_ref().map(|d| &d.label) != Some(&wanted.label) {
+        ok &= report("set_tooltip", handle.set_tooltip(&wanted.label));
+    }
     if drawn.as_ref().map(|d| d.glyph) != Some(wanted.glyph) {
         ok &= report("set_icon", handle.set_glyph(wanted.glyph));
     }
@@ -175,7 +211,28 @@ fn draw(handle: &dyn TrayHandle, state: &Mutex<TrayState>) {
     if drawn.as_ref().map(|d| &d.items) != Some(&wanted.items) {
         ok &= report("set_menu", handle.set_menu(&wanted.items));
     }
-    lock_state(state).drawn = ok.then_some(wanted);
+    if ok {
+        let mut state = lock_state(state);
+        state.drawn = Some(wanted);
+        return;
+    }
+    let (newer, retry) = {
+        let mut state = lock_state(state);
+        // A newer view's draw is already posted and redoes everything (`drawn` is `None`).
+        let newer = state.wanted.is_some();
+        let retry = !newer && state.retries < DRAW_RETRIES;
+        if retry {
+            state.retries += 1;
+            state.wanted = Some(wanted);
+        }
+        (newer, retry)
+    };
+    if retry {
+        eprintln!("tray: drawing the menu-bar item again");
+        post_draw(handle, state);
+    } else if !newer {
+        eprintln!("tray: gave up drawing this view; the next view redraws everything");
+    }
 }
 
 /// Logs a failed tray call; `true` when it succeeded.
@@ -246,6 +303,12 @@ impl TrayHandle for TauriTray {
             .map_err(|error| error.to_string())
     }
 
+    fn set_tooltip(&self, label: &str) -> Result<(), String> {
+        self.icon
+            .set_tooltip(Some(label))
+            .map_err(|error| error.to_string())
+    }
+
     fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
         // `set_icon` alone drops the template flag on macOS (tray-icon 0.25.1).
         self.icon
@@ -285,7 +348,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let icon = TrayIconBuilder::with_id(TRAY_ID)
         .icon(glyph.image())
         .icon_as_template(true)
-        .tooltip("Orasenda")
+        .tooltip(tray_label(&idle))
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| on_menu_event(app, event.id().as_ref()))
@@ -313,30 +376,36 @@ mod tests {
     use std::collections::VecDeque;
     use std::sync::OnceLock;
 
-    use orasenda_core::{EngineState, NotificationStatus};
+    use orasenda_core::{EngineState, NotificationStatus, format_remaining, spoken_remaining};
 
     use super::*;
     use crate::ipc::StoreStatus;
+
+    /// 24:59, 24:58 and 24:57 left.
+    const S59: u64 = 1_499_000;
+    const S58: u64 = 1_498_000;
+    const S57: u64 = 1_497_000;
 
     fn idle() -> TimerView {
         TimerView::idle(StoreStatus::Ok, NotificationStatus::Granted)
     }
 
-    fn running(remaining: &str) -> TimerView {
+    fn running(remaining_ms: u64) -> TimerView {
         TimerView {
             state: EngineState::Running,
             mode: Mode::Focus,
-            remaining: remaining.into(),
+            remaining_ms,
+            remaining: format_remaining(remaining_ms),
+            remaining_label: spoken_remaining(remaining_ms),
             ..idle()
         }
     }
 
-    fn paused(remaining: &str) -> TimerView {
+    fn paused(remaining_ms: u64) -> TimerView {
         TimerView {
             state: EngineState::Paused,
             mode: Mode::Paused,
-            remaining: remaining.into(),
-            ..idle()
+            ..running(remaining_ms)
         }
     }
 
@@ -344,26 +413,33 @@ mod tests {
     fn tray_title_and_icon_per_view() {
         assert_eq!(tray_title_and_icon(&idle()), (None, Glyph::Idle));
         assert_eq!(
-            tray_title_and_icon(&running("24:59")),
+            tray_title_and_icon(&running(S59)),
             (Some("24:59".to_string()), Glyph::Focus)
         );
         assert_eq!(
-            tray_title_and_icon(&paused("12:34")),
+            tray_title_and_icon(&paused(754_000)),
             (Some("12:34".to_string()), Glyph::Paused)
+        );
+    }
+
+    #[test]
+    fn tray_label_per_view() {
+        assert_eq!(tray_label(&idle()), "No session");
+        assert_eq!(
+            tray_label(&running(S59)),
+            "Focus, 24 minutes 59 seconds remaining"
+        );
+        assert_eq!(
+            tray_label(&paused(S59)),
+            "Paused, 24 minutes 59 seconds remaining"
         );
     }
 
     #[test]
     fn menu_items_per_state() {
         assert_eq!(menu_items(&idle()), [SHOW, QUIT]);
-        assert_eq!(
-            menu_items(&running("24:59")),
-            [PAUSE, END_SESSION, SHOW, QUIT]
-        );
-        assert_eq!(
-            menu_items(&paused("24:59")),
-            [RESUME, END_SESSION, SHOW, QUIT]
-        );
+        assert_eq!(menu_items(&running(S59)), [PAUSE, END_SESSION, SHOW, QUIT]);
+        assert_eq!(menu_items(&paused(S59)), [RESUME, END_SESSION, SHOW, QUIT]);
         assert_eq!(
             [PAUSE, RESUME, END_SESSION, SHOW, QUIT],
             [
@@ -398,8 +474,17 @@ mod tests {
     #[derive(Debug, Clone, PartialEq)]
     enum Call {
         Title(Option<String>),
+        Tooltip(String),
         Glyph(Glyph),
         Menu(Vec<&'static str>),
+    }
+
+    fn title(text: &str) -> Call {
+        Call::Title(Some(text.into()))
+    }
+
+    fn tooltip(view: &TimerView) -> Call {
+        Call::Tooltip(tray_label(view))
     }
 
     /// Records the calls. Each call asserts `Tray`'s lock is free. With `queued`, main-thread
@@ -410,7 +495,8 @@ mod tests {
         state: OnceLock<Arc<Mutex<TrayState>>>,
         queued: bool,
         queue: Mutex<VecDeque<Box<dyn FnOnce() + Send>>>,
-        fail_title_once: Mutex<bool>,
+        /// How many of the next `set_title` calls fail.
+        title_failures: Mutex<u32>,
     }
 
     impl Recorder {
@@ -450,11 +536,16 @@ mod tests {
 
         fn set_title(&self, title: Option<&str>) -> Result<(), String> {
             self.record(Call::Title(title.map(str::to_string)));
-            let mut fail = self.fail_title_once.lock().unwrap();
-            if *fail {
-                *fail = false;
+            let mut failures = self.title_failures.lock().unwrap();
+            if *failures > 0 {
+                *failures -= 1;
                 return Err("no status item".into());
             }
+            Ok(())
+        }
+
+        fn set_tooltip(&self, label: &str) -> Result<(), String> {
+            self.record(Call::Tooltip(label.into()));
             Ok(())
         }
 
@@ -469,48 +560,54 @@ mod tests {
         }
     }
 
-    fn tray_with(recorder: Recorder) -> (Tray, Arc<Recorder>) {
+    fn tray_with(recorder: Recorder) -> (Arc<Tray>, Arc<Recorder>) {
         let recorder = Arc::new(recorder);
-        let tray = Tray::new(recorder.clone(), &idle());
+        let tray = Arc::new(Tray::new(recorder.clone(), &idle()));
         recorder.state.set(Arc::clone(&tray.state)).ok().unwrap();
         (tray, recorder)
+    }
+
+    /// Everything a draw from the idle item to `view` calls.
+    fn full_draw(view: &TimerView) -> Vec<Call> {
+        let drawn = Drawn::of(view);
+        vec![
+            Call::Title(drawn.title),
+            Call::Tooltip(drawn.label),
+            Call::Glyph(drawn.glyph),
+            Call::Menu(drawn.items),
+        ]
     }
 
     #[test]
     fn tray_render_skips_set_menu_when_class_unchanged() {
         let (tray, calls) = tray_with(Recorder::default());
 
-        tray.render(&running("24:59"));
-        assert_eq!(
-            calls.take(),
-            [
-                Call::Title(Some("24:59".into())),
-                Call::Glyph(Glyph::Focus),
-                Call::Menu(vec![PAUSE, END_SESSION, SHOW, QUIT]),
-            ]
-        );
+        tray.render(&running(S59));
+        assert_eq!(calls.take(), full_draw(&running(S59)));
 
-        // A tick costs one `set_title`.
-        tray.render(&running("24:58"));
-        assert_eq!(calls.take(), [Call::Title(Some("24:58".into()))]);
+        // A tick costs one `set_title` and one `set_tooltip`.
+        tray.render(&running(S58));
+        assert_eq!(calls.take(), [title("24:58"), tooltip(&running(S58))]);
 
         // The same view again (a focus republish) costs nothing.
-        tray.render(&running("24:58"));
+        tray.render(&running(S58));
         assert_eq!(calls.take(), []);
 
-        tray.render(&paused("24:58"));
+        tray.render(&paused(S58));
         assert_eq!(
             calls.take(),
             [
+                tooltip(&paused(S58)),
                 Call::Glyph(Glyph::Paused),
                 Call::Menu(vec![RESUME, END_SESSION, SHOW, QUIT]),
             ]
         );
 
-        tray.render(&running("24:58"));
+        tray.render(&running(S58));
         assert_eq!(
             calls.take(),
             [
+                tooltip(&running(S58)),
                 Call::Glyph(Glyph::Focus),
                 Call::Menu(vec![PAUSE, END_SESSION, SHOW, QUIT]),
             ]
@@ -521,61 +618,117 @@ mod tests {
             calls.take(),
             [
                 Call::Title(None),
+                Call::Tooltip("No session".into()),
                 Call::Glyph(Glyph::Idle),
                 Call::Menu(vec![SHOW, QUIT]),
             ]
         );
     }
 
-    /// Two renders from two threads (a tick and a menu *Pause*) whose draws reach the main
-    /// thread later: the menu bar ends on the last view, and the next tick costs one title.
+    /// Two renders from two threads whose draws reach the main thread later: the menu bar
+    /// ends on the last view, and the next identical render costs nothing.
     #[test]
     fn queued_renders_draw_the_latest_view_once() {
         let (tray, calls) = tray_with(Recorder {
             queued: true,
             ..Recorder::default()
         });
-        tray.render(&running("24:59"));
-        tray.render(&paused("24:59"));
+        tray.render(&running(S59));
+        tray.render(&paused(S59));
         assert_eq!(calls.take(), [], "render itself makes no tray call");
 
         calls.run_queue();
-        assert_eq!(
-            calls.take(),
-            [
-                Call::Title(Some("24:59".into())),
-                Call::Glyph(Glyph::Paused),
-                Call::Menu(vec![RESUME, END_SESSION, SHOW, QUIT]),
-            ]
-        );
+        assert_eq!(calls.take(), full_draw(&paused(S59)));
 
-        tray.render(&paused("24:59"));
+        tray.render(&paused(S59));
         calls.run_queue();
         assert_eq!(calls.take(), []);
     }
 
-    /// A failed call is logged and the next render redraws everything.
+    /// A failed call is logged and the draw is posted again at once, redoing every call.
     #[test]
-    fn failed_tray_call_redraws_everything_next_time() {
+    fn failed_tray_call_is_retried_without_a_new_render() {
+        let (tray, calls) = tray_with(Recorder::default());
+        tray.render(&running(S59));
+        calls.take();
+
+        // While idle no further render comes, so the retry is the only way back.
+        *calls.title_failures.lock().unwrap() = 1;
+        tray.render(&idle());
+        let mut expected = full_draw(&idle());
+        expected.extend(full_draw(&idle()));
+        assert_eq!(calls.take(), expected);
+
+        tray.render(&idle());
+        assert_eq!(calls.take(), []);
+    }
+
+    /// A tray that keeps failing is tried once plus [`DRAW_RETRIES`] times per view, then
+    /// left until the next view.
+    #[test]
+    fn failed_draw_retries_are_bounded() {
         let (tray, calls) = tray_with(Recorder {
-            fail_title_once: Mutex::new(true),
+            title_failures: Mutex::new(u32::MAX),
             ..Recorder::default()
         });
-        tray.render(&running("24:59"));
-        assert_eq!(calls.take().len(), 3);
+        tray.render(&running(S59));
+        let titles = calls
+            .take()
+            .iter()
+            .filter(|call| matches!(call, Call::Title(_)))
+            .count();
+        assert_eq!(titles, 1 + DRAW_RETRIES as usize);
 
-        tray.render(&running("24:58"));
+        *calls.title_failures.lock().unwrap() = 0;
+        tray.render(&running(S57));
+        assert_eq!(calls.take(), full_draw(&running(S57)));
+    }
+
+    /// A retry that finds a newer view waiting leaves the drawing to that view's own draw.
+    #[test]
+    fn failed_draw_does_not_retry_over_a_newer_view() {
+        let (tray, calls) = tray_with(Recorder {
+            queued: true,
+            title_failures: Mutex::new(1),
+            ..Recorder::default()
+        });
+        tray.render(&running(S59));
+        // The first draw fails; before the retry runs, a newer view arrives.
+        let first = calls.queue.lock().unwrap().pop_front().unwrap();
+        first();
+        tray.render(&running(S58));
+        calls.run_queue();
+        let mut expected = full_draw(&running(S59));
+        expected.extend(full_draw(&running(S58)));
+        assert_eq!(calls.take(), expected);
+    }
+
+    /// Through `publish_view`: idle, then a stale running view (an older number) leaves the
+    /// tray idle with no title.
+    #[test]
+    fn stale_view_through_the_gate_leaves_the_tray_idle() {
+        use crate::scheduler::publish_view;
+        use crate::session::test_support::TestHost;
+
+        let host = TestHost::new(NotificationStatus::Granted);
+        let (tray, calls) = tray_with(Recorder::default());
+        host.0
+            .surfaces
+            .0
+            .lock()
+            .unwrap()
+            .push(Arc::clone(&tray) as Arc<dyn NativeSurface>);
+
+        publish_view(&host, 1, &running(S59));
+        publish_view(&host, 3, &idle());
+        calls.take();
+        publish_view(&host, 2, &running(S58));
+        assert_eq!(calls.take(), []);
         assert_eq!(
-            calls.take(),
-            [
-                Call::Title(Some("24:58".into())),
-                Call::Glyph(Glyph::Focus),
-                Call::Menu(vec![PAUSE, END_SESSION, SHOW, QUIT]),
-            ]
+            lock_state(&tray.state).drawn,
+            Some(Drawn::of(&idle())),
+            "the tray stays idle"
         );
-
-        tray.render(&running("24:57"));
-        assert_eq!(calls.take(), [Call::Title(Some("24:57".into()))]);
     }
 
     /// `render` may be called from `draw`'s own calls (a surface re-entering on the main
@@ -595,9 +748,12 @@ mod tests {
                 if title == Some("24:59")
                     && let Some(tray) = self.tray.get().and_then(std::sync::Weak::upgrade)
                 {
-                    tray.render(&running("24:58"));
+                    tray.render(&running(S58));
                 }
                 self.inner.set_title(title)
+            }
+            fn set_tooltip(&self, label: &str) -> Result<(), String> {
+                self.inner.set_tooltip(label)
             }
             fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
                 self.inner.set_glyph(glyph)
@@ -624,7 +780,7 @@ mod tests {
         let worker = {
             let tray = Arc::clone(&tray);
             std::thread::spawn(move || {
-                tray.render(&running("24:59"));
+                tray.render(&running(S59));
                 done.send(()).unwrap();
             })
         };
@@ -632,11 +788,6 @@ mod tests {
             .recv_timeout(std::time::Duration::from_secs(5))
             .expect("rendered without deadlock");
         worker.join().unwrap();
-        assert!(
-            handle
-                .inner
-                .take()
-                .contains(&Call::Title(Some("24:58".into())))
-        );
+        assert!(handle.inner.take().contains(&title("24:58")));
     }
 }
