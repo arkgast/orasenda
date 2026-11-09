@@ -17,13 +17,15 @@ use tauri_specta::Event;
 
 use crate::ClockTick;
 use crate::ipc::{MilestoneEvent, TimerView};
-use crate::session::{Effects, SessionService, Surfaces, lock};
+use crate::session::{Effects, SessionService, Surfaces, ViewGate, lock};
 
 /// Where the publish steps send their output: the running app, or a recording fake in tests.
 pub trait Host: Clone + Send + Sync + 'static {
     /// The service, or `None` before `session::setup` has managed it.
     fn service(&self) -> Option<&Mutex<SessionService>>;
     fn surfaces(&self) -> Option<&Surfaces>;
+    /// The publish-order gate, or `None` before `session::setup` has managed it.
+    fn view_gate(&self) -> Option<&ViewGate>;
     fn notifier(&self) -> Arc<dyn Notifier>;
     fn now_ms(&self) -> u64;
     /// Emits `timer-tick`. An emit error is logged, never fatal.
@@ -42,6 +44,10 @@ impl Host for AppHandle {
 
     fn surfaces(&self) -> Option<&Surfaces> {
         self.try_state::<Surfaces>().map(|state| state.inner())
+    }
+
+    fn view_gate(&self) -> Option<&ViewGate> {
+        self.try_state::<ViewGate>().map(|state| state.inner())
     }
 
     fn notifier(&self) -> Arc<dyn Notifier> {
@@ -133,10 +139,9 @@ pub fn publish_focus<H: Host>(host: &H) {
     let Some(service) = host.service() else {
         return;
     };
-    let view = lock(service).view(host.now_ms());
+    let (seq, view) = lock(service).snapshot(host.now_ms());
     if view.state != EngineState::Idle {
-        host.emit_timer_tick(&view);
-        render_surfaces(host, &view);
+        publish_view(host, seq, &view);
     }
 }
 
@@ -152,11 +157,11 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         notify_session_end,
         drop_after_unlock,
         request_notifications,
+        seq,
         ..
     } = effects;
     if !was_idle || view.state != EngineState::Idle {
-        host.emit_timer_tick(&view);
-        render_surfaces(host, &view);
+        publish_view(host, seq, &view);
     }
     let completed = ended.is_some_and(|record| record.end_reason == EndReason::Completed);
     if completed && notify_session_end {
@@ -219,18 +224,43 @@ fn request_permission<H: Host>(host: &H) {
 /// Stores a status read or answer; emits one `timer-tick` when the shown status changed,
 /// in every state (plan amendment 4).
 fn store_status<H: Host>(host: &H, status: NotificationStatus) {
-    let Some(service) = host.service() else {
+    if let Some((seq, view)) = status_snapshot(host, status) {
+        publish_view(host, seq, &view);
+    }
+}
+
+/// Stores `status` under the service lock; the numbered view to publish when it changed.
+pub(crate) fn status_snapshot<H: Host>(
+    host: &H,
+    status: NotificationStatus,
+) -> Option<(u64, TimerView)> {
+    let service = host.service()?;
+    let mut service = lock(service);
+    service
+        .set_notifications(status)
+        .then(|| service.snapshot(host.now_ms()))
+}
+
+/// Emits `timer-tick` and renders the surfaces for `view`, unless a newer view (by `seq`)
+/// was already published. The gate is held across the emit and the renders so a stale view
+/// can't slip in between a newer one's check and its render. That is safe because neither
+/// waits on the main thread: an emit posts to the webview and `Tray::render` only records
+/// the view and posts its draw. The notifier, the guard drop and the milestones stay
+/// outside the gate.
+pub(crate) fn publish_view<H: Host>(host: &H, seq: u64, view: &TimerView) {
+    let Some(gate) = host.view_gate() else {
+        // Only before `session::setup`, when nothing else publishes either.
+        host.emit_timer_tick(view);
+        render_surfaces(host, view);
         return;
     };
-    let changed = {
-        let mut service = lock(service);
-        service
-            .set_notifications(status)
-            .then(|| service.view(host.now_ms()))
-    };
-    if let Some(view) = changed {
-        host.emit_timer_tick(&view);
+    let mut last = gate.0.lock().unwrap_or_else(PoisonError::into_inner);
+    if seq <= *last {
+        return;
     }
+    *last = seq;
+    host.emit_timer_tick(view);
+    render_surfaces(host, view);
 }
 
 /// Clones the surface list under its lock and renders after releasing it.
@@ -638,5 +668,115 @@ mod tests {
         let events = host.log().take();
         let expected = lock(&host.0.service).clock_tick(T0);
         assert_eq!(events, [Event::Clock(expected)]);
+    }
+
+    fn renders(events: &[Event]) -> Vec<TimerView> {
+        events
+            .iter()
+            .filter_map(|e| match e {
+                Event::Render(view) => Some(view.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The scheduler takes a running view, then a menu *End session* publishes the idle
+    /// view before the scheduler publishes: the stale running view is dropped.
+    #[test]
+    fn stale_tick_view_is_not_published_after_a_newer_command() {
+        let host = launched(NotificationStatus::Denied);
+        with_recorder(&host);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        host.set_now(T0 + 1_000);
+        host.log().take();
+
+        let (ticked, has_ticked) = channel();
+        let (go, may_publish) = channel::<()>();
+        let scheduler = {
+            let host = host.clone();
+            thread::spawn(move || {
+                let effects = lock(&host.0.service).tick(host.now_ms());
+                assert_eq!(effects.view.state, EngineState::Running);
+                ticked.send(()).unwrap();
+                may_publish.recv_timeout(WAIT).expect("released");
+                publish(&host, effects);
+            })
+        };
+        has_ticked.recv_timeout(WAIT).expect("the scheduler ticked");
+        let menu = {
+            let host = host.clone();
+            thread::spawn(move || run_action_on(&host, Action::Stop))
+        };
+        menu.join().unwrap().expect("stops");
+        go.send(()).unwrap();
+        scheduler.join().expect("no panic while publishing");
+
+        let events = host.log().take();
+        let ticks = ticks(&events);
+        let renders = renders(&events);
+        assert_eq!(ticks.len(), 1, "{events:?}");
+        assert_eq!(renders.len(), 1, "{events:?}");
+        assert_eq!(ticks[0].state, EngineState::Idle);
+        assert_eq!(renders[0].state, EngineState::Idle);
+        host.0.surfaces.0.lock().expect("surfaces").clear();
+    }
+
+    /// A status answer taken before a concurrent *Pause* and published after it is dropped;
+    /// the pause's view already carries the new status.
+    #[test]
+    fn status_publish_is_ordered_with_a_concurrent_command() {
+        let host = launched(NotificationStatus::NotDetermined);
+        with_recorder(&host);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        host.log().take();
+
+        let (taken, has_taken) = channel();
+        let (go, may_publish) = channel::<()>();
+        let answer = {
+            let host = host.clone();
+            thread::spawn(move || {
+                let (seq, view) =
+                    status_snapshot(&host, NotificationStatus::Granted).expect("changed");
+                assert_eq!(view.state, EngineState::Running);
+                taken.send(()).unwrap();
+                may_publish.recv_timeout(WAIT).expect("released");
+                publish_view(&host, seq, &view);
+            })
+        };
+        has_taken.recv_timeout(WAIT).expect("the status was stored");
+        let menu = {
+            let host = host.clone();
+            thread::spawn(move || run_action_on(&host, Action::Pause))
+        };
+        menu.join().unwrap().expect("pauses");
+        go.send(()).unwrap();
+        answer.join().expect("no panic while publishing");
+
+        let events = host.log().take();
+        let ticks = ticks(&events);
+        assert_eq!(ticks.len(), 1, "{events:?}");
+        assert_eq!(ticks[0].state, EngineState::Paused);
+        assert_eq!(ticks[0].notifications, NotificationStatus::Granted);
+        assert!(
+            renders(&events)
+                .iter()
+                .all(|view| view.state == EngineState::Paused),
+            "{events:?}"
+        );
+        host.0.surfaces.0.lock().expect("surfaces").clear();
+    }
+
+    #[test]
+    fn publish_view_drops_a_view_not_newer_than_the_last() {
+        let host = launched(NotificationStatus::Denied);
+        with_recorder(&host);
+        let view = lock(&host.0.service).view(T0);
+        publish_view(&host, 5, &view);
+        publish_view(&host, 5, &view);
+        publish_view(&host, 4, &view);
+        assert_eq!(ticks(&host.log().take()).len(), 1);
+        publish_view(&host, 6, &view);
+        assert_eq!(ticks(&host.log().take()).len(), 1);
+        host.0.surfaces.0.lock().expect("surfaces").clear();
     }
 }

@@ -3,11 +3,14 @@
 
 mod commands;
 mod ipc;
+mod lifecycle;
+mod platform;
 mod scheduler;
 mod session;
 pub(crate) mod spike;
-
-use tauri::Manager;
+// The menu-bar item: Tauri's tray exists on desktop only.
+#[cfg(desktop)]
+mod tray;
 
 include!("../commands.list.rs");
 
@@ -74,28 +77,27 @@ pub fn run() {
     let context = tauri::generate_context!();
     let spike = spike::Spike::new(spike::enabled(), &context.config().identifier);
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(spike)
         .manage(session::Surfaces::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
             session::setup(app)?;
+            #[cfg(desktop)]
+            tray::setup(app)?;
             scheduler::spawn(app.handle().clone())?;
             spike::setup(app)?;
             Ok(())
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Focused(true) = event {
-                scheduler::publish_focus(window.app_handle());
-            }
-        })
+        });
+    lifecycle::install(app)
         .build(context)
         .expect("error while building Orasenda")
-        .run(|app, event| {
-            if let tauri::RunEvent::Exit = event {
-                session::flush_on_exit(app);
-            }
+        .run(|app, event| match event {
+            tauri::RunEvent::Exit => session::flush_on_exit(app),
+            #[cfg(target_os = "macos")]
+            tauri::RunEvent::Reopen { .. } => lifecycle::on_reopen(app),
+            _ => {}
         });
 }
 

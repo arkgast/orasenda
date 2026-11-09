@@ -14,9 +14,8 @@ use std::time::SystemTime;
 
 use orasenda_core::clock::epoch_ms;
 use orasenda_core::{
-    EngineState, KeepAwake, LocalTime, Milestone, NoopKeepAwake, NoopNotifier, NotificationStatus,
-    Notifier, Preset, Session, SessionId, SessionRecord, TimerError, UtcLocalTime, format_clock,
-    format_remaining, spoken_remaining,
+    EngineState, KeepAwake, LocalTime, Milestone, NotificationStatus, Notifier, Preset, Session,
+    SessionId, SessionRecord, TimerError, format_clock, format_remaining, spoken_remaining,
 };
 use orasenda_store::{OpenError, Store, StoreError, Txn, active_session, focus_sessions, settings};
 use serde::de::DeserializeOwned;
@@ -36,15 +35,6 @@ pub struct Platform {
     pub keep_awake: Box<dyn KeepAwake>,
     pub local_time: Box<dyn LocalTime>,
     pub notifier: Arc<dyn Notifier>,
-}
-
-/// The core no-ops. T9 (#93) replaces the one call in [`setup`] with `platform::current()`.
-fn default_platform() -> Platform {
-    Platform {
-        keep_awake: Box::new(NoopKeepAwake),
-        local_time: Box::new(UtcLocalTime),
-        notifier: Arc::new(NoopNotifier),
-    }
 }
 
 /// What a surface asks the session to do.
@@ -74,6 +64,8 @@ pub struct Effects {
     pub drop_after_unlock: Option<Box<dyn Any + Send>>,
     /// Whether to ask for the notification permission (a start while it is not determined).
     pub request_notifications: bool,
+    /// Orders `view` against every other published view (see [`ViewGate`]).
+    pub seq: u64,
 }
 
 /// A native view of the timer (T9's menu-bar item).
@@ -85,6 +77,13 @@ pub trait NativeSurface: Send + Sync {
 /// renders after releasing it, so a surface may lock it again.
 #[derive(Default)]
 pub struct Surfaces(pub Mutex<Vec<Arc<dyn NativeSurface>>>);
+
+/// The number of the last view published as `timer-tick` and to the surfaces, in managed
+/// state. Every view is numbered under the service lock ([`Effects::seq`],
+/// [`SessionService::snapshot`]); `scheduler::publish_view` drops a view whose number is not
+/// newer, so a view taken before a command can't be published after the command's own.
+#[derive(Default)]
+pub struct ViewGate(pub Mutex<u64>);
 
 /// The live session, the store and the cached settings. Held in managed state as
 /// `Mutex<SessionService>`; lock it with [`lock`].
@@ -100,6 +99,8 @@ pub struct SessionService {
     pending: Vec<MilestoneEvent>,
     platform: Platform,
     recover_owed: RecoverOwed,
+    /// The number given to the last view handed out (see [`ViewGate`]).
+    view_seq: u64,
 }
 
 /// Launch reads that failed at the database level and are still owed (architect ruling on
@@ -172,6 +173,7 @@ impl SessionService {
             pending: Vec::new(),
             platform,
             recover_owed,
+            view_seq: 0,
         };
         if let Some(read) = service
             .store
@@ -320,6 +322,13 @@ impl SessionService {
             pending: std::mem::take(&mut self.pending),
         };
         (state, effects)
+    }
+
+    /// The view at `now_ms` with the next publish number, for a path that publishes a view
+    /// outside [`Effects`] (focus, a notification status change).
+    pub fn snapshot(&mut self, now_ms: u64) -> (u64, TimerView) {
+        self.view_seq += 1;
+        (self.view_seq, self.view(now_ms))
     }
 
     /// The view at `now_ms`. `mode` is derived here and nowhere else.
@@ -582,14 +591,15 @@ impl SessionService {
     }
 
     fn effects(
-        &self,
+        &mut self,
         now_ms: u64,
         was_idle: bool,
         outcome: Outcome,
         result: Result<(), TimerCommandError>,
     ) -> Effects {
-        let view = self.view(now_ms);
+        let (seq, view) = self.snapshot(now_ms);
         Effects {
+            seq,
             result: result.map(|()| view.clone()),
             view,
             was_idle,
@@ -702,10 +712,11 @@ pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>> {
         Ok(dir) => open_store_at(&dir, &Uuid::new_v4().to_string()),
         Err(error) => Err(OpenError::Io(error.to_string())),
     };
-    let platform = default_platform();
+    let platform = crate::platform::current();
     let notifier = Arc::clone(&platform.notifier);
     app.manage(Mutex::new(SessionService::new(store, platform, now_ms())));
     app.manage(notifier);
+    app.manage(ViewGate::default());
     let handle = app.handle().clone();
     thread::Builder::new()
         .name("notification-status".into())
@@ -795,7 +806,7 @@ pub(crate) mod test_support {
     };
     use orasenda_store::Store;
 
-    use super::{Action, Platform, SessionService, Surfaces};
+    use super::{Action, Platform, SessionService, Surfaces, ViewGate};
     use crate::ClockTick;
     use crate::ipc::{MilestoneEvent, StartRequest, TimerView};
     use crate::scheduler::Host;
@@ -981,6 +992,7 @@ pub(crate) mod test_support {
     pub(crate) struct HostInner {
         pub(crate) service: Mutex<SessionService>,
         pub(crate) surfaces: Surfaces,
+        pub(crate) gate: ViewGate,
         pub(crate) notifier: Arc<FakeNotifier>,
         pub(crate) now: AtomicU64,
         pub(crate) log: Log,
@@ -1012,6 +1024,7 @@ pub(crate) mod test_support {
             TestHost(Arc::new(HostInner {
                 service: Mutex::new(service),
                 surfaces: Surfaces::default(),
+                gate: ViewGate::default(),
                 notifier,
                 now: AtomicU64::new(T0),
                 log,
@@ -1034,6 +1047,10 @@ pub(crate) mod test_support {
 
         fn surfaces(&self) -> Option<&Surfaces> {
             Some(&self.0.surfaces)
+        }
+
+        fn view_gate(&self) -> Option<&ViewGate> {
+            Some(&self.0.gate)
         }
 
         fn notifier(&self) -> Arc<dyn Notifier> {
