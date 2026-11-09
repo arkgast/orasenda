@@ -3,8 +3,9 @@
 
 mod commands;
 mod ipc;
+mod scheduler;
+mod session;
 pub(crate) mod spike;
-mod ticker;
 
 use tauri::Manager;
 
@@ -75,20 +76,27 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(spike)
+        .manage(session::Surfaces::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
-            ticker::spawn(app.handle().clone())?;
+            session::setup(app)?;
+            scheduler::spawn(app.handle().clone())?;
             spike::setup(app)?;
             Ok(())
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Focused(true) = event {
-                ticker::emit_now(window.app_handle());
+                scheduler::publish_focus(window.app_handle());
             }
         })
-        .run(context)
-        .expect("error while running Orasenda");
+        .build(context)
+        .expect("error while building Orasenda")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                session::flush_on_exit(app);
+            }
+        });
 }
 
 #[cfg(test)]

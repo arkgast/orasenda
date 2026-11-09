@@ -1,6 +1,6 @@
-//! Test hooks for the app crate's tests, behind the `test-hooks` feature: make every write fail,
-//! or park every write on a channel. Both act before `write` takes the connection mutex, so a
-//! failing or parked write holds nothing that a read or the connection needs.
+//! Test hooks for the app crate's tests, behind the `test-hooks` feature: make every write or
+//! every read fail, or park every write on a channel. All act before `write` or `read` takes
+//! the connection mutex, so a failing or parked call holds nothing the connection needs.
 
 use crate::{Store, StoreError};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -16,6 +16,7 @@ pub struct WriteGate {
 #[derive(Default)]
 pub(crate) struct Hooks {
     fail: AtomicBool,
+    fail_reads: AtomicBool,
     gate: Mutex<Option<WriteGate>>,
 }
 
@@ -35,6 +36,14 @@ impl Hooks {
         }
         Ok(())
     }
+
+    /// Runs at the start of every `read`, before the connection mutex is taken.
+    pub(crate) fn before_read(&self) -> Result<(), StoreError> {
+        if self.fail_reads.load(Ordering::SeqCst) {
+            return Err(StoreError::Sqlite("injected".to_owned()));
+        }
+        Ok(())
+    }
 }
 
 impl Store {
@@ -42,6 +51,12 @@ impl Store {
     /// without running its closure or touching the connection.
     pub fn fail_writes(&self, fail: bool) {
         self.hooks.fail.store(fail, Ordering::SeqCst);
+    }
+
+    /// While `fail` is true, every `read` returns `Err(StoreError::Sqlite("injected"))`
+    /// without running its closure or touching the connection. Writes are not affected.
+    pub fn fail_reads(&self, fail: bool) {
+        self.hooks.fail_reads.store(fail, Ordering::SeqCst);
     }
 
     /// While a gate is set, every `write` parks on it before taking the connection mutex.
@@ -117,6 +132,53 @@ mod tests {
             .expect("writes succeed again");
         let value: Option<i32> = store.read(|txn| settings::get(txn, "k")).expect("reads");
         assert_eq!(value, Some(2));
+    }
+
+    #[test]
+    fn fail_reads_hook_fails_reads_before_connection_and_writes_still_pass() {
+        let store = Arc::new(Store::open_in_memory("device-a").expect("opens"));
+        store
+            .write(1_000, |txn| settings::set(txn, "k", &1))
+            .expect("writes");
+        store.fail_reads(true);
+
+        // Hold the connection mutex in a read-free write on another thread.
+        let (held_tx, held_rx) = channel();
+        let (done_tx, done_rx) = channel::<()>();
+        let holder = {
+            let store = Arc::clone(&store);
+            thread::spawn(move || {
+                store.write(2_000, |_| {
+                    held_tx.send(()).expect("test is listening");
+                    done_rx.recv_timeout(WAIT).expect("test releases the write");
+                    Ok(())
+                })
+            })
+        };
+        held_rx
+            .recv_timeout(WAIT)
+            .expect("write holds the connection");
+
+        // A read that touched the connection would wait for the write; this one must not.
+        let mut ran = false;
+        let result: Result<Option<i32>, StoreError> = store.read(|txn| {
+            ran = true;
+            settings::get(txn, "k")
+        });
+        assert_eq!(result, Err(StoreError::Sqlite("injected".into())));
+        assert!(!ran);
+        done_tx.send(()).expect("holder is waiting");
+        holder
+            .join()
+            .expect("holder joins")
+            .expect("write succeeds");
+
+        store
+            .write(3_000, |txn| settings::set(txn, "k", &3))
+            .expect("writes still pass");
+        store.fail_reads(false);
+        let value: Option<i32> = store.read(|txn| settings::get(txn, "k")).expect("reads");
+        assert_eq!(value, Some(3));
     }
 
     #[test]
