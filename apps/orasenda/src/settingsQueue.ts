@@ -87,6 +87,8 @@ let intended: TimerSettings | null = null;
 let accepted: TimerSettings | null = null;
 let busy = false;
 let getWanted = false;
+// The intent a get in flight was sent under; `null` when no get is in flight.
+let getSentUnder: { intent: TimerSettings | null } | null = null;
 // Bumped by the test reset: a reply from an earlier generation is dropped.
 let generation = 0;
 
@@ -107,8 +109,12 @@ export function latest(): TimerSettings | null {
   return intended;
 }
 
-/** Queues one settings_get behind any save; a second call while one is queued is a no-op. */
+/**
+ * Queues one settings_get behind any save; a second call while one is queued, or in flight with no
+ * change since, is a no-op.
+ */
 export function load(): void {
+  if (getSentUnder && getSentUnder.intent === intended) return;
   getWanted = true;
   pump();
 }
@@ -128,6 +134,7 @@ export function resetSettingsQueueForTests(): void {
   accepted = null;
   busy = false;
   getWanted = false;
+  getSentUnder = null;
 }
 
 /** Rolls back to what Rust holds; changes queued behind a failed save are dropped too. */
@@ -185,6 +192,7 @@ function sendGet(): void {
   getWanted = false;
   const mine = generation;
   const before = intended;
+  getSentUnder = { intent: before };
   commands
     .settingsGet()
     .then(
@@ -193,8 +201,10 @@ function sendGet(): void {
         accepted = saved;
         // A change made while the get was in flight is kept and sent next.
         if (intended === before) {
+          // Reset the draft only when the page shows something else: text typed during a long save stays.
+          const differs = !sameSettings(saved, intended);
           intended = saved;
-          listener?.shown(saved, true);
+          if (differs) listener?.shown(saved, true);
         }
       },
       (error: unknown) => {
@@ -206,6 +216,7 @@ function sendGet(): void {
     .finally(() => {
       if (mine !== generation) return;
       busy = false;
+      getSentUnder = null;
       pump();
     });
 }

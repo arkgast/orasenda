@@ -819,6 +819,20 @@ test("remounted_today_waits_for_the_in_flight_save", async () => {
   expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
 });
 
+test("remounted_today_keeps_text_typed_while_the_save_is_in_flight", async () => {
+  const { held } = statefulBackend();
+  const first = render(<Today />);
+  await settle();
+  await editFocus60();
+  first.unmount();
+  render(<Today />);
+  await settle();
+  fireEvent.change(screen.getByLabelText("Focus minutes"), { target: { value: "70" } });
+
+  await answer(() => held[0].resolve());
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(70);
+});
+
 test("remounted_today_sends_the_intent_queued_before_unmount_after_the_save_answers", async () => {
   const { backend, held } = statefulBackend();
   const first = render(<Today />);

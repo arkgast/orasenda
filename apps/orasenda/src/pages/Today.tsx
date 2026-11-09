@@ -66,10 +66,6 @@ function parseDraft(draft: Draft): CustomSpec | null {
   return { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
 }
 
-export type { CoversEveryKey } from "../settingsQueue";
-// Re-exported for src/ui-types.test-d.tsx.
-export { CUSTOM_KEYS, SETTINGS_KEYS } from "../settingsQueue";
-
 /**
  * The helpers to show for a refused spec. When neither field is out of range locally (no spec
  * was sent, or the bounds drifted from core's), both show so the refusal is never silent.
