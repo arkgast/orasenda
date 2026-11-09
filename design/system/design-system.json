@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-09T21:58:10Z",
+    "at": "2026-11-09T22:15:21Z",
     "via": "Claude Code",
-    "note": "Review fixes: static redesign states in TimerRing, StartButton, FullScreenFocus, CommandPalette previews; MenuBarTimer caption; PopoverMenu idle and read-only panels; Built in tag word-only; StartButton drops disabled; IconButton, InlineNotice, AppPicker README wording."
+    "note": "index.d.ts matches bundle.js: runtime-exported Props back to their implemented shapes (StartButton keeps disabled); redesign props moved to *NextProps in the not-in-bundle block; Kbd, AppRow, SettingsIndexSection and Toast types tightened."
   }
 }
