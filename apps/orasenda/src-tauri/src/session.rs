@@ -139,7 +139,7 @@ impl SessionService {
     /// Loads the settings and runs relaunch recovery against `now_ms` (spec: Relaunch
     /// recovery). A store that failed to open leaves the engine idle and in memory.
     pub fn new(store: Result<Store, OpenError>, platform: Platform, now_ms: u64) -> SessionService {
-        let (store, mut store_status) = match store {
+        let (store, store_status) = match store {
             Ok(store) => (Some(store), StoreStatus::Ok),
             Err(error @ OpenError::Newer { .. }) => {
                 eprintln!("store: {error}; running without saving");
@@ -150,31 +150,27 @@ impl SessionService {
                 (None, StoreStatus::Unavailable)
             }
         };
-        let mut recover_owed = RecoverOwed::default();
-        let settings = match store.as_ref().map(|store| store.read(read_settings)) {
-            Some(Ok(settings)) => settings,
-            Some(Err(error)) => {
-                eprintln!("settings: could not be read ({error}); using the defaults for now");
-                recover_owed.settings = true;
-                store_status = StoreStatus::Unavailable;
-                TimerSettings::default()
-            }
-            None => TimerSettings::default(),
-        };
         let mut service = SessionService {
             engine: Session::Idle,
             store,
             store_status,
-            settings,
+            settings: TimerSettings::default(),
             unsaved: Vec::new(),
             snapshot_dirty: false,
             keep_awake: None,
             notifications: None,
             pending: Vec::new(),
             platform,
-            recover_owed,
+            recover_owed: RecoverOwed::default(),
             view_seq: 0,
         };
+        if let Some(read) = service
+            .store
+            .as_ref()
+            .map(|store| store.read(read_settings))
+        {
+            service.load_settings(read);
+        }
         if let Some(read) = service
             .store
             .as_ref()
@@ -183,6 +179,19 @@ impl SessionService {
             service.recover(read, now_ms);
         }
         service
+    }
+
+    /// The launch read of the settings. A failure keeps the defaults for now, owes the read
+    /// to `tick` and shows the store as unavailable.
+    fn load_settings(&mut self, read: Result<TimerSettings, StoreError>) {
+        match read {
+            Ok(settings) => self.settings = settings,
+            Err(error) => {
+                eprintln!("settings: could not be read ({error}); using the defaults for now");
+                self.recover_owed.settings = true;
+                self.store_status = StoreStatus::Unavailable;
+            }
+        }
     }
 
     /// Relaunch recovery from a read of `active_session`. True when it wrote (a session that
@@ -2168,6 +2177,51 @@ mod tests {
         assert!(
             snapshot(db(&s)).is_some(),
             "the unread row is left in place"
+        );
+    }
+
+    /// One launch read with the store failing reads; the next read succeeds.
+    fn failing_read<T>(
+        s: &SessionService,
+        read: impl FnOnce(&Txn) -> Result<T, StoreError>,
+    ) -> Result<T, StoreError> {
+        db(s).fail_reads(true);
+        let result = db(s).read(read);
+        db(s).fail_reads(false);
+        assert!(result.is_err(), "the hook fails the read");
+        result
+    }
+
+    /// Each launch read marks the store unavailable on its own: only the settings read
+    /// fails here, the snapshot read succeeds.
+    #[test]
+    fn failed_settings_read_alone_shows_the_store_unavailable() {
+        let mut s = service();
+        let read = failing_read(&s, read_settings);
+        s.load_settings(read);
+        assert!(s.recover_owed.settings);
+        assert!(!s.recover_owed.snapshot);
+        assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
+        assert_eq!(
+            s.tick(T0 + 1).view.store,
+            StoreStatus::Ok,
+            "the retried read succeeds"
+        );
+    }
+
+    /// Only the snapshot read fails here; the settings read succeeded.
+    #[test]
+    fn failed_snapshot_read_alone_shows_the_store_unavailable() {
+        let mut s = service();
+        let read = failing_read(&s, active_session::get::<Session>);
+        assert!(!s.recover(read, T0));
+        assert!(s.recover_owed.snapshot);
+        assert!(!s.recover_owed.settings);
+        assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
+        assert_eq!(
+            s.tick(T0 + 1).view.store,
+            StoreStatus::Ok,
+            "the retried read succeeds"
         );
     }
 
