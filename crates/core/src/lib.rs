@@ -14,7 +14,7 @@ pub use app_info::{AppInfo, Os};
 pub use blocking::{
     AppRef, BlockAction, BlockRule, Decision, Gate, GateAction, SAFETY_ALLOWLIST, decide,
 };
-pub use clock::{Hlc, HlcStamp};
+pub use clock::{Hlc, HlcStamp, ParseHlcStampError};
 pub use platform::{
     AppControl, ForegroundSource, HourCycle, IdleSource, KeepAwake, LocalTime, NoopKeepAwake,
     NoopNotifier, NotificationStatus, Notifier, PlatformError, UtcLocalTime,

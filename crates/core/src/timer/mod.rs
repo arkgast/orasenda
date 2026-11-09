@@ -176,8 +176,8 @@ impl std::fmt::Display for TimerError {
         f.write_str(match self {
             TimerError::AlreadyRunning => "a session is already running",
             TimerError::NothingRunning => "no session is running",
-            TimerError::WrongState => "that is not possible in the current state",
-            TimerError::InvalidSpec => "those lengths are out of range",
+            TimerError::WrongState => "that can't be done while the session is in this state",
+            TimerError::InvalidSpec => "focus can be 5 to 180 minutes, and a break 1 to 60",
         })
     }
 }

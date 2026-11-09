@@ -27,8 +27,10 @@ pub fn epoch_ms(t: SystemTime) -> u64 {
     })
 }
 
-/// A hybrid logical clock stamp. The string form sorts in causal order.
+/// A hybrid logical clock stamp. The string form sorts in causal order, provided `wall_ms`
+/// stays below 10^13 (the string pads it to 13 digits). Serialized as that string.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "String", try_from = "String")]
 pub struct HlcStamp {
     pub wall_ms: u64,
     pub counter: u16,
@@ -60,17 +62,40 @@ impl std::error::Error for ParseHlcStampError {}
 impl std::str::FromStr for HlcStamp {
     type Err = ParseHlcStampError;
 
+    /// Accepts only the canonical form: 13 digits, `-`, 5 digits, `-`, a non-empty device id.
     fn from_str(s: &str) -> Result<HlcStamp, ParseHlcStampError> {
-        let mut parts = s.splitn(3, '-');
-        let (Some(wall), Some(counter), Some(device)) = (parts.next(), parts.next(), parts.next())
+        let digits = |t: &str, n: usize| t.len() == n && t.bytes().all(|b| b.is_ascii_digit());
+        let (Some(wall), Some(counter), Some(device)) = (s.get(..13), s.get(14..19), s.get(20..))
         else {
             return Err(ParseHlcStampError);
         };
+        if !digits(wall, 13)
+            || !digits(counter, 5)
+            || &s[13..14] != "-"
+            || &s[19..20] != "-"
+            || device.is_empty()
+        {
+            return Err(ParseHlcStampError);
+        }
         Ok(HlcStamp {
             wall_ms: wall.parse().map_err(|_| ParseHlcStampError)?,
             counter: counter.parse().map_err(|_| ParseHlcStampError)?,
             device_id: device.to_owned(),
         })
+    }
+}
+
+impl From<HlcStamp> for String {
+    fn from(s: HlcStamp) -> String {
+        s.to_string()
+    }
+}
+
+impl TryFrom<String> for HlcStamp {
+    type Error = ParseHlcStampError;
+
+    fn try_from(s: String) -> Result<HlcStamp, ParseHlcStampError> {
+        s.parse()
     }
 }
 
@@ -121,7 +146,7 @@ impl Hlc {
         } else if let Some(next) = self.counter.checked_add(1) {
             self.counter = next;
         } else {
-            self.wall_ms += 1;
+            self.wall_ms = self.wall_ms.saturating_add(1);
             self.counter = 0;
         }
         HlcStamp {
@@ -233,11 +258,24 @@ mod tests {
 
     #[test]
     fn hlc_stamps_sort_as_strings() {
-        let mut s = clock(&[1, 1, 2, 1, 100]);
-        let mut by_string = s.clone();
+        // Wall 999 -> 1000 and counter 9 -> 10 change the digit count.
+        let mut h = Hlc::new("d".into());
+        let mut stamps: Vec<HlcStamp> = [998, 999, 999, 999, 1000]
+            .iter()
+            .map(|n| h.tick(*n))
+            .collect();
+        for _ in 0..12 {
+            stamps.push(h.tick(1000));
+        }
+        let generated = stamps.clone();
+        let mut by_string = stamps.clone();
         by_string.sort_by_key(|x| x.to_string());
-        s.sort();
-        assert_eq!(s, by_string);
+        let mut by_fields = stamps;
+        by_fields.sort_by(|a, b| {
+            (a.wall_ms, a.counter, &a.device_id).cmp(&(b.wall_ms, b.counter, &b.device_id))
+        });
+        assert_eq!(by_string, by_fields);
+        assert_eq!(by_string, generated);
     }
 
     #[test]
@@ -270,6 +308,31 @@ mod tests {
         assert_eq!(s.to_string(), "1794009600123-00042-mac-1");
         assert_eq!(s.to_string().parse::<HlcStamp>(), Ok(s));
         assert!("garbage".parse::<HlcStamp>().is_err());
+    }
+
+    #[test]
+    fn hlc_from_str_rejects_non_canonical() {
+        for bad in [
+            "1-2-x",
+            "+794009600123-00001-x",
+            "1794009600123-00001-",
+            "1794009600123-1-x",
+        ] {
+            assert!(bad.parse::<HlcStamp>().is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn hlc_stamp_serde_round_trips_as_string() {
+        let s = HlcStamp {
+            wall_ms: 5,
+            counter: 7,
+            device_id: "d".into(),
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        assert_eq!(json, "\"0000000000005-00007-d\"");
+        assert_eq!(serde_json::from_str::<HlcStamp>(&json).unwrap(), s);
+        assert!(serde_json::from_str::<HlcStamp>("\"1-2-x\"").is_err());
     }
 
     #[test]

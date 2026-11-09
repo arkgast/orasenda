@@ -92,21 +92,27 @@ ci:
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
-# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
+# Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]
 [script]
 core-purity:
+    [ -d crates/core/src ] || { echo "core purity: crates/core/src not found" >&2; exit 2; }
     status=0
-    hits="$(grep -rnE 'target_os' crates/core/src | grep -vE '^[^:]+:[0-9]+:\s*//')" || status=$?
-    if [ "$status" -eq 0 ]; then
-        echo "orasenda-core must not branch on the target OS (ADR-001):" >&2
-        echo "$hits" >&2
-        exit 1
-    elif [ "$status" -ne 1 ]; then
+    raw="$(grep -rnE 'target_os|target_family|target_vendor|cfg!?\((not\()?(unix|windows)|any\(.*(unix|windows)' crates/core/src)" || status=$?
+    if [ "$status" -eq 1 ]; then
+        exit 0
+    elif [ "$status" -ne 0 ]; then
         echo "core purity check failed: grep exited $status" >&2
         exit "$status"
     fi
+    hits="$(grep -vE '^[^:]+:[0-9]+:\s*//' <<<"$raw")" || status=$?
+    if [ -n "$hits" ]; then
+        echo "orasenda-core must not branch on the target OS (ADR-001):" >&2
+        echo "$hits" >&2
+        exit 1
+    fi
 
+# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
 [private]
 [script]
 core-boundary:
