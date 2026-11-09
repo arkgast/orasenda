@@ -3,12 +3,13 @@ import { events } from "./bindings";
 import { subscribe } from "./subscribe";
 
 /**
- * The wall clock from Rust: `waiting` before the first `clock-tick`, `ok` with the latest tick's
- * epoch milliseconds (UTC), or `error` when subscribing failed (final: no tick can follow).
+ * The wall clock from Rust: `waiting` before the first `clock-tick`, `ok` with the latest tick
+ * (epoch milliseconds in UTC, the clock as text and the idle finish preview, both formatted by
+ * Rust), or `error` when subscribing failed (final: no tick can follow).
  */
 export type ClockState =
   | { status: "waiting" }
-  | { status: "ok"; epochMs: number }
+  | { status: "ok"; epochMs: number; clock: string; idleFinish: string | null }
   | { status: "error" };
 
 /**
@@ -23,7 +24,7 @@ export function useClock(): ClockState {
       subscribe(
         "clock-tick",
         events.clockTick.listen,
-        ({ epochMs }) => setClock({ status: "ok", epochMs }),
+        ({ epochMs, clock, idleFinish }) => setClock({ status: "ok", epochMs, clock, idleFinish }),
         {
           onError: () => setClock({ status: "error" }),
         },
