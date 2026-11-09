@@ -17,10 +17,16 @@ export const commands = {
 	timerResume: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_resume")),
 	/**  Stops the session. */
 	timerStop: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_stop")),
-	/**  The saved timer settings. */
-	settingsGet: () => __TAURI_INVOKE<TimerSettings>("settings_get"),
-	/**  Saves the timer settings. */
-	settingsSet: (settings: TimerSettings) => typedError<null, SettingsError>(__TAURI_INVOKE("settings_set", { settings })),
+	/**  The saved settings. */
+	settingsGet: () => __TAURI_INVOKE<Settings>("settings_get"),
+	/**  Saves the settings. */
+	settingsSet: (settings: Settings) => typedError<null, SettingsError>(__TAURI_INVOKE("settings_set", { settings })),
+	/**  The notification permission status. Never asks; never errors. */
+	notificationsRequest: () => __TAURI_INVOKE<NotificationStatus>("notifications_request"),
+	/**  Opens the system notification settings for the app. */
+	notificationsOpenSettings: () => typedError<null, NotificationsError>(__TAURI_INVOKE("notifications_open_settings")),
+	/**  The page the app was asked to show before the webview listened, once. */
+	navigateTake: () => __TAURI_INVOKE<NavigatePage | null>("navigate_take"),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -40,7 +46,9 @@ export const commands = {
 /** Events */
 export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
+	navigate: makeEvent<Navigate, Navigate>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
+	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
 	timerMilestone: makeEvent<MilestoneEvent_Serialize, MilestoneEvent_Deserialize>("timer-milestone"),
 	timerTick: makeEvent<TimerView_Serialize, TimerView_Deserialize>("timer-tick"),
@@ -142,8 +150,24 @@ export type MilestoneKind = "started" | "paused" | "resumed" | "ended" | "recove
 /**  What the timer is doing, for the webview to name in words. */
 export type Mode = "focus" | "paused" | "idle";
 
+/**  Asks the webview to show a page. */
+export type Navigate = {
+	page: NavigatePage,
+};
+
+/**  A page of the app shell. */
+export type NavigatePage = "today" | "board" | "calendar" | "routines" | "review" | "settings";
+
 /**  Whether the app may post notifications, serialized camelCase. */
 export type NotificationStatus = "notDetermined" | "denied" | "granted" | "unavailable";
+
+export type NotificationsError = {
+	kind: NotificationsErrorKind,
+	message: string,
+};
+
+/**  Why a notification settings call failed. */
+export type NotificationsErrorKind = "unavailable" | "failed";
 
 /**  Operating system family, serialized lowercase (`"macos"`, …). */
 export type Os = "macos" | "windows" | "linux" | "ios" | "android" | "other";
@@ -178,6 +202,17 @@ export type Preset = "classic" | "fifty_ten" | "deep_block" | "custom" | "quick"
 
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;
+
+/**  The saved settings. */
+export type Settings = {
+	theme: Theme,
+	preset: Preset,
+	custom: CustomSpec,
+	notifySessionEnd: boolean,
+};
+
+/**  The settings changed. */
+export type SettingsChanged = Settings;
 
 export type SettingsError = {
 	kind: SettingsErrorKind,
@@ -223,6 +258,15 @@ export type StartRequest_Serialize = {
 /**  Whether the session store could be used. */
 export type StoreStatus = "ok" | "unavailable" | "newer";
 
+/**  The colour theme the person chose. */
+export type Theme = 
+/**  Follow the system appearance. */
+"system" | 
+/**  Always light. */
+"light" | 
+/**  Always dark. */
+"dark";
+
 export type TimerCommandError = {
 	kind: TimerCommandErrorKind,
 	message: string,
@@ -230,13 +274,6 @@ export type TimerCommandError = {
 
 /**  Why a timer command failed. */
 export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store";
-
-/**  The saved timer settings. */
-export type TimerSettings = {
-	preset: Preset,
-	custom: CustomSpec,
-	notifySessionEnd: boolean,
-};
 
 /**  The view plus milestones the webview has not seen yet. */
 export type TimerState = TimerState_Serialize | TimerState_Deserialize;

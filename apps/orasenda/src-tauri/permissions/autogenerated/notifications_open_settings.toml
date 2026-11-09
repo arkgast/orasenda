@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-notifications-open-settings"
+description = "Enables the notifications_open_settings command without any pre-configured scope."
+commands.allow = ["notifications_open_settings"]
+
+[[permission]]
+identifier = "deny-notifications-open-settings"
+description = "Denies the notifications_open_settings command without any pre-configured scope."
+commands.deny = ["notifications_open_settings"]

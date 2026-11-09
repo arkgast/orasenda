@@ -4,7 +4,7 @@ import type {
   AppInfo,
   ClockTick_Serialize,
   MilestoneEvent_Serialize,
-  TimerSettings,
+  Settings,
   TimerState_Serialize,
   TimerView_Serialize,
 } from "../bindings";
@@ -67,7 +67,8 @@ export const PAUSED: TimerView_Serialize = {
   finish: null,
 };
 
-export const SETTINGS: TimerSettings = {
+export const SETTINGS: Settings = {
+  theme: "system",
   preset: "classic",
   custom: { focusMin: 45, breakMin: 10 },
   notifySessionEnd: true,

@@ -25,8 +25,8 @@ use uuid::Uuid;
 
 use crate::ClockTick;
 use crate::ipc::{
-    MilestoneEvent, MilestoneKind, Mode, SettingsError, SettingsErrorKind, StartRequest,
-    StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerSettings, TimerState, TimerView,
+    MilestoneEvent, MilestoneKind, Mode, Settings, SettingsError, SettingsErrorKind, StartRequest,
+    StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerState, TimerView,
 };
 use crate::scheduler::{self, Host};
 
@@ -96,7 +96,7 @@ pub struct SessionService {
     engine: Session,
     store: Option<Store>,
     store_status: StoreStatus,
-    settings: TimerSettings,
+    settings: Settings,
     unsaved: Vec<SessionRecord>,
     snapshot_dirty: bool,
     keep_awake: Option<Box<dyn Any + Send>>,
@@ -133,6 +133,7 @@ impl RecoverOwed {
 const KEY_PRESET: &str = "timer.preset";
 const KEY_CUSTOM: &str = "timer.custom";
 const KEY_NOTIFY: &str = "notify.session_end";
+const KEY_THEME: &str = "ui.theme";
 const DB_FILE: &str = "orasenda.db";
 const KEEP_AWAKE_REASON: &str = "Focus session";
 
@@ -164,7 +165,7 @@ impl SessionService {
             engine: Session::Idle,
             store,
             store_status,
-            settings: TimerSettings::default(),
+            settings: Settings::default(),
             unsaved: Vec::new(),
             snapshot_dirty: false,
             keep_awake: None,
@@ -194,7 +195,7 @@ impl SessionService {
 
     /// The launch read of the settings. A failure keeps the defaults for now, owes the read
     /// to `tick` and shows the store as unavailable.
-    fn load_settings(&mut self, read: Result<TimerSettings, StoreError>) {
+    fn load_settings(&mut self, read: Result<Settings, StoreError>) {
         match read {
             Ok(settings) => self.settings = settings,
             Err(error) => {
@@ -404,17 +405,13 @@ impl SessionService {
     }
 
     /// The cached settings: defaults while degraded, never `Quick`.
-    pub fn settings(&self) -> TimerSettings {
+    pub fn settings(&self) -> Settings {
         self.settings.clone()
     }
 
-    /// Validates and writes the three settings in one transaction (with anything owed),
+    /// Validates and writes every setting in one transaction (with anything owed),
     /// then updates the cache.
-    pub fn set_settings(
-        &mut self,
-        settings: TimerSettings,
-        now_ms: u64,
-    ) -> Result<(), SettingsError> {
+    pub fn set_settings(&mut self, settings: Settings, now_ms: u64) -> Result<(), SettingsError> {
         if settings.preset == Preset::Quick {
             return Err(SettingsError {
                 kind: SettingsErrorKind::InvalidSpec,
@@ -436,6 +433,7 @@ impl SessionService {
         self.write_owed(now_ms, |txn| {
             settings::set(txn, KEY_PRESET, &settings.preset)?;
             settings::set(txn, KEY_CUSTOM, &settings.custom)?;
+            settings::set(txn, KEY_THEME, &settings.theme)?;
             settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)
         })
         .map_err(|_| SettingsError {
@@ -692,8 +690,8 @@ fn recovered(record: &SessionRecord) -> MilestoneEvent {
 /// Reads the settings. A value that fails to decode, a saved `Quick` and an out-of-range
 /// Custom are logged and replaced by their default in memory, never rewritten. A database
 /// error fails the whole read.
-fn read_settings(txn: &Txn) -> Result<TimerSettings, StoreError> {
-    let defaults = TimerSettings::default();
+fn read_settings(txn: &Txn) -> Result<Settings, StoreError> {
+    let defaults = Settings::default();
     let mut preset = read_setting(txn, KEY_PRESET, defaults.preset)?;
     if preset == Preset::Quick {
         eprintln!("settings: {KEY_PRESET} is quick, which is never saved; using the default");
@@ -704,7 +702,8 @@ fn read_settings(txn: &Txn) -> Result<TimerSettings, StoreError> {
         eprintln!("settings: {KEY_CUSTOM} is out of range; using the default");
         custom = defaults.custom;
     }
-    Ok(TimerSettings {
+    Ok(Settings {
+        theme: read_setting(txn, KEY_THEME, defaults.theme)?,
         preset,
         custom,
         notify_session_end: read_setting(txn, KEY_NOTIFY, defaults.notify_session_end)?,
@@ -805,10 +804,7 @@ pub(crate) fn run_state<H: Host>(host: &H) -> TimerState {
 /// idle finish follows the new preset at once. A save that changes the store status (its
 /// write fails, or it also writes what was owed) publishes one `timer-tick` first, even while
 /// idle, so the standing store line follows `view.store` (#112).
-pub(crate) fn run_set_settings<H: Host>(
-    host: &H,
-    settings: TimerSettings,
-) -> Result<(), SettingsError> {
+pub(crate) fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), SettingsError> {
     let Some(service) = host.service() else {
         return Err(SettingsError {
             kind: SettingsErrorKind::Unavailable,
@@ -840,7 +836,7 @@ pub(crate) fn run_set_settings<H: Host>(
 }
 
 /// `settings_get`: the cached settings under a brief lock; defaults before setup.
-pub(crate) fn current_settings<H: Host>(host: &H) -> TimerSettings {
+pub(crate) fn current_settings<H: Host>(host: &H) -> Settings {
     host.service()
         .map(|service| lock(service).settings())
         .unwrap_or_default()
@@ -1155,7 +1151,7 @@ mod tests {
 
     use super::test_support::*;
     use super::*;
-    use crate::ipc::{MilestoneKind, Mode, SettingsErrorKind, TimerCommandErrorKind};
+    use crate::ipc::{MilestoneKind, Mode, SettingsErrorKind, Theme, TimerCommandErrorKind};
 
     const WAIT: Duration = Duration::from_secs(10);
     /// How long a blocked thread is watched to show it has not moved on.
@@ -1298,7 +1294,8 @@ mod tests {
     #[test]
     fn custom_start_without_spec_uses_saved_custom() {
         let mut s = service();
-        let saved = TimerSettings {
+        let saved = Settings {
+            theme: Theme::System,
             preset: Preset::Custom,
             custom: CustomSpec {
                 focus_min: 30,
@@ -1699,7 +1696,8 @@ mod tests {
         );
         assert_eq!(
             s.settings(),
-            TimerSettings {
+            Settings {
+                theme: Theme::System,
                 preset: Preset::Classic,
                 custom,
                 notify_session_end: false,
@@ -1710,6 +1708,44 @@ mod tests {
             .read(|txn| orasenda_store::settings::get(txn, "timer.preset"))
             .expect("reads");
         assert_eq!(raw, Some(serde_json::json!("nonsense")));
+    }
+
+    #[test]
+    fn settings_round_trip_with_theme() {
+        let mut s = service();
+        let dark = Settings {
+            theme: Theme::Dark,
+            ..Settings::default()
+        };
+        s.set_settings(dark, T0).expect("settings save");
+        assert_eq!(s.settings().theme, Theme::Dark);
+        let raw: Option<serde_json::Value> = db(&s)
+            .read(|txn| orasenda_store::settings::get(txn, "ui.theme"))
+            .expect("reads");
+        assert_eq!(raw, Some(serde_json::json!("dark")));
+        let back = relaunch(&mut s, T0);
+        assert_eq!(back.settings().theme, Theme::Dark);
+    }
+
+    #[test]
+    fn undecodable_theme_reads_as_system() {
+        let store = memory_store();
+        store
+            .write(T0, |txn| {
+                orasenda_store::settings::set(txn, "ui.theme", &"sepia")
+            })
+            .expect("writes");
+        let mut s = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::NotDetermined, false).platform,
+            T0,
+        );
+        assert_eq!(s.settings(), Settings::default());
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let raw: Option<serde_json::Value> = db(&s)
+            .read(|txn| orasenda_store::settings::get(txn, "ui.theme"))
+            .expect("reads");
+        assert_eq!(raw, Some(serde_json::json!("sepia")));
     }
 
     #[test]
@@ -1985,7 +2021,8 @@ mod tests {
     #[test]
     fn settings_set_refuses_quick_and_out_of_range_custom() {
         let mut s = service();
-        let valid = TimerSettings {
+        let valid = Settings {
+            theme: Theme::System,
             preset: Preset::DeepBlock,
             custom: CustomSpec {
                 focus_min: 60,
@@ -1993,14 +2030,16 @@ mod tests {
             },
             notify_session_end: false,
         };
-        let quick = TimerSettings {
+        let quick = Settings {
+            theme: Theme::System,
             preset: Preset::Quick,
             ..valid.clone()
         };
         let error = s.set_settings(quick, T0).expect_err("quick is refused");
         assert_eq!(error.kind, SettingsErrorKind::InvalidSpec);
         for (focus_min, break_min) in [(4, 5), (181, 5), (30, 0), (30, 61)] {
-            let bad = TimerSettings {
+            let bad = Settings {
+                theme: Theme::System,
                 preset: Preset::Custom,
                 custom: CustomSpec {
                     focus_min,
@@ -2011,7 +2050,7 @@ mod tests {
             let error = s.set_settings(bad, T0).expect_err("out of range");
             assert_eq!(error.kind, SettingsErrorKind::InvalidSpec);
         }
-        assert_eq!(s.settings(), TimerSettings::default());
+        assert_eq!(s.settings(), Settings::default());
 
         s.set_settings(valid.clone(), T0)
             .expect("valid settings save");
@@ -2024,13 +2063,14 @@ mod tests {
     fn settings_set_write_failure_is_write_and_keeps_the_cache() {
         let mut s = service();
         db(&s).fail_writes(true);
-        let changed = TimerSettings {
+        let changed = Settings {
+            theme: Theme::System,
             preset: Preset::FiftyTen,
-            ..TimerSettings::default()
+            ..Settings::default()
         };
         let error = s.set_settings(changed, T0).expect_err("the write fails");
         assert_eq!(error.kind, SettingsErrorKind::Write);
-        assert_eq!(s.settings(), TimerSettings::default());
+        assert_eq!(s.settings(), Settings::default());
         assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
     }
 
@@ -2043,7 +2083,7 @@ mod tests {
         );
         assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
         let error = s
-            .set_settings(TimerSettings::default(), T0)
+            .set_settings(Settings::default(), T0)
             .expect_err("degraded");
         assert_eq!(error.kind, SettingsErrorKind::Unavailable);
 
@@ -2079,7 +2119,7 @@ mod tests {
             fakes(NotificationStatus::NotDetermined, false).platform,
             T0,
         );
-        assert_eq!(s.settings(), TimerSettings::default());
+        assert_eq!(s.settings(), Settings::default());
 
         let store = memory_store();
         store
@@ -2248,10 +2288,11 @@ mod tests {
             .collect()
     }
 
-    fn fifty_ten() -> TimerSettings {
-        TimerSettings {
+    fn fifty_ten() -> Settings {
+        Settings {
+            theme: Theme::System,
             preset: Preset::FiftyTen,
-            ..TimerSettings::default()
+            ..Settings::default()
         }
     }
 
@@ -2274,7 +2315,7 @@ mod tests {
                 .count(),
             0
         );
-        assert_eq!(current_settings(&host), TimerSettings::default());
+        assert_eq!(current_settings(&host), Settings::default());
     }
 
     #[test]
@@ -2318,17 +2359,18 @@ mod tests {
         run_set_settings(&host, fifty_ten()).expect("saves");
         assert_eq!(count(&host), (0, 1));
 
-        let quick = TimerSettings {
+        let quick = Settings {
+            theme: Theme::System,
             preset: Preset::Quick,
-            ..TimerSettings::default()
+            ..Settings::default()
         };
         assert!(run_set_settings(&host, quick).is_err());
         assert_eq!(count(&host), (0, 0));
 
         db(&lock(&host.0.service)).fail_writes(true);
-        assert!(run_set_settings(&host, TimerSettings::default()).is_err());
+        assert!(run_set_settings(&host, Settings::default()).is_err());
         assert_eq!(count(&host), (1, 0));
-        assert!(run_set_settings(&host, TimerSettings::default()).is_err());
+        assert!(run_set_settings(&host, Settings::default()).is_err());
         assert_eq!(count(&host), (0, 0));
     }
 
@@ -2363,9 +2405,10 @@ mod tests {
     #[test]
     fn run_set_settings_publishes_one_clock_tick() {
         let host = TestHost::new(NotificationStatus::Denied);
-        let changed = TimerSettings {
+        let changed = Settings {
+            theme: Theme::System,
             preset: Preset::FiftyTen,
-            ..TimerSettings::default()
+            ..Settings::default()
         };
         run_set_settings(&host, changed.clone()).expect("saves");
         let events = host.log().take();
@@ -2385,9 +2428,10 @@ mod tests {
 
         let refused = run_set_settings(
             &host,
-            TimerSettings {
+            Settings {
+                theme: Theme::System,
                 preset: Preset::Quick,
-                ..TimerSettings::default()
+                ..Settings::default()
             },
         );
         assert!(refused.is_err());
@@ -2427,9 +2471,10 @@ mod tests {
     /// again with reads failing.
     fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
         let mut s = service();
-        let saved = TimerSettings {
+        let saved = Settings {
+            theme: Theme::System,
             preset: Preset::FiftyTen,
-            ..TimerSettings::default()
+            ..Settings::default()
         };
         s.set_settings(saved, T0).expect("settings save");
         s.apply(start(Preset::Classic), T0, id("a"));
@@ -2464,7 +2509,7 @@ mod tests {
         let view = s.view(T0 + MINUTE);
         assert_eq!(view.state, EngineState::Idle);
         assert_eq!(view.store, StoreStatus::Unavailable);
-        assert_eq!(s.settings(), TimerSettings::default());
+        assert_eq!(s.settings(), Settings::default());
         assert!(s.keep_awake.is_none());
         assert!(s.pending.is_empty());
         let still = s.tick(T0 + 2 * MINUTE);
@@ -2556,9 +2601,10 @@ mod tests {
     fn relaunch_idle_with_reads_failing() -> SessionService {
         let mut s = service();
         s.set_settings(
-            TimerSettings {
+            Settings {
+                theme: Theme::System,
                 preset: Preset::FiftyTen,
-                ..TimerSettings::default()
+                ..Settings::default()
             },
             T0,
         )
@@ -2708,9 +2754,10 @@ mod tests {
     #[test]
     fn settings_saved_while_unread_win_over_stored_ones() {
         let mut s = relaunch_with_reads_failing(T0 + 60 * MINUTE);
-        let chosen = TimerSettings {
+        let chosen = Settings {
+            theme: Theme::System,
             preset: Preset::DeepBlock,
-            ..TimerSettings::default()
+            ..Settings::default()
         };
         s.set_settings(chosen.clone(), T0 + 60 * MINUTE)
             .expect("writes still work");
@@ -2793,7 +2840,7 @@ mod tests {
         db(&lock(&host.0.service)).fail_writes(true);
         let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
         assert_eq!(err.kind, SettingsErrorKind::Write);
-        assert_eq!(current_settings(&host), TimerSettings::default());
+        assert_eq!(current_settings(&host), Settings::default());
     }
 
     #[test]

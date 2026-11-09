@@ -4,6 +4,7 @@
 mod commands;
 mod ipc;
 mod lifecycle;
+mod notifications;
 mod platform;
 mod scheduler;
 mod session;
@@ -28,6 +29,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::timer_stop,
             commands::settings_get,
             commands::settings_set,
+            commands::notifications_request,
+            commands::notifications_open_settings,
+            commands::navigate_take,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -40,6 +44,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ClockTick,
             ipc::TimerView,
             ipc::MilestoneEvent,
+            ipc::SettingsChanged,
+            ipc::Navigate,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])
@@ -80,6 +86,8 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(spike)
         .manage(session::Surfaces::default())
+        .manage(lifecycle::PendingNavigate::default())
+        .manage(notifications::Notifications)
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
@@ -231,6 +239,27 @@ mod tests {
         }
     }
 
+    #[test]
+    fn main_capability_grants_settings_page_commands() {
+        let (windows, permissions) = capability("main.json");
+        assert_eq!(windows, ["main"]);
+        let (_, overlay) = capability("overlay.json");
+        for granted in [
+            "allow-notifications-request",
+            "allow-notifications-open-settings",
+            "allow-navigate-take",
+        ] {
+            assert!(
+                permissions.iter().any(|p| p == granted),
+                "main lacks {granted}"
+            );
+            assert!(
+                !overlay.iter().any(|p| p == granted),
+                "overlay has {granted}"
+            );
+        }
+    }
+
     /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.
     #[test]
     fn export_bindings() {
@@ -255,12 +284,19 @@ mod tests {
             "timerPause: () => typedError<TimerView_Serialize, TimerCommandError>",
             "timerResume: () => typedError<TimerView_Serialize, TimerCommandError>",
             "typedError<null, SettingsError>",
+            "settingsChanged: makeEvent<",
+            "navigate: makeEvent<",
+            "theme: Theme",
+            "navigateTake",
+            "notificationsOpenSettings",
+            "notificationsRequest: () => __TAURI_INVOKE<NotificationStatus>(\"notifications_request\")",
         ] {
             assert!(
                 bindings.contains(needle),
                 "bindings lack {needle}:\n{bindings}"
             );
         }
+        assert!(!bindings.contains("TimerSettings"));
         assert!(!bindings.contains("progress: number | null"));
         assert!(
             bindings.contains("epochMs: number"),

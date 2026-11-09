@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-navigate-take"
+description = "Enables the navigate_take command without any pre-configured scope."
+commands.allow = ["navigate_take"]
+
+[[permission]]
+identifier = "deny-navigate-take"
+description = "Denies the navigate_take command without any pre-configured scope."
+commands.deny = ["navigate_take"]
