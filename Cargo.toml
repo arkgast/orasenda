@@ -23,6 +23,7 @@ objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-core-graphics = { version = "0.3.2", default-features = false, features = ["std"] }
+objc2-user-notifications = { version = "0.3.2", default-features = false, features = ["std"] }
 block2 = { version = "0.6.2", default-features = false, features = ["std"] }
 # SQLite for crates/store only (ADR-002); bundled so iOS and Android build it from source.
 rusqlite = { version = "0.41.1", default-features = false, features = ["bundled"] }
