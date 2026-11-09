@@ -3,7 +3,7 @@
 - Date: 2026-11-09
 - Scope: every screen group before sub-project B (Today, timer surfaces, Settings, tracking and blocking, planning, onboarding)
 - Record: this review follows `01-fable-review.md` and `03-final-notes.md`. It records what was decided and why. It does not replace the design system artifact, which is the source of truth in design-first mode.
-- Status: design only. No app code changed. The repo copy of `design/system/` was refreshed in this branch (commit 3965a1d) from artifact version 1794261511-11cc, which includes the eight scoped-check fixes (section 6.4). The latest artifact version at merge is recorded in `design/system/design-system.json` under `lastChange`. Items still owed are listed in sections 7 and 8.
+- Status: design only. No app code changed. The repo copy of `design/system/` was refreshed in this branch (commit 3965a1d) from artifact version 1794261511-11cc, which includes the eight scoped-check fixes (section 6.4). The latest artifact version at merge is recorded in `design/system/design-system.json` under `lastChange`. Items still owed are listed in sections 7 and 8. A follow-up round (artifact version 1794262528-fd99, commit 70c5cb3) moved the redesign-only props into `*NextProps` interfaces marked "Not implemented in bundle.js yet", so the types never promise what the preview bundle does not do. The token sheet now also emits a `--type-<name>` font shorthand per style, with a reading-comfort block that swaps body, body-sm, heading and title to the alt family (commits e869d2b, 23a981c).
 - Supporting files: the briefs, the direction pick, the five group reviews, and the design-system changeset with its review are copied unchanged into [`04-redesign-pass/`](04-redesign-pass/). Links in this document point there. They were written in a session scratchpad, and this folder is their permanent copy.
 
 ---
@@ -132,6 +132,7 @@ These are not blockers. They are recorded here so they are not lost. The status 
 | c-tracking-19 | Tracking | The compact "Add as" select hides its label, while the controls table says it has a visible label. The select rule should be written from that table. | Absorbed into the design system |
 | N1 | Tracking | The Strong lock sentence is keyed on the helper state, not on the chosen strength. The README rule must key the sentence pair on helper approval alone. | Absorbed into the design system |
 | N2 | Tracking | A few raw values remain in the mock's inline styles (a 3px margin, a 17px heading, scrollbar offsets). The type shorthands live in the canvas CSS, not the token sheet. | Absorbed into the design system |
+| N4 | Design system | AppRowProps lets a never-record row take onChangeRole; the AppRow README does not say whether that is allowed. Decide in the artifact first. | Open |
 | d-planning-20 | Planning | The 900×600 caption gives "about 252px" for each open column. The arithmetic gives about 204px. | Open. A canvas caption; not in the changeset |
 | d-planning-21 | Planning | Weekly review step 3 places deep blocks with no task source. Week has no tray by design, so the step has nothing to place. | Routed to the planning spec (changeset section 10) |
 | d-planning-22 | Planning | The compact Day picker lists both "Today" and "Mon 9 Nov, today". Two entries for one day. | Absorbed into the design system |
@@ -145,6 +146,8 @@ The eight findings from the scoped check of the republished design system (art-1
 ## 6. Design-system changes
 
 The changeset was applied to the live artifact (https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73), republished as version 1794260898-f16f. The scoped-check fixes followed in version 1794261511-11cc. The repo copy in `design/system/` was refreshed from that version in this branch (commit 3965a1d). The latest artifact version at merge is recorded in `design/system/design-system.json` under `lastChange`.
+
+A follow-up round (artifact version 1794262528-fd99, commit 70c5cb3) moved the redesign-only props into `*NextProps` interfaces marked "Not implemented in bundle.js yet", so the types never promise what the preview bundle does not do. The token sheet now also emits a `--type-<name>` font shorthand per style, with a reading-comfort block that swaps body, body-sm, heading and title to the alt family (commits e869d2b, 23a981c).
 
 ### 6.1 Tokens
 
@@ -180,7 +183,7 @@ The scoped check (fable) read every path the changeset touched and compared them
 - **art-4 (fixed).** The PopoverMenu preview mixed two states. It now shows the idle and read-only panels separately.
 - **art-5 (fixed).** IconButton says Pause and Resume are `round`. Two compositions used `md`, and the README wording now matches.
 - **art-6 (fixed).** InlineNotice's first bullet predated the `attention` tone. The README wording now matches.
-- **art-7 (fixed).** StartButton's `disabled` was still typed and previewed, but no longer documented. It was dropped.
+- **art-7 (fixed).** StartButton's `disabled` was still typed and previewed, but no longer documented. It is not dropped. `disabled` stays typed on StartButtonProps, and bundle.js implements it. `unavailable` is the redesign contract, declared in StartButtonNextProps.
 - **art-8 (fixed).** AppPicker's inset focus ring is now documented.
 
 The first review of the changeset raised 19 findings (cs-1 to cs-19). The scoped check confirmed that the READMEs now carry their fixes. Two of them are worth naming: the single-key caption rule (cs-1) and the rule that a floater never uses the strip (cs-2).
