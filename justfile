@@ -60,7 +60,7 @@ ci:
     cargo fmt --all --check
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
-    @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows or windows-core)"
+    @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
     "{{ just_executable() }}" core-boundary
     @echo "==> core purity (no target_os in core)"
     "{{ just_executable() }}" core-purity
@@ -87,8 +87,8 @@ ci:
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/bindings.ts
     git diff --exit-code -- apps/orasenda/src/bindings.ts
-    @echo "==> mobile (cargo check core and app for iOS and Android)"
-    cargo check -p orasenda-core -p orasenda --locked {{ mobile_targets }}
+    @echo "==> mobile (cargo check core, store and app for iOS and Android)"
+    "{{ just_executable() }}" mobile
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
@@ -117,18 +117,50 @@ core-purity:
         exit 1
     fi
 
-# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
+# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows, windows-core, rusqlite
+# or libsqlite3-sys on any target.
 [private]
 [script]
 core-boundary:
     tree="$(cargo tree -p orasenda-core --locked --target all -e normal,build,dev --prefix none --format '{p}')"
     status=0
-    offenders="$(grep -E '^(tauri|tao|wry|objc2|block2)|^windows(-core)? v' <<<"$tree")" || status=$?
+    offenders="$(grep -E '^(tauri|tao|wry|objc2|block2)|^windows(-core)? v|^rusqlite|^libsqlite3-sys' <<<"$tree")" || status=$?
     if [ "$status" -eq 0 ]; then
-        echo "orasenda-core must not depend on tauri, tao, wry, objc2, block2, windows or windows-core (ADR-001, ADR-010):" >&2
+        echo "orasenda-core must not depend on tauri, tao, wry, objc2, block2, windows, windows-core or SQLite (ADR-001, ADR-002, ADR-010):" >&2
         echo "$offenders" >&2
         exit 1
     elif [ "$status" -ne 1 ]; then
         echo "core boundary check failed: grep exited $status" >&2
         exit "$status"
     fi
+
+# Checks core, store and app for iOS and Android. The store builds SQLite from C, so the Android
+# target needs the NDK's clang and llvm-ar. NDK lookup, first match wins: ANDROID_NDK_HOME,
+# NDK_HOME, ANDROID_NDK_LATEST_HOME, then the newest folder under
+# ${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/.
+[private]
+[script]
+mobile:
+    ndk="${ANDROID_NDK_HOME:-${NDK_HOME:-${ANDROID_NDK_LATEST_HOME:-}}}"
+    if [ -z "$ndk" ]; then
+        installed=()
+        for dir in "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/ndk/*/; do
+            [ -d "$dir" ] && installed+=("${dir%/}")
+        done
+        if [ "${#installed[@]}" -gt 0 ]; then
+            ndk="$(printf '%s\n' "${installed[@]}" | sort -V | tail -n 1)"
+        fi
+    fi
+    if [ -z "$ndk" ]; then
+        echo "no Android NDK found: set ANDROID_NDK_HOME" >&2
+        exit 1
+    fi
+    # Apple silicon NDKs ship only the darwin-x86_64 folder; its tools run under Rosetta.
+    bin="$ndk/toolchains/llvm/prebuilt/$(uname -s | tr '[:upper:]' '[:lower:]')-x86_64/bin"
+    if [ ! -x "$bin/aarch64-linux-android24-clang" ]; then
+        echo "the Android NDK at $ndk has no $bin/aarch64-linux-android24-clang" >&2
+        exit 1
+    fi
+    export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
+    export AR_aarch64_linux_android="$bin/llvm-ar"
+    cargo check -p orasenda-core -p orasenda-store -p orasenda --locked {{ mobile_targets }}

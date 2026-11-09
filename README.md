@@ -29,6 +29,11 @@ For the desktop app (macOS):
 - [gitleaks](https://github.com/gitleaks/gitleaks) 8.30 or newer, used by `just ci`.
 - Xcode (the full app, not only the Command Line Tools). `just ci` checks the core crate for iOS,
   which needs the iOS SDK.
+- The Android NDK (r29 is known to work). `just ci` checks the store crate for Android, which
+  compiles SQLite with the NDK's clang. It uses the first NDK it finds: `ANDROID_NDK_HOME`,
+  `NDK_HOME`, `ANDROID_NDK_LATEST_HOME`, then the newest folder under
+  `${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/`. Android Studio's SDK Manager installs it
+  there, so no variable is needed.
 
 For iOS, also:
 - An iOS Simulator runtime, installed from Xcode.
