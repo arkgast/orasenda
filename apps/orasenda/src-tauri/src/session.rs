@@ -801,7 +801,9 @@ pub(crate) fn run_state<H: Host>(host: &H) -> TimerState {
 }
 
 /// `settings_set`: validate and write under the lock, then publish one `clock-tick` so the
-/// idle finish follows the new preset at once.
+/// idle finish follows the new preset at once. A save that changes the store status (its
+/// write fails, or it also writes what was owed) publishes one `timer-tick` first, even while
+/// idle, so the standing store line follows `view.store` (#112).
 pub(crate) fn run_set_settings<H: Host>(
     host: &H,
     settings: TimerSettings,
@@ -812,7 +814,18 @@ pub(crate) fn run_set_settings<H: Host>(
             message: "settings can't be saved right now".into(),
         });
     };
-    lock(service).set_settings(settings, host.now_ms())?;
+    let now_ms = host.now_ms();
+    let (result, changed) = {
+        let mut service = lock(service);
+        let before = service.store_status;
+        let result = service.set_settings(settings, now_ms);
+        let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
+        (result, changed)
+    };
+    if let Some((seq, view)) = changed {
+        scheduler::publish_view(host, seq, &view);
+    }
+    result?;
     scheduler::publish_clock(host);
     Ok(())
 }
@@ -2090,6 +2103,128 @@ mod tests {
             host.log()
                 .count(|e| matches!(e, Event::Milestone(m) if m.kind == MilestoneKind::Recovered)),
             0
+        );
+    }
+
+    fn tick_views(events: &[Event]) -> Vec<TimerView> {
+        events
+            .iter()
+            .filter_map(|e| match e {
+                Event::Tick(v) => Some(v.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn fifty_ten() -> TimerSettings {
+        TimerSettings {
+            preset: Preset::FiftyTen,
+            ..TimerSettings::default()
+        }
+    }
+
+    #[test]
+    fn run_set_settings_write_failure_publishes_one_unavailable_timer_tick() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        db(&lock(&host.0.service)).fail_writes(true);
+        host.log().take();
+        let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
+        assert_eq!(err.kind, SettingsErrorKind::Write);
+        let events = host.log().take();
+        let ticks = tick_views(&events);
+        assert_eq!(ticks.len(), 1, "{events:?}");
+        assert_eq!(ticks[0].state, EngineState::Idle);
+        assert_eq!(ticks[0].store, StoreStatus::Unavailable);
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Clock(_)))
+                .count(),
+            0
+        );
+        assert_eq!(current_settings(&host), TimerSettings::default());
+    }
+
+    #[test]
+    fn run_set_settings_flushing_what_was_owed_publishes_one_ok_timer_tick() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        db(&lock(&host.0.service)).fail_writes(true);
+        run_action_on(&host, Action::Stop).expect("stops");
+        db(&lock(&host.0.service)).fail_writes(false);
+        host.log().take();
+        run_set_settings(&host, fifty_ten()).expect("saves");
+        let events = host.log().take();
+        let ticks = tick_views(&events);
+        assert_eq!(ticks.len(), 1, "{events:?}");
+        assert_eq!(ticks[0].state, EngineState::Idle);
+        assert_eq!(ticks[0].store, StoreStatus::Ok);
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Clock(_)))
+                .count(),
+            1
+        );
+        assert!(!lock(&host.0.service).snapshot_dirty);
+    }
+
+    #[test]
+    fn run_set_settings_without_a_store_change_publishes_no_timer_tick() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        let count = |host: &TestHost| {
+            let events = host.log().take();
+            (
+                tick_views(&events).len(),
+                events
+                    .iter()
+                    .filter(|e| matches!(e, Event::Clock(_)))
+                    .count(),
+            )
+        };
+        host.log().take();
+        run_set_settings(&host, fifty_ten()).expect("saves");
+        assert_eq!(count(&host), (0, 1));
+
+        let quick = TimerSettings {
+            preset: Preset::Quick,
+            ..TimerSettings::default()
+        };
+        assert!(run_set_settings(&host, quick).is_err());
+        assert_eq!(count(&host), (0, 0));
+
+        db(&lock(&host.0.service)).fail_writes(true);
+        assert!(run_set_settings(&host, TimerSettings::default()).is_err());
+        assert_eq!(count(&host), (1, 0));
+        assert!(run_set_settings(&host, TimerSettings::default()).is_err());
+        assert_eq!(count(&host), (0, 0));
+    }
+
+    #[test]
+    fn run_set_settings_after_a_failed_settings_read_publishes_one_ok_timer_tick() {
+        let mut s = service();
+        let read = failing_read(&s, read_settings);
+        s.load_settings(read);
+        assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
+        let Fakes {
+            platform,
+            log,
+            notifier,
+        } = fakes(NotificationStatus::Denied, false);
+        let _ = platform;
+        let host = TestHost::with(s, log, notifier);
+        host.log().take();
+        run_set_settings(&host, fifty_ten()).expect("saves");
+        let events = host.log().take();
+        let ticks = tick_views(&events);
+        assert_eq!(ticks.len(), 1, "{events:?}");
+        assert_eq!(ticks[0].store, StoreStatus::Ok);
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Clock(_)))
+                .count(),
+            1
         );
     }
 
