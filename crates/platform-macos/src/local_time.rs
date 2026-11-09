@@ -38,13 +38,42 @@ impl LocalTime for MacLocalTime {
 }
 
 /// The hour cycle from the `AppleICUForce24HourTime` default (`None` when unset) and the
-/// locale's format for the `j` template: a set default wins, else `a` (AM/PM) means 12-hour.
+/// locale's format for the `j` template: a set default wins, else [`format_hour_cycle`].
 fn hour_cycle_from(force_24_hour: Option<bool>, template: Option<&str>) -> HourCycle {
     match force_24_hour {
         Some(true) => HourCycle::H23,
         Some(false) => HourCycle::H12,
-        None if template.is_some_and(|format| format.contains('a')) => HourCycle::H12,
-        None => HourCycle::H23,
+        None => template.map_or(HourCycle::H23, format_hour_cycle),
+    }
+}
+
+/// Classifies a date format by its hour field outside quoted literals: `h`/`K` are 12-hour,
+/// `H`/`k` are 24-hour. Without an hour field, a period marker (`a`, or `B` as in zh_TW and
+/// hi_IN) means 12-hour; otherwise 24-hour.
+fn format_hour_cycle(format: &str) -> HourCycle {
+    let mut in_literal = false;
+    let mut has_period = false;
+    for letter in format.chars() {
+        // `'` opens and closes a literal; an escaped quote (`''`) toggles twice, so it
+        // leaves the state unchanged.
+        if letter == '\'' {
+            in_literal = !in_literal;
+            continue;
+        }
+        if in_literal {
+            continue;
+        }
+        match letter {
+            'h' | 'K' => return HourCycle::H12,
+            'H' | 'k' => return HourCycle::H23,
+            'a' | 'B' => has_period = true,
+            _ => {}
+        }
+    }
+    if has_period {
+        HourCycle::H12
+    } else {
+        HourCycle::H23
     }
 }
 
@@ -106,5 +135,21 @@ mod tests {
         assert_eq!(hour_cycle_from(None, Some("h a")), HourCycle::H12);
         assert_eq!(hour_cycle_from(None, Some("HH")), HourCycle::H23);
         assert_eq!(hour_cycle_from(None, None), HourCycle::H23);
+    }
+
+    #[test]
+    fn hour_cycle_helper_reads_the_hour_field_outside_quotes() {
+        // 12-hour locales that mark the period with `B` (zh_TW, hi_IN) instead of `a`.
+        assert_eq!(hour_cycle_from(None, Some("Bh時")), HourCycle::H12);
+        assert_eq!(hour_cycle_from(None, Some("B h")), HourCycle::H12);
+        assert_eq!(hour_cycle_from(None, Some("K a")), HourCycle::H12);
+        assert_eq!(hour_cycle_from(None, Some("k")), HourCycle::H23);
+        // Letters inside quoted literals are text, not fields.
+        assert_eq!(hour_cycle_from(None, Some("HH 'h'")), HourCycle::H23);
+        assert_eq!(hour_cycle_from(None, Some("H 'a'")), HourCycle::H23);
+        assert_eq!(hour_cycle_from(None, Some("h 'o''clock'")), HourCycle::H12);
+        // No hour field: the period marker decides, else 24-hour.
+        assert_eq!(hour_cycle_from(None, Some("B")), HourCycle::H12);
+        assert_eq!(hour_cycle_from(None, Some("'a'")), HourCycle::H23);
     }
 }
