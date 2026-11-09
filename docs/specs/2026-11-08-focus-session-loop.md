@@ -49,17 +49,15 @@ Menu bar, at the same moment: `● 24:59`. Close the window: the process stays, 
 Behind it: `crates/core::timer` decides everything from `now_ms`; `crates/store` writes `focus_session` once at the end and keeps the live session in a device-only `active_session` row; the app crate's `session-scheduler` thread wakes once a second, advances the engine, emits `timer-tick` and sets the menu-bar title.
 
 ## Context: P1 sub-projects
-P1 "Focus Core" is split into five sub-projects, each with its own spec, plan and implementation cycle. This spec is **A**. The split is recorded here so later specs can refer to it.
+Dated 2026-11-09: the P1 sub-project table now lives in [docs/ROADMAP.md](../ROADMAP.md#p1-sub-projects), re-cut under the architect ruling in [#134](https://github.com/arkgast/orasenda/issues/134). This spec is still **A**, and A's scope is unchanged.
 
-| # | Sub-project | Scope | Depends on | Size |
-|---|---|---|---|---|
-| **A** | **Focus session loop** (this spec) | Timer engine in core; `crates/store` skeleton (migrations, `meta`, `change_log`, settings, sessions); scheduler and App Nap assertion; IPC; Today (StartButton, TimerRing, preset choice, Pause and End); native menu-bar item; hide-on-close; session-end notification; relaunch recovery. | none | 8 tasks |
-| **B** | Session cadence | Breaks (short, long after N rounds), "Just 2 minutes" with the keep-going prompt, flow extension "+10 min" capped at 2, two-minute warning (ring, chip and menu bar switch to `warning`, one chime, one `InlineNotice`, one notification), deep-hours cap notice, session intent line. | A | 6 tasks |
-| **C** | Timer surfaces | Floating mini timer window (`MenuBarTimer compact:false`), full-screen mode (`FullScreenFocus`, exit `Dialog`), the ⌘K palette with timer commands. | A (B for `warning`) | 5 tasks |
-| **D** | Capture pad | Global hotkey, `CapturePad` in its own window, `capture_note` entity (text, internal or external, session), a plain Inbox list until P2's board. | A | 4 tasks |
-| **E** | Data portability | Export and import of a versioned JSON bundle, automatic backups (`VACUUM INTO`, rotating), Settings page, "Delete all data" (the one `critical` button). | A, D | 5 tasks |
+Legend for the letters used in this spec's prose:
+- old B (session cadence) = new **E**
+- old C (timer surfaces) = merged into new **D** (⌘K) and **C** (window minimum)
+- old D (capture pad) = new **F**
+- old E (data portability) = new **G** plus **B** (Settings)
 
-**Build order: A → B → (C ∥ D) → E.** A is a vertical slice rather than a store layer because P1's exit criterion is "usable daily as a focus timer", because the two real risks (timer truth while hidden or asleep, the menu-bar and hide-on-close lifecycle) are only proven end to end, and because ADR-002 already fixes the store's shape, so one real entity is enough to settle its API.
+A is a vertical slice rather than a store layer because P1's exit criterion is "usable daily as a focus timer", because the two real risks (timer truth while hidden or asleep, the menu-bar and hide-on-close lifecycle) are only proven end to end, and because ADR-002 already fixes the store's shape, so one real entity is enough to settle its API.
 
 ## Problem
 The shell keeps time in Rust and renders it in React (`apps/orasenda/src-tauri/src/ticker.rs:15-28`, `apps/orasenda/src/App.tsx:36-57`), but it has no product behaviour: the only command is `app_info`, the rest are spike commands (`apps/orasenda/src-tauri/src/lib.rs:25-34`), closing the window quits the app (no `CloseRequested` handler in `lib.rs`; recorded in the [shell spec](2026-11-07-app-shell.md) line 123 and its FAQ), the menu bar is empty (`tauri` has no `tray-icon` feature: `apps/orasenda/src-tauri/Cargo.toml:22`, pin at `Cargo.toml:16`) and nothing is stored (no `rusqlite` or `uuid` in any `Cargo.toml`). People with ADHD need the time visible at all times and starting to cost almost nothing (SPEC §1.7). The first daily-usable build is a focus timer that survives a hidden window, sleep and a relaunch, and the storage it writes must already have the shape sync will need (ADR-002), because retrofitting that is expensive.
