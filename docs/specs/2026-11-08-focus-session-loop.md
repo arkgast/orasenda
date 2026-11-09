@@ -338,4 +338,4 @@ All three were the owner's call and are now decided, as recommended. None is ope
 - [x] Plan: `docs/plans/2026-11-08-focus-session-loop.md`
 - [x] Issues: #85–#94
 - [x] ADR-011, ADR-012, ADR-013 accepted
-- [ ] Owner's manual acceptance (T10 #94 PR)
+- [x] Owner's manual acceptance (#110, 2026-11-09)
