@@ -15,10 +15,7 @@ pub struct MacLocalTime;
 
 impl LocalTime for MacLocalTime {
     fn utc_offset_min(&self, at_epoch_ms: u64) -> i32 {
-        let date = NSDate::dateWithTimeIntervalSince1970(at_epoch_ms as f64 / 1000.0);
-        let offset_secs = NSTimeZone::localTimeZone().secondsFromGMTForDate(&date);
-        // Real offsets are within ±18 h, so the minutes always fit in an i32.
-        (offset_secs / 60) as i32
+        offset_min_in(&NSTimeZone::localTimeZone(), at_epoch_ms)
     }
 
     fn hour_cycle(&self) -> HourCycle {
@@ -35,6 +32,13 @@ impl LocalTime for MacLocalTime {
         .map(|format| format.to_string());
         hour_cycle_from(force_24_hour, template.as_deref())
     }
+}
+
+/// Minutes east of UTC in `zone` at that instant.
+fn offset_min_in(zone: &NSTimeZone, at_epoch_ms: u64) -> i32 {
+    let date = NSDate::dateWithTimeIntervalSince1970(at_epoch_ms as f64 / 1000.0);
+    // Real offsets are within ±18 h, so the minutes always fit in an i32.
+    (zone.secondsFromGMTForDate(&date) / 60) as i32
 }
 
 /// The hour cycle from the `AppleICUForce24HourTime` default (`None` when unset) and the
@@ -116,6 +120,17 @@ mod tests {
             MacLocalTime.utc_offset_min(later),
             ns_time_zone_offset_min(later)
         );
+    }
+
+    #[test]
+    fn offset_follows_dst_in_a_named_zone() {
+        // Independent of the runner's zone, which may be UTC or have no DST.
+        let new_york = NSTimeZone::timeZoneWithName(&NSString::from_str("America/New_York"))
+            .expect("America/New_York exists");
+        const JAN_15_2026_NOON_UTC_MS: u64 = 1_768_478_400_000;
+        const JUL_15_2026_NOON_UTC_MS: u64 = 1_784_116_800_000;
+        assert_eq!(offset_min_in(&new_york, JAN_15_2026_NOON_UTC_MS), -300);
+        assert_eq!(offset_min_in(&new_york, JUL_15_2026_NOON_UTC_MS), -240);
     }
 
     #[test]
