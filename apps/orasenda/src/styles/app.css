@@ -1,4 +1,4 @@
-/* Shell styles. Every length, color and font comes from the design system tokens. */
+/* App styles. Every length, color and font comes from the design system tokens. */
 @import "@orasenda/tokens/tokens.css";
 
 :root {
@@ -15,8 +15,19 @@ body {
   font-weight: var(--type-body-font-weight);
 }
 
+/* The rail on the left, the header and the page beside it. */
 .app {
+  display: flex;
+  align-items: stretch;
+}
+
+.app-column {
+  flex: auto;
+  min-inline-size: 0;
   padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
 .app-header {
@@ -26,7 +37,7 @@ body {
   gap: var(--space-2);
 }
 
-.app-title {
+.app-brand {
   margin: 0;
   font-size: var(--type-heading-font-size);
   line-height: var(--type-heading-line-height);
@@ -45,18 +56,66 @@ body {
   font-weight: var(--type-body-sm-font-weight);
 }
 
-/* The clock's box, shared by the clock and "clock unavailable" so nothing shifts. */
-.app-clock-slot {
-  display: block;
-  min-block-size: var(--type-timer-md-line-height);
-  margin-block-start: var(--space-4);
+/* Each page's one h1; it takes focus after navigation. */
+.app-page-title {
+  margin: 0;
+  font-size: var(--type-title-font-size);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-font-weight);
 }
 
-.app-clock {
-  font-family: var(--font-mono);
-  font-size: var(--type-timer-md-font-size);
-  line-height: var(--type-timer-md-line-height);
-  font-weight: var(--type-timer-md-font-weight);
-  letter-spacing: var(--type-timer-md-letter-spacing);
-  font-variant-numeric: var(--type-timer-md-font-variant-numeric);
+/* Secondary lines: the finish time, the notifications explanation, "Timer unavailable.". */
+.app-muted {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-font-weight);
+}
+
+.today,
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.today {
+  max-inline-size: var(--content-width);
+}
+
+.today-timer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+/* The ring's box, shared by the ring and "Timer unavailable." so nothing shifts. */
+.today-ring {
+  display: grid;
+  place-items: center;
+  inline-size: var(--timer-size);
+  min-block-size: var(--timer-size);
+}
+
+.today-status,
+.today-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.today-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.today-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }
