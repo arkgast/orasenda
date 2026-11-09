@@ -3,13 +3,17 @@
 <html lang="en">
 <head><meta charset="utf-8"><title>PageFrame</title></head>
 <body>
-<div class="os-col">
-  <div class="os-page os-page-flow" style="height: 320px; max-width: var(--content-width); padding: var(--space-4); border: 1px solid var(--line)">
-    <header class="os-page-head"><h1 tabindex="-1">Shutdown</h1><span class="os-page-step">Step 2 of 4</span></header>
-    <div class="os-statusrow"><p class="os-statusrow-msg" role="status" aria-live="polite">Tomorrow's first task is set.</p></div>
-    <div class="os-scroll" role="region" aria-label="Plan tomorrow"><p style="margin:0">Pick what comes first tomorrow. Everything else can wait in the Inbox.</p></div>
-    <footer class="os-page-foot"><button class="os-btn os-btn-ghost" type="button">End</button><button class="os-btn os-btn-ghost" type="button">Not now</button><button class="os-btn os-btn-primary" type="button">Continue</button></footer>
-  </div>
-</div>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    return h('div', { className: 'os-col' },
+      h('div', { style: { height: '320px', maxWidth: 'var(--content-width)', border: '1px solid var(--line)' } },
+        h(O.PageFrame, { title: 'Shutdown', variant: 'flow', step: 'Step 2 of 4', status: h(O.InlineNotice, { variant: 'row', tone: 'rest' }, "Tomorrow's first task is set."),
+          footer: [h(O.Button, { key: 'e', variant: 'ghost' }, 'End'), h(O.Button, { key: 'n', variant: 'ghost' }, 'Not now'), h(O.Button, { key: 'c', variant: 'primary' }, 'Continue')] },
+          h(O.ScrollRegion, { label: 'Plan tomorrow' }, h('p', { style: { margin: 0 } }, 'Pick what comes first tomorrow. Everything else can wait in the Inbox.')))));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
 </body>
 </html>

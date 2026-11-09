@@ -36,14 +36,16 @@ export declare function Dialog(props: DialogProps): React.ReactElement;
 export interface FullScreenFocusProps extends Omit<TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
 export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
 export interface FieldProps { label: string; helper?: string; error?: string }
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, FieldProps {}
+/** unit adds a suffix ("min") after a number field sized to number-width. */
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, FieldProps { unit?: string }
 export declare function Input(props: InputProps): React.ReactElement;
 export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement>, FieldProps {}
 export declare function TextArea(props: TextAreaProps): React.ReactElement;
 export type InterruptionKind = 'internal' | 'external';
 export interface CapturePadProps { open?: boolean; value: string; kind: InterruptionKind; onChange: (value: string) => void; onKindChange: (kind: InterruptionKind) => void; onSave: (note: { text: string; kind: InterruptionKind }) => void | Promise<void>; onClose: () => void }
 export declare function CapturePad(props: CapturePadProps): React.ReactElement;
-export interface InlineNoticeProps { children: React.ReactNode; tone?: 'neutral' | 'warning'; actionLabel?: string; onAction?: () => void }
+/** variant 'row' is the reserved 44px status row; tone 'attention' (alert glyph) and 'rest' (ink-muted, no glyph) are for that row only. actionName is the accessible name when it differs from the visible actionLabel (e.g. "Try again saving break minutes"). */
+export type InlineNoticeProps = { children: React.ReactNode; actionLabel?: string; actionName?: string; onAction?: () => void } & ({ variant?: 'default'; tone?: 'neutral' | 'warning' } | { variant: 'row'; tone?: 'neutral' | 'attention' | 'rest' | 'warning' })
 export declare function InlineNotice(props: InlineNoticeProps): React.ReactElement;
 export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
 export declare function Toast(props: ToastProps): React.ReactElement;
@@ -55,7 +57,8 @@ export declare function KanbanColumn(props: KanbanColumnProps): React.ReactEleme
 export interface Command { id: string; label: string; hint?: string }
 export interface CommandPaletteProps { open?: boolean; commands: Command[]; onSelect: (id: string) => void; onClose: () => void }
 export declare function CommandPalette(props: CommandPaletteProps): React.ReactElement;
-export interface EmptyStateProps { title?: string; message?: string; actionLabel?: string; onAction?: () => void }
+/** 'inline' sits inside a SettingsRow: one line, no action. */
+export type EmptyStateProps = { title?: string; message?: string; actionLabel?: string; onAction?: () => void; variant?: 'default' } | { title?: never; message?: string; variant: 'inline'; actionLabel?: never; onAction?: never }
 export declare function EmptyState(props: EmptyStateProps): React.ReactElement;
 export interface StartButtonProps { onStart: () => void; onQuickStart: () => void; finishTime?: string; disabled?: boolean; loading?: boolean }
 export declare function StartButton(props: StartButtonProps): React.ReactElement;
@@ -74,18 +77,12 @@ export interface IntentPromptNextProps extends IntentPromptProps { variant?: 'ge
 export interface DialogNextProps extends DialogProps { emphasis?: 'default' | 'safe' }
 /** Not implemented in bundle.js yet. */
 export interface FullScreenFocusNextProps extends FullScreenFocusProps { onPause?: () => void; onResume?: () => void; onEnd?: () => void; onStart?: () => void }
-/** Not implemented in bundle.js yet. Suffix after a number field sized to number-width, e.g. "min". */
-export interface InputNextProps extends InputProps { unit?: string }
-/** Not implemented in bundle.js yet. variant 'row' is the reserved 44px status row; tone 'attention' (alert glyph) is for that row only. */
-export type InlineNoticeNextProps = Omit<InlineNoticeProps, 'tone'> & ({ variant?: 'default'; tone?: 'neutral' | 'warning' } | { variant: 'row'; tone?: 'neutral' | 'attention' | 'warning' })
 /** Not implemented in bundle.js yet. Folds into a column-strip-width strip. */
 export interface KanbanColumnNextProps extends KanbanColumnProps { collapsed?: boolean; onToggle?: () => void }
 /** Not implemented in bundle.js yet. shortcut is a right-aligned Kbd glyph string. */
 export interface CommandNext extends Command { shortcut?: string }
 /** Not implemented in bundle.js yet. compact applies below layout-compact-height. */
 export interface CommandPaletteNextProps extends Omit<CommandPaletteProps, 'commands'> { commands: CommandNext[]; compact?: boolean }
-/** Not implemented in bundle.js yet. 'inline' sits inside a SettingsRow: one line, no action. */
-export type EmptyStateNextProps = (EmptyStateProps & { variant?: 'default' }) | (Omit<EmptyStateProps, 'actionLabel' | 'onAction'> & { variant: 'inline'; actionLabel?: never; onAction?: never })
 /** Not implemented in bundle.js yet. finishTime moves to the preset summary; unavailable replaces disabled (pair it with a status-row line); compactLabel is the visible label below 400px of content, the name stays "Start focus". */
 export interface StartButtonNextProps extends Omit<StartButtonProps, 'disabled'> { unavailable?: boolean; compactLabel?: string }
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
@@ -101,11 +98,16 @@ export interface PopoverMenuProps { heading: string; description?: string; items
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> { label: string; /** Only for a compact page picker that replaces a visible title. */ labelHidden?: boolean; options: Array<{ value: string; label: string }> }
 export interface ScrollRegionProps { label: string; children?: React.ReactNode }
 export interface PageFrameProps { title: string; primary?: React.ReactNode; status?: React.ReactNode; variant?: 'list' | 'flow'; step?: string; footer?: React.ReactNode; compactPicker?: React.ReactNode; children?: React.ReactNode }
+export declare function PageFrame(props: PageFrameProps): React.ReactElement;
+export declare function ScrollRegion(props: ScrollRegionProps): React.ReactElement;
 export interface SessionSlotProps extends Omit<MenuBarTimerProps, 'compact'> { onPause: () => void; onResume: () => void }
 /** A problem always carries words; alert adds the glyph to those words, never on its own. */
 export interface SettingsIndexSection { id: string; name: string; value: string; problem?: { text: string; alert?: boolean } }
 export interface SettingsIndexProps { sections: SettingsIndexSection[]; current: string; onJump: (id: string) => void }
-export interface SettingsRowProps { label: string; helper: string; status?: React.ReactNode; actionLabel?: string; onAction?: () => void; disabledReason?: string; children: React.ReactNode }
+/** actionName is the accessible name when it differs from actionLabel; actionVariant defaults to 'quiet'. The row is role="group", labelled by label and described by helper, status and disabledReason. */
+export interface SettingsRowProps { label: string; helper: string; status?: React.ReactNode; actionLabel?: string; actionName?: string; actionVariant?: 'quiet' | 'ghost'; onAction?: () => void; disabledReason?: string; children: React.ReactNode }
+export declare function SettingsIndex(props: SettingsIndexProps): React.ReactElement;
+export declare function SettingsRow(props: SettingsRowProps): React.ReactElement;
 export interface ShortcutRecorderProps { label: string; keys?: string; spokenKeys?: string; recording?: boolean; conflict?: string; onRecord: (keys: string | null) => void; onRestoreDefault?: () => void }
 export type AppRole = 'distracting' | 'allowed' | 'focus' | 'neutral' | 'neverRecord' | 'site';
 export interface RoleTagProps { role: AppRole; children?: React.ReactNode }
@@ -123,6 +125,7 @@ declare global {
       Input: typeof Input; TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
+      PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
     };
   }
 }

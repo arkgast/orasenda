@@ -1,7 +1,7 @@
 A quiet line of guidance in place, and, as `variant="row"`, the reserved status row on Today, the Focus window and every `PageFrame`.
 
 - `children`: one or two plain sentences. `tone: 'warning'` (triangle, `amber-soft`) only for time almost up and WIP limits; everything else is neutral, or `attention` in the status row (the alert glyph, see below).
-- `actionLabel` with `onAction` adds one ghost action.
+- `actionLabel` with `onAction` adds one ghost action. `actionName` sets an accessible name that contains the visible text (the row variant's names are in its Actions line). In the row variant, `tone: 'rest'` is the at-rest line in `ink-muted` with no glyph.
 - The message is `role="status"`; mount it at the milestone, never on every tick.
 - The default variant stays for in-place notices.
 
@@ -49,7 +49,7 @@ A refused start shows here, on the same screen as Start. Focus stays on Start; t
 | Field saved | none | "Saved. Custom focus is now 50 minutes." |
 | Invalid value | `Input` error: alert glyph + "Between 5 and 180 minutes. Still using 45." (Break: "Between 1 and 60 minutes. Still using 10."); typed value kept, `aria-invalid` | "Focus minutes weren't saved. Still using 45." + ghost "Show" (moves focus to the field) |
 | Write failed | "Orasenda can't write its data file." | "Break minutes weren't saved. Back to 10." + "Try again" (name "Try again saving break minutes") |
-| Store unavailable | none | "Orasenda can't save settings right now. Changes you make here may not be kept." + "Try again" (name "Try again saving") |
+| Store unavailable | none | "Orasenda can't save settings right now. Changes you make here may not be kept." + "Try again" (name "Try again saving"), only while a failed change is waiting to be resent |
 | Store unavailable (About and data row) | "Orasenda can't read your sessions right now." | the save line above |
 | Store newer | controls read-only, each with the reason | "This data was saved by a newer Orasenda. Settings are read-only until you update." |
 | Shortcut conflict | the recorder's conflict line | none (the index shows "Pick a new shortcut" with the alert glyph) |

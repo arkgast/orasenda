@@ -14,18 +14,9 @@
       h(O.InlineNotice, { actionLabel: 'Plan a pause', onAction: ack('Pause planned.') }, 'Four hours of deep work today. A pause now will keep tomorrow good.'),
       h(O.InlineNotice, { actionLabel: 'Break it down', onAction: ack('Breakdown opened.') }, 'This task is over four sessions. It may be easier as smaller steps.'),
       h('p', { className: 'os-muted' }, 'variant="row": the reserved 44px status row.'),
-      h('div', { className: 'os-statusrow' },
-        h('p', { className: 'os-statusrow-msg', role: 'status', 'aria-live': 'polite' },
-          h('svg', { className: 'os-glyph', viewBox: '0 0 14 14', 'aria-hidden': 'true' }, h('circle', { cx: 7, cy: 7, r: 5.75 }), h('path', { d: 'M7 4v3.5' }), h('circle', { cx: 7, cy: 9.9, r: 0.5, fill: 'currentColor' })),
-          "Focus didn't start. Custom focus needs 5 to 180 minutes."),
-        h('button', { type: 'button', className: 'os-btn os-btn-ghost', 'aria-label': 'Open Settings to change custom minutes', onClick: ack('Settings › Timer opened.') }, 'Open Settings')),
-      h('div', { className: 'os-statusrow' },
-        h('p', { className: 'os-statusrow-msg', role: 'status', 'aria-live': 'polite' }, 'Tip: ',
-          h('span', { className: 'os-kbd', 'aria-hidden': 'true' }, '⌃⌥F'), h('span', { className: 'os-sr-only' }, 'Control-Option-F'),
-          ' starts or pauses focus from anywhere.'),
-        h('button', { type: 'button', className: 'os-btn os-btn-ghost', 'aria-label': 'Got it, hide this tip', onClick: ack('Tip hidden.') }, 'Got it')),
-      h('div', { className: 'os-statusrow' },
-        h('p', { className: 'os-statusrow-msg os-statusrow-rest', role: 'status', 'aria-live': 'polite' }, 'Changes save as you make them.')),
+      h(O.InlineNotice, { variant: 'row', tone: 'attention', actionLabel: 'Open Settings', actionName: 'Open Settings to change custom minutes', onAction: ack('Settings › Timer opened.') }, "Focus didn't start. Custom focus needs 5 to 180 minutes."),
+      h(O.InlineNotice, { variant: 'row', actionLabel: 'Got it', actionName: 'Got it, hide this tip', onAction: ack('Tip hidden.') }, 'Tip: ⌃⌥F starts or pauses focus from anywhere.'),
+      h(O.InlineNotice, { variant: 'row', tone: 'rest' }, 'Changes save as you make them.'),
       notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
