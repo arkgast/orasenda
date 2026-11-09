@@ -1517,6 +1517,7 @@ mod tests {
 
     #[test]
     fn recovers_running_snapshot_in_time() {
+        // Wall-clock continuation by design (case a of #121): a relaunch before the planned end keeps running.
         let mut s = service();
         s.apply(start(Preset::Classic), T0, id("a"));
         let Fakes { platform, log, .. } = fakes(NotificationStatus::NotDetermined, false);
@@ -1654,21 +1655,6 @@ mod tests {
         assert_eq!(back.view(T0 + MINUTE).state, EngineState::Idle);
         assert!(back.state(T0 + MINUTE).0.pending.is_empty());
         assert_eq!(snapshot(db(&back)), None);
-    }
-
-    #[test]
-    fn relaunch_with_clock_before_planned_end_continues_running() {
-        // Pins the spec's wall-clock continuation, so changing that rule must be deliberate.
-        let mut s = service();
-        s.apply(start(Preset::Classic), T0, id("a"));
-        let back = relaunch(&mut s, T0 + 5 * MINUTE);
-        let v = back.view(T0 + 5 * MINUTE);
-        assert_eq!(v.state, EngineState::Running);
-        assert_eq!(v.session_id, Some(SessionId("a".into())));
-        assert_eq!(v.remaining_ms, CLASSIC_MS - 5 * MINUTE);
-        assert!(back.pending.is_empty());
-        let snap = snapshot(db(&back)).expect("snapshot stays");
-        assert_eq!(snap.view(T0).session_id, Some(SessionId("a".into())));
     }
 
     #[test]
