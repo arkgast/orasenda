@@ -1,0 +1,19 @@
+[package]
+name = "orasenda-store"
+description = "Orasenda local storage: SQLite, migrations and the change log (ADR-002, ADR-012)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+# Write failure injection and a write gate for the app crate's tests. Enable it only from
+# [dev-dependencies], never from [dependencies].
+test-hooks = []
+
+[dependencies]
+orasenda-core = { path = "../core" }
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
