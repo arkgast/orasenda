@@ -2693,6 +2693,32 @@ mod tests {
     }
 
     #[test]
+    fn run_set_settings_returns_ok_when_publish_panics() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        db(&lock(&host.0.service)).fail_writes(true);
+        run_action_on(&host, Action::Stop).expect("stops");
+        db(&lock(&host.0.service)).fail_writes(false);
+        assert_eq!(lock(&host.0.service).store_status, StoreStatus::Unavailable);
+        with_panicking_surface(&host);
+        run_set_settings(&host, fifty_ten()).expect("the save committed");
+        assert_eq!(current_settings(&host), fifty_ten());
+        let service = lock(&host.0.service);
+        assert_eq!(service.store_status, StoreStatus::Ok);
+        assert!(!service.snapshot_dirty);
+    }
+
+    #[test]
+    fn run_set_settings_returns_its_write_error_when_publish_panics() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        with_panicking_surface(&host);
+        db(&lock(&host.0.service)).fail_writes(true);
+        let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
+        assert_eq!(err.kind, SettingsErrorKind::Write);
+        assert_eq!(current_settings(&host), TimerSettings::default());
+    }
+
+    #[test]
     fn setup_creates_app_data_dir() {
         let root =
             std::env::temp_dir().join(format!("orasenda-setup-{}-{}", std::process::id(), T0));
