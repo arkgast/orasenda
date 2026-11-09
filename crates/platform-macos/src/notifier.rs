@@ -78,8 +78,9 @@ impl Notifier for MacNotifier {
         );
     }
 
-    /// Delivers a notification now. Blocks until the center accepts it, at most 3 s; a
-    /// refusal or no answer is `Other`. Never call it on the main thread.
+    /// Delivers a notification now. Blocks until the center accepts it, at most 3 s. A
+    /// refusal is `Other`; no answer in time is also `Other`, but then the notification is
+    /// only unconfirmed and may still be shown. Never call it on the main thread.
     fn post(&self, title: &str, body: &str) -> Result<(), PlatformError> {
         let content = UNMutableNotificationContent::new();
         content.setTitle(&NSString::from_str(title));
@@ -103,11 +104,7 @@ impl Notifier for MacNotifier {
             let _ = tx.send(outcome);
         });
         center().addNotificationRequest_withCompletionHandler(&request, Some(&handler));
-        rx.recv_timeout(ANSWER_TIMEOUT).unwrap_or_else(|_| {
-            Err(PlatformError::Other(
-                "notification center did not answer".into(),
-            ))
-        })
+        wait_for_post(&rx, ANSWER_TIMEOUT)
     }
 }
 
@@ -135,6 +132,21 @@ fn notification_status(status: UNAuthorizationStatus) -> NotificationStatus {
             NotificationStatus::Unavailable
         }
     }
+}
+
+/// Waits up to `timeout` for the outcome the `addNotificationRequest` handler sends. No
+/// answer in time is `Other` saying the post is unconfirmed: the request may still be
+/// delivered.
+fn wait_for_post(
+    rx: &Receiver<Result<(), PlatformError>>,
+    timeout: Duration,
+) -> Result<(), PlatformError> {
+    rx.recv_timeout(timeout).unwrap_or_else(|_| {
+        Err(PlatformError::Other(format!(
+            "notification center did not confirm within {} s; it may still be shown",
+            timeout.as_secs_f64()
+        )))
+    })
 }
 
 /// Waits up to `timeout` for the status a completion handler sends; `Unavailable` when none
@@ -176,6 +188,24 @@ mod tests {
         for (status, expected) in cases {
             assert_eq!(notification_status(status), expected, "{status:?}");
         }
+    }
+
+    #[test]
+    fn post_timeout_says_the_notification_is_unconfirmed() {
+        let (_tx, rx) = mpsc::channel();
+        assert_eq!(
+            wait_for_post(&rx, Duration::from_millis(20)),
+            Err(PlatformError::Other(
+                "notification center did not confirm within 0.02 s; it may still be shown".into()
+            ))
+        );
+    }
+
+    #[test]
+    fn post_reports_the_handler_outcome() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(Ok(())).unwrap();
+        assert_eq!(wait_for_post(&rx, Duration::from_millis(20)), Ok(()));
     }
 
     #[test]
