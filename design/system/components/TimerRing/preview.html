@@ -1,9 +1,15 @@
-<!-- @dsCard group="Timer" height=1000 -->
+<!-- @dsCard group="Timer" height=1560 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>TimerRing</title></head>
 <body>
 <div id="root"></div>
+<div class="os-col" style="margin-top: var(--space-6)">
+  <p class="os-muted" style="margin:0">size="fluid": the ring fills its container between timer-min-size and timer-full-size, and the digits scale with the diameter. Drawn as static markup until the preview bundle supports it.</p>
+  <div style="width: 100%; max-width: var(--timer-full-size)">
+    <div class="os-timer os-timer-focus os-timer-full" style="width: 100%; min-width: min(100%, var(--timer-min-size))" role="timer" aria-live="off" aria-label="Focus, 18 minutes 42 seconds remaining, Chapter 3 outline"><svg class="os-timer-ring" viewBox="0 0 400 400" aria-hidden="true"><circle class="track" cx="200" cy="200" r="195" stroke-width="3.33"/><circle class="prog" cx="200" cy="200" r="195" stroke-width="10" stroke-dasharray="1225.22" stroke-dashoffset="306.31"/></svg><div class="os-timer-center" aria-hidden="true"><span class="os-chip os-mode-focus"><svg class="os-shape" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>Focus</span><div class="os-timer-digits">18:42</div><div class="os-timer-task">Chapter 3 outline</div></div></div>
+  </div>
+</div>
 <script>
   var O = window.Orasenda, h = React.createElement;
   function Demo() {

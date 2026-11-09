@@ -1,0 +1,34 @@
+<!-- @dsCard group="Timer" height=330 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>TimerStrip</title></head>
+<body>
+<div class="os-col" style="max-width: var(--content-width)">
+  <div class="os-actions" style="flex-wrap: nowrap; align-items: flex-end">
+    <div class="os-strip" role="timer" aria-live="off" aria-label="Focus, 18 minutes 42 seconds remaining">
+      <span class="os-strip-digits">18:42</span>
+      <div class="os-strip-bar"><span class="os-strip-fill" style="width: 75%"></span></div>
+    </div>
+    <span class="os-chip os-mode-focus"><svg class="os-shape" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="5"/></svg> Focus</span>
+  </div>
+  <div class="os-actions" style="flex-wrap: nowrap; align-items: flex-end">
+    <div class="os-strip os-strip-warning" role="timer" aria-live="off" aria-label="Almost up, 1 minute 48 seconds remaining">
+      <span class="os-strip-digits">01:48</span>
+      <div class="os-strip-bar"><span class="os-strip-fill" style="width: 7%"></span><svg class="os-strip-tri" viewBox="0 0 10 10" aria-hidden="true" style="inset-inline-start: 7%"><path d="M5 0.5l4.5 9h-9z"/></svg></div>
+    </div>
+    <span class="os-chip os-mode-warning"><svg class="os-shape" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0.5l4.5 9h-9z"/></svg> Almost up</span>
+  </div>
+  <div class="os-actions" style="flex-wrap: nowrap; align-items: flex-end">
+    <div class="os-strip os-strip-paused" role="timer" aria-live="off" aria-label="Paused, 12 minutes 16 seconds remaining">
+      <span class="os-strip-digits">12:16</span>
+      <div class="os-strip-bar"><span class="os-strip-fill" style="width: 49%"></span></div>
+    </div>
+    <span class="os-chip os-mode-paused"><svg class="os-shape" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1" width="2.5" height="8" rx="0.5"/><rect x="6" y="1" width="2.5" height="8" rx="0.5"/></svg> Paused</span>
+  </div>
+  <div class="os-actions" style="flex-wrap: nowrap; align-items: flex-end">
+    <div class="os-strip"><span class="os-strip-idle">25 min</span></div>
+    <span class="os-chip os-mode-idle"><svg class="os-shape" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> No session</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!-- @dsCard group="Settings" height=380 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>SettingsRow</title></head>
+<body>
+<div class="os-col" style="max-width: var(--content-width)">
+  <div class="os-srow">
+    <label class="os-srow-label" for="sr-focus">Focus minutes</label>
+    <div class="os-unit"><input class="os-input" id="sr-focus" type="number" value="50" aria-describedby="sr-focus-h"><span>min</span></div>
+    <p class="os-srow-help" id="sr-focus-h">Used by the Custom preset. Between 5 and 180.</p>
+  </div>
+  <div class="os-srow">
+    <label class="os-srow-label" for="sr-break">Break minutes</label>
+    <div class="os-unit"><input class="os-input" id="sr-break" type="number" value="90" aria-invalid="true" aria-describedby="sr-break-e"><span>min</span></div>
+    <p class="os-srow-status" id="sr-break-e"><svg class="os-glyph" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.75"/><path d="M7 4v3.5"/><circle cx="7" cy="9.9" r="0.5" fill="currentColor"/></svg> Between 1 and 60 minutes. Still using 10.</p>
+  </div>
+</div>
+</body>
+</html>

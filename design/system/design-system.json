@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-09T02:02:02Z",
+    "at": "2026-11-09T21:58:10Z",
     "via": "Claude Code",
-    "note": "MenuBarTimer glyphs: static focus circle, 14 pt shape on an 18 pt canvas, plain system title (not tabular), VoiceOver label; README type note names the native exception (#86)."
+    "note": "Review fixes: static redesign states in TimerRing, StartButton, FullScreenFocus, CommandPalette previews; MenuBarTimer caption; PopoverMenu idle and read-only panels; Built in tag word-only; StartButton drops disabled; IconButton, InlineNotice, AppPicker README wording."
   }
 }

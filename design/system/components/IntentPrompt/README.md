@@ -7,5 +7,12 @@ The Gentle overlay in two steps: first "Is this what you intended?" with one cle
 - **Keyboard and VoiceOver.** Escape is "Back to focus" in both steps. Choosing "I need <app> now" moves focus to the first reason, so VoiceOver reads the radio with the group's question; there is no live region, so nothing is announced twice. Tab order in step 2 is reasons, Continue, Back to focus. Arrow keys pick a reason.
 - `app` is the name in the copy; `title`, `message` and `waitLabel` override step 1's defaults. Native modal: background inert, focus contained, `scrim` backdrop, focus returns to the still-mounted trigger. Unmount or set `open: false` when done; reopening or a new `app` resets to step 1 and clears the reason.
 - No new motion: steps swap instantly. The breathing circle stays in both steps and is static under reduced motion.
+- **Context lines.** An optional context line (the focus shape and "Focus · ends 15:20") and a strength line ("Gentle pause. Esc or Return goes back to focus.").
+- **Variants.**
+  - Waiting: "You chose to wait until 15:12" / "Discord stays hidden until then."; keeps "I need <app> now".
+  - Firm: Continue is `aria-disabled`, described by a `role="status"` hint "Available at 15:21." that changes once to "You can continue now.", then a typed reason in `TextArea`.
+  - StrongLock: title "<app> is locked until 15:20", Back to focus only; the description follows the helper's approval state, independent of the selected strength; strength line "It ends when the session ends; End on Today asks once."
+  - Fallback: "Orasenda couldn't show the pause" / "Your session is still running. If an app was hidden, you can bring it back from the Dock."; Back to focus only, no app name, no scrim.
+- **Short displays.** Below `layout-tight-height` the step 2 and typed-reason steps drop the breathing circle and the gap goes from `space-5` to `space-4`. Back to focus stays the only primary and the initial focus.
 
 Do: keep "Back to focus" the only primary in both steps. Don't: show bypass counts here, pre-select a reason, or omit `onContinue` unless the user chose a stricter mode.
