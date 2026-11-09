@@ -3,7 +3,7 @@
 - Date: 2026-11-09
 - Scope: every screen group before sub-project B (Today, timer surfaces, Settings, tracking and blocking, planning, onboarding)
 - Record: this review follows `01-fable-review.md` and `03-final-notes.md`. It records what was decided and why. It does not replace the design system artifact, which is the source of truth in design-first mode.
-- Status: design only. No app code changed. The repo copy of `design/system/` has not been refreshed yet (see section 6).
+- Status: design only. No app code changed. The repo copy of `design/system/` was refreshed from artifact version 1794260898-f16f in this branch (commit 3965a1d). Items still owed are listed in sections 6.4, 7 and 8.
 
 ---
 
@@ -19,7 +19,7 @@ The owner asked for five things:
 4. **Settings comes sooner.** Theme, timer presets, notifications and keyboard need a home now, not in a later phase.
 5. **Tracking and blocking** need a clear presentation of which apps and sites are covered and why.
 
-The owner also asked what "Just 2 minutes" is for. The answer is in section 6: starting is often the hardest step, and a two-minute session is small enough to say yes to. It is the quiet secondary action beside Start, never a second primary.
+The owner also asked what "Just 2 minutes" is for. Starting is often the hardest step, and a two-minute session is small enough to say yes to without planning. It matters most for people with ADHD. Once a session has started, most people keep going past the two minutes. It is the quiet secondary action beside Start, never a second primary. The purpose sentence is written into the StartButton README (section 6.2).
 
 ### Known issues
 
@@ -46,7 +46,7 @@ Every canvas was drawn but not rendered or screenshot-checked, by design. Real-f
 | Direction | Canvas | Principles | Productivity | Verdict |
 |---|---|---|---|---|
 | A: Still Point | https://claude.ai/artifact/PCgq6TwYj2PDtjRw2YYqea | 9 | 8 | Chosen |
-| A2: centre Start | https://claude.ai/artifact/5hrrbc3JCwP3xo8NMgN6vo | 7 | 8 | Idea grafted into the choice only as a rejected variant |
+| A2: centre Start | https://claude.ai/artifact/5hrrbc3JCwP3xo8NMgN6vo | 7 | 8 | Not chosen; centre Start disc rejected, three ideas grafted (section 4) |
 | C: Horizon (strip layout) | https://claude.ai/artifact/AmzaQXPBw3pLboPo1ePg9h | 8 | 7 (9 in its niche) | Kept as the strip layout |
 
 **A, Still Point.** The ring is a timer and never a control. The idle state keeps its word ("No session") and its shape (a hollow circle). Start is the design system's own 52px pill with the word and a play glyph. Pause, Resume and End are icon controls with tooltips on hover and focus. Amber appears only with the triangle and "Almost up". Nothing uses red. The layout fixes #119 by construction: four tracks, one of them flexible, a reserved 44px status row, configuration off the screen, no page scroll.
@@ -73,7 +73,7 @@ The critique folded the original "Dial" direction into A as A2, a variant of A. 
 Direction A was chosen. These items were grafted from the other two:
 
 1. **From C: the strip layout and the minimum.** Today switches to the three-column strip when the content box is wider than twice its height and under 420px tall. It switches to the stacked strip under 360 tall and under 640 wide. The window minimum became 360×240. The default stays 900×600. The switch happens on resize only, never on a tick.
-2. **From C: paused wording.** While paused, the summary reads "Classic · 18 min left". The chip is the only "Paused". Two state words on one screen were rejected.
+2. **From C: paused wording.** The chip is the only "Paused". Two state words on one screen were rejected. The pick's wording was "Classic · 18 min left". The final wording is "Classic · 25 min" while paused, and "Classic · ends 15:20" while running. The timer review changed the paused wording so that the time left appears only once, in the digits (a-timer-5, rule 9).
 3. **From A2 and C: a visible Pause and Resume target.** The 52px circle gets a `surface-raised` ground and a `line-strong` edge, so the target is visible and not only the glyph.
 4. **From A2: a tooltip on the preset summary** ("Change preset · P") on hover and focus, so the single-key shortcut is discoverable. The row-budget overlay from A2 became the model for the layout test assertions.
 5. **From A2 and C: drawn states.** The Start loading state ("Starting…"), the denied-notification state with "Open System Settings", and the Settings keyboard section were drawn in both themes.
@@ -87,7 +87,7 @@ Must-fix items from the pick, before code:
 - The 360 idle row measured with real fonts. This is still owed (section 7).
 - One menu model. Navigation and commands use native menus. The preset popover is in the webview because it carries radios and a heading.
 - Window tokens updated (section 6.1).
-- Contrast for the new pairs. The changeset re-ran every relied-on pair (section 6.3).
+- Contrast for the new pairs. The changeset re-ran every relied-on pair (section 6.4).
 
 ---
 
@@ -105,7 +105,7 @@ Each group was reviewed once, fixed on the same canvas, then re-reviewed. "First
 
 Notes per group:
 
-- **Timer surfaces.** The floater has a real idle state: a hollow circle, "No session", the Start pill and Open Orasenda. It no longer says "Session ended." before any session. The floater's minimum is 248×56 and its default is 280×64. Scripted contrast failed two floater-edge pairs on a mid-grey wallpaper (1.23 and 1.25). The edge there is decorative, and the fill carries the boundary. The changeset check later found that at least one of the two holds 3:1 in every wallpaper combination.
+- **Timer surfaces.** The floater has a real idle state: a hollow circle, "No session", the Start pill and Open Orasenda. It no longer says "Session ended." before any session. The floater's minimum is 280×56 (was 248×56), its default 280×64 and its maximum 360×96. Scripted contrast failed two floater-edge pairs on a mid-grey wallpaper (1.23 and 1.25). The edge there is decorative, and the fill carries the boundary. The round-2 re-review showed that in all six theme × wallpaper combinations at least one of the fill and the edge holds 3:1. The changeset check confirmed this.
 - **Settings.** One scrolling page with a section index, not a drill-in, below 640×480. The unavailable line is "Orasenda can't save right now. Changes you make here may not be kept." with "Try again". It covers both the write failure and the launch-time read failure.
 - **Tracking, blocking and recent apps.** Strong lock wording depends on the helper. Without it the line says "quitting Orasenda ends it". With the helper approved it says that quitting reopens it, and that turning off the helper in Login Items ends it. The final verdict is "approve with changes" because of four minor findings listed in section 5.1. The contrast script found one failing pair, which was fixed.
 - **Planning screens.** Every planning page uses one frame: a 44px header with the primary at its end, a reserved 44px status row, and one region that scrolls inside itself. The page never scrolls. Step flows have a fixed 52px footer. Two contrast pairs were documented as non-pairs (a former goal tick no longer drawn, and a decorative hairline).
@@ -113,32 +113,37 @@ Notes per group:
 
 ### 5.1 Minor findings carried forward
 
-These are not blockers. They are recorded here so they are not lost.
+These are not blockers. They are recorded here so they are not lost. The status column reads against the changeset review (`04-ds-changeset-review.md`) and the changeset itself (`04-ds-changeset.md`):
 
-| ID | Group | Finding |
-|---|---|---|
-| a-timer-13 | Timer surfaces | The menu bar board's headers still read "18 minutes left" at 18:42. The board's own rule says header minutes round up, which gives 19. The rule and the drawing disagree. |
-| a-timer-15 | Timer surfaces | The contrast note says the edge holds about the same ratio on a light and a dark desktop. This is true for light only. The dark edge is 2.71, and the fill carries it. |
-| a-timer-12 | Timer surfaces | Real-font measurement is now specified as the Playwright WebKit layout test. Nothing was measured on the canvas. |
-| b-settings-11 | Settings | When settings cannot be read at launch, the About row still shows "38 focus sessions, since 2 November." The count is not known in that case. The row is off-screen in the drawn frame. |
-| b-settings-12 | Settings | "Try again" appears in two places that retry different things. The labels must say what each one retries. |
-| c-tracking-18 | Tracking | The compact Apps and sites view shows the strength choice but none of the four helper rows. A small window can select Strong lock and never be offered the helper. |
-| c-tracking-19 | Tracking | The compact "Add as" select hides its label, while the controls table says it has a visible label. The select rule should be written from that table. |
-| N1 | Tracking | The Strong lock sentence is keyed on the helper state, not on the chosen strength. The README rule must key the sentence pair on helper approval alone. |
-| N2 | Tracking | A few raw values remain in the mock's inline styles (a 3px margin, a 17px heading, scrollbar offsets). The type shorthands live in the canvas CSS, not the token sheet. |
-| d-planning-20 | Planning | The 900×600 caption gives "about 252px" for each open column. The arithmetic gives about 204px. |
-| d-planning-21 | Planning | Weekly review step 3 places deep blocks with no task source. Week has no tray by design, so the step has nothing to place. Implementation must decide. |
-| d-planning-22 | Planning | The compact Day picker lists both "Today" and "Mon 9 Nov, today". Two entries for one day. |
-| e-onboarding-14 | Onboarding | Tooltip key glyphs are hidden from VoiceOver, which relies on `aria-keyshortcuts`. VoiceOver in WKWebView speaks this only partly. The first-run tips still name the global keys in words. |
-| e-onboarding-15 | Onboarding | The onboarding CSS has stale comments and an unused class from the pre-fix design. |
+- **Absorbed into the design system:** the change is in the changeset and the republished artifact.
+- **Routed:** the fix belongs to a spec or a canvas, and the changeset names where.
+- **Owed to a test or device pass:** nothing can be closed on the canvas.
+- **Open:** no fix is recorded yet.
 
-The eight findings from the scoped check of the republished design system are in section 6.4.
+| ID | Group | Finding | Status |
+|---|---|---|---|
+| a-timer-13 | Timer surfaces | The menu bar board's headers still read "18 minutes left" at 18:42. The board's own rule says header minutes round up, which gives 19. The rule and the drawing disagree. | Absorbed into the design system |
+| a-timer-15 | Timer surfaces | The contrast note says the edge holds on a light desktop. That is true in the light theme (4.15) only. In the dark theme the edge is 2.71, and the fill (13.52) carries the boundary. | Absorbed into the design system |
+| a-timer-12 | Timer surfaces | Real-font measurement is now specified as the Playwright WebKit layout test. Nothing was measured on the canvas. | Owed to the layout test (section 7) |
+| b-settings-11 | Settings | When settings cannot be read at launch, the About row still shows "38 focus sessions, since 2 November." The count is not known in that case. | Absorbed into the design system (8.3, "Store unavailable") |
+| b-settings-12 | Settings | "Try again" appears in two places that retry different things. The labels must say what each one retries. | Absorbed into the design system |
+| c-tracking-18 | Tracking | The compact Apps and sites view shows the strength choice but none of the four helper rows. A small window can select Strong lock and never be offered the helper. | Routed to the tracking canvas (changeset section 10) |
+| c-tracking-19 | Tracking | The compact "Add as" select hides its label, while the controls table says it has a visible label. The select rule should be written from that table. | Absorbed into the design system |
+| N1 | Tracking | The Strong lock sentence is keyed on the helper state, not on the chosen strength. The README rule must key the sentence pair on helper approval alone. | Absorbed into the design system |
+| N2 | Tracking | A few raw values remain in the mock's inline styles (a 3px margin, a 17px heading, scrollbar offsets). The type shorthands live in the canvas CSS, not the token sheet. | Absorbed into the design system |
+| d-planning-20 | Planning | The 900×600 caption gives "about 252px" for each open column. The arithmetic gives about 204px. | Open. A canvas caption; not in the changeset |
+| d-planning-21 | Planning | Weekly review step 3 places deep blocks with no task source. Week has no tray by design, so the step has nothing to place. | Routed to the planning spec (changeset section 10) |
+| d-planning-22 | Planning | The compact Day picker lists both "Today" and "Mon 9 Nov, today". Two entries for one day. | Absorbed into the design system |
+| e-onboarding-14 | Onboarding | Tooltip key glyphs are hidden from VoiceOver, which relies on `aria-keyshortcuts`. VoiceOver in WKWebView speaks this only partly. | Owed to the device pass (section 7) |
+| e-onboarding-15 | Onboarding | The onboarding CSS has stale comments and an unused class from the pre-fix design. | Open. A canvas file; not in the changeset |
+
+The eight findings from the scoped check of the republished design system (art-1 to art-8) are in section 6.4. They are open.
 
 ---
 
 ## 6. Design-system changes
 
-The changeset was applied to the live artifact (https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73), republished as version 1794260898-f16f. The repo copy in `design/system/` has not been refreshed from it yet.
+The changeset was applied to the live artifact (https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73), republished as version 1794260898-f16f. The repo copy in `design/system/` was refreshed from that version in this branch (commit 3965a1d).
 
 ### 6.1 Tokens
 
@@ -158,7 +163,7 @@ The changeset was applied to the live artifact (https://claude.ai/artifact/Sk5N7
 
 ### 6.3 Rules
 
-- 34 new or rewritten README rules, in sections Layout (1–5), Colour (6), States (7–9), Motion (10), Iconography (11–13), Keyboard and menus (14–21) and Pages and flows (22–29), and Voice (30–34).
+- 34 new or rewritten README rules, in sections Layout (1–5); Colour (6); States (7–9); Motion (10); Iconography (11–13); Keyboard and menus (14–21); Pages and flows (22–29); Voice (30–34).
 - **Single keys.** Copy never promises a single key that a setting can turn off. With single-key shortcuts off, tooltips and tips drop their key cap. The control stays reachable by Tab.
 - **No single keys on Settings.** Single-key shortcuts never exist on Settings or on any page with text fields. A list may act on a letter key only while a row has focus, and only if the rule says so. The AppRow letter key was dropped for this reason.
 - **Esc order.** The Esc precedence rule was extended to cover every Esc behaviour the changeset defines.
@@ -166,7 +171,7 @@ The changeset was applied to the live artifact (https://claude.ai/artifact/Sk5N7
 
 ### 6.4 Scoped check of the republished version
 
-The scoped check (fable) read every path the changeset touched and compared them with the repo. Every item was applied. Nothing outside the changeset changed. Contrast was re-run by script against the live tokens, and every relied-on pair reproduces. The check approved the version with eight minor findings. None needs a token or a new drawing:
+The scoped check (fable) read every path the changeset touched and compared them with the repo. Every item was applied. Nothing outside the changeset changed. Contrast was re-run by script against the live tokens, and every relied-on pair reproduces. The check approved the version with eight minor findings. None needs a token or a new drawing. They are still open:
 
 - **art-1.** Previews of changed components still show the old behaviour. For example, the StartButton preview still shows the finish time under the button.
 - **art-2.** The `hit-floor` text lost "and the menu-bar timer" without a record in the changeset.
@@ -185,7 +190,7 @@ The first review of the changeset raised 19 findings (cs-1 to cs-19). The scoped
 
 Nothing in this pass was rendered, screenshot-checked or run in an app. Every layout number is calculated.
 
-- **Real-font layout in WebKit.** Atkinson Hyperlegible Next and Lexend must be measured in WKWebView. The Playwright WebKit layout test is required by the next spec and gates the first code change. It was not run. Its cases are: 360×240, 360×360, 640×480, 900×240, 900×600 and 1440×900. Each case uses the longest status line and an action. It asserts that the controls row is inside the viewport, that the status row is exactly 44px, and that `scrollHeight <= innerHeight` on Today, Focus and Floating. The idle row at 360 wide is estimated at 316 of 328px. If it wraps, the pill reads "Start", and the accessible name stays "Start focus".
+- **Real-font layout in WebKit.** Atkinson Hyperlegible Next and Lexend must be measured in WKWebView. The Playwright WebKit layout test is required by the next spec and gates the first code change. It was not run. Its case list is README rule 2 in `design/system/README.md`, which is the source; this section does not restate it in full. Rule 2 covers at least: windows 360×240, 360×360, 640×330, 640×480, 900×240, 900×600, 1440×900 and 3440×400; the Focus window at 1280×720 and 1920×1080; and the floater at 280×56, 280×64 and 360×96 in every state (running, paused, warning, idle, ended, deep). The cases are the longest status line beside the widest action ("Open Settings"), the stacked strip running (chip plus a two-line store line), a status row exactly 44px, and `scrollHeight <= innerHeight` on Today, Focus and Floating. Planning adds Board, Calendar, Routines, Review and ⌘K at 360×240, 900×600 and 1440×900 (review-d-planning, section 4). The idle row at 360 wide is estimated at 316 of 328px. If it wraps, the pill reads "Start", and the accessible name stays "Start focus".
 - **VoiceOver** on a running build. Including the composed recorder name and the key glyphs in tooltips.
 - **Native menus and the status item.** The NSMenu and NSStatusItem appearance is drawn as token stand-ins.
 - **Final icons.** The rail, Focus view, leave and open glyphs are placeholders. The final set must be in the design system before the app uses it.
@@ -204,7 +209,7 @@ Nothing in this pass was rendered, screenshot-checked or run in an app. Every la
 
 ## 8. Next steps
 
-1. Refresh `design/system/` from the republished artifact (version 1794260898-f16f) in the same PR as the code change. Diff against that version, not against the changeset text.
-2. Fix the eight art findings and the fourteen minor findings in section 5.1 in the artifact first, then in the repo copy.
-3. Write the Playwright WebKit layout test before the first code change of Today.
+1. Refresh `design/system/` again once the art-1 to art-8 fixes (section 6.4) are made in the artifact. These fixes change previews and READMEs, so the repo copy is behind until then. Diff against the artifact, not the changeset text.
+2. Fix the open findings first in the artifact or canvas, then in the repo copy where they apply. These are art-1 to art-8 (artifact, section 6.4), d-planning-20 (planning canvas caption, "about 204px") and e-onboarding-15 (onboarding canvas CSS comments).
+3. Write the Playwright WebKit layout test before the first code change of Today. It also covers a-timer-12. The device pass for e-onboarding-14 comes with the accessibility pass.
 4. Write the spec A amendments from the Calls board into `docs/specs`.
