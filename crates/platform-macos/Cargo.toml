@@ -10,7 +10,8 @@ publish.workspace = true
 [target.'cfg(target_os = "macos")'.dependencies]
 orasenda-core = { path = "../core" }
 objc2.workspace = true
-objc2-foundation = { workspace = true, features = ["NSArray", "NSDictionary", "NSEnumerator", "NSError", "NSNotification", "NSOperation", "NSString", "NSURL", "block2"] }
+objc2-foundation = { workspace = true, features = ["NSArray", "NSBundle", "NSDate", "NSDateFormatter", "NSDictionary", "NSEnumerator", "NSError", "NSFormatter", "NSLocale", "NSNotification", "NSOperation", "NSProcessInfo", "NSString", "NSTimeZone", "NSURL", "NSUserDefaults", "block2"] }
 objc2-app-kit = { workspace = true, features = ["NSApplication", "NSPanel", "NSResponder", "NSRunningApplication", "NSScreen", "NSWindow", "NSWorkspace", "libc"] }
 objc2-core-graphics = { workspace = true, features = ["CGEventSource", "CGEventTypes"] }
+objc2-user-notifications = { workspace = true, features = ["UNNotificationContent", "UNNotificationRequest", "UNNotificationSettings", "UNNotificationTrigger", "UNUserNotificationCenter", "block2"] }
 block2.workspace = true
