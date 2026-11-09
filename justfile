@@ -62,6 +62,8 @@ ci:
     pnpm exec biome ci .
     @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows or windows-core)"
     "{{ just_executable() }}" core-boundary
+    @echo "==> core purity (no target_os in core)"
+    "{{ just_executable() }}" core-purity
     @echo "==> tokens (tokens.css is up to date)"
     "{{ just_executable() }}" tokens
     git diff --exit-code -- packages/tokens/tokens.css
@@ -89,6 +91,31 @@ ci:
     cargo check -p orasenda-core -p orasenda --locked {{ mobile_targets }}
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
+
+# Fails when orasenda-core source branches on the target OS (ADR-001).
+[private]
+[script]
+core-purity:
+    [ -d crates/core/src ] || { echo "core purity: crates/core/src not found" >&2; exit 2; }
+    status=0
+    raw="$(grep -rnE 'target_os|target_family|target_vendor|cfg(_attr)?!?\((.*[(, ])?(unix|windows) *[,)]' crates/core/src)" || status=$?
+    if [ "$status" -eq 1 ]; then
+        exit 0
+    elif [ "$status" -ne 0 ]; then
+        echo "core purity check failed: grep exited $status" >&2
+        exit "$status"
+    fi
+    status=0
+    hits="$(grep -vE '^[^:]+:[0-9]+:\s*//' <<<"$raw")" || status=$?
+    if [ "$status" -ge 2 ]; then
+        echo "core purity check failed: grep exited $status" >&2
+        exit "$status"
+    fi
+    if [ -n "$hits" ]; then
+        echo "orasenda-core must not branch on the target OS (ADR-001):" >&2
+        echo "$hits" >&2
+        exit 1
+    fi
 
 # Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
 [private]

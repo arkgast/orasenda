@@ -1,5 +1,6 @@
 //! Pure time helpers. Callers pass `SystemTime` in; core never reads the clock.
 
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const ONE_SECOND: Duration = Duration::from_secs(1);
@@ -24,6 +25,136 @@ pub fn epoch_ms(t: SystemTime) -> u64 {
     t.duration_since(UNIX_EPOCH).map_or(0, |since| {
         u64::try_from(since.as_millis()).unwrap_or(u64::MAX)
     })
+}
+
+/// A hybrid logical clock stamp. The string form sorts in causal order, provided `wall_ms`
+/// stays below 10^13 (the string pads it to 13 digits). Serialized as that string.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "String", try_from = "String")]
+pub struct HlcStamp {
+    pub wall_ms: u64,
+    pub counter: u16,
+    pub device_id: String,
+}
+
+impl std::fmt::Display for HlcStamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:013}-{:05}-{}",
+            self.wall_ms, self.counter, self.device_id
+        )
+    }
+}
+
+/// A stamp string that does not parse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseHlcStampError;
+
+impl std::fmt::Display for ParseHlcStampError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("not a valid clock stamp")
+    }
+}
+
+impl std::error::Error for ParseHlcStampError {}
+
+impl std::str::FromStr for HlcStamp {
+    type Err = ParseHlcStampError;
+
+    /// Accepts only the canonical form: 13 digits, `-`, 5 digits, `-`, a non-empty device id.
+    fn from_str(s: &str) -> Result<HlcStamp, ParseHlcStampError> {
+        let digits = |t: &str, n: usize| t.len() == n && t.bytes().all(|b| b.is_ascii_digit());
+        let (Some(wall), Some(counter), Some(device)) = (s.get(..13), s.get(14..19), s.get(20..))
+        else {
+            return Err(ParseHlcStampError);
+        };
+        if !digits(wall, 13)
+            || !digits(counter, 5)
+            || &s[13..14] != "-"
+            || &s[19..20] != "-"
+            || device.is_empty()
+        {
+            return Err(ParseHlcStampError);
+        }
+        Ok(HlcStamp {
+            wall_ms: wall.parse().map_err(|_| ParseHlcStampError)?,
+            counter: counter.parse().map_err(|_| ParseHlcStampError)?,
+            device_id: device.to_owned(),
+        })
+    }
+}
+
+impl From<HlcStamp> for String {
+    fn from(s: HlcStamp) -> String {
+        s.to_string()
+    }
+}
+
+impl TryFrom<String> for HlcStamp {
+    type Error = ParseHlcStampError;
+
+    fn try_from(s: String) -> Result<HlcStamp, ParseHlcStampError> {
+        s.parse()
+    }
+}
+
+impl Ord for HlcStamp {
+    fn cmp(&self, other: &HlcStamp) -> std::cmp::Ordering {
+        self.to_string().cmp(&other.to_string())
+    }
+}
+
+impl PartialOrd for HlcStamp {
+    fn partial_cmp(&self, other: &HlcStamp) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+/// Hybrid logical clock. The caller passes wall time in; stamps never go backwards.
+#[derive(Debug, Clone)]
+pub struct Hlc {
+    wall_ms: u64,
+    counter: u16,
+    device_id: String,
+}
+
+impl Hlc {
+    pub fn new(device_id: String) -> Hlc {
+        Hlc {
+            wall_ms: 0,
+            counter: 0,
+            device_id,
+        }
+    }
+
+    /// Continues after `last`, so the next stamp sorts after it.
+    pub fn restore(last: &HlcStamp) -> Hlc {
+        Hlc {
+            wall_ms: last.wall_ms,
+            counter: last.counter,
+            device_id: last.device_id.clone(),
+        }
+    }
+
+    /// The next stamp. An equal or backward `now_ms` bumps the counter; a full counter
+    /// bumps `wall_ms` by one instead.
+    pub fn tick(&mut self, now_ms: u64) -> HlcStamp {
+        if now_ms > self.wall_ms {
+            self.wall_ms = now_ms;
+            self.counter = 0;
+        } else if let Some(next) = self.counter.checked_add(1) {
+            self.counter = next;
+        } else {
+            self.wall_ms = self.wall_ms.saturating_add(1);
+            self.counter = 0;
+        }
+        HlcStamp {
+            wall_ms: self.wall_ms,
+            counter: self.counter,
+            device_id: self.device_id.clone(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -99,5 +230,117 @@ mod tests {
     #[test]
     fn epoch_ms_before_epoch_is_zero() {
         assert_eq!(epoch_ms(UNIX_EPOCH - Duration::from_secs(1)), 0);
+    }
+
+    fn clock(now: &[u64]) -> Vec<HlcStamp> {
+        let mut h = Hlc::new("dev".into());
+        now.iter().map(|n| h.tick(*n)).collect()
+    }
+
+    fn assert_increasing(stamps: &[HlcStamp]) {
+        for w in stamps.windows(2) {
+            assert!(w[0] < w[1], "{} !< {}", w[0], w[1]);
+            assert!(w[0].to_string() < w[1].to_string());
+        }
+    }
+
+    #[test]
+    fn hlc_strictly_increasing_across_equal_wall_times() {
+        assert_increasing(&clock(&[1000, 1000, 1000, 1001]));
+    }
+
+    #[test]
+    fn hlc_strictly_increasing_across_backward_wall_times() {
+        let s = clock(&[5000, 4000, 3000, 5000, 6000]);
+        assert_increasing(&s);
+        assert_eq!(s[1].wall_ms, 5000);
+    }
+
+    #[test]
+    fn hlc_stamps_sort_as_strings() {
+        // Wall 999 -> 1000 and counter 9 -> 10 change the digit count.
+        let mut h = Hlc::new("d".into());
+        let mut stamps: Vec<HlcStamp> = [998, 999, 999, 999, 1000]
+            .iter()
+            .map(|n| h.tick(*n))
+            .collect();
+        for _ in 0..12 {
+            stamps.push(h.tick(1000));
+        }
+        let generated = stamps.clone();
+        let mut by_string = stamps.clone();
+        by_string.sort_by_key(|x| x.to_string());
+        let mut by_fields = stamps;
+        by_fields.sort_by(|a, b| {
+            (a.wall_ms, a.counter, &a.device_id).cmp(&(b.wall_ms, b.counter, &b.device_id))
+        });
+        assert_eq!(by_string, by_fields);
+        assert_eq!(by_string, generated);
+    }
+
+    #[test]
+    fn hlc_stamps_sort_as_strings_across_counter_9999_to_10000() {
+        let mut h = Hlc::new("d".into());
+        let stamps: Vec<_> = (0..10_005).map(|_| h.tick(7)).collect();
+        assert_eq!(stamps[9_999].counter, 9_999);
+        assert_eq!(stamps[10_000].counter, 10_000);
+        assert_increasing(&stamps);
+    }
+
+    #[test]
+    fn hlc_counter_saturation_bumps_wall_ms() {
+        let mut h = Hlc::restore(&HlcStamp {
+            wall_ms: 50,
+            counter: u16::MAX,
+            device_id: "d".into(),
+        });
+        let s = h.tick(10);
+        assert_eq!((s.wall_ms, s.counter), (51, 0));
+    }
+
+    #[test]
+    fn hlc_stamp_round_trips_from_str() {
+        let s = HlcStamp {
+            wall_ms: 1_794_009_600_123,
+            counter: 42,
+            device_id: "mac-1".into(),
+        };
+        assert_eq!(s.to_string(), "1794009600123-00042-mac-1");
+        assert_eq!(s.to_string().parse::<HlcStamp>(), Ok(s));
+        assert!("garbage".parse::<HlcStamp>().is_err());
+    }
+
+    #[test]
+    fn hlc_from_str_rejects_non_canonical() {
+        for bad in [
+            "1-2-x",
+            "+794009600123-00001-x",
+            "1794009600123-00001-",
+            "1794009600123-1-x",
+        ] {
+            assert!(bad.parse::<HlcStamp>().is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn hlc_stamp_serde_round_trips_as_string() {
+        let s = HlcStamp {
+            wall_ms: 5,
+            counter: 7,
+            device_id: "d".into(),
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        assert_eq!(json, "\"0000000000005-00007-d\"");
+        assert_eq!(serde_json::from_str::<HlcStamp>(&json).unwrap(), s);
+        assert!(serde_json::from_str::<HlcStamp>("\"1-2-x\"").is_err());
+    }
+
+    #[test]
+    fn hlc_restore_continues_after_last() {
+        let mut a = Hlc::new("d".into());
+        let last = a.tick(900);
+        let mut b = Hlc::restore(&last);
+        assert!(b.tick(100) > last);
+        assert!(b.tick(900) > last);
     }
 }
