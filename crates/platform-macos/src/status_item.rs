@@ -14,13 +14,15 @@ use crate::main_thread;
 /// for the menu-bar item.
 ///
 /// Main thread only: elsewhere `Other("not on main thread")`, before the item is touched.
-/// `NotFound` when the item has no button.
+/// `Other("status item has no button")` when the item has no button.
 pub fn set_status_item_accessibility_label(
     item: &NSStatusItem,
     label: &str,
 ) -> Result<(), PlatformError> {
     let mtm = main_thread()?;
-    let button = item.button(mtm).ok_or(PlatformError::NotFound)?;
+    let button = item
+        .button(mtm)
+        .ok_or_else(|| PlatformError::Other("status item has no button".into()))?;
     button.setAccessibilityLabel(Some(&NSString::from_str(label)));
     Ok(())
 }
