@@ -13,13 +13,15 @@ never wait on each other and so that no two parallel tasks own one file:
   by the orchestrator).
 - **Wave 2** runs three tasks in parallel on T1: the IPC contract with stub commands and the
   regenerated `bindings.ts` (T2), the timer engine with formatting (T3) and the new
-  `crates/store` (T4). The macOS platform implementations (T5) follow T4 because both edit the
-  root `Cargo.toml` and `Cargo.lock`; nothing waits on T5 before Wave 4, so this costs no time.
+  `crates/store` (T4). The macOS platform implementations (T5) start as soon as T4 merges, and
+  T7 waits for T5: T4, T5 and T7 each add to the root `Cargo.toml` and `Cargo.lock`, so they are
+  chained rather than parallel. T5 is small and T7 waits on T2 and T3 anyway, so this costs
+  little or no time.
 - **Wave 3** builds the session service, the scheduler and the real command bodies in the app
-  crate (T7, on T2–T4, against the traits with fakes) while Today and the shell UI (T8) build
-  against `bindings.ts` and `mockIPC` (on T2).
+  crate (T7, on T2, T3 and T5, against the traits with fakes) while Today and the shell UI (T8)
+  build against `bindings.ts` and `mockIPC` (on T2).
 - **Wave 4** wires macOS: the menu-bar item, hide-on-close, Dock reopen, the platform
-  selection and the exit flush (T9, on T5, T6 and T7).
+  selection and the exit flush (T9, on T6 and T7).
 - **Wave 5** flips the ADR statuses, updates the conventions and the spec status, and carries
   the owner's manual acceptance checklist (T10).
 
@@ -64,9 +66,11 @@ listing gaps. T10 then only flips the ADR statuses.
    `write(|txn| …)` becomes `write(now_ms, |txn| …)`. Repositories write their own row and
    call `txn.log_fields(entity, id, fields)` for the change log (ADR-012's `set_fields` could
    not fill `created_at` and `updated_at` generically).
-4. **One `timer-tick` on the permission answer, in every state.** The spec said the
+4. **One `timer-tick` on every notification-status change, in every state.** The spec said the
    explanation line disappears "as soon as" the status changes but also that nothing is
-   emitted on `timer-tick` while idle. The answer now emits exactly one tick, idle included.
+   emitted on `timer-tick` while idle. Each change of the status (the launch read, a request
+   answer, the re-read at a completed end) now emits exactly one tick, idle included; an
+   unchanged read emits none.
 5. **`HlcStamp` counter width is five digits** (`{counter:05}`): a `u16` reaches 65535, and
    `{counter:04}` would break string order from 10000 up.
 
@@ -118,7 +122,8 @@ variables is set in a plain shell. T4's justfile fallback chain covers both, so
 - **Platform contract (T5):** `MacKeepAwake`, `MacLocalTime`, `MacNotifier`, `is_app_bundle`.
   T9 consumes them.
 - **Service contract (T7):** `SessionService`, `Action`, `Effects`, `NativeSurface`,
-  `Surfaces`, `Platform`, `run_action`, `scheduler::publish`. T9 consumes them.
+  `Surfaces`, `Platform`, `run_action`, `scheduler::publish`, the private `default_platform()`
+  call site T9 repoints. T9 consumes them.
 - **Design-system contract (T6):** the `MenuBarTimer` README "Menu-bar glyphs" note with the
   three shapes T9 draws.
 
@@ -147,9 +152,14 @@ replaced, the window lifecycle changed, the CI script extended.
 - **Threading (T7, T9):** Tauri 2 runs non-async commands and menu events on the main thread,
   and `TrayIcon::set_title`/`set_icon`/`set_menu` called from another thread go through
   `run_on_main_thread` and wait for it. So the scheduler thread must never hold a mutex the
-  main thread may want while it calls a tray API, and the main thread must never block on the
-  scheduler. The plan's rule: the timer and settings commands are `async fn` (Tauri runs them
-  off the main thread), menu events hand the action to `tauri::async_runtime::spawn_blocking`,
+  main thread may want while it calls a tray API, and the main thread must never wait on a
+  thread that may itself be waiting on the main thread. The plan's rule: the timer commands and
+  `settings_set` are `async fn` whose whole body is
+  `tauri::async_runtime::spawn_blocking(move || run_action(&app, …)).await` (the work is
+  blocking: a `std::sync::Mutex`, SQLite writes, and `publish`, which may read the notifier
+  status for up to 3 s); `settings_get`, `publish_focus` and the `Exit` flush take the service
+  lock briefly on the main thread, which is safe because nothing inside that lock waits on
+  another thread; menu events hand the action to `tauri::async_runtime::spawn_blocking`,
   `Surfaces` is a `Vec<Arc<dyn NativeSurface>>` cloned under its lock and rendered after unlock,
   and `Tray` computes under its own lock and calls AppKit after unlock. T7 and T9 carry this as
   acceptance.
@@ -176,20 +186,20 @@ replaced, the window lifecycle changed, the CI script extended.
 ```
 T1 ──> T2 ──> T7 ──> T9 ──> T10
 T1 ──> T3 ──> T7
-T1 ──> T4 ──> T7
-       T4 ──> T5 ──> T9
+T1 ──> T4 ──> T5 ──> T7
 T2 ──> T8 ────────────────> T10
 T6 ──────────────────> T9
 ```
 - Wave 1 (start now, in parallel): **T1**, **T6**.
-- Wave 2 (after T1): **T2**, **T3**, **T4** in parallel; **T5** after T4.
-- Wave 3 (after T2, T3, T4 for T7; after T2 for T8): **T7**, **T8** in parallel.
-- Wave 4 (after T5, T6, T7): **T9**.
+- Wave 2 (after T1): **T2**, **T3**, **T4** in parallel; **T5** as soon as T4 merges.
+- Wave 3 (after T2, T3, T5 for T7; after T2 for T8): **T7**, **T8** in parallel.
+- Wave 4 (after T6, T7): **T9**.
 - Wave 5 (after T8, T9): **T10**.
 
-No two tasks in one wave touch the same file: T4 (root `Cargo.toml`, `Cargo.lock`, `justfile`)
-and T5 (root `Cargo.toml`, `Cargo.lock`) are sequenced for that reason; T7 and T8 share no
-file; T2 only consumes `crates/core`, it does not touch it.
+The rule is that no two tasks that **can run at the same time** touch the same file. The root
+`Cargo.toml` and `Cargo.lock` are edited by T4 (rusqlite), T5 (objc2-user-notifications) and
+T7 (uuid, orasenda-store), so those three are chained T4 → T5 → T7. T7 and T8 share no file;
+T2 only consumes `crates/core`, it does not touch it.
 
 ## Tasks
 
@@ -269,7 +279,7 @@ file; T2 only consumes `crates/core`, it does not touch it.
     - `pub struct TimerSettings { pub preset: Preset, pub custom: CustomSpec, pub notify_session_end: bool }`, `#[serde(deny_unknown_fields)]`; `impl Default` (`Classic`, 45/10, `true`)
     - `pub struct TimerCommandError { pub kind: TimerCommandErrorKind, pub message: String }` with `pub enum TimerCommandErrorKind { AlreadyRunning, NothingRunning, WrongState, InvalidSpec, Store }` camelCase; `impl From<orasenda_core::TimerError> for TimerCommandError`
     - `pub struct SettingsError { pub kind: SettingsErrorKind, pub message: String }` with `pub enum SettingsErrorKind { InvalidSpec, Unavailable, Write }` camelCase
-  - Produces (`commands.rs`, `#[tauri::command] #[specta::specta]`, **`async fn`** for the five timer commands and `settings_set` (so Tauri runs them off the main thread, see Impact "Threading"), stub bodies that return `TimerView::idle(StoreStatus::Unavailable, NotificationStatus::Unavailable)`, `Err(TimerCommandError { kind: NothingRunning, … })`, `TimerSettings::default()` or `Ok(())` with a `// T7 fills this in` comment; unused parameters are named `_app`, `_request`, `_settings` so `clippy -D warnings` passes):
+  - Produces (`commands.rs`, `#[tauri::command] #[specta::specta]`, **`async fn`** for the five timer commands and `settings_set` (T7 fills their bodies with `spawn_blocking(…).await`, see Impact "Threading"), stub bodies that return `TimerView::idle(StoreStatus::Unavailable, NotificationStatus::Unavailable)`, `Err(TimerCommandError { kind: NothingRunning, … })`, `TimerSettings::default()` or `Ok(())` with a `// T7 fills this in` comment; unused parameters are named `_app`, `_request`, `_settings` so `clippy -D warnings` passes):
     - `pub async fn timer_state(app: AppHandle) -> TimerState`
     - `pub async fn timer_start(app: AppHandle, request: StartRequest) -> Result<TimerView, TimerCommandError>`
     - `pub async fn timer_pause(app: AppHandle) -> Result<TimerView, TimerCommandError>`, `timer_resume`, `timer_stop` likewise
@@ -353,7 +363,7 @@ file; T2 only consumes `crates/core`, it does not touch it.
   - [ ] `active_session::put` then `get` round-trips a serde value; `clear` empties; `get` on empty is `None`; no `change_log` row is ever written by this module (asserted by counting).
   - [ ] A closure that returns `Err` rolls the transaction back; a connection dropped without commit (open a second `Store` on the same file, start a `write` whose closure panics inside `catch_unwind`) leaves the previous state intact and `hlc_last` unchanged.
   - [ ] `fail_writes(true)` makes `write` fail without touching the connection; `gate_writes` parks a write before the connection mutex is taken (a `read` from another thread succeeds while a write is parked; the test waits with `recv_timeout`, never `sleep`).
-  - [ ] `cargo tree -e features -p orasenda-store` and, once T7 lands, `cargo tree -e features -p orasenda` (normal edges only, no dev-dependencies) show no `test-hooks`: the feature never reaches a release build.
+  - [ ] `cargo tree -e features -p orasenda-store` (normal edges only) shows no `test-hooks` (the app-crate check is T7's).
   - [ ] `cargo check -p orasenda-store` passes for `aarch64-apple-ios` and `aarch64-linux-android` through `just ci`'s mobile step on the owner's Mac (no variables set) and on CI (runner variables set); `just core-boundary` fails when `rusqlite` is added to core in a scratch commit (checked by hand, recorded in the PR).
   - [ ] `cargo tree -p orasenda-core` is unchanged; `cargo tree -p orasenda-store -e normal` has no `tauri`, `objc2`, `time`, `chrono`, `uuid`.
   - [ ] `./scripts/ci.sh` passes; PR `ci` is green.
@@ -375,8 +385,8 @@ file; T2 only consumes `crates/core`, it does not touch it.
   connection so a stamp is never handed out without its row. Justfile NDK lookup, in order:
   `ANDROID_NDK_HOME`, `NDK_HOME`, `ANDROID_NDK_LATEST_HOME`, the newest directory under
   `${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/`; then
-  `bin="$ndk/toolchains/llvm/prebuilt/darwin-x86_64/bin"` (Apple silicon NDKs ship the
-  `darwin-x86_64` folder and run under Rosetta; on Linux `linux-x86_64`), export
+  `bin="$ndk/toolchains/llvm/prebuilt/$(uname -s | tr '[:upper:]' '[:lower:]')-x86_64/bin"` (Apple
+  silicon NDKs ship the `darwin-x86_64` folder and run under Rosetta), export
   `CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"` and
   `AR_aarch64_linux_android="$bin/llvm-ar"`; fail with "no Android NDK found: set
   ANDROID_NDK_HOME" when nothing matches. The `macos-26-arm64` runner exports
@@ -386,7 +396,7 @@ file; T2 only consumes `crates/core`, it does not touch it.
 ### T5: `crates/platform-macos`: keep-awake, local time and notifier
 - Priority: 0
 - Kind: cross-file/debugging
-- Depends on: T4 (only for the shared root `Cargo.toml`/`Cargo.lock` edit; code-wise T1)
+- Depends on: T4 (only for the shared root `Cargo.toml`/`Cargo.lock` edit; code-wise T1). T7 waits on this task for the same reason.
 - Owns: `crates/platform-macos/src/{keep_awake.rs, local_time.rs, notifier.rs, bundle.rs}` (new)
 - Touches (read-only or additive): `crates/platform-macos/src/lib.rs` (adds `mod` lines and re-exports), `crates/platform-macos/Cargo.toml` (adds `objc2-user-notifications` and the new `objc2-foundation` features), root `Cargo.toml` (adds the `objc2-user-notifications` pin), `Cargo.lock`
 - Interfaces:
@@ -431,30 +441,32 @@ file; T2 only consumes `crates/core`, it does not touch it.
 ### T7: Session service, scheduler, recovery and the real commands
 - Priority: 0
 - Kind: cross-file/debugging
-- Depends on: T2, T3, T4
+- Depends on: T2, T3, T5 (T4 through T5; T5 for the shared root `Cargo.toml`/`Cargo.lock` only)
 - Owns: `apps/orasenda/src-tauri/src/session.rs` (new), `apps/orasenda/src-tauri/src/scheduler.rs` (new; replaces `ticker.rs`, which this task deletes), `apps/orasenda/src-tauri/src/commands.rs` (replaces T2's stub bodies)
 - Touches (read-only or additive): `apps/orasenda/src-tauri/src/lib.rs` (manages `SessionService`, `Surfaces` and `Platform`, calls `session::setup`, `scheduler::spawn`, replaces `ticker::emit_now` with `scheduler::publish_focus`, adds the `RunEvent::Exit` flush through `.build().run(|app, event| …)`), `apps/orasenda/src-tauri/Cargo.toml` (adds `orasenda-store`, `uuid`; `orasenda-store` with `features = ["test-hooks"]` under `[dev-dependencies]`), root `Cargo.toml` (adds the `uuid` pin), `Cargo.lock`
 - Interfaces:
   - Consumes: `Session`, `Milestone`, `SessionRecord`, `SessionId`, `EngineView`, `format_remaining`, `spoken_remaining`, `format_clock`, `Preset`, `CustomSpec`, `KeepAwake`, `LocalTime`, `Notifier`, `NoopKeepAwake`, `UtcLocalTime`, `NoopNotifier`, `clock::{delay_to_next_second, epoch_ms}` (T1, T3; the two clock helpers already exist); `Store`, `OpenError`, `StoreError`, `settings`, `focus_sessions`, `active_session`, `WriteGate`, `fail_writes`, `gate_writes` (T4); every IPC type incl. `TimerSettings::default` (T2)
   - Produces (`session.rs`):
-    - `pub struct Platform { pub keep_awake: Box<dyn KeepAwake>, pub local_time: Box<dyn LocalTime>, pub notifier: Arc<dyn Notifier> }` — the notifier `Arc` is **also** kept in managed state outside the service (`tauri::State<Arc<dyn Notifier>>`) so `publish` can call it after unlock; `platform::defaults() -> Platform` returns the core no-ops until T9 adds `platform.rs`
-    - `pub struct SessionService` (private fields: `engine: Session`, `store: Option<Store>`, `store_status: StoreStatus`, `settings: TimerSettings` (cached), `unsaved: Vec<SessionRecord>`, `snapshot_dirty: bool`, `keep_awake: Option<Box<dyn Any + Send>>`, `notifications: NotificationStatus` (starts `Unavailable`), `pending: Vec<MilestoneEvent>`, `platform: Platform`)
-    - `impl SessionService { pub fn new(store: Result<Store, OpenError>, platform: Platform, now_ms: u64) -> SessionService` (loads settings — a setting that fails to decode is logged and replaced by its default in memory, never rewritten; runs relaunch recovery against `now_ms`: a running snapshot past its planned end is inserted as `Completed` at `planned_end` and the row cleared in one write, with `Recovered` queued in `pending`; if that write fails the record goes to `unsaved` and `snapshot_dirty` is set; a running snapshot in time or **any paused snapshot** is restored exactly and `keep_awake` begun; a snapshot that fails to decode is logged, the engine stays `Idle`, the row is **not** cleared and `store_status` stays `ok`); `pub fn apply(&mut self, action: Action, now_ms: u64, new_id: impl FnOnce() -> SessionId) -> Result<Effects, TimerCommandError>` (**first `engine.advance(now_ms)`** and, if it ended, handle the end exactly like `tick` does and then evaluate the action against the now-idle engine: a `Pause`/`Stop` after the planned end returns `NothingRunning` and the completed record is what gets written; then the action, its write under the same lock hold, `unsaved`/`snapshot_dirty` bookkeeping); `pub fn tick(&mut self, now_ms: u64) -> Effects` (advance; if `Ended`, write the end together with any owed flush in one transaction; else if `unsaved` or `snapshot_dirty`, retry the flush once; then build the view); `pub fn state(&mut self, now_ms: u64) -> (TimerState, Effects)` (advances like `tick`, drains `pending`); `pub fn view(&self, now_ms: u64) -> TimerView`; `pub fn clock_tick(&self, now_ms: u64) -> ClockTick` (`idle_finish` from the cached preset while idle, `None` otherwise); `pub fn settings(&self) -> TimerSettings`; `pub fn set_settings(&mut self, settings: TimerSettings, now_ms: u64) -> Result<(), SettingsError>` (refuses `Quick` and an out-of-range Custom with `InvalidSpec`; `Unavailable` when the store is degraded; `Write` on a failed write); `pub fn set_notifications(&mut self, status: NotificationStatus)`; `pub fn flush(&mut self, now_ms: u64)` (the `RunEvent::Exit` attempt) }`
+    - `pub struct Platform { pub keep_awake: Box<dyn KeepAwake>, pub local_time: Box<dyn LocalTime>, pub notifier: Arc<dyn Notifier> }` — the notifier `Arc` is **also** kept in managed state outside the service (`tauri::State<Arc<dyn Notifier>>`) so `publish` can call it after unlock; a private `fn default_platform() -> Platform` in `session.rs` returns the core no-ops (`NoopKeepAwake`, `UtcLocalTime`, `NoopNotifier`); T9 adds `platform.rs` with `platform::current()` and repoints that one call site
+    - `pub struct SessionService` (private fields: `engine: Session`, `store: Option<Store>`, `store_status: StoreStatus`, `settings: TimerSettings` (cached), `unsaved: Vec<SessionRecord>`, `snapshot_dirty: bool`, `keep_awake: Option<Box<dyn Any + Send>>`, `notifications: Option<NotificationStatus>` (`None` = not read yet; the view shows `Unavailable` while `None`), `pending: Vec<MilestoneEvent>`, `platform: Platform`)
+    - `impl SessionService { pub fn new(store: Result<Store, OpenError>, platform: Platform, now_ms: u64) -> SessionService` (loads settings — a setting that fails to decode is logged and replaced by its default in memory, never rewritten; runs relaunch recovery against `now_ms`: a running snapshot past its planned end is inserted as `Completed` at `planned_end` and the row cleared in one write, with `Recovered` queued in `pending`; if that write fails the record goes to `unsaved` and `snapshot_dirty` is set; a running snapshot in time or **any paused snapshot** is restored exactly and `keep_awake` begun; a snapshot that fails to decode is logged, the engine stays `Idle`, the row is **not** cleared and `store_status` stays `ok`); `pub fn apply(&mut self, action: Action, now_ms: u64, new_id: impl FnOnce() -> SessionId) -> Effects` (**first `engine.advance(now_ms)`** and, if it ended, handle the end exactly like `tick` does — the `ended` milestone, the record, the guard to drop and the notification go into the same `Effects` — then evaluate the action against the now-idle engine and put its outcome in `Effects.result`: a `Pause`/`Stop` after the planned end gives `Err(NothingRunning)` while the end is still published; a `Start` after the planned end gives two milestones, `ended` then `started`; the action's write runs under the same lock hold with the `unsaved`/`snapshot_dirty` bookkeeping; **`apply` always returns `Effects`, never bare `Err`**); `pub fn tick(&mut self, now_ms: u64) -> Effects` (advance; if `Ended`, write the end together with any owed flush in one transaction; else if `unsaved` or `snapshot_dirty`, retry the flush once; then build the view); `pub fn state(&mut self, now_ms: u64) -> (TimerState, Effects)` (advances like `tick`, drains `pending`); `pub fn view(&self, now_ms: u64) -> TimerView`; `pub fn clock_tick(&self, now_ms: u64) -> ClockTick` (`idle_finish` from the cached preset while idle, `None` otherwise); `pub fn settings(&self) -> TimerSettings`; `pub fn set_settings(&mut self, settings: TimerSettings, now_ms: u64) -> Result<(), SettingsError>` (refuses `Quick` and an out-of-range Custom with `InvalidSpec`; `Unavailable` when the store is degraded; `Write` on a failed write); `pub fn set_notifications(&mut self, status: NotificationStatus) -> bool` (true when it changed, so the caller emits one `timer-tick`); `pub fn notifications(&self) -> Option<NotificationStatus>`; `pub fn flush(&mut self, now_ms: u64)` (the `RunEvent::Exit` attempt) }`
     - `pub enum Action { Start(StartRequest), Pause, Resume, Stop }`; `StartRequest` rules: `Custom` with `custom: None` uses the saved `settings.custom`; a non-custom preset with `Some(custom)` ignores it; `Quick` ignores it too
-    - `pub struct Effects { pub view: TimerView, pub was_idle: bool, pub milestone: Option<MilestoneEvent>, pub ended: Option<SessionRecord>, pub notify_session_end: bool, pub drop_after_unlock: Option<Box<dyn Any + Send>>, pub request_notifications: bool }` — everything the caller does **after** unlocking
+    - `pub struct Effects { pub view: TimerView, pub was_idle: bool, pub result: Result<TimerView, TimerCommandError>, pub milestones: Vec<MilestoneEvent>, pub ended: Option<SessionRecord>, pub notify_session_end: bool, pub drop_after_unlock: Option<Box<dyn Any + Send>>, pub request_notifications: bool }` — everything the caller does **after** unlocking; `result` is what the command returns (`tick` and `state` set it to `Ok(view)`); `milestones` are emitted in order
     - `pub trait NativeSurface: Send + Sync { fn render(&self, view: &TimerView); }`; `pub struct Surfaces(pub Mutex<Vec<Arc<dyn NativeSurface>>>)` in managed state (T9 pushes the tray); `publish` clones the `Vec` under the lock and renders after releasing it
-    - `pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>>` (`create_dir_all(app_data_dir())`, then `Store::open(dir.join("orasenda.db"), &Uuid::new_v4().to_string())`; builds the service with `platform::defaults()`; then spawns a thread that reads `notifier.status()` and publishes it through `set_notifications` + one `timer-tick`, so `status` never blocks the main thread); `pub fn run_action(app: &AppHandle, action: Action) -> Result<TimerView, TimerCommandError>` (lock, `apply`, unlock, `scheduler::publish`; used by the commands and by T9's menu through `spawn_blocking`)
-  - Produces (`scheduler.rs`): `pub fn spawn(app: AppHandle) -> io::Result<()>` (thread `session-scheduler`: sleep to the next second, lock, `tick(now)`, `clock_tick(now)`, unlock, then `publish_clock` and `publish`; the loop body runs inside `catch_unwind` and a panic is logged with `eprintln!` and the loop continues); `pub fn publish_clock(app: &AppHandle)` (lock briefly for `clock_tick`, emit `clock-tick`); `pub fn publish_focus(app: &AppHandle)` (on `Focused(true)`: `publish_clock` plus, when the engine is running or paused, one `timer-tick` and a surface render; called from `lib.rs`; also after `settings_set` for the clock only); `pub fn publish(app: &AppHandle, effects: Effects)` (after unlock, in this order: `timer-tick` when `!was_idle || view.state != idle`, surfaces, then for `ended` with `Completed` and `notify_session_end`: **re-read `notifier.status()` off-lock**, store it through `set_notifications`, and `post` when `Granted` (a `post` error is logged), drop `drop_after_unlock`, emit `timer-milestone`, then when `request_notifications` call `Notifier::request` whose callback locks, calls `set_notifications`, builds the view, unlocks and emits one `timer-tick` in every state (amendment 4)); an emit error is logged and the loop continues
-  - Produces (`commands.rs`): the seven commands with real bodies over `run_action`, `state`, `settings`, `set_settings` + `publish_clock`; the `async` ones are plain wrappers (no `.await` inside the lock)
+    - `pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>>` (`create_dir_all(app_data_dir())`, then `Store::open(dir.join("orasenda.db"), &Uuid::new_v4().to_string())`; builds the service with `default_platform()`; then spawns a thread that reads `notifier.status()` and publishes it through `set_notifications`, emitting one `timer-tick` when it changed, so `status` never blocks the main thread); `pub fn run_action(app: &AppHandle, action: Action) -> Result<TimerView, TimerCommandError>` (lock, `apply`, unlock, **always** `scheduler::publish(effects)`, then return `effects.result`; used by the commands and by T9's menu, always on a `spawn_blocking` thread)
+  - Produces (`scheduler.rs`): `pub fn spawn(app: AppHandle) -> io::Result<()>` (thread `session-scheduler`: sleep to the next second, lock, `tick(now)`, `clock_tick(now)`, unlock, then `publish_clock` and `publish`; the loop body runs inside `catch_unwind` and a panic is logged with `eprintln!` and the loop continues); `pub fn publish_clock(app: &AppHandle)` (lock briefly for `clock_tick`, emit `clock-tick`); `pub fn publish_focus(app: &AppHandle)` (on `Focused(true)`: `publish_clock` plus, when the engine is running or paused, one `timer-tick` and a surface render; called from `lib.rs`; also after `settings_set` for the clock only); `pub fn publish(app: &AppHandle, effects: Effects)` (after unlock, in this order: `timer-tick` when `!was_idle || view.state != idle`, surfaces, then for `ended` with `Completed` and `notify_session_end`: **re-read `notifier.status()` off-lock**, store it through `set_notifications` and, when it changed, emit one more `timer-tick` with the fresh view, then `post` when `Granted` (a `post` error is logged); drop `drop_after_unlock`; emit each `timer-milestone` in order; then when `request_notifications`: if the status is still not read (`None`), read it off-lock first and store it (one `timer-tick` if changed), and if it is `NotDetermined` call `Notifier::request`, whose callback locks, calls `set_notifications`, builds the view, unlocks and emits one `timer-tick` when it changed, in every state (amendment 4)); an emit error is logged and the loop continues
+  - Produces (`commands.rs`): the seven commands with real bodies; each `async` command is `tauri::async_runtime::spawn_blocking(move || run_action(&app, …)).await` (or the `state`/`set_settings` equivalent), so no lock, SQLite write or notifier read runs on the async runtime or the main thread; `settings_get` stays sync and only reads the cached settings under a brief lock
 - Acceptance:
   - [ ] Every transition and the natural end match the spec's Behavior section; `TimerView.mode` is derived here and nowhere else (`idle → idle`, `paused → paused`, `running → focus`); `finish` is `format_clock(planned_end)` while running and `None` while paused or idle; `remaining` and `remaining_label` come from core's formatters.
-  - [ ] `apply` and `state` advance before acting: a `Pause` or `Stop` after the planned end (wake before the next tick) completes the session at its planned end, returns `NothingRunning`, and the record is `Completed`.
+  - [ ] `apply` and `state` advance before acting: a `Pause` or `Stop` after the planned end (wake before the next tick) completes the session at its planned end, returns `Err(NothingRunning)` **and still publishes** the idle `timer-tick`, the `ended` milestone, the tray reset and the notification, with the `KeepAwake` guard dropped after unlock; a `Start` after the planned end publishes `ended` then `started`. `run_action` publishes on every call, success or error.
   - [ ] Every store write runs under the service lock in the same hold as the engine change; the flush writes the **current** snapshot (put if non-idle, clear if idle) and inserts `unsaved` first, in one transaction; `unsaved` and `snapshot_dirty` are cleared only after that write succeeds. No emit, surface, tray, window, `Notifier` call or guard drop happens inside `apply`, `tick`, `state` or `set_settings`: they only fill `Effects`. No mutex (service, `Surfaces`) is held while calling a tray, menu or window API.
   - [ ] A failing `active_session` put at start does not fail the start (`store: unavailable` in the view, `snapshot_dirty` set); a failing end write keeps the record in `unsaved`; a failing recovery insert keeps the record in `unsaved` with `snapshot_dirty`; the next successful write (retry or transition) returns `store` to `ok`.
   - [ ] `timer_state` returns and drains `pending`; `Recovered` is never emitted as an event.
-  - [ ] `timer_start` makes the UUIDv7 in the app crate, applies the `StartRequest` rules above, requests the notification permission only when the status is `NotDetermined`, and never waits for the answer; `KeepAwake::begin` failing is logged and the start proceeds.
+  - [ ] `timer_start` makes the UUIDv7 in the app crate, applies the `StartRequest` rules above, requests the notification permission only when the status is `NotDetermined` (reading it first, off-lock, if the launch read has not finished yet), and never waits for the answer; `KeepAwake::begin` failing is logged and the start proceeds.
   - [ ] `settings_set` writes `timer.preset`, `timer.custom`, `notify.session_end` through `settings::set` and the command publishes one `clock-tick` at once; `settings_get` returns defaults while degraded and never `Quick`.
-  - [ ] `setup` creates `app_data_dir()` before opening the store (a fresh install is not degraded); the notification status is read on a background thread after setup and published; a status `Denied` or `Unavailable` never triggers a request.
+  - [ ] `setup` creates `app_data_dir()` before opening the store (a fresh install is not degraded); the notification status is read on a background thread after setup and, when it changed, published with one `timer-tick`; a status `Denied` or `Unavailable` never triggers a request; every status change (launch read, request answer, re-read at a completed end) emits exactly one `timer-tick`, and an unchanged re-read emits none.
+  - [ ] `cargo tree -e features -p orasenda` (normal edges only, no dev-dependencies) shows no `test-hooks`: the feature never reaches a release build.
+  - [ ] The async commands do all their work inside `spawn_blocking`; nothing in `commands.rs` locks the service directly except `settings_get`.
   - [ ] `ticker.rs` is gone; `lib.rs` emits `clock-tick` and, when non-idle, `timer-tick` on `Focused(true)`; `RunEvent::Exit` calls `flush`.
   - [ ] The scheduler thread does no database read per tick (settings are cached), makes at most one write attempt per tick, and survives a panic in one iteration.
   - [ ] A poisoned service mutex is recovered with `into_inner`, never a panic.
@@ -462,12 +474,12 @@ file; T2 only consumes `crates/core`, it does not touch it.
   - [ ] `./scripts/ci.sh` passes; PR `ci` is green; on the Windows job the clippy and `cargo test` steps pass (no macOS-only code here; mobile red is the #78 baseline).
 - Tests first (`session.rs`, `scheduler.rs`, with `Store::open_in_memory`, fake `Notifier`/`LocalTime`/`KeepAwake` recording calls, injected `now_ms`; waits use `recv_timeout`, never `sleep`):
   - `start_pause_resume_stop_transitions_and_milestone_order`, `quick_start_uses_quick_start_ms_and_records_quick`, `custom_start_without_spec_uses_saved_custom`, `non_custom_start_ignores_given_custom`, `view_mode_is_derived_from_engine_state`, `finish_is_null_while_paused_and_formatted_while_running`, `idle_finish_null_while_running_and_formatted_while_idle`
-  - `pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running`, `stop_after_planned_end_records_completed`, `state_after_planned_end_completes_and_reports_idle`
+  - `pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running` (asserts the `ended` milestone and the notification are in `Effects` and the guard is handed out for dropping, not dropped inside), `stop_after_planned_end_records_completed`, `start_after_planned_end_publishes_ended_then_started`, `state_after_planned_end_completes_and_reports_idle`, `run_action_publishes_effects_on_error`
   - `recovers_running_snapshot_in_time`, `recovers_running_snapshot_past_end_as_completed_with_pending_recovered`, `recovery_with_failing_write_keeps_record_unsaved`, `recovers_paused_session_as_paused`, `undecodable_snapshot_is_logged_and_left_in_place`, `undecodable_setting_falls_back_to_default_without_rewrite`, `timer_state_drains_pending`
   - `stop_with_failing_write_does_not_resurrect_on_relaunch`, `failed_put_then_recover_keeps_live_snapshot`, `retry_flush_holds_lock_against_concurrent_start` (as the spec describes it: `snapshot_dirty` set with the engine idle, the store recovered, a `WriteGate` parks the flush's write; while parked, `Mutex::try_lock` on the service fails and a `timer_start` on a second thread has neither returned nor changed the engine; release, join; `active_session` holds the started session, `snapshot_dirty` is false, a new service on the same store resumes it)
   - `ending_tick_publishes_idle_view_once_and_lists_ended_effects`, `store_status_across_failing_write_and_next_success`, `start_with_failing_put_runs_and_marks_dirty`, `end_write_failure_keeps_record_unsaved_and_next_tick_flushes_it`
   - `settings_set_refuses_quick_and_out_of_range_custom`, `settings_set_unavailable_when_degraded`, `settings_get_defaults_when_degraded`
-  - `request_made_only_when_not_determined`, `permission_answer_publishes_one_tick_even_while_idle`, `notification_posted_only_for_completed_when_granted_and_enabled`, `end_rereads_status_before_posting` (fake status flips to `Granted` after start; the post happens), `keep_awake_begun_on_start_and_guard_returned_on_end`, `keep_awake_failure_is_logged_and_start_proceeds`
+  - `request_made_only_when_not_determined`, `start_before_status_read_still_requests` (the launch read has not returned; `timer_start` reads the status off-lock, finds `NotDetermined`, requests), `permission_answer_publishes_one_tick_even_while_idle`, `launch_status_read_publishes_one_tick_when_changed_and_none_when_not`, `notification_posted_only_for_completed_when_granted_and_enabled`, `end_rereads_status_before_posting_and_publishes_the_change` (fake status flips to `Granted` after start; one extra `timer-tick` carries it, then the post happens), `keep_awake_begun_on_start_and_guard_returned_on_end`, `keep_awake_failure_is_logged_and_start_proceeds`
   - `focused_republishes_timer_tick_only_while_non_idle`, `setup_creates_app_data_dir` (a helper `open_store_at(dir: &Path, device_id)` that creates the dir, tested on a temp path), `surfaces_are_rendered_after_the_lock_is_released` (a fake surface that locks `Surfaces` inside `render` must not deadlock)
   - `manifest_commands_match_specta_builder`, `export_bindings` (existing, still green; the file is unchanged)
 - Notes: run `baton:deps` for `uuid@1.29.2` (`v7`, `v4`, `serde`). Wrap `SessionService` in
@@ -482,19 +494,19 @@ file; T2 only consumes `crates/core`, it does not touch it.
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T2
-- Owns: `apps/orasenda/src/App.tsx`, `apps/orasenda/src/App.test.tsx`, `apps/orasenda/src/main.tsx`, `apps/orasenda/src/pages/**` (`Today.tsx`, `Today.test.tsx`, `Placeholder.tsx`), `apps/orasenda/src/useClock.ts`, `apps/orasenda/src/useTimer.ts`, `apps/orasenda/src/useTimer.test.tsx`, `apps/orasenda/src/format.ts`, `apps/orasenda/src/format.test.ts`, `apps/orasenda/src/styles/**`, `apps/orasenda/src/styles.test.ts`
+- Owns: `apps/orasenda/src/App.tsx`, `apps/orasenda/src/App.test.tsx`, `apps/orasenda/src/main.tsx`, `apps/orasenda/src/pages/**` (`Today.tsx`, `Today.test.tsx`, `Placeholder.tsx`), `apps/orasenda/src/useClock.ts`, `apps/orasenda/src/useTimer.ts`, `apps/orasenda/src/timerQueue.ts`, `apps/orasenda/src/useTimer.test.tsx`, `apps/orasenda/src/format.ts`, `apps/orasenda/src/format.test.ts`, `apps/orasenda/src/styles/**`, `apps/orasenda/src/styles.test.ts`
 - Touches (read-only or additive): `apps/orasenda/src/bindings.ts` (read), `apps/orasenda/src/spike/DevPanel.tsx` (read; unchanged, rendered from Today), `design/system/components/*/README.md` (read)
 - Interfaces:
   - Consumes: `commands.timerState | timerStart | timerPause | timerResume | timerStop | settingsGet | settingsSet`, `events.clockTick | timerTick | timerMilestone`, the IPC types (T2); `subscribe()` (exists); `TimerRing`, `ModeChip`, `StartButton`, `Button`, `Input`, `InlineNotice`, `NavRail`, `EmptyState` from `@orasenda/ui`; `.os-choice-group`/`.os-choice` from `@orasenda/ui/components.css`
   - Produces:
     - `useClock(): ClockState` with `{ status: "ok"; epochMs: number; clock: string; idleFinish: string | null }`
-    - `useTimer({ onMilestone }: { onMilestone: (event: MilestoneEvent) => void }): TimerStateUi` = `{ status: "waiting" } | { status: "ok"; view: TimerView } | { status: "error" }`. Order inside: subscribe to `timer-tick` and `timer-milestone` first, then call `timerState()`; the reply's `view` is ignored when a tick already arrived; the reply's `pending` events are pushed into a **module-level queue** that the live instance drains through `onMilestone`, so a StrictMode first mount that is cleaned up before the reply arrives loses nothing (the second mount drains the queue). No separate `useMilestones` hook: `onMilestone` receives both live events and drained pending ones.
+    - `useTimer({ onMilestone }: { onMilestone: (event: MilestoneEvent) => void }): TimerStateUi` = `{ status: "waiting" } | { status: "ok"; view: TimerView } | { status: "error" }`. Order inside: subscribe to `timer-tick` and `timer-milestone` first, then call `timerState()`; the reply's `view` is ignored when a tick already arrived. Pending events go through a **module-level queue with one listener slot** (`timerQueue.ts`, owned here): `push(event)` calls the registered live listener at once, or holds the event until the next `register(listener)`; the live `useTimer` instance registers on mount and unregisters on cleanup; `onMilestone` is read through a ref, so a new callback identity never resubscribes. Under StrictMode the usual order is mount 1 calls `timerState()` and is cleaned up, mount 2 registers and calls again (empty `pending`), and only then reply A lands: its `recovered` is pushed and delivered to mount 2's listener at once. `export function resetTimerQueueForTests(): void` clears the queue and the slot (Vitest shares the module within a file; HMR keeps it alive). No separate `useMilestones` hook: `onMilestone` receives both live events and pending ones.
     - `<Today />`, `<Placeholder />`, `App` without `locale`/`timeZone` props; `format.ts` keeps `osLabel`, `infoLine`, `formatClock` (with a comment: spike only)
 - Acceptance:
   - [ ] `App.tsx`: `NavRail` with `current` in local state and `onNavigate`; Today renders `<Today />`; the other five pages render `<Placeholder />` with `EmptyState` title "Nothing here yet." and message "This comes in a later phase."; the heading receives focus after navigation (NavRail README). The shell's header (today an `h1` "Orasenda" and the version line) becomes a `<header>` with the wordmark as a `<p className="app-brand">` and the info line in `body-sm` `ink-muted`, so each page has exactly one `h1`, the page title.
   - [ ] `main.tsx` imports `@orasenda/ui/components.css` directly (today the design-system styles load only through `DevPanel`/the overlay).
   - [ ] Today: `h1` "Today"; `TimerRing size={280}` with `remaining`, `remainingLabel`, `progress`, `mode` from the view and `clock` from the latest `clock-tick`; `ModeChip` with "Focus", "Paused" or "No session"; the running finish line beside the chip as "Realistic finish · " + time in `os-num`, `body-sm` `ink-muted`, **not rendered while paused**; the preset radio group (`fieldset.os-choice-group`, four `label.os-choice` radios, 44 px targets) reflects `settingsGet()` on mount, with two `Input`s (focus minutes, break minutes) only when Custom is checked; the inputs commit on blur or Enter, not per keystroke; the helper "Between 5 and 180 minutes." shows on an `invalidSpec` reply, no alert styling; radio and committed input changes call `settingsSet`.
-  - [ ] Idle: `StartButton` with `onStart` (sends the checked preset; for Custom, `custom: null`, the saved spec is used by Rust), `onQuickStart` (sends `{ preset: "quick", custom: null }`), `finishTime` from `clock-tick.idleFinish`; the StartButton is the only `primary`. Running or paused: `Button variant="quiet"` *Pause* or *Resume* and `Button variant="ghost"` *End session*.
+  - [ ] Idle: `StartButton` with `onStart` (sends the checked preset; for Custom, `custom: <the current draft>` when it parses as two integers, so a Start right after an edit uses the edit even if the blur's `settingsSet` is still in flight — Rust honours `Some`; otherwise `custom: null` and the saved spec is used), `onQuickStart` (sends `{ preset: "quick", custom: null }`), `finishTime` from `clock-tick.idleFinish`; the StartButton is the only `primary`. Running or paused: `Button variant="quiet"` *Pause* or *Resume* and `Button variant="ghost"` *End session*.
   - [ ] Under the Start button, while `view.notifications === "notDetermined"`, one `body-sm` `ink-muted` line: "Orasenda can tell you when a session ends, even when its window is hidden."
   - [ ] One `InlineNotice` slot under the ring, by priority: the one-shot notice from the latest milestone event ("Session ended." for `ended`, "Your last session ended while Orasenda was closed." for `recovered`), no action, dismissed by the next transition (`started`, `paused`, `resumed`, or a view whose `sessionId` differs); otherwise the standing store line while `view.store !== "ok"` ("Orasenda can't save sessions right now." / "This data was saved by a newer Orasenda."). Exactly one `role="status"` node exists whenever a notice shows; none otherwise; no other live region is added.
   - [ ] When `useTimer` is `{ status: "error" }` (the `timerState()` call or the `timer-tick` listen rejected), Today renders one `body-sm` `ink-muted` `<p>` "Timer unavailable." in the ring's slot, logs with `console.error`, and shows no Start button and no alert styling (ADR-013: a surface that cannot listen renders its failure line).
@@ -502,9 +514,9 @@ file; T2 only consumes `crates/core`, it does not touch it.
   - [ ] New CSS uses only tokens (`styles.test.ts` covers every CSS file under `styles/`); copy has no exclamation marks or emoji; both themes checked by hand with screenshots in the PR; keyboard path from launch to Start works; VoiceOver reads the ring name, the chip and the buttons (recorded in the PR, repeated by the owner in T10).
   - [ ] `./scripts/ci.sh` passes; PR `ci` is green.
 - Tests first (Vitest + jsdom + Testing Library, `mockIPC(handler, { shouldMockEvents: true })`; keep the `App.test.tsx` listener-counting harness from the shell, as `docs/common-issues.md` describes):
-  - `start_focus_calls_timer_start_with_checked_preset`, `just_two_minutes_calls_timer_start_with_quick`, `custom_start_sends_custom_null`
+  - `start_focus_calls_timer_start_with_checked_preset`, `just_two_minutes_calls_timer_start_with_quick`, `custom_start_sends_the_current_draft`, `start_right_after_custom_edit_uses_the_edit`
   - `clock_tick_renders_wall_clock_and_idle_finish`, `timer_tick_renders_digits_chip_word_and_planned_finish`, `paused_view_renders_paused_once_and_no_finish_line`, `running_finish_line_reads_realistic_finish`
-  - `ended_event_shows_session_ended_as_single_status_node`, `recovered_pending_event_shows_notice_as_single_status_node`, `recovered_pending_event_survives_strict_mode_double_mount`, `store_unavailable_on_mount_renders_standing_line_once_and_ok_removes_it`, `standing_store_line_after_one_shot_notice_is_announced_once`, `next_transition_dismisses_one_shot_notice`
+  - `ended_event_shows_session_ended_as_single_status_node`, `recovered_pending_event_shows_notice_as_single_status_node`, `recovered_pending_event_survives_strict_mode_double_mount` (reply A is held and resolved only after the second mount has registered; `resetTimerQueueForTests()` in `beforeEach`), `new_on_milestone_identity_does_not_resubscribe`, `store_unavailable_on_mount_renders_standing_line_once_and_ok_removes_it`, `standing_store_line_after_one_shot_notice_is_announced_once`, `next_transition_dismisses_one_shot_notice`
   - `explanation_line_only_while_not_determined`
   - `preset_radio_reflects_saved_settings`, `custom_shows_two_inputs_and_invalid_spec_shows_helper`, `custom_inputs_commit_on_blur_not_per_keystroke`, `preset_change_calls_settings_set`
   - `rail_switches_pages_and_other_pages_render_empty_state`, `only_one_h1_per_page`, `only_one_primary_button_on_today`, `renders_brand_and_info_line` (replaces `renders_heading_and_info_line`)
@@ -523,13 +535,13 @@ file; T2 only consumes `crates/core`, it does not touch it.
 ### T9: macOS wiring: menu-bar item, hide-on-close, platform selection
 - Priority: 0
 - Kind: cross-file/debugging
-- Depends on: T5, T6, T7
+- Depends on: T6, T7 (T5 through T7)
 - Owns: `apps/orasenda/src-tauri/src/tray.rs` (new), `apps/orasenda/src-tauri/src/tray/icons/{focus.png, paused.png, idle.png}` (new, 36×36 px template images), `apps/orasenda/src-tauri/src/lifecycle.rs` (new), `apps/orasenda/src-tauri/src/platform.rs` (new: the per-OS choice of `KeepAwake`, `LocalTime`, `Notifier`)
-- Touches (read-only or additive): `apps/orasenda/src-tauri/src/lib.rs` (calls `tray::setup`, `lifecycle::install`, handles `RunEvent::Reopen`), `apps/orasenda/src-tauri/src/session.rs` (the `platform::defaults()` call site only, now pointing at `platform.rs`), `apps/orasenda/src-tauri/Cargo.toml` (`tauri = { workspace = true, features = ["tray-icon"] }`), `Cargo.lock`
+- Touches (read-only or additive): `apps/orasenda/src-tauri/src/lib.rs` (calls `tray::setup`, `lifecycle::install`, handles `RunEvent::Reopen`), `apps/orasenda/src-tauri/src/session.rs` (replaces the one `default_platform()` call in `setup` with `platform::current()`; `default_platform` stays for the tests), `apps/orasenda/src-tauri/Cargo.toml` (`tauri = { workspace = true, features = ["tray-icon"] }`), `Cargo.lock`
 - Interfaces:
   - Consumes: `MacKeepAwake`, `MacLocalTime`, `MacNotifier`, `is_app_bundle` (T5); `SessionService`, `Action`, `run_action`, `NativeSurface`, `Surfaces`, `Platform`, `TimerView`, `Mode` (T7, T2); `NoopKeepAwake`, `UtcLocalTime`, `NoopNotifier` (T1); the glyph note (T6)
   - Produces:
-    - `platform.rs`: `pub fn current() -> Platform` (macOS: `MacKeepAwake`, `MacLocalTime`, `MacNotifier` only when `is_app_bundle()`, else `NoopNotifier`; other OS: the core defaults); `pub(crate) fn choose_notifier(in_bundle: bool) -> Arc<dyn Notifier>` for the test
+    - `platform.rs`: `pub fn current() -> Platform` (the production replacement for T7's private `default_platform()`; macOS: `MacKeepAwake`, `MacLocalTime`, `MacNotifier` only when `is_app_bundle()`, else `NoopNotifier`; other OS: the core defaults); `pub(crate) fn choose_notifier(in_bundle: bool) -> Arc<dyn Notifier>` for the test
     - `tray.rs`: `pub fn setup(app: &tauri::App) -> tauri::Result<()>` (builds the `TrayIconBuilder` with id `"orasenda"`, the idle template icon, `icon_as_template(true)`, `show_menu_on_left_click(true)`, the menu, `on_menu_event`; pushes `Arc<Tray>` into `Surfaces`); `pub struct Tray` implementing `NativeSurface` (`render`: compute `(title, glyph, menu_class)` and compare with the last rendered class **under `Tray`'s own small mutex**, release it, then call `set_title`, `set_icon`, `set_menu` with no lock held); menu events hand the action to `tauri::async_runtime::spawn_blocking(move || run_action(&app, action))` so the main thread never blocks on the scheduler; `pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph)` and `pub(crate) enum Glyph { Focus, Paused, Idle }` (pure, tested); `pub(crate) fn menu_items(view: &TimerView) -> Vec<&'static str>` (pure, tested)
     - `lifecycle.rs`: `pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry>` (adds the `on_window_event` that prevents `CloseRequested` on `main` and hides it, keeping the existing `Focused(true)` publish); `pub fn show_main(app: &AppHandle)` (show, unminimize, set focus); `pub fn on_reopen(app: &AppHandle)` (for `RunEvent::Reopen`); `pub(crate) fn on_close_requested(label: &str) -> CloseAction` with `pub(crate) enum CloseAction { Hide, Pass }` (pure, tested)
 - Acceptance:
@@ -590,7 +602,7 @@ file; T2 only consumes `crates/core`, it does not touch it.
 | Store schema v1, generic runner, `user_version` only, newer refused | T4 |
 | Settings keys and defaults; `settings_set` refuses `quick` and bad Custom; one `clock-tick` after | T7 (`settings_set_refuses_…`), T8 (`preset_change_calls_settings_set`, `preset_radio_reflects_saved_settings`) |
 | `TimerView.mode` derived in one place | T7 (`view_mode_is_derived_from_engine_state`) |
-| Commands' error kinds and no state change on error; commands run "advance, then publish" | T3 (`start_while_running_…`, `wrong_state_…`), T7 (`pause_after_planned_end_…`, `stop_after_planned_end_records_completed`) |
+| Commands' error kinds and no state change on error; commands run "advance, then publish" | T3 (`start_while_running_…`, `wrong_state_…`), T7 (`pause_after_planned_end_…`, `stop_after_planned_end_records_completed`, `start_after_planned_end_publishes_ended_then_started`, `run_action_publishes_effects_on_error`) |
 | Scheduler: one thread, advance then publish, retry once a second, no lock across emits/AppKit | T7, T9 (threading acceptance) |
 | Unsaved writes: `unsaved` + `snapshot_dirty`, current snapshot, lock held across the flush, `RunEvent::Exit` flush | T4 (hooks), T7 (`stop_with_failing_write_…`, `failed_put_then_recover_…`, `retry_flush_holds_lock_against_concurrent_start`) |
 | Menu bar: template glyphs, title, menu items, design-first README note | T6, T9 |
@@ -600,7 +612,7 @@ file; T2 only consumes `crates/core`, it does not touch it.
 | Behavior: clock set back clamps; set forward ends | T3 (`elapsed_clamped_on_backward_clock_never_negative`, `late_advance_…`), T10 (step 6) |
 | Behavior: emit fails → logged, loop continues; StrictMode one listener; `Focused(true)` republishes | T7 (`focused_republishes_timer_tick_only_while_non_idle`), T8 (`strict_mode_one_listener_per_event`) |
 | Store cannot open / newer → degraded, standing line, `settings_set` unavailable | T4 (`newer_user_version_is_refused_…`), T7 (`settings_set_unavailable_when_degraded`), T8 (`store_unavailable_on_mount_…`) |
-| Notification denied/unavailable → no line, no second prompt; answer at any time; grant in System Settings honoured | T7 (`request_made_only_when_not_determined`, `end_rereads_status_before_posting`), T8 (`explanation_line_only_while_not_determined`), T10 (step 7) |
+| Notification denied/unavailable → no line, no second prompt; answer at any time; grant in System Settings honoured; one tick per status change | T7 (`request_made_only_when_not_determined`, `start_before_status_read_still_requests`, `launch_status_read_publishes_one_tick_…`, `end_rereads_status_before_posting_and_publishes_the_change`), T8 (`explanation_line_only_while_not_determined`), T10 (step 7) |
 | Data: `orasenda.db` WAL under `app_data_dir()` | T4 (WAL), T7 (`setup_creates_app_data_dir`) |
 | `ci.sh`: boundary rejects rusqlite; `target_os` grep; mobile adds store; clippy and tests cover the new crate | T1, T4 |
 | Conventions additions | T10 |
@@ -608,4 +620,5 @@ file; T2 only consumes `crates/core`, it does not touch it.
 | Failure mode: a stale `active_session` clear removes a session started after a failed write | T7: `failed_put_then_recover_keeps_live_snapshot` |
 | Failure mode: `Hlc` counter crosses 9999 and the stamp string order breaks | T1: `hlc_stamps_sort_as_strings_across_counter_9999_to_10000` |
 | Failure mode: the permission answer arrives while idle and no `timer-tick` follows, so the explanation line stays | T7: `permission_answer_publishes_one_tick_even_while_idle` |
+| Failure mode: a Start right after a Custom edit races the blur's `settingsSet` and uses the old spec | T8: `start_right_after_custom_edit_uses_the_edit` |
 | Failure mode: `MacNotifier::status` never gets its completion handler and blocks the caller | T5: `status_times_out_to_unavailable` |
