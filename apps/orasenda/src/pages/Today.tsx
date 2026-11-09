@@ -78,10 +78,17 @@ export function Today() {
   // `settings` is what the page shows; `intended` holds the same value, set synchronously, so a
   // change made while an earlier settings_set is in flight builds on it, never on a stale render.
   // `accepted` is the last value Rust took, which a failed write rolls back to.
+  // Saves can overlap and answer out of order, so each is stamped with a sequence number when
+  // sent (docs/conventions.md, "Newest wins"): `accepted` only moves forward (`acceptedSeq`), and
+  // only an answer to the latest save (`sentSeq`) may change the screen. `latestFailed` records how
+  // the latest save failed, so an older save that succeeds afterwards becomes the new baseline.
   const [settings, setSettings] = useState<TimerSettings | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const intended = useRef<TimerSettings | null>(null);
   const accepted = useRef<TimerSettings | null>(null);
+  const acceptedSeq = useRef(0);
+  const sentSeq = useRef(0);
+  const latestFailed = useRef<"write" | "invalidSpec" | null>(null);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
   const [showRangeHelp, setShowRangeHelp] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -128,28 +135,47 @@ export function Today() {
     setDraft(draftOf(last.custom));
   };
 
+  // Keep the typed draft beside the helper, but never resend the rejected spec.
+  const keepAcceptedCustom = () => {
+    const latest = intended.current;
+    if (latest && accepted.current) intend({ ...latest, custom: accepted.current.custom });
+  };
+
   const save = (next: TimerSettings) => {
     intend(next);
-    commands.settingsSet(next).then(
-      (result) => {
-        if (result.status === "ok") {
+    sentSeq.current += 1;
+    const seq = sentSeq.current;
+    latestFailed.current = null;
+    const failed = (error: unknown) => {
+      console.error("settings_set failed", error);
+      // A newer save carries this one's change too, and its own answer settles the screen.
+      if (seq !== sentSeq.current) return;
+      latestFailed.current = "write";
+      rollBack();
+    };
+    commands.settingsSet(next).then((result) => {
+      if (result.status === "ok") {
+        if (seq > acceptedSeq.current) {
+          acceptedSeq.current = seq;
           accepted.current = next;
-          setShowRangeHelp(false);
-        } else if (result.error.kind === "invalidSpec") {
-          // Keep the typed draft beside the helper, but never resend the rejected spec.
-          const latest = intended.current;
-          if (latest && accepted.current) intend({ ...latest, custom: accepted.current.custom });
-          setShowRangeHelp(true);
-        } else {
-          console.error("settings_set failed", result.error);
-          rollBack();
         }
-      },
-      (error: unknown) => {
-        console.error("settings_set failed", error);
-        rollBack();
-      },
-    );
+        if (seq === sentSeq.current) {
+          setShowRangeHelp(false);
+        } else if (seq === acceptedSeq.current && latestFailed.current) {
+          // The latest save failed before this older one landed: Rust now holds this one.
+          if (latestFailed.current === "write") rollBack();
+          else keepAcceptedCustom();
+        }
+      } else if (result.error.kind === "invalidSpec") {
+        // A newer save has replaced this spec; its own answer decides the helper.
+        if (seq !== sentSeq.current) return;
+        latestFailed.current = "invalidSpec";
+        keepAcceptedCustom();
+        setShowRangeHelp(true);
+      } else {
+        failed(result.error);
+      }
+    }, failed);
   };
 
   const choosePreset = (preset: Preset) => {
