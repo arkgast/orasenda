@@ -1,5 +1,5 @@
 import { Button, InlineNotice, Input, ModeChip, StartButton, TimerRing } from "@orasenda/ui";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type {
   CustomSpec,
   MilestoneEvent_Serialize,
@@ -12,6 +12,7 @@ import type {
   TimerView_Serialize,
 } from "../bindings";
 import { commands } from "../bindings";
+import { latest, load, register, sameCustom, save } from "../settingsQueue";
 import { DevPanel } from "../spike/DevPanel";
 import { useClock } from "../useClock";
 import { useTimer } from "../useTimer";
@@ -65,50 +66,9 @@ function parseDraft(draft: Draft): CustomSpec | null {
   return { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
 }
 
-/** `true` when `Keys` lists every key of `T`; any key left out makes it `false`. */
-export type CoversEveryKey<T, Keys extends readonly (keyof T)[]> = [
-  Exclude<keyof T, Keys[number]>,
-] extends [never]
-  ? true
-  : false;
-
-/** Fails to compile unless `Check` is `true`. */
-type AssertTrue<Check extends true> = Check;
-
-/** Every `CustomSpec` field, compared by `sameCustom`. */
-export const CUSTOM_KEYS = [
-  "focusMin",
-  "breakMin",
-] as const satisfies readonly (keyof CustomSpec)[];
-
-/**
- * Every `TimerSettings` field, compared by `sameSettings`. A field added to the generated type
- * must be listed here, or a change to only that field would never be sent (#114).
- */
-export const SETTINGS_KEYS = [
-  "preset",
-  "custom",
-  "notifySessionEnd",
-] as const satisfies readonly (keyof TimerSettings)[];
-
-// Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field these lists miss.
-export type CustomKeysAreComplete = AssertTrue<CoversEveryKey<CustomSpec, typeof CUSTOM_KEYS>>;
-export type SettingsKeysAreComplete = AssertTrue<
-  CoversEveryKey<TimerSettings, typeof SETTINGS_KEYS>
->;
-
-// A new non-`custom` field must be a primitive, or `sameSettings` would compare it by reference;
-// an object field fails to compile here until it gets its own compare.
-export type OtherSettingsArePrimitive = AssertTrue<
-  [
-    Exclude<
-      TimerSettings[Exclude<keyof TimerSettings, "custom">],
-      string | number | boolean | null
-    >,
-  ] extends [never]
-    ? true
-    : false
->;
+export type { CoversEveryKey } from "../settingsQueue";
+// Re-exported for src/ui-types.test-d.tsx.
+export { CUSTOM_KEYS, SETTINGS_KEYS } from "../settingsQueue";
 
 /**
  * The helpers to show for a refused spec. When neither field is out of range locally (no spec
@@ -119,18 +79,6 @@ function rangeHelpFor(custom: CustomSpec | null | undefined): RangeHelp {
   const focus = custom.focusMin < FOCUS_RANGE.min || custom.focusMin > FOCUS_RANGE.max;
   const brk = custom.breakMin < BREAK_RANGE.min || custom.breakMin > BREAK_RANGE.max;
   return focus || brk ? { focus, break: brk } : { focus: true, break: true };
-}
-
-function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
-  return CUSTOM_KEYS.every((key) => a[key] === b[key]);
-}
-
-function sameSettings(a: TimerSettings | null, b: TimerSettings | null): boolean {
-  if (!a || !b) return a === b;
-  // `custom` is the one object field; a new object field needs its own compare here.
-  return SETTINGS_KEYS.every((key) =>
-    key === "custom" ? sameCustom(a.custom, b.custom) : a[key] === b[key],
-  );
 }
 
 function logFailure(name: string) {
@@ -151,49 +99,26 @@ export function Today() {
       setNotice(text ? { text, sessionId: event.sessionId } : null);
     },
   });
-  // `settings` is what the page shows; `intended` holds the same value, set synchronously, so a
-  // change made while an earlier settings_set is in flight builds on it, never on a stale render.
-  // `accepted` is the last value Rust took, which a failed write rolls back to.
-  // Saves are chained, never overlapped (docs/conventions.md, "Newest wins"): at most one
-  // settings_set is in flight (`saving`), and when it answers, the latest `intended` is sent next
-  // if Rust doesn't hold it yet. So Rust applies saves in the order they were meant, and every
-  // answer is judged against a settled store.
+  // `settings` is what the page shows; the save chain lives in ../settingsQueue.
   const [settings, setSettings] = useState<TimerSettings | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
-  const intended = useRef<TimerSettings | null>(null);
-  const accepted = useRef<TimerSettings | null>(null);
-  const saving = useRef(false);
-  const mounted = useRef(true);
   const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
   const [rangeHelp, setRangeHelp] = useState<RangeHelp>(NO_RANGE_HELP);
   const [starting, setStarting] = useState(false);
   const presetName = useId();
 
   useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    commands.settingsGet().then(
-      (saved) => {
-        if (cancelled) return;
-        intended.current = saved;
-        accepted.current = saved;
-        setSettings(saved);
-        setDraft(draftOf(saved.custom));
+    const unregister = register({
+      shown: (shown, resetDraft) => {
+        setSettings(shown);
+        if (resetDraft) setDraft(draftOf(shown.custom));
       },
-      (error: unknown) => {
-        console.error("settings_get failed", error);
-        if (!cancelled) setSettingsFailed(true);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
+      accepted: () => setRangeHelp(NO_RANGE_HELP),
+      refused: (custom) => setRangeHelp(rangeHelpFor(custom)),
+      loadFailed: () => setSettingsFailed(true),
+    });
+    load();
+    return unregister;
   }, []);
 
   const view = timer.status === "ok" ? timer.view : null;
@@ -205,76 +130,22 @@ export function Today() {
     setNotice(null);
   }
 
-  const intend = (next: TimerSettings) => {
-    intended.current = next;
-    setSettings(next);
-  };
-
-  const rollBack = () => {
-    const last = accepted.current;
-    if (!last) return;
-    intend(last);
-    setDraft(draftOf(last.custom));
-  };
-
-  /** Sends the latest intent when nothing is in flight and Rust doesn't hold it yet. */
-  const flush = () => {
-    const next = intended.current;
-    if (saving.current || !mounted.current || !next || sameSettings(next, accepted.current)) {
-      return;
-    }
-    saving.current = true;
-    const settled = () => {
-      saving.current = false;
-      flush();
-    };
-    const failed = (error: unknown) => {
-      console.error("settings_set failed", error);
-      // Changes queued behind this save are dropped too: the screen shows what Rust holds.
-      if (mounted.current) rollBack();
-    };
-    commands
-      .settingsSet(next)
-      .then((result) => {
-        if (result.status === "ok") {
-          accepted.current = next;
-          if (mounted.current && sameSettings(intended.current, next)) setRangeHelp(NO_RANGE_HELP);
-        } else if (result.error.kind === "invalidSpec") {
-          if (!mounted.current) return;
-          const latest = intended.current;
-          // A spec typed since this one was sent replaces it, and its own save decides.
-          if (!latest || !sameCustom(latest.custom, next.custom) || !accepted.current) return;
-          // Keep the typed draft beside the helper, but never resend the rejected spec.
-          intend({ ...latest, custom: accepted.current.custom });
-          setRangeHelp(rangeHelpFor(next.custom));
-        } else {
-          failed(result.error);
-        }
-      }, failed)
-      .finally(settled);
-  };
-
-  const save = (next: TimerSettings) => {
-    intend(next);
-    flush();
-  };
-
   const choosePreset = (preset: Preset) => {
-    const latest = intended.current;
-    if (!latest) return;
-    save({ ...latest, preset });
+    const current = latest();
+    if (!current) return;
+    save({ ...current, preset });
   };
 
   const commitCustom = () => {
     const custom = parseDraft(draft);
-    const latest = intended.current;
-    if (!latest || !custom) return;
-    if (custom.focusMin === latest.custom.focusMin && custom.breakMin === latest.custom.breakMin) {
+    const current = latest();
+    if (!current || !custom) return;
+    if (sameCustom(custom, current.custom)) {
       // Back to a spec Rust has (or is saving): an earlier range helper no longer applies.
       setRangeHelp(NO_RANGE_HELP);
       return;
     }
-    save({ ...latest, custom });
+    save({ ...current, custom });
   };
 
   const start = (request: StartRequest_Deserialize) => {

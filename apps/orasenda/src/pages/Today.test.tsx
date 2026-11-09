@@ -2,6 +2,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { TimerSettings } from "../bindings";
+import { resetSettingsQueueForTests } from "../settingsQueue";
 import { resetTimerQueueForTests } from "../timerQueue";
 import { Today } from "./Today";
 import {
@@ -47,6 +48,7 @@ function statusNodes(): HTMLElement[] {
 
 beforeEach(() => {
   resetTimerQueueForTests();
+  resetSettingsQueueForTests();
 });
 
 afterEach(async () => {
@@ -740,7 +742,7 @@ test("out_of_range_spec_after_an_accepted_save_keeps_that_save", async () => {
   await answer(() => held[2].resolve());
 });
 
-test("unmount_with_a_chained_save_sends_nothing_more", async () => {
+test("unmount_with_a_chained_save_still_sends_the_latest_intent", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   const { held, reply } = heldSaves();
   const { backend, unmount } = await renderToday({
@@ -756,8 +758,121 @@ test("unmount_with_a_chained_save_sends_nothing_more", async () => {
   unmount();
   await answer(() => held[0].resolve());
 
-  expect(settingsSent(backend)).toHaveLength(1);
+  expect(settingsSent(backend)).toHaveLength(2);
+  expect(settingsSent(backend)[1]).toEqual({
+    preset: "fifty_ten",
+    custom: { focusMin: 60, breakMin: 10 },
+    notifySessionEnd: true,
+  });
+  await answer(() => held[1].resolve());
+  expect(settingsSent(backend)).toHaveLength(2);
   expect(error).not.toHaveBeenCalled();
+});
+
+/** A backend whose settings_get returns what the last answered settings_set wrote. */
+function statefulBackend() {
+  let stored: TimerSettings = { ...SETTINGS, preset: "custom" };
+  const held: Held[] = [];
+  const backend = mockBackend({
+    settings_get: () => stored,
+    settings_set: (args) =>
+      new Promise<null>((done, fail) => {
+        held.push({
+          resolve: () => {
+            stored = (args as { settings: TimerSettings }).settings;
+            done(null);
+          },
+          reject: fail,
+        });
+      }),
+  });
+  return { backend, held };
+}
+
+function settingsCommands(backend: { calls: { cmd: string }[] }): string[] {
+  return backend.calls.map((call) => call.cmd).filter((cmd) => cmd.startsWith("settings_"));
+}
+
+async function editFocus60() {
+  const focus = screen.getByLabelText("Focus minutes");
+  fireEvent.change(focus, { target: { value: "60" } });
+  fireEvent.blur(focus);
+  await settle();
+}
+
+test("remounted_today_waits_for_the_in_flight_save", async () => {
+  const { backend, held } = statefulBackend();
+  const first = render(<Today />);
+  await settle();
+  await editFocus60();
+  first.unmount();
+  render(<Today />);
+  await settle();
+
+  expect(settingsCommands(backend)).toEqual(["settings_get", "settings_set"]);
+  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
+
+  await answer(() => held[0].resolve());
+  expect(settingsCommands(backend)).toEqual(["settings_get", "settings_set", "settings_get"]);
+  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
+});
+
+test("remounted_today_sends_the_intent_queued_before_unmount_after_the_save_answers", async () => {
+  const { backend, held } = statefulBackend();
+  const first = render(<Today />);
+  await settle();
+  await editFocus60();
+  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
+  first.unmount();
+  render(<Today />);
+  await settle();
+  expect(settingsCommands(backend)).toEqual(["settings_get", "settings_set"]);
+
+  await answer(() => held[0].resolve());
+  expect(settingsCommands(backend)).toEqual(["settings_get", "settings_set", "settings_set"]);
+  expect(settingsSent(backend)[1].preset).toBe("fifty_ten");
+
+  await answer(() => held[1].resolve());
+  expect(settingsCommands(backend).slice(3)).toEqual(["settings_get"]);
+  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
+});
+
+test("failed_save_after_unmount_rolls_back_and_sends_nothing_more", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const { backend, held } = statefulBackend();
+  const first = render(<Today />);
+  await settle();
+  await editFocus60();
+  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
+  first.unmount();
+  await answer(() => held[0].reject(WRITE_FAILED));
+
+  expect(settingsSent(backend)).toHaveLength(1);
+  expect(error).toHaveBeenCalledWith("settings_set failed", WRITE_FAILED);
+  render(<Today />);
+  await settle();
+  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(45);
+});
+
+test("out_of_range_spec_refused_after_unmount_is_not_resent", async () => {
+  const { backend, held } = statefulBackend();
+  const first = render(<Today />);
+  await settle();
+  const focus = screen.getByLabelText("Focus minutes");
+  fireEvent.change(focus, { target: { value: "200" } });
+  fireEvent.blur(focus);
+  await settle();
+  first.unmount();
+  await answer(() => held[0].reject({ kind: "invalidSpec", message: "focus_min out of range" }));
+
+  expect(settingsSent(backend)).toHaveLength(1);
+  render(<Today />);
+  await settle();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(45);
+  expect(screen.queryByText(RANGE_HELP)).toBeNull();
 });
 
 // Per-field range helpers (#118)
