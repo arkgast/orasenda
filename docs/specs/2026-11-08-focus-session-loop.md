@@ -57,8 +57,6 @@ Legend for the letters used in this spec's prose:
 - old D (capture pad) = new **F**
 - old E (data portability) = new **G** plus **B** (Settings)
 
-**Build order (2026-11-09): A → B → C → (D ∥ E) → F → G.**
-
 A is a vertical slice rather than a store layer because P1's exit criterion is "usable daily as a focus timer", because the two real risks (timer truth while hidden or asleep, the menu-bar and hide-on-close lifecycle) are only proven end to end, and because ADR-002 already fixes the store's shape, so one real entity is enough to settle its API.
 
 ## Problem
