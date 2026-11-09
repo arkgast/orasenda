@@ -62,6 +62,8 @@ ci:
     pnpm exec biome ci .
     @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows or windows-core)"
     "{{ just_executable() }}" core-boundary
+    @echo "==> core purity (no target_os in core)"
+    "{{ just_executable() }}" core-purity
     @echo "==> tokens (tokens.css is up to date)"
     "{{ just_executable() }}" tokens
     git diff --exit-code -- packages/tokens/tokens.css
@@ -91,6 +93,20 @@ ci:
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
 # Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
+[private]
+[script]
+core-purity:
+    status=0
+    hits="$(grep -rnE 'target_os' crates/core/src | grep -vE '^[^:]+:[0-9]+:\s*//')" || status=$?
+    if [ "$status" -eq 0 ]; then
+        echo "orasenda-core must not branch on the target OS (ADR-001):" >&2
+        echo "$hits" >&2
+        exit 1
+    elif [ "$status" -ne 1 ]; then
+        echo "core purity check failed: grep exited $status" >&2
+        exit "$status"
+    fi
+
 [private]
 [script]
 core-boundary:

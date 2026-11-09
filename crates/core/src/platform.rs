@@ -1,5 +1,10 @@
 //! Traits the OS-specific crates implement so core logic never touches OS APIs.
 
+use std::any::Any;
+
+use serde::{Deserialize, Serialize};
+use specta::Type;
+
 use crate::blocking::AppRef;
 
 /// Why a platform call failed.
@@ -54,6 +59,83 @@ impl std::fmt::Display for PlatformError {
 
 impl std::error::Error for PlatformError {}
 
+/// Clock-style preference for showing times.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HourCycle {
+    H12,
+    H23,
+}
+
+/// Whether the app may post notifications, serialized camelCase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum NotificationStatus {
+    NotDetermined,
+    Denied,
+    Granted,
+    Unavailable,
+}
+
+/// Keeps the machine awake while the returned guard is alive.
+pub trait KeepAwake: Send + Sync {
+    /// Starts holding the machine awake. Dropping the guard releases it.
+    fn begin(&self, reason: &str) -> Result<Box<dyn Any + Send>, PlatformError>;
+}
+
+/// Keeps nothing awake.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NoopKeepAwake;
+
+impl KeepAwake for NoopKeepAwake {
+    fn begin(&self, _reason: &str) -> Result<Box<dyn Any + Send>, PlatformError> {
+        Ok(Box::new(()))
+    }
+}
+
+/// The user's local time zone and clock preference.
+pub trait LocalTime: Send + Sync {
+    /// Minutes east of UTC at that instant.
+    fn utc_offset_min(&self, at_epoch_ms: u64) -> i32;
+    fn hour_cycle(&self) -> HourCycle;
+}
+
+/// UTC with a 24-hour clock.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UtcLocalTime;
+
+impl LocalTime for UtcLocalTime {
+    fn utc_offset_min(&self, _at_epoch_ms: u64) -> i32 {
+        0
+    }
+    fn hour_cycle(&self) -> HourCycle {
+        HourCycle::H23
+    }
+}
+
+/// Asks for permission and posts notifications.
+pub trait Notifier: Send + Sync {
+    fn status(&self) -> NotificationStatus;
+    /// Asks the user; calls `done` with the outcome.
+    fn request(&self, done: Box<dyn FnOnce(NotificationStatus) + Send>);
+    fn post(&self, title: &str, body: &str) -> Result<(), PlatformError>;
+}
+
+/// A notifier for platforms without notifications.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NoopNotifier;
+
+impl Notifier for NoopNotifier {
+    fn status(&self) -> NotificationStatus {
+        NotificationStatus::Unavailable
+    }
+    fn request(&self, done: Box<dyn FnOnce(NotificationStatus) + Send>) {
+        done(NotificationStatus::Unavailable);
+    }
+    fn post(&self, _title: &str, _body: &str) -> Result<(), PlatformError> {
+        Err(PlatformError::Unsupported)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,5 +153,26 @@ mod tests {
         );
         assert_eq!(PlatformError::Other("boom".into()).to_string(), "boom");
         let _: &dyn std::error::Error = &PlatformError::Refused;
+    }
+
+    #[test]
+    fn noop_keep_awake_returns_a_guard() {
+        assert!(NoopKeepAwake.begin("focus").is_ok());
+    }
+
+    #[test]
+    fn utc_local_time_is_zero_h23() {
+        assert_eq!(UtcLocalTime.utc_offset_min(1_794_009_600_000), 0);
+        assert_eq!(UtcLocalTime.hour_cycle(), HourCycle::H23);
+    }
+
+    #[test]
+    fn noop_notifier_is_unavailable_and_post_is_unsupported() {
+        use std::sync::mpsc;
+        assert_eq!(NoopNotifier.status(), NotificationStatus::Unavailable);
+        let (tx, rx) = mpsc::channel();
+        NoopNotifier.request(Box::new(move |s| tx.send(s).unwrap()));
+        assert_eq!(rx.try_recv(), Ok(NotificationStatus::Unavailable));
+        assert_eq!(NoopNotifier.post("t", "b"), Err(PlatformError::Unsupported));
     }
 }
