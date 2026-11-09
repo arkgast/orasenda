@@ -19,6 +19,8 @@ export function infoLine(info: AppInfo): string {
 }
 
 /**
+ * Spike only (`spike/DevPanel.tsx`): the app's own clock and finish times arrive formatted by Rust.
+ *
  * Hours and minutes of `epochMs` (seconds are reserved for countdowns). Locale and time zone
  * default to the system's; the hour cycle comes from the locale, so midnight is never `24:00`.
  * Builds a new formatter on each call so a time-zone change shows on the next tick.

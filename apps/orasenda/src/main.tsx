@@ -1,6 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+// The design system first, so the app's own rules can build on it.
+import "@orasenda/ui/components.css";
 import "./styles/app.css";
 
 const root = document.getElementById("root");
