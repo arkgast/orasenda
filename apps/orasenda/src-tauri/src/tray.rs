@@ -539,6 +539,8 @@ mod tests {
         queue: Mutex<VecDeque<Box<dyn FnOnce() + Send>>>,
         /// How many of the next `set_title` calls fail.
         title_failures: Mutex<u32>,
+        /// How many of the next `set_accessibility_label` calls fail.
+        label_failures: Mutex<u32>,
     }
 
     impl Recorder {
@@ -593,6 +595,11 @@ mod tests {
 
         fn set_accessibility_label(&self, label: &str) -> Result<(), String> {
             self.record(Call::AccessibilityLabel(label.into()));
+            let mut failures = self.label_failures.lock().unwrap();
+            if *failures > 0 {
+                *failures -= 1;
+                return Err("status item has no button".into());
+            }
             Ok(())
         }
 
@@ -712,6 +719,24 @@ mod tests {
 
         // While idle no further render comes, so the retry is the only way back.
         *calls.title_failures.lock().unwrap() = 1;
+        tray.render(&idle());
+        let mut expected = full_draw(&idle());
+        expected.extend(full_draw(&idle()));
+        assert_eq!(calls.take(), expected);
+
+        tray.render(&idle());
+        assert_eq!(calls.take(), []);
+    }
+
+    /// A failed accessibility label fails the draw like any other call: the retry sets it
+    /// again, so VoiceOver is not left reading the previous view's name.
+    #[test]
+    fn failed_accessibility_label_is_retried_without_a_new_render() {
+        let (tray, calls) = tray_with(Recorder::default());
+        tray.render(&running(S59));
+        calls.take();
+
+        *calls.label_failures.lock().unwrap() = 1;
         tray.render(&idle());
         let mut expected = full_draw(&idle());
         expected.extend(full_draw(&idle()));
