@@ -15,7 +15,7 @@
         h(O.MenuBarTimer, { remaining: '12:16', mode: 'paused' }),
         h(O.MenuBarTimer, { mode: 'idle' })),
       h(O.MenuBarTimer, { remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25, compact: false, task: 'Chapter 3 outline' }),
-      h('p', { className: 'os-muted' }, 'Compact in the menu bar; the floating mini timer adds the task.'));
+      h('p', { className: 'os-muted' }, 'Compact inside SessionSlot; the longer form with the task belongs to FloatingTimer. The macOS menu-bar item itself is native.'));
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
 </script>

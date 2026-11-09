@@ -1,9 +1,21 @@
-<!-- @dsCard group="Timer" height=760 -->
+<!-- @dsCard group="Timer" height=1500 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>FullScreenFocus</title></head>
 <body>
 <div id="root"></div>
+<div class="os-col" style="margin-top: var(--space-6)">
+  <p class="os-muted" style="margin:0">The redesigned Focus window, drawn as static markup until the preview bundle catches up: Leave full screen is a top-right IconButton, and the ring is fluid.</p>
+  <section class="os-fullscreen" aria-label="Full-screen focus" style="position: relative">
+    <button class="os-iconbtn" type="button" aria-label="Leave full screen" aria-keyshortcuts="Escape" style="position: absolute; top: var(--space-4); right: var(--space-4)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4v4H4M12 16v-4h4M8 8L3.5 3.5M12 12l4.5 4.5"/></svg></button>
+    <div style="width: 100%; max-width: var(--timer-full-size)"><div class="os-timer os-timer-focus os-timer-full" style="width: 100%; min-width: min(100%, var(--timer-min-size))" role="timer" aria-live="off" aria-label="Focus, 18 minutes 42 seconds remaining, Chapter 3 outline, Wall clock, 09:41"><svg class="os-timer-ring" viewBox="0 0 400 400" aria-hidden="true"><circle class="track" cx="200" cy="200" r="195" stroke-width="3.33"/><circle class="prog" cx="200" cy="200" r="195" stroke-width="10" stroke-dasharray="1225.22" stroke-dashoffset="306.31"/></svg><div class="os-timer-center" aria-hidden="true"><span class="os-chip os-mode-focus"><svg class="os-shape" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>Focus</span><div class="os-timer-digits">18:42</div><div class="os-timer-task">Chapter 3 outline</div><div class="os-timer-clock">Clock · 09:41</div></div></div></div>
+    <div class="os-actions">
+      <button class="os-iconbtn os-iconbtn-round" type="button" aria-label="Pause session" aria-keyshortcuts="Space"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5v11M12.5 4.5v11"/></svg></button>
+      <button class="os-iconbtn" type="button" aria-label="End session" aria-keyshortcuts="Meta+Period"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5"/></svg></button>
+    </div>
+    <p class="os-muted" style="margin:0"><span class="os-kbd" aria-hidden="true">Space</span><span class="os-sr-only">Space</span> pauses · <span class="os-kbd" aria-hidden="true">Esc</span><span class="os-sr-only">Escape</span> leaves</p>
+  </section>
+</div>
 <script>
   var O = window.Orasenda, h = React.createElement;
   function Demo() {

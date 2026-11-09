@@ -1,0 +1,29 @@
+<!-- @dsCard group="Overlays" height=820 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>PopoverMenu</title></head>
+<body>
+<div class="os-col">
+  <p class="os-muted" style="margin:0">Idle: every row is live.</p>
+  <div class="os-popover" role="menu" aria-labelledby="pm-h">
+    <div class="os-popover-head"><p class="os-popover-title" id="pm-h">Preset</p></div>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="true" type="button"><span class="os-radio-mark"></span>Classic<span class="os-popover-meta">25 / 5</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Deep Block<span class="os-popover-meta">90 / 15</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Short<span class="os-popover-meta">15 / 3</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Custom<span class="os-popover-meta">50 / 10</span></button>
+    <hr class="os-popover-sep">
+    <button class="os-popover-item" role="menuitem" type="button">Timer settings…</button>
+  </div>
+  <p class="os-muted" style="margin:0">Read-only while a session runs: the current preset is checked, the others wait, and Settings stays live.</p>
+  <div class="os-popover" role="menu" aria-labelledby="pm-h2" aria-describedby="pm-d2">
+    <div class="os-popover-head"><p class="os-popover-title" id="pm-h2">Classic · 25 / 5</p><p class="os-popover-desc" id="pm-d2">Presets can change between sessions.</p></div>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="true" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Classic<span class="os-popover-meta">25 / 5</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Deep Block<span class="os-popover-meta">90 / 15</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Short<span class="os-popover-meta">15 / 3</span></button>
+    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Custom<span class="os-popover-meta">50 / 10</span></button>
+    <hr class="os-popover-sep">
+    <button class="os-popover-item" role="menuitem" type="button">Timer settings…</button>
+  </div>
+</div>
+</body>
+</html>

@@ -46,6 +46,7 @@
   --radius-pill: 999px;
   --duration-quick: 160ms;
   --duration-calm: 320ms;
+  --duration-slow: 1600ms;
   --duration-breath: 8s;
   --easing-calm: cubic-bezier(0.45, 0, 0.55, 1);
   --control-sm: 28px;
@@ -53,16 +54,40 @@
   --hit-min: 44px;
   --hit-floor: 24px;
   --rail-width: 64px;
-  --window-min-width: 900px;
-  --window-min-height: 600px;
+  --window-min-width: 360px;
+  --window-min-height: 240px;
+  --layout-compact-width: 640px;
+  --layout-compact-height: 480px;
+  --layout-strip-height: 420px;
+  --layout-ring-min-height: 360px;
+  --layout-short-height: 300px;
+  --layout-tight-height: 700px;
   --content-width: 720px;
+  --index-width: 200px;
+  --side-width: 240px;
+  --field-width: 220px;
+  --number-width: 120px;
   --column-width: 280px;
+  --column-min-width: 200px;
+  --column-strip-width: 64px;
+  --hour-gutter: 52px;
+  --minute-scale: 2px;
   --panel-width: 420px;
+  --picker-height: 520px;
+  --popover-width: 272px;
   --timer-size: 280px;
   --timer-full-size: 560px;
+  --timer-min-size: 160px;
+  --floater-width: 280px;
+  --floater-height: 64px;
+  --floater-min-height: 56px;
+  --floater-max-width: 360px;
+  --floater-max-height: 96px;
   --icon-sm: 10px;
   --icon-md: 14px;
   --icon-lg: 20px;
+  --scrollbar-size: 10px;
+  --bar-height: 12px;
   --z-rail: 10;
   --z-popover: 100;
   --z-overlay: 1000;
@@ -74,47 +99,65 @@
   --type-timer-xl-font-weight: 300;
   --type-timer-xl-letter-spacing: 0;
   --type-timer-xl-font-variant-numeric: tabular-nums;
+  --type-timer-xl: 300 168px/1 var(--font-mono);
   --type-timer-lg-font-size: 64px;
   --type-timer-lg-line-height: 1;
   --type-timer-lg-font-weight: 300;
   --type-timer-lg-letter-spacing: 0;
   --type-timer-lg-font-variant-numeric: tabular-nums;
+  --type-timer-lg: 300 64px/1 var(--font-mono);
   --type-timer-md-font-size: 28px;
   --type-timer-md-line-height: 32px;
   --type-timer-md-font-weight: 400;
   --type-timer-md-letter-spacing: 0;
   --type-timer-md-font-variant-numeric: tabular-nums;
+  --type-timer-md: 400 28px/32px var(--font-mono);
   --type-timer-sm-font-size: 13px;
   --type-timer-sm-line-height: 16px;
   --type-timer-sm-font-weight: 500;
   --type-timer-sm-letter-spacing: 0;
   --type-timer-sm-font-variant-numeric: tabular-nums;
+  --type-timer-sm: 500 13px/16px var(--font-mono);
+  --type-kbd-font-size: 12px;
+  --type-kbd-line-height: 16px;
+  --type-kbd-font-weight: 400;
+  --type-kbd-letter-spacing: 0;
+  --type-kbd-font-variant-numeric: tabular-nums;
+  --type-kbd: 400 12px/16px var(--font-mono);
   --type-display-font-size: 32px;
   --type-display-line-height: 40px;
   --type-display-font-weight: 600;
   --type-display-letter-spacing: -0.01em;
+  --type-display: 600 32px/40px var(--font-sans);
   --type-title-font-size: 22px;
   --type-title-line-height: 28px;
   --type-title-font-weight: 600;
+  --type-title: 600 22px/28px var(--font-sans);
   --type-heading-font-size: 17px;
   --type-heading-line-height: 24px;
   --type-heading-font-weight: 600;
+  --type-heading: 600 17px/24px var(--font-sans);
   --type-body-font-size: 15px;
   --type-body-line-height: 22px;
   --type-body-font-weight: 400;
+  --type-body: 400 15px/22px var(--font-sans);
   --type-body-sm-font-size: 13px;
   --type-body-sm-line-height: 18px;
   --type-body-sm-font-weight: 400;
+  --type-body-sm: 400 13px/18px var(--font-sans);
   --type-label-font-size: 12px;
   --type-label-line-height: 16px;
   --type-label-font-weight: 600;
   --type-label-letter-spacing: 0.06em;
+  --type-label: 600 12px/16px var(--font-sans);
   --type-caption-font-size: 11px;
   --type-caption-line-height: 14px;
   --type-caption-font-weight: 500;
+  --type-caption: 500 11px/14px var(--font-sans);
   --type-body-alt-font-size: 15px;
   --type-body-alt-line-height: 24px;
   --type-body-alt-font-weight: 400;
+  --type-body-alt: 400 15px/24px var(--font-alt);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -151,4 +194,11 @@
     --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.30);
     --shadow-overlay: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
+}
+
+[data-reading-comfort="true"] {
+  --type-title: 600 22px/28px var(--font-alt);
+  --type-heading: 600 17px/24px var(--font-alt);
+  --type-body: 400 15px/22px var(--font-alt);
+  --type-body-sm: 400 13px/18px var(--font-alt);
 }

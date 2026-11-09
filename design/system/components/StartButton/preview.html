@@ -1,16 +1,26 @@
-<!-- @dsCard group="Actions" height=170 -->
+<!-- @dsCard group="Actions" height=300 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>StartButton</title></head>
 <body>
 <div id="root"></div>
+<div class="os-col" style="margin-top: var(--space-5)">
+  <p class="os-muted" style="margin:0">The redesigned Start, drawn as static markup until the preview bundle catches up: the finish time sits in the preset summary, and Start carries the play glyph.</p>
+  <div class="os-start">
+    <div><button class="os-btn os-btn-ghost" type="button" aria-haspopup="menu">Classic · ends <span class="os-num">15:20</span></button></div>
+    <div class="os-actions">
+      <button class="os-btn os-btn-primary os-btn-lg" type="button" aria-keyshortcuts="Space Meta+Enter" style="display: inline-flex; align-items: center; gap: var(--space-2)"><svg viewBox="0 0 14 14" aria-hidden="true" style="width: var(--icon-md); height: var(--icon-md); fill: currentColor"><path d="M4 2.5l8 4.5-8 4.5z"/></svg> Start focus</button>
+      <button class="os-btn os-btn-quiet" type="button">Just 2 minutes</button>
+    </div>
+  </div>
+</div>
 <script>
   var O = window.Orasenda, h = React.createElement;
   function Demo() {
     var n = React.useState(''), notice = n[0], setNotice = n[1];
     function ack(what) { return function () { setNotice(what); }; }
     return h('div', { className: 'os-col' },
-      h(O.StartButton, { finishTime: '17:20', onStart: ack('Focus started on Chapter 3 outline.'), onQuickStart: ack('Two-minute start.') }),
+      h(O.StartButton, { onStart: ack('Focus started on Chapter 3 outline.'), onQuickStart: ack('Two-minute start.') }),
       notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
