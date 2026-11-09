@@ -21,9 +21,8 @@
 //! and the draw is posted again after [`RETRY_DELAY`] from a background thread (Tauri runs a
 //! post inline when already on the main thread, so an immediate retry would run back to back),
 //! at most [`DRAW_RETRIES`] times for one view; a newer render drops an older pending retry.
-//! Which view is
-//! newest is decided before `render` by `scheduler::publish_view`. Menu actions run
-//! `run_action` on a `spawn_blocking` thread.
+//! Which view is newest is decided before `render` by `scheduler::publish_view`. Menu actions
+//! run `run_action` on a `spawn_blocking` thread.
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
