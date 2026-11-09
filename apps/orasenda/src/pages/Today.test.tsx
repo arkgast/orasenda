@@ -442,6 +442,9 @@ test("preset_change_after_custom_commit_keeps_the_edit", async () => {
   fireEvent.change(focus, { target: { value: "60" } });
   fireEvent.blur(focus);
   fireEvent.click(screen.getByRole("radio", { name: "Classic 25/5" }));
+  await settle();
+  // The preset change waits for the blur's save to answer.
+  expect(argsOf(backend.calls, "settings_set")).toHaveLength(1);
   await act(async () => saving.resolve(null));
   await settle();
 
@@ -544,28 +547,22 @@ test("failed_settings_set_rolls_back_to_the_accepted_settings", async () => {
   });
 });
 
-// Overlapping saves (#101): newest wins, not last to arrive
+// Chained saves (#101): one settings_set in flight, the latest intent sent after it answers
 
 const WRITE_FAILED = { kind: "write", message: "disk full" };
 
 /** A settings_set reply held until the test answers it, with either outcome. */
-type Held = { promise: Promise<null>; resolve: () => void; reject: (error: unknown) => void };
+type Held = { resolve: () => void; reject: (error: unknown) => void };
 
 /** settings_set replies held in call order; `held[i]` answers the i-th save. */
 function heldSaves(): { held: Held[]; reply: () => Promise<null> } {
   const held: Held[] = [];
   return {
     held,
-    reply: () => {
-      let resolve: () => void = () => {};
-      let reject: (error: unknown) => void = () => {};
-      const promise = new Promise<null>((done, fail) => {
-        resolve = () => done(null);
-        reject = fail;
-      });
-      held.push({ promise, resolve, reject });
-      return promise;
-    },
+    reply: () =>
+      new Promise<null>((done, fail) => {
+        held.push({ resolve: () => done(null), reject: fail });
+      }),
   };
 }
 
@@ -575,10 +572,46 @@ function settingsSent(backend: { calls: { cmd: string; args: unknown }[] }): Tim
   );
 }
 
-test.each([
-  ["the failure arrives first", [0, 1]],
-  ["the later success arrives first", [1, 0]],
-] as const)("stale_failed_save_does_not_roll_back_over_a_later_save: %s", async (_, order) => {
+async function answer(reply: () => void) {
+  await act(async () => reply());
+  await settle();
+}
+
+test("one_save_in_flight_and_the_latest_intent_follows_it", async () => {
+  const { held, reply } = heldSaves();
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "custom" }),
+    settings_set: reply,
+  });
+  const focus = screen.getByLabelText("Focus minutes");
+
+  fireEvent.change(focus, { target: { value: "60" } });
+  fireEvent.blur(focus);
+  fireEvent.click(screen.getByRole("radio", { name: "Classic 25/5" }));
+  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
+  await settle();
+
+  // Only the first save is in flight; the screen already shows the latest intent.
+  expect(settingsSent(backend)).toEqual([
+    { preset: "custom", custom: { focusMin: 60, breakMin: 10 }, notifySessionEnd: true },
+  ]);
+  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
+
+  await answer(() => held[0].resolve());
+  // Only the latest intent follows, not each step on the way to it.
+  expect(settingsSent(backend)).toHaveLength(2);
+  expect(settingsSent(backend)[1]).toEqual({
+    preset: "fifty_ten",
+    custom: { focusMin: 60, breakMin: 10 },
+    notifySessionEnd: true,
+  });
+
+  await answer(() => held[1].resolve());
+  expect(settingsSent(backend)).toHaveLength(2);
+  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
+});
+
+test("failed_save_rolls_back_over_changes_queued_behind_it", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   const { held, reply } = heldSaves();
   const { backend } = await renderToday({
@@ -587,86 +620,64 @@ test.each([
   });
   const focus = screen.getByLabelText("Focus minutes");
 
-  // Save 1 (Custom, 60) will fail; save 2 (50/10, 60) is sent before it answers and succeeds.
+  // The issue's case: Focus 60 fails to write; 50/10 is chosen before the failure answers.
   fireEvent.change(focus, { target: { value: "60" } });
   fireEvent.blur(focus);
   fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
   await settle();
-  expect(held).toHaveLength(2);
+  await answer(() => held[0].reject(WRITE_FAILED));
 
-  const answers = [() => held[0].reject(WRITE_FAILED), () => held[1].resolve()];
-  for (const index of order) {
-    await act(async () => answers[index]());
-    await settle();
-  }
-
-  // Rust holds fifty_ten with 60 minutes: the screen agrees.
-  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
-  expect(statusNodes()).toHaveLength(0);
-  // The failure is still logged.
+  // Rust holds Custom 45, and so does the screen; nothing more is sent.
+  expect(settingsSent(backend)).toHaveLength(1);
+  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+  expect(screen.getByLabelText("Focus minutes")).toHaveValue(45);
   expect(error).toHaveBeenCalledWith("settings_set failed", WRITE_FAILED);
-
-  // The next change builds on what Rust holds, not on the rolled-back settings.
-  fireEvent.click(screen.getByRole("radio", { name: "Custom" }));
-  await settle();
-  expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
-  expect(settingsSent(backend)[2]).toEqual({
-    preset: "custom",
-    custom: { focusMin: 60, breakMin: 10 },
-    notifySessionEnd: true,
-  });
-  await act(async () => held[2].resolve());
 });
 
-test("newer_failed_save_rolls_back_to_an_older_save_that_succeeds_later", async () => {
+test("failed_preset_save_then_out_of_range_custom_ends_on_what_rust_holds", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { held, reply } = heldSaves();
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "fifty_ten" }),
+    settings_set: reply,
+  });
+
+  // Save 1 (Custom, 45) will fail to write; 200 is typed and committed while it is in flight.
+  fireEvent.click(screen.getByRole("radio", { name: "Custom" }));
+  await settle();
+  const focus = screen.getByLabelText("Focus minutes");
+  fireEvent.change(focus, { target: { value: "200" } });
+  fireEvent.blur(focus);
+  await settle();
+  await answer(() => held[0].reject(WRITE_FAILED));
+  // Were 200 sent, Rust would refuse it as out of range; either way Rust holds 50/10.
+  for (const save of held.slice(1)) await answer(() => save.reject(INVALID_SPEC));
+
+  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
+  expect(screen.queryByLabelText("Focus minutes")).toBeNull();
+  expect(settingsSent(backend)).toHaveLength(1);
+});
+
+test("failed_save_rolls_back_to_the_save_accepted_just_before_it", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { held, reply } = heldSaves();
   await renderToday({ ...savedSettings({ preset: "custom" }), settings_set: reply });
   const focus = screen.getByLabelText("Focus minutes");
 
-  // Save 1 (Custom, 60) succeeds, but only after save 2 (50/10, 60) has failed.
+  // Save 1 (Custom, 60) succeeds; save 2 (50/10, 60) follows it and fails.
   fireEvent.change(focus, { target: { value: "60" } });
   fireEvent.blur(focus);
   fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
   await settle();
+  await answer(() => held[0].resolve());
+  await answer(() => held[1].reject(WRITE_FAILED));
 
-  await act(async () => held[1].reject(WRITE_FAILED));
-  await settle();
-  await act(async () => held[0].resolve());
-  await settle();
-
-  // Rust holds Custom with 60 minutes, the latest state it accepted.
   expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
   expect(screen.getByLabelText("Focus minutes")).toHaveValue(60);
   expect(screen.getByLabelText("Break minutes")).toHaveValue(10);
 });
 
-test("older_success_arriving_after_a_newer_success_keeps_the_newer_baseline", async () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  const { held, reply } = heldSaves();
-  await renderToday({ ...savedSettings({ preset: "custom" }), settings_set: reply });
-  const focus = screen.getByLabelText("Focus minutes");
-
-  // Save 1 (Custom, 60) and save 2 (Custom, 70) succeed out of order; save 3 then fails.
-  fireEvent.change(focus, { target: { value: "60" } });
-  fireEvent.blur(focus);
-  fireEvent.change(focus, { target: { value: "70" } });
-  fireEvent.blur(focus);
-  await settle();
-  await act(async () => held[1].resolve());
-  await act(async () => held[0].resolve());
-  await settle();
-
-  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
-  await settle();
-  await act(async () => held[2].reject(WRITE_FAILED));
-  await settle();
-
-  expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-  expect(screen.getByLabelText("Focus minutes")).toHaveValue(70);
-});
-
-test("stale_invalid_spec_does_not_undo_a_later_custom_save", async () => {
+test("out_of_range_spec_replaced_while_in_flight_is_not_kept", async () => {
   const { held, reply } = heldSaves();
   const { backend } = await renderToday({
     ...savedSettings({ preset: "custom" }),
@@ -674,16 +685,15 @@ test("stale_invalid_spec_does_not_undo_a_later_custom_save", async () => {
   });
   const focus = screen.getByLabelText("Focus minutes");
 
-  // Save 1 (200) is out of range; save 2 (60) is sent before Rust answers save 1.
+  // Save 1 (200) is out of range; 60 is committed before Rust answers it.
   fireEvent.change(focus, { target: { value: "200" } });
   fireEvent.blur(focus);
   fireEvent.change(focus, { target: { value: "60" } });
   fireEvent.blur(focus);
   await settle();
-  await act(async () => held[0].reject(INVALID_SPEC));
-  await settle();
-  await act(async () => held[1].resolve());
-  await settle();
+  await answer(() => held[0].reject(INVALID_SPEC));
+  expect(settingsSent(backend)).toHaveLength(2);
+  await answer(() => held[1].resolve());
 
   expect(focus).toHaveValue(60);
   expect(screen.queryByText(RANGE_HELP)).toBeNull();
@@ -695,10 +705,10 @@ test("stale_invalid_spec_does_not_undo_a_later_custom_save", async () => {
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
   });
-  await act(async () => held[2].resolve());
+  await answer(() => held[2].resolve());
 });
 
-test("older_success_after_a_newer_invalid_spec_becomes_the_spec_kept", async () => {
+test("out_of_range_spec_after_an_accepted_save_keeps_that_save", async () => {
   const { held, reply } = heldSaves();
   const { backend } = await renderToday({
     ...savedSettings({ preset: "custom" }),
@@ -706,16 +716,14 @@ test("older_success_after_a_newer_invalid_spec_becomes_the_spec_kept", async () 
   });
   const focus = screen.getByLabelText("Focus minutes");
 
-  // Save 1 (60) succeeds, but only after save 2 (200) is rejected as out of range.
+  // Save 1 (60) succeeds; save 2 (200) follows it and is out of range.
   fireEvent.change(focus, { target: { value: "60" } });
   fireEvent.blur(focus);
   fireEvent.change(focus, { target: { value: "200" } });
   fireEvent.blur(focus);
   await settle();
-  await act(async () => held[1].reject(INVALID_SPEC));
-  await settle();
-  await act(async () => held[0].resolve());
-  await settle();
+  await answer(() => held[0].resolve());
+  await answer(() => held[1].reject(INVALID_SPEC));
 
   // The typed draft stays beside the helper.
   expect(focus).toHaveValue(200);
@@ -729,5 +737,25 @@ test("older_success_after_a_newer_invalid_spec_becomes_the_spec_kept", async () 
     custom: { focusMin: 60, breakMin: 10 },
     notifySessionEnd: true,
   });
-  await act(async () => held[2].resolve());
+  await answer(() => held[2].resolve());
+});
+
+test("unmount_with_a_chained_save_sends_nothing_more", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const { held, reply } = heldSaves();
+  const { backend, unmount } = await renderToday({
+    ...savedSettings({ preset: "custom" }),
+    settings_set: reply,
+  });
+  const focus = screen.getByLabelText("Focus minutes");
+
+  fireEvent.change(focus, { target: { value: "60" } });
+  fireEvent.blur(focus);
+  fireEvent.click(screen.getByRole("radio", { name: "50/10" }));
+  await settle();
+  unmount();
+  await answer(() => held[0].resolve());
+
+  expect(settingsSent(backend)).toHaveLength(1);
+  expect(error).not.toHaveBeenCalled();
 });
