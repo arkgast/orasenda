@@ -98,7 +98,12 @@ test("page_frame_renders_h1_and_three_tracks", () => {
   expect((container.firstElementChild as HTMLElement).children).toHaveLength(3);
 
   rerender(
-    <ui.PageFrame title="Shutdown" variant="flow" step="Step 2 of 4" footer={<button type="button">Continue</button>} />,
+    <ui.PageFrame
+      title="Shutdown"
+      variant="flow"
+      step="Step 2 of 4"
+      footer={<button type="button">Continue</button>}
+    />,
   );
   const flow = container.firstElementChild as HTMLElement;
   expect(flow).toHaveClass("os-page-flow");
@@ -110,8 +115,14 @@ test("page_frame_renders_h1_and_three_tracks", () => {
 function stubLayout(scrollHeight: number, clientHeight: number): () => void {
   const sh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
   const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
-  Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, value: scrollHeight });
-  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, value: clientHeight });
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    value: scrollHeight,
+  });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    value: clientHeight,
+  });
   return () => {
     if (sh) Object.defineProperty(HTMLElement.prototype, "scrollHeight", sh);
     else delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollHeight;
@@ -206,11 +217,18 @@ test("settings_row_links_helper_and_status_by_describedby", () => {
   expect(onAction).toHaveBeenCalledTimes(1);
 
   rerender(
-    <ui.SettingsRow label="Notifications" helper="Helper only." disabledReason="Read-only until you update Orasenda.">
+    <ui.SettingsRow
+      label="Notifications"
+      helper="Helper only."
+      disabledReason="Read-only until you update Orasenda."
+    >
       <input type="checkbox" aria-label="Tell me" />
     </ui.SettingsRow>,
   );
-  const ids = (container.querySelector("[aria-describedby]") as HTMLElement).getAttribute("aria-describedby") ?? "";
+  const ids =
+    (container.querySelector("[aria-describedby]") as HTMLElement).getAttribute(
+      "aria-describedby",
+    ) ?? "";
   for (const id of ids.split(" ")) expect(container.querySelector(`[id="${id}"]`)).not.toBeNull();
   expect(screen.getByText("Read-only until you update Orasenda.")).toBeVisible();
 });
@@ -230,7 +248,13 @@ test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
   expect((container.firstElementChild as HTMLElement).getAttribute("role")).toBeNull();
 
   rerender(
-    <ui.InlineNotice variant="row" tone="attention" actionLabel="Try again" actionName="Try again saving" onAction={onAction}>
+    <ui.InlineNotice
+      variant="row"
+      tone="attention"
+      actionLabel="Try again"
+      actionName="Try again saving"
+      onAction={onAction}
+    >
       Theme wasn't saved. Back to Match system.
     </ui.InlineNotice>,
   );
@@ -241,7 +265,9 @@ test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
 });
 
 test("input_unit_renders_suffix_after_number_field", () => {
-  const { container, rerender } = render(<ui.Input label="Focus minutes" type="number" unit="min" />);
+  const { container, rerender } = render(
+    <ui.Input label="Focus minutes" type="number" unit="min" />,
+  );
   const input = screen.getByRole("spinbutton", { name: "Focus minutes" });
   expect(input.hasAttribute("unit")).toBe(false);
   const suffix = screen.getByText("min");
@@ -252,7 +278,8 @@ test("input_unit_renders_suffix_after_number_field", () => {
 });
 
 test("empty_state_inline_has_one_line_and_no_action", () => {
-  const text = "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
+  const text =
+    "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
   const { container } = render(<ui.EmptyState variant="inline" message={text} />);
   expect(screen.queryByRole("heading")).toBeNull();
   expect(screen.queryByRole("button")).toBeNull();
