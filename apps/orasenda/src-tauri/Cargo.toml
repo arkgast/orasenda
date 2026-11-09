@@ -20,7 +20,7 @@ orasenda-store = { path = "../../../crates/store" }
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
-tauri.workspace = true
+tauri = { workspace = true, features = ["tray-icon"] }
 tauri-specta.workspace = true
 uuid.workspace = true
 
