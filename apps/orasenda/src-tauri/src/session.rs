@@ -1613,6 +1613,65 @@ mod tests {
     }
 
     #[test]
+    fn clock_set_back_after_end_does_not_reopen() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let end = s.tick(T0 + CLASSIC_MS);
+        let record = ended_record(&end);
+        assert_eq!(record.end_reason, EndReason::Completed);
+        assert_eq!(end.view.state, EngineState::Idle);
+        assert!(has_row(db(&s), &record));
+        assert_eq!(snapshot(db(&s)), None);
+        for earlier in [T0 + MINUTE, T0 - MINUTE, T0 + CLASSIC_MS - 1] {
+            let t = s.tick(earlier);
+            assert!(t.milestones.is_empty());
+            assert!(t.ended.is_none());
+            assert_eq!(t.view.state, EngineState::Idle);
+            assert_eq!(t.view.remaining_ms, 0);
+            let p = s.apply(Action::Pause, earlier, id("x"));
+            assert_eq!(kind(&p), Some(TimerCommandErrorKind::NothingRunning));
+            assert!(p.milestones.is_empty());
+            assert!(p.ended.is_none());
+            assert_eq!(p.view.state, EngineState::Idle);
+            assert_eq!(snapshot(db(&s)), None);
+        }
+        let mut back = relaunch(&mut s, T0 + MINUTE);
+        assert_eq!(back.view(T0 + MINUTE).state, EngineState::Idle);
+        assert!(back.state(T0 + MINUTE).0.pending.is_empty());
+        assert!(has_row(db(&back), &record));
+    }
+
+    #[test]
+    fn clock_set_back_after_stop_does_not_reopen_on_relaunch() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let stopped = s.apply(Action::Stop, T0 + 5 * MINUTE, id("x"));
+        let record = ended_record(&stopped);
+        assert_eq!(record.end_reason, EndReason::Stopped);
+        assert!(has_row(db(&s), &record));
+        assert_eq!(snapshot(db(&s)), None);
+        let mut back = relaunch(&mut s, T0 + MINUTE);
+        assert_eq!(back.view(T0 + MINUTE).state, EngineState::Idle);
+        assert!(back.state(T0 + MINUTE).0.pending.is_empty());
+        assert_eq!(snapshot(db(&back)), None);
+    }
+
+    #[test]
+    fn relaunch_with_clock_before_planned_end_continues_running() {
+        // Pins the spec's wall-clock continuation, so changing that rule must be deliberate.
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let back = relaunch(&mut s, T0 + 5 * MINUTE);
+        let v = back.view(T0 + 5 * MINUTE);
+        assert_eq!(v.state, EngineState::Running);
+        assert_eq!(v.session_id, Some(SessionId("a".into())));
+        assert_eq!(v.remaining_ms, CLASSIC_MS - 5 * MINUTE);
+        assert!(back.pending.is_empty());
+        let snap = snapshot(db(&back)).expect("snapshot stays");
+        assert_eq!(snap.view(T0).session_id, Some(SessionId("a".into())));
+    }
+
+    #[test]
     fn undecodable_snapshot_is_logged_and_left_in_place() {
         let store = memory_store();
         store

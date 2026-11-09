@@ -193,6 +193,11 @@ impl Session {
     /// Ends a running session once `now_ms` reaches its planned end, returning
     /// `Some(Ended(record))` with `ended_ms` at the planned end, however late the call. `None`
     /// on every other tick, and always while paused or idle.
+    ///
+    /// Invariant: once this returns `Ended`, the engine is [`Session::Idle`], and `Idle` has no
+    /// end time to compare against, so a later call with an earlier `now_ms` (a clock set
+    /// back) can never revive the session, change its remaining time or end it again. Only
+    /// [`Session::start`] leaves `Idle`.
     pub fn advance(&mut self, now_ms: u64) -> Option<Milestone> {
         let Session::Running {
             id,
@@ -486,6 +491,27 @@ mod tests {
         assert_eq!(s.advance(T0), None);
         assert_eq!(s.advance(u64::MAX), None);
         assert!(s.is_idle());
+    }
+
+    #[test]
+    fn advance_after_end_with_earlier_now_stays_idle() {
+        let mut s = classic_at(T0);
+        let record = ended(s.advance(T0 + 25 * MIN));
+        assert_eq!(record.end_reason, EndReason::Completed);
+        assert_eq!(record.ended_ms, T0 + 25 * MIN);
+        for earlier in [T0 + MIN, T0, 0] {
+            assert_eq!(s.advance(earlier), None, "at {earlier}");
+            assert!(s.is_idle());
+            let v = s.view(earlier);
+            assert_eq!(v.state, EngineState::Idle);
+            assert_eq!(v.remaining_ms, 0);
+            assert_eq!(v.planned_end_ms, None);
+            assert_eq!(s.planned_end_ms(), None);
+            assert_eq!(s.pause(earlier), Err(TimerError::NothingRunning));
+            assert_eq!(s.resume(earlier), Err(TimerError::NothingRunning));
+            assert_eq!(s.stop(earlier), Err(TimerError::NothingRunning));
+        }
+        assert_eq!(s, Session::Idle);
     }
 
     #[test]
