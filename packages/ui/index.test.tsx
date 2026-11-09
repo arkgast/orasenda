@@ -293,7 +293,9 @@ test("empty_state_inline_has_one_line_and_no_action", () => {
 });
 
 test("settings_index_wraps_and_resets_tab_stop_when_current_changes", () => {
-  const { rerender } = render(<ui.SettingsIndex sections={SECTIONS} current="timer" onJump={() => {}} />);
+  const { rerender } = render(
+    <ui.SettingsIndex sections={SECTIONS} current="timer" onJump={() => {}} />,
+  );
   const items = screen.getAllByRole("button");
   items[4]?.focus();
   fireEvent.keyDown(items[4] as HTMLElement, { key: "ArrowDown" });
@@ -306,7 +308,9 @@ test("settings_index_wraps_and_resets_tab_stop_when_current_changes", () => {
 });
 
 test("input_error_uses_alert_glyph_not_mode_shape", () => {
-  const { container } = render(<ui.Input label="Focus minutes" error="Between 5 and 180 minutes." />);
+  const { container } = render(
+    <ui.Input label="Focus minutes" error="Between 5 and 180 minutes." />,
+  );
   const err = container.querySelector("[role=status]") as HTMLElement;
   expect(err.querySelector("svg.os-glyph")).not.toBeNull();
   expect(err.querySelector(".os-shape")).toBeNull();
@@ -325,8 +329,14 @@ test("scroll_region_remeasures_when_content_grows", async () => {
   let h = 50;
   const sh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
   const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
-  Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => h });
-  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 100 });
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get: () => h,
+  });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get: () => 100,
+  });
   try {
     const { container } = render(
       <ui.ScrollRegion label="Settings">
