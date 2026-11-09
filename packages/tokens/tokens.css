@@ -195,3 +195,10 @@
     --shadow-overlay: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
 }
+
+[data-reading-comfort="true"] {
+  --type-title: 600 22px/28px var(--font-alt);
+  --type-heading: 600 17px/24px var(--font-alt);
+  --type-body: 400 15px/22px var(--font-alt);
+  --type-body-sm: 400 13px/18px var(--font-alt);
+}
