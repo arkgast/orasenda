@@ -297,7 +297,7 @@ It needs a name in `focus_session.preset` so B's keep-going prompt and E's expor
 The session is persisted on every transition and resumes on relaunch; a dialog would protect nothing. The full-screen exit confirmation in C guards an accidental key press, which is a different case.
 
 ## Open questions
-Each needs the owner's taste or hands. None is decided here.
+All three were the owner's call and are now decided, as recommended. None is open.
 
 1. **Dock icon or menu-bar-only app?** (decided by the owner, 2026-11-08, as recommended) Keep the Dock icon (`Regular` activation policy) in P1: the window hides on close and the menu bar carries the timer. A "hide Dock icon" setting is a cheap later addition and keeps ⌘Tab working for beta testers.
 2. **A session that ends while the Mac is asleep or Orasenda is closed: is it completed?** (decided by the owner, 2026-11-08, as recommended) Yes, completed at its planned end and counted like any other, with one calm notice. It is the wall-clock truth, and stats stay neutral.
