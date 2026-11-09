@@ -381,13 +381,22 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| on_menu_event(app, event.id().as_ref()))
         .build(app)?;
-    let tray: Arc<dyn NativeSurface> = Arc::new(Tray::new(
-        Arc::new(TauriTray {
-            app: handle.clone(),
-            icon,
-        }),
-        &idle,
-    ));
+    let tauri_tray = Arc::new(TauriTray {
+        app: handle.clone(),
+        icon,
+    });
+    // The builder takes no accessibility label, so the idle item gets it here, on the main
+    // thread like every tray call.
+    let labelled = report(
+        "set_accessibility_label",
+        tauri_tray.set_accessibility_label(&tray_label(&idle)),
+    );
+    let tray = Tray::new(tauri_tray, &idle);
+    if !labelled {
+        // The first render then redoes every call, the label included.
+        lock_state(&tray.state).drawn = None;
+    }
+    let tray: Arc<dyn NativeSurface> = Arc::new(tray);
     match app.try_state::<Surfaces>() {
         Some(surfaces) => surfaces
             .0
