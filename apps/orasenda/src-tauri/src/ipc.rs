@@ -193,14 +193,23 @@ mod tests {
     #[test]
     fn timer_view_serializes_camel_case_with_number_fields() {
         let view = TimerView::idle(StoreStatus::Ok, NotificationStatus::Unavailable);
-        let value = serde_json::to_value(&view).unwrap();
-        assert_eq!(value["remainingMs"], json!(0));
-        assert_eq!(value["remainingLabel"], json!("0 seconds"));
-        assert_eq!(value["remaining"], json!("00:00"));
-        assert_eq!(value["progress"], json!(0.0));
-        assert_eq!(value["mode"], json!("idle"));
-        assert_eq!(value["store"], json!("ok"));
-        assert_eq!(value["sessionId"], json!(null));
+        assert_eq!(
+            serde_json::to_value(&view).unwrap(),
+            json!({
+                "state": "idle",
+                "phase": "focus",
+                "mode": "idle",
+                "remainingMs": 0,
+                "remaining": "00:00",
+                "remainingLabel": "0 seconds",
+                "progress": 0.0,
+                "sessionId": null,
+                "preset": null,
+                "finish": null,
+                "store": "ok",
+                "notifications": "unavailable",
+            })
+        );
         assert_eq!(TimerView::NAME, "timer-tick");
     }
 
@@ -259,6 +268,17 @@ mod tests {
         let bad = serde_json::from_value::<StartRequest>(
             json!({ "preset": "classic", "custom": null, "extra": 1 }),
         );
+        assert!(bad.is_err());
+    }
+
+    #[test]
+    fn timer_settings_rejects_unknown_fields() {
+        let bad = serde_json::from_value::<TimerSettings>(json!({
+            "preset": "classic",
+            "custom": { "focusMin": 45, "breakMin": 10 },
+            "notifySessionEnd": true,
+            "extra": 1
+        }));
         assert!(bad.is_err());
     }
 

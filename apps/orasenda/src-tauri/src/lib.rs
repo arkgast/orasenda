@@ -242,6 +242,8 @@ mod tests {
             "progress: number",
             "timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>",
             "timerStop: () => typedError<TimerView_Serialize, TimerCommandError>",
+            "timerPause: () => typedError<TimerView_Serialize, TimerCommandError>",
+            "timerResume: () => typedError<TimerView_Serialize, TimerCommandError>",
             "typedError<null, SettingsError>",
         ] {
             assert!(
