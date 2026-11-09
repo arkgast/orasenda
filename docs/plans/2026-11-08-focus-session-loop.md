@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-08-focus-session-loop.md](../specs/2026-11-08-focus-session-loop.md) (as merged in #83, amended by this plan's PR; see "Spec and ADR-012 amendments")
 - Date: 2026-11-08
-- Status: done (T1–T10 merged: #95–#110; owner's manual acceptance recorded in #110)
+- Status: done (T1–T10 merged: #95, #96, #97, #98, #99, #100, #102, #105, #108, #110; follow-up fixes #111, #115, #116; owner's manual acceptance recorded in #110, 2026-11-09)
 
 ## Overview
 Ten tasks in five waves. The spec estimated eight; two were added so that frontend and backend
