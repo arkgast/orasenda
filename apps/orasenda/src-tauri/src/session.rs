@@ -121,7 +121,7 @@ impl SessionService {
     /// Loads the settings and runs relaunch recovery against `now_ms` (spec: Relaunch
     /// recovery). A store that failed to open leaves the engine idle and in memory.
     pub fn new(store: Result<Store, OpenError>, platform: Platform, now_ms: u64) -> SessionService {
-        let (store, store_status) = match store {
+        let (store, mut store_status) = match store {
             Ok(store) => (Some(store), StoreStatus::Ok),
             Err(error @ OpenError::Newer { .. }) => {
                 eprintln!("store: {error}; running without saving");
@@ -132,7 +132,16 @@ impl SessionService {
                 (None, StoreStatus::Unavailable)
             }
         };
-        let settings = store.as_ref().map(load_settings).unwrap_or_default();
+        let settings = match &store {
+            Some(store) => {
+                let (settings, read_failed) = load_settings(store);
+                if read_failed {
+                    store_status = StoreStatus::Unavailable;
+                }
+                settings
+            }
+            None => TimerSettings::default(),
+        };
         let mut service = SessionService {
             engine: Session::Idle,
             store,
@@ -490,33 +499,52 @@ impl SessionService {
     }
 }
 
-/// Reads the settings. A value that fails to read or decode, a saved `Quick` and an
-/// out-of-range Custom are logged and replaced by their default in memory, never rewritten.
-fn load_settings(store: &Store) -> TimerSettings {
+/// Reads the settings. A value that fails to decode, a saved `Quick` and an out-of-range
+/// Custom are logged and replaced by their default in memory, never rewritten. The flag is
+/// true when the database itself failed a read, which the view shows as `unavailable`.
+fn load_settings(store: &Store) -> (TimerSettings, bool) {
     let defaults = TimerSettings::default();
-    let mut preset = load_setting(store, KEY_PRESET, defaults.preset);
+    let mut read_failed = false;
+    let mut preset = load_setting(store, KEY_PRESET, defaults.preset, &mut read_failed);
     if preset == Preset::Quick {
         eprintln!("settings: {KEY_PRESET} is quick, which is never saved; using the default");
         preset = defaults.preset;
     }
-    let mut custom = load_setting(store, KEY_CUSTOM, defaults.custom);
+    let mut custom = load_setting(store, KEY_CUSTOM, defaults.custom, &mut read_failed);
     if custom.validate().is_err() {
         eprintln!("settings: {KEY_CUSTOM} is out of range; using the default");
         custom = defaults.custom;
     }
-    TimerSettings {
+    let notify_session_end = load_setting(
+        store,
+        KEY_NOTIFY,
+        defaults.notify_session_end,
+        &mut read_failed,
+    );
+    let settings = TimerSettings {
         preset,
         custom,
-        notify_session_end: load_setting(store, KEY_NOTIFY, defaults.notify_session_end),
-    }
+        notify_session_end,
+    };
+    (settings, read_failed)
 }
 
-fn load_setting<T: DeserializeOwned>(store: &Store, key: &str, default: T) -> T {
+fn load_setting<T: DeserializeOwned>(
+    store: &Store,
+    key: &str,
+    default: T,
+    read_failed: &mut bool,
+) -> T {
     match store.read(|txn| settings::get::<T>(txn, key)) {
         Ok(Some(value)) => value,
         Ok(None) => default,
+        Err(StoreError::Json(error)) => {
+            eprintln!("settings: {key} could not be decoded ({error}); using the default");
+            default
+        }
         Err(error) => {
             eprintln!("settings: {key} could not be read ({error}); using the default");
+            *read_failed = true;
             default
         }
     }
