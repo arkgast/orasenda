@@ -224,7 +224,7 @@ fn request_permission<H: Host>(host: &H) {
 
 /// Stores a status read or answer; emits one `timer-tick` when the shown status changed,
 /// in every state (plan amendment 4).
-fn store_status<H: Host>(host: &H, status: NotificationStatus) {
+pub(crate) fn store_status<H: Host>(host: &H, status: NotificationStatus) {
     if let Some((seq, view)) = status_snapshot(host, status) {
         publish_view(host, seq, &view);
     }
@@ -499,9 +499,9 @@ mod tests {
         let disabled = launched(NotificationStatus::Granted);
         lock(&disabled.0.service)
             .set_settings(
-                crate::ipc::TimerSettings {
+                crate::ipc::Settings {
                     notify_session_end: false,
-                    ..crate::ipc::TimerSettings::default()
+                    ..crate::ipc::Settings::default()
                 },
                 T0,
             )

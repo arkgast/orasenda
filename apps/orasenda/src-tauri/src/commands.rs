@@ -5,7 +5,7 @@ use tauri::PackageInfo;
 
 use crate::ipc::{
     SettingsError, SettingsErrorKind, StartRequest, StoreStatus, TimerCommandError,
-    TimerCommandErrorKind, TimerSettings, TimerState, TimerView,
+    TimerCommandErrorKind, Settings, TimerState, TimerView,
 };
 use crate::session::{self, Action};
 
@@ -89,7 +89,7 @@ pub async fn timer_stop(app: tauri::AppHandle) -> Result<TimerView, TimerCommand
 /// The saved timer settings.
 #[tauri::command]
 #[specta::specta]
-pub fn settings_get(app: tauri::AppHandle) -> TimerSettings {
+pub fn settings_get(app: tauri::AppHandle) -> Settings {
     session::current_settings(&app)
 }
 
@@ -98,7 +98,7 @@ pub fn settings_get(app: tauri::AppHandle) -> TimerSettings {
 #[specta::specta]
 pub async fn settings_set(
     app: tauri::AppHandle,
-    settings: TimerSettings,
+    settings: Settings,
 ) -> Result<(), SettingsError> {
     on_blocking(move || session::run_set_settings(&app, settings))
         .await

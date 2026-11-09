@@ -115,23 +115,79 @@ pub struct StartRequest {
     pub custom: Option<CustomSpec>,
 }
 
-/// The saved timer settings.
+/// The colour theme the person chose.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    /// Follow the system appearance.
+    #[default]
+    System,
+    /// Always light.
+    Light,
+    /// Always dark.
+    Dark,
+}
+
+/// The saved settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct TimerSettings {
+pub struct Settings {
+    pub theme: Theme,
     pub preset: Preset,
     pub custom: CustomSpec,
     pub notify_session_end: bool,
 }
 
-impl Default for TimerSettings {
-    fn default() -> TimerSettings {
-        TimerSettings {
+impl Default for Settings {
+    fn default() -> Settings {
+        Settings {
+            theme: Theme::System,
             preset: Preset::Classic,
             custom: CustomSpec::default(),
+            // Interim: T3 (#144) flips this to false.
             notify_session_end: true,
         }
     }
+}
+
+/// A page of the app shell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum NavigatePage {
+    Today,
+    Board,
+    Calendar,
+    Routines,
+    Review,
+    Settings,
+}
+
+/// Asks the webview to show a page.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "navigate")]
+pub struct Navigate {
+    pub page: NavigatePage,
+}
+
+/// The settings changed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[tauri_specta(event_name = "settings-changed")]
+pub struct SettingsChanged(pub Settings);
+
+/// Why a notification settings call failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum NotificationsErrorKind {
+    Unavailable,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationsError {
+    pub kind: NotificationsErrorKind,
+    pub message: String,
 }
 
 /// Why a timer command failed.
@@ -271,20 +327,34 @@ mod tests {
         assert!(bad.is_err());
     }
 
-    #[test]
-    fn timer_settings_rejects_unknown_fields() {
-        let bad = serde_json::from_value::<TimerSettings>(json!({
-            "preset": "classic",
-            "custom": { "focusMin": 45, "breakMin": 10 },
-            "notifySessionEnd": true,
-            "extra": 1
-        }));
-        assert!(bad.is_err());
+    fn sample_settings() -> Settings {
+        Settings {
+            theme: Theme::Dark,
+            ..Settings::default()
+        }
     }
 
     #[test]
-    fn timer_settings_default_is_classic_45_10_notify() {
-        let settings = TimerSettings::default();
+    fn settings_rejects_unknown_fields() {
+        let good = json!({
+            "theme": "system",
+            "preset": "classic",
+            "custom": { "focusMin": 45, "breakMin": 10 },
+            "notifySessionEnd": true
+        });
+        assert!(serde_json::from_value::<Settings>(good.clone()).is_ok());
+        let mut extra = good.clone();
+        extra["extra"] = json!(1);
+        assert!(serde_json::from_value::<Settings>(extra).is_err());
+        let mut missing = good;
+        missing.as_object_mut().unwrap().remove("theme");
+        assert!(serde_json::from_value::<Settings>(missing).is_err());
+    }
+
+    #[test]
+    fn settings_default_is_system_classic_45_10_notify() {
+        let settings = Settings::default();
+        assert_eq!(settings.theme, Theme::System);
         assert_eq!(settings.preset, Preset::Classic);
         assert_eq!(
             settings.custom,
@@ -294,5 +364,38 @@ mod tests {
             }
         );
         assert!(settings.notify_session_end);
+    }
+
+    #[test]
+    fn navigate_event_serializes_lowercase_page() {
+        assert_eq!(
+            serde_json::to_value(Navigate {
+                page: NavigatePage::Settings
+            })
+            .unwrap(),
+            json!({ "page": "settings" })
+        );
+        assert_eq!(Navigate::NAME, "navigate");
+        for (page, name) in [
+            (NavigatePage::Today, "today"),
+            (NavigatePage::Board, "board"),
+            (NavigatePage::Calendar, "calendar"),
+            (NavigatePage::Routines, "routines"),
+            (NavigatePage::Review, "review"),
+            (NavigatePage::Settings, "settings"),
+        ] {
+            assert_eq!(serde_json::to_value(page).unwrap(), json!(name));
+            assert_eq!(serde_json::from_value::<NavigatePage>(json!(name)).unwrap(), page);
+        }
+    }
+
+    #[test]
+    fn settings_changed_serializes_as_settings() {
+        let s = sample_settings();
+        let value = serde_json::to_value(SettingsChanged(s.clone())).unwrap();
+        assert_eq!(value, serde_json::to_value(&s).unwrap());
+        assert_eq!(value["theme"], json!("dark"));
+        assert!(value.get("notifySessionEnd").is_some());
+        assert_eq!(SettingsChanged::NAME, "settings-changed");
     }
 }
