@@ -225,7 +225,7 @@
     if (p.variant === "row") return h(StatusRow, p);
     return h("div", { className: cx("os-notice", p.tone === "warning" && "os-notice-warning") },
       h("div", { className: "os-notice-message", role: "status", "aria-atomic": "true" }, h(Shape, { mode: p.tone === "warning" ? "warning" : "shallow" }), h("span", null, p.children)),
-      p.actionLabel && p.onAction ? h(Button, { variant: "ghost", onClick: p.onAction }, p.actionLabel) : null);
+      p.actionLabel && p.onAction ? h(Button, { variant: "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null);
   }
   function Toast(p) {
     return h("div", { className: "os-toast" }, h(InlineNotice, p), p.onDismiss ? h(Button, { variant: "ghost", onClick: p.onDismiss }, "Dismiss") : null);
@@ -291,11 +291,14 @@
       focusable[1](!!el.querySelector(FOCUSABLE));
     }
     R.useEffect(function () {
+      var el = ref.current;
       measure();
       var ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-      if (ro && ref.current) ro.observe(ref.current);
-      return function () { if (ro) ro.disconnect(); };
-    });
+      var mo = typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
+      if (ro && el) { ro.observe(el); Array.prototype.forEach.call(el.children, function (c) { ro.observe(c); }); }
+      if (mo && el) mo.observe(el, { childList: true, subtree: true });
+      return function () { if (ro) ro.disconnect(); if (mo) mo.disconnect(); };
+    }, []);
     return h("div", { ref: ref, className: "os-scroll", role: "region", "aria-label": p.label, "data-scrolled": scrolled[0] ? "true" : "false", tabIndex: focusable[0] === false ? 0 : undefined, onScroll: measure },
       p.children,
       more[0] ? h("div", { className: "os-scroll-more", "aria-hidden": "true" }, h("svg", { className: "os-glyph", viewBox: "0 0 14 14", "aria-hidden": "true" }, h("path", { d: "M3.5 5.5L7 9l3.5-3.5" })), " More below") : null);

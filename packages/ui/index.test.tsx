@@ -5,6 +5,10 @@ import * as ui from "./index.ts";
 test("exports_intent_prompt_and_button", () => {
   expect(typeof ui.IntentPrompt).toBe("function");
   expect(typeof ui.Button).toBe("function");
+  for (const name of ["PageFrame", "ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
+    expect(typeof ui[name]).toBe("function");
+    expect(name in window.Orasenda).toBe(true);
+  }
 });
 
 test("intent_prompt_renders_with_global_react", () => {
@@ -288,9 +292,53 @@ test("empty_state_inline_has_one_line_and_no_action", () => {
   expect(paras[0]).toHaveTextContent(text);
 });
 
-test("exports_settings_components", () => {
-  for (const name of ["PageFrame", "ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
-    expect(typeof ui[name]).toBe("function");
-    expect(name in window.Orasenda).toBe(true);
+test("settings_index_wraps_and_resets_tab_stop_when_current_changes", () => {
+  const { rerender } = render(<ui.SettingsIndex sections={SECTIONS} current="timer" onJump={() => {}} />);
+  const items = screen.getAllByRole("button");
+  items[4]?.focus();
+  fireEvent.keyDown(items[4] as HTMLElement, { key: "ArrowDown" });
+  expect(items[0]).toHaveFocus();
+  fireEvent.keyDown(items[0] as HTMLElement, { key: "ArrowUp" });
+  expect(items[4]).toHaveFocus();
+  expect(items.filter((i) => i.tabIndex === 0)).toEqual([items[4]]);
+  rerender(<ui.SettingsIndex sections={SECTIONS} current="general" onJump={() => {}} />);
+  expect(items.filter((i) => i.tabIndex === 0)).toEqual([items[0]]);
+});
+
+test("input_error_uses_alert_glyph_not_mode_shape", () => {
+  const { container } = render(<ui.Input label="Focus minutes" error="Between 5 and 180 minutes." />);
+  const err = container.querySelector("[role=status]") as HTMLElement;
+  expect(err.querySelector("svg.os-glyph")).not.toBeNull();
+  expect(err.querySelector(".os-shape")).toBeNull();
+});
+
+test("inline_notice_default_action_uses_action_name", () => {
+  render(
+    <ui.InlineNotice actionLabel="Try again" actionName="Try again saving" onAction={() => {}}>
+      Nope
+    </ui.InlineNotice>,
+  );
+  expect(screen.getByRole("button", { name: "Try again saving" })).toBeInTheDocument();
+});
+
+test("scroll_region_remeasures_when_content_grows", async () => {
+  let h = 50;
+  const sh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
+  const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => h });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 100 });
+  try {
+    const { container } = render(
+      <ui.ScrollRegion label="Settings">
+        <div id="grow">short</div>
+      </ui.ScrollRegion>,
+    );
+    expect(container.querySelector(".os-scroll-more")).toBeNull();
+    h = 500;
+    (container.querySelector("#grow") as HTMLElement).appendChild(document.createElement("p"));
+    await vi.waitFor(() => expect(container.querySelector(".os-scroll-more")).not.toBeNull());
+  } finally {
+    if (sh) Object.defineProperty(HTMLElement.prototype, "scrollHeight", sh);
+    if (ch) Object.defineProperty(HTMLElement.prototype, "clientHeight", ch);
   }
 });
