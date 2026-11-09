@@ -19,8 +19,8 @@ The macOS menu-bar item is a native `NSStatusItem`, which holds an image and a t
 | `break` (later) | half circle | `remaining` |
 
 - The first focus-session release draws `focus`, `paused` and `idle`; `warning` and `break` come with breaks and the two-minute warning.
-- Glyphs are **template images**: black with alpha only, so macOS tints them for the light and dark menu bar, the selected state and Increase Contrast. Never colour them; the mode is told by the shape and the title, never by hue.
+- Glyphs are **template images**: black with alpha only, so macOS tints them for the light and dark menu bar, the selected state and Increase Contrast. Never colour them; the mode is told by the shape, never by hue.
 - `focus` uses the static filled circle from the mode shapes, not the component's draining ring: a template image does not animate, and the digits carry the progress.
 - Size: an 18×18 pt canvas, shipped as one 36×36 px image (`tray-icon` sizes the image to 18 pt high). The shape fills the centre 14×14 pt (28×28 px), matching `icon-md` beside the digits; the hollow circle's stroke is 1.5/10 of the shape (about 4 px in the asset), as in the component.
 - The title is plain text in the system menu-bar font. Orasenda does not restyle it, so its digits are not tabular and the title's width can shift slightly as it counts.
-- VoiceOver: the item's accessibility label repeats the component's spoken name: the mode word and `remainingLabel` ("Focus, 24 minutes 59 seconds remaining", "Paused, …"), or "No session" when idle. The glyph alone never carries the mode.
+- VoiceOver: the item's accessibility label repeats the component's spoken name: the mode word and `remainingLabel` ("Focus, 24 minutes 59 seconds remaining", "Paused, …"), or "No session" when idle. For VoiceOver the glyph alone never carries the mode.
