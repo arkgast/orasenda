@@ -7,6 +7,7 @@
 
 use std::any::Any;
 use std::error::Error;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
@@ -822,11 +823,19 @@ pub(crate) fn run_set_settings<H: Host>(
         let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
         (result, changed)
     };
-    if let Some((seq, view)) = changed {
-        scheduler::publish_view(host, seq, &view);
+    // The save is committed: a panic while publishing is logged, never turned into a failure.
+    let published = panic::catch_unwind(AssertUnwindSafe(|| {
+        if let Some((seq, view)) = changed {
+            scheduler::publish_view(host, seq, &view);
+        }
+        if result.is_ok() {
+            scheduler::publish_clock(host);
+        }
+    }));
+    if published.is_err() {
+        eprintln!("session: publishing a settings save panicked; its result stands");
     }
     result?;
-    scheduler::publish_clock(host);
     Ok(())
 }
 
