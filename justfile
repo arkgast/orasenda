@@ -117,6 +117,7 @@ core-purity:
         exit 1
     fi
 
+# Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows or windows-core on any target.
 [private]
 [script]
 core-boundary:
