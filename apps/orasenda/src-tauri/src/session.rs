@@ -14,9 +14,8 @@ use std::time::SystemTime;
 
 use orasenda_core::clock::epoch_ms;
 use orasenda_core::{
-    EngineState, KeepAwake, LocalTime, Milestone, NoopKeepAwake, NoopNotifier, NotificationStatus,
-    Notifier, Preset, Session, SessionId, SessionRecord, TimerError, UtcLocalTime, format_clock,
-    format_remaining, spoken_remaining,
+    EngineState, KeepAwake, LocalTime, Milestone, NotificationStatus, Notifier, Preset, Session,
+    SessionId, SessionRecord, TimerError, format_clock, format_remaining, spoken_remaining,
 };
 use orasenda_store::{OpenError, Store, StoreError, Txn, active_session, focus_sessions, settings};
 use serde::de::DeserializeOwned;
@@ -36,15 +35,6 @@ pub struct Platform {
     pub keep_awake: Box<dyn KeepAwake>,
     pub local_time: Box<dyn LocalTime>,
     pub notifier: Arc<dyn Notifier>,
-}
-
-/// The core no-ops. T9 (#93) replaces the one call in [`setup`] with `platform::current()`.
-fn default_platform() -> Platform {
-    Platform {
-        keep_awake: Box::new(NoopKeepAwake),
-        local_time: Box::new(UtcLocalTime),
-        notifier: Arc::new(NoopNotifier),
-    }
 }
 
 /// What a surface asks the session to do.
@@ -702,7 +692,7 @@ pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>> {
         Ok(dir) => open_store_at(&dir, &Uuid::new_v4().to_string()),
         Err(error) => Err(OpenError::Io(error.to_string())),
     };
-    let platform = default_platform();
+    let platform = crate::platform::current();
     let notifier = Arc::clone(&platform.notifier);
     app.manage(Mutex::new(SessionService::new(store, platform, now_ms())));
     app.manage(notifier);
