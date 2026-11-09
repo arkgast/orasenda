@@ -1517,6 +1517,7 @@ mod tests {
 
     #[test]
     fn recovers_running_snapshot_in_time() {
+        // Wall-clock continuation by design (case a of #121): a relaunch before the planned end keeps running.
         let mut s = service();
         s.apply(start(Preset::Classic), T0, id("a"));
         let Fakes { platform, log, .. } = fakes(NotificationStatus::NotDetermined, false);
@@ -1610,6 +1611,50 @@ mod tests {
         assert_eq!(log.count(|e| *e == Event::Begun), 1);
         let resumed = back.apply(Action::Resume, later, id("x"));
         assert_eq!(resumed.view.remaining_ms, CLASSIC_MS - 10 * MINUTE);
+    }
+
+    #[test]
+    fn clock_set_back_after_end_does_not_reopen() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let end = s.tick(T0 + CLASSIC_MS);
+        let record = ended_record(&end);
+        assert_eq!(record.end_reason, EndReason::Completed);
+        assert_eq!(end.view.state, EngineState::Idle);
+        assert!(has_row(db(&s), &record));
+        assert_eq!(snapshot(db(&s)), None);
+        for earlier in [T0 + MINUTE, T0 - MINUTE, T0 + CLASSIC_MS - 1] {
+            let t = s.tick(earlier);
+            assert!(t.milestones.is_empty());
+            assert!(t.ended.is_none());
+            assert_eq!(t.view.state, EngineState::Idle);
+            assert_eq!(t.view.remaining_ms, 0);
+            let p = s.apply(Action::Pause, earlier, id("x"));
+            assert_eq!(kind(&p), Some(TimerCommandErrorKind::NothingRunning));
+            assert!(p.milestones.is_empty());
+            assert!(p.ended.is_none());
+            assert_eq!(p.view.state, EngineState::Idle);
+            assert_eq!(snapshot(db(&s)), None);
+        }
+        let mut back = relaunch(&mut s, T0 + MINUTE);
+        assert_eq!(back.view(T0 + MINUTE).state, EngineState::Idle);
+        assert!(back.state(T0 + MINUTE).0.pending.is_empty());
+        assert!(has_row(db(&back), &record));
+    }
+
+    #[test]
+    fn clock_set_back_after_stop_does_not_reopen_on_relaunch() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        let stopped = s.apply(Action::Stop, T0 + 5 * MINUTE, id("x"));
+        let record = ended_record(&stopped);
+        assert_eq!(record.end_reason, EndReason::Stopped);
+        assert!(has_row(db(&s), &record));
+        assert_eq!(snapshot(db(&s)), None);
+        let mut back = relaunch(&mut s, T0 + MINUTE);
+        assert_eq!(back.view(T0 + MINUTE).state, EngineState::Idle);
+        assert!(back.state(T0 + MINUTE).0.pending.is_empty());
+        assert_eq!(snapshot(db(&back)), None);
     }
 
     #[test]
