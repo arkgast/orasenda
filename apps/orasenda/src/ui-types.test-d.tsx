@@ -2,7 +2,7 @@
 // native button attributes as consumed from the app, and rejects a misspelled one.
 import { Button, type ButtonProps } from "@orasenda/ui";
 import type { CustomSpec, TimerSettings } from "./bindings";
-import type { CoversEveryKey, CUSTOM_KEYS, SETTINGS_KEYS } from "./pages/Today";
+import type { CoversEveryKey, CUSTOM_KEYS, SETTINGS_KEYS } from "./settingsQueue";
 
 export const valid = (
   <Button onClick={() => {}} type="button" disabled aria-label="Start" variant="primary">
