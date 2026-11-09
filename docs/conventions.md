@@ -37,3 +37,16 @@ Project rules for every contributor and agent. They override baton's general gui
 - `NSWindow`, `NSApplication` and `NSScreen` calls and observer registration run on the main
   thread (`MainThreadMarker`); never hold a lock across an AppKit call.
 - Spike code runs only behind `spike::enabled()` (debug build and `ORASENDA_SPIKE=1`).
+
+## Failures are never silent success
+Seen three times in the P1-A wave 2 reviews: `PRAGMA journal_mode = wal` answered and ignored
+(#89), an unknown `UNAuthorizationStatus` mapped to `Granted` (#90), and a failed
+`settings_get` only logged while the page silently hid the presets (#92).
+- An unknown value from the OS, the store or IPC maps to the failure side (`Unavailable`, an
+  error), never to the success one. List the known success values explicitly; the `_` arm is
+  the failure.
+- When a call answers with what actually happened (a pragma, a completion handler, a status),
+  check the answer. Ignore it only on purpose, with a comment saying why.
+- A failure in a surface is logged and shown: one plain failure line in the slot the feature
+  would fill (ADR-013), or a rollback to the last state the store accepted. Logging alone is
+  not handling.
