@@ -1758,6 +1758,84 @@ mod tests {
         assert!(back.state(T0 + 60 * MINUTE).0.pending.is_empty());
     }
 
+    /// Pins a documented limit (#122, ADR-012): when no write succeeds from
+    /// the end through the exit flush, the start snapshot is all the store
+    /// has, so a relaunch before the planned end resumes the session. The
+    /// store is the single durable medium; nothing is journaled beside it.
+    #[test]
+    fn end_and_exit_flush_both_failing_leaves_start_snapshot_and_relaunch_resumes() {
+        let mut s = service();
+        s.apply(start(Preset::Classic), T0, id("a"));
+        assert!(snapshot(db(&s)).is_some());
+
+        db(&s).fail_writes(true);
+        let stopped = s.apply(Action::Stop, T0 + 5 * MINUTE, id("x"));
+        let record = ended_record(&stopped);
+        assert_eq!(stopped.view.store, StoreStatus::Unavailable);
+        assert_eq!(stopped.view.state, EngineState::Idle);
+        assert_eq!(s.unsaved, std::slice::from_ref(&record));
+        assert!(s.snapshot_dirty);
+        assert_eq!(record.end_reason, EndReason::Stopped);
+        assert_eq!(record.focused_ms, 5 * MINUTE);
+
+        s.flush(T0 + 5 * MINUTE);
+        assert_eq!(s.unsaved, std::slice::from_ref(&record));
+        assert!(s.snapshot_dirty);
+        db(&s).fail_writes(false);
+        assert!(!has_row(db(&s), &record));
+        assert_eq!(
+            snapshot(db(&s)).and_then(|session| session.view(T0).session_id),
+            Some(SessionId("a".into()))
+        );
+
+        let mut back = relaunch(&mut s, T0 + 6 * MINUTE);
+        let view = back.view(T0 + 6 * MINUTE);
+        assert_eq!(view.state, EngineState::Running);
+        assert_eq!(view.session_id, Some(SessionId("a".into())));
+        assert_eq!(view.remaining_ms, CLASSIC_MS - 6 * MINUTE);
+        assert!(!has_row(db(&back), &record));
+        assert!(back.unsaved.is_empty());
+        assert!(back.state(T0 + 6 * MINUTE).0.pending.is_empty());
+
+        let ended = back.apply(Action::Stop, T0 + 7 * MINUTE, id("x"));
+        let again = ended_record(&ended);
+        assert_eq!(ended.view.store, StoreStatus::Ok);
+        assert_eq!(again.end_reason, EndReason::Stopped);
+        assert_eq!(again.focused_ms, 7 * MINUTE);
+        assert_eq!(again.id, SessionId("a".into()));
+        assert!(has_row(db(&back), &again));
+        assert_eq!(snapshot(db(&back)), None);
+
+        let mut third = relaunch(&mut back, T0 + 8 * MINUTE);
+        assert_eq!(third.view(T0 + 8 * MINUTE).state, EngineState::Idle);
+        assert!(third.state(T0 + 8 * MINUTE).0.pending.is_empty());
+    }
+
+    /// The exit flush with a store that still rejects writes leaves what is
+    /// owed untouched and does not panic (#122).
+    #[test]
+    fn flush_on_exit_with_failing_store_leaves_owed_state() {
+        let host = TestHost::new(NotificationStatus::Denied);
+        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        db(&lock(&host.0.service)).fail_writes(true);
+        host.set_now(T0 + MINUTE);
+        run_action_on(&host, Action::Stop).expect("stops");
+        let (unsaved_before, dirty_before) = {
+            let service = lock(&host.0.service);
+            (service.unsaved.clone(), service.snapshot_dirty)
+        };
+        flush_on_exit(&host);
+        let service = lock(&host.0.service);
+        assert_eq!(service.unsaved, unsaved_before);
+        assert_eq!(unsaved_before.len(), 1);
+        assert_eq!(unsaved_before[0].end_reason, EndReason::Stopped);
+        assert_eq!(unsaved_before[0].focused_ms, MINUTE);
+        assert_eq!(service.snapshot_dirty, dirty_before);
+        assert!(dirty_before);
+        assert_eq!(service.view(T0 + MINUTE).store, StoreStatus::Unavailable);
+        assert!(snapshot(db(&service)).is_some());
+    }
+
     #[test]
     fn failed_put_then_recover_keeps_live_snapshot() {
         let mut s = service();
