@@ -19,7 +19,9 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
 
 /// Runs `work` on the blocking pool, so no lock, SQLite write or notifier read runs on the
 /// async runtime or the main thread. `None` when the task panicked (logged).
-async fn on_blocking<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> Option<T> {
+pub(crate) async fn on_blocking<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Option<T> {
     match tauri::async_runtime::spawn_blocking(work).await {
         Ok(value) => Some(value),
         Err(error) => {

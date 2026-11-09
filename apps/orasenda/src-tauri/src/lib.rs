@@ -239,7 +239,6 @@ mod tests {
         }
     }
 
-    /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.
     #[test]
     fn main_capability_grants_settings_page_commands() {
         let (windows, permissions) = capability("main.json");
@@ -261,6 +260,7 @@ mod tests {
         }
     }
 
+    /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.
     #[test]
     fn export_bindings() {
         super::export_bindings(&specta_builder()).unwrap();
