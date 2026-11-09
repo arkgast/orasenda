@@ -170,6 +170,8 @@ impl Store {
 
     /// Runs `f` in one read transaction. [`Txn::now_ms`] is 0 here: reads have no write time.
     pub fn read<T>(&self, f: impl FnOnce(&Txn) -> Result<T, StoreError>) -> Result<T, StoreError> {
+        #[cfg(any(test, feature = "test-hooks"))]
+        self.hooks.before_read()?;
         let mut inner = self.lock();
         let Inner { conn, hlc } = &mut *inner;
         // Reads never tick the clock; the copy only satisfies `Txn`'s shape.
