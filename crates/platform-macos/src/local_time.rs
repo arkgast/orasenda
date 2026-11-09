@@ -8,8 +8,8 @@ const FORCE_24_HOUR_KEY: &str = "AppleICUForce24HourTime";
 /// The skeleton for "the locale's preferred hour", resolved to `h a`, `HH` and so on.
 const PREFERRED_HOUR_TEMPLATE: &str = "j";
 
-/// Reads `NSTimeZone.localTimeZone` and the clock preference on every call, so changes in
-/// System Settings apply without a restart. Thread-safe.
+/// Asks Foundation on every call and caches nothing itself (Foundation may cache the
+/// current locale). Thread-safe: no AppKit, so any thread works.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct MacLocalTime;
 
