@@ -98,8 +98,9 @@ pub struct SessionService {
     notifications: Option<NotificationStatus>,
     pending: Vec<MilestoneEvent>,
     /// True once `timer_state` has drained `pending`: a webview is listening, so a
-    /// `recovered` event created later (a retried read, a write that records the unread row)
-    /// goes out with the next [`Effects`] as a `timer-milestone` instead of waiting there.
+    /// `recovered` event created later (a retried read, an idle flush) goes out with the next
+    /// [`Effects`] as a `timer-milestone` instead of waiting there. One recorded by a
+    /// transition is dropped: that transition dismisses one-shot notices anyway.
     listening: bool,
     platform: Platform,
     recover_owed: RecoverOwed,
@@ -615,9 +616,13 @@ impl SessionService {
         let (seq, view) = self.snapshot(now_ms);
         let mut milestones = outcome.milestones;
         if self.listening {
-            // After the call's own milestones, so the start that recorded the unread row
-            // does not dismiss the notice at once.
-            milestones.append(&mut self.pending);
+            if milestones.is_empty() {
+                milestones.append(&mut self.pending);
+            } else {
+                // A transition dismisses one-shot notices, and Today drops a notice about
+                // another session, so a `recovered` it recorded would never be seen.
+                self.pending.clear();
+            }
         }
         Effects {
             seq,
@@ -2288,22 +2293,22 @@ mod tests {
         assert!(run_state(&host).pending.is_empty(), "not handed out again");
     }
 
-    /// The same for the event a write records from the unread row: it follows the start
-    /// that wrote it, so that start does not dismiss the notice.
+    /// A start that records the unread row after the webview has listened is a transition,
+    /// which dismisses one-shot notices anyway: the row is recorded, but its `recovered`
+    /// event is neither emitted behind `started` nor kept for a later `timer_state`.
     #[test]
-    fn row_recorded_by_a_start_after_the_webview_listens_is_emitted() {
+    fn row_recorded_by_a_start_after_the_webview_listens_is_not_announced() {
         let mut s = relaunch_with_reads_failing(T0 + MINUTE);
         let (state, _) = s.state(T0 + MINUTE);
         assert!(state.pending.is_empty());
         let started = s.apply(start(Preset::Classic), T0 + 3 * MINUTE, id("b"));
         assert_eq!(
             started.milestones,
-            [
-                milestone(MilestoneKind::Started, None, "b"),
-                milestone(MilestoneKind::Recovered, Some(EndReason::Stopped), "a"),
-            ]
+            [milestone(MilestoneKind::Started, None, "b")]
         );
         assert!(s.pending.is_empty());
+        db(&s).fail_reads(false);
+        assert!(has_row(db(&s), &row_a()), "the row is still recorded");
     }
 
     #[test]
