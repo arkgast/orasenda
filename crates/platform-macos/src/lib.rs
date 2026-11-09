@@ -4,14 +4,22 @@
 //! methods are thread-safe and run on any thread; observer registration needs the main thread.
 #![cfg(target_os = "macos")]
 
+mod bundle;
 mod control;
 mod foreground;
 mod idle;
+mod keep_awake;
+mod local_time;
+mod notifier;
 mod overlay;
 
+pub use bundle::is_app_bundle;
 pub use control::{MacAppControl, phone_bundle_id};
 pub use foreground::MacForeground;
 pub use idle::MacIdle;
+pub use keep_awake::{ActivityToken, MacKeepAwake};
+pub use local_time::MacLocalTime;
+pub use notifier::MacNotifier;
 pub use overlay::{configure_overlay, cover_main_screen, focus_overlay};
 
 use objc2::MainThreadMarker;
