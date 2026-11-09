@@ -18,11 +18,15 @@
 //! `set_icon` and `set_menu` for what changed. Because every draw runs on the main thread, one
 //! after another, the drawn state always matches the menu bar, and a tick costs one
 //! `set_title`, one `set_tooltip` and one `set_accessibility_label`. A failed call is logged
-//! and the draw is posted again, at most [`DRAW_RETRIES`] times for one view. Which view is
-//! newest is decided before `render` by `scheduler::publish_view`. Menu actions run
-//! `run_action` on a `spawn_blocking` thread.
+//! and the draw is posted again after [`RETRY_DELAY`] from a background thread (Tauri runs a
+//! post inline when already on the main thread, so an immediate retry would run back to back),
+//! at most [`DRAW_RETRIES`] times for one view; a newer render drops an older pending retry.
+//! Which view is newest is decided before `render` by `scheduler::publish_view`. Menu actions
+//! run `run_action` on a `spawn_blocking` thread.
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::thread;
+use std::time::Duration;
 
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -122,6 +126,9 @@ impl Drawn {
 pub(crate) trait TrayHandle: Send + Sync + 'static {
     /// Runs `task` on the main thread: inline when called there, else posted without waiting.
     fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
+    /// Runs `task` on a background thread after [`RETRY_DELAY`], so a failed draw is not
+    /// retried back to back on the main thread. Tests hold the task instead of sleeping.
+    fn after_delay(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
     fn set_title(&self, title: Option<&str>) -> Result<(), String>;
     fn set_tooltip(&self, label: &str) -> Result<(), String>;
     /// Sets the spoken name VoiceOver reads for the item (#107).
@@ -139,10 +146,16 @@ struct TrayState {
     drawn: Option<Drawn>,
     /// Draws posted again for the current `wanted` after a failure.
     retries: u32,
+    /// Counts renders. A delayed retry carries the number it was scheduled under and is
+    /// dropped when a newer render has come since (newest wins).
+    render_seq: u64,
 }
 
 /// How many times a failed draw is posted again for one view.
 pub(crate) const DRAW_RETRIES: u32 = 3;
+
+/// How long a failed draw waits before it is posted again.
+const RETRY_DELAY: Duration = Duration::from_millis(250);
 
 /// The menu-bar item as a [`NativeSurface`].
 pub struct Tray {
@@ -159,6 +172,7 @@ impl Tray {
                 wanted: None,
                 drawn: Some(Drawn::of(shown)),
                 retries: 0,
+                render_seq: 0,
             })),
         }
     }
@@ -174,6 +188,7 @@ impl NativeSurface for Tray {
             let mut state = lock_state(&self.state);
             state.wanted = Some(Drawn::of(view));
             state.retries = 0;
+            state.render_seq += 1;
         }
         post_draw(&self.handle, &self.state);
     }
@@ -232,13 +247,29 @@ fn draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
             state.retries += 1;
             state.wanted = Some(wanted);
         }
-        (newer, retry)
+        (newer, retry.then_some(state.render_seq))
     };
-    if retry {
-        eprintln!("tray: drawing the menu-bar item again");
-        post_draw(handle, state);
+    if let Some(seq) = retry {
+        eprintln!("tray: drawing the menu-bar item again shortly");
+        schedule_retry(handle, state, seq);
     } else if !newer {
         eprintln!("tray: gave up drawing this view; the next view redraws everything");
+    }
+}
+
+/// Posts the draw again after [`RETRY_DELAY`], unless a newer render has come since `seq`
+/// (its own draw, and its own retries, redo everything).
+fn schedule_retry(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>, seq: u64) {
+    let task_handle = Arc::clone(handle);
+    let task_state = Arc::clone(state);
+    let scheduled = handle.after_delay(Box::new(move || {
+        let current = lock_state(&task_state).render_seq == seq;
+        if current {
+            post_draw(&task_handle, &task_state);
+        }
+    }));
+    if let Err(error) = scheduled {
+        eprintln!("tray: could not schedule the retry ({error}); the next view redraws everything");
     }
 }
 
@@ -301,6 +332,17 @@ impl TrayHandle for TauriTray {
     fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String> {
         self.app
             .run_on_main_thread(task)
+            .map_err(|error| error.to_string())
+    }
+
+    fn after_delay(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String> {
+        thread::Builder::new()
+            .name("tray-retry".into())
+            .spawn(move || {
+                thread::sleep(RETRY_DELAY);
+                task();
+            })
+            .map(drop)
             .map_err(|error| error.to_string())
     }
 
@@ -537,6 +579,8 @@ mod tests {
         state: OnceLock<Arc<Mutex<TrayState>>>,
         queued: bool,
         queue: Mutex<VecDeque<Box<dyn FnOnce() + Send>>>,
+        /// Tasks handed to `after_delay`, held until the test runs them (no sleeps).
+        delayed: Mutex<VecDeque<Box<dyn FnOnce() + Send>>>,
         /// How many of the next `set_title` calls fail.
         title_failures: Mutex<u32>,
         /// How many of the next `set_accessibility_label` calls fail.
@@ -566,6 +610,16 @@ mod tests {
                 }
             }
         }
+
+        /// Runs the oldest delayed task, as if its delay had passed. False when none waits.
+        fn run_delayed(&self) -> bool {
+            let task = self.delayed.lock().unwrap().pop_front();
+            task.map(|task| task()).is_some()
+        }
+
+        fn delayed_count(&self) -> usize {
+            self.delayed.lock().unwrap().len()
+        }
     }
 
     impl TrayHandle for Recorder {
@@ -575,6 +629,11 @@ mod tests {
             } else {
                 task();
             }
+            Ok(())
+        }
+
+        fn after_delay(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String> {
+            self.delayed.lock().unwrap().push_back(task);
             Ok(())
         }
 
@@ -710,7 +769,9 @@ mod tests {
         assert_eq!(calls.take(), []);
     }
 
-    /// A failed call is logged and the draw is posted again at once, redoing every call.
+    /// A failed call is logged and the draw is posted again after a delay, redoing every
+    /// call. The main thread runs posts inline here, as Tauri does when already on it: the
+    /// retry still waits for its delay instead of running back to back.
     #[test]
     fn failed_tray_call_is_retried_without_a_new_render() {
         let (tray, calls) = tray_with(Recorder::default());
@@ -720,9 +781,15 @@ mod tests {
         // While idle no further render comes, so the retry is the only way back.
         *calls.title_failures.lock().unwrap() = 1;
         tray.render(&idle());
-        let mut expected = full_draw(&idle());
-        expected.extend(full_draw(&idle()));
-        assert_eq!(calls.take(), expected);
+        assert_eq!(
+            calls.take(),
+            full_draw(&idle()),
+            "no retry before the delay"
+        );
+        assert_eq!(calls.delayed_count(), 1);
+        assert!(calls.run_delayed());
+        assert_eq!(calls.take(), full_draw(&idle()));
+        assert_eq!(calls.delayed_count(), 0);
 
         tray.render(&idle());
         assert_eq!(calls.take(), []);
@@ -738,6 +805,7 @@ mod tests {
 
         *calls.label_failures.lock().unwrap() = 1;
         tray.render(&idle());
+        assert!(calls.run_delayed());
         let mut expected = full_draw(&idle());
         expected.extend(full_draw(&idle()));
         assert_eq!(calls.take(), expected);
@@ -755,6 +823,7 @@ mod tests {
             ..Recorder::default()
         });
         tray.render(&running(S59));
+        while calls.run_delayed() {}
         let titles = calls
             .take()
             .iter()
@@ -781,9 +850,36 @@ mod tests {
         first();
         tray.render(&running(S58));
         calls.run_queue();
+        while calls.run_delayed() {
+            calls.run_queue();
+        }
         let mut expected = full_draw(&running(S59));
         expected.extend(full_draw(&running(S58)));
         assert_eq!(calls.take(), expected);
+    }
+
+    /// A delayed retry for an older view is dropped once a newer view has rendered, even
+    /// when that newer view's draw failed too: only the newer view's own retry draws, so
+    /// the older retry neither draws early nor uses up the newer view's attempts.
+    #[test]
+    fn delayed_retry_for_an_older_view_is_dropped() {
+        let (tray, calls) = tray_with(Recorder {
+            title_failures: Mutex::new(2),
+            ..Recorder::default()
+        });
+        tray.render(&running(S59));
+        tray.render(&running(S58));
+        calls.take();
+        assert_eq!(calls.delayed_count(), 2);
+
+        assert!(calls.run_delayed(), "the older view's retry");
+        assert_eq!(calls.take(), [], "the older retry is dropped");
+        assert!(calls.run_delayed(), "the newer view's retry");
+        assert_eq!(calls.take(), full_draw(&running(S58)));
+        assert_eq!(
+            lock_state(&tray.state).drawn,
+            Some(Drawn::of(&running(S58)))
+        );
     }
 
     /// Through `publish_view`: idle, then a stale running view (an older number) leaves the
@@ -826,6 +922,9 @@ mod tests {
             fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String> {
                 task();
                 Ok(())
+            }
+            fn after_delay(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String> {
+                self.inner.after_delay(task)
             }
             fn set_title(&self, title: Option<&str>) -> Result<(), String> {
                 if title == Some("24:59")
