@@ -59,7 +59,7 @@ function mockBackend(
 
 async function tick(epochMs: number): Promise<void> {
   await act(async () => {
-    await events.clockTick.emit({ epochMs });
+    await events.clockTick.emit({ epochMs, clock: "", idleFinish: null });
   });
 }
 

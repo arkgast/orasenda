@@ -2,28 +2,28 @@
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
 mod commands;
+mod ipc;
 pub(crate) mod spike;
 mod ticker;
 
-use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 include!("../commands.list.rs");
 
-/// The wall clock, emitted as `clock-tick` on every whole second.
-#[derive(Debug, Serialize, Deserialize, Clone, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct ClockTick {
-    /// UTC milliseconds since the Unix epoch. Exported as `number`: lossless below 2^53.
-    #[specta(type = specta_typescript::Number)]
-    pub epoch_ms: u64,
-}
+pub use ipc::ClockTick;
 
 /// Every command and event the webview can use. `run()` and the bindings export share it.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(tauri_specta::collect_commands![
             commands::app_info,
+            commands::timer_state,
+            commands::timer_start,
+            commands::timer_pause,
+            commands::timer_resume,
+            commands::timer_stop,
+            commands::settings_get,
+            commands::settings_set,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -34,6 +34,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         ])
         .events(tauri_specta::collect_events![
             ClockTick,
+            ipc::TimerView,
+            ipc::MilestoneEvent,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])
@@ -130,10 +132,12 @@ mod tests {
     fn clock_tick_serializes_as_epoch_ms_camel_case() {
         let tick = ClockTick {
             epoch_ms: 1_794_009_600_123,
+            clock: "09:30".into(),
+            idle_finish: None,
         };
         assert_eq!(
             serde_json::to_value(&tick).unwrap(),
-            serde_json::json!({ "epochMs": 1_794_009_600_123_u64 })
+            serde_json::json!({ "epochMs": 1_794_009_600_123_u64, "clock": "09:30", "idleFinish": null })
         );
         assert_eq!(ClockTick::NAME, "clock-tick");
     }
@@ -174,6 +178,26 @@ mod tests {
     }
 
     #[test]
+    fn main_capability_grants_timer_and_settings_commands() {
+        let (windows, permissions) = capability("main.json");
+        assert_eq!(windows, ["main"]);
+        for granted in [
+            "allow-timer-state",
+            "allow-timer-start",
+            "allow-timer-pause",
+            "allow-timer-resume",
+            "allow-timer-stop",
+            "allow-settings-get",
+            "allow-settings-set",
+        ] {
+            assert!(
+                permissions.iter().any(|p| p == granted),
+                "main lacks {granted}"
+            );
+        }
+    }
+
+    #[test]
     fn main_capability_includes_spike_commands() {
         let (windows, permissions) = capability("main.json");
         assert_eq!(windows, ["main"]);
@@ -210,6 +234,22 @@ mod tests {
             bindings.contains("clockTick"),
             "no clockTick event:\n{bindings}"
         );
+        for needle in [
+            "timerTick",
+            "timerMilestone",
+            "idleFinish: string | null",
+            "remainingMs: number",
+            "progress: number",
+            "timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>",
+            "timerStop: () => typedError<TimerView_Serialize, TimerCommandError>",
+            "typedError<null, SettingsError>",
+        ] {
+            assert!(
+                bindings.contains(needle),
+                "bindings lack {needle}:\n{bindings}"
+            );
+        }
+        assert!(!bindings.contains("progress: number | null"));
         assert!(
             bindings.contains("epochMs: number"),
             "epochMs is not a number:\n{bindings}"

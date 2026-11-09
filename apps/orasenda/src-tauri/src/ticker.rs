@@ -28,6 +28,8 @@ pub fn spawn(app: AppHandle) -> io::Result<()> {
 pub fn emit_now(app: &AppHandle) {
     let tick = ClockTick {
         epoch_ms: epoch_ms(SystemTime::now()),
+        clock: String::new(),
+        idle_finish: None,
     };
     if let Err(error) = tick.emit(app) {
         eprintln!("clock-ticker: could not emit clock-tick: {error}");

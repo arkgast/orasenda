@@ -7,6 +7,20 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 export const commands = {
 	/**  Name, version and platform of the running app. */
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	/**  The current timer view and any milestones not yet seen. */
+	timerState: () => __TAURI_INVOKE<TimerState_Serialize>("timer_state"),
+	/**  Starts a session. */
+	timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_start", { request })),
+	/**  Pauses the running session. */
+	timerPause: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_pause")),
+	/**  Resumes a paused session. */
+	timerResume: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_resume")),
+	/**  Stops the session. */
+	timerStop: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_stop")),
+	/**  The saved timer settings. */
+	settingsGet: () => __TAURI_INVOKE<TimerSettings>("settings_get"),
+	/**  Saves the timer settings. */
+	settingsSet: (settings: TimerSettings) => typedError<null, SettingsError>(__TAURI_INVOKE("settings_set", { settings })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -25,9 +39,11 @@ export const commands = {
 
 /** Events */
 export const events = {
-	clockTick: makeEvent<ClockTick, ClockTick>("clock-tick"),
+	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
+	timerMilestone: makeEvent<MilestoneEvent_Serialize, MilestoneEvent_Deserialize>("timer-milestone"),
+	timerTick: makeEvent<TimerView_Serialize, TimerView_Deserialize>("timer-tick"),
 };
 
 /* Types */
@@ -69,10 +85,65 @@ export type BlockRule = {
 };
 
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
-export type ClockTick = {
+export type ClockTick = ClockTick_Serialize | ClockTick_Deserialize;
+
+/**  The wall clock, emitted as `clock-tick` on every whole second. */
+export type ClockTick_Deserialize = {
 	/**  UTC milliseconds since the Unix epoch. Exported as `number`: lossless below 2^53. */
 	epochMs: number,
+	/**  The wall clock as text, formatted by Rust in the user's locale. */
+	clock: string,
+	/**  When the running session would finish if left idle, as text, if one is running. */
+	idleFinish?: string | null,
 };
+
+/**  The wall clock, emitted as `clock-tick` on every whole second. */
+export type ClockTick_Serialize = {
+	/**  UTC milliseconds since the Unix epoch. Exported as `number`: lossless below 2^53. */
+	epochMs: number,
+	/**  The wall clock as text, formatted by Rust in the user's locale. */
+	clock: string,
+	/**  When the running session would finish if left idle, as text, if one is running. */
+	idleFinish: string | null,
+};
+
+/**  The user's own focus and break lengths, in minutes. */
+export type CustomSpec = {
+	focusMin: number,
+	breakMin: number,
+};
+
+/**  How a session ended. */
+export type EndReason = "completed" | "stopped";
+
+/**  Whether the timer is idle, counting or paused. */
+export type EngineState = "idle" | "running" | "paused";
+
+/**  A session milestone, emitted as `timer-milestone`. */
+export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
+
+/**  A session milestone, emitted as `timer-milestone`. */
+export type MilestoneEvent_Deserialize = {
+	kind: MilestoneKind,
+	endReason?: EndReason | null,
+	sessionId?: SessionId | null,
+};
+
+/**  A session milestone, emitted as `timer-milestone`. */
+export type MilestoneEvent_Serialize = {
+	kind: MilestoneKind,
+	endReason: EndReason | null,
+	sessionId: SessionId | null,
+};
+
+/**  What happened to a session. */
+export type MilestoneKind = "started" | "paused" | "resumed" | "ended" | "recovered";
+
+/**  What the timer is doing, for the webview to name in words. */
+export type Mode = "focus" | "paused" | "idle";
+
+/**  Whether the app may post notifications, serialized camelCase. */
+export type NotificationStatus = "notDetermined" | "denied" | "granted" | "unavailable";
 
 /**  Operating system family, serialized lowercase (`"macos"`, …). */
 export type Os = "macos" | "windows" | "linux" | "ios" | "android" | "other";
@@ -99,6 +170,23 @@ export type OverlayShow = {
 	appName: string,
 };
 
+/**  Which part of the loop a session is in. */
+export type Phase = "focus";
+
+/**  A named timing preset, serialized snake_case (`"fifty_ten"`). */
+export type Preset = "classic" | "fifty_ten" | "deep_block" | "custom" | "quick";
+
+/**  Opaque session identifier, serialized as a bare string. */
+export type SessionId = string;
+
+export type SettingsError = {
+	kind: SettingsErrorKind,
+	message: string,
+};
+
+/**  Why saving settings failed. */
+export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
+
 /**  Why a spike command failed, with a message for the log. */
 export type SpikeError = {
 	kind: SpikeErrorKind,
@@ -116,6 +204,89 @@ export type SpikeStatus = {
 
 /**  Sent to window `main` when usage changed; the dev panel then calls `spike_usage`. */
 export type SpikeUsageChanged = null;
+
+/**  Asks to start a session. */
+export type StartRequest = StartRequest_Serialize | StartRequest_Deserialize;
+
+/**  Asks to start a session. */
+export type StartRequest_Deserialize = {
+	preset: Preset,
+	custom?: CustomSpec | null,
+};
+
+/**  Asks to start a session. */
+export type StartRequest_Serialize = {
+	preset: Preset,
+	custom: CustomSpec | null,
+};
+
+/**  Whether the session store could be used. */
+export type StoreStatus = "ok" | "unavailable" | "newer";
+
+export type TimerCommandError = {
+	kind: TimerCommandErrorKind,
+	message: string,
+};
+
+/**  Why a timer command failed. */
+export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store";
+
+/**  The saved timer settings. */
+export type TimerSettings = {
+	preset: Preset,
+	custom: CustomSpec,
+	notifySessionEnd: boolean,
+};
+
+/**  The view plus milestones the webview has not seen yet. */
+export type TimerState = TimerState_Serialize | TimerState_Deserialize;
+
+/**  The view plus milestones the webview has not seen yet. */
+export type TimerState_Deserialize = {
+	view: TimerView_Deserialize,
+	pending: MilestoneEvent_Deserialize[],
+};
+
+/**  The view plus milestones the webview has not seen yet. */
+export type TimerState_Serialize = {
+	view: TimerView_Serialize,
+	pending: MilestoneEvent_Serialize[],
+};
+
+/**  Everything the webview shows about the timer, emitted as `timer-tick`. */
+export type TimerView = TimerView_Serialize | TimerView_Deserialize;
+
+/**  Everything the webview shows about the timer, emitted as `timer-tick`. */
+export type TimerView_Deserialize = {
+	state: EngineState,
+	phase: Phase,
+	mode: Mode,
+	remainingMs: number,
+	remaining: string,
+	remainingLabel: string,
+	progress: number,
+	sessionId?: SessionId | null,
+	preset?: Preset | null,
+	finish?: string | null,
+	store: StoreStatus,
+	notifications: NotificationStatus,
+};
+
+/**  Everything the webview shows about the timer, emitted as `timer-tick`. */
+export type TimerView_Serialize = {
+	state: EngineState,
+	phase: Phase,
+	mode: Mode,
+	remainingMs: number,
+	remaining: string,
+	remainingLabel: string,
+	progress: number,
+	sessionId: SessionId | null,
+	preset: Preset | null,
+	finish: string | null,
+	store: StoreStatus,
+	notifications: NotificationStatus,
+};
 
 /**  A stretch of time one app was in front. `end_ms` is `None` while open. */
 export type UsageSegment = UsageSegment_Serialize | UsageSegment_Deserialize;
