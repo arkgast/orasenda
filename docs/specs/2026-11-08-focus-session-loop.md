@@ -335,5 +335,5 @@ All three were the owner's call and are now decided, as recommended. None is ope
 
 ## Implementation status
 - [x] Plan: `docs/plans/2026-11-08-focus-session-loop.md`
-- [ ] Issues
+- [x] Issues: #85–#94
 - [ ] ADR-011, ADR-012, ADR-013 accepted

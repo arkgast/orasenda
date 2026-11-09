@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-08-focus-session-loop.md](../specs/2026-11-08-focus-session-loop.md) (as merged in #83, amended by this plan's PR; see "Spec and ADR-012 amendments")
 - Date: 2026-11-08
-- Status: approved (owner, 2026-11-08)
+- Status: in backlog (approved by the owner 2026-11-08; issues #85–#94)
 
 ## Overview
 Ten tasks in five waves. The spec estimated eight; two were added so that frontend and backend
@@ -203,7 +203,7 @@ T2 only consumes `crates/core`, it does not touch it.
 
 ## Tasks
 
-### T1: Core contract: timer types, hybrid logical clock, platform traits and the purity check
+### T1: Core contract: timer types, hybrid logical clock, platform traits and the purity check  (#85)
 - Priority: 0
 - Kind: mechanical
 - Depends on: none
@@ -259,7 +259,7 @@ T2 only consumes `crates/core`, it does not touch it.
   in `app_info.rs` for derives and the serde test style in `blocking.rs`. No `SystemTime::now()`
   anywhere; `Hlc::tick` takes `now_ms`.
 
-### T2: IPC contract: types, stub commands, capability and `bindings.ts`
+### T2: IPC contract: types, stub commands, capability and `bindings.ts`  (#87)
 - Priority: 0
 - Kind: mechanical
 - Depends on: T1
@@ -303,7 +303,7 @@ T2 only consumes `crates/core`, it does not touch it.
   as for sync ones (they are `Promise<…>` either way). No new crate, so no `baton:deps` run.
   Regenerate `bindings.ts` with `just bindings`.
 
-### T3: Core timer engine and formatting
+### T3: Core timer engine and formatting  (#88)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T1
@@ -335,7 +335,7 @@ T2 only consumes `crates/core`, it does not touch it.
   `format_remaining` for 60 minutes exactly is `1:00:00` (the spec: "`H:MM:SS` from 60 minutes
   up").
 
-### T4: `crates/store`: SQLite, migrations, repositories and test hooks
+### T4: `crates/store`: SQLite, migrations, repositories and test hooks  (#89)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T1
@@ -393,7 +393,7 @@ T2 only consumes `crates/core`, it does not touch it.
   `ANDROID_NDK_HOME` and `ANDROID_NDK_LATEST_HOME` (verified by the orchestrator), so
   `.github/workflows/ci.yml` does not change.
 
-### T5: `crates/platform-macos`: keep-awake, local time and notifier
+### T5: `crates/platform-macos`: keep-awake, local time and notifier  (#90)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T4 (only for the shared root `Cargo.toml`/`Cargo.lock` edit; code-wise T1). T7 waits on this task for the same reason.
@@ -422,7 +422,7 @@ T2 only consumes `crates/core`, it does not touch it.
   `recv_timeout` (never block forever). The selection between `MacNotifier` and `NoopNotifier`
   and its test live in T9, not here. `unsafe` blocks get a `// SAFETY:` comment.
 
-### T6: Design system: `MenuBarTimer` "Menu-bar glyphs" note (design-first)
+### T6: Design system: `MenuBarTimer` "Menu-bar glyphs" note (design-first)  (#86)
 - Priority: 0
 - Kind: mechanical (done by the orchestrator, not an implementer: it needs the Artifact tool)
 - Depends on: none
@@ -438,7 +438,7 @@ T2 only consumes `crates/core`, it does not touch it.
 - Tests first: none automated (the design system has no test suite). The PR shows the README section.
 - Notes: CLAUDE.md "Keeping the design system in sync" applies: artifact first, then the repo copy; never edit `design/system/` by hand alone. The orchestrator runs this task because it needs the Artifact tool (`read` the URL, edit, `publish` to the same URL, then `read` with `paths` to refresh the repo copy). T9 draws the PNGs from the note.
 
-### T7: Session service, scheduler, recovery and the real commands
+### T7: Session service, scheduler, recovery and the real commands  (#91)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T2, T3, T5 (T4 through T5; T5 for the shared root `Cargo.toml`/`Cargo.lock` only)
@@ -490,7 +490,7 @@ T2 only consumes `crates/core`, it does not touch it.
   Follow the spike's `Spike`/`SpikeState` layout (`state.rs`) for the managed-state shape. Log
   store failures with `eprintln!` once per entry into the degraded state, not per tick.
 
-### T8: Today, the page switch and the timer hooks
+### T8: Today, the page switch and the timer hooks  (#92)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T2
@@ -532,7 +532,7 @@ T2 only consumes `crates/core`, it does not touch it.
   and cleaned-up-subscription tests, rewritten for `useTimer`. T6's README note is not needed
   here (it concerns the native glyphs).
 
-### T9: macOS wiring: menu-bar item, hide-on-close, platform selection
+### T9: macOS wiring: menu-bar item, hide-on-close, platform selection  (#93)
 - Priority: 0
 - Kind: cross-file/debugging
 - Depends on: T6, T7 (T5 through T7)
@@ -556,7 +556,7 @@ T2 only consumes `crates/core`, it does not touch it.
 - Tests first: `tray_title_and_icon_per_view` (idle → `None`/`Idle`; running → `Some("24:59")`/`Focus`; paused → frozen digits/`Paused`), `menu_items_per_state`, `tray_render_skips_set_menu_when_class_unchanged` (through a recording fake of the tray handle behind a small trait), `choose_notifier_outside_bundle_is_noop` (macOS), `close_requested_on_main_hides_and_other_windows_pass`, `manifest_commands_match_specta_builder` (unchanged list, still green)
 - Notes: run `baton:deps` for the `tray-icon` feature of `tauri` (version unchanged, result in the Dependencies section). `TrayIcon::set_title(None)` clears the title; `set_icon(Some(image))` swaps the glyph; both dispatch to the main thread themselves, which is exactly why no lock may be held around them. Rebuild the menu only when the state class changes (idle ↔ non-idle, paused ↔ running) so a tick costs one `set_title`. Draw the PNGs from the shapes in T6's README note (any tool; commit the files; note the stroke and size in a comment at the top of `tray.rs`). Nothing here adds a Tauri plugin.
 
-### T10: Flip the ADR statuses, update the conventions, record the manual acceptance
+### T10: Flip the ADR statuses, update the conventions, record the manual acceptance  (#94)
 - Priority: 1
 - Kind: mechanical (the acceptance steps are the owner's; the implementer prepares the checklist and the docs)
 - Depends on: T8, T9
