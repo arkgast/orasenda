@@ -21,7 +21,7 @@ Phases are grouped into releases. Each release goes to real users before the nex
 | Phase | Name | Scope | Exit criteria |
 |---|---|---|---|
 | **P0** | Foundations | Tech decisions recorded in `DECISIONS.md` (stack, storage, distribution, blocking approach, licence, telemetry), with a **spike** proving foreground-app detection and an overlay on macOS. Design pass in Claude Design: tokens, Today, Timer, Board, Full-screen. Repo, CI and lint set up. **App shell:** Tauri 2 + React + Rust core, macOS gating CI, Windows advisory CI, mobile projects smoke-tested. | Decisions approved, spike works, design tokens ready, shell passes `ci` on macOS |
-| **P1** | Focus Core | Timer presets, menu-bar and mini timer, 2-minute start, flow extension, capture pad, 2-minute warning, full-screen, deep-hours cap, local store (sync-ready, ADR-002), export, import, automatic backups. Split into sub-projects A–E, built A → B → (C ∥ D) → E; see [the focus session loop spec](specs/2026-11-08-focus-session-loop.md). | Usable daily as a focus timer |
+| **P1** | Focus Core | Timer presets, menu-bar and mini timer, 2-minute start, flow extension, capture pad, 2-minute warning, full-screen, deep-hours cap, local store (sync-ready, ADR-002), export, import, automatic backups. Split into sub-projects A–G, built A → B → C → (D ∥ E) → F → G; see [P1 sub-projects](#p1-sub-projects) and [the focus session loop spec](specs/2026-11-08-focus-session-loop.md). | Usable daily as a focus timer |
 | **P2** | Tasks | Kanban with WIP limits, Deep/Shallow, estimates with buffer, time per task, breakdown prompt, Frog, quick-add hotkey, **task import** (Apple Reminders on the device; Todoist and Things exports) | Every session is linked to a task, with estimated vs actual time |
 | **P3** | Plan the Day | Built-in calendar, drag-to-block, overflow block, block-starts-session prompt, energy-aware suggestions, realistic finish time, reshuffle, onboarding, **read-only calendar import** (macOS EventKit and ICS files, on the device, no account) | Full day planned and executed in the app, around existing calendar events |
 | **P4** | Routines and Reviews | Unified routines and habits, 5 templates with disclaimers, daily shutdown, weekly review and plan, neutral stats | One week of use with reviews completed |
@@ -33,6 +33,23 @@ Phases are grouped into releases. Each release goes to real users before the nex
 | **P10** | Sync and Multi-platform | Accounts, paid end-to-end encrypted sync (ADR-002, ADR-006), web app, iOS companion with Screen Time blocking, Android, Windows builds, two-way external calendars, body-doubling and status sharing, template gallery | Paying sync users on at least two platforms |
 
 **Note:** P1–P4 make a complete, useful product with no system permissions at all, so they are a safe base before the risky macOS work in P5–P7.
+
+## P1 sub-projects
+P1 is built as seven sub-projects, each with its own spec, plan and implementation cycle. The redesign (Settings, Today, Focus views) comes before session cadence. The re-cut is the architect ruling in [#134](https://github.com/arkgast/orasenda/issues/134), dated 2026-11-09. Spec A keeps its original letters as history; its legend is in [the focus session loop spec](specs/2026-11-08-focus-session-loop.md#context-p1-sub-projects).
+
+| # | Sub-project | Scope | Depends on | Tasks |
+|---|---|---|---|---|
+| **A** | Focus session loop | Done (#110, #117). Tail follow-ups #121, #122, #124, #125, #129 are independent of the redesign. | none | 8 (done) |
+| **B** | **Settings** | Settings page on `PageFrame`, regular layout. General (theme), Timer (presets, Custom minutes), Notifications (off by default), About, Apps and sites as an interim EmptyState. Save on change, ⌘, opens it. Notification migration in Rust. | A, design-system PR merged | 4–5 |
+| **C** | **Today redesign** | Playwright WebKit layout harness (#119). Window minimum 360×240, compact, regular and spacious layouts, the Still Point grid and `TimerStrip`, preset popover, refused-start line with "Open Settings" (#120), in-app and menu-bar shortcuts. The DevPanel leaves Today. | B | 6–7 |
+| **D** | **Focus views** | Focus view button and menu. Full screen in a borderless window per display (⌘⇧F). Floating timer panel (⌘⇧T). Menu-bar items and the ⌘K command palette. Proposes ADR-014. | C | 6 |
+| **E** | **Session cadence** | Breaks and long breaks, keep-going prompt after "Just 2 minutes", +10 min capped at 2, two-minute warning, deep-hours cap, intent line, `sessions_today`. Settings gains its Timer and Notifications rows. The floater and full-screen states come last, after D. | C (D for the last task) | 6–7 |
+| **F** | **Hotkeys and capture** | Global shortcuts ⌃⌥F and ⌃⌥N, Settings › Keyboard, single-key shortcuts with an off switch, `CapturePad`, `capture_note`, plain Inbox, one-time welcome lines. | C, D | 6–7 |
+| **G** | **Data portability** | Export and import of the versioned JSON bundle, automatic backups, Settings › About and data, "Delete all data". | B, E, F | 4 |
+
+**Build order: A → B → C → (D ∥ E) → F → G.**
+
+Tracking and blocking stay in P5 and P6. No P1 change there.
 
 ## Website track
 Runs alongside the phases; it must be live before the public v1 launch.
