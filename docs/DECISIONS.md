@@ -142,3 +142,52 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 - **Decision:** option 1, with segments built in `crates/core` and time passed in. The spike's findings ([docs/spikes/2026-11-07-macos-blocking.md](spikes/2026-11-07-macos-blocking.md)) confirm it: no permission or prompt, CPU 0.22 % on average over 5 minutes with the flag on, and idle closes the open segment at idle start while the next input opens a new one.
 - **Consequences:** domains come only from the browser extension (P7). Private-window exclusion depends on the extension. Storage, retention and export follow ADR-002 in P5.
 
+
+## ADR-011: Time and scheduling
+- **Date:** 2026-11-08
+- **Status:** proposed
+- **Context:** P1 adds the first timed product behaviour (focus sessions; later breaks, the two-minute cue, routines and blocks). ADR-001 keeps `SystemTime::now()` out of core and puts time in Rust because WebKit throttles hidden pages and App Nap throttles hidden apps. A countdown must stay true while the window is hidden, across sleep and across a relaunch, and every surface (Today, menu bar, later the mini timer and full screen) must show the same digits. WKWebView also ignores the macOS 24-hour setting (`docs/spikes/2026-11-07-macos-blocking.md`).
+- **Options considered:**
+  1. **Pure engines in core fed with `now_ms`, one scheduler thread in the app crate, the wall clock as the only time base, Rust formats every time string:** no drift from missed ticks, survives relaunch, one formatter for every surface; a backward clock change makes the remaining time grow.
+  2. **A monotonic clock (`Instant`) for the countdown:** immune to clock changes, but it stops during sleep on macOS and cannot be persisted across a relaunch.
+  3. **Countdown accumulated from ticks, or JavaScript timers in the webview:** simplest to write; drifts whenever a tick is late, and the webview sleeps when hidden.
+- **Decision:** Option 1.
+  - Core engines (`timer::Session` first) take `now_ms` and return milestones; they never read the clock and never accumulate ticks. Remaining time is derived from the start time, the planned length and the pauses; a session ends at its planned end even when the engine is advanced late (after sleep or a relaunch).
+  - The app crate owns one `session-scheduler` thread (the shell's clock ticker, extended) that wakes on whole wall-clock seconds, advances the engines, and publishes the result: the wall clock every second, timer events only while something runs, the menu-bar title, notifications. Commands run the same advance-then-publish step synchronously.
+  - Local-time facts (UTC offset at a given instant, hour cycle) come from a `LocalTime` trait in core implemented per platform crate, with a UTC default; no `time` or `chrono` dependency.
+  - The wall clock (`SystemTime`, UTC epoch ms) is the only time base. Sleep counts as elapsed. A forward clock change ends sessions that are due; a backward one is clamped (elapsed never negative) and otherwise accepted.
+  - Rust produces every time string: countdowns, spoken labels, the menu-bar title, finish times and wall clocks. The hour cycle is read by the platform crate and passed in. The webview never computes time.
+  - A `KeepAwake` trait in core, implemented in `crates/platform-macos` with an `NSProcessInfo` activity that allows idle sleep, is held while a session runs so App Nap does not delay the end.
+- **Consequences:** every later timed feature is a milestone from a core engine, never a `setTimeout`. Time formatting is English and lives in Rust until i18n arrives, which then also lives in Rust. Re-basing on clock changes is a possible later addition. Spec: [docs/specs/2026-11-08-focus-session-loop.md](specs/2026-11-08-focus-session-loop.md).
+
+## ADR-012: Store crate API
+- **Date:** 2026-11-08
+- **Status:** proposed
+- **Context:** ADR-002 fixes the storage shape (SQLite in `crates/store`, UUIDv7 ids, tombstones, one `change_log` row per changed field, syncable versus device-only entities, versioned migrations) but not how code uses it. Every P1 sub-project adds tables, so the API pattern must be settled with the first one.
+- **Options considered:**
+  1. **One `Store` with a mutex-guarded connection, closure-scoped transactions, repository modules, and a typed `set_fields` that writes the row and the change log together; device-only repositories skip the log by type:** small, testable with an in-memory database, hard to bypass the log by accident.
+  2. **An ORM or query builder (diesel, sea-orm, sqlx):** more code and compile time, async or macro machinery the app does not need, and the change log would still be hand-written.
+  3. **Repositories that write SQL freely and remember to log:** the log becomes a convention and drifts.
+- **Decision:** Option 1.
+  - `Store::open(path)` and `Store::open_in_memory()`; one `rusqlite` connection behind a `Mutex`; WAL mode; `store.read(|txn| …)` and `store.write(|txn| …)` closures, one SQLite transaction each.
+  - Repositories are modules with functions over `&mut Txn` (`settings::set`, `focus_sessions::insert`, …). A syncable repository writes through `txn.set_fields(entity, id, &[(field, value)])`, which updates or inserts the row and appends one `change_log` row per field stamped with a hybrid logical clock from core (`clock::Hlc`) and the device id. A device-only repository writes rows directly and is marked device-only in its module doc; it never touches `change_log`.
+  - Live or ephemeral state (the active session, later window positions, bypass reasons, raw usage) is device-only. History is append-only and syncable.
+  - **Amendment to ADR-002:** `PRAGMA user_version` is the only schema version; `meta` holds `device_id` and the clock state but not the `schema_version` ADR-002 lists. Key-value settings (`setting(key)`) and singleton device-only tables (`active_session`) carry no UUIDv7 `id`, `created_at` or `deleted_at`. A setting is reset by writing its default, never tombstoned; `change_log.entity_id` carries the key, so the field-level log and the sync direction are unchanged. ADR-002's natural key for `HabitCheck(habit, date)` stays as it was. Every other entity keeps the full ADR-002 shape.
+  - Migrations are numbered SQL files embedded with `include_str!`, applied in order, one transaction each, `PRAGMA user_version` set at the end, forward-only. A database with a newer `user_version` is refused and the app runs degraded (in memory) rather than failing to start.
+  - `crates/store` depends on `crates/core` for types, never the reverse; it must `cargo check` for the two mobile targets; it is not a WebAssembly target.
+- **Consequences:** the sync engine in P10 reads `change_log` as is; it must treat `setting` rows as keyed by name. Every new table comes with a migration file, a repository module and a syncable or device-only marking in the spec. `PRAGMA user_version` is the only schema version. Tests use `open_in_memory()`. A pruning job for synced log rows comes with P10. Spec: [docs/specs/2026-11-08-focus-session-loop.md](specs/2026-11-08-focus-session-loop.md).
+
+## ADR-013: One Rust state, many surfaces
+- **Date:** 2026-11-08
+- **Status:** proposed
+- **Context:** The timer shows on Today, in the menu bar and, from the next sub-projects, in a floating window, in full screen and in notifications. The spike already runs a second webview window with its own capability file (`apps/orasenda/src-tauri/src/spike/macos.rs`). Two surfaces that each keep their own timer would disagree.
+- **Options considered:**
+  1. **One owner in Rust managed state; every surface subscribes to the same events and sends the same commands; native surfaces are driven from Rust directly:** one truth, idempotent commands, windows never talk to each other.
+  2. **The main webview owns the state and forwards it to other windows:** fails when the main window is hidden or its webview is throttled.
+  3. **Shared state in the webview via a store library and Tauri's multi-window event relay:** two copies of the truth and a dependency on the webview staying awake.
+- **Decision:** Option 1.
+  - Product state lives once, in Tauri managed state in the app crate, changed only through the session service. Every command is safe to repeat from any window and returns an error rather than changing state when it does not apply.
+  - Webview surfaces (main, mini timer, full screen, overlay) subscribe to the same events (`timer-tick`, `timer-milestone`) and render the latest payload; each extra window is its own HTML entry with its own capability file, as the overlay is.
+  - Native surfaces (menu-bar item, notifications, later the Dock) are written from Rust in the same publish step; they need no IPC.
+  - Rendering is a pure function of the latest event payload; one-shot effects come from milestone events, never from diffing ticks.
+- **Consequences:** adding a surface means a new subscriber, never new state. The webview holds no product state beyond the last payload and local UI state (the current page, an open dialog). A surface that cannot listen renders its failure line, as the shell does for the clock. Spec: [docs/specs/2026-11-08-focus-session-loop.md](specs/2026-11-08-focus-session-loop.md).
