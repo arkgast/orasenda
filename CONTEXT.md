@@ -21,6 +21,11 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Degraded | The app running with its store unavailable or newer than the build: the timer works in memory, finished sessions wait in memory as unsaved records, Today keeps a standing line. | A crash |
 | Pending milestone | A milestone event that happened before any window was listening (at launch); `timer_state` returns and drains it. | An event (delivered live) |
 | Ended early | A session the user ended with *End session*; recorded with `end_reason: stopped` and its real focused minutes. | A failed or abandoned session (words the app never uses) |
+| Notification status | What macOS allows Orasenda: `notDetermined`, `granted`, `denied` or `unavailable` (no app bundle). Read from the OS at launch, when the main window gains focus, after a request and before posting; never stored. | The notification preference |
+| Notification preference | The user's *Tell me when a session ends* setting (`notify.session_end`), off by default. A notification is posted only when the preference is on **and** the status is `granted`. | The notification status |
+| Notify review | The one-time check on a database created before the Settings spec: the preference stays on only if macOS already reports `granted`. Marked by the device-only `meta.notify_review` row. | A schema migration (the marker is written by one; the review itself needs the OS status) |
+| Save line | The Settings page's reserved status row (`InlineNotice variant="row"`): at rest "Changes save as you make them.", otherwise the answer to the last save or the standing store line. | A toast (Orasenda has none for saves) |
+| Theme override | `ui.theme` set to Light or Dark: Rust sets the app appearance and the webview sets `data-theme` on `<html>`. *Match system* removes both. | The system appearance |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
@@ -29,4 +34,4 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 - Syncable entities write change-log rows in the same transaction; device-only entities do not.
 
 ## Decisions
-ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces).
+ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings).
