@@ -97,6 +97,10 @@ pub struct SessionService {
     keep_awake: Option<Box<dyn Any + Send>>,
     notifications: Option<NotificationStatus>,
     pending: Vec<MilestoneEvent>,
+    /// True once `timer_state` has drained `pending`: a webview is listening, so a
+    /// `recovered` event created later (a retried read, a write that records the unread row)
+    /// goes out with the next [`Effects`] as a `timer-milestone` instead of waiting there.
+    listening: bool,
     platform: Platform,
     recover_owed: RecoverOwed,
     /// The number given to the last view handed out (see [`ViewGate`]).
@@ -160,6 +164,7 @@ impl SessionService {
             keep_awake: None,
             notifications: None,
             pending: Vec::new(),
+            listening: false,
             platform,
             recover_owed: RecoverOwed::default(),
             view_seq: 0,
@@ -330,6 +335,7 @@ impl SessionService {
             view: effects.view.clone(),
             pending: std::mem::take(&mut self.pending),
         };
+        self.listening = true;
         (state, effects)
     }
 
@@ -607,12 +613,18 @@ impl SessionService {
         result: Result<(), TimerCommandError>,
     ) -> Effects {
         let (seq, view) = self.snapshot(now_ms);
+        let mut milestones = outcome.milestones;
+        if self.listening {
+            // After the call's own milestones, so the start that recorded the unread row
+            // does not dismiss the notice at once.
+            milestones.append(&mut self.pending);
+        }
         Effects {
             seq,
             result: result.map(|()| view.clone()),
             view,
             was_idle,
-            milestones: outcome.milestones,
+            milestones,
             notify_session_end: outcome.ended.is_some() && self.settings.notify_session_end,
             ended: outcome.ended,
             drop_after_unlock: outcome.drop_after_unlock,
@@ -2252,6 +2264,46 @@ mod tests {
         );
         assert!(has_row(db(&late), &row_a()));
         assert_eq!(snapshot(db(&late)), None);
+    }
+
+    /// A `recovered` event that a retried read creates after the webview has drained
+    /// `pending` goes out as a `timer-milestone` on that tick, once: a later `timer_state`
+    /// (Today mounting again) does not hand it out a second time.
+    #[test]
+    fn late_recovered_event_is_emitted_once_the_webview_listens() {
+        let Fakes { log, notifier, .. } = fakes(NotificationStatus::Denied, false);
+        let host = TestHost::with(relaunch_with_reads_failing(T0 + 60 * MINUTE), log, notifier);
+        host.set_now(T0 + 60 * MINUTE);
+        assert!(run_state(&host).pending.is_empty());
+        db(&lock(&host.0.service)).fail_reads(false);
+        host.log().take();
+        host.set_now(T0 + 61 * MINUTE);
+        crate::scheduler::iterate(&host);
+        let recovered = Event::Milestone(milestone(
+            MilestoneKind::Recovered,
+            Some(EndReason::Completed),
+            "a",
+        ));
+        assert_eq!(host.log().count(|event| *event == recovered), 1);
+        assert!(run_state(&host).pending.is_empty(), "not handed out again");
+    }
+
+    /// The same for the event a write records from the unread row: it follows the start
+    /// that wrote it, so that start does not dismiss the notice.
+    #[test]
+    fn row_recorded_by_a_start_after_the_webview_listens_is_emitted() {
+        let mut s = relaunch_with_reads_failing(T0 + MINUTE);
+        let (state, _) = s.state(T0 + MINUTE);
+        assert!(state.pending.is_empty());
+        let started = s.apply(start(Preset::Classic), T0 + 3 * MINUTE, id("b"));
+        assert_eq!(
+            started.milestones,
+            [
+                milestone(MilestoneKind::Started, None, "b"),
+                milestone(MilestoneKind::Recovered, Some(EndReason::Stopped), "a"),
+            ]
+        );
+        assert!(s.pending.is_empty());
     }
 
     #[test]
