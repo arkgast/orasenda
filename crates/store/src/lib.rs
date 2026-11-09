@@ -126,15 +126,23 @@ impl Store {
     /// newer than [`SCHEMA_VERSION`] is refused with [`OpenError::Newer`] before anything is
     /// written to it.
     pub fn open(path: &Path, new_device_id: &str) -> Result<Store, OpenError> {
-        Store::from_connection(Connection::open(path)?, new_device_id)
+        Store::from_connection(Connection::open(path)?, Backing::File, new_device_id)
     }
 
     /// An in-memory database with the full schema, for tests.
     pub fn open_in_memory(new_device_id: &str) -> Result<Store, OpenError> {
-        Store::from_connection(Connection::open_in_memory()?, new_device_id)
+        Store::from_connection(
+            Connection::open_in_memory()?,
+            Backing::Memory,
+            new_device_id,
+        )
     }
 
-    fn from_connection(mut conn: Connection, new_device_id: &str) -> Result<Store, OpenError> {
+    fn from_connection(
+        mut conn: Connection,
+        backing: Backing,
+        new_device_id: &str,
+    ) -> Result<Store, OpenError> {
         let found: u32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
         if found > SCHEMA_VERSION {
             return Err(OpenError::Newer {
@@ -142,9 +150,9 @@ impl Store {
                 supported: SCHEMA_VERSION,
             });
         }
-        // An in-memory database answers "memory"; only a file can use WAL.
-        let _mode: String =
+        let mode: String =
             conn.pragma_update_and_check(None, "journal_mode", "wal", |row| row.get(0))?;
+        check_journal_mode(backing, &mode)?;
         migrate::run(&mut conn)?;
         let (device_id, hlc) = init_meta(&mut conn, new_device_id)?;
         Ok(Store {
@@ -202,6 +210,30 @@ impl Store {
     /// the connection is consistent and a poisoned mutex is safe to reuse.
     fn lock(&self) -> MutexGuard<'_, Inner> {
         self.inner.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Where the database lives, which decides the journal mode it can have.
+#[derive(Debug, Clone, Copy)]
+enum Backing {
+    File,
+    Memory,
+}
+
+/// SQLite answers `PRAGMA journal_mode = wal` with the mode it actually took. A file must be in
+/// WAL (ADR-002); SQLite silently keeps another mode when it cannot switch (a VFS without
+/// shared memory, for one). An in-memory database always answers `memory`.
+fn check_journal_mode(backing: Backing, mode: &str) -> Result<(), OpenError> {
+    let expected = match backing {
+        Backing::File => "wal",
+        Backing::Memory => "memory",
+    };
+    if mode.eq_ignore_ascii_case(expected) {
+        Ok(())
+    } else {
+        Err(OpenError::Sqlite(format!(
+            "journal_mode is {mode}, expected {expected}"
+        )))
     }
 }
 
@@ -332,6 +364,24 @@ mod tests {
             .expect("table_info runs")
             .collect::<Result<_, _>>()
             .expect("column names read")
+    }
+
+    #[test]
+    fn journal_mode_other_than_wal_is_refused_for_a_file() {
+        assert_eq!(check_journal_mode(Backing::File, "wal"), Ok(()));
+        assert_eq!(check_journal_mode(Backing::Memory, "memory"), Ok(()));
+        assert_eq!(
+            check_journal_mode(Backing::File, "delete"),
+            Err(OpenError::Sqlite(
+                "journal_mode is delete, expected wal".into()
+            ))
+        );
+        assert_eq!(
+            check_journal_mode(Backing::Memory, "delete"),
+            Err(OpenError::Sqlite(
+                "journal_mode is delete, expected memory".into()
+            ))
+        );
     }
 
     #[test]
