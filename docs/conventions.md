@@ -54,3 +54,14 @@ Seen three times in the P1-A wave 2 reviews: `PRAGMA journal_mode = wal` answere
 - A failure in a surface is logged and shown: one plain failure line in the slot the feature
   would fill (ADR-013), or a rollback to the last state the store accepted. Logging alone is
   not handling.
+
+## Newest wins, not last to arrive
+Seen twice in P1-A: Today rolled back over a later settings save that was still in flight
+(#101), and the menu bar drew a stale running view after a newer stop (#93).
+- Work computed under a lock and applied after unlock, or replies to calls that can overlap,
+  can arrive out of order. Stamp each one with a sequence number taken where it was computed
+  (under the lock, or when the call was sent) and drop anything older than the last one applied.
+- Check-and-apply happens under one small mutex (not an atomic) that is never held while
+  waiting on the main thread.
+- Test it with two threads (or two pending promises) forced into the stale order with barriers
+  or held replies, never with sleeps.
