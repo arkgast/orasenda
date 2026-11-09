@@ -89,6 +89,19 @@ export type SettingsKeysAreComplete = AssertTrue<
   CoversEveryKey<TimerSettings, typeof SETTINGS_KEYS>
 >;
 
+// A new non-`custom` field must be a primitive, or `sameSettings` would compare it by reference;
+// an object field fails to compile here until it gets its own compare.
+export type OtherSettingsArePrimitive = AssertTrue<
+  [
+    Exclude<
+      TimerSettings[Exclude<keyof TimerSettings, "custom">],
+      string | number | boolean | null
+    >,
+  ] extends [never]
+    ? true
+    : false
+>;
+
 function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
   return CUSTOM_KEYS.every((key) => a[key] === b[key]);
 }
