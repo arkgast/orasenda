@@ -4,9 +4,10 @@ use orasenda_core::{AppInfo, NotificationStatus};
 use tauri::PackageInfo;
 
 use crate::ipc::{
-    SettingsError, StartRequest, StoreStatus, TimerCommandError, TimerCommandErrorKind,
-    TimerSettings, TimerState, TimerView,
+    SettingsError, SettingsErrorKind, StartRequest, StoreStatus, TimerCommandError,
+    TimerCommandErrorKind, TimerSettings, TimerState, TimerView,
 };
+use crate::session::{self, Action};
 
 /// Name, version and platform of the running app.
 #[tauri::command]
@@ -15,80 +16,98 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
     app_info_from(app.package_info())
 }
 
-fn idle_view() -> TimerView {
-    TimerView::idle(StoreStatus::Unavailable, NotificationStatus::Unavailable)
+/// Runs `work` on the blocking pool, so no lock, SQLite write or notifier read runs on the
+/// async runtime or the main thread. `None` when the task panicked (logged).
+async fn on_blocking<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> Option<T> {
+    match tauri::async_runtime::spawn_blocking(work).await {
+        Ok(value) => Some(value),
+        Err(error) => {
+            eprintln!("commands: a session task failed: {error}");
+            None
+        }
+    }
 }
 
-fn nothing_running() -> TimerCommandError {
+/// What a timer command returns when its task panicked: a failure, never a success.
+fn task_failed() -> TimerCommandError {
     TimerCommandError {
-        kind: TimerCommandErrorKind::NothingRunning,
-        message: "no session is running".into(),
+        kind: TimerCommandErrorKind::Store,
+        message: "Orasenda couldn't finish that. Try again.".into(),
     }
+}
+
+async fn run(app: tauri::AppHandle, action: Action) -> Result<TimerView, TimerCommandError> {
+    on_blocking(move || session::run_action(&app, action))
+        .await
+        .unwrap_or_else(|| Err(task_failed()))
 }
 
 /// The current timer view and any milestones not yet seen.
 #[tauri::command]
 #[specta::specta]
-pub async fn timer_state(_app: tauri::AppHandle) -> TimerState {
-    // T7 (#91) fills this in
-    TimerState {
-        view: idle_view(),
-        pending: Vec::new(),
-    }
+pub async fn timer_state(app: tauri::AppHandle) -> TimerState {
+    on_blocking(move || session::run_state(&app))
+        .await
+        .unwrap_or_else(|| TimerState {
+            view: TimerView::idle(StoreStatus::Unavailable, NotificationStatus::Unavailable),
+            pending: Vec::new(),
+        })
 }
 
 /// Starts a session.
 #[tauri::command]
 #[specta::specta]
 pub async fn timer_start(
-    _app: tauri::AppHandle,
-    _request: StartRequest,
+    app: tauri::AppHandle,
+    request: StartRequest,
 ) -> Result<TimerView, TimerCommandError> {
-    // T7 (#91) fills this in
-    Err(nothing_running())
+    run(app, Action::Start(request)).await
 }
 
 /// Pauses the running session.
 #[tauri::command]
 #[specta::specta]
-pub async fn timer_pause(_app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
-    // T7 (#91) fills this in
-    Err(nothing_running())
+pub async fn timer_pause(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::Pause).await
 }
 
 /// Resumes a paused session.
 #[tauri::command]
 #[specta::specta]
-pub async fn timer_resume(_app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
-    // T7 (#91) fills this in
-    Err(nothing_running())
+pub async fn timer_resume(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::Resume).await
 }
 
 /// Stops the session.
 #[tauri::command]
 #[specta::specta]
-pub async fn timer_stop(_app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
-    // T7 (#91) fills this in
-    Err(nothing_running())
+pub async fn timer_stop(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::Stop).await
 }
 
+// Sync: it only reads the cached settings under a brief lock.
 /// The saved timer settings.
 #[tauri::command]
 #[specta::specta]
-pub fn settings_get(_app: tauri::AppHandle) -> TimerSettings {
-    // T7 (#91) fills this in
-    TimerSettings::default()
+pub fn settings_get(app: tauri::AppHandle) -> TimerSettings {
+    session::current_settings(&app)
 }
 
 /// Saves the timer settings.
 #[tauri::command]
 #[specta::specta]
 pub async fn settings_set(
-    _app: tauri::AppHandle,
-    _settings: TimerSettings,
+    app: tauri::AppHandle,
+    settings: TimerSettings,
 ) -> Result<(), SettingsError> {
-    // T7 (#91) fills this in
-    Ok(())
+    on_blocking(move || session::run_set_settings(&app, settings))
+        .await
+        .unwrap_or_else(|| {
+            Err(SettingsError {
+                kind: SettingsErrorKind::Write,
+                message: "Your settings couldn't be saved. Try again.".into(),
+            })
+        })
 }
 
 /// Name and version come from the app's package info, never from core's own Cargo metadata.
