@@ -28,4 +28,8 @@ export const {
   EmptyState,
   StartButton,
   NowLine,
+  PageFrame,
+  ScrollRegion,
+  SettingsIndex,
+  SettingsRow,
 } = window.Orasenda;
