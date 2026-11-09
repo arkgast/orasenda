@@ -3,8 +3,10 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+pub mod engine;
 pub mod format;
 
+pub use engine::Session;
 pub use format::{format_clock, format_remaining, spoken_remaining};
 
 /// Length of a Quick start focus block, in milliseconds.
