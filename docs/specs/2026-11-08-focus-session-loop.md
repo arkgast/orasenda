@@ -1,6 +1,6 @@
 # Focus session loop — Spec
 
-- Status: draft
+- Status: approved (owner, 2026-11-08)
 - Date: 2026-11-08
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP P1](../ROADMAP.md), [SPEC §2.1 and §4](../SPEC.md), [app shell spec](2026-11-07-app-shell.md), [ADR-001](../DECISIONS.md#adr-001-tech-stack-and-code-sharing), [ADR-002](../DECISIONS.md#adr-002-local-storage-ready-for-sync), [ADR-007](../DECISIONS.md#adr-007-typed-ipc-contract-with-tauri-specta-2), [ADR-010](../DECISIONS.md#adr-010-platform-code-layout), [ADR-011](../DECISIONS.md#adr-011-time-and-scheduling), [ADR-012](../DECISIONS.md#adr-012-store-crate-api), [ADR-013](../DECISIONS.md#adr-013-one-rust-state-many-surfaces), [CONTEXT.md](../../CONTEXT.md), design system [`TimerRing`](../../design/system/components/TimerRing/README.md), [`StartButton`](../../design/system/components/StartButton/README.md), [`MenuBarTimer`](../../design/system/components/MenuBarTimer/README.md), [`ModeChip`](../../design/system/components/ModeChip/README.md), [`InlineNotice`](../../design/system/components/InlineNotice/README.md), [`NavRail`](../../design/system/components/NavRail/README.md)
@@ -299,9 +299,9 @@ The session is persisted on every transition and resumes on relaunch; a dialog w
 ## Open questions
 Each needs the owner's taste or hands. None is decided here.
 
-1. **Dock icon or menu-bar-only app?** (recommended, awaiting owner) Keep the Dock icon (`Regular` activation policy) in P1: the window hides on close and the menu bar carries the timer. A "hide Dock icon" setting is a cheap later addition and keeps ⌘Tab working for beta testers.
-2. **A session that ends while the Mac is asleep or Orasenda is closed: is it completed?** (recommended, awaiting owner) Yes, completed at its planned end and counted like any other, with one calm notice. It is the wall-clock truth, and stats stay neutral.
-3. **Does a session ended early count its minutes?** (recommended, awaiting owner) Yes: record `focused_ms` with `end_reason: stopped` and count it toward today's focused time and, in B, the deep hours. Nothing a person did is lost, and the copy never judges.
+1. **Dock icon or menu-bar-only app?** (decided by the owner, 2026-11-08, as recommended) Keep the Dock icon (`Regular` activation policy) in P1: the window hides on close and the menu bar carries the timer. A "hide Dock icon" setting is a cheap later addition and keeps ⌘Tab working for beta testers.
+2. **A session that ends while the Mac is asleep or Orasenda is closed: is it completed?** (decided by the owner, 2026-11-08, as recommended) Yes, completed at its planned end and counted like any other, with one calm notice. It is the wall-clock truth, and stats stay neutral.
+3. **Does a session ended early count its minutes?** (decided by the owner, 2026-11-08, as recommended) Yes: record `focused_ms` with `end_reason: stopped` and count it toward today's focused time and, in B, the deep hours. Nothing a person did is lost, and the copy never judges.
 
 ## Implementation status
 - [ ] Plan: `docs/plans/2026-11-08-focus-session-loop.md`
