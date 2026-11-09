@@ -7,9 +7,9 @@
 //! the centre 28×28 px (2.8 px per unit, a 4 px margin). `tray-icon` sizes the image to 18 pt
 //! high. The title is `remaining` in the system font, or none when idle.
 //!
-//! The tooltip carries the design system's spoken name ("Focus, 24 minutes 59 seconds
-//! remaining", "No session") and changes with the title. It is a stopgap for VoiceOver: the
-//! real accessibility label on the status item is #107.
+//! The design system's spoken name ("Focus, 24 minutes 59 seconds remaining", "No session")
+//! is the status item's accessibility label on macOS, which VoiceOver reads (#107), and the
+//! tooltip; both change with the title.
 //!
 //! Threading (plan, Impact "Threading"): every tray, menu and window call runs on the main
 //! thread with no lock held. [`Tray::render`] only records the wanted state under `Tray`'s own
@@ -17,9 +17,10 @@
 //! state and the drawn state under the same mutex, releases it, then calls `set_title`,
 //! `set_icon` and `set_menu` for what changed. Because every draw runs on the main thread, one
 //! after another, the drawn state always matches the menu bar, and a tick costs one
-//! `set_title` and one `set_tooltip`. A failed call is logged and the draw is posted again, at
-//! most [`DRAW_RETRIES`] times for one view. Which view is newest is decided before `render`
-//! by `scheduler::publish_view`. Menu actions run `run_action` on a `spawn_blocking` thread.
+//! `set_title`, one `set_tooltip` and one `set_accessibility_label`. A failed call is logged
+//! and the draw is posted again, at most [`DRAW_RETRIES`] times for one view. Which view is
+//! newest is decided before `render` by `scheduler::publish_view`. Menu actions run
+//! `run_action` on a `spawn_blocking` thread.
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -75,7 +76,7 @@ pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph) {
 }
 
 /// The item's spoken name (design system `MenuBarTimer`, "Menu-bar glyphs"): the mode word
-/// and `remainingLabel`, or "No session" when idle. Set as the tooltip.
+/// and `remainingLabel`, or "No session" when idle. Set as the tooltip and accessibility label.
 pub(crate) fn tray_label(view: &TimerView) -> String {
     let mode = match view.mode {
         Mode::Focus => "Focus",
@@ -123,6 +124,8 @@ pub(crate) trait TrayHandle: Send + Sync + 'static {
     fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
     fn set_title(&self, title: Option<&str>) -> Result<(), String>;
     fn set_tooltip(&self, label: &str) -> Result<(), String>;
+    /// Sets the spoken name VoiceOver reads for the item (#107).
+    fn set_accessibility_label(&self, label: &str) -> Result<(), String>;
     /// Swaps the glyph, keeping it a template image.
     fn set_glyph(&self, glyph: Glyph) -> Result<(), String>;
     fn set_menu(&self, items: &[&'static str]) -> Result<(), String>;
@@ -203,6 +206,10 @@ fn draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
     }
     if drawn.as_ref().map(|d| &d.label) != Some(&wanted.label) {
         ok &= report("set_tooltip", handle.set_tooltip(&wanted.label));
+        ok &= report(
+            "set_accessibility_label",
+            handle.set_accessibility_label(&wanted.label),
+        );
     }
     if drawn.as_ref().map(|d| d.glyph) != Some(wanted.glyph) {
         ok &= report("set_icon", handle.set_glyph(wanted.glyph));
@@ -309,6 +316,27 @@ impl TrayHandle for TauriTray {
             .map_err(|error| error.to_string())
     }
 
+    /// `with_inner_tray_icon` runs the closure inline here, since `draw` is on the main thread.
+    #[cfg(target_os = "macos")]
+    fn set_accessibility_label(&self, label: &str) -> Result<(), String> {
+        let label = label.to_string();
+        self.icon
+            .with_inner_tray_icon(move |tray| match tray.ns_status_item() {
+                Some(item) => {
+                    orasenda_platform_macos::set_status_item_accessibility_label(&item, &label)
+                        .map_err(|error| error.to_string())
+                }
+                None => Err("no status item".to_string()),
+            })
+            .map_err(|error| error.to_string())?
+    }
+
+    /// Other desktops read the tooltip as the item's name; there is nothing more to set.
+    #[cfg(not(target_os = "macos"))]
+    fn set_accessibility_label(&self, _label: &str) -> Result<(), String> {
+        Ok(())
+    }
+
     fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
         // `set_icon` alone drops the template flag on macOS (tray-icon 0.25.1).
         self.icon
@@ -353,13 +381,22 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| on_menu_event(app, event.id().as_ref()))
         .build(app)?;
-    let tray: Arc<dyn NativeSurface> = Arc::new(Tray::new(
-        Arc::new(TauriTray {
-            app: handle.clone(),
-            icon,
-        }),
-        &idle,
-    ));
+    let tauri_tray = Arc::new(TauriTray {
+        app: handle.clone(),
+        icon,
+    });
+    // The builder takes no accessibility label, so the idle item gets it here, on the main
+    // thread like every tray call.
+    let labelled = report(
+        "set_accessibility_label",
+        tauri_tray.set_accessibility_label(&tray_label(&idle)),
+    );
+    let tray = Tray::new(tauri_tray, &idle);
+    if !labelled {
+        // The first render then redoes every call, the label included.
+        lock_state(&tray.state).drawn = None;
+    }
+    let tray: Arc<dyn NativeSurface> = Arc::new(tray);
     match app.try_state::<Surfaces>() {
         Some(surfaces) => surfaces
             .0
@@ -475,6 +512,7 @@ mod tests {
     enum Call {
         Title(Option<String>),
         Tooltip(String),
+        AccessibilityLabel(String),
         Glyph(Glyph),
         Menu(Vec<&'static str>),
     }
@@ -487,6 +525,10 @@ mod tests {
         Call::Tooltip(tray_label(view))
     }
 
+    fn accessibility_label(view: &TimerView) -> Call {
+        Call::AccessibilityLabel(tray_label(view))
+    }
+
     /// Records the calls. Each call asserts `Tray`'s lock is free. With `queued`, main-thread
     /// tasks wait in a queue until the test runs them, like posts from another thread.
     #[derive(Default)]
@@ -497,6 +539,8 @@ mod tests {
         queue: Mutex<VecDeque<Box<dyn FnOnce() + Send>>>,
         /// How many of the next `set_title` calls fail.
         title_failures: Mutex<u32>,
+        /// How many of the next `set_accessibility_label` calls fail.
+        label_failures: Mutex<u32>,
     }
 
     impl Recorder {
@@ -549,6 +593,16 @@ mod tests {
             Ok(())
         }
 
+        fn set_accessibility_label(&self, label: &str) -> Result<(), String> {
+            self.record(Call::AccessibilityLabel(label.into()));
+            let mut failures = self.label_failures.lock().unwrap();
+            if *failures > 0 {
+                *failures -= 1;
+                return Err("status item has no button".into());
+            }
+            Ok(())
+        }
+
         fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
             self.record(Call::Glyph(glyph));
             Ok(())
@@ -572,7 +626,8 @@ mod tests {
         let drawn = Drawn::of(view);
         vec![
             Call::Title(drawn.title),
-            Call::Tooltip(drawn.label),
+            Call::Tooltip(drawn.label.clone()),
+            Call::AccessibilityLabel(drawn.label),
             Call::Glyph(drawn.glyph),
             Call::Menu(drawn.items),
         ]
@@ -585,9 +640,16 @@ mod tests {
         tray.render(&running(S59));
         assert_eq!(calls.take(), full_draw(&running(S59)));
 
-        // A tick costs one `set_title` and one `set_tooltip`.
+        // A tick costs one `set_title`, one `set_tooltip` and one `set_accessibility_label`.
         tray.render(&running(S58));
-        assert_eq!(calls.take(), [title("24:58"), tooltip(&running(S58))]);
+        assert_eq!(
+            calls.take(),
+            [
+                title("24:58"),
+                tooltip(&running(S58)),
+                accessibility_label(&running(S58)),
+            ]
+        );
 
         // The same view again (a focus republish) costs nothing.
         tray.render(&running(S58));
@@ -598,6 +660,7 @@ mod tests {
             calls.take(),
             [
                 tooltip(&paused(S58)),
+                accessibility_label(&paused(S58)),
                 Call::Glyph(Glyph::Paused),
                 Call::Menu(vec![RESUME, END_SESSION, SHOW, QUIT]),
             ]
@@ -608,6 +671,7 @@ mod tests {
             calls.take(),
             [
                 tooltip(&running(S58)),
+                accessibility_label(&running(S58)),
                 Call::Glyph(Glyph::Focus),
                 Call::Menu(vec![PAUSE, END_SESSION, SHOW, QUIT]),
             ]
@@ -619,6 +683,7 @@ mod tests {
             [
                 Call::Title(None),
                 Call::Tooltip("No session".into()),
+                Call::AccessibilityLabel("No session".into()),
                 Call::Glyph(Glyph::Idle),
                 Call::Menu(vec![SHOW, QUIT]),
             ]
@@ -654,6 +719,24 @@ mod tests {
 
         // While idle no further render comes, so the retry is the only way back.
         *calls.title_failures.lock().unwrap() = 1;
+        tray.render(&idle());
+        let mut expected = full_draw(&idle());
+        expected.extend(full_draw(&idle()));
+        assert_eq!(calls.take(), expected);
+
+        tray.render(&idle());
+        assert_eq!(calls.take(), []);
+    }
+
+    /// A failed accessibility label fails the draw like any other call: the retry sets it
+    /// again, so VoiceOver is not left reading the previous view's name.
+    #[test]
+    fn failed_accessibility_label_is_retried_without_a_new_render() {
+        let (tray, calls) = tray_with(Recorder::default());
+        tray.render(&running(S59));
+        calls.take();
+
+        *calls.label_failures.lock().unwrap() = 1;
         tray.render(&idle());
         let mut expected = full_draw(&idle());
         expected.extend(full_draw(&idle()));
@@ -754,6 +837,9 @@ mod tests {
             }
             fn set_tooltip(&self, label: &str) -> Result<(), String> {
                 self.inner.set_tooltip(label)
+            }
+            fn set_accessibility_label(&self, label: &str) -> Result<(), String> {
+                self.inner.set_accessibility_label(label)
             }
             fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
                 self.inner.set_glyph(glyph)
