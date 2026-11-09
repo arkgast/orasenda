@@ -334,6 +334,6 @@ All three were the owner's call and are now decided, as recommended. None is ope
 3. **Does a session ended early count its minutes?** (decided by the owner, 2026-11-08, as recommended) Yes: record `focused_ms` with `end_reason: stopped` and count it toward the day's focused time and the deep hours when B shows them. Nothing a person did is lost, and the copy never judges.
 
 ## Implementation status
-- [ ] Plan: `docs/plans/2026-11-08-focus-session-loop.md`
+- [x] Plan: `docs/plans/2026-11-08-focus-session-loop.md`
 - [ ] Issues
 - [ ] ADR-011, ADR-012, ADR-013 accepted
