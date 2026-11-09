@@ -385,7 +385,10 @@ mod tests {
             (NavigatePage::Settings, "settings"),
         ] {
             assert_eq!(serde_json::to_value(page).unwrap(), json!(name));
-            assert_eq!(serde_json::from_value::<NavigatePage>(json!(name)).unwrap(), page);
+            assert_eq!(
+                serde_json::from_value::<NavigatePage>(json!(name)).unwrap(),
+                page
+            );
         }
     }
 

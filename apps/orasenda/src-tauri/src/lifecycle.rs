@@ -1,14 +1,38 @@
 //! Window lifecycle (spec: Windows): closing `main` hides it, the Dock and *Show Orasenda*
 //! bring it back, ⌘Q and *Quit Orasenda* quit. The activation policy stays `Regular`.
 
+use std::sync::{Mutex, PoisonError};
 #[cfg(desktop)]
 use tauri::AppHandle;
+
 use tauri::{Manager, Wry};
 
+use crate::ipc::NavigatePage;
 use crate::scheduler;
 
 /// The label of the app's main window (`tauri.conf.json`).
 pub(crate) const MAIN: &str = "main";
+
+/// A page the webview has been asked to show but has not taken yet, so a request made before
+/// it listens is not lost. The mutex is held only for the swap, never across a window call.
+#[derive(Default)]
+pub(crate) struct PendingNavigate(Mutex<Option<NavigatePage>>);
+
+impl PendingNavigate {
+    /// Stores the page; the last one wins.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "called by lifecycle::show_settings, T5 (#146)")
+    )]
+    pub(crate) fn set(&self, page: NavigatePage) {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(page);
+    }
+
+    /// Returns the stored page and clears it.
+    pub(crate) fn take(&self) -> Option<NavigatePage> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner).take()
+    }
+}
 
 /// What a close request on a window does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,7 +56,12 @@ pub(crate) fn on_close_requested(label: &str) -> CloseAction {
 /// (T7), and `CloseRequested` on `main` hides it instead of closing.
 pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
     builder.on_window_event(|window, event| match event {
-        tauri::WindowEvent::Focused(true) => scheduler::publish_focus(window.app_handle()),
+        tauri::WindowEvent::Focused(true) => {
+            scheduler::publish_focus(window.app_handle());
+            if window.label() == MAIN {
+                crate::notifications::on_main_focused(window.app_handle());
+            }
+        }
         tauri::WindowEvent::CloseRequested { api, .. }
             if on_close_requested(window.label()) == CloseAction::Hide =>
         {
@@ -85,5 +114,17 @@ mod tests {
         assert_eq!(on_close_requested("overlay"), CloseAction::Pass);
         assert_eq!(on_close_requested("Main"), CloseAction::Pass);
         assert_eq!(on_close_requested(""), CloseAction::Pass);
+    }
+
+    #[test]
+    fn navigate_take_returns_once() {
+        let pending = PendingNavigate::default();
+        assert_eq!(pending.take(), None);
+        pending.set(NavigatePage::Settings);
+        assert_eq!(pending.take(), Some(NavigatePage::Settings));
+        assert_eq!(pending.take(), None);
+        pending.set(NavigatePage::Today);
+        pending.set(NavigatePage::Review);
+        assert_eq!(pending.take(), Some(NavigatePage::Review));
     }
 }

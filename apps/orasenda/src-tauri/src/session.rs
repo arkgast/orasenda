@@ -25,8 +25,8 @@ use uuid::Uuid;
 
 use crate::ClockTick;
 use crate::ipc::{
-    MilestoneEvent, MilestoneKind, Mode, SettingsError, SettingsErrorKind, StartRequest,
-    StoreStatus, TimerCommandError, TimerCommandErrorKind, Settings, TimerState, TimerView,
+    MilestoneEvent, MilestoneKind, Mode, Settings, SettingsError, SettingsErrorKind, StartRequest,
+    StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerState, TimerView,
 };
 use crate::scheduler::{self, Host};
 
@@ -411,11 +411,7 @@ impl SessionService {
 
     /// Validates and writes every setting in one transaction (with anything owed),
     /// then updates the cache.
-    pub fn set_settings(
-        &mut self,
-        settings: Settings,
-        now_ms: u64,
-    ) -> Result<(), SettingsError> {
+    pub fn set_settings(&mut self, settings: Settings, now_ms: u64) -> Result<(), SettingsError> {
         if settings.preset == Preset::Quick {
             return Err(SettingsError {
                 kind: SettingsErrorKind::InvalidSpec,
@@ -438,7 +434,7 @@ impl SessionService {
             settings::set(txn, KEY_PRESET, &settings.preset)?;
             settings::set(txn, KEY_CUSTOM, &settings.custom)?;
             settings::set(txn, KEY_THEME, &settings.theme)?;
-        settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)
+            settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)
         })
         .map_err(|_| SettingsError {
             kind: SettingsErrorKind::Write,
@@ -808,10 +804,7 @@ pub(crate) fn run_state<H: Host>(host: &H) -> TimerState {
 /// idle finish follows the new preset at once. A save that changes the store status (its
 /// write fails, or it also writes what was owed) publishes one `timer-tick` first, even while
 /// idle, so the standing store line follows `view.store` (#112).
-pub(crate) fn run_set_settings<H: Host>(
-    host: &H,
-    settings: Settings,
-) -> Result<(), SettingsError> {
+pub(crate) fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), SettingsError> {
     let Some(service) = host.service() else {
         return Err(SettingsError {
             kind: SettingsErrorKind::Unavailable,
@@ -1738,7 +1731,9 @@ mod tests {
     fn undecodable_theme_reads_as_system() {
         let store = memory_store();
         store
-            .write(T0, |txn| orasenda_store::settings::set(txn, "ui.theme", &"sepia"))
+            .write(T0, |txn| {
+                orasenda_store::settings::set(txn, "ui.theme", &"sepia")
+            })
             .expect("writes");
         let mut s = SessionService::new(
             Ok(store),
