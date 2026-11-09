@@ -21,11 +21,12 @@ Project rules for every contributor and agent. They override baton's general gui
   on them.
 - All checks live in the `ci` recipe of the `justfile`; `scripts/ci.sh` runs `just ci`, and baton
   `validate` and GitHub Actions both run that script. Add new checks to the recipe, fastest first.
-- A plan task's Touches list every file outside its Owns that its change or its tests need: the
+- Every task issue, whether a plan task or a follow-up filed from a review, lists Owns and
+  Touches. Touches name every file outside Owns that its change or its tests need: the
   TypeScript tests that build an IPC type it changes, the test hooks it needs in another crate,
   and the spec line for a failure case it settles. Three P1-A tasks (#87, #91, #104) each needed
-  an architect ruling for an ownership exception because the plan left one out. #104 needed one
-  Rust file for a single term and one test in its `tests` module.
+  an architect ruling for an ownership exception: the plan left a file out of #87 and #91, and
+  #104, a review follow-up, had no Owns or Touches at all.
 
 ## Code structure (ADR-001, ADR-007)
 - `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
@@ -68,12 +69,12 @@ Seen twice in P1-A: Today rolled back over a later settings save that was still 
 - Work computed under a lock and applied after unlock, or replies to calls that can overlap,
   can arrive out of order. First, stop the overlap: if the caller can wait for the last call to
   answer, chain the calls so at most one is in flight, and send the newest intent when it
-  answers. Chaining also fixes the order the other side applies them in. The first
-  sequence-number design for Today (#101) dropped a stale write failure that sat behind a newer
-  answer, and Rust could still apply overlapping saves in either order. Chaining (#115) fixed
-  both.
-- Use a sequence number only when the calls cannot be chained, such as a background thread
-  racing a main-thread update. Stamp each result with a number taken where it was computed
+  answers. Chaining also fixes the order the other side applies them in. Today's first fix
+  (#101) used sequence numbers. It dropped an older write failure because a newer save was
+  rejected, so the screen kept a value Rust never saved, and Rust could still apply overlapping
+  saves in either order. Chaining (#115) fixed both.
+- Use a sequence number only when the calls cannot be chained, such as views published by both
+  the scheduler thread and commands, which no single caller can wait on (#93). Stamp each result with a number taken where it was computed
   (under the lock, or when the call was sent) and drop anything older than the last one applied
   (#93).
 - Check-and-apply happens under one small mutex (not an atomic) that is never held while
