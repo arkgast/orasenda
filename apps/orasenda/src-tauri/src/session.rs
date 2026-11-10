@@ -491,8 +491,9 @@ impl SessionService {
     /// Validates, then writes only the keys that differ from the presented settings, in one
     /// transaction with anything owed, and updates the cache. A `notifySessionEnd` that
     /// differs from the presented value also removes the review marker (the user's choice
-    /// wins). While the launch read of the settings is owed the cache holds defaults, so
-    /// every key is written and the marker is cleared.
+    /// wins). While the launch read of the settings is owed, the stored settings and marker are
+    /// read in the same transaction and only the changed keys are written on top; the read is
+    /// then no longer owed, and a pending review runs at once if a status is known.
     pub fn set_settings(
         &mut self,
         settings: Settings,
@@ -3366,6 +3367,8 @@ mod tests {
         assert!(saved.presented.notify_session_end);
         assert_eq!(saved.presented.preset, Preset::Custom);
         assert!(!s.recover_owed.settings);
+        assert!(!s.settings_event_owed);
+        assert!(!s.review_pending);
         assert_eq!(s.store_status, StoreStatus::Ok);
         assert_eq!(
             db(&s).change_log_ids()[before..],
@@ -3375,7 +3378,7 @@ mod tests {
 
     #[test]
     fn settings_set_while_settings_read_owed_with_unknown_status_leaves_the_review_pending() {
-        let (mut s, _) = read_owed_service();
+        let (mut s, before) = read_owed_service();
         db(&s).fail_reads(false);
         let saved = s
             .set_settings(
@@ -3390,6 +3393,8 @@ mod tests {
         assert_eq!(marker(&s).as_deref(), Some("pending"));
         assert!(!saved.presented.notify_session_end);
         assert!(s.review_pending);
+        assert!(!s.recover_owed.settings);
+        assert_eq!(db(&s).change_log_ids()[before..], ["ui.theme"]);
         assert_eq!(stored_custom(&s).0, Some(Preset::Custom));
     }
 
