@@ -1,0 +1,26 @@
+<!-- @dsCard group="Apps" height=580 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>AppPicker</title></head>
+<body>
+<div class="os-col">
+  <section class="os-picker" role="dialog" aria-labelledby="ap-t">
+    <div class="os-picker-head"><h2 id="ap-t">Add apps</h2><button class="os-iconbtn" type="button" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg></button></div>
+    <div class="os-picker-search os-field"><label for="ap-s">Search apps</label><input class="os-input" id="ap-s" type="search" value=""></div>
+    <div class="os-picker-body">
+      <h3>Open now</h3>
+      <label class="os-picker-row"><input type="checkbox" checked> <span class="os-approw-icon" style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line-strong)" aria-hidden="true"></span> Discord <span>Selected</span></label>
+      <label class="os-picker-row"><input type="checkbox"> <span class="os-approw-icon" style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line-strong)" aria-hidden="true"></span> Safari <span></span></label>
+      <h3>All applications</h3>
+      <label class="os-picker-row"><input type="checkbox" disabled> <span class="os-approw-icon" style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line-strong)" aria-hidden="true"></span> Stocks <span>Already Distracting</span></label>
+      <label class="os-picker-row"><input type="checkbox"> <span class="os-approw-icon" style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line-strong)" aria-hidden="true"></span> Xcode <span></span></label>
+      <label class="os-picker-row"><input type="checkbox"> <span class="os-approw-icon" style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line-strong)" aria-hidden="true"></span> Zoom <span></span></label>
+    </div>
+    <div class="os-picker-foot">
+      <div class="os-field"><label for="ap-as">Add as</label><span class="os-select-wrap"><select class="os-select" id="ap-as"><option>Distracting</option><option>Always allowed</option><option>Focus</option><option>Neutral</option></select><svg class="os-glyph" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 5.5L7 9l3.5-3.5"/></svg></span></div>
+      <button class="os-btn os-btn-primary" type="button" aria-keyshortcuts="Meta+Enter">Add 1 app</button>
+    </div>
+  </section>
+</div>
+</body>
+</html>

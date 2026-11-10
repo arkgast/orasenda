@@ -20,7 +20,9 @@ export default defineConfig({
   build: {
     // Safari 18 is the WebKit that macOS Sequoia 15.x ships. The 15.8.2 security notes
     // (https://support.apple.com/en-us/149523) do not name a Safari version, so this is the Sequoia
-    // baseline, not a number read from that page.
+    // baseline, not a number read from that page. It is a deliberate lower bound: it can only make the
+    // output more conservative, never newer than macOS 15.8.2's WebKit. To pin it exactly, read
+    // Safari's version on a 15.8.2 machine (/Applications/Safari.app) and set the matching target.
     target: "safari18",
     rolldownOptions: {
       // Setting `input` replaces the default entry, so the main page is listed too.

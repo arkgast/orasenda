@@ -81,29 +81,50 @@ const here = (name: string) => resolve(import.meta.dirname, name);
 // legacy.js is the hand-written bundle; the guards above read it. The rest of src is typed source.
 const typed = tsFiles(dir).filter((f) => !/\.(test|test-d|d)\.tsx?$/.test(f));
 
+/** Names of the sources (path to text) that call or import createElement. */
+function createElementHits(sources: Record<string, string>): string[] {
+  return Object.keys(sources).filter((name) => /createElement/.test(sources[name] as string));
+}
+
+/** The "!" and emoji problems in one source's copy: its string literals and its JSX text. */
+function copyProblems(text: string): { exclamation: string[]; emoji: string[] } {
+  // JSX text between tags counts as copy too; "!" in code (!x, !==) does not.
+  const jsxText = [...text.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)].map(
+    (m) => m[1] as string,
+  );
+  const copy = [...literals(text), ...jsxText];
+  return {
+    exclamation: copy.filter((s) => s.includes("!")),
+    emoji: copy.filter((s) => /\p{Extended_Pictographic}/u.test(s)),
+  };
+}
+
+const typedSources = Object.fromEntries(
+  typed.map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
+);
+
 test("guard_rejects_create_element", () => {
-  const hits = tsFiles(dir).filter((f) => /createElement/.test(readFileSync(f, "utf8")));
-  expect(hits.map((f) => f.replace(`${dir}/`, ""))).toEqual([]);
-  expect(/createElement/.test(`React.createElement("div")`)).toBe(true);
+  const all = Object.fromEntries(
+    tsFiles(dir).map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
+  );
+  expect(createElementHits(all)).toEqual([]);
+  // The scan bites on a seeded file.
+  expect(
+    createElementHits({
+      "Seed.tsx": `import { createElement } from "react";\nexport const x = createElement("div");`,
+      "Clean.tsx": "export const y = 1;",
+    }),
+  ).toEqual(["Seed.tsx"]);
 });
 
 test("source_copy_has_no_exclamation_mark_or_emoji", () => {
-  for (const file of typed) {
-    const text = readFileSync(file, "utf8");
-    // JSX text between tags counts as copy too; "!" in code (!x, !==) does not.
-    const jsxText = [...text.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)].map(
-      (m) => m[1] as string,
-    );
-    const copy = [...literals(text), ...jsxText];
-    expect(
-      copy.filter((s) => s.includes("!")),
-      file,
-    ).toEqual([]);
-    expect(
-      copy.filter((s) => /\p{Extended_Pictographic}/u.test(s)),
-      file,
-    ).toEqual([]);
+  for (const [name, text] of Object.entries(typedSources)) {
+    expect(copyProblems(text), name).toEqual({ exclamation: [], emoji: [] });
   }
+  // The scan bites on seeded copy, in a literal and in JSX text, and ignores "!" in code.
+  expect(copyProblems("export const A = () => <p>Done!</p>;").exclamation).toEqual(["Done!"]);
+  expect(copyProblems('export const b = "Nice 🎉";').emoji).toEqual(['"Nice 🎉"']);
+  expect(copyProblems("const ok = !x && a !== b;")).toEqual({ exclamation: [], emoji: [] });
 });
 
 test("source_critical_only_in_dialog_destructive_and_button_critical", () => {

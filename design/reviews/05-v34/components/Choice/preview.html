@@ -1,0 +1,33 @@
+<!-- @dsCard group="Fields" height=520 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Choice</title></head>
+<body>
+<div class="os-col" style="max-width: var(--panel-width)">
+  <fieldset class="os-choice-group">
+    <legend>Apps to intercept</legend>
+    <label class="os-choice"><input type="checkbox" checked> Safari</label>
+    <label class="os-choice"><input type="checkbox"> Notes</label>
+    <label class="os-choice"><input type="checkbox" checked> Mail</label>
+  </fieldset>
+  <fieldset class="os-choice-group">
+    <legend>When I go back to focus</legend>
+    <label class="os-choice"><input type="radio" name="back" checked> Hide the app</label>
+    <label class="os-choice"><input type="radio" name="back"> Quit the app</label>
+    <label class="os-choice"><input type="radio" name="back" disabled> Close it</label>
+  </fieldset>
+  <fieldset class="os-segmented">
+    <legend>Show</legend>
+    <div class="os-segmented-track">
+      <label><input type="radio" name="seg" checked> Unscheduled</label>
+      <label><input type="radio" name="seg"> Day</label>
+    </div>
+  </fieldset>
+  <fieldset class="os-choice-group">
+    <legend>Strength</legend>
+    <label class="os-choice os-choice-long"><input type="radio" name="strength" checked><span><b>Gentle</b><span class="os-choice-sub">A pause asks if this is what you intended. You can always continue.</span></span></label>
+    <label class="os-choice os-choice-long"><input type="radio" name="strength"><span><b>Firm</b><span class="os-choice-sub">You can continue after a short wait and a typed reason.</span></span></label>
+  </fieldset>
+</div>
+</body>
+</html>

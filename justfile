@@ -67,8 +67,12 @@ ui-build:
 
 # Build the Design System artifact files into a scratch folder and load them as classic scripts.
 design-system-check:
-    "{{ just_executable() }}" design-system --out "$(mktemp -d)"
-    pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="$(mktemp -d)"
+    trap 'rm -rf "$dir"' EXIT
+    "{{ just_executable() }}" design-system --out "$dir"
+    DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
 # Every check, fastest first. Stops at the first failure.
 ci:

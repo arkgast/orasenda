@@ -1,0 +1,59 @@
+<!-- @dsCard group="Actions" height=560 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>IconButton</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  // Placeholder glyphs (inline SVG paths) until the icon set lands.
+  function glyph(kids) { return h('svg', { viewBox: '0 0 20 20', 'aria-hidden': 'true', focusable: 'false' }, kids); }
+  var PAUSE = function () { return glyph(h('path', { d: 'M7.5 4.5v11M12.5 4.5v11' })); };
+  var STOP = function () { return glyph(h('rect', { x: 5, y: 5, width: 10, height: 10, rx: 1.5 })); };
+  var EXPAND = function () { return glyph(h('path', { d: 'M4 8V4h4M16 12v4h-4M4 4l5 5M16 16l-5-5' })); };
+  var MENU = function () { return glyph(h('path', { d: 'M4 6h12M4 10h12M4 14h12' })); };
+  var CLOSE = function () { return glyph(h('path', { d: 'M5.5 5.5l9 9M14.5 5.5l-9 9' })); };
+  var STATES = [
+    ['Rest', null],
+    ['Hover', { background: 'var(--surface-sunken)' }],
+    ['Pressed', { background: 'var(--selection)' }],
+    ['Focus', { outline: '2px solid var(--focus-ring)', outlineOffset: '2px' }]
+  ];
+  function Panel(props) {
+    var theme = props.theme, id = 'ib-' + theme;
+    var m = React.useState(false), open = m[0], setOpen = m[1];
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h('div', { className: 'os-actions' },
+        h(O.IconButton, { size: 'round', label: 'Pause session', icon: h(PAUSE), shortcut: 'Space', keyshortcuts: false, onClick: ack('Pause session pressed.') }),
+        h(O.IconButton, { label: 'End session', icon: h(STOP), shortcut: '⌘.', onClick: ack('End session pressed.') }),
+        h(O.IconButton, { label: 'Focus view', icon: h(EXPAND), onClick: ack('Focus view pressed.') }),
+        h(O.IconButton, { label: 'Pages', icon: h(MENU), shortcut: ['⌘1', '⌘2', '⌘3', '⌘4', '⌘5', '⌘6'], shortcutLabel: '⌘1–6', id: id + '-pages', 'aria-haspopup': 'menu', 'aria-expanded': open, 'aria-controls': id + '-menu', onClick: function () { setOpen(!open); } }),
+        h(O.IconButton, { label: 'Close', icon: h(CLOSE), onClick: ack('Close pressed.') }),
+        h(O.IconButton, { label: 'End session', icon: h(STOP), disabled: true })),
+      open ? h('p', { id: id + '-menu', className: 'os-muted', style: { margin: 0 } }, 'Pages menu is open (stand-in for PopoverMenu). Pages sets aria-expanded and aria-controls.') : null,
+      h('p', { className: 'os-muted', style: { margin: 0 } }, 'The last button is disabled: no session is running, so there is nothing to end.'),
+      h('div', { className: 'os-actions', 'aria-hidden': 'true' }, STATES.map(function (s) {
+        return h('span', { key: s[0], className: 'os-stack', style: { alignItems: 'center', gap: 'var(--space-1)' } },
+          h('span', { className: 'os-iconbtn', style: s[1] || undefined }, h(STOP)),
+          h('span', { className: 'os-caption' }, s[0]));
+      }).concat([
+        h('span', { key: 'round', className: 'os-stack', style: { alignItems: 'center', gap: 'var(--space-1)' } },
+          h('span', { className: 'os-iconbtn os-iconbtn-round' }, h(PAUSE)), h('span', { className: 'os-caption' }, 'Round')),
+        h('span', { key: 'off', className: 'os-stack', style: { alignItems: 'center', gap: 'var(--space-1)' } },
+          h('span', { className: 'os-iconbtn', style: { border: '1px dashed var(--line-strong)', color: 'var(--ink-muted)' } }, h(STOP)), h('span', { className: 'os-caption' }, 'Disabled'))
+      ])),
+      notice ? h('p', { role: 'status', className: 'os-muted', style: { margin: 0 } }, notice) : null);
+  }
+  function Demo() {
+    return h('div', null,
+      h(Panel, { theme: 'light' }),
+      h(Panel, { theme: 'dark' }),
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Round 52 × 52 for Pause/Resume on Today and in the Focus window; md 44 × 44 for the rest. Hover or Tab to a button to see its tooltip; the static row shows each state. Each name is its tooltip text.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!-- @dsCard group="Foundations" height=420 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Kbd</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  var SAMPLES = ['⌃⌥F', '⌘.', '⌘↩', '⇧⌘P', 'Space', 'Esc', '⌫', '←', 'Tab'];
+  function key(glyphs) { return h(O.Kbd, { keys: glyphs, spoken: O.describeShortcut(glyphs).spoken }); }
+  function Panel(props) {
+    var theme = props.theme;
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h('p', { style: { margin: 0 } }, 'Tip: ', key('⌃⌥F'), ' starts or pauses focus from anywhere.'),
+      h('p', { className: 'os-muted', style: { margin: 0 } }, key('⌘.'), ' ends · ', key('Esc'), ' leaves'),
+      h('p', { className: 'os-muted', style: { margin: 0 } }, 'In a tooltip: ',
+        h('span', { className: 'os-tooltip', 'aria-hidden': 'true' }, h('span', { className: 'os-tooltip-label' }, 'End session'), h(O.Kbd, { keys: '⌘.', inTooltip: true }))),
+      h('ul', { className: 'os-muted', style: { margin: 0, paddingInlineStart: 'var(--space-5)' } }, SAMPLES.map(function (g) {
+        var d = O.describeShortcut(g);
+        return h('li', { key: g }, h(O.Kbd, { keys: g, inTooltip: true }), ' ', d.spoken, ' · ', h('span', { className: 'os-num' }, d.aria));
+      })));
+  }
+  function Demo() {
+    return h('div', null, h(Panel, { theme: 'light' }), h(Panel, { theme: 'dark' }),
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'The glyph is hidden from VoiceOver; in running text a hidden sibling speaks the spoken name. The list shows the key table: glyph, spoken words, aria-keyshortcuts form.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

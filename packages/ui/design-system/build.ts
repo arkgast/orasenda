@@ -95,8 +95,39 @@ export function composeDeclarations(libDir: string): string {
     /^import type[\s\S]*?;\n/gm,
     "",
   );
-  const first = existsSync(built) ? `${readFileSync(built, "utf8")}\n` : "";
+  const first = existsSync(built) ? `${withoutLegacyLines(readFileSync(built, "utf8"))}\n` : "";
   return `${first}${legacy.trimEnd()}\n${types}`;
+}
+
+/**
+ * The library build leaves legacy.js, legacy.d.ts and types.ts external (vite.config.ts), so its
+ * index.d.ts imports and re-exports them by name. Those lines are dropped here: legacy.d.ts and
+ * types.ts are appended whole instead.
+ */
+export function withoutLegacyLines(dts: string): string {
+  const legacyNames = new Set<string>();
+  const kept: string[] = [];
+  for (const line of dts.split("\n")) {
+    const fromLegacy = /^import \{([^}]*)\} from ["'][^"']*\/legacy\.js["'];?$/.exec(line);
+    if (fromLegacy) {
+      for (const n of (fromLegacy[1] ?? "").split(",")) legacyNames.add(n.trim());
+      continue;
+    }
+    if (/^export type \* from ["'][^"']*\/(legacy\.(js|d\.ts)|types\.ts)["'];?$/.test(line))
+      continue;
+    kept.push(line);
+  }
+  return kept
+    .map((line) => {
+      const list = /^export \{([^}]*)\};?$/.exec(line);
+      if (!list) return line;
+      const names = (list[1] ?? "")
+        .split(",")
+        .map((n) => n.trim())
+        .filter((n) => n && !legacyNames.has(n));
+      return names.length ? `export { ${names.join(", ")} };` : "";
+    })
+    .join("\n");
 }
 
 const CARD_STYLE = `body{margin:0;font-family:var(--font-sans);background:var(--surface);color:var(--ink)}
@@ -163,6 +194,14 @@ interface Card {
 
 export async function generate(out: string): Promise<void> {
   const components = join(out, "components");
+  // Never clear a folder this build did not make: `--out .` or `--out ..` must not wipe a package.
+  if (
+    existsSync(out) &&
+    readdirSync(out).length > 0 &&
+    !existsSync(join(out, "design-system.json"))
+  ) {
+    throw new Error(`${out} is not empty and holds no earlier build (no design-system.json)`);
+  }
   rmSync(out, { recursive: true, force: true });
   mkdirSync(join(components, "lib"), { recursive: true });
   const work = mkdtempSync(join(tmpdir(), "ui-ds-"));

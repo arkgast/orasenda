@@ -1,0 +1,48 @@
+<!-- @dsCard group="Actions" height=1500 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>StartButton</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Frame(props) {
+    return h('div', { className: 'os-stack', style: { gap: 'var(--space-1)', width: props.width, maxWidth: '100%' } },
+      h('span', { className: 'os-caption' }, props.caption),
+      h('div', { style: { outline: '1px dashed var(--line-strong)' } }, props.children));
+  }
+  function Panel(props) {
+    var theme = props.theme;
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    var live = { onStart: ack('Focus started.'), onQuickStart: ack('Two-minute start.') };
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h('div', null, h(O.Button, { variant: 'ghost', 'aria-haspopup': 'menu' }, 'Classic · ends ', h('span', { className: 'os-num' }, '15:20'))),
+      h(Frame, { width: 480, caption: '480 of content, compactLabel "Start", singleKeys: aria-keyshortcuts "Space Meta+Enter"' },
+        h(O.StartButton, Object.assign({ compactLabel: 'Start', singleKeys: true }, live))),
+      h(Frame, { width: 360, caption: '360 of content: the label reads "Start", the name stays "Start focus"' },
+        h(O.StartButton, Object.assign({ compactLabel: 'Start', singleKeys: true }, live))),
+      h(Frame, { width: 480, caption: 'singleKeys false: aria-keyshortcuts "Meta+Enter"' },
+        h(O.StartButton, Object.assign({ singleKeys: false }, live))),
+      h(Frame, { width: 480, caption: 'singleKeys omitted: no aria-keyshortcuts' },
+        h(O.StartButton, live)),
+      h(Frame, { width: 480, caption: 'loading' },
+        h(O.StartButton, { onStart: function () {}, onQuickStart: function () {}, loading: true })),
+      h(Frame, { width: 480, caption: 'unavailable: both buttons stay focusable; the status row says why' },
+        h('div', { className: 'os-stack' },
+          h(O.InlineNotice, { variant: 'row', tone: 'attention', actionLabel: 'Try again', onAction: ack('Trying again.') }, 'Focus didn’t start. Orasenda’s timer isn’t responding.'),
+          h(O.StartButton, { onStart: function () {}, onQuickStart: function () {}, unavailable: true }))),
+      h(Frame, { width: 480, caption: 'Deprecated, rendered as before: finishTime and disabled' },
+        h('div', { className: 'os-stack' },
+          h(O.StartButton, Object.assign({ finishTime: '15:20' }, live)),
+          h(O.StartButton, { onStart: function () {}, onQuickStart: function () {}, disabled: true }))),
+      notice ? h('p', { role: 'status', className: 'os-muted', style: { margin: 0 } }, notice) : null);
+  }
+  function Demo() {
+    return h('div', null, h(Panel, { theme: 'light' }), h(Panel, { theme: 'dark' }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!-- @dsCard group="Feedback" height=220 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>EmptyState</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    return h('div', { className: 'os-col' },
+      h(O.EmptyState, { title: 'Your Inbox is clear', message: 'A thought can go here whenever you need.', actionLabel: 'Add a thought', onAction: ack('Capture opened.') }),
+      h(O.EmptyState, { variant: 'inline', message: 'Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.' }),
+      notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

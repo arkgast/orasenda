@@ -1,0 +1,31 @@
+<!-- @dsCard group="Navigation" height=760 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>CommandPalette</title></head>
+<body>
+<div id="root"></div>
+<div class="os-col" style="margin-top: var(--space-5); max-width: var(--panel-width)">
+  <p class="os-muted" style="margin:0">Results during a session, drawn as static markup until the preview bundle shows shortcuts: Pause and End come first, and a shortcut is a right-aligned key cap.</p>
+  <div class="os-command-list" role="listbox" aria-label="Commands, example">
+    <div class="os-command" role="option" aria-selected="true"><span style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3)"><span>Pause focus</span><span class="os-kbd" aria-hidden="true">⌃⌥F</span><span class="os-sr-only">Control-Option-F</span></span><span class="os-muted">Keeps your place</span><span class="os-command-selected" aria-hidden="true">Selected</span></div>
+    <div class="os-command" role="option" aria-selected="false"><span style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3)"><span>End session</span><span class="os-kbd" aria-hidden="true">⌘.</span><span class="os-sr-only">Command-Period</span></span></div>
+    <div class="os-command" role="option" aria-selected="false"><span>Capture a thought</span><span class="os-muted">Saves to the Inbox</span></div>
+  </div>
+</div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    function ack(what) { return function () { setNotice(what); }; }
+    var a = React.useState(false), open = a[0], setOpen = a[1];
+    function close() { setOpen(false); }
+    return h('div', { className: 'os-col' },
+      h('p', null, 'Type to filter, use the arrow keys, then press Enter.'),
+      h('div', null, h(O.Button, { onClick: function () { setOpen(true); } }, 'Open commands')),
+      open ? h(O.CommandPalette, { commands: [{ id: 'today', label: 'Go to Today', hint: 'Your next block and priorities' }, { id: 'capture', label: 'Capture a thought', hint: 'Saves to the Inbox' }, { id: 'pause', label: 'Pause focus', hint: 'Keeps your place', shortcut: '⌃⌥F' }], onSelect: function (id) { setNotice('Command chosen · ' + id); }, onClose: close }) : null,
+      notice ? h('p', { role: 'status', className: 'os-muted' }, notice) : null);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

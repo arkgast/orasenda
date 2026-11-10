@@ -22,8 +22,8 @@ export function runtimeExports(): string[] {
  * is legacy the declarations are composed from legacy.d.ts and types.ts (design-system/build.ts)
  * and the plugin joins the build with the first migrated component.
  */
-export function hasMigratedExports(): boolean {
-  const text = readFileSync(resolve(src, "index.ts"), "utf8");
+export function hasMigratedExports(entry: string = resolve(src, "index.ts")): boolean {
+  const text = readFileSync(entry, "utf8");
   return /^export \{ \w+ \} from "(?!\.\/legacy\.js)/m.test(text);
 }
 
@@ -79,17 +79,46 @@ const safe: Plugin = {
 
 const productionReact = { "process.env.NODE_ENV": JSON.stringify("production") };
 
-/** The library: ES modules, with react, react-dom and radix-ui left to the host. */
-const config: UserConfig = defineConfig({
-  resolve: { alias },
-  plugins: hasMigratedExports() ? [dts({ tsconfig: resolve(root, "tsconfig.json") })] : [],
-  build: {
-    lib: { entry: resolve(src, "index.ts"), formats: ["es"], fileName: "index" },
-    outDir: resolve(root, "dist"),
-    emptyOutDir: true,
-    rolldownOptions: { external: [/^react(\/|$)/, /^react-dom(\/|$)/, /^radix-ui(\/|$)/] },
+/**
+ * While names are still legacy, the declaration pass must not read legacy.js as types: it marks
+ * legacy.js, legacy.d.ts and types.ts external, and composeDeclarations (design-system/build.ts)
+ * drops those lines and appends legacy.d.ts and types.ts instead.
+ */
+const legacyExternalForDts: Plugin = {
+  name: "legacy-external-for-dts",
+  enforce: "pre",
+  resolveId(source) {
+    return /(^|\/)(legacy\.js|legacy\.d\.ts|types\.ts)$/.test(source)
+      ? { id: source, external: true }
+      : undefined;
   },
-});
+};
+
+/** rolldown-plugin-dts, run before Vite's own TypeScript transform, which would strip the .d.ts it generates. */
+function declarations(): Plugin[] {
+  const plugins = [dts({ tsconfig: resolve(root, "tsconfig.json") })].flat() as unknown as Plugin[];
+  return plugins.map((plugin) =>
+    /fake/.test(plugin.name) ? { ...plugin, enforce: "pre" } : plugin,
+  );
+}
+
+/** The library: ES modules, with react, react-dom and radix-ui left to the host. */
+export function libraryConfig(
+  entry: string = resolve(src, "index.ts"),
+  outDir: string = resolve(root, "dist"),
+): UserConfig {
+  return defineConfig({
+    resolve: { alias },
+    plugins: hasMigratedExports(entry) ? [legacyExternalForDts, ...declarations()] : [],
+    build: {
+      lib: { entry, formats: ["es"], fileName: "index" },
+      outDir,
+      emptyOutDir: true,
+      rolldownOptions: { external: [/^react(\/|$)/, /^react-dom(\/|$)/, /^radix-ui(\/|$)/] },
+    },
+  });
+}
+const config: UserConfig = libraryConfig();
 export default config;
 
 /** components/bundle.js and components/bundle.css: a classic script; react is window.React. */

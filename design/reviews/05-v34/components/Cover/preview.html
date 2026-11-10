@@ -1,0 +1,50 @@
+<!-- @dsCard group="Brand" height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orasenda</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--surface); color:var(--ink); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .focus { fill:var(--focus); }
+  .tint { fill:var(--focus-soft); }
+  .brk { fill:var(--break); }
+  .rout { fill:var(--routine); }
+  .deep { fill:var(--ink); }
+  .arc { fill:none; stroke:var(--focus-soft); stroke-width:8; stroke-linecap:round; }
+  .arc.b { stroke:var(--break-soft); }
+  .arc.a { stroke:var(--amber-soft); }
+  .words { position:absolute; left:var(--space-6); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-size:88px; line-height:.92; font-weight:500; letter-spacing:-.02em; color:var(--ink); }
+  .tag { margin:var(--space-2) 0 0 var(--space-1); font-size:13px; line-height:18px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+
+<rect class="focus blk" x="16" y="-16" width="128" height="232" rx="16"/>
+<rect class="rout blk" x="16" y="232" width="128" height="40" rx="16"/>
+<rect class="brk blk" x="160" y="16" width="128" height="32" rx="16"/>
+<rect class="tint blk" x="160" y="64" width="128" height="208" rx="16"/>
+<rect class="deep blk" x="304" y="40" width="160" height="232" rx="16"/>
+<g transform="rotate(-90 384 156)">
+<circle class="arc" cx="384" cy="156" r="80" pathLength="100" stroke-dasharray="72 100"/>
+<circle class="arc b" cx="384" cy="156" r="60" pathLength="100" stroke-dasharray="48 100"/>
+<circle class="arc" cx="384" cy="156" r="40" pathLength="100" stroke-dasharray="84 100"/>
+<circle class="arc a" cx="384" cy="156" r="20" pathLength="100" stroke-dasharray="30 100"/>
+</g>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Orasenda</h1>
+<p class="tag">One calm place for your time.</p>
+</div>
+</div>
+</body>
+</html>

@@ -12,34 +12,47 @@ import {
 import { flushSync } from "react-dom";
 import { commands, events } from "./bindings";
 import { infoLine } from "./format";
+import { PageBoundary } from "./PageBoundary";
 import type { Arrival, SettingsTarget } from "./pages/Settings";
 import type { AboutInfo } from "./pages/settings/About";
-import { Today } from "./pages/Today";
 import { subscribe } from "./subscribe";
 import { useTheme } from "./useTheme";
 
 export type { SettingsTarget };
 
-// Today is the first page and stays in the main chunk. The others are their own chunks; they start loading right away, and a page that has loaded renders
+// Every page is its own chunk. They start loading right away, and a page that has loaded renders
 // without suspending (React's `use` reads a settled promise at once), so a click on the rail finds the new
-// heading in place and focus can move to it straight away.
+// heading in place and focus can move to it straight away. (React.lazy would suspend on first render.)
 type Loaded<P> = Promise<ComponentType<P>> & { status?: string; value?: ComponentType<P> };
 
 function load<P>(importer: () => Promise<ComponentType<P>>) {
   const promise: Loaded<P> = importer();
-  promise.then((component) => {
-    promise.status = "fulfilled";
-    promise.value = component;
-  });
+  // A failed chunk rejects `use` inside the page boundary; this handler keeps it from also being unhandled.
+  promise.then(
+    (component) => {
+      promise.status = "fulfilled";
+      promise.value = component;
+    },
+    () => {},
+  );
   return { ready: promise, use: () => use(promise as Parameters<typeof use<ComponentType<P>>>[0]) };
 }
 
+const todayPage = load(() => import("./pages/Today").then((m) => m.Today));
 const settingsPage = load(() => import("./pages/Settings").then((m) => m.Settings));
 const placeholderPage = load(() => import("./pages/Placeholder").then((m) => m.Placeholder));
 
-/** Settles when every lazy page has loaded; the test setup waits for it. */
-export const pagesReady = Promise.all([settingsPage.ready, placeholderPage.ready]);
+/** Settles when every page has loaded or failed; the test setup waits for it. */
+export const pagesReady = Promise.allSettled([
+  todayPage.ready,
+  settingsPage.ready,
+  placeholderPage.ready,
+]);
 
+function Today() {
+  const Page = todayPage.use();
+  return <Page />;
+}
 function Settings(props: ComponentProps<typeof import("./pages/Settings").Settings>) {
   const Page = settingsPage.use();
   return <Page {...props} />;
@@ -133,13 +146,15 @@ export function App() {
           <p className="app-info">{infoText}</p>
         </header>
         <main ref={main} className="app-main">
-          <Suspense fallback={null}>
-            {current === "today" ? <Today /> : null}
-            {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
-            {current !== "today" && current !== "settings" ? (
-              <Placeholder title={TITLES[current]} />
-            ) : null}
-          </Suspense>
+          <PageBoundary>
+            <Suspense fallback={null}>
+              {current === "today" ? <Today /> : null}
+              {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
+              {current !== "today" && current !== "settings" ? (
+                <Placeholder title={TITLES[current]} />
+              ) : null}
+            </Suspense>
+          </PageBoundary>
         </main>
       </div>
     </div>

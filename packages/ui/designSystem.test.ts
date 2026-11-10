@@ -9,19 +9,50 @@ import * as ui from "./src/index.ts";
 
 // The runtime surface before the code-first move (window.Orasenda of the hand-written bundle.js).
 const PREVIOUS_SURFACE = [
-  "Button", "ModeChip", "TimerRing", "TimerStrip", "timerLayout", "MenuBarTimer", "TaskCard",
-  "TimeBlock", "HabitDots", "RoutineItem", "WellnessNote", "IntentPrompt", "Dialog",
-  "FullScreenFocus", "Input", "TextArea", "CapturePad", "InlineNotice", "Toast", "NavRail",
-  "KanbanColumn", "CommandPalette", "EmptyState", "StartButton", "NowLine", "PageFrame",
-  "ScrollRegion", "SettingsIndex", "SettingsRow", "IconButton", "Tooltip", "Kbd",
-  "describeShortcut", "PopoverMenu",
-]; // biome-ignore format: one line per group reads better
+  "Button",
+  "ModeChip",
+  "TimerRing",
+  "TimerStrip",
+  "timerLayout",
+  "MenuBarTimer",
+  "TaskCard",
+  "TimeBlock",
+  "HabitDots",
+  "RoutineItem",
+  "WellnessNote",
+  "IntentPrompt",
+  "Dialog",
+  "FullScreenFocus",
+  "Input",
+  "TextArea",
+  "CapturePad",
+  "InlineNotice",
+  "Toast",
+  "NavRail",
+  "KanbanColumn",
+  "CommandPalette",
+  "EmptyState",
+  "StartButton",
+  "NowLine",
+  "PageFrame",
+  "ScrollRegion",
+  "SettingsIndex",
+  "SettingsRow",
+  "IconButton",
+  "Tooltip",
+  "Kbd",
+  "describeShortcut",
+  "PopoverMenu",
+];
 
+// `just design-system-check` builds once and passes the folder in DS_OUT; alone, the test builds its own.
+const prebuilt = process.env.DS_OUT;
 const scratch = mkdtempSync(join(tmpdir(), "ui-ds-test-"));
-const out = join(scratch, "system");
+const out = prebuilt ?? join(scratch, "system");
 const file = (...p: string[]) => readFileSync(join(out, ...p), "utf8");
 
 beforeAll(async () => {
+  if (prebuilt) return;
   const { generate } = await import("./design-system/build.ts");
   await generate(out);
 }, 240_000);
@@ -129,7 +160,8 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   },
 };
 
-test("design_system_renders_every_export", async () => {
+/** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */
+function loadWindow() {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', {
     runScripts: "dangerously",
     pretendToBeVisual: true,
@@ -150,6 +182,33 @@ test("design_system_renders_every_export", async () => {
   for (const name of ["lib/react.js", "lib/react-dom.js", "bundle.js"]) {
     w.eval(file("components", name));
   }
+  return { dom, w, errors };
+}
+
+/** Renders each named export with its minimal props; returns the names that threw or logged an error. */
+// biome-ignore lint/suspicious/noExplicitAny: the jsdom window is driven loosely, as a page would
+function renderAll(w: Record<string, any>, errors: string[], names: readonly string[]): string[] {
+  const failed: string[] = [];
+  for (const name of names) {
+    const props = MINIMAL[name];
+    expect(props, `minimal props for ${name}`).toBeDefined();
+    const before = errors.length;
+    const host = w.document.createElement("div");
+    w.document.body.appendChild(host);
+    const root = w.ReactDOM.createRoot(host);
+    try {
+      w.ReactDOM.flushSync(() => root.render(w.React.createElement(w.Orasenda[name], props)));
+      if (errors.length > before || host.innerHTML.length === 0) failed.push(name);
+      w.ReactDOM.flushSync(() => root.unmount());
+    } catch {
+      failed.push(name);
+    }
+  }
+  return failed;
+}
+
+test("design_system_renders_every_export", () => {
+  const { dom, w, errors } = loadWindow();
   expect(w.React.version).toBe("19.3.1");
   const O = w.Orasenda;
   expect(Object.keys(O).sort()).toEqual(expect.arrayContaining([...PREVIOUS_SURFACE]));
@@ -158,17 +217,27 @@ test("design_system_renders_every_export", async () => {
     "string",
   );
   expect(O.describeShortcut("⌘.").aria).toBe("Meta+Period");
-  for (const name of PREVIOUS_SURFACE.filter((n) => /^[A-Z]/.test(n))) {
-    const props = MINIMAL[name];
-    expect(props, `minimal props for ${name}`).toBeDefined();
-    const host = w.document.createElement("div");
-    w.document.body.appendChild(host);
-    const root = w.ReactDOM.createRoot(host);
-    w.ReactDOM.flushSync(() => root.render(w.React.createElement(O[name], props)));
-    expect(errors, name).toEqual([]);
-    expect(host.innerHTML.length, name).toBeGreaterThan(0);
-    w.ReactDOM.flushSync(() => root.unmount());
-  }
+  expect(
+    renderAll(
+      w,
+      errors,
+      PREVIOUS_SURFACE.filter((n) => /^[A-Z]/.test(n)),
+    ),
+  ).toEqual([]);
   expect(errors).toEqual([]);
   dom.window.close();
+});
+
+test("design_system_check_fails_when_a_seeded_export_throws_on_render", () => {
+  const { dom, w, errors } = loadWindow();
+  w.Orasenda.Boom = () => {
+    throw new Error("seeded: throws on render");
+  };
+  MINIMAL.Boom = {};
+  try {
+    expect(renderAll(w, errors, ["Button", "Boom"])).toEqual(["Boom"]);
+  } finally {
+    delete MINIMAL.Boom;
+    dom.window.close();
+  }
 });

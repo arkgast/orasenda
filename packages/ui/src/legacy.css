@@ -1,10 +1,13 @@
+/* Shared: base */
 /* Type sizes mirror tokens.json type.groups: body 15/22, body-sm 13/18, label 12/16, caption 11/14, heading 17/24, title 22/28, timer-xl 168, timer-lg 64, timer-md 28/32, timer-sm 13/16. */
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; font-family: var(--font-sans); font-size: 15px; line-height: 22px; background: var(--surface); color: var(--ink); }
 button { font-family: inherit; }
 [data-reading-comfort="true"] { font-family: var(--font-alt); }
 :where(a[href], button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* end Shared: base */
 
+/* Shared: layout helpers */
 /* Layout helpers used by previews and screens */
 .os-row, .os-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
 .os-row, .os-col { padding: var(--space-4); }
@@ -14,6 +17,7 @@ button { font-family: inherit; }
 .os-caption { color: var(--ink-muted); font-size: 11px; line-height: 14px; font-weight: 500; }
 .os-shape { width: var(--icon-sm); height: var(--icon-sm); fill: currentColor; flex: none; }
 .os-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* end Shared: layout helpers */
 
 /* Button */
 /* Button. Disabled keeps a readable label; the fill becomes a dashed neutral boundary. */
@@ -171,6 +175,9 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-dialog h2 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; }
 .os-dialog-description { margin: 0; font-size: 15px; line-height: 22px; color: var(--ink-muted); }
 .os-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+/* end Dialog */
+
+/* IntentPrompt */
 .os-intent { text-align: center; align-items: center; }
 .os-intent-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
 /* Step 2: the reason group is the step's question, so its legend reads as a heading; the hint names what unlocks Continue. */
@@ -181,9 +188,13 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-breath { width: 96px; height: 96px; border-radius: var(--radius-pill); background: var(--focus-soft); display: grid; place-items: center; flex: none; }
 .os-breath i { display: block; width: 48px; height: 48px; border-radius: var(--radius-pill); background: var(--focus); animation: os-breathe var(--duration-breath) var(--easing-calm) infinite; }
 @keyframes os-breathe { 0%, 100% { transform: scale(0.7); } 50% { transform: scale(1.4); } }
+/* end IntentPrompt */
+
+/* FullScreenFocus */
 .os-fullscreen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-6); min-height: var(--window-min-height); padding: var(--space-8); background: var(--surface); color: var(--ink); }
 .os-fullscreen:focus { outline: none; }
-/* end Dialog */
+@media (max-width: 600px) { .os-fullscreen { padding: var(--space-4); } }
+/* end FullScreenFocus */
 
 /* Input */
 /* Input, TextArea and radio choices keep native keyboard behaviour. */
@@ -192,10 +203,16 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-input { display: block; width: 100%; min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink); font: inherit; }
 .os-input:hover { border-color: var(--focus); }
 .os-input::placeholder { color: var(--ink-muted); opacity: 1; }
-textarea.os-input { resize: vertical; min-height: 96px; }
 .os-input:disabled { color: var(--ink-muted); border-style: dashed; cursor: default; }
 .os-input[aria-invalid="true"] { box-shadow: inset 0 0 0 1px var(--line-strong); }
 .os-field-help { display: flex; align-items: baseline; gap: var(--space-2); margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+/* end Input */
+
+/* TextArea */
+textarea.os-input { resize: vertical; min-height: 96px; }
+/* end TextArea */
+
+/* Choice (CSS only: radio and checkbox choices, segmented and long variants) */
 .os-choice-group { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; border: 0; }
 .os-choice-group legend { margin-bottom: var(--space-2); }
 .os-choice { display: inline-flex; gap: var(--space-2); align-items: center; min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--ink); background: var(--surface-raised); cursor: pointer; }
@@ -206,16 +223,40 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-choice input[type="checkbox"] { display: inline-grid; place-content: center; border-radius: calc(var(--radius-sm) / 2); }
 .os-choice input[type="checkbox"]:checked { box-shadow: none; }
 .os-choice input[type="checkbox"]:checked::before { content: ""; width: calc(var(--icon-md) * 0.3); height: calc(var(--icon-md) * 0.55); margin-top: -2px; border: solid var(--on-focus); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-/* end Input */
+/* Choice variants: segmented (joined radios) and long (title plus one sentence). */
+.os-segmented { margin: 0; padding: 0; border: 0; }
+.os-segmented legend { margin-bottom: var(--space-2); font-size: 13px; line-height: 18px; color: var(--ink); }
+.os-segmented-track { display: inline-flex; }
+.os-segmented label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: var(--hit-min); padding: 0 var(--space-4); margin-inline-start: -1px; border: 1px solid var(--line-strong); background: var(--surface-raised); color: var(--ink); cursor: pointer; }
+.os-segmented label:first-child { margin-inline-start: 0; border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md); }
+.os-segmented label:last-child { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
+.os-segmented label:hover { background: var(--surface-sunken); }
+.os-segmented label:has(:checked) { background: var(--selection); font-weight: 600; box-shadow: inset 0 -2px 0 var(--focus); }
+.os-segmented label:has(input:focus-visible) { z-index: 1; outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.os-segmented input { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); }
+.os-choice-long { display: flex; align-items: flex-start; width: 100%; padding: var(--space-3); }
+.os-choice-long input { margin-top: var(--space-1); flex: none; }
+.os-choice-long b { display: block; font-weight: 600; }
+.os-choice-sub { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+/* end Choice (CSS only: radio and checkbox choices, segmented and long variants) */
 
 /* InlineNotice */
 /* InlineNotice and Toast */
 .os-notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); }
 .os-notice-message { display: flex; align-items: baseline; gap: var(--space-2); flex: 1; }
 .os-notice-warning { background: var(--amber-soft); color: var(--amber); }
+/* InlineNotice variant="row": the reserved 44px status row. */
+.os-statusrow { display: flex; align-items: center; gap: var(--space-3); height: var(--hit-min); min-width: 0; }
+.os-statusrow-msg { display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 18px; color: var(--ink); }
+.os-statusrow-rest { color: var(--ink-muted); }
+.os-statusrow .os-btn-ghost { color: var(--focus); padding-inline: var(--space-3); flex: none; }
+.os-statusrow-warning .os-glyph { color: var(--amber); }
+/* end InlineNotice */
+
+/* Toast */
 .os-toast { position: fixed; bottom: var(--space-5); left: 50%; transform: translateX(-50%); width: var(--panel-width); max-width: calc(100% - var(--space-6)); z-index: var(--z-popover); padding: var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--surface-overlay); box-shadow: var(--shadow-raised); }
 .os-toast > .os-btn { margin-top: var(--space-2); }
-/* end InlineNotice */
+/* end Toast */
 
 /* NavRail */
 /* NavRail, KanbanColumn, CommandPalette, EmptyState, StartButton */
@@ -224,16 +265,31 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-nav button:hover { background: var(--surface-sunken); }
 .os-nav button[aria-current="page"] { background: var(--selection); color: var(--focus); border-inline-start-color: var(--focus); font-weight: 600; }
 .os-nav svg { width: var(--icon-lg); height: var(--icon-lg); stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+/* end NavRail */
+
+/* KanbanColumn */
 .os-kanban { width: var(--column-width); max-width: 100%; flex: none; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); background: var(--surface-sunken); border-radius: var(--radius-lg); }
 .os-kanban header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }
-.os-kanban h2, .os-empty h2 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; }
 .os-kanban > p { margin: 0; }
+/* end KanbanColumn */
+
+/* Shared: card headings (KanbanColumn, EmptyState) */
+.os-kanban h2, .os-empty h2 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; }
+/* end Shared: card headings (KanbanColumn, EmptyState) */
+
+/* CommandPalette */
 .os-command-list { display: flex; flex-direction: column; gap: var(--space-1); max-height: min(320px, 50vh); overflow: auto; padding: var(--space-1); }
 .os-command { display: flex; flex-direction: column; gap: var(--space-1); min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border-inline-start: 3px solid var(--clear); cursor: pointer; }
 .os-command[aria-selected="true"] { background: var(--selection); border-inline-start-color: var(--focus); }
 .os-command-selected { color: var(--focus); font-size: 13px; line-height: 18px; }
+/* end CommandPalette */
+
+/* EmptyState */
 .os-empty { max-width: var(--panel-width); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
 .os-empty p { margin: 0; color: var(--ink-muted); }
+/* end EmptyState */
+
+/* StartButton */
 .os-start { display: flex; flex-direction: column; gap: var(--space-3); }
 .os-start p { margin: 0; }
 /* Start carries the play glyph. With compactLabel the StartButton fills its host's width and, below 400px of that
@@ -246,12 +302,16 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-start-fit .os-start-full { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
   .os-start-fit .os-start-compact { display: inline; }
 }
+/* end StartButton */
 
-@media (max-width: 600px) { .os-fullscreen { padding: var(--space-4); } }
+/* Shared: reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .os-breath i { transform: scale(1); }
 }
+/* end Shared: reduced motion */
+
+/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, HabitDots, Choice) */
 @media (forced-colors: active) {
   .os-timer .track { stroke-dasharray: 2 4; }
   .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
@@ -267,8 +327,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-choice input:checked:focus-visible { outline-color: Highlight; }
   .os-choice input:checked:disabled { background: GrayText; border-color: GrayText; }
 }
-/* end NavRail */
+/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, HabitDots, Choice) */
 
+/* Shared: redesign pass glyphs */
 /* ---------------------------------------------------------------------------
    Redesign pass, 2026-11-09. Components added as READMEs with static previews;
    the app implements them. Type sizes mirror tokens.json (body-sm 13/18, caption
@@ -276,6 +337,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
    --------------------------------------------------------------------------- */
 .os-glyph { width: var(--icon-md); height: var(--icon-md); flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .os-glyph-fill { fill: currentColor; stroke: none; }
+/* end Shared: redesign pass glyphs */
 
 /* Kbd */
 /* Kbd: a key name, never a control. */
@@ -326,7 +388,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-strip-stacked .os-strip-head { justify-content: center; gap: var(--space-2); }
 .os-strip-stacked .os-strip-digits { font-size: clamp(28px, 10cqi, 64px); }
 .os-strip-tri { position: absolute; top: 0; width: 10px; height: 10px; margin-inline-start: -5px; color: var(--amber); fill: currentColor; }
+/* end TimerStrip */
 
+/* FloatingTimer (CSS only: TimerStrip README) */
 /* FloatingTimer: its own composition, sized by the floater-* tokens. */
 .os-floater { display: flex; align-items: center; gap: var(--space-2); width: var(--floater-width); min-width: var(--floater-width); max-width: var(--floater-max-width); height: var(--floater-height); min-height: var(--floater-min-height); max-height: var(--floater-max-height); padding-block: 0; padding-inline: var(--space-3) var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-raised); color: var(--ink); }
 .os-floater-time { display: flex; align-items: center; gap: var(--space-1-5); flex: 1; min-width: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 32px; font-weight: 400; }
@@ -335,7 +399,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-floater-warning .os-shape { color: var(--amber); }
 .os-floater-start { min-height: var(--hit-min); padding-inline: var(--space-3); display: inline-flex; align-items: center; gap: var(--space-1-5); }
 .os-floater-start svg { width: var(--icon-md); height: var(--icon-md); fill: currentColor; }
-/* end TimerStrip */
+/* end FloatingTimer (CSS only: TimerStrip README) */
 
 /* PopoverMenu */
 /* PopoverMenu: the one in-webview menu, for a choice. */
@@ -374,7 +438,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   [aria-checked="true"] > .os-radio-mark { box-shadow: inset 0 0 0 2px Canvas; }
   .os-checkbox-mark svg { stroke: HighlightText; }
 }
+/* end PopoverMenu */
 
+/* Select (CSS only: the Input family) */
 /* Select: a native select in the Input family. */
 .os-select-wrap { position: relative; display: block; }
 .os-select { appearance: none; display: block; width: 100%; min-height: var(--hit-min); padding-block: var(--space-2); padding-inline: var(--space-3) calc(var(--space-3) + var(--icon-md) + var(--space-2)); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-sunken); color: var(--ink); font: inherit; font-weight: 400; cursor: pointer; }
@@ -382,7 +448,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-select:disabled { border-style: dashed; color: var(--ink-muted); cursor: default; }
 .os-select-title { font-weight: 600; }
 .os-select-wrap > .os-glyph { position: absolute; inset-inline-end: var(--space-3); top: 50%; margin-top: calc(var(--icon-md) / -2); color: var(--ink-muted); pointer-events: none; }
-/* end PopoverMenu */
+/* end Select (CSS only: the Input family) */
 
 /* ScrollRegion */
 /* ScrollRegion: the only scrolling box on a list page. */
@@ -404,21 +470,17 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-page-step { font-size: 13px; line-height: 18px; color: var(--ink-muted); white-space: nowrap; }
 .os-page-foot { display: flex; align-items: center; gap: var(--space-2); }
 .os-page-foot > :last-child { margin-inline-start: auto; }
+.os-page-status, .os-page-body { min-width: 0; min-height: 0; }
+.os-page-title { display: flex; align-items: center; min-width: 0; }
+.os-page-body > .os-scroll { height: 100%; }
 /* end PageFrame */
 
-/* InlineNotice */
-/* InlineNotice variant="row": the reserved 44px status row. */
-.os-statusrow { display: flex; align-items: center; gap: var(--space-3); height: var(--hit-min); min-width: 0; }
-.os-statusrow-msg { display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 18px; color: var(--ink); }
-.os-statusrow-rest { color: var(--ink-muted); }
-.os-statusrow .os-btn-ghost { color: var(--focus); padding-inline: var(--space-3); flex: none; }
-.os-statusrow-warning .os-glyph { color: var(--amber); }
-
+/* SessionSlot (CSS only) */
 /* SessionSlot: a running session in place of a planning page's primary. */
 .os-sessionslot { display: inline-flex; align-items: center; gap: var(--space-1); padding-inline-start: var(--space-3); border-radius: var(--radius-pill); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .os-sessionslot .os-menubar { padding: 0; }
 .os-sessionslot .os-iconbtn { border-radius: var(--radius-pill); }
-/* end InlineNotice */
+/* end SessionSlot (CSS only) */
 
 /* SettingsIndex */
 /* SettingsIndex and SettingsRow */
@@ -427,6 +489,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-sindex-item:hover { background: var(--surface-sunken); }
 .os-sindex-item[aria-current="location"] { background: var(--selection); border-inline-start-color: var(--focus); }
 .os-sindex-value { display: flex; align-items: center; gap: var(--space-1); font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+/* end SettingsIndex */
+
+/* SettingsRow */
 .os-srow { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-4); border-bottom: 1px solid var(--line); }
 .os-srow-label { margin: 0; font-weight: 600; }
 .os-srow-help, .os-srow-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
@@ -436,18 +501,18 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-unit > span { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
 .os-srow-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .os-empty-inline { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-page-status, .os-page-body { min-width: 0; min-height: 0; }
-.os-page-title { display: flex; align-items: center; min-width: 0; }
-.os-page-body > .os-scroll { height: 100%; }
+/* end SettingsRow */
 
+/* ShortcutRecorder (CSS only) */
 /* ShortcutRecorder: a field-like button. */
 .os-recorder { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-width: var(--field-width); min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
 .os-recorder-keys { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 16px; font-weight: 500; }
 .os-recorder-hint { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
 .os-recorder-recording { background: var(--selection); border-color: var(--focus); }
 .os-recorder-conflict { box-shadow: inset 0 0 0 1px var(--line-strong); }
+/* end ShortcutRecorder (CSS only) */
 
-/* AppRow and RoleTag */
+/* AppRow (CSS only; includes RoleTag) */
 .os-applist { container-type: inline-size; display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border-radius: var(--radius-md); background: var(--surface-raised); }
 .os-approw { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-3); min-height: var(--control-lg); padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--line); }
 .os-approw:last-child { border-bottom: 0; }
@@ -458,8 +523,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-roletag { display: inline-flex; align-items: center; gap: var(--space-1-5); font-size: 13px; line-height: 18px; color: var(--ink-muted); white-space: nowrap; }
 .os-roletag-focus { color: var(--focus); }
 @container (max-width: 359px) { .os-approw .os-roletag { order: 3; flex-basis: 100%; padding-inline-start: calc(var(--icon-lg) + var(--space-3)); } }
+/* end AppRow (CSS only; includes RoleTag) */
 
-/* AppPicker */
+/* AppPicker (CSS only) */
 .os-picker { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; width: var(--panel-width); max-width: 100%; height: var(--picker-height); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--surface-overlay); color: var(--ink); box-shadow: var(--shadow-overlay); overflow: hidden; }
 .os-picker-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-2) var(--space-5); }
 .os-picker-head h2 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; }
@@ -475,7 +541,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-picker-row > span:last-child { margin-inline-start: auto; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
 .os-picker-foot { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--line); }
 .os-picker-foot .os-field { flex: 1; min-width: 140px; }
+/* end AppPicker (CSS only) */
 
+/* BarRow (CSS only) */
 /* BarRow: durations as neutral bars; the goal bar is the one with a track. */
 .os-bars { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; column-gap: var(--space-3); row-gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
 .os-bar-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; min-height: var(--control-sm); }
@@ -490,20 +558,4 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-bar-tick::before { top: 0; }
 .os-bar-tick::after { bottom: 0; }
 .os-bar-words { grid-column: 2 / -1; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-
-/* Choice variants: segmented (joined radios) and long (title plus one sentence). */
-.os-segmented { margin: 0; padding: 0; border: 0; }
-.os-segmented legend { margin-bottom: var(--space-2); font-size: 13px; line-height: 18px; color: var(--ink); }
-.os-segmented-track { display: inline-flex; }
-.os-segmented label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: var(--hit-min); padding: 0 var(--space-4); margin-inline-start: -1px; border: 1px solid var(--line-strong); background: var(--surface-raised); color: var(--ink); cursor: pointer; }
-.os-segmented label:first-child { margin-inline-start: 0; border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md); }
-.os-segmented label:last-child { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
-.os-segmented label:hover { background: var(--surface-sunken); }
-.os-segmented label:has(:checked) { background: var(--selection); font-weight: 600; box-shadow: inset 0 -2px 0 var(--focus); }
-.os-segmented label:has(input:focus-visible) { z-index: 1; outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.os-segmented input { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); }
-.os-choice-long { display: flex; align-items: flex-start; width: 100%; padding: var(--space-3); }
-.os-choice-long input { margin-top: var(--space-1); flex: none; }
-.os-choice-long b { display: block; font-weight: 600; }
-.os-choice-sub { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-/* end SettingsIndex */
+/* end BarRow (CSS only) */

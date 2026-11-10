@@ -1,0 +1,20 @@
+<!-- @dsCard group="Routines" height=330 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>RoutineItem</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function Demo() {
+    var d = React.useState(false), done = d[0], setDone = d[1];
+    return h('div', { className: 'os-col' },
+      h(O.RoutineItem, { label: 'Drink a glass of water', detail: 'After opening the curtains', done: done, onChange: setDone }),
+      h(O.RoutineItem, { label: 'Walk outside', detail: 'The two-minute version counts.', defaultDone: true }),
+      h(O.RoutineItem, { label: 'Try a brief rest', detail: 'Experimental. Skip it if it does not help.', optional: true }),
+      h(O.WellnessNote, { as: 'p' }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

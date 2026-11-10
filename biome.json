@@ -15,6 +15,7 @@
       "!.baton",
       "!apps/orasenda/src/bindings.ts",
       "!packages/tokens/tokens.css",
+      "!packages/tokens/tokens.json",
       "!packages/tokens/theme.css",
       "!packages/ui/design-system/Cover",
       "!packages/ui/src/legacy.js",

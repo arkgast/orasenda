@@ -62,22 +62,23 @@ function px(name: string): number {
 test("fluid_tokens_stay_within_bounds", () => {
   const fluid: Loose[] = tokens.fluid.tokens;
   assert.ok(fluid.length > 0);
+  const theme = buildTheme();
+  const css = readFileSync(join(scratch, "tokens.css"), "utf8");
   for (const f of fluid) {
     const min = px(f.min);
     const max = px(f.max);
     const m = /^(\d+(?:\.\d+)?)cqi$/.exec(f.value);
     assert.ok(m, `${f.name} needs a cqi preferred term`);
     assert.ok(min < max, `${f.name} min is below max`);
-    for (let w = 390; w <= 1536; w += 6) {
-      const preferred = (Number(m[1]) * w) / 100;
-      const v = Math.min(max, Math.max(min, preferred));
-      assert.ok(v >= min && v <= max, `${f.name} at ${w}`);
-    }
+    // The generated css clamps between exactly the declared tokens, min first.
+    assert.ok(
+      css.includes(`--${f.name}: clamp(var(--${f.min}), ${m[1]}cqi, var(--${f.max}));`),
+      `${f.name} is clamp(var(--${f.min}), ${m[1]}cqi, var(--${f.max})) in tokens.css`,
+    );
     // The ramp is reached, so the term is not a dead constant.
     assert.ok((Number(m[1]) * 390) / 100 <= max, `${f.name} starts at or below max`);
     assert.ok((Number(m[1]) * 1536) / 100 >= max, `${f.name} reaches max by 1536`);
   }
-  const theme = buildTheme();
   assert.match(theme, /--spacing-fluid-gutter: var\(--fluid-gutter\);/);
 });
 

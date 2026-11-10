@@ -17,7 +17,9 @@ import type {
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. */
 export interface TaskCardNextProps extends TaskCardProps {
-  /** Click or arrow key selects; Return, double-click or Open opens. */ onSelect?: () => void /** 'row' is the 44px TaskRow. */;
+  /** Click or arrow key selects; Return, double-click or Open opens. */
+  onSelect?: () => void;
+  /** 'row' is the 44px TaskRow. */
   density?: "card" | "row";
 }
 /** Not implemented in bundle.js yet. */
@@ -26,13 +28,10 @@ export interface RoutineItemNextProps extends RoutineItemProps {
 }
 /** Not implemented in bundle.js yet. */
 export interface IntentPromptNextProps extends IntentPromptProps {
-  variant?:
-    | "gentle"
-    | "waiting"
-    | "firm"
-    | "strongLock"
-    | "fallback" /** e.g. "Focus · ends 15:20" */;
-  context?: string /** e.g. "Gentle pause. Esc or Return goes back to focus." */;
+  variant?: "gentle" | "waiting" | "firm" | "strongLock" | "fallback";
+  /** e.g. "Focus · ends 15:20" */
+  context?: string;
+  /** e.g. "Gentle pause. Esc or Return goes back to focus." */
   strengthLine?: string;
 }
 /** Not implemented in bundle.js yet. 'safe': cancel is the primary and the initial focus; used only for ending a Strong lock. */
@@ -71,7 +70,8 @@ export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
   onOpen?: () => void;
 }
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string /** Only for a compact page picker that replaces a visible title. */;
+  label: string;
+  /** Only for a compact page picker that replaces a visible title. */
   labelHidden?: boolean;
   options: Array<{ value: string; label: string }>;
 }

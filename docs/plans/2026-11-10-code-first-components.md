@@ -68,7 +68,7 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
   - [ ] `theme.css` starts with `--*: initial`; `bg-red-500` produces no CSS (test); `bg-primary` resolves to `--color-focus`
   - [ ] `contrast.py` reads `packages/tokens/tokens.json` and passes
   - [ ] `tauri.conf.json` `bundle.macOS.minimumSystemVersion` is `"15.8.2"`; the app's `build.target` names the matching Safari version, cited in the PR
-  - [ ] Today and Settings load through `React.lazy`; `pnpm --filter orasenda test` and `typecheck` pass with no app test changed
+  - [ ] Today, Settings and the placeholder pages load as their own chunks, preloaded and read with `use()` (not `React.lazy`, which suspends on first render and would delay the rail's focus move), inside an error boundary; `pnpm --filter orasenda test` and `typecheck` pass with no app test changed
   - [ ] every existing `packages/ui` test and WebKit spec passes unchanged against the legacy exports
   - [ ] `./scripts/ci.sh` passes
 - Tests first: `design_system_bundle_header_lists_runtime_exports`, `design_system_bundle_loads_as_classic_script`, `design_system_renders_every_export`, `guard_rejects_create_element`, `guard_rejects_exclamation_in_copy`, `lint_rejects_arbitrary_tailwind_value`, `theme_is_closed`, `theme_maps_destructive_to_critical`, `fluid_tokens_stay_within_bounds`, `exports_match_previous_surface`
