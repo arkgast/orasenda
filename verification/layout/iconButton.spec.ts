@@ -68,12 +68,13 @@ test("small_controls_aria_snapshot", async ({ page }) => {
     "aria-keyshortcuts",
     "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6",
   );
-  await expect(
-    page.locator('[data-state="icon-button-round"] button'),
-  ).not.toHaveAttribute("aria-keyshortcuts");
-  await expect(
-    page.locator('[data-state="icon-button-disabled"] button'),
-  ).toHaveAttribute("aria-describedby", "jump-why");
+  await expect(page.locator('[data-state="icon-button-round"] button')).not.toHaveAttribute(
+    "aria-keyshortcuts",
+  );
+  await expect(page.locator('[data-state="icon-button-disabled"] button')).toHaveAttribute(
+    "aria-describedby",
+    "jump-why",
+  );
   await openSpecimen(page, "Tooltip");
   await expect(page.locator("body")).toMatchAriaSnapshot(`
     - paragraph: tooltip-preset-summary

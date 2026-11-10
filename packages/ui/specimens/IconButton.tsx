@@ -44,12 +44,7 @@ export function IconButtonSpecimen(): ReactElement {
         <IconButton label="Leave full screen" icon={<Shrink />} shortcut="Esc" />
       </Frame>
       <Frame state="icon-button-disabled" width={360} height={80}>
-        <IconButton
-          label="Jump to section"
-          icon={<Menu />}
-          disabled
-          aria-describedby="jump-why"
-        />
+        <IconButton label="Jump to section" icon={<Menu />} disabled aria-describedby="jump-why" />
         <span className="specimen-label" id="jump-why">
           {" "}
           Nothing to jump to yet.
