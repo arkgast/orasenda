@@ -52,7 +52,13 @@ test("renders_legend_with_words", () => {
 });
 
 test("renders_notes_when_given", () => {
-  render(<HabitDots days={["done"]} note="Two minutes" restartNote="Two days off. Today is a fresh start." />);
+  render(
+    <HabitDots
+      days={["done"]}
+      note="Two minutes"
+      restartNote="Two days off. Today is a fresh start."
+    />,
+  );
   expect(screen.getByText("Two minutes")).toBeTruthy();
   expect(screen.getByText("Two days off. Today is a fresh start.")).toBeTruthy();
 });
