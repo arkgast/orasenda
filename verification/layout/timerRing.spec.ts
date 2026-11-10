@@ -150,9 +150,11 @@ test("seed_states_fit_their_frames", async ({ page }, info) => {
     const frame = all.nth(i);
     const state = await frame.getAttribute("data-state");
     if (state === "seeded-overflow") continue;
-    // The viewport slot holds the visually hidden wall-clock span (1x1 clip box by design); its own
-    // test below checks the ring, task clamp and page fit.
-    if (state === "timer-ring-viewport") continue;
+    // Frames with a clamped task line or the visually hidden clock span use the clamp-aware check.
+    if (state?.startsWith("timer-ring-fluid") || state === "timer-ring-viewport") {
+      await expectClampedFits(frame, "[data-slot=timer-ring-task]", 2);
+      continue;
+    }
     await expectFits(frame);
   }
   const dir = process.env.ORASENDA_SHOTS;
