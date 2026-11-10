@@ -19,7 +19,7 @@
     return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
       h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
       h('div', { className: 'os-actions' },
-        h(O.IconButton, { size: 'round', label: 'Pause session', icon: glyph('M7.5 4.5v11M12.5 4.5v11'), shortcut: 'Space' }),
+        h(O.IconButton, { size: 'round', label: 'Pause session', icon: glyph('M7.5 4.5v11M12.5 4.5v11'), shortcut: 'Space', keyshortcuts: false }),
         h(O.Tooltip, { label: 'Change preset', shortcut: 'P' },
           h(O.Button, { variant: 'ghost', 'aria-label': 'Classic, ends 15:20, Change preset', 'aria-keyshortcuts': O.describeShortcut('P').aria }, 'Classic · ends 15:20')),
         h(O.Tooltip, { label: 'Change preset' },

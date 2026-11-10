@@ -1,9 +1,11 @@
 The one primary action on Today: "Start focus" with the play glyph, and "Just 2 minutes" beside it as the quiet secondary.
 
 - **Why "Just 2 minutes" stays visible at every size:** starting is the hardest step for many people, and especially with ADHD. A two-minute session is small enough to say yes to without planning, and once started most people keep going. It is the quiet secondary beside Start, never a second primary.
-- `onStart` and `onQuickStart`. Start carries the play glyph, the only control that does (with the floater's Start pill). The finish time lives in the preset summary above ("Classic · ends 15:20"), not under the button.
-- `compactLabel`: below 400px of content the visible label is "Start"; the accessible name stays "Start focus".
-- `loading` ("Starting…") and `unavailable` both guard Start and Just 2 minutes. `unavailable` pairs with a status-row line ("Focus didn't start. Orasenda's timer isn't responding." and Try again).
-- `aria-keyshortcuts="Space Meta+Enter"` on Start only (Space only while single-key shortcuts are on).
+- `onStart` and `onQuickStart`. Start carries the play glyph (drawn inline, `icon-lg`, `aria-hidden`; it moves to `Icon` later), the only control that does (with the floater's Start pill). The finish time lives in the preset summary above ("Classic · ends 15:20"), not under the button.
+- **Name:** "Start focus" in every form, so VoiceOver and Voice Control always hear the same words. While `loading` the label and name read "Starting…".
+- `compactLabel` ("Start"): below 400px of content the visible label is the compact one. The StartButton then fills its host's width and switches by a container query on its own box; the full label stays in the DOM (visually hidden) and in the name. Without `compactLabel` the label never changes.
+- `loading` ("Starting…") and `unavailable` both guard Start and Just 2 minutes. `unavailable` sets `aria-disabled`, so both buttons stay focusable and keep their names; it pairs with a status-row line from the host that says why ("Focus didn't start. Orasenda's timer isn't responding." and Try again). The StartButton adds no live region.
+- `singleKeys`: `true` sets `aria-keyshortcuts="Space Meta+Enter"` on Start only, `false` sets `Meta+Enter`, and omitted sets none. The host passes it only while those keys are live (Space only while single-key shortcuts are on); a control never advertises a key that does nothing.
+- **Deprecated, still rendered as before:** `finishTime` ("Realistic finish · 15:20" under the buttons) and `disabled` (disables both buttons). New hosts use the preset summary and `unavailable`.
 
 Do: keep this the only `primary` on the screen. Don't: put a second Start anywhere else on Today, or hide Just 2 minutes in small windows.

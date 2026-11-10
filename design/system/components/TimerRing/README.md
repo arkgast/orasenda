@@ -1,9 +1,10 @@
 The countdown ring. The arc shows what is left, not what is spent: full at the start, empty at the end.
 
 - `progress`: elapsed fraction from 0 to 1 (clamped). `remaining`: the digits ("18:42"). `remainingLabel`: the spoken form ("18 minutes 42 seconds") used in the accessible name.
-- `mode`: `focus`, `break`, `routine`, `warning` at two minutes, `paused` (arc frozen, `ink-muted`), `idle` (no digits, "No session").
-- `size`: 280 (`timer-size`) at the default window, 560 (`timer-full-size`) as the largest, or `"fluid"`: sized by its container between `timer-min-size` and `timer-full-size`, digits scaled with the diameter and never below `timer-md`. `stroke` defaults to size / 40; the track is a third of that.
-- `task` is clamped to two lines visually and kept whole in the accessible name. `clock` adds a small wall clock in `timer-sm`.
-- When the window is a strip, Today and the Focus window show `TimerStrip` instead.
+- `mode`: `focus`, `break` (half-filled circle, `break` arc), `routine`, `warning` at two minutes (triangle, `amber` arc), `paused` (arc frozen, `ink-muted`), `idle` (no digits, "No session"). The chip inside the ring carries the word and the shape, so no state rests on colour alone.
+- `size`: a number is the diameter in px and renders exactly as before: 280 (`timer-size`) at the default window, 560 (`timer-full-size`) as the largest. `"fluid"` fills the slot the host gives it: the ring takes the slot's shorter side, clamped to `timer-min-size` .. `timer-full-size` (a container query on its own box), and the digits scale with the diameter, never below `timer-md`. Give the slot a height (a grid or flex track, as Today's time track and the Focus window are); a slot with no height of its own is treated as square.
+- `stroke` defaults to size / 40; the track is a third of that. With `"fluid"` it is in units of the ring's 400-unit drawing (default 10), so it scales with the diameter.
+- `task` (E's intent line) is clamped to two lines visually and kept whole in the accessible name. `clock` adds a small wall clock in `timer-sm` (`timer-md` from a 480px ring).
+- When the window is a strip, Today and the Focus window show `TimerStrip` instead (`timerLayout`, TimerStrip README, "Choosing the layout").
 
-Do: switch to `warning` once. The word and the triangle switch at once; the arc and chip colour fade over `duration-slow`; under reduced motion it is instant. Don't: announce every tick; the ring is `role="timer"` with `aria-live="off"`.
+Do: switch to `warning` once. The word and the triangle switch at once; the arc and chip colour fade over `duration-slow` (`easing-calm`); under reduced motion it is instant. Don't: announce every tick; the ring is `role="timer"` with `aria-live="off"`.

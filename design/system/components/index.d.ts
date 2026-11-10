@@ -5,8 +5,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export declare function Button(props: ButtonProps): React.ReactElement;
 export interface ModeChipProps { mode?: Mode; children?: React.ReactNode }
 export declare function ModeChip(props: ModeChipProps): React.ReactElement;
-/** progress is the elapsed fraction [0,1]; the arc shows what is left. */
-export interface TimerRingProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; size?: number; stroke?: number; clock?: string }
+/** progress is the elapsed fraction [0,1]; the arc shows what is left. task is clamped to two lines and whole in the accessible name. At warning the arc and chip colour fade over duration-slow. */
+export interface TimerRingProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; /** A number renders that diameter in px, as before. 'fluid' fills the host's slot: the diameter is the slot's shorter side clamped to [timer-min-size, timer-full-size] (container query), digits never below timer-md. */ size?: number | 'fluid'; /** px for a numeric size; with 'fluid', units of the 400-unit drawing (default 10), so it scales with the diameter. */ stroke?: number; clock?: string }
 export declare function TimerRing(props: TimerRingProps): React.ReactElement;
 /** compact defaults to true. Use false only for the floating mini timer. */
 export interface MenuBarTimerProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; compact?: boolean }
@@ -59,13 +59,12 @@ export declare function CommandPalette(props: CommandPaletteProps): React.ReactE
 /** 'inline' sits inside a SettingsRow: one line, no action. */
 export type EmptyStateProps = { title?: string; message?: string; actionLabel?: string; onAction?: () => void; variant?: 'default' } | { title?: never; message?: string; variant: 'inline'; actionLabel?: never; onAction?: never }
 export declare function EmptyState(props: EmptyStateProps): React.ReactElement;
-export interface StartButtonProps { onStart: () => void; onQuickStart: () => void; finishTime?: string; disabled?: boolean; loading?: boolean }
+/** Start carries the play glyph (aria-hidden); its accessible name is "Start focus" in every form ("Starting…" while loading). */
+export interface StartButtonProps { onStart: () => void; onQuickStart: () => void; /** @deprecated The finish time moves to the preset summary ("Classic · ends 15:20"). Still renders "Realistic finish · <time>" under the buttons. */ finishTime?: string; /** @deprecated Use unavailable with a status-row line. Still disables both buttons. */ disabled?: boolean; loading?: boolean; /** Guards Start and Just 2 minutes with aria-disabled: both stay focusable, and the host's status-row line says why. */ unavailable?: boolean; /** The visible label below 400px of content (e.g. "Start"); the StartButton then fills its host's width, and the full label stays in the DOM and the name. */ compactLabel?: string; /** true: aria-keyshortcuts="Space Meta+Enter"; false: "Meta+Enter"; omitted: no aria-keyshortcuts. Pass it only while the keys are live. */ singleKeys?: boolean }
 export declare function StartButton(props: StartButtonProps): React.ReactElement;
 export interface NowLineProps { time: string }
 export declare function NowLine(props: NowLineProps): React.ReactElement;
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
-/** Not implemented in bundle.js yet. 'fluid' sizes to the container between timer-min-size and timer-full-size. */
-export interface TimerRingNextProps extends Omit<TimerRingProps, 'size'> { size?: number | 'fluid' }
 /** Not implemented in bundle.js yet. */
 export interface TaskCardNextProps extends TaskCardProps { /** Click or arrow key selects; Return, double-click or Open opens. */ onSelect?: () => void; /** 'row' is the 44px TaskRow. */ density?: 'card' | 'row' }
 /** Not implemented in bundle.js yet. */
@@ -82,8 +81,6 @@ export interface KanbanColumnNextProps extends KanbanColumnProps { collapsed?: b
 export interface CommandNext extends Command { shortcut?: string }
 /** Not implemented in bundle.js yet. compact applies below layout-compact-height. */
 export interface CommandPaletteNextProps extends Omit<CommandPaletteProps, 'commands'> { commands: CommandNext[]; compact?: boolean }
-/** Not implemented in bundle.js yet. finishTime moves to the preset summary; unavailable replaces disabled (pair it with a status-row line); compactLabel is the visible label below 400px of content, the name stays "Start focus". */
-export interface StartButtonNextProps extends Omit<StartButtonProps, 'disabled'> { unavailable?: boolean; compactLabel?: string }
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps { compact?: boolean }
 /** The ARIA and spoken forms of one canonical glyph string (Kbd README, "Shortcut glyphs"): modifiers in the order ⌃⌥⇧⌘, then one key from A-Z, 0-9, '.', ',', '↩', 'Space', 'Esc', '⌫', '←', '↑', '→', '↓', 'Tab'. '⌃⌥F' gives { aria: 'Control+Alt+F', spoken: 'Control-Option-F' }; '⌘.' gives { aria: 'Meta+Period', spoken: 'Command-Period' }. An unknown string throws when window.Orasenda.strictShortcuts is true; otherwise it returns { aria: glyphs, spoken: glyphs } and logs one console.warn. */
@@ -97,7 +94,18 @@ export declare function Tooltip(props: TooltipProps): React.ReactElement;
 /** In running text, spoken is required because the glyph is aria-hidden; inside a Tooltip the tooltip label speaks. */
 export type KbdProps = { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })
 export declare function Kbd(props: KbdProps): React.ReactElement;
-export interface TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; idleLength?: string }
+/** The time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the ring. progress is the elapsed fraction [0,1]; the bar shows what is left. idleLength ("25 min") shows when idle, never fake digits. task is E's intent line: clamped to two lines, whole in the accessible name. stacked is the narrow form (stackedStrip). role="timer", aria-live="off": no live region. */
+export interface TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; idleLength?: string; task?: string; stacked?: boolean }
+export declare function TimerStrip(props: TimerStripProps): React.ReactElement;
+export type TimerLayout = 'ring' | 'strip' | 'stackedStrip';
+/** contentWidth and contentHeight: the timer surface's content box (Today: the window's content area; the Focus window: the window minus space-8, or space-4 below layout-compact-width). windowWidth: the window's inner width, for the compact test only. */
+export interface TimerLayoutBox { contentWidth: number; contentHeight: number; windowWidth: number }
+/** TimerStrip README, "Choosing the layout". Pure; call it on resize only, never on a tick. contentHeight < layout-ring-min-height: 'strip' when windowWidth >= layout-compact-width, else 'stackedStrip'. Otherwise contentWidth > 2 × contentHeight and contentHeight < layout-strip-height: 'strip'. Otherwise 'ring'. */
+export declare function timerLayout(box: TimerLayoutBox): TimerLayout;
+export declare namespace timerLayout {
+  /** The px values of the tokens the rule reads, by token name (equal to tokens.json). */
+  const tokens: { readonly 'layout-ring-min-height': number; readonly 'layout-compact-width': number; readonly 'layout-strip-height': number };
+}
 export interface FloatingTimerProps extends Omit<MenuBarTimerProps, 'compact'> { onPause?: () => void; onResume?: () => void; onStart?: () => void; onOpen?: () => void }
 export interface PopoverMenuItem { id: string; label: string; meta?: string; kind: 'radio' | 'checkbox' | 'link'; checked?: boolean; disabled?: boolean }
 export interface PopoverMenuProps { heading: string; description?: string; items: PopoverMenuItem[]; readOnly?: boolean; onSelect: (id: string) => void; onClose: () => void }
@@ -125,7 +133,7 @@ export interface BarRowProps { label: React.ReactNode; minutes: number; max: num
 declare global {
   interface Window {
     Orasenda: {
-      Button: typeof Button; ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; MenuBarTimer: typeof MenuBarTimer;
+      Button: typeof Button; ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof HabitDots; RoutineItem: typeof RoutineItem;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       Input: typeof Input; TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;

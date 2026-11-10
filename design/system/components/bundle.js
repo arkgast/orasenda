@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"},{"name":"IconButton"},{"name":"Tooltip"},{"name":"Kbd"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"TimerStrip"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"},{"name":"IconButton"},{"name":"Tooltip"},{"name":"Kbd"}]} */
 (function () {
   "use strict";
   var R = window.React, h = R.createElement;
@@ -36,10 +36,14 @@
   function timerLabel(p, mode) {
     return mode === "idle" ? "No session" : MODE_LABEL[mode] + ", " + (p.remainingLabel || p.remaining || "25:00") + " remaining" + (p.task ? ", " + p.task : "") + (p.clock ? ", Wall clock, " + p.clock : "");
   }
+  // size="fluid": the ring is drawn on a 400-unit grid and sized by its box (bundle.css, .os-timer-box), between
+  // timer-min-size and timer-full-size; stroke is then in those units, so it scales with the diameter.
+  // A numeric size renders exactly as before.
   function TimerRing(p) {
-    var size = Math.max(160, p.size || 280), stroke = Math.max(2, Math.min(size / 4, p.stroke || Math.round(size / 40)));
+    var fluid = p.size === "fluid";
+    var size = fluid ? 400 : Math.max(160, p.size || 280), stroke = Math.max(2, Math.min(size / 4, p.stroke || Math.round(size / 40)));
     var r = (size - stroke) / 2, c = 2 * Math.PI * r, progress = clamp(p.progress), mode = p.mode || "focus";
-    return h("div", { className: cx("os-timer", "os-timer-" + mode, size >= 480 && "os-timer-full"), style: { width: size }, role: "timer", "aria-live": "off", "aria-label": timerLabel(p, mode) },
+    var ring = h("div", { className: cx("os-timer", "os-timer-" + mode, fluid ? "os-timer-fluid" : size >= 480 && "os-timer-full"), style: fluid ? undefined : { width: size }, role: "timer", "aria-live": "off", "aria-label": timerLabel(p, mode) },
       h("svg", { className: "os-timer-ring", viewBox: "0 0 " + size + " " + size, "aria-hidden": "true" },
         h("circle", { className: "track", cx: size / 2, cy: size / 2, r: r, strokeWidth: Math.max(2, stroke / 3) }),
         mode !== "idle" ? h("circle", { className: "prog", cx: size / 2, cy: size / 2, r: r, strokeWidth: stroke, strokeDasharray: c, strokeDashoffset: c * progress }) : null),
@@ -49,7 +53,36 @@
         p.task ? h("div", { className: "os-timer-task" }, p.task) : null,
         p.clock ? h("div", { className: "os-timer-clock" }, "Clock · " + p.clock) : null),
       p.clock ? h("span", { className: "os-sr-only" }, "Wall clock, " + p.clock) : null);
+    return fluid ? h("div", { className: "os-timer-box" }, ring) : ring;
   }
+  // TimerStrip: the time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the
+  // ring; the fill shows time left; warning adds the triangle at the fill's end. No live region: role="timer", aria-live off.
+  function stripLabel(p, mode) {
+    var parts = mode === "idle" ? ["No session", p.idleLength] : [MODE_LABEL[mode] + ", " + (p.remainingLabel || p.remaining || "25:00") + " remaining"];
+    if (p.task) parts.push(p.task);
+    return parts.filter(Boolean).join(", ");
+  }
+  function TimerStrip(p) {
+    var mode = p.mode || "focus", left = (1 - clamp(p.progress)) * 100 + "%";
+    return h("div", { className: cx("os-strip", "os-strip-" + mode, p.stacked && "os-strip-stacked"), role: "timer", "aria-live": "off", "aria-label": stripLabel(p, mode) },
+      h("div", { className: "os-strip-head", "aria-hidden": "true" },
+        h(ModeChip, { mode: mode }),
+        mode === "idle" ? (p.idleLength ? h("span", { className: "os-strip-idle" }, p.idleLength) : null) : h("span", { className: "os-strip-digits" }, p.remaining || "25:00")),
+      mode !== "idle" ? h("div", { className: "os-strip-bar", "aria-hidden": "true" },
+        h("span", { className: "os-strip-fill", style: { width: left } }),
+        mode === "warning" ? h("svg", { className: "os-strip-tri", viewBox: "0 0 10 10", "aria-hidden": "true", focusable: "false", style: { insetInlineStart: left } }, h("path", { d: "M5 0.5 9.6 9.5H0.4z" })) : null) : null,
+      p.task ? h("div", { className: "os-strip-task", "aria-hidden": "true" }, p.task) : null);
+  }
+  // timerLayout (TimerStrip README, Choosing the layout). Pure; hosts call it on resize only, never on a tick.
+  // The constants are the px values of these tokens in tokens.json (a plain script cannot read the file).
+  var LAYOUT_TOKENS = { "layout-ring-min-height": 360, "layout-compact-width": 640, "layout-strip-height": 420 };
+  function timerLayout(box) {
+    var width = box.contentWidth, height = box.contentHeight;
+    if (height < LAYOUT_TOKENS["layout-ring-min-height"]) return box.windowWidth >= LAYOUT_TOKENS["layout-compact-width"] ? "strip" : "stackedStrip";
+    if (width > 2 * height && height < LAYOUT_TOKENS["layout-strip-height"]) return "strip";
+    return "ring";
+  }
+  timerLayout.tokens = Object.freeze(Object.assign({}, LAYOUT_TOKENS));
   function MenuBarTimer(p) {
     var mode = p.mode || "focus", c = 2 * Math.PI * 5;
     return h("span", { className: cx("os-menubar", "os-menubar-" + mode, p.compact === false && "os-menubar-floating"), role: "timer", "aria-live": "off", "aria-label": timerLabel(p, mode) },
@@ -269,8 +302,23 @@
     if (p.variant === "inline") return h("p", { className: "os-empty-inline" }, p.message || "Nothing here yet.");
     return h("div", { className: "os-empty" }, h("h2", null, p.title || "Nothing here yet"), h("p", null, p.message || "That's fine. Start when you're ready."), p.actionLabel && p.onAction ? h(Button, { onClick: p.onAction }, p.actionLabel) : null);
   }
+  // The play glyph, drawn inline as the mode shapes are (it moves to Icon in T7).
+  function PlayGlyph() {
+    return h("svg", { className: "os-start-glyph", viewBox: "0 0 20 20", "aria-hidden": "true", focusable: "false" }, h("path", { d: "M6.5 4.6v10.8a.9.9 0 0 0 1.37.77l8.6-5.4a.9.9 0 0 0 0-1.54l-8.6-5.4A.9.9 0 0 0 6.5 4.6z" }));
+  }
+  // The name is "Start focus" in every form ("Starting…" while loading). compactLabel shows below 400px of content
+  // (a container query on .os-start-fit) while the full label stays in the DOM and the name. unavailable uses
+  // aria-disabled, so both buttons stay focusable. singleKeys omitted: no aria-keyshortcuts (planner decision 11).
+  // finishTime and disabled are deprecated and render as before.
   function StartButton(p) {
-    return h("div", { className: "os-start" }, h("div", { className: "os-actions" }, h(Button, { variant: "primary", size: "lg", onClick: p.onStart, disabled: p.disabled, loading: p.loading }, p.loading ? "Starting…" : "Start focus"), h(Button, { onClick: p.onQuickStart, disabled: p.disabled || p.loading }, "Just 2 minutes")), p.finishTime ? h("p", { className: "os-muted" }, "Realistic finish · ", h("span", { className: "os-num" }, p.finishTime)) : null);
+    var guard = p.unavailable ? { "aria-disabled": true } : null;
+    var keys = p.singleKeys == null ? undefined : (p.singleKeys ? ["Space", "\u2318\u21a9"] : ["\u2318\u21a9"]).map(function (k) { return describeShortcut(k).aria; }).join(" ");
+    var label = p.loading ? "Starting…" : p.compactLabel ? [h("span", { key: "full", className: "os-start-full" }, "Start focus"), h("span", { key: "compact", className: "os-start-compact", "aria-hidden": "true" }, p.compactLabel)] : "Start focus";
+    return h("div", { className: cx("os-start", p.compactLabel && "os-start-fit") },
+      h("div", { className: "os-actions" },
+        h(Button, Object.assign({ variant: "primary", size: "lg", className: "os-start-btn", onClick: p.onStart, disabled: p.disabled, loading: p.loading, "aria-keyshortcuts": keys }, guard), h(PlayGlyph), label),
+        h(Button, Object.assign({ onClick: p.onQuickStart, disabled: p.disabled || p.loading }, guard), "Just 2 minutes")),
+      p.finishTime ? h("p", { className: "os-muted" }, "Realistic finish · ", h("span", { className: "os-num" }, p.finishTime)) : null);
   }
   var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
   function PageFrame(p) {
@@ -463,5 +511,5 @@
         h("span", { className: "os-iconbtn-icon", "aria-hidden": "true" }, p.icon)));
   }
   function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "Now, " + p.time }, h("span", { className: "os-num" }, "Now · " + p.time), h("i", { "aria-hidden": "true" })); }
-  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow, IconButton: IconButton, Tooltip: Tooltip, Kbd: Kbd, describeShortcut: describeShortcut });
+  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, TimerStrip: TimerStrip, timerLayout: timerLayout, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow, IconButton: IconButton, Tooltip: Tooltip, Kbd: Kbd, describeShortcut: describeShortcut });
 })();

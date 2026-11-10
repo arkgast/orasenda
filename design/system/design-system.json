@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-10T09:00:00Z",
+    "at": "2026-11-10T05:29:23Z",
     "via": "Claude Code",
-    "note": "T2 review round (issue #169): IconButton shortcut takes several chords, shortcutLabel and keyshortcuts={false}; IconButton aria-describedby; Tooltip README Esc note for host handlers."
+    "note": "T3 (issue #170): TimerRing size='fluid' (container-query sizing, clamped to timer-min-size..timer-full-size, digits >= timer-md) and the warning arc and chip fade on duration-slow; TimerStrip built (task, stacked, break and warning) with the README 'Choosing the layout' table; timerLayout exported; StartButton redesign (play glyph, compactLabel, unavailable, singleKeys: omitted means no aria-keyshortcuts; finishTime and disabled deprecated); TimerRingNextProps and StartButtonNextProps folded in; Tooltip preview Pause keyshortcuts={false} (#179)."
   }
 }
