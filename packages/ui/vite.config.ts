@@ -148,8 +148,8 @@ window.Orasenda = Object.assign(window.Orasenda || {}, { ${names.map((n) => `${n
         cssFileName: "bundle",
       },
       rolldownOptions: {
-        external: ["react"],
-        output: { globals: { react: "React" } },
+        external: ["react", "react-dom"],
+        output: { globals: { react: "React", "react-dom": "ReactDOM" } },
       },
     },
   };
