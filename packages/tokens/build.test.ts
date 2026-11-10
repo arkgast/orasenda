@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -57,7 +57,8 @@ test("emits_every_token_in_tokens_json", () => {
     assert.ok(css.includes(`--${name}:`), `missing --${name}`);
   }
   assert.match(css, /--z-overlay: 1000;/);
-  assert.doesNotMatch(css, /@import|url\(/);
+  assert.doesNotMatch(css, /@import/);
+  assert.doesNotMatch(css, /url\((?!"\.\/fonts\/)/);
 });
 
 test("emits_type_style_properties", () => {
@@ -206,4 +207,64 @@ test("dark_block_guarded_and_repeated_under_data_theme_dark", () => {
   assert.ok(guarded.length > 0);
   assert.ok(guarded.includes("--surface: #121a1d;"));
   assert.deepEqual(explicit, guarded);
+});
+
+test("emits_font_face_per_type_fonts_entry", () => {
+  const { css } = build();
+  const fonts: Loose[] = tokens.type.fonts;
+  assert.equal(fonts.length, 3);
+  assert.equal(css.split("@font-face {").length - 1, fonts.length);
+  for (const f of fonts) {
+    assert.ok(css.includes(`font-family: "${f.family}";`), `no @font-face for ${f.family}`);
+    assert.ok(css.includes(`font-weight: ${f.weight};`), `no weight ${f.weight}`);
+  }
+  assert.equal(css.split("font-style: normal;").length - 1, fonts.length);
+  assert.equal(css.split("font-display: block;").length - 1, fonts.length);
+});
+
+test("font_face_src_is_relative_woff2_url", () => {
+  const { css } = build();
+  for (const f of tokens.type.fonts as Loose[]) {
+    assert.ok(css.includes(`src: url("./${f.file}") format("woff2");`), `src for ${f.file}`);
+    assert.ok(existsSync(join(here, f.file)), `${f.file} is not on disk`);
+  }
+  assert.doesNotMatch(css, /http|\/\/|googleapis|gstatic/);
+});
+
+test("font_faces_come_before_root_block", () => {
+  const { css } = build();
+  assert.ok(css.lastIndexOf("@font-face {") < css.indexOf(":root {"));
+});
+
+test("type_fonts_entry_without_file_fails", () => {
+  assertFails((t) => {
+    delete t.type.fonts[0].file;
+  }, /Atkinson Hyperlegible Next.*file|file/);
+});
+
+test("type_fonts_family_not_in_families_fails", () => {
+  assertFails((t) => {
+    t.type.fonts[0].family = "Comic Sans";
+  }, /Comic Sans/);
+});
+
+test("every_weight_a_type_style_uses_is_inside_a_font_range", () => {
+  const first = (stack: string) => stack.split(",")[0].trim().replace(/"/g, "");
+  const inside = (w: number, range: string) => {
+    const [lo, hi = lo] = range.split(" ").map(Number);
+    return w >= lo && w <= hi;
+  };
+  for (const g of tokens.type.groups as Loose[]) {
+    const font = (tokens.type.fonts as Loose[]).find(
+      (f) => f.family === first(tokens.type.families[g.family]),
+    );
+    assert.ok(font, `no font for group ${g.name}`);
+    for (const s of g.styles as Loose[]) assert.ok(inside(s.fontWeight, font.weight), s.name);
+  }
+  assertFails((t) => {
+    t.type.fonts[2].weight = "500";
+  }, /Lexend|weight/);
+  assertFails((t) => {
+    t.type.groups[0].styles[0].fontWeight = 900;
+  }, /weight/);
 });

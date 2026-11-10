@@ -262,6 +262,7 @@ Fonts (T1):
 - Each family's `OFL.txt` sits beside its file. The OFL allows bundling unmodified fonts with software. Subsetting would make a Modified Version and could touch a Reserved Font Name, so it is not done.
 - Lexend has no P1 consumer (reading comfort is a later setting), but ships now because the README says the fonts ship inside the app and `--font-alt` names it (`design/system/README.md:42-45`).
 - The PR states the added bundle size. #149 gains the three notices.
+- Amended 2026-11-10 (controller ruling on #168, https://github.com/arkgast/orasenda/issues/168#issuecomment-6758234020): `googlefonts/lexend` ships no variable roman `woff2`, so Lexend ships as its unmodified upstream static `Lexend-Regular.woff2` (`font-weight: 400`, the only weight `alt` uses); the Atkinson families stay variable.
 
 ## Testing strategy
 For every task:
