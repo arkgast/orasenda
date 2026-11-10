@@ -119,6 +119,9 @@ pub trait Notifier: Send + Sync {
     /// Asks the user; calls `done` with the outcome.
     fn request(&self, done: Box<dyn FnOnce(NotificationStatus) + Send>);
     fn post(&self, title: &str, body: &str) -> Result<(), PlatformError>;
+    /// Opens the OS notification settings for this app. `Unsupported` when there is
+    /// nothing to open; any other error means the OS refused or failed.
+    fn open_settings(&self) -> Result<(), PlatformError>;
 }
 
 /// A notifier for platforms without notifications.
@@ -133,6 +136,9 @@ impl Notifier for NoopNotifier {
         done(NotificationStatus::Unavailable);
     }
     fn post(&self, _title: &str, _body: &str) -> Result<(), PlatformError> {
+        Err(PlatformError::Unsupported)
+    }
+    fn open_settings(&self) -> Result<(), PlatformError> {
         Err(PlatformError::Unsupported)
     }
 }
@@ -175,5 +181,10 @@ mod tests {
         NoopNotifier.request(Box::new(move |s| tx.send(s).unwrap()));
         assert_eq!(rx.try_recv(), Ok(NotificationStatus::Unavailable));
         assert_eq!(NoopNotifier.post("t", "b"), Err(PlatformError::Unsupported));
+    }
+
+    #[test]
+    fn noop_notifier_open_settings_is_unsupported() {
+        assert_eq!(NoopNotifier.open_settings(), Err(PlatformError::Unsupported));
     }
 }

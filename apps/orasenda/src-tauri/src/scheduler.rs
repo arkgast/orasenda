@@ -170,7 +170,7 @@ pub fn publish_focus<H: Host>(host: &H) {
 }
 
 /// Carries out `effects` after the service lock is released, in this order: the view and
-/// the surfaces, `settings-changed` (when owed), the end notification, the guard drop, the
+/// the surfaces, the theme (when a recovered read changed it), `settings-changed` (when owed), the end notification, the guard drop, the
 /// milestones.
 pub fn publish<H: Host>(host: &H, effects: Effects) {
     let Effects {
@@ -182,11 +182,15 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         notify_session_end,
         drop_after_unlock,
         settings_changed,
+        apply_theme,
         seq,
         ..
     } = effects;
     if !was_idle || view.state != EngineState::Idle || store_changed {
         publish_view(host, seq, &view);
+    }
+    if let Some(theme) = apply_theme {
+        host.apply_theme(theme);
     }
     if let Some(settings) = &settings_changed {
         host.emit_settings_changed(settings);
@@ -372,6 +376,7 @@ mod tests {
                 Event::Begun => "begun",
                 Event::SettingsChanged(_) => "settings",
                 Event::ApplyTheme(_) => "theme",
+                Event::OpenedSettings => "opened",
             })
             .collect();
         assert_eq!(

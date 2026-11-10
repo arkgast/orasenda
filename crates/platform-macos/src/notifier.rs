@@ -9,7 +9,8 @@ use std::time::Duration;
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::Bool;
-use objc2_foundation::{NSError, NSString};
+use objc2_app_kit::NSWorkspace;
+use objc2_foundation::{NSBundle, NSError, NSString, NSURL};
 use objc2_user_notifications::{
     UNAuthorizationOptions, UNAuthorizationStatus, UNMutableNotificationContent,
     UNNotificationRequest, UNNotificationSettings, UNUserNotificationCenter,
@@ -106,6 +107,28 @@ impl Notifier for MacNotifier {
         center().addNotificationRequest_withCompletionHandler(&request, Some(&handler));
         wait_for_post(&rx, ANSWER_TIMEOUT)
     }
+
+    /// Opens this app's pane in System Settings. The caller runs it on the main thread.
+    /// `Refused` when `openURL` answers NO; never `Unsupported`.
+    fn open_settings(&self) -> Result<(), PlatformError> {
+        let bundle_id = NSBundle::mainBundle()
+            .bundleIdentifier()
+            .ok_or_else(|| PlatformError::Other("the app has no bundle identifier".into()))?;
+        let url = NSURL::URLWithString(&NSString::from_str(&notification_settings_url(
+            &bundle_id.to_string(),
+        )))
+        .ok_or_else(|| PlatformError::Other("the settings address is not valid".into()))?;
+        if NSWorkspace::sharedWorkspace().openURL(&url) {
+            Ok(())
+        } else {
+            Err(PlatformError::Refused)
+        }
+    }
+}
+
+/// The System Settings address of the Notifications pane for `bundle_id`.
+pub fn notification_settings_url(bundle_id: &str) -> String {
+    format!("x-apple.systempreferences:com.apple.Notifications-Settings.extension?id={bundle_id}")
 }
 
 fn center() -> Retained<UNUserNotificationCenter> {
@@ -221,6 +244,14 @@ mod tests {
         assert_eq!(
             wait_for_status(&rx, Duration::from_millis(20)),
             NotificationStatus::Unavailable
+        );
+    }
+
+    #[test]
+    fn notification_settings_url_names_bundle_id() {
+        assert_eq!(
+            notification_settings_url("app.orasenda"),
+            "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=app.orasenda"
         );
     }
 }

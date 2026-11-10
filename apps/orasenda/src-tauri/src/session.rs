@@ -72,6 +72,9 @@ pub struct Effects {
     /// The presented settings to emit as `settings-changed`: owed by a recovered launch read
     /// of the settings, and by a notify review run from the retry of that read.
     pub settings_changed: Option<Settings>,
+    /// The cached theme, when a recovered launch read changed it; applied after unlock,
+    /// before `settings_changed`.
+    pub apply_theme: Option<Theme>,
     /// Orders `view` against every other published view (see [`ViewGate`]).
     pub seq: u64,
 }
@@ -117,6 +120,8 @@ pub struct SessionService {
     review_pending: bool,
     /// A recovered launch read of the settings is owed a `settings-changed`.
     settings_event_owed: bool,
+    /// The cached theme a recovered launch read changed, until `effects()` hands it out.
+    theme_owed: Option<Theme>,
     /// The number given to the last view handed out (see [`ViewGate`]).
     view_seq: u64,
 }
@@ -140,7 +145,9 @@ impl RecoverOwed {
 /// What a successful settings save tells the caller, for the side effects after unlock.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SettingsSaved {
-    /// The new theme, when `theme` was in the diff: what gates `apply_theme`.
+    /// The cached theme after the save when it differs from the presented theme before it,
+    /// whether the user changed it or a save that settled the owed read adopted it. Gates
+    /// `apply_theme`.
     pub theme: Option<Theme>,
     /// The presented settings after the save, for `settings-changed`.
     pub presented: Settings,
@@ -193,6 +200,7 @@ impl SessionService {
             recover_owed: RecoverOwed::default(),
             review_pending: false,
             settings_event_owed: false,
+            theme_owed: None,
             view_seq: 0,
         };
         if let Some(read) = service
@@ -294,7 +302,11 @@ impl SessionService {
         };
         let mut wrote = false;
         if let Some((settings, pending)) = settings {
+            let before = self.settings.theme;
             self.settings = settings;
+            if self.settings.theme != before {
+                self.theme_owed = Some(self.settings.theme);
+            }
             self.review_pending = pending;
             self.recover_owed.settings = false;
             self.settings_event_owed = true;
@@ -575,7 +587,7 @@ impl SessionService {
         }
         self.refresh_status();
         Ok(SettingsSaved {
-            theme: (settings.theme != presented.theme).then_some(settings.theme),
+            theme: (self.settings.theme != presented.theme).then_some(self.settings.theme),
             presented: self.settings(),
         })
     }
@@ -777,6 +789,7 @@ impl SessionService {
             ended: outcome.ended,
             drop_after_unlock: outcome.drop_after_unlock,
             settings_changed,
+            apply_theme: self.theme_owed.take(),
         }
     }
 }
@@ -1043,6 +1056,7 @@ pub(crate) mod test_support {
         Released,
         SettingsChanged(Settings),
         ApplyTheme(Theme),
+        OpenedSettings,
     }
 
     #[derive(Clone, Default)]
@@ -1111,6 +1125,10 @@ pub(crate) mod test_support {
         log: Log,
         status: Mutex<NotificationStatus>,
         answers: Mutex<Vec<Answer>>,
+        open_result: Mutex<Result<(), PlatformError>>,
+        /// When set, `status` logs the read and then blocks until the gate is released.
+        gate: Mutex<Option<std::sync::mpsc::Receiver<()>>>,
+        panic_on_status: std::sync::atomic::AtomicBool,
     }
 
     impl FakeNotifier {
@@ -1118,8 +1136,27 @@ pub(crate) mod test_support {
             *self.status.lock().unwrap_or_else(PoisonError::into_inner) = status;
         }
 
+        /// What `open_settings` answers next.
+        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        pub(crate) fn set_open_result(&self, result: Result<(), PlatformError>) {
+            *self.open_result.lock().unwrap_or_else(PoisonError::into_inner) = result;
+        }
+
+        /// Holds every `status` read until the returned sender sends or drops.
+        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        pub(crate) fn gate_status(&self) -> std::sync::mpsc::Sender<()> {
+            let (tx, rx) = std::sync::mpsc::channel();
+            *self.gate.lock().unwrap_or_else(PoisonError::into_inner) = Some(rx);
+            tx
+        }
+
+        /// Makes `status` panic (after logging the read) while `on`.
+        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        pub(crate) fn panic_on_status(&self, on: bool) {
+            self.panic_on_status.store(on, Ordering::SeqCst);
+        }
+
         /// Answers the oldest open request, as the OS would on a Foundation thread.
-        #[allow(dead_code, reason = "T4 (#145) answers requests")]
         pub(crate) fn answer(&self, status: NotificationStatus) {
             self.set_status(status);
             let answer = self
@@ -1134,6 +1171,13 @@ pub(crate) mod test_support {
     impl Notifier for FakeNotifier {
         fn status(&self) -> NotificationStatus {
             self.log.push(Event::StatusRead);
+            assert!(
+                !self.panic_on_status.load(Ordering::SeqCst),
+                "fake status read panics"
+            );
+            if let Some(rx) = self.gate.lock().unwrap_or_else(PoisonError::into_inner).take() {
+                let _ = rx.recv();
+            }
             *self.status.lock().unwrap_or_else(PoisonError::into_inner)
         }
 
@@ -1149,6 +1193,14 @@ pub(crate) mod test_support {
             self.log.push(Event::Posted(title.into(), body.into()));
             Ok(())
         }
+
+        fn open_settings(&self) -> Result<(), PlatformError> {
+            self.log.push(Event::OpenedSettings);
+            self.open_result
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .clone()
+        }
     }
 
     pub(crate) struct Fakes {
@@ -1163,6 +1215,9 @@ pub(crate) mod test_support {
             log: log.clone(),
             status: Mutex::new(status),
             answers: Mutex::new(Vec::new()),
+            open_result: Mutex::new(Ok(())),
+            gate: Mutex::new(None),
+            panic_on_status: std::sync::atomic::AtomicBool::new(false),
         });
         Fakes {
             platform: Platform {
@@ -3296,9 +3351,17 @@ mod tests {
     /// A pending store with non-default preset/custom and notify stored true, whose launch
     /// settings read failed. Returns the service and the change-log length after seeding.
     fn read_owed_service() -> (SessionService, usize) {
+        read_owed_service_with_theme(Theme::System)
+    }
+
+    /// [`read_owed_service`] with `theme` stored as `ui.theme`.
+    fn read_owed_service_with_theme(theme: Theme) -> (SessionService, usize) {
         let store = pending_store(Some(true));
         store
             .write(0, |txn| {
+                if theme != Theme::System {
+                    settings::set(txn, KEY_THEME, &theme)?;
+                }
                 settings::set(txn, KEY_PRESET, &Preset::Custom)?;
                 settings::set(
                     txn,
@@ -3519,6 +3582,102 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn recovered_settings_read_applies_the_stored_theme() {
+        let host = recovered_theme_host(Some(Theme::Dark));
+        scheduler::iterate(&host);
+        let events = host.log().take();
+        let applied: Vec<usize> = events
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| **e == Event::ApplyTheme(Theme::Dark))
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(applied.len(), 1, "{events:?}");
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::ApplyTheme(_)))
+                .count(),
+            1
+        );
+        let changed = events
+            .iter()
+            .position(|e| matches!(e, Event::SettingsChanged(_)))
+            .expect("settings-changed");
+        assert!(applied[0] < changed, "{events:?}");
+        assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn recovered_settings_read_with_the_same_theme_applies_nothing() {
+        let host = recovered_theme_host(None);
+        scheduler::iterate(&host);
+        let events = host.log().take();
+        assert!(
+            !events.iter().any(|e| matches!(e, Event::ApplyTheme(_))),
+            "{events:?}"
+        );
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::SettingsChanged(_)))
+                .count(),
+            1,
+            "{events:?}"
+        );
+    }
+
+    /// A host whose launch settings read failed and now recovers; `theme` is stored first.
+    fn recovered_theme_host(theme: Option<Theme>) -> TestHost {
+        let store = memory_store();
+        if let Some(theme) = theme {
+            store
+                .write(0, |txn| settings::set(txn, KEY_THEME, &theme))
+                .expect("seeds");
+        }
+        store.fail_reads(true);
+        let f = fakes(NotificationStatus::Granted, false);
+        let s = SessionService::new(Ok(store), f.platform, T0);
+        let host = TestHost::with(s, f.log, f.notifier);
+        db(&lock(&host.0.service)).fail_reads(false);
+        host.log().take();
+        host
+    }
+
+    #[test]
+    fn settings_set_adopting_stored_values_applies_the_stored_theme() {
+        let echo = Settings {
+            theme: Theme::System,
+            preset: Preset::FiftyTen,
+            ..Settings::default()
+        };
+        let (mut s, _) = read_owed_service_with_theme(Theme::Dark);
+        s.set_notifications(NotificationStatus::Granted);
+        db(&s).fail_reads(false);
+        let saved = s.set_settings(echo.clone(), T0 + 1).expect("saves");
+        assert_eq!(saved.theme, Some(Theme::Dark));
+
+        let (mut s, _) = read_owed_service_with_theme(Theme::Dark);
+        s.set_notifications(NotificationStatus::Granted);
+        db(&s).fail_reads(false);
+        let f = fakes(NotificationStatus::Granted, false);
+        let host = TestHost::with(s, f.log, f.notifier);
+        host.log().take();
+        run_set_settings(&host, echo).expect("saves");
+        let events = host.log().take();
+        let theme = events
+            .iter()
+            .position(|e| *e == Event::ApplyTheme(Theme::Dark))
+            .expect("applied");
+        let changed = events
+            .iter()
+            .position(|e| matches!(e, Event::SettingsChanged(_)))
+            .expect("changed");
+        assert!(theme < changed, "{events:?}");
+        assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
     }
 
     #[test]
