@@ -144,7 +144,7 @@ function Field(p) {
 // Input (private: CommandPalette still renders it; the public Input lives in components/ui/input.tsx)
 function Input(p) { return h(Field, p); }
 // end Input
-// TextArea
+// TextArea (private: CapturePad still renders it; the public TextArea lives in components/ui/text-area.tsx)
 function TextArea(p) { return h(Field, Object.assign({ rows: 4 }, p, { multiline: true })); }
 // end TextArea
 // CapturePad
@@ -510,7 +510,6 @@ export {
   TaskCard,
   IntentPrompt,
   FullScreenFocus,
-  TextArea,
   CapturePad,
   Toast,
   KanbanColumn,
