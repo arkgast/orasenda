@@ -186,7 +186,6 @@ test("index_values_follow_each_section", async () => {
 
   fireEvent.keyDown(nav.getByRole("button", { name: /^Timer/ }), { key: "Enter" });
   expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
-
 });
 
 test("index_shows_problems_in_words", async () => {
