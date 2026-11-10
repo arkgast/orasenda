@@ -131,7 +131,7 @@ test("popover_menu_keyboard_path", async ({ page }) => {
     "false",
   );
   await expect(page.getByText("Deep Block chosen.")).toBeVisible();
-  const quickMs = (await token(page, "--duration-quick")) * 1000;
+  const quickMs = (await token(page, "--duration-quick"));
   expect(quickMs).toBeGreaterThan(0);
   await page.waitForTimeout(quickMs + 250);
   await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
