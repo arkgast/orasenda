@@ -334,7 +334,8 @@ function tokenNumber(el, name) {
 // opts (PopoverMenu): align "start" lines the panel's start edge up with the trigger's instead of centring it;
 // clamp keeps a panel taller than the room on its side inside the viewport (it may then cover the trigger).
 function panelHost(trigger) {
-  var dialog = trigger.closest ? trigger.closest("dialog[open]") : null;
+  // An open Radix Dialog's content counts as a layer too (same selectors as src/lib/layer.ts).
+  var dialog = trigger.closest ? trigger.closest("[data-slot='dialog-content'][data-state='open'], dialog[open]") : null;
   return dialog || trigger.ownerDocument.body;
 }
 function placePanel(trigger, panel, opts) {
@@ -563,7 +564,6 @@ export {
   TimerStrip,
   TaskCard,
   IntentPrompt,
-  Dialog,
   FullScreenFocus,
   TextArea,
   CapturePad,

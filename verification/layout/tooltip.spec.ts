@@ -36,7 +36,7 @@ test("tooltip_40ch_two_lines_kbd_unbroken", async ({ page }, info) => {
 test("tooltip_visible_above_open_dialog", async ({ page }) => {
   await openSpecimen(page, "Tooltip");
   await page.getByRole("button", { name: "Open dialog" }).click();
-  const dialog = page.locator("dialog[open]");
+  const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await page.getByRole("button", { name: "End session" }).hover();
   const panel = dialog.locator(PANEL);
@@ -89,9 +89,9 @@ test("tooltip_trigger_focus_restored_after_dialog_shows_nothing", async ({ page 
   await pressTab(page);
   await expect(opener).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.locator("dialog[open]")).toHaveCount(1);
+  await expect(page.getByRole("dialog")).toHaveCount(1);
   await page.keyboard.press("Escape");
-  await expect(page.locator("dialog[open]")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(opener).toBeFocused();
   await page.waitForTimeout(400);
   await expect(page.locator(PANEL)).toHaveCount(0);
@@ -100,7 +100,7 @@ test("tooltip_trigger_focus_restored_after_dialog_shows_nothing", async ({ page 
 test("tooltip_esc_inside_dialog_hides_tip_and_keeps_dialog", async ({ page }) => {
   await openSpecimen(page, "Tooltip");
   await page.getByRole("button", { name: "Open dialog", exact: true }).click();
-  const dialog = page.locator("dialog[open]");
+  const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   const inner = dialog.getByRole("button", { name: "End session" });
   await inner.focus();

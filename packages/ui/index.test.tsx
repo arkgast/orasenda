@@ -4,6 +4,19 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import * as ui from "./src/index.ts";
 
+// jsdom lacks the dialog methods the legacy modal shell (IntentPrompt, wave 3) calls. Remove with that shell.
+const proto = HTMLDialogElement.prototype;
+if (typeof proto.showModal !== "function") {
+  proto.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+}
+if (typeof proto.close !== "function") {
+  proto.close = function close(this: HTMLDialogElement) {
+    this.removeAttribute("open");
+  };
+}
+
 test("exports_intent_prompt_and_button", () => {
   expect(typeof ui.IntentPrompt).toBe("function");
   expect(typeof ui.Button).toBe("function");

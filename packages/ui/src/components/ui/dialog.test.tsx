@@ -49,7 +49,7 @@ test("dialog_backdrop_click_never_dismisses", () => {
   fireEvent.pointerDown(overlay);
   fireEvent.click(overlay);
   expect(onCancel).not.toHaveBeenCalled();
-  expect(screen.getByRole("dialog", { hidden: true })).toBeTruthy();
+  expect(screen.getByRole("alertdialog")).toBeTruthy();
 });
 
 test("dialog_confirm_and_cancel_buttons_call_their_handlers", () => {
