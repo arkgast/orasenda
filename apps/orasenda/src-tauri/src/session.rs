@@ -3198,7 +3198,7 @@ mod tests {
         );
         assert!(
             db(&s)
-                .read(|txn| active_session::get::<Session>(txn))
+                .read(active_session::get::<Session>)
                 .expect("reads")
                 .is_some(),
             "the active session row stays"
