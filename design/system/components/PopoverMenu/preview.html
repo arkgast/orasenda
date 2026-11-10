@@ -1,29 +1,87 @@
-<!-- @dsCard group="Overlays" height=820 -->
+<!-- @dsCard group="Overlays" height=1640 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>PopoverMenu</title></head>
 <body>
-<div class="os-col">
-  <p class="os-muted" style="margin:0">Idle: every row is live.</p>
-  <div class="os-popover" role="menu" aria-labelledby="pm-h">
-    <div class="os-popover-head"><p class="os-popover-title" id="pm-h">Preset</p></div>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="true" type="button"><span class="os-radio-mark"></span>Classic<span class="os-popover-meta">25 / 5</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Deep Block<span class="os-popover-meta">90 / 15</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Short<span class="os-popover-meta">15 / 3</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" type="button"><span class="os-radio-mark"></span>Custom<span class="os-popover-meta">50 / 10</span></button>
-    <hr class="os-popover-sep">
-    <button class="os-popover-item" role="menuitem" type="button">Timer settings…</button>
-  </div>
-  <p class="os-muted" style="margin:0">Read-only while a session runs: the current preset is checked, the others wait, and Settings stays live.</p>
-  <div class="os-popover" role="menu" aria-labelledby="pm-h2" aria-describedby="pm-d2">
-    <div class="os-popover-head"><p class="os-popover-title" id="pm-h2">Classic · 25 / 5</p><p class="os-popover-desc" id="pm-d2">Presets can change between sessions.</p></div>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="true" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Classic<span class="os-popover-meta">25 / 5</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Deep Block<span class="os-popover-meta">90 / 15</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Short<span class="os-popover-meta">15 / 3</span></button>
-    <button class="os-popover-item" role="menuitemradio" aria-checked="false" aria-disabled="true" type="button"><span class="os-radio-mark"></span>Custom<span class="os-popover-meta">50 / 10</span></button>
-    <hr class="os-popover-sep">
-    <button class="os-popover-item" role="menuitem" type="button">Timer settings…</button>
-  </div>
-</div>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function glyph(d) { return h('svg', { viewBox: '0 0 20 20', 'aria-hidden': 'true', focusable: 'false' }, h('path', { d: d })); }
+  var PRESETS = [['classic', 'Classic', '25 / 5'], ['deep', 'Deep Block', '90 / 15'], ['short', 'Short', '15 / 3'], ['custom', 'Custom', '50 / 10']];
+  function presetItems(current, withSettings) {
+    var rows = PRESETS.map(function (p) { return { id: p[0], label: p[1], meta: p[2], kind: 'radio', checked: p[0] === current }; });
+    return withSettings ? rows.concat([{ id: 'settings', label: 'Timer settings…', kind: 'link' }]) : rows;
+  }
+  function nameOf(id) { var p = PRESETS.filter(function (x) { return x[0] === id; })[0]; return p ? p[1] : 'Classic'; }
+  // A static copy of an open menu (same classes, no behaviour), so every state shows without opening it.
+  function Shown(props) {
+    var rows = [];
+    props.items.forEach(function (it, i) {
+      if (it.kind === 'link' && i > 0 && props.items[i - 1].kind !== 'link') rows.push(h('hr', { key: 'sep', className: 'os-popover-sep' }));
+      var off = it.disabled || (props.readOnly && it.kind !== 'link');
+      rows.push(h('div', { key: it.id, className: 'os-popover-item', 'aria-checked': it.kind === 'link' ? undefined : String(!!it.checked), 'aria-disabled': off ? 'true' : undefined },
+        it.kind === 'radio' ? h('span', { className: 'os-radio-mark' }) : null,
+        it.kind === 'checkbox' ? h('span', { className: 'os-checkbox-mark' }, it.checked ? h('svg', { viewBox: '0 0 20 20' }, h('path', { d: 'M5.5 10.5l3 3 6-7' })) : null) : null,
+        h('span', { className: 'os-popover-label' }, it.label),
+        it.meta ? h('span', { className: 'os-popover-meta' }, it.meta) : null,
+        it.kind === 'checkbox' ? h('span', { className: 'os-popover-word' }, it.checked ? 'On' : 'Off') : null));
+    });
+    return h('div', { className: 'os-stack', style: { gap: 'var(--space-1)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, props.caption),
+      h('div', { className: 'os-popover', 'aria-hidden': 'true' },
+        h('div', { className: 'os-popover-head' },
+          h('div', { className: 'os-popover-headline' }, h('p', { className: 'os-popover-title' }, props.heading), props.keys ? h(O.Kbd, { keys: 'P', inTooltip: true }) : null),
+          props.description ? h('p', { className: 'os-popover-desc' }, props.description) : null),
+        h('div', { className: 'os-popover-list' }, rows)));
+  }
+  function Panel(props) {
+    var theme = props.theme, base = 'pm-' + theme;
+    var o = React.useState(''), open = o[0], setOpen = o[1];
+    var c = React.useState('classic'), preset = c[0], setPreset = c[1];
+    var k = React.useState(true), keys = k[0], setKeys = k[1];
+    var x = React.useState({ a: true, b: false }), checks = x[0], setChecks = x[1];
+    var d = React.useState(false), dialog = d[0], setDialog = d[1];
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    var today = React.useRef(null), running = React.useRef(null), fw = React.useRef(null), boxes = React.useRef(null), inDialog = React.useRef(null);
+    function toggle(key) { return function () { setOpen(open === key ? '' : key); }; }
+    function close() { setOpen(''); }
+    function trigger(key) { return { 'aria-haspopup': 'menu', 'aria-expanded': open === key, 'aria-controls': open === key ? base + '-' + key : undefined, onClick: toggle(key) }; }
+    function pick(id) { if (id === 'settings') setNotice('Timer settings would open here.'); else { setPreset(id); setNotice(nameOf(id) + ' chosen.'); } }
+    var summary = nameOf(preset) + ' · ends 15:20';
+    var menu = function (key, ref, extra) { return open === key ? h(O.PopoverMenu, Object.assign({ id: base + '-' + key, anchor: ref, onClose: close }, extra)) : null; };
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h('label', { className: 'os-choice', style: { alignSelf: 'flex-start' } }, h('input', { type: 'checkbox', checked: keys, onChange: function (e) { setKeys(e.target.checked); } }), 'Single-key shortcuts'),
+      h('div', { className: 'os-actions' },
+        h(O.Tooltip, { label: 'Change preset', shortcut: keys ? 'P' : undefined },
+          h('button', Object.assign({ ref: today, type: 'button', className: 'os-btn os-btn-ghost', 'aria-label': summary + ', Change preset', 'aria-keyshortcuts': keys ? O.describeShortcut('P').aria : undefined }, trigger('today')), summary)),
+        h(O.Tooltip, { label: 'Change preset' },
+          h('button', Object.assign({ ref: running, type: 'button', className: 'os-btn os-btn-ghost', 'aria-label': 'Session running, ' + nameOf(preset) + ' · 25 / 5, Change preset' }, trigger('running')), 'Running · ' + nameOf(preset))),
+        h('span', { ref: fw }, h(O.IconButton, Object.assign({ label: 'Preset for the next session', icon: glyph('M4 6h12M4 10h12M4 14h8') }, trigger('fw')))),
+        h('span', { ref: boxes }, h(O.IconButton, Object.assign({ label: 'Checkbox rows', icon: glyph('M4 4h12v12H4zM7 10l2 2 4-4') }, trigger('boxes')))),
+        h(O.Button, { onClick: function () { setDialog(true); } }, 'Open a dialog')),
+      menu('today', today, { heading: 'Preset', items: presetItems(preset, true), singleKeys: keys, onSelect: pick }),
+      menu('running', running, { heading: nameOf(preset) + ' · 25 / 5', description: 'Presets can change between sessions.', items: presetItems(preset, true), readOnly: true, onSelect: pick }),
+      menu('fw', fw, { heading: 'Preset for the next session', description: 'Choosing one applies it and closes.', items: presetItems(preset, false), onSelect: pick }),
+      menu('boxes', boxes, { heading: 'Checkbox rows', description: 'Choosing one toggles it and closes.', items: [{ id: 'a', label: 'First option', kind: 'checkbox', checked: checks.a }, { id: 'b', label: 'Second option', kind: 'checkbox', checked: checks.b }, { id: 'c', label: 'Unavailable option', kind: 'checkbox', disabled: true }],
+        onSelect: function (id) { var next = Object.assign({}, checks); next[id] = !next[id]; setChecks(next); setNotice((id === 'a' ? 'First' : 'Second') + ' option ' + (next[id] ? 'on.' : 'off.')); } }),
+      notice ? h('p', { className: 'os-muted', style: { margin: 0 } }, notice) : null,
+      h('div', { className: 'os-actions', style: { alignItems: 'flex-start' } },
+        h(Shown, { caption: 'Idle, single keys on', heading: 'Preset', keys: true, items: presetItems('classic', true) }),
+        h(Shown, { caption: 'Read-only while a session runs', heading: 'Classic · 25 / 5', description: 'Presets can change between sessions.', readOnly: true, items: presetItems('classic', true) }),
+        h(Shown, { caption: 'Focus window: no Settings row', heading: 'Preset for the next session', description: 'Choosing one applies it and closes.', items: presetItems('deep', false) }),
+        h(Shown, { caption: 'Checkbox rows: on, off, disabled', heading: 'Checkbox rows', items: [{ id: 'a', label: 'First option', kind: 'checkbox', checked: true }, { id: 'b', label: 'Second option', kind: 'checkbox' }, { id: 'c', label: 'Unavailable option', kind: 'checkbox', disabled: true }] })),
+      dialog ? h(O.Dialog, { title: 'Leave full screen?', description: 'Your focus session will keep running. The preset menu below opens above this dialog, placed against its trigger.', confirmLabel: 'Leave full screen', cancelLabel: 'Stay in full screen', onCancel: function () { setOpen(''); setDialog(false); }, onConfirm: function () { setOpen(''); setDialog(false); } },
+        h('div', { className: 'os-actions' }, h('span', { ref: inDialog }, h(O.IconButton, Object.assign({ label: 'Preset for the next session', icon: glyph('M4 6h12M4 10h12M4 14h8') }, trigger('dialog'))))),
+        menu('dialog', inDialog, { heading: 'Preset for the next session', description: 'Choosing one applies it and closes.', items: presetItems(preset, false), onSelect: pick })) : null);
+  }
+  function Demo() {
+    return h('div', null,
+      h(Panel, { theme: 'light' }),
+      h(Panel, { theme: 'dark' }),
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Open a trigger with a click, Return or Space. Up and down arrows move, Return or Space chooses and closes, Esc or Shift+Tab closes and focus returns to the trigger; Tab closes and moves on to the next control. Each trigger sets aria-expanded and aria-controls itself; the menu never touches it. Near a window edge the menu flips above its trigger and stays inside.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
 </body>
 </html>

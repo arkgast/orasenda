@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"TimerStrip"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"},{"name":"IconButton"},{"name":"Tooltip"},{"name":"Kbd"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"TimerStrip"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"},{"name":"IconButton"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"PopoverMenu"}]} */
 (function () {
   "use strict";
   var R = window.React, h = R.createElement;
@@ -416,29 +416,34 @@
     var v = el && el.ownerDocument.defaultView ? el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(name).trim() : "", n = parseFloat(v);
     return !Number.isFinite(n) ? 0 : /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
   }
-  // Positioned panel, shared by Tooltip and later PopoverMenu (internal, not exported). No popover API, no anchor
+  // Positioned panel, shared by Tooltip and PopoverMenu (internal, not exported). No popover API, no anchor
   // positioning: the macOS 13 WebKit has neither. The panel lives in the nearest open dialog (already in the top
   // layer) or the page body, is placed from the trigger rect below it, flipped above when it does not fit,
   // kept inside the viewport, and re-placed on resize and on any scroll.
+  // opts (PopoverMenu): align "start" lines the panel's start edge up with the trigger's instead of centring it;
+  // clamp keeps a panel taller than the room on its side inside the viewport (it may then cover the trigger).
   function panelHost(trigger) {
     var dialog = trigger.closest ? trigger.closest("dialog[open]") : null;
     return dialog || trigger.ownerDocument.body;
   }
-  function placePanel(trigger, panel) {
+  function placePanel(trigger, panel, opts) {
     var doc = trigger.ownerDocument, root = doc.documentElement, view = doc.defaultView;
     var t = trigger.getBoundingClientRect(), w = panel.offsetWidth, ht = panel.offsetHeight;
     var gap = tokenNumber(root, "--space-1"), edge = tokenNumber(root, "--space-2");
     var vw = root.clientWidth || view.innerWidth, vh = root.clientHeight || view.innerHeight;
     var below = t.bottom + gap, above = t.top - gap - ht;
     var side = below + ht <= vh - edge || (above < edge && vh - t.bottom >= t.top) ? "below" : "above";
-    var left = Math.min(Math.max(edge, t.left + t.width / 2 - w / 2), Math.max(edge, vw - edge - w));
+    var start = opts && opts.align === "start" ? t.left : t.left + t.width / 2 - w / 2;
+    var left = Math.min(Math.max(edge, start), Math.max(edge, vw - edge - w));
+    var top = side === "below" ? below : above;
+    if (opts && opts.clamp) top = Math.min(Math.max(edge, top), Math.max(edge, vh - edge - ht));
     panel.style.left = Math.round(left) + "px";
-    panel.style.top = Math.round(side === "below" ? below : above) + "px";
+    panel.style.top = Math.round(top) + "px";
     panel.setAttribute("data-side", side);
   }
-  function followTrigger(trigger, panel) {
+  function followTrigger(trigger, panel, opts) {
     var view = trigger.ownerDocument.defaultView;
-    function place() { if (trigger.isConnected && panel.isConnected) placePanel(trigger, panel); }
+    function place() { if (trigger.isConnected && panel.isConnected) placePanel(trigger, panel, opts); }
     place();
     view.addEventListener("resize", place);
     view.addEventListener("scroll", place, true);
@@ -457,7 +462,9 @@
   function Tooltip(p) {
     var anchor = R.useRef(null), timer = R.useRef(0);
     var hover = R.useState(false), focus = R.useState(false), dismissed = R.useState(false);
-    var shown = !!p.label && (hover[0] || focus[0]) && !dismissed[0];
+    // A menu trigger whose menu is open (aria-expanded true on the child) shows no tooltip, so Esc reaches the menu.
+    var kid = p.children && p.children.props, expanded = kid ? kid["aria-expanded"] === true || kid["aria-expanded"] === "true" : false;
+    var shown = !!p.label && (hover[0] || focus[0]) && !dismissed[0] && !expanded;
     function cancel() { if (timer.current) { clearTimeout(timer.current); timer.current = 0; } }
     function afterQuick(fn) {
       cancel();
@@ -467,11 +474,17 @@
     function leave() { afterQuick(function () { hover[1](false); }); }
     R.useEffect(function () { return cancel; }, []);
     R.useEffect(function () { if (!hover[0] && !focus[0] && dismissed[0]) dismissed[1](false); }, [hover[0], focus[0], dismissed[0]]);
-    // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler).
+    // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler),
+    // unless the press comes from inside an open PopoverMenu: then it hides the tooltip and still reaches the menu.
     R.useEffect(function () {
       if (!shown || !anchor.current) return;
       var doc = anchor.current.ownerDocument;
-      function key(e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel(); dismissed[1](true); } }
+      function key(e) {
+        if (e.key !== "Escape") return;
+        var t = e.target, inMenu = t && t.closest && t.closest(".os-popover-panel");
+        cancel(); dismissed[1](true);
+        if (!inMenu) { e.preventDefault(); e.stopPropagation(); }
+      }
       doc.addEventListener("keydown", key, true);
       return function () { doc.removeEventListener("keydown", key, true); };
     }, [shown]);
@@ -510,6 +523,123 @@
         disabled: p.disabled, onClick: p.onClick },
         h("span", { className: "os-iconbtn-icon", "aria-hidden": "true" }, p.icon)));
   }
+  // PopoverMenu (PopoverMenu README): a positioned panel, never a popover. React renders it into a slot; on mount it
+  // moves into the nearest open dialog that holds the anchor (the top layer) or the page body and is placed by
+  // placePanel, start-aligned with the anchor and clamped inside the viewport. It can sit outside the React root,
+  // so its keys and clicks are native listeners reading the latest props. The roving index is component state.
+  // It reads anchor only to place itself and to return focus; the host sets the trigger's aria-expanded and aria-controls.
+  var MENU_PLACE = { align: "start", clamp: true };
+  var MENU_ROLE = { radio: "menuitemradio", checkbox: "menuitemcheckbox", link: "menuitem" };
+  function menuRowLive(item, readOnly) { return !!item && !item.disabled && !(readOnly && item.kind !== "link"); }
+  function menuFocusTarget(a) { return !a ? null : a.matches && a.matches(FOCUSABLE) ? a : a.querySelector ? a.querySelector(FOCUSABLE) : null; }
+  // Tab out of a menu (WAI-ARIA APG): the next tabbable element after the trigger in DOM order, inside the open dialog
+  // that holds the trigger if there is one, never inside the menu itself. None: null (focus goes back to the trigger).
+  function menuNextTabbable(from, menu) {
+    if (!from || !from.ownerDocument) return null;
+    var scope = panelHost(from), all = scope.querySelectorAll(FOCUSABLE);
+    for (var i = 0; i < all.length; i++) {
+      var n = all[i];
+      if (n === from || from.contains(n) || (menu && menu.contains(n)) || n.tabIndex < 0) continue;
+      if (n.closest && n.closest("[hidden],[inert],[aria-hidden='true']")) continue;
+      if (from.compareDocumentPosition(n) & 4) return n;
+    }
+    return null;
+  }
+  function PopoverMenu(p) {
+    var generated = R.useId(), id = p.id || generated, items = p.items || [];
+    var slot = R.useRef(null), panel = R.useRef(null), rows = R.useRef([]), restore = R.useRef(true), latest = R.useRef(null);
+    var roving = R.useState(function () {
+      for (var i = 0; i < items.length; i++) if (items[i].kind === "radio" && items[i].checked) return i;
+      return 0;
+    });
+    var index = Math.min(roving[0], Math.max(0, items.length - 1)), setIndex = roving[1];
+    latest.current = { items: items, index: index, readOnly: !!p.readOnly, onSelect: p.onSelect, onClose: p.onClose, anchor: p.anchor };
+    R.useLayoutEffect(function () {
+      var el = panel.current, home = slot.current;
+      if (!el) return;
+      var doc = el.ownerDocument, a = p.anchor && p.anchor.current;
+      // A theme set on a section around the trigger (as in the previews) travels with the panel.
+      var themed = a && a.closest ? a.closest("[data-theme]") : null;
+      if (themed && themed !== doc.documentElement) el.setAttribute("data-theme", themed.getAttribute("data-theme"));
+      (a ? panelHost(a) : doc.body).appendChild(el);
+      var stop = a ? followTrigger(a, el, MENU_PLACE) : function () {};
+      function anchorEl() { var r = latest.current.anchor; return r && r.current; }
+      function back() { var t = menuFocusTarget(anchorEl()); restore.current = false; if (t && t.focus) t.focus(); }
+      function close() { back(); latest.current.onClose(); }
+      function choose(i) {
+        var cur = latest.current, item = cur.items[i];
+        if (!menuRowLive(item, cur.readOnly)) return;
+        back(); cur.onSelect(item.id); cur.onClose();
+      }
+      function key(e) {
+        var cur = latest.current, n = cur.items.length, k = e.key;
+        if (k === "ArrowDown" || k === "ArrowUp" || k === "Home" || k === "End") {
+          e.preventDefault(); e.stopPropagation();
+          if (n) setIndex(k === "Home" ? 0 : k === "End" ? n - 1 : (cur.index + (k === "ArrowDown" ? 1 : -1) + n) % n);
+        } else if (k === "Enter" || k === " " || k === "Spacebar") { e.preventDefault(); e.stopPropagation(); if (n) choose(cur.index); }
+        else if (k === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+        else if (k === "Tab") {
+          // Shift+Tab goes back to the trigger; Tab moves on to the next tabbable element after it.
+          e.preventDefault(); e.stopPropagation();
+          var next = e.shiftKey ? null : menuNextTabbable(menuFocusTarget(anchorEl()), el);
+          if (!next) close();
+          else { restore.current = false; next.focus(); latest.current.onClose(); }
+        }
+      }
+      function click(e) {
+        var row = e.target && e.target.closest ? e.target.closest("[data-menu-index]") : null;
+        if (!row || !el.contains(row)) return;
+        var i = Number(row.getAttribute("data-menu-index"));
+        setIndex(i); choose(i);
+      }
+      // A press outside the menu and its trigger closes it and leaves focus where the press put it.
+      function outside(e) {
+        var a2 = anchorEl();
+        if (el.contains(e.target) || (a2 && a2.contains(e.target))) return;
+        restore.current = false; latest.current.onClose();
+      }
+      el.addEventListener("keydown", key);
+      el.addEventListener("click", click);
+      doc.addEventListener("pointerdown", outside, true);
+      return function () {
+        stop();
+        el.removeEventListener("keydown", key);
+        el.removeEventListener("click", click);
+        doc.removeEventListener("pointerdown", outside, true);
+        var had = el.contains(doc.activeElement);
+        if (home) home.appendChild(el);
+        if (had && restore.current) { var t = menuFocusTarget(anchorEl()); if (t && t.isConnected && t.focus) t.focus(); }
+      };
+    }, []);
+    // Placed again after every render (rows can change), and focus follows the roving index.
+    R.useLayoutEffect(function () { var a = p.anchor && p.anchor.current; if (a && panel.current) placePanel(a, panel.current, MENU_PLACE); });
+    R.useLayoutEffect(function () {
+      var row = rows.current[index];
+      if (row && row.ownerDocument.activeElement !== row) row.focus({ preventScroll: true });
+    }, [index, items.length]);
+    var headingId = id + "-heading", descId = id + "-desc", list = [];
+    items.forEach(function (it, i) {
+      if (it.kind === "link" && i > 0 && items[i - 1].kind !== "link") list.push(h("hr", { key: "sep-" + i, className: "os-popover-sep" }));
+      var live = menuRowLive(it, p.readOnly);
+      list.push(h("div", { key: it.id, ref: function (n) { rows.current[i] = n; }, role: MENU_ROLE[it.kind] || "menuitem", tabIndex: i === index ? 0 : -1,
+        "data-menu-index": i, className: cx("os-popover-item", "os-popover-" + it.kind),
+        "aria-checked": it.kind === "radio" || it.kind === "checkbox" ? !!it.checked : undefined, "aria-disabled": live ? undefined : "true" },
+        it.kind === "radio" ? h("span", { className: "os-radio-mark", "aria-hidden": "true" }) : null,
+        it.kind === "checkbox" ? h("span", { className: "os-checkbox-mark", "aria-hidden": "true" }, it.checked ? h("svg", { viewBox: "0 0 20 20", focusable: "false" }, h("path", { d: "M5.5 10.5l3 3 6-7" })) : null) : null,
+        h("span", { className: "os-popover-label" }, it.label),
+        it.meta ? h("span", { className: "os-popover-meta" }, it.meta) : null,
+        it.kind === "checkbox" ? h("span", { className: "os-popover-word", "aria-hidden": "true" }, it.checked ? "On" : "Off") : null));
+    });
+    rows.current.length = items.length;
+    return h("span", { ref: slot, className: "os-popover-slot" },
+      h("div", { ref: panel, className: "os-popover os-popover-panel", "data-side": "below" },
+        h("div", { className: "os-popover-head" },
+          h("div", { className: "os-popover-headline" },
+            h("p", { className: "os-popover-title", id: headingId }, p.heading),
+            p.singleKeys === true ? h(Kbd, { keys: "P", inTooltip: true }) : null),
+          p.description ? h("p", { className: "os-popover-desc", id: descId }, p.description) : null),
+        h("div", { id: id, role: "menu", className: "os-popover-list", "aria-labelledby": headingId, "aria-describedby": p.description ? descId : undefined }, list)));
+  }
   function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "Now, " + p.time }, h("span", { className: "os-num" }, "Now · " + p.time), h("i", { "aria-hidden": "true" })); }
-  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, TimerStrip: TimerStrip, timerLayout: timerLayout, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow, IconButton: IconButton, Tooltip: Tooltip, Kbd: Kbd, describeShortcut: describeShortcut });
+  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, TimerStrip: TimerStrip, timerLayout: timerLayout, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow, IconButton: IconButton, Tooltip: Tooltip, Kbd: Kbd, describeShortcut: describeShortcut, PopoverMenu: PopoverMenu });
 })();

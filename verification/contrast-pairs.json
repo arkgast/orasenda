@@ -276,5 +276,107 @@
     "bg": "focus",
     "kind": "text",
     "where": "T3: StartButton label"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "T4: PopoverMenu heading and row labels"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "T4: PopoverMenu meta, second line, On/Off word, read-only and disabled rows"
+  },
+  {
+    "fg": "ink",
+    "bg": "selection",
+    "kind": "text",
+    "where": "T4: PopoverMenu checked row label"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "selection",
+    "kind": "text",
+    "where": "T4: PopoverMenu checked row meta"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-sunken",
+    "kind": "text",
+    "where": "T4: PopoverMenu row hover"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-sunken",
+    "kind": "text",
+    "where": "T4: PopoverMenu meta on hover"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "T4: PopoverMenu P Kbd glyph"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "T4: PopoverMenu panel edge, unchecked marks, dashed rings"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T4: PopoverMenu panel edge against the page"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "T4: PopoverMenu unchecked marks on a hovered row"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T4: PopoverMenu P Kbd edge"
+  },
+  {
+    "fg": "focus",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "T4: PopoverMenu checked radio ring and checkbox fill on the checked row"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "T4: PopoverMenu checked radio dot"
+  },
+  {
+    "fg": "on-focus",
+    "bg": "focus",
+    "kind": "mark",
+    "where": "T4: PopoverMenu checkbox tick"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "T4: PopoverMenu inset row focus ring"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "T4: PopoverMenu inset ring on the checked row"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "T4: PopoverMenu inset ring on a hovered row"
   }
 ]

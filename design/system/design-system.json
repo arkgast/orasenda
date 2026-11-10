@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-10T06:13:20Z",
+    "at": "2026-11-10T10:18:28Z",
     "via": "Claude Code",
-    "note": "T3 (issue #170) fix: Today's stacked TimerStrip now fits the timer-surfaces canvas's 52px time track at 360 x 240 (ruling a). The stacked strip's head-to-bar gap is space-1 (4px), so head 36 + 4 + bar 10 = 50px, and Today passes no task to its stacked strip. The TimerStrip README gains a \"Today's stacked strip\" section, and the preview draws the stacked frames in a 52px track with no intent."
+    "note": "T4 (issue #171) review fixes: (1) bundle.css .os-popover-sep now stretches full width (align-self: stretch; margin: space-2 0), overriding the UA hr margin-inline: auto that shrank the separator before the link row to 0 width in the live menu and the static preview; PopoverMenu README anatomy names the rule. (2) Tooltip's Esc listener still hides a tooltip showing on another trigger but no longer stops an Esc pressed inside an open PopoverMenu, so one press closes the menu; Tooltip and PopoverMenu READMEs updated. (3) PopoverMenu Tab follows the WAI-ARIA menu pattern: Tab closes and moves focus to the next tabbable element after the trigger (scoped to the open dialog holding it; none: the trigger), Shift+Tab closes and returns focus to the trigger; README, index.d.ts and preview text updated. (4) PopoverMenu preview notice is a plain p, no role=status live region."
   }
 }
