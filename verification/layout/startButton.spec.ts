@@ -107,7 +107,7 @@ test("start_button_aria_keyshortcuts", async ({ page }) => {
   ).not.toHaveAttribute("aria-keyshortcuts");
 });
 
-test("start_button_aria_snapshot", async ({ page }) => {
+test("timer_faces_aria_snapshot (StartButton)", async ({ page }) => {
   await openSpecimen(page, "StartButton");
   for (const s of [
     "start-button-default",
@@ -133,7 +133,7 @@ test("start_button_aria_snapshot", async ({ page }) => {
   `);
 });
 
-test("start_button_no_motion_when_reduced", async ({ page }, info) => {
+test("timer_faces_no_motion_when_reduced (StartButton)", async ({ page }, info) => {
   test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
   await openSpecimen(page, "StartButton");
   expect(await animatedElements(page)).toEqual([]);

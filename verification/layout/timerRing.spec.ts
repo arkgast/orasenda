@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { overflows } from "./support/fits.ts";
+import { expectClampedFits } from "./support/clampedFits.ts";
 import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
 import { frames, openSpecimen } from "./support/specimen.ts";
@@ -55,19 +55,7 @@ test("timer_ring_frames_fit", async ({ page }) => {
   await openSpecimen(page, "TimerRing");
   const all = frames(page);
   for (let i = 0; i < (await all.count()); i++) {
-    // The clamped task box reports its hidden lines as scroll overflow; its visible box must be two lines at most.
-    const reported = await overflows(all.nth(i));
-    expect(
-      reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("div.os-timer-task")),
-    ).toEqual([]);
-    const task = all.nth(i).locator(".os-timer-task");
-    if ((await task.count()) > 0) {
-      const h = await task.evaluate((el) => ({
-        box: el.clientHeight,
-        line: Number.parseFloat(getComputedStyle(el).lineHeight),
-      }));
-      expect(h.box).toBeLessThanOrEqual(h.line * 2 + 1);
-    }
+    await expectClampedFits(all.nth(i), ".os-timer-task", 2);
   }
 });
 
@@ -106,7 +94,7 @@ test("warning_fade_uses_duration_slow", async ({ page }, info) => {
   expect(arc.easing).toContain("cubic-bezier(0.45, 0, 0.55, 1)");
 });
 
-test("timer_ring_aria_snapshot", async ({ page }) => {
+test("timer_faces_aria_snapshot (TimerRing)", async ({ page }) => {
   await openSpecimen(page, "TimerRing");
   const task = "Finish the chapter 3 outline and send the draft to Maya before the review";
   await expect(page.locator("[data-state='timer-ring-numeric-idle']")).toMatchAriaSnapshot(`
@@ -132,7 +120,7 @@ test("timer_ring_aria_snapshot", async ({ page }) => {
   `);
 });
 
-test("timer_ring_no_motion_when_reduced", async ({ page }, info) => {
+test("timer_faces_no_motion_when_reduced (TimerRing)", async ({ page }, info) => {
   test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
   await openSpecimen(page, "TimerRing");
   expect(await animatedElements(page)).toEqual([]);

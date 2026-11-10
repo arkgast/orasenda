@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { timerLayout } from "./index.ts";
 
 const readme = readFileSync(
@@ -72,5 +72,21 @@ test("timer_layout_boundaries", () => {
 });
 
 test("timer_layout_is_pure", () => {
-  expect(L(900, 240, 900)).toBe(L(900, 240, 900));
+  const trap = () =>
+    new Proxy(
+      {},
+      {
+        get: () => {
+          throw new Error("timerLayout must not read the environment");
+        },
+      },
+    );
+  vi.stubGlobal("document", trap());
+  vi.stubGlobal("window", trap());
+  try {
+    expect(L(900, 240, 900)).toBe("strip");
+    expect(L(300, 300, 300)).toBe(L(300, 300, 300));
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

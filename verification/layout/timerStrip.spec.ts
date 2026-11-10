@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectVisibleFits } from "./support/fitsVisible.ts";
+import { expectClampedFits } from "./support/clampedFits.ts";
 import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
 import { openSpecimen } from "./support/specimen.ts";
@@ -10,7 +10,7 @@ const WIDTHS = [360, 640, 1440];
 async function checkFrame(page: import("@playwright/test").Page, state: string) {
   const frame = page.locator(`[data-frame][data-state="${state}"]`);
   await expect(frame, state).toHaveCount(1);
-  await expectVisibleFits(frame);
+  await expectClampedFits(frame, ".os-strip-task", 2);
   const task = await frame.locator(".os-strip-task").evaluate((el) => {
     const cs = getComputedStyle(el);
     const line = Number.parseFloat(cs.lineHeight);
@@ -36,6 +36,22 @@ test("timer_strip_fits_at_360_640_1440_with_two_line_intent", async ({ page }, i
   await openSpecimen(page, "TimerStrip");
   for (const w of WIDTHS) for (const m of MODES) await checkFrame(page, `timer-strip-${w}-${m}`);
   await shoot(page, info, "timer-strip");
+});
+
+test("timer_strip_long_intent_clamps_to_two_lines", async ({ page }) => {
+  await openSpecimen(page, "TimerStrip");
+  for (const w of WIDTHS) {
+    const frame = page.locator(`[data-frame][data-state="timer-strip-long-${w}"]`);
+    await expect(frame).toHaveCount(1);
+    await expectClampedFits(frame, ".os-strip-task", 2);
+    const t = await frame.locator(".os-strip-task").evaluate((el) => ({
+      box: el.clientHeight,
+      full: el.scrollHeight,
+      line: Number.parseFloat(getComputedStyle(el).lineHeight),
+    }));
+    expect(t.full, `${w} intent runs past two lines`).toBeGreaterThan(t.line * 2 + 1);
+    expect(t.box, `${w} renders exactly two lines`).toBeGreaterThanOrEqual(t.line * 2 - 1);
+  }
 });
 
 test("stacked_strip_fits_at_360", async ({ page }) => {
@@ -70,7 +86,7 @@ test("timer_strip_warning_fade_uses_duration_slow", async ({ page }, info) => {
   expect(fill.durations[i]).toBe("1.6s");
 });
 
-test("timer_strip_aria_snapshot", async ({ page }) => {
+test("timer_faces_aria_snapshot (TimerStrip)", async ({ page }) => {
   await openSpecimen(page, "TimerStrip");
   const t = "Finish the chapter 3 outline and send the draft to Maya before the review";
   const cases: Array<[string, string]> = [
@@ -89,7 +105,7 @@ test("timer_strip_aria_snapshot", async ({ page }) => {
   }
 });
 
-test("timer_strip_no_motion_when_reduced", async ({ page }, info) => {
+test("timer_faces_no_motion_when_reduced (TimerStrip)", async ({ page }, info) => {
   test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
   await openSpecimen(page, "TimerStrip");
   expect(await animatedElements(page)).toEqual([]);

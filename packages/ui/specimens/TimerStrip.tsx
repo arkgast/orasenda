@@ -27,6 +27,11 @@ export function TimerStripSpecimen(): ReactElement {
           </Frame>
         )),
       )}
+      {[360, 640, 1440].map((w) => (
+        <Frame key={`long-${w}`} state={`timer-strip-long-${w}`} width={w} height={150}>
+          <TimerStrip {...STATES[0]} task={`${INTENT[w]} ${LONG} ${LONG}`} />
+        </Frame>
+      ))}
       {STATES.map((s) => (
         <Frame key={s.mode} state={`timer-strip-stacked-360-${s.mode}`} width={360} height={190}>
           <TimerStrip {...s} task={SHORT} stacked />
