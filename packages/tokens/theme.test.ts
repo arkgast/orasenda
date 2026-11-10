@@ -43,11 +43,19 @@ test("theme_is_closed", async () => {
 
 test("theme_has_font_weights", async () => {
   const theme = buildTheme();
-  const css = await utilities(theme, ["font-semibold", "font-medium", "font-light", "font-bold"]);
+  const css = await utilities(theme, [
+    "font-semibold",
+    "font-medium",
+    "font-light",
+    "font-normal",
+    "font-bold",
+  ]);
   assert.match(css, /\.font-semibold \{[^}]*font-weight: var\(--font-weight-semibold\)/);
   assert.match(css, /\.font-medium \{[^}]*font-weight: var\(--font-weight-medium\)/);
   assert.match(css, /--font-weight-semibold: 600;/);
   assert.match(css, /--font-weight-medium: 500;/);
+  assert.match(css, /\.font-light \{[^}]*font-weight: var\(--font-weight-light\)/);
+  assert.match(css, /\.font-normal \{[^}]*font-weight: var\(--font-weight-normal\)/);
   assert.doesNotMatch(css, /\.font-bold/);
 });
 
