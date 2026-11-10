@@ -129,3 +129,21 @@ test("capture_pad_suppresses_duplicate_saves_while_busy", async () => {
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
   await act(async () => release());
 });
+
+test("capture_pad_reopening_clears_the_saved_announcement", async () => {
+  const props = {
+    value: "note",
+    kind: "internal" as const,
+    onChange: vi.fn(),
+    onKindChange: vi.fn(),
+    onSave: vi.fn(),
+    onClose: vi.fn(),
+  };
+  const view = render(<CapturePad {...props} open />);
+  fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
+  await waitFor(() => expect(props.onClose).toHaveBeenCalled());
+  expect(screen.getByRole("status", { hidden: true }).textContent).toBe("Saved to Inbox.");
+  view.rerender(<CapturePad {...props} open={false} />);
+  view.rerender(<CapturePad {...props} open />);
+  await waitFor(() => expect(screen.getByRole("status", { hidden: true }).textContent).toBe(""));
+});

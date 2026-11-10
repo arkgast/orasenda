@@ -1,5 +1,5 @@
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { type JSX, useId, useRef, useState } from "react";
+import { type JSX, useEffect, useId, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { Button } from "./button";
 import { TextArea } from "./text-area";
@@ -45,6 +45,11 @@ export function CapturePad({
   const opener = useRef<HTMLElement | null>(null);
   const hasText = value.trim().length > 0;
 
+  // A reopened pad starts with a quiet status line, not the last save's "Saved to Inbox.".
+  useEffect(() => {
+    if (open) setAnnounce("");
+  }, [open]);
+
   function save() {
     if (saving.current) return;
     if (!hasText) {
@@ -72,6 +77,8 @@ export function CapturePad({
       );
   }
 
+  // Built on the Radix primitive directly, not the Dialog component: the pad saves on Esc and outside
+  // interaction instead of dismissing, and restores focus to its own opener.
   return (
     <>
       <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && save()}>
