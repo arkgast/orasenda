@@ -7,7 +7,9 @@ const OPEN = "Open the capture pad";
 test("capture_pad_opens_named_with_thought_focused_and_saves_on_escape", async ({ page }, info) => {
   await openSpecimen(page, "CapturePad");
   const opener = page.getByRole("button", { name: OPEN });
-  await opener.click();
+  // Opened from the keyboard, as the hotkey does: the opener held focus. (WebKit does not focus a clicked button.)
+  await opener.focus();
+  await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Capture a thought" });
   await expect(dialog).toBeVisible();
   const field = page.getByRole("textbox", { name: "Thought" });
