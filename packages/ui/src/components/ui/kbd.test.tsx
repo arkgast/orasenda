@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { Kbd } from "./src/index.ts";
+import { Kbd } from "./kbd.tsx";
 
 test("kbd_glyph_hidden_and_spoken_in_text", () => {
   const { container } = render(

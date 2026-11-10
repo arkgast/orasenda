@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { describeShortcut } from "./src/index.ts";
+import { describeShortcut } from "./shortcuts.ts";
 
 const MODS: Array<[string, string, string]> = [
   ["⌃", "Control", "Control"],

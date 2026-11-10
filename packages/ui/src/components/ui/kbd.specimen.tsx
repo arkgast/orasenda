@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
-import { describeShortcut, Kbd } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { describeShortcut } from "../../lib/shortcuts.ts";
+import { Kbd } from "./kbd.tsx";
 
 const key = (keys: string): ReactElement => (
   <Kbd keys={keys} spoken={describeShortcut(keys).spoken} />
