@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-09T22:15:21Z",
+    "at": "2026-11-09T23:49:26Z",
     "via": "Claude Code",
-    "note": "index.d.ts matches bundle.js: runtime-exported Props back to their implemented shapes (StartButton keeps disabled); redesign props moved to *NextProps in the not-in-bundle block; Kbd, AppRow, SettingsIndexSection and Toast types tightened."
+    "note": "Built PageFrame, ScrollRegion, SettingsIndex, SettingsRow, InlineNotice row, Input unit and EmptyState inline in bundle.js; ScrollRegion now watches its content and the default InlineNotice honours actionName; READMEs gain the Notifications row table, the new index values, the theme-override line and the Try again condition."
   }
 }

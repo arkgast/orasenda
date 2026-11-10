@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"}]} */
 (function () {
   "use strict";
   var R = window.React, h = R.createElement;
@@ -15,6 +15,9 @@
       m === "shallow" || m === "overflow" || m === "idle" ? h("circle", { cx: 5, cy: 5, r: 4, fill: "none", stroke: "currentColor", strokeWidth: 1.5 }) :
       h("circle", { cx: 5, cy: 5, r: 5 });
     return h("svg", { className: "os-shape", viewBox: "0 0 10 10", "aria-hidden": "true", focusable: "false" }, kids);
+  }
+  function AlertGlyph() {
+    return h("svg", { className: "os-glyph", viewBox: "0 0 14 14", "aria-hidden": "true", focusable: "false" }, h("circle", { cx: 7, cy: 7, r: 5.75 }), h("path", { d: "M7 4v3.5" }), h("circle", { className: "os-glyph-fill", cx: 7, cy: 9.9, r: 0.5 }));
   }
   function Button(p) {
     var rest = Object.assign({}, p);
@@ -183,11 +186,14 @@
   function Field(p) {
     var generated = R.useId(), id = p.id || generated, described = [p["aria-describedby"], p.helper ? id + "-helper" : "", p.error ? id + "-error" : ""].filter(Boolean).join(" ");
     var rest = Object.assign({}, p);
-    ["multiline", "label", "helper", "error", "className"].forEach(function (k) { delete rest[k]; });
+    ["multiline", "label", "helper", "error", "className", "unit"].forEach(function (k) { delete rest[k]; });
     return h("div", { className: cx("os-field", p.className) }, h("label", { htmlFor: id }, p.label),
-      h(p.multiline ? "textarea" : "input", Object.assign({}, rest, { id: id, className: "os-input", "aria-invalid": p.error ? true : p["aria-invalid"], "aria-describedby": described || undefined })),
+      (function () {
+        var control = h(p.multiline ? "textarea" : "input", Object.assign({}, rest, { id: id, className: "os-input", "aria-invalid": p.error ? true : p["aria-invalid"], "aria-describedby": described || undefined }));
+        return p.unit && !p.multiline ? h("div", { className: "os-unit" }, control, h("span", null, p.unit)) : control;
+      })(),
       p.helper ? h("p", { id: id + "-helper", className: "os-field-help" }, p.helper) : null,
-      p.error ? h("p", { id: id + "-error", className: "os-field-help", role: "status" }, h(Shape, { mode: "warning" }), p.error) : null);
+      p.error ? h("p", { id: id + "-error", className: "os-field-help", role: "status" }, h(AlertGlyph), p.error) : null);
   }
   function Input(p) { return h(Field, p); }
   function TextArea(p) { return h(Field, Object.assign({ rows: 4 }, p, { multiline: true })); }
@@ -208,10 +214,18 @@
           ["internal", "external"].map(function (kind) { return h("label", { key: kind, className: "os-choice" }, h("input", { type: "radio", name: group, value: kind, checked: p.kind === kind, onChange: function () { p.onKindChange(kind); } }), kind === "internal" ? "Internal" : "External"); })),
         h(Button, { variant: "primary", type: "submit", loading: busy[0], disabled: !p.value.trim() }, busy[0] ? "Saving…" : "Save to Inbox")));
   }
+  function StatusRow(p) {
+    var tone = p.tone === "attention" || p.tone === "warning" || p.tone === "rest" ? p.tone : "neutral";
+    var glyph = tone === "attention" ? h(AlertGlyph) : tone === "warning" ? h(Shape, { mode: "warning" }) : null;
+    var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "quiet" ? "quiet" : "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
+    return h("div", { className: cx("os-statusrow", tone === "warning" && "os-statusrow-warning") },
+      h("p", { className: cx("os-statusrow-msg", tone === "rest" && "os-statusrow-rest"), role: "status", "aria-live": "polite" }, glyph, p.children), action);
+  }
   function InlineNotice(p) {
+    if (p.variant === "row") return h(StatusRow, p);
     return h("div", { className: cx("os-notice", p.tone === "warning" && "os-notice-warning") },
       h("div", { className: "os-notice-message", role: "status", "aria-atomic": "true" }, h(Shape, { mode: p.tone === "warning" ? "warning" : "shallow" }), h("span", null, p.children)),
-      p.actionLabel && p.onAction ? h(Button, { variant: "ghost", onClick: p.onAction }, p.actionLabel) : null);
+      p.actionLabel && p.onAction ? h(Button, { variant: "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null);
   }
   function Toast(p) {
     return h("div", { className: "os-toast" }, h(InlineNotice, p), p.onDismiss ? h(Button, { variant: "ghost", onClick: p.onDismiss }, "Dismiss") : null);
@@ -252,11 +266,75 @@
       h(Button, { variant: "ghost", onClick: p.onClose }, "Close"));
   }
   function EmptyState(p) {
+    if (p.variant === "inline") return h("p", { className: "os-empty-inline" }, p.message || "Nothing here yet.");
     return h("div", { className: "os-empty" }, h("h2", null, p.title || "Nothing here yet"), h("p", null, p.message || "That's fine. Start when you're ready."), p.actionLabel && p.onAction ? h(Button, { onClick: p.onAction }, p.actionLabel) : null);
   }
   function StartButton(p) {
     return h("div", { className: "os-start" }, h("div", { className: "os-actions" }, h(Button, { variant: "primary", size: "lg", onClick: p.onStart, disabled: p.disabled, loading: p.loading }, p.loading ? "Starting…" : "Start focus"), h(Button, { onClick: p.onQuickStart, disabled: p.disabled || p.loading }, "Just 2 minutes")), p.finishTime ? h("p", { className: "os-muted" }, "Realistic finish · ", h("span", { className: "os-num" }, p.finishTime)) : null);
   }
+  var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
+  function PageFrame(p) {
+    var flow = p.variant === "flow";
+    var title = p.compactPicker ? h("div", { className: "os-page-title" }, p.compactPicker, h("h1", { className: "os-sr-only", tabIndex: -1 }, p.title)) : h("h1", { tabIndex: -1 }, p.title);
+    return h("div", { className: cx("os-page", flow && "os-page-flow") },
+      h("header", { className: "os-page-head" }, title, p.primary || (p.step ? h("span", { className: "os-page-step" }, p.step) : null)),
+      h("div", { className: "os-page-status" }, p.status),
+      h("div", { className: "os-page-body" }, p.children),
+      flow ? h("footer", { className: "os-page-foot" }, p.footer) : null);
+  }
+  function ScrollRegion(p) {
+    var ref = R.useRef(null), more = R.useState(false), scrolled = R.useState(false), focusable = R.useState(null);
+    function measure() {
+      var el = ref.current; if (!el) return;
+      more[1](el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+      scrolled[1](el.scrollTop > 0);
+      focusable[1](!!el.querySelector(FOCUSABLE));
+    }
+    R.useEffect(function () {
+      var el = ref.current;
+      measure();
+      var ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+      var mo = typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
+      if (ro && el) { ro.observe(el); Array.prototype.forEach.call(el.children, function (c) { ro.observe(c); }); }
+      if (mo && el) mo.observe(el, { childList: true, subtree: true });
+      return function () { if (ro) ro.disconnect(); if (mo) mo.disconnect(); };
+    }, []);
+    return h("div", { ref: ref, className: "os-scroll", role: "region", "aria-label": p.label, "data-scrolled": scrolled[0] ? "true" : "false", tabIndex: focusable[0] === false ? 0 : undefined, onScroll: measure },
+      p.children,
+      more[0] ? h("div", { className: "os-scroll-more", "aria-hidden": "true" }, h("svg", { className: "os-glyph", viewBox: "0 0 14 14", "aria-hidden": "true" }, h("path", { d: "M3.5 5.5L7 9l3.5-3.5" })), " More below") : null);
+  }
+  function SettingsIndex(p) {
+    var secs = p.sections || [], refs = R.useRef({}), last = R.useState(null);
+    var stop = secs.some(function (s) { return s.id === last[0]; }) ? last[0] : secs.some(function (s) { return s.id === p.current; }) ? p.current : secs.length ? secs[0].id : null;
+    R.useEffect(function () { last[1](null); }, [p.current]);
+    function move(i, d) {
+      var j = (i + d + secs.length) % secs.length, n = refs.current[secs[j].id];
+      last[1](secs[j].id); if (n) n.focus();
+    }
+    return h("nav", { "aria-label": "Settings sections" }, h("ul", { className: "os-sindex" }, secs.map(function (s, i) {
+      return h("li", { key: s.id }, h("button", {
+        type: "button", className: "os-sindex-item", ref: function (n) { refs.current[s.id] = n; },
+        tabIndex: s.id === stop ? 0 : -1, "aria-current": s.id === p.current ? "location" : undefined,
+        onFocus: function () { last[1](s.id); },
+        onClick: function () { p.onJump(s.id); },
+        onKeyDown: function (e) {
+          if (e.key === "ArrowDown") { e.preventDefault(); move(i, 1); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); move(i, -1); }
+          else if (e.key === "Enter") { e.preventDefault(); p.onJump(s.id); }
+        }
+      }, s.name, h("span", { className: "os-sindex-value" }, s.problem ? [s.problem.alert ? h(AlertGlyph, { key: "g" }) : null, s.problem.text] : s.value)));
+    })));
+  }
+  function SettingsRow(p) {
+    var generated = R.useId(), id = p.id || generated, described = [id + "-help", p.status ? id + "-status" : "", p.disabledReason ? id + "-why" : ""].filter(Boolean).join(" ");
+    var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "ghost" ? "ghost" : "quiet", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
+    return h("div", { className: "os-srow", role: "group", "aria-labelledby": id + "-label", "aria-describedby": described },
+      h("p", { id: id + "-label", className: "os-srow-label" }, p.label),
+      p.children,
+      h("p", { id: id + "-help", className: "os-srow-help" }, p.helper),
+      p.status || action ? h("div", { className: "os-srow-line" }, p.status ? h("p", { id: id + "-status", className: "os-srow-status" }, p.status) : null, action) : null,
+      p.disabledReason ? h("p", { id: id + "-why", className: "os-srow-status" }, p.disabledReason) : null);
+  }
   function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "Now, " + p.time }, h("span", { className: "os-num" }, "Now · " + p.time), h("i", { "aria-hidden": "true" })); }
-  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine });
+  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow });
 })();

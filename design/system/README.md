@@ -29,6 +29,7 @@ Four modes, each a hue with a `-soft` tint; `focus` and `break` also have `on-`,
 - `selection` (an alias of `focus-soft`) is the ground of a selected card, row, command or rail item, always with a word, a check or `aria-current`.
 - `critical` appears once in the whole app: the confirm button of the delete-data `Dialog`. Never on a card, in a list or for time.
 - Dark is a first-class theme, not an inversion: deep slate ground, lighter hues, dark `on-` text. In dark, raise with `surface-raised` and `surface-overlay`; borders separate and shadows barely exist.
+- **Theme override.** An app picks a theme with `data-theme="light"` or `"dark"` on `<html>`; without it the system appearance applies.
 
 Don'ts that would have caused real bugs: no `filter` or `opacity` to make states; no `surface-sunken` as a mark on `surface` (1.1:1); no `amber` for anything that is not "almost up" or "at limit"; no colour change without a word or shape change beside it.
 
