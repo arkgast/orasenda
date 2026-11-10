@@ -5,13 +5,13 @@ import type { DialogProps } from "./components/ui/dialog";
 import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
+import type { TaskCardProps } from "./components/ui/task-card";
 import type {
   Command,
   CommandPaletteProps,
   FullScreenFocusProps,
   IntentPromptProps,
   KanbanColumnProps,
-  TaskCardProps,
 } from "./legacy.d.ts";
 
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */

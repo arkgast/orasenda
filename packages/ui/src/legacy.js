@@ -36,23 +36,6 @@ function ModeChip(p) {
   return h("span", { className: "os-chip os-mode-" + mode }, h(Shape, { mode: mode }), p.children || MODE_LABEL[mode]);
 }
 // end ModeChip
-// TaskCard
-function TaskCard(p) {
-  var est = count(p.estimate), done = count(p.done), dots = [], hasEstimate = p.estimate != null;
-  for (var i = 0; i < Math.min(12, Math.max(est, done)); i++) dots.push(h("span", { key: i, className: cx("os-pomo", i < done && "os-pomo-done", hasEstimate && i >= est && i < done && "os-pomo-over") }));
-  var meta = (hasEstimate ? "Est " + est : "No estimate") + " · Done " + done + (p.tracked ? " · " + p.tracked : "");
-  return h(p.onOpen ? "button" : "article", { type: p.onOpen ? "button" : undefined, onClick: p.onOpen, disabled: p.onOpen ? p.disabled : undefined,
-    className: cx("os-card", p.active && "os-card-active", p.selected && "os-card-selected"),
-    "aria-label": p.onOpen ? p.title + ", " + (p.type === "shallow" ? "Shallow" : "Deep") + (p.frog ? ", Frog" : "") + ", " + done + " sessions done, " + (hasEstimate ? est + " estimated" : "no estimate") + (p.tracked ? ", " + p.tracked : "") + (p.project ? ", " + p.project : "") + (p.active ? ", In progress" : "") + (p.selected ? ", Selected" : "") : undefined },
-    h("span", { className: "os-card-top" }, h(ModeChip, { mode: p.type === "shallow" ? "shallow" : "focus" }, p.type === "shallow" ? "Shallow" : "Deep"),
-      p.frog ? h("span", { className: "os-frog" }, "Frog") : null),
-    h("span", { className: "os-card-title" }, p.title),
-    p.active || p.selected ? h("span", { className: "os-card-state" }, [p.active ? "In progress" : "", p.selected ? "Selected" : ""].filter(Boolean).join(" · ")) : null,
-    h("span", { className: "os-pomos", "aria-hidden": "true" }, dots),
-    h("span", { className: "os-card-meta os-num" }, meta),
-    p.project ? h("span", { className: "os-card-meta" }, p.project) : null);
-}
-// end TaskCard
 // Native modal dialogs supply inert background and focus containment. Keep one open at a time.
 function Modal(p) {
   var ref = R.useRef(null), titleId = R.useId(), bodyId = R.useId(), open = p.open !== false;
@@ -489,7 +472,6 @@ function PopoverMenu(p) {
 // end PopoverMenu
 
 export {
-  TaskCard,
   IntentPrompt,
   FullScreenFocus,
   CapturePad,
