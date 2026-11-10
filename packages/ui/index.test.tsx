@@ -7,7 +7,7 @@ import * as ui from "./src/index.ts";
 test("exports_intent_prompt_and_button", () => {
   expect(typeof ui.IntentPrompt).toBe("function");
   expect(typeof ui.Button).toBe("function");
-  for (const name of ["PageFrame", "ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
+  for (const name of ["ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
     expect(typeof ui[name]).toBe("function");
   }
 });
@@ -100,40 +100,6 @@ test("index_d_ts_has_no_timer_or_start_next_props", () => {
   expect(dts).not.toContain("StartButtonNextProps");
   expect(dts).toContain("declare function TimerStrip");
   expect(dts).toContain("declare function timerLayout");
-});
-
-test("page_frame_renders_h1_and_three_tracks", () => {
-  const { container, rerender } = render(
-    <ui.PageFrame title="Settings" status={<span>s</span>}>
-      <p>body</p>
-    </ui.PageFrame>,
-  );
-  const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
-  expect(h1.tabIndex).toBe(-1);
-  const root = container.firstElementChild as HTMLElement;
-  expect(root).toHaveClass("os-page");
-  expect(root.children).toHaveLength(3);
-  expect(root.children[0]).toHaveClass("os-page-head");
-  expect(root.children[0]).toContainElement(h1);
-  expect(root.children[1]).toHaveTextContent("s");
-  expect(root.children[2]).toHaveTextContent("body");
-
-  rerender(<ui.PageFrame title="Settings" />);
-  expect((container.firstElementChild as HTMLElement).children).toHaveLength(3);
-
-  rerender(
-    <ui.PageFrame
-      title="Shutdown"
-      variant="flow"
-      step="Step 2 of 4"
-      footer={<button type="button">Continue</button>}
-    />,
-  );
-  const flow = container.firstElementChild as HTMLElement;
-  expect(flow).toHaveClass("os-page-flow");
-  expect(flow.children).toHaveLength(4);
-  expect(flow.children[3]).toHaveTextContent("Continue");
-  expect(screen.getByText("Step 2 of 4")).toBeInTheDocument();
 });
 
 function stubLayout(scrollHeight: number, clientHeight: number): () => void {

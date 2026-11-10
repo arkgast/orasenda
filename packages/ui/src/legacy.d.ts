@@ -114,10 +114,6 @@ export declare function PopoverMenu(props: PopoverMenuProps): React.ReactElement
 export interface ScrollRegionProps { label: string; children?: React.ReactNode }
 export declare function ScrollRegion(props: ScrollRegionProps): React.ReactElement;
 // end ScrollRegion
-// PageFrame
-export interface PageFrameProps { title: string; primary?: React.ReactNode; status?: React.ReactNode; variant?: 'list' | 'flow'; step?: string; footer?: React.ReactNode; compactPicker?: React.ReactNode; children?: React.ReactNode }
-export declare function PageFrame(props: PageFrameProps): React.ReactElement;
-// end PageFrame
 // SettingsIndex
 /** A problem always carries words; alert adds the glyph to those words, never on its own. */
 export interface SettingsIndexSection { id: string; name: string; value: string; problem?: { text: string; alert?: boolean } }
@@ -139,7 +135,7 @@ declare global {
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: (props: { time: string }) => React.ReactElement;
-      PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
+      ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;
