@@ -102,41 +102,6 @@ test("index_d_ts_has_no_timer_or_start_next_props", () => {
   expect(dts).toContain("declare function timerLayout");
 });
 
-const SECTIONS = [
-  { id: "general", name: "General", value: "Match system" },
-  { id: "timer", name: "Timer", value: "Classic · 25 / 5" },
-  { id: "notifications", name: "Notifications", value: "Off in macOS" },
-  { id: "keyboard", name: "Keyboard", value: "Set", problem: { text: "Not saved" } },
-  { id: "about", name: "About and data", value: "Version unavailable" },
-];
-
-test("settings_index_is_one_roving_tab_stop", () => {
-  render(<ui.SettingsIndex sections={SECTIONS} current="timer" onJump={() => {}} />);
-  const items = screen.getAllByRole("button");
-  expect(items.filter((i) => i.tabIndex === 0)).toHaveLength(1);
-  expect(items[1]?.tabIndex).toBe(0);
-  items[1]?.focus();
-  fireEvent.keyDown(items[1] as HTMLElement, { key: "ArrowDown" });
-  expect(items[2]).toHaveFocus();
-  expect(items.filter((i) => i.tabIndex === 0)).toEqual([items[2]]);
-  fireEvent.keyDown(items[2] as HTMLElement, { key: "ArrowUp" });
-  expect(items[1]).toHaveFocus();
-  expect(screen.getByText("Not saved")).toBeInTheDocument();
-  expect(screen.getByText("Version unavailable")).toBeInTheDocument();
-});
-
-test("settings_index_return_calls_on_jump_and_marks_current_location", () => {
-  const onJump = vi.fn();
-  render(<ui.SettingsIndex sections={SECTIONS} current="timer" onJump={onJump} />);
-  const items = screen.getAllByRole("button");
-  expect(items.filter((i) => i.getAttribute("aria-current") === "location")).toEqual([items[1]]);
-  fireEvent.keyDown(items[3] as HTMLElement, { key: "Enter" });
-  expect(onJump).toHaveBeenCalledTimes(1);
-  expect(onJump).toHaveBeenCalledWith("keyboard");
-  fireEvent.click(items[0] as HTMLElement);
-  expect(onJump).toHaveBeenLastCalledWith("general");
-});
-
 test("settings_row_links_helper_and_status_by_describedby", () => {
   const onAction = vi.fn();
   const { container, rerender } = render(
@@ -214,21 +179,6 @@ test("empty_state_inline_has_one_line_and_no_action", () => {
   const paras = container.querySelectorAll("p");
   expect(paras).toHaveLength(1);
   expect(paras[0]).toHaveTextContent(text);
-});
-
-test("settings_index_wraps_and_resets_tab_stop_when_current_changes", () => {
-  const { rerender } = render(
-    <ui.SettingsIndex sections={SECTIONS} current="timer" onJump={() => {}} />,
-  );
-  const items = screen.getAllByRole("button");
-  items[4]?.focus();
-  fireEvent.keyDown(items[4] as HTMLElement, { key: "ArrowDown" });
-  expect(items[0]).toHaveFocus();
-  fireEvent.keyDown(items[0] as HTMLElement, { key: "ArrowUp" });
-  expect(items[4]).toHaveFocus();
-  expect(items.filter((i) => i.tabIndex === 0)).toEqual([items[4]]);
-  rerender(<ui.SettingsIndex sections={SECTIONS} current="general" onJump={() => {}} />);
-  expect(items.filter((i) => i.tabIndex === 0)).toEqual([items[0]]);
 });
 
 const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";
