@@ -43,3 +43,11 @@ test("nav_rail_current_follows_the_prop", () => {
   );
   expect(screen.getByRole("button", { name: "Today" }).hasAttribute("aria-current")).toBe(false);
 });
+
+test("nav_rail_current_label_is_semibold_like_legacy", () => {
+  render(<NavRail current="board" onNavigate={() => {}} />);
+  for (const button of screen.getAllByRole("button")) {
+    const label = button.querySelector("span");
+    expect(label?.classList.contains("font-semibold")).toBe(button.hasAttribute("aria-current"));
+  }
+});

@@ -52,7 +52,9 @@ export function NavRail({ current, onNavigate }: NavRailProps): ReactElement {
             >
               <path d={path} />
             </svg>
-            <span className="text-caption">{label}</span>
+            <span className={isCurrent ? "text-caption font-semibold" : "text-caption"}>
+              {label}
+            </span>
           </button>
         );
       })}
