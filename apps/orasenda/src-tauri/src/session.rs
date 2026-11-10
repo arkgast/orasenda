@@ -465,8 +465,7 @@ impl SessionService {
     /// when it wrote; the caller must then emit one `settings-changed` after unlock.
     ///
     /// A failed write keeps the reviewed value in the cache and the marker on disk; the next
-    /// launch reviews again, and this run does not retry. T4 (#145) calls it from
-    /// `store_status`.
+    /// launch reviews again, and this run does not retry. `store_status` calls it.
     ///
     /// Accepted race (plan ruling 5): a theme or preset save sent between this write and its
     /// `settings-changed` can carry the pre-review `notifySessionEnd` and undo the review. The
@@ -1139,7 +1138,7 @@ pub(crate) mod test_support {
         /// What `open_settings` answers next.
         #[allow(
             dead_code,
-            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
+            reason = "open_settings takes an AppHandle, so no host-generic test drives it yet"
         )]
         pub(crate) fn set_open_result(&self, result: Result<(), PlatformError>) {
             *self
@@ -1149,10 +1148,6 @@ pub(crate) mod test_support {
         }
 
         /// Holds every `status` read until the returned sender sends or drops.
-        #[allow(
-            dead_code,
-            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
-        )]
         pub(crate) fn gate_status(&self) -> std::sync::mpsc::Sender<()> {
             let (tx, rx) = std::sync::mpsc::channel();
             *self.gate.lock().unwrap_or_else(PoisonError::into_inner) = Some(rx);
@@ -1160,19 +1155,11 @@ pub(crate) mod test_support {
         }
 
         /// Makes `status` panic (after logging the read) while `on`.
-        #[allow(
-            dead_code,
-            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
-        )]
         pub(crate) fn panic_on_status(&self, on: bool) {
             self.panic_on_status.store(on, Ordering::SeqCst);
         }
 
         /// Answers the oldest open request, as the OS would on a Foundation thread.
-        #[allow(
-            dead_code,
-            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
-        )]
         pub(crate) fn answer(&self, status: NotificationStatus) {
             self.set_status(status);
             let answer = self
