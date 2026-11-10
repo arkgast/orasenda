@@ -55,7 +55,7 @@ export function MenuBarTimer({
       aria-label={label}
       className={cn(
         "inline-flex max-w-full items-center gap-1.5 rounded-sm bg-surface-raised px-2 font-medium font-mono text-timer-sm text-ink tabular-nums min-h-hit-floor",
-        floating && "gap-2 border border-line-strong p-2 text-timer-md",
+        floating && "gap-2 border border-line-strong p-2 text-timer-md shadow-raised",
       )}
     >
       {mode === "focus" ? (
@@ -82,7 +82,12 @@ export function MenuBarTimer({
       ) : (
         <span
           data-slot="menu-bar-timer-shape"
-          className="inline-flex size-icon-md shrink-0 items-center justify-center"
+          className={cn(
+            "inline-flex size-icon-md shrink-0 items-center justify-center",
+            mode === "warning" && "text-amber",
+            mode === "break" && "text-break",
+            mode === "routine" && "text-routine",
+          )}
         >
           <ModeShape mode={mode} />
         </span>
