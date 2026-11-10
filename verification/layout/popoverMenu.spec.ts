@@ -9,7 +9,11 @@ const PANEL = ".os-popover-panel";
 
 const FORMS = [
   { shot: "popover-menu-today", trigger: "Classic · ends 15:20, Change preset", menu: "Preset" },
-  { shot: "popover-menu-read-only", trigger: "Preset while a session runs", menu: "Classic · 25 / 5" },
+  {
+    shot: "popover-menu-read-only",
+    trigger: "Preset while a session runs",
+    menu: "Classic · 25 / 5",
+  },
   {
     shot: "popover-menu-focus-window",
     trigger: "Preset for the next session",
@@ -63,14 +67,12 @@ test("popover_menu_rows_meet_hit_min", async ({ page }) => {
   expect(hitMin).toBeGreaterThan(0);
   for (const form of FORMS) {
     await page.getByRole("button", { name: form.trigger, exact: true }).click();
-    const sizes = await page
-      .locator(`${PANEL} [role^="menuitem"]`)
-      .evaluateAll((rows) =>
-        rows.map((r) => {
-          const b = r.getBoundingClientRect();
-          return { w: b.width, h: b.height };
-        }),
-      );
+    const sizes = await page.locator(`${PANEL} [role^="menuitem"]`).evaluateAll((rows) =>
+      rows.map((r) => {
+        const b = r.getBoundingClientRect();
+        return { w: b.width, h: b.height };
+      }),
+    );
     expect(sizes.length).toBeGreaterThan(0);
     for (const s of sizes) {
       expect(s.w).toBeGreaterThanOrEqual(hitMin);
@@ -102,8 +104,13 @@ test("popover_menu_keyboard_path", async ({ page }) => {
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(panel).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Deep Block · ends 15:20, Change preset" })).toBeFocused();
-  await expect(page.getByRole("button", { name: /Change preset/ })).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    page.getByRole("button", { name: "Deep Block · ends 15:20, Change preset" }),
+  ).toBeFocused();
+  await expect(page.getByRole("button", { name: /Change preset/ })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
   await expect(page.getByText("Deep Block chosen.")).toBeVisible();
   await page.waitForTimeout(400);
   await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
@@ -172,7 +179,9 @@ test("popover_menu_flips_inside_viewport", async ({ page }) => {
   await expect(panel).toHaveAttribute("data-side", "above");
   const r = await page.evaluate(() => {
     const b = (document.querySelector(".os-popover-panel") as HTMLElement).getBoundingClientRect();
-    const t = (document.querySelector('[aria-haspopup="menu"][aria-expanded="true"]') as HTMLElement).getBoundingClientRect();
+    const t = (
+      document.querySelector('[aria-haspopup="menu"][aria-expanded="true"]') as HTMLElement
+    ).getBoundingClientRect();
     return { top: b.top, bottom: b.bottom, ttop: t.top, vh: document.documentElement.clientHeight };
   });
   expect(r.bottom).toBeLessThanOrEqual(r.ttop);
@@ -216,7 +225,9 @@ test("popover_menu_aria_snapshot", async ({ page }) => {
       - separator
       - menuitem "Timer settings…"
   `);
-  await expect(page.getByRole("menu")).toHaveAccessibleDescription("Presets can change between sessions.");
+  await expect(page.getByRole("menu")).toHaveAccessibleDescription(
+    "Presets can change between sessions.",
+  );
   await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "Checkbox rows" }).click();

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { IconButtonSpecimen } from "./IconButton.tsx";
 import { KbdSpecimen } from "./Kbd.tsx";
+import { PopoverMenuSpecimen } from "./PopoverMenu.tsx";
 import { Seed } from "./Seed.tsx";
 import { StartButtonSpecimen } from "./StartButton.tsx";
 import { TimerRingSpecimen } from "./TimerRing.tsx";
@@ -15,4 +16,5 @@ export const specimens: Record<string, () => ReactElement> = {
   TimerRing: TimerRingSpecimen,
   TimerStrip: TimerStripSpecimen,
   StartButton: StartButtonSpecimen,
+  PopoverMenu: PopoverMenuSpecimen,
 };
