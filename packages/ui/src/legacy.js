@@ -171,14 +171,6 @@ function Toast(p) {
   return h("div", { className: "os-toast" }, h(InlineNotice, p), p.onDismiss ? h(Button, { variant: "ghost", onClick: p.onDismiss }, "Dismiss") : null);
 }
 // end Toast
-// KanbanColumn
-function KanbanColumn(p) {
-  var id = R.useId(), n = count(p.count), limit = p.limit == null ? null : count(p.limit), atLimit = limit != null && n >= limit;
-  return h("section", { className: "os-kanban", "aria-labelledby": id },
-    h("header", null, h("h2", { id: id }, p.title), atLimit ? h(ModeChip, { mode: "warning" }, n > limit ? n + " of " + limit : "At limit") : h("span", { className: "os-caption os-num" }, limit == null ? n + " tasks" : n + " of " + limit)),
-    p.children || h("p", { className: "os-muted" }, p.emptyMessage || "Nothing here yet. That's fine."));
-}
-// end KanbanColumn
 // CommandPalette
 function CommandPalette(p) {
   var query = R.useState(""), active = R.useState(0), listId = R.useId();
@@ -476,7 +468,6 @@ export {
   FullScreenFocus,
   CapturePad,
   Toast,
-  KanbanColumn,
   CommandPalette,
   IconButton,
   Tooltip,
