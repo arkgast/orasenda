@@ -360,7 +360,7 @@ None. The owner answered both calls on 2026-11-10 and accepted the recommendatio
 ## Implementation status
 Updated by the PRs that implement this spec.
 - [x] Plan: [`docs/plans/2026-11-10-p1-components.md`](../plans/2026-11-10-p1-components.md) (seven design-first tasks in series, as cut here)
-- [ ] T1 Real-engine harness, bundled fonts and the contrast check
+- [x] T1 Real-engine harness, bundled fonts and the contrast check
 - [ ] T2 The small controls and the key table (VoiceOver: [ ] IconButton [ ] Tooltip [ ] Kbd)
 - [ ] T3 Timer faces and Start (VoiceOver: [ ] TimerRing [ ] TimerStrip [ ] StartButton)
 - [ ] T4 The preset popover (VoiceOver: [ ] PopoverMenu)
