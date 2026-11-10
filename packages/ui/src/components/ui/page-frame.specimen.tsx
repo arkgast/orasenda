@@ -1,8 +1,9 @@
 import type { ReactElement } from "react";
 import { Frame } from "../../../specimens/Frame";
-import { InlineNotice, ScrollRegion } from "../../legacy.js";
+import { InlineNotice } from "../../legacy.js";
 import { Button } from "./button";
 import { PageFrame } from "./page-frame";
+import { ScrollRegion } from "./scroll-region";
 
 const rows = (count: number): ReactElement[] =>
   Array.from({ length: count }, (_, i) => (
