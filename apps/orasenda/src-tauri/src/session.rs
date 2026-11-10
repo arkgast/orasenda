@@ -293,17 +293,21 @@ impl SessionService {
             return false;
         };
         let mut wrote = false;
+        let settings_read = settings.is_some();
         if let Some((settings, pending)) = settings {
             self.settings = settings;
             self.review_pending = pending;
             self.recover_owed.settings = false;
             self.settings_event_owed = true;
-            // One event, carrying the value after the review (a no-op until a status is known).
-            wrote = self.run_notify_review(now_ms);
         }
         if let Some(snapshot) = snapshot {
             self.recover_owed.snapshot = false;
             wrote |= self.recover(snapshot, now_ms);
+        }
+        // After the snapshot is settled: a write while it is still owed would treat the
+        // running session as unread. One event, carrying the value after the review.
+        if settings_read {
+            wrote |= self.run_notify_review(now_ms);
         }
         self.refresh_status();
         wrote
@@ -445,7 +449,7 @@ impl SessionService {
     /// status is known (`granted`, `denied` or `notDetermined`; `unavailable` leaves it
     /// pending). Writes `notify.session_end = (stored value, or true when absent) && granted`
     /// together with the marker's removal, in one transaction. A no-op once done. Returns true
-    /// when it wrote, so a `settings-changed` is owed after unlock.
+    /// when it wrote; the caller must then emit one `settings-changed` after unlock.
     ///
     /// A failed write keeps the reviewed value in the cache and the marker on disk; the next
     /// launch reviews again, and this run does not retry. T4 (#145) calls it from
@@ -469,7 +473,6 @@ impl SessionService {
         let value = self.settings.notify_session_end && status == NotificationStatus::Granted;
         self.settings.notify_session_end = value;
         self.review_pending = false;
-        self.settings_event_owed = true;
         let written = self.write_owed(now_ms, |txn| {
             settings::set(txn, KEY_NOTIFY, &value)?;
             meta::remove(txn, META_NOTIFY_REVIEW)
@@ -3162,6 +3165,44 @@ mod tests {
         assert!(presented.notify_session_end);
         assert_eq!(marker(&s), None);
         assert_eq!(stored_notify(&s), Some(true));
+    }
+
+    #[test]
+    fn review_with_snapshot_recovery_in_one_retry_keeps_the_running_session() {
+        let store = pending_store(Some(true));
+        let mut first = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0,
+        );
+        first.apply(start(Preset::Classic), T0, id("a"));
+        let store = first.store.take().expect("store");
+        store.fail_reads(true);
+        let mut s = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0 + 1,
+        );
+        s.set_notifications(NotificationStatus::Granted);
+        db(&s).fail_reads(false);
+        let e = s.tick(T0 + 2);
+        assert!(e.settings_changed.is_some());
+        assert_eq!(marker(&s), None);
+        assert!(!s.engine.is_idle(), "the session resumes running");
+        assert_eq!(
+            e.milestones
+                .iter()
+                .filter(|m| m.kind == MilestoneKind::Recovered)
+                .count(),
+            0
+        );
+        assert!(
+            db(&s)
+                .read(|txn| active_session::get::<Session>(txn))
+                .expect("reads")
+                .is_some(),
+            "the active session row stays"
+        );
     }
 
     #[test]
