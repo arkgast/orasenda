@@ -144,8 +144,7 @@ impl Default for Settings {
             theme: Theme::System,
             preset: Preset::Classic,
             custom: CustomSpec::default(),
-            // Interim: T3 (#144) flips this to false.
-            notify_session_end: true,
+            notify_session_end: false,
         }
     }
 }
@@ -352,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn settings_default_is_system_classic_45_10_notify() {
+    fn settings_default_is_system_theme_and_notify_off() {
         let settings = Settings::default();
         assert_eq!(settings.theme, Theme::System);
         assert_eq!(settings.preset, Preset::Classic);
@@ -363,7 +362,7 @@ mod tests {
                 break_min: 10
             }
         );
-        assert!(settings.notify_session_end);
+        assert!(!settings.notify_session_end);
     }
 
     #[test]

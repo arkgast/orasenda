@@ -16,7 +16,7 @@ use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 use crate::ClockTick;
-use crate::ipc::{MilestoneEvent, TimerView};
+use crate::ipc::{MilestoneEvent, Settings, SettingsChanged, Theme, TimerView};
 use crate::session::{Effects, SessionService, Surfaces, ViewGate, lock};
 
 /// Where the publish steps send their output: the running app, or a recording fake in tests.
@@ -34,6 +34,20 @@ pub trait Host: Clone + Send + Sync + 'static {
     fn emit_milestone(&self, event: &MilestoneEvent);
     /// Emits `clock-tick`. An emit error is logged, never fatal.
     fn emit_clock_tick(&self, tick: &ClockTick);
+    /// Emits `settings-changed`. An emit error is logged, never fatal.
+    fn emit_settings_changed(&self, settings: &Settings);
+    /// Applies the app-wide theme (`System` clears the override). Never called under the
+    /// service lock.
+    fn apply_theme(&self, theme: Theme);
+}
+
+/// The Tauri theme for a saved one: `System` clears the override.
+pub(crate) fn tauri_theme(theme: Theme) -> Option<tauri::Theme> {
+    match theme {
+        Theme::System => None,
+        Theme::Light => Some(tauri::Theme::Light),
+        Theme::Dark => Some(tauri::Theme::Dark),
+    }
 }
 
 impl Host for AppHandle {
@@ -77,6 +91,16 @@ impl Host for AppHandle {
         if let Err(error) = tick.emit(self) {
             eprintln!("session-scheduler: could not emit clock-tick: {error}");
         }
+    }
+
+    fn emit_settings_changed(&self, settings: &Settings) {
+        if let Err(error) = SettingsChanged(settings.clone()).emit(self) {
+            eprintln!("session-scheduler: could not emit settings-changed: {error}");
+        }
+    }
+
+    fn apply_theme(&self, theme: Theme) {
+        self.set_theme(tauri_theme(theme));
     }
 }
 
@@ -146,8 +170,8 @@ pub fn publish_focus<H: Host>(host: &H) {
 }
 
 /// Carries out `effects` after the service lock is released, in this order: the view and
-/// the surfaces, the end notification, the guard drop, the milestones, the permission
-/// request.
+/// the surfaces, `settings-changed` (when owed), the end notification, the guard drop, the
+/// milestones.
 pub fn publish<H: Host>(host: &H, effects: Effects) {
     let Effects {
         view,
@@ -157,12 +181,15 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         ended,
         notify_session_end,
         drop_after_unlock,
-        request_notifications,
+        settings_changed,
         seq,
         ..
     } = effects;
     if !was_idle || view.state != EngineState::Idle || store_changed {
         publish_view(host, seq, &view);
+    }
+    if let Some(settings) = &settings_changed {
+        host.emit_settings_changed(settings);
     }
     let completed = ended.is_some_and(|record| record.end_reason == EndReason::Completed);
     if completed && notify_session_end {
@@ -171,9 +198,6 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     drop(drop_after_unlock);
     for milestone in &milestones {
         host.emit_milestone(milestone);
-    }
-    if request_notifications {
-        request_permission(host);
     }
 }
 
@@ -197,29 +221,6 @@ fn notify_end<H: Host>(host: &H) {
     {
         eprintln!("notifier: could not post the end notification: {error}");
     }
-}
-
-/// Asks for the permission when it is not determined, reading the status first if the
-/// launch read has not finished. Never waits for the answer.
-fn request_permission<H: Host>(host: &H) {
-    let Some(service) = host.service() else {
-        return;
-    };
-    let notifier = host.notifier();
-    let known = lock(service).notifications();
-    let status = match known {
-        Some(status) => status,
-        None => {
-            let status = notifier.status();
-            store_status(host, status);
-            status
-        }
-    };
-    if status != NotificationStatus::NotDetermined {
-        return;
-    }
-    let answered = host.clone();
-    notifier.request(Box::new(move |answer| store_status(&answered, answer)));
 }
 
 /// Stores a status read or answer; emits one `timer-tick` when the shown status changed,
@@ -369,6 +370,8 @@ mod tests {
                 Event::Milestone(_) => "milestone",
                 Event::Requested => "requested",
                 Event::Begun => "begun",
+                Event::SettingsChanged(_) => "settings",
+                Event::ApplyTheme(_) => "theme",
             })
             .collect();
         assert_eq!(
@@ -402,61 +405,24 @@ mod tests {
     }
 
     #[test]
-    fn request_made_only_when_not_determined() {
-        for (status, expected) in [
-            (NotificationStatus::NotDetermined, 1),
-            (NotificationStatus::Granted, 0),
-            (NotificationStatus::Denied, 0),
-            (NotificationStatus::Unavailable, 0),
+    fn start_never_requests_notification_permission() {
+        for status in [
+            NotificationStatus::NotDetermined,
+            NotificationStatus::Granted,
+            NotificationStatus::Denied,
+            NotificationStatus::Unavailable,
         ] {
             let host = launched(status);
             run_action_on(&host, start(Preset::Classic)).expect("starts");
             assert_eq!(
                 host.log().count(|e| *e == Event::Requested),
-                expected,
+                0,
                 "{status:?}"
             );
-            assert_eq!(
-                host.log().count(|e| *e == Event::StatusRead),
-                0,
-                "already read"
-            );
         }
-    }
-
-    #[test]
-    fn start_before_status_read_still_requests() {
-        let host = TestHost::new(NotificationStatus::NotDetermined);
-        let view = run_action_on(&host, start(Preset::Classic)).expect("starts");
-        assert_eq!(view.state, EngineState::Running);
-        let events = host.log().take();
-        let read = events.iter().position(|e| *e == Event::StatusRead);
-        let requested = events.iter().position(|e| *e == Event::Requested);
-        assert!(read.is_some() && read < requested, "{events:?}");
-        let status_ticks: Vec<_> = ticks(&events)
-            .into_iter()
-            .filter(|view| view.notifications == NotificationStatus::NotDetermined)
-            .collect();
-        assert_eq!(status_ticks.len(), 1, "{events:?}");
-        assert_eq!(
-            lock(&host.0.service).notifications(),
-            Some(NotificationStatus::NotDetermined)
-        );
-    }
-
-    #[test]
-    fn permission_answer_publishes_one_tick_even_while_idle() {
-        let host = launched(NotificationStatus::NotDetermined);
-        run_action_on(&host, start(Preset::Classic)).expect("starts");
-        host.set_now(T0 + 1_000);
-        run_action_on(&host, Action::Stop).expect("stops");
-        host.log().take();
-        host.0.notifier.answer(NotificationStatus::Granted);
-        let events = host.log().take();
-        let answered = ticks(&events);
-        assert_eq!(answered.len(), 1, "{events:?}");
-        assert_eq!(answered[0].state, EngineState::Idle);
-        assert_eq!(answered[0].notifications, NotificationStatus::Granted);
+        let unread = TestHost::new(NotificationStatus::NotDetermined);
+        run_action_on(&unread, start(Preset::Classic)).expect("starts");
+        assert_eq!(unread.log().count(|e| *e == Event::Requested), 0, "unread");
     }
 
     #[test]

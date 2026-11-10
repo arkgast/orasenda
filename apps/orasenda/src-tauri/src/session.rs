@@ -18,7 +18,9 @@ use orasenda_core::{
     EngineState, KeepAwake, LocalTime, Milestone, NotificationStatus, Notifier, Preset, Session,
     SessionId, SessionRecord, TimerError, format_clock, format_remaining, spoken_remaining,
 };
-use orasenda_store::{OpenError, Store, StoreError, Txn, active_session, focus_sessions, settings};
+use orasenda_store::{
+    OpenError, Store, StoreError, Txn, active_session, focus_sessions, meta, settings,
+};
 use serde::de::DeserializeOwned;
 use tauri::Manager;
 use uuid::Uuid;
@@ -26,7 +28,7 @@ use uuid::Uuid;
 use crate::ClockTick;
 use crate::ipc::{
     MilestoneEvent, MilestoneKind, Mode, Settings, SettingsError, SettingsErrorKind, StartRequest,
-    StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerState, TimerView,
+    StoreStatus, Theme, TimerCommandError, TimerCommandErrorKind, TimerState, TimerView,
 };
 use crate::scheduler::{self, Host};
 
@@ -67,8 +69,9 @@ pub struct Effects {
     pub notify_session_end: bool,
     /// The keep-awake guard to drop once the lock is released.
     pub drop_after_unlock: Option<Box<dyn Any + Send>>,
-    /// Whether to ask for the notification permission (a start while it is not determined).
-    pub request_notifications: bool,
+    /// The presented settings to emit as `settings-changed`: owed by a recovered launch read
+    /// of the settings, and by a notify review run from the retry of that read.
+    pub settings_changed: Option<Settings>,
     /// Orders `view` against every other published view (see [`ViewGate`]).
     pub seq: u64,
 }
@@ -109,6 +112,11 @@ pub struct SessionService {
     listening: bool,
     platform: Platform,
     recover_owed: RecoverOwed,
+    /// True while the `notify_review` marker is pending and the review has not run in this
+    /// run. The cache then holds the stored value, an absent key reading as `true`.
+    review_pending: bool,
+    /// A recovered launch read of the settings is owed a `settings-changed`.
+    settings_event_owed: bool,
     /// The number given to the last view handed out (see [`ViewGate`]).
     view_seq: u64,
 }
@@ -129,11 +137,21 @@ impl RecoverOwed {
     }
 }
 
+/// What a successful settings save tells the caller, for the side effects after unlock.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SettingsSaved {
+    /// The new theme, when `theme` was in the diff: what gates `apply_theme`.
+    pub theme: Option<Theme>,
+    /// The presented settings after the save, for `settings-changed`.
+    pub presented: Settings,
+}
+
 /// Settings keys (spec: Store).
 const KEY_PRESET: &str = "timer.preset";
 const KEY_CUSTOM: &str = "timer.custom";
 const KEY_NOTIFY: &str = "notify.session_end";
 const KEY_THEME: &str = "ui.theme";
+const META_NOTIFY_REVIEW: &str = "notify_review";
 const DB_FILE: &str = "orasenda.db";
 const KEEP_AWAKE_REASON: &str = "Focus session";
 
@@ -143,7 +161,6 @@ struct Outcome {
     milestones: Vec<MilestoneEvent>,
     ended: Option<SessionRecord>,
     drop_after_unlock: Option<Box<dyn Any + Send>>,
-    request_notifications: bool,
 }
 
 impl SessionService {
@@ -174,6 +191,8 @@ impl SessionService {
             listening: false,
             platform,
             recover_owed: RecoverOwed::default(),
+            review_pending: false,
+            settings_event_owed: false,
             view_seq: 0,
         };
         if let Some(read) = service
@@ -195,9 +214,12 @@ impl SessionService {
 
     /// The launch read of the settings. A failure keeps the defaults for now, owes the read
     /// to `tick` and shows the store as unavailable.
-    fn load_settings(&mut self, read: Result<Settings, StoreError>) {
+    fn load_settings(&mut self, read: Result<(Settings, bool), StoreError>) {
         match read {
-            Ok(settings) => self.settings = settings,
+            Ok((settings, pending)) => {
+                self.settings = settings;
+                self.review_pending = pending;
+            }
             Err(error) => {
                 eprintln!("settings: could not be read ({error}); using the defaults for now");
                 self.recover_owed.settings = true;
@@ -270,14 +292,18 @@ impl SessionService {
         let Ok((settings, snapshot)) = read else {
             return false;
         };
-        if let Some(settings) = settings {
-            self.settings = settings;
-            self.recover_owed.settings = false;
-        }
         let mut wrote = false;
+        if let Some((settings, pending)) = settings {
+            self.settings = settings;
+            self.review_pending = pending;
+            self.recover_owed.settings = false;
+            self.settings_event_owed = true;
+            // One event, carrying the value after the review (a no-op until a status is known).
+            wrote = self.run_notify_review(now_ms);
+        }
         if let Some(snapshot) = snapshot {
             self.recover_owed.snapshot = false;
-            wrote = self.recover(snapshot, now_ms);
+            wrote |= self.recover(snapshot, now_ms);
         }
         self.refresh_status();
         wrote
@@ -404,14 +430,69 @@ impl SessionService {
         }
     }
 
-    /// The cached settings: defaults while degraded, never `Quick`.
+    /// The presented settings: the cache (defaults while degraded, never `Quick`), except that
+    /// while a notify review is pending `notify_session_end` is the review's outcome under the
+    /// status known now, and `false` while it is not known.
     pub fn settings(&self) -> Settings {
-        self.settings.clone()
+        let mut presented = self.settings.clone();
+        if self.review_pending {
+            presented.notify_session_end &= self.notifications == Some(NotificationStatus::Granted);
+        }
+        presented
     }
 
-    /// Validates and writes every setting in one transaction (with anything owed),
-    /// then updates the cache.
-    pub fn set_settings(&mut self, settings: Settings, now_ms: u64) -> Result<(), SettingsError> {
+    /// The one-time notify review of a pre-B database. Runs when the marker is pending and a
+    /// status is known (`granted`, `denied` or `notDetermined`; `unavailable` leaves it
+    /// pending). Writes `notify.session_end = (stored value, or true when absent) && granted`
+    /// together with the marker's removal, in one transaction. A no-op once done. Returns true
+    /// when it wrote, so a `settings-changed` is owed after unlock.
+    ///
+    /// A failed write keeps the reviewed value in the cache and the marker on disk; the next
+    /// launch reviews again, and this run does not retry. T4 (#145) calls it from
+    /// `store_status`.
+    ///
+    /// Accepted race (plan ruling 5): a theme or preset save sent between this write and its
+    /// `settings-changed` can carry the pre-review `notifySessionEnd` and undo the review. The
+    /// window is milliseconds and the outcome is visible on the page.
+    pub fn run_notify_review(&mut self, now_ms: u64) -> bool {
+        if !self.review_pending {
+            return false;
+        }
+        let Some(
+            status @ (NotificationStatus::Granted
+            | NotificationStatus::Denied
+            | NotificationStatus::NotDetermined),
+        ) = self.notifications
+        else {
+            return false;
+        };
+        let value = self.settings.notify_session_end && status == NotificationStatus::Granted;
+        self.settings.notify_session_end = value;
+        self.review_pending = false;
+        self.settings_event_owed = true;
+        let written = self.write_owed(now_ms, |txn| {
+            settings::set(txn, KEY_NOTIFY, &value)?;
+            meta::remove(txn, META_NOTIFY_REVIEW)
+        });
+        match written {
+            Ok(()) => true,
+            Err(error) => {
+                eprintln!("settings: the notify review could not be saved ({error})");
+                false
+            }
+        }
+    }
+
+    /// Validates, then writes only the keys that differ from the presented settings, in one
+    /// transaction with anything owed, and updates the cache. A `notifySessionEnd` that
+    /// differs from the presented value also removes the review marker (the user's choice
+    /// wins). While the launch read of the settings is owed the cache holds defaults, so
+    /// every key is written and the marker is cleared.
+    pub fn set_settings(
+        &mut self,
+        settings: Settings,
+        now_ms: u64,
+    ) -> Result<SettingsSaved, SettingsError> {
         if settings.preset == Preset::Quick {
             return Err(SettingsError {
                 kind: SettingsErrorKind::InvalidSpec,
@@ -430,21 +511,51 @@ impl SessionService {
                 message: "settings can't be saved right now".into(),
             });
         }
+        let presented = self.settings();
+        let all = self.recover_owed.settings;
+        let theme_changed = all || settings.theme != presented.theme;
+        let preset_changed = all || settings.preset != presented.preset;
+        let custom_changed = all || settings.custom != presented.custom;
+        let notify_changed = all || settings.notify_session_end != presented.notify_session_end;
+        let clear_marker = notify_changed && (all || self.review_pending);
         self.write_owed(now_ms, |txn| {
-            settings::set(txn, KEY_PRESET, &settings.preset)?;
-            settings::set(txn, KEY_CUSTOM, &settings.custom)?;
-            settings::set(txn, KEY_THEME, &settings.theme)?;
-            settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)
+            if preset_changed {
+                settings::set(txn, KEY_PRESET, &settings.preset)?;
+            }
+            if custom_changed {
+                settings::set(txn, KEY_CUSTOM, &settings.custom)?;
+            }
+            if theme_changed {
+                settings::set(txn, KEY_THEME, &settings.theme)?;
+            }
+            if notify_changed {
+                settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)?;
+            }
+            if clear_marker {
+                meta::remove(txn, META_NOTIFY_REVIEW)?;
+            }
+            Ok(())
         })
         .map_err(|_| SettingsError {
             kind: SettingsErrorKind::Write,
             message: "settings couldn't be saved".into(),
         })?;
-        self.settings = settings;
+        self.settings.theme = settings.theme;
+        self.settings.preset = settings.preset;
+        self.settings.custom = settings.custom;
+        // An echoed value is not copied into the cache while the review is pending: the cache
+        // keeps the stored-or-true value the review will use.
+        if notify_changed {
+            self.settings.notify_session_end = settings.notify_session_end;
+            self.review_pending = false;
+        }
         // The user's choice now wins over the values the launch could not read.
         self.recover_owed.settings = false;
         self.refresh_status();
-        Ok(())
+        Ok(SettingsSaved {
+            theme: (settings.theme != presented.theme).then_some(settings.theme),
+            presented: self.settings(),
+        })
     }
 
     /// Stores the notification status. True when the status the view shows changed, so
@@ -500,10 +611,6 @@ impl SessionService {
         let spec = request.preset.spec(&custom)?;
         self.engine.start(new_id(), request.preset, spec, now_ms)?;
         self.keep_awake = self.begin_keep_awake();
-        outcome.request_notifications = matches!(
-            self.notifications,
-            None | Some(NotificationStatus::NotDetermined)
-        );
         self.changed(now_ms, MilestoneKind::Started, outcome);
         Ok(())
     }
@@ -624,6 +731,9 @@ impl SessionService {
         result: Result<(), TimerCommandError>,
     ) -> Effects {
         let (seq, view) = self.snapshot(now_ms);
+        let presented = self.settings();
+        let settings_changed =
+            std::mem::take(&mut self.settings_event_owed).then_some(presented.clone());
         let mut milestones = outcome.milestones;
         if self.listening {
             if milestones.is_empty() {
@@ -641,10 +751,10 @@ impl SessionService {
             was_idle,
             store_changed: false,
             milestones,
-            notify_session_end: outcome.ended.is_some() && self.settings.notify_session_end,
+            notify_session_end: outcome.ended.is_some() && presented.notify_session_end,
             ended: outcome.ended,
             drop_after_unlock: outcome.drop_after_unlock,
-            request_notifications: outcome.request_notifications,
+            settings_changed,
         }
     }
 }
@@ -690,8 +800,21 @@ fn recovered(record: &SessionRecord) -> MilestoneEvent {
 /// Reads the settings. A value that fails to decode, a saved `Quick` and an out-of-range
 /// Custom are logged and replaced by their default in memory, never rewritten. A database
 /// error fails the whole read.
-fn read_settings(txn: &Txn) -> Result<Settings, StoreError> {
+/// Also reads the notify review marker in the same transaction; while it is pending an absent
+/// `notify.session_end` reads `true` (spec A's default) so the review sees what A meant. The
+/// flag is true when the marker is present: any value other than `pending` is logged and
+/// counts as pending, the failure side.
+fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
     let defaults = Settings::default();
+    let pending = match meta::get(txn, META_NOTIFY_REVIEW)? {
+        None => false,
+        Some(value) => {
+            if value != "pending" {
+                eprintln!("settings: {META_NOTIFY_REVIEW} is {value:?}; treating it as pending");
+            }
+            true
+        }
+    };
     let mut preset = read_setting(txn, KEY_PRESET, defaults.preset)?;
     if preset == Preset::Quick {
         eprintln!("settings: {KEY_PRESET} is quick, which is never saved; using the default");
@@ -702,12 +825,14 @@ fn read_settings(txn: &Txn) -> Result<Settings, StoreError> {
         eprintln!("settings: {KEY_CUSTOM} is out of range; using the default");
         custom = defaults.custom;
     }
-    Ok(Settings {
+    let notify_default = pending || defaults.notify_session_end;
+    let settings = Settings {
         theme: read_setting(txn, KEY_THEME, defaults.theme)?,
         preset,
         custom,
-        notify_session_end: read_setting(txn, KEY_NOTIFY, defaults.notify_session_end)?,
-    })
+        notify_session_end: read_setting(txn, KEY_NOTIFY, notify_default)?,
+    };
+    Ok((settings, pending))
 }
 
 fn read_setting<T: DeserializeOwned>(txn: &Txn, key: &str, default: T) -> Result<T, StoreError> {
@@ -800,10 +925,12 @@ pub(crate) fn run_state<H: Host>(host: &H) -> TimerState {
     state
 }
 
-/// `settings_set`: validate and write under the lock, then publish one `clock-tick` so the
-/// idle finish follows the new preset at once. A save that changes the store status (its
-/// write fails, or it also writes what was owed) publishes one `timer-tick` first, even while
-/// idle, so the standing store line follows `view.store` (#112).
+/// `settings_set`: validate and write under the lock, then, after unlock and in this order:
+/// apply the theme when it changed, publish one `timer-tick` when the save changed the store
+/// status (its write fails, or it also writes what was owed; even while idle, so the standing
+/// store line follows `view.store`, #112), publish one `clock-tick` so the idle finish follows
+/// the new preset at once, and emit `settings-changed`. A failed save does only the
+/// `timer-tick` part.
 pub(crate) fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), SettingsError> {
     let Some(service) = host.service() else {
         return Err(SettingsError {
@@ -821,11 +948,17 @@ pub(crate) fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<
     };
     // The save is committed: a panic while publishing is logged, never turned into a failure.
     let published = panic::catch_unwind(AssertUnwindSafe(|| {
+        if let Ok(saved) = &result
+            && let Some(theme) = saved.theme
+        {
+            host.apply_theme(theme);
+        }
         if let Some((seq, view)) = changed {
             scheduler::publish_view(host, seq, &view);
         }
-        if result.is_ok() {
+        if let Ok(saved) = &result {
             scheduler::publish_clock(host);
+            host.emit_settings_changed(&saved.presented);
         }
     }));
     if published.is_err() {
@@ -864,7 +997,7 @@ pub(crate) mod test_support {
 
     use super::{Action, Platform, SessionService, Surfaces, ViewGate};
     use crate::ClockTick;
-    use crate::ipc::{MilestoneEvent, StartRequest, TimerView};
+    use crate::ipc::{MilestoneEvent, Settings, StartRequest, Theme, TimerView};
     use crate::scheduler::Host;
 
     /// 2026-11-07 00:00:00 UTC.
@@ -886,6 +1019,8 @@ pub(crate) mod test_support {
         Posted(String, String),
         Begun,
         Released,
+        SettingsChanged(Settings),
+        ApplyTheme(Theme),
     }
 
     #[derive(Clone, Default)]
@@ -962,6 +1097,7 @@ pub(crate) mod test_support {
         }
 
         /// Answers the oldest open request, as the OS would on a Foundation thread.
+        #[allow(dead_code, reason = "T4 (#145) answers requests")]
         pub(crate) fn answer(&self, status: NotificationStatus) {
             self.set_status(status);
             let answer = self
@@ -1057,6 +1193,8 @@ pub(crate) mod test_support {
         pub(crate) notifier: Arc<FakeNotifier>,
         pub(crate) now: AtomicU64,
         pub(crate) log: Log,
+        /// How many host hooks that must run unlocked found the service locked.
+        pub(crate) under_lock: std::sync::atomic::AtomicUsize,
     }
 
     /// A recording [`Host`]: emits and renders go to the log.
@@ -1064,17 +1202,30 @@ pub(crate) mod test_support {
     pub(crate) struct TestHost(pub(crate) Arc<HostInner>);
 
     impl TestHost {
+        /// A host for a user who turned notifications on (`notify.session_end` is stored as
+        /// `true`). Use [`TestHost::fresh`] for fresh-install semantics.
         pub(crate) fn new(status: NotificationStatus) -> TestHost {
+            let store = memory_store();
+            store
+                .write(0, |txn| {
+                    orasenda_store::settings::set(txn, "notify.session_end", &true)
+                })
+                .expect("seeds the notify preference");
+            TestHost::on_store(store, status)
+        }
+
+        /// A host on a fresh install: the defaults, notifications off.
+        pub(crate) fn fresh(status: NotificationStatus) -> TestHost {
+            TestHost::on_store(memory_store(), status)
+        }
+
+        fn on_store(store: Store, status: NotificationStatus) -> TestHost {
             let Fakes {
                 platform,
                 log,
                 notifier,
             } = fakes(status, false);
-            TestHost::with(
-                SessionService::new(Ok(memory_store()), platform, T0),
-                log,
-                notifier,
-            )
+            TestHost::with(SessionService::new(Ok(store), platform, T0), log, notifier)
         }
 
         pub(crate) fn with(
@@ -1089,7 +1240,16 @@ pub(crate) mod test_support {
                 notifier,
                 now: AtomicU64::new(T0),
                 log,
+                under_lock: std::sync::atomic::AtomicUsize::new(0),
             }))
+        }
+
+        /// Counts a violation when the service is locked. Never asserts: publishing runs inside
+        /// `catch_unwind`, which would swallow a panic.
+        fn note_unlocked(&self) {
+            if self.0.service.try_lock().is_err() {
+                self.0.under_lock.fetch_add(1, Ordering::SeqCst);
+            }
         }
 
         pub(crate) fn set_now(&self, now_ms: u64) {
@@ -1132,6 +1292,16 @@ pub(crate) mod test_support {
 
         fn emit_clock_tick(&self, tick: &ClockTick) {
             self.0.log.push(Event::Clock(tick.clone()));
+        }
+
+        fn emit_settings_changed(&self, settings: &Settings) {
+            self.note_unlocked();
+            self.0.log.push(Event::SettingsChanged(settings.clone()));
+        }
+
+        fn apply_theme(&self, theme: Theme) {
+            self.note_unlocked();
+            self.0.log.push(Event::ApplyTheme(theme));
         }
     }
 }
@@ -1429,6 +1599,14 @@ mod tests {
     fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running() {
         let Fakes { platform, log, .. } = fakes(NotificationStatus::Granted, false);
         let mut s = SessionService::new(Ok(memory_store()), platform, T0);
+        s.set_settings(
+            Settings {
+                notify_session_end: true,
+                ..s.settings()
+            },
+            T0,
+        )
+        .expect("turns notifications on");
         s.apply(start(Preset::Classic), T0, id("a"));
         let late = s.apply(Action::Pause, T0 + CLASSIC_MS + 5_000, id("x"));
         assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
@@ -2139,6 +2317,14 @@ mod tests {
     fn keep_awake_begun_on_start_and_guard_returned_on_end() {
         let Fakes { platform, log, .. } = fakes(NotificationStatus::Granted, false);
         let mut s = SessionService::new(Ok(memory_store()), platform, T0);
+        s.set_settings(
+            Settings {
+                notify_session_end: true,
+                ..s.settings()
+            },
+            T0,
+        )
+        .expect("turns notifications on");
         s.apply(start(Preset::Classic), T0, id("a"));
         assert_eq!(log.count(|e| *e == Event::Begun), 1);
         assert!(s.keep_awake.is_some());
@@ -2166,26 +2352,6 @@ mod tests {
         assert_eq!(log.count(|e| *e == Event::Begun), 0);
         let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
         assert!(stopped.drop_after_unlock.is_none());
-    }
-
-    #[test]
-    fn start_requests_notifications_only_while_not_determined_or_unread() {
-        for (status, expected) in [
-            (None, true),
-            (Some(NotificationStatus::NotDetermined), true),
-            (Some(NotificationStatus::Granted), false),
-            (Some(NotificationStatus::Denied), false),
-            (Some(NotificationStatus::Unavailable), false),
-        ] {
-            let mut s = service();
-            if let Some(status) = status {
-                s.set_notifications(status);
-            }
-            let started = s.apply(start(Preset::Classic), T0, id("a"));
-            assert_eq!(started.request_notifications, expected, "{status:?}");
-            let refused = s.apply(start(Preset::Classic), T0, id("b"));
-            assert!(!refused.request_notifications);
-        }
     }
 
     #[test]
@@ -2298,7 +2464,7 @@ mod tests {
 
     #[test]
     fn run_set_settings_write_failure_publishes_one_unavailable_timer_tick() {
-        let host = TestHost::new(NotificationStatus::Denied);
+        let host = TestHost::fresh(NotificationStatus::Denied);
         db(&lock(&host.0.service)).fail_writes(true);
         host.log().take();
         let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
@@ -2835,7 +3001,7 @@ mod tests {
 
     #[test]
     fn run_set_settings_returns_its_write_error_when_publish_panics() {
-        let host = TestHost::new(NotificationStatus::Denied);
+        let host = TestHost::fresh(NotificationStatus::Denied);
         with_panicking_surface(&host);
         db(&lock(&host.0.service)).fail_writes(true);
         let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
