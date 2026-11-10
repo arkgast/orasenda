@@ -109,7 +109,7 @@ test("dev_panel_refresh_apps_refetches", async () => {
   await renderPanel();
 
   const refresh = screen.getByRole("button", { name: "Refresh apps" });
-  expect(refresh).toHaveClass("os-btn");
+  expect(refresh).toHaveAttribute("data-slot", "button");
   await act(async () => {
     fireEvent.click(refresh);
   });

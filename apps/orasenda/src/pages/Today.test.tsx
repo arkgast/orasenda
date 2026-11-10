@@ -176,8 +176,11 @@ test("timer_tick_renders_digits_chip_word_and_planned_finish", async () => {
   ).toHaveTextContent("24:59");
   expect(outsideRing("Focus")).toHaveLength(1);
   expect(container).toHaveTextContent("Realistic finish · 15:20");
-  expect(screen.getByRole("button", { name: "Pause" })).toHaveClass("os-btn-quiet");
-  expect(screen.getByRole("button", { name: "End session" })).toHaveClass("os-btn-ghost");
+  expect(screen.getByRole("button", { name: "Pause" })).toHaveAttribute("data-variant", "quiet");
+  expect(screen.getByRole("button", { name: "End session" })).toHaveAttribute(
+    "data-variant",
+    "ghost",
+  );
   expect(screen.queryByRole("button", { name: "Start focus" })).toBeNull();
 });
 
@@ -189,9 +192,12 @@ test("paused_view_renders_paused_once_and_no_finish_line", async () => {
   expect(screen.getByRole("timer", { name: /^Paused, 24 minutes 59 seconds remaining/ }));
   expect(outsideRing("Paused")).toHaveLength(1);
   expect(container).not.toHaveTextContent("Realistic finish");
-  expect(screen.getByRole("button", { name: "Resume" })).toHaveClass("os-btn-quiet");
+  expect(screen.getByRole("button", { name: "Resume" })).toHaveAttribute("data-variant", "quiet");
   expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
-  expect(screen.getByRole("button", { name: "End session" })).toHaveClass("os-btn-ghost");
+  expect(screen.getByRole("button", { name: "End session" })).toHaveAttribute(
+    "data-variant",
+    "ghost",
+  );
 });
 
 test("running_finish_line_reads_realistic_finish", async () => {
