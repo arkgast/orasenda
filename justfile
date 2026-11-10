@@ -39,6 +39,7 @@ test:
     cargo test --workspace --locked
     pnpm --filter orasenda test
     pnpm --filter @orasenda/tokens test
+    node --test tools/tailwind-strict.test.ts
     pnpm --filter @orasenda/ui test
 
 # Check the declared colour pairs (verification/contrast-pairs.json) in both themes.
@@ -55,7 +56,7 @@ tokens:
 design-system *args:
     pnpm --filter @orasenda/ui design-system {{ args }}
 
-# Fails on an arbitrary Tailwind value (w-[13px], bg-(--x), text-[#fff]) in packages/ui/src or apps/orasenda/src.
+# Fails on an arbitrary Tailwind value (w-[13px], bg-(--x), text-[#fff]) or a class that emits no CSS (m-9) in packages/ui/src or apps/orasenda/src.
 tailwind-strict:
     node tools/tailwind-strict.ts
 
