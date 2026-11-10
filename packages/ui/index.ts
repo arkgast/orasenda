@@ -36,4 +36,6 @@ export const {
   Tooltip,
   Kbd,
   describeShortcut,
+  TimerStrip,
+  timerLayout,
 } = window.Orasenda;

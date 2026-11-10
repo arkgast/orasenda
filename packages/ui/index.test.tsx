@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import * as ui from "./index.ts";
@@ -93,6 +95,20 @@ test("exports_small_controls_and_key_table", () => {
   for (const name of ["IconButton", "Tooltip", "Kbd", "describeShortcut"]) {
     expect(name in window.Orasenda).toBe(true);
   }
+});
+
+test("exports_timer_faces", () => {
+  for (const member of [ui.TimerStrip, ui.timerLayout]) expect(typeof member).toBe("function");
+  for (const name of ["TimerStrip", "timerLayout"]) expect(name in window.Orasenda).toBe(true);
+  expect(ui.timerLayout.tokens).toBeDefined();
+});
+
+test("index_d_ts_has_no_timer_or_start_next_props", () => {
+  const dts = readFileSync(resolve(import.meta.dirname, "../../design/system/components/index.d.ts"), "utf8");
+  expect(dts).not.toContain("TimerRingNextProps");
+  expect(dts).not.toContain("StartButtonNextProps");
+  expect(dts).toContain("declare function TimerStrip");
+  expect(dts).toContain("declare function timerLayout");
 });
 
 test("page_frame_renders_h1_and_three_tracks", () => {
