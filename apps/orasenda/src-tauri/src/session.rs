@@ -3321,7 +3321,12 @@ mod tests {
 
     fn stored_custom(s: &SessionService) -> (Option<Preset>, Option<CustomSpec>) {
         db(s)
-            .read(|txn| Ok((settings::get(txn, KEY_PRESET)?, settings::get(txn, KEY_CUSTOM)?)))
+            .read(|txn| {
+                Ok((
+                    settings::get(txn, KEY_PRESET)?,
+                    settings::get(txn, KEY_CUSTOM)?,
+                ))
+            })
             .expect("reads")
     }
 
@@ -3351,7 +3356,9 @@ mod tests {
             )
         );
         assert_eq!(
-            db(&s).read(|txn| settings::get::<Theme>(txn, KEY_THEME)).expect("reads"),
+            db(&s)
+                .read(|txn| settings::get::<Theme>(txn, KEY_THEME))
+                .expect("reads"),
             Some(Theme::Dark)
         );
         assert_eq!(stored_notify(&s), Some(true));
