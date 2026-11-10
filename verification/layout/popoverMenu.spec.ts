@@ -22,6 +22,16 @@ const FORMS = [
   { shot: "popover-menu-checkbox", trigger: "Checkbox rows", menu: "Checkbox rows" },
 ] as const;
 
+/**
+ * Opens a menu and waits until focus has moved into it, so the next key reaches the menu. A tooltip
+ * still showing on the previous trigger takes the first Esc (Tooltip README), so wait for it to go.
+ */
+async function openMenu(page: Page, name: string): Promise<void> {
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
+  await expect(page.locator(`${PANEL} [role^="menuitem"]:focus`)).toHaveCount(1);
+}
+
 const token = (page: Page, name: string): Promise<number> =>
   page.evaluate(
     (n) => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n)),
@@ -34,7 +44,7 @@ test("popover_menu_fits_at_360", async ({ page }, info) => {
   for (const frame of await frames(page).all()) await expectVisibleFits(frame);
   const space2 = await token(page, "--space-2");
   for (const form of FORMS) {
-    await page.getByRole("button", { name: form.trigger, exact: true }).click();
+    await openMenu(page, form.trigger);
     const panel = page.locator(PANEL);
     await expect(panel).toBeVisible();
     await expectVisibleFits(panel);
@@ -66,7 +76,7 @@ test("popover_menu_rows_meet_hit_min", async ({ page }) => {
   const hitMin = await token(page, "--hit-min");
   expect(hitMin).toBeGreaterThan(0);
   for (const form of FORMS) {
-    await page.getByRole("button", { name: form.trigger, exact: true }).click();
+    await openMenu(page, form.trigger);
     const sizes = await page.locator(`${PANEL} [role^="menuitem"]`).evaluateAll((rows) =>
       rows.map((r) => {
         const b = r.getBoundingClientRect();
@@ -203,7 +213,7 @@ test("popover_menu_flips_inside_viewport", async ({ page }) => {
 
 test("popover_menu_aria_snapshot", async ({ page }) => {
   await openSpecimen(page, "PopoverMenu");
-  await page.getByRole("button", { name: "Classic · ends 15:20, Change preset" }).click();
+  await openMenu(page, "Classic · ends 15:20, Change preset");
   await expect(page.locator(PANEL)).toMatchAriaSnapshot(`
     - menu "Preset":
       - menuitemradio "Classic 25 / 5" [checked]
@@ -215,7 +225,7 @@ test("popover_menu_aria_snapshot", async ({ page }) => {
   `);
   await page.keyboard.press("Escape");
 
-  await page.getByRole("button", { name: "Preset while a session runs" }).click();
+  await openMenu(page, "Preset while a session runs");
   await expect(page.locator(PANEL)).toMatchAriaSnapshot(`
     - menu "Classic · 25 / 5":
       - menuitemradio "Classic 25 / 5" [checked] [disabled]
@@ -230,7 +240,7 @@ test("popover_menu_aria_snapshot", async ({ page }) => {
   );
   await page.keyboard.press("Escape");
 
-  await page.getByRole("button", { name: "Checkbox rows" }).click();
+  await openMenu(page, "Checkbox rows");
   await expect(page.locator(PANEL)).toMatchAriaSnapshot(`
     - menu "Checkbox rows":
       - menuitemcheckbox "First option" [checked]
@@ -245,7 +255,7 @@ test("popover_menu_no_motion_when_reduced", async ({ page }, info) => {
   test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
   await openSpecimen(page, "PopoverMenu");
   for (const form of FORMS) {
-    await page.getByRole("button", { name: form.trigger, exact: true }).click();
+    await openMenu(page, form.trigger);
     await expect(page.locator(PANEL)).toBeVisible();
     expect(await animatedElements(page)).toEqual([]);
     await page.locator(`${PANEL} [role^="menuitem"]`).nth(1).hover();
