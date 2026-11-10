@@ -1,13 +1,13 @@
 # P1 Components — Spec
 
-- Status: draft
+- Status: approved (2026-11-10)
 - Date: 2026-11-10
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP, P1 sub-projects](../ROADMAP.md#p1-sub-projects) (amended here: this sub-project sits between B and C, unlettered), [issue #134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut ruling, amended by a dated note in the ROADMAP), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window; its Today test stays in C), [#149](https://github.com/arkgast/orasenda/issues/149) (third-party licence notices; the bundled fonts add to it), [#61](https://github.com/arkgast/orasenda/issues/61) (pre-beta device pass), the Settings [spec](2026-11-09-settings.md) and [plan](../plans/2026-11-09-settings.md) (how B built its seven components design-first: #142, PR #152, PR #159), design-pass review [`design/reviews/04-redesign-pass.md`](../../design/reviews/04-redesign-pass.md) and its [changeset](../../design/reviews/04-redesign-pass/04-ds-changeset.md), [`design/system/README.md`](../../design/system/README.md), [`docs/conventions.md`](../conventions.md) ("Design-system changes are checked against their first consumer"), [CONTEXT.md](../../CONTEXT.md), the live design system https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73.
 
 ## TL;DR
 - A new P1 sub-project, **Components**, between B and C. It builds, design-first, every design-system component that P1's remaining screens (C Today, D Focus views, E Session cadence, F Hotkeys and capture, G Data portability) need, before any of those screens is built. The owner asked for this on 2026-11-10: "all components ready, and implement the screens one by one, functionality + UI".
-- **Scope is P1's screens only** (pending the owner's yes, owner question 1). It covers 8 new components and the redesign props of 5 existing ones, plus a shared icon set, a key table and a layout rule function. Components for later phases wait for those phases: the planning components (TaskCard, KanbanColumn, RoutineItem, NowLine, IntentPrompt, `SessionSlot`, `Select`) and the tracking and blocking components (AppRow, RoleTag, AppPicker, BarRow, `Dialog emphasis="safe"`). Their screens have no behaviour yet, so nothing could check them against a consumer.
+- **Scope is P1's screens only** (approved by the owner on 2026-11-10). It covers 8 new components and the redesign props of 5 existing ones, plus a shared icon set, a key table and a layout rule function. Components for later phases wait for those phases: the planning components (TaskCard, KanbanColumn, RoutineItem, NowLine, IntentPrompt, `SessionSlot`, `Select`) and the tracking and blocking components (AppRow, RoleTag, AppPicker, BarRow, `Dialog emphasis="safe"`). Their screens have no behaviour yet, so nothing could check them against a consumer.
 - **The real-engine checks move here from C.** These are the Playwright WebKit layout harness, the bundled fonts it measures with, and `verification/contrast.py` in `ci.sh`. A fluid ring, a strip and a 280×56 floater can't be checked in jsdom. C keeps the Today page cases, which include #119's failing test, and writes them on this harness after Components closes. The harness proves layout on current WebKit; what macOS 13's WebKit supports is settled from compatibility data and owed to the device pass (#61).
 - **The "first consumer" check, for components whose screens don't exist yet**, has three parts:
   1. a component test;
@@ -352,7 +352,9 @@ Components own no state (ADR-013's "surfaces own no state" applies to their part
 The current Today uses both (`Today.tsx:188`, `:272`). Breaking them would force Today edits into a sub-project that owns no screen. C stops using them. Removing them later is a cleanup.
 
 ## Open questions
-None blocking. Two owner calls are listed with the review message: the P1-only scope and the icon style. Each has a recommended default, which the plan follows if no answer comes.
+None. The owner answered both calls on 2026-11-10 and accepted the recommendations:
+- Scope is P1's screens only; the planning, tracking and blocking components are built design-first at the start of their own phases.
+- The icon set is adapted from Lucide's geometry (ISC licence), redrawn to the 20px grid and 1.5 stroke. Lucide's notice is added to #149. The owner approves the glyph sheet in the artifact preview before T7 merges.
 
 ## Implementation status
 Updated by the PRs that implement this spec.
