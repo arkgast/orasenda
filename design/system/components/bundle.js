@@ -193,7 +193,7 @@
         return p.unit && !p.multiline ? h("div", { className: "os-unit" }, control, h("span", null, p.unit)) : control;
       })(),
       p.helper ? h("p", { id: id + "-helper", className: "os-field-help" }, p.helper) : null,
-      p.error ? h("p", { id: id + "-error", className: "os-field-help", role: "status" }, h(AlertGlyph), p.error) : null);
+      p.error ? h("p", { id: id + "-error", className: "os-field-help" }, h(AlertGlyph), p.error) : null);
   }
   function Input(p) { return h(Field, p); }
   function TextArea(p) { return h(Field, Object.assign({ rows: 4 }, p, { multiline: true })); }
