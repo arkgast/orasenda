@@ -148,7 +148,7 @@ export function TimerRing(p: TimerRingProps): ReactElement {
             className={cn(
               "font-mono text-ink-muted text-timer-sm tabular-nums",
               full && "text-timer-md",
-              fluid && "@lg:text-timer-md",
+              fluid && "@ring-clock:text-timer-md",
             )}
           >
             {`Clock · ${p.clock}`}

@@ -267,7 +267,7 @@ test.describe("viewport slot", () => {
       );
       const wantClock = await px(
         page,
-        m.w >= 512 ? "--type-timer-md-font-size" : "--type-timer-sm-font-size",
+        m.w >= 480 ? "--type-timer-md-font-size" : "--type-timer-sm-font-size",
       );
       expect(Math.abs(parseFloat(clockSize) - wantClock), "clock size").toBeLessThanOrEqual(0.5);
       // Other specimen frames are fixed-width and may scroll the page; the slot itself must fit.
