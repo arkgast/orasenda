@@ -43,10 +43,17 @@ is copied here before `baton:backlog`.
    `{ aria: glyphs, spoken: glyphs }` and logs one `console.warn`. `packages/ui/test-setup.ts` and
    the specimens' `main.tsx` set it to `true`. The artifact round may choose another mechanism; the
    T2 PR records it.
-6. **T1 proves Playwright WebKit on both machines before anything else.** Its first commit is
-   the pinned dependency plus a one-case smoke spec; the branch is pushed as a draft PR so the
-   `macos-26` runner proves the launch, and the owner's macOS 27 run is recorded as a PR comment.
-   If either fails, T1 stops and asks (spec, Behavior).
+6. **T1 proves Playwright WebKit on both machines before anything else.** Its first commit holds
+   everything the runner needs to launch WebKit, not only the dependency: the pinned
+   `@playwright/test`, a one-case `verification/layout/smoke.spec.ts` (with a minimal
+   `playwright.config.ts`), the `ci.yml` cache step and `pnpm exec playwright install webkit`
+   step on the `ci` job, a temporary `just layout` recipe that runs only `smoke.spec.ts`, and a
+   `layout` call in the `ci` recipe. Today's `ci` job never runs Playwright, so a green run without
+   these proves nothing. The branch is pushed as a draft PR; the `macos-26` run's log must show
+   the WebKit launch line (the smoke case's `webkit <version>` output), linked in the PR. A green
+   run without that line counts as a failure. The owner's macOS 27 run is recorded as a PR
+   comment. If either fails, T1 stops and asks (spec, Behavior, "Playwright has no WebKit for the
+   host's macOS").
 7. **No eighth task to close the sub-project.** The spec counts seven. Each task ticks its own
    Implementation status line; T7 ticks the last one. The VoiceOver boxes are ticked as the owner
    records each pass, and the sub-project is closed by a docs-only PR (precedent: #163, "docs:
@@ -61,6 +68,22 @@ is copied here before `baton:backlog`.
    `@font-face` declares (nothing to load), so a missing rule passes it. T1's font case also
    asserts that, after `document.fonts.ready`, a `FontFace` for each family is in `document.fonts`
    with `status === "loaded"` and that its request was served from the specimen server.
+10. **Who sets the menu trigger's `aria-expanded` and `aria-controls`: the host.** The trigger
+    is the host's element (the preset summary, or an `IconButton` with `aria-haspopup="menu"`),
+    so `PopoverMenu` never edits another component's DOM through `anchor`. T2 adds
+    `aria-expanded?: boolean` and `aria-controls?: string` to `IconButtonProps` (passed through to
+    the `button`) in its design-first round. T4's README says the host sets them from `open` and
+    the menu's `id`, and T4's specimen and test use a host trigger that does.
+11. **`StartButton`'s `singleKeys` default needs a ruling (asked before `baton:backlog`).** The
+    spec defaults `singleKeys` to `true`. `Today.tsx:269-274` passes no `singleKeys`, so after T3
+    the app's Start button would carry `aria-keyshortcuts="Space Meta+Enter"`, and VoiceOver would
+    announce two shortcuts the app doesn't implement until C or F. That breaks Goal 6 ("render as
+    before") and the "host passes only what is live" invariant. Recommended: `singleKeys`
+    defaults to `undefined`, and with it omitted the button has no `aria-keyshortcuts` (as
+    today); `true` gives `Space Meta+Enter`, `false` gives `Meta+Enter`. The alternative is to
+    keep the spec's default and record the gap under the T3 PR's "Not yet verified". Either way
+    T3 has the test `start_button_without_single_keys_prop_matches_current_output`, asserting
+    the ruled behaviour, and the ruling is copied into the spec as an amendment line in the T3 PR.
 
 ## Overview
 The spec's seven tasks are kept as cut, in series. Each one is **design-first** and
@@ -70,11 +93,21 @@ steps the spec makes explicit ("How each task runs"):
    system". Claude reads the live artifact (https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73),
    settles the task's contract gaps (spec, "Contract gaps each task settles in the artifact
    first"), writes the components by hand in the artifact's `bundle.js` and `bundle.css`, updates
-   the READMEs, previews and `index.d.ts`, and republishes once. Before the republish, the
-   implementer's compatibility check runs: fold the task's `*NextProps` into its `*Props` in a
-   scratch copy of `index.d.ts`, regenerate `packages/ui/components.d.ts` from it locally and run
-   `pnpm --filter orasenda typecheck`. A break stops the task for a ruling (opus; fable only if the
-   ruling changes scope). App files are never edited.
+   the READMEs, previews and `index.d.ts`, and republishes once. Before the republish, **the
+   orchestrator** runs the compatibility check, as part of the artifact round (it is never the
+   implementer's, because no implementer worktree exists yet). The exact steps:
+   ```sh
+   git -C <repo> worktree add .worktrees/<task>-compat origin/main
+   cp <draft index.d.ts> .worktrees/<task>-compat/design/system/components/index.d.ts
+   (builtin cd .worktrees/<task>-compat && pnpm install --frozen-lockfile && just ui-css \
+     && pnpm --filter orasenda typecheck)
+   git -C <repo> worktree remove --force .worktrees/<task>-compat
+   ```
+   (`packages/ui/build.ts` reads `design/system/components/` directly, which is why the draft
+   replaces that file in the scratch worktree.) The orchestrator pastes the typecheck output into
+   the task's issue. A break stops the task for a ruling (opus; fable only if the ruling changes
+   scope). App files are never edited. The implementer re-runs `pnpm --filter orasenda typecheck`
+   after the refresh as a recorded acceptance item (T3, T5, T6).
 2. The implementer refreshes `design/system/` from that version's published files (`Artifact`
    read with `paths`), byte for byte. If the live version is newer than the one the orchestrator
    named, someone else republished: stop.
@@ -252,9 +285,11 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `justfile`: a `python` variable (`python` on Windows, `python3` elsewhere), recipes
     `contrast`, `layout` (skips on non-Darwin like `mobile`; on Darwin fails with
     `pnpm exec playwright install webkit` when the browser is missing) and `specimens`; in `ci`,
-    `contrast` runs before the `tokens` step and `layout` after the ui tests
+    `contrast` runs before the `tokens` step and `layout` after the ui tests. In checkpoint 1
+    `layout` is a temporary recipe that runs only `smoke.spec.ts`; checkpoint 4 replaces it.
   - `.github/workflows/ci.yml`: a pinned `actions/setup-python` step (Python 3.13) on both jobs;
-    on the macOS `ci` job, an `actions/cache` step for `~/Library/Caches/ms-playwright` keyed on
+    on the macOS `ci` job, a SHA-pinned `actions/cache` step (with a version comment, like every
+    other action in the file) for `~/Library/Caches/ms-playwright` keyed on
     the `@playwright/test` version from `pnpm-lock.yaml`, then `pnpm exec playwright install
     webkit` before `./scripts/ci.sh`; all new steps carry `if: steps.scope.outputs.docs_only !=
     'true'`
@@ -306,17 +341,41 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
       [--pairs <path>]`; prints each pair's ratio in light and dark; exit 1 on any failure,
       2 on a bad input (unknown token, malformed entry)
     - `justfile`: `just layout`, `just specimens`, `just contrast`
+- Step zero (orchestrator, before the artifact round): fetch the three upstream font releases
+  (`googlefonts/atkinson-hyperlegible-next`, `googlefonts/atkinson-hyperlegible-next-mono`,
+  `googlefonts/lexend`) into a scratch folder and record in the T1 issue, per family: repository,
+  release tag or commit, the variable roman `woff2` file name, its SHA-256 and its `wght` range
+  (read from the file's `fvar` table). Each range must cover the weights listed under Consumes;
+  if one doesn't, stop and ask before the artifact round. The artifact round writes `type.fonts`
+  from that record, so the republish never waits on the implementer.
+- Checkpoints: one PR, as the spec cuts it, built as commits in this order. After each
+  checkpoint the implementer may stop and report (the branch pushed, the PR still a draft):
+  1. Smoke and CI launch (planner decision 6): the pinned `@playwright/test`, a minimal
+     `playwright.config.ts`, `smoke.spec.ts`, the `ci.yml` steps (`setup-python`, `actions/cache`,
+     `playwright install webkit`), the temporary `layout` recipe and its call in `ci`.
+  2. Fonts and tokens: the refresh from the artifact, the font files (SHA-256 checked against
+     the step-zero record), `build.ts`, `build.test.ts`, `tokens.css`, `packages/tokens/package.json`.
+  3. Contrast: `contrast.py`, `contrast_test.py`, the seeded `contrast-pairs.json`, `just contrast`
+     and its place in `ci`.
+  4. Harness helpers and the seed: `support/**`, the specimen server, `Seed.tsx`, `seed.spec.ts`
+     (the smoke case folds in), the final `layout` and `specimens` recipes.
+  5. The guard: `guard.test.ts`; then the manual app check and the #149 comment.
 - Acceptance:
-  - [ ] **First, before any other T1 work:** the pinned `@playwright/test` installs and
-    launches WebKit on the `macos-26` runner (the draft PR's `ci` run) and on the owner's macOS 27
-    machine (recorded as a PR comment with the `playwright --version` and the launch output).
-    If either fails, the task stops and asks (planner decision 6).
-  - [ ] `@playwright/test`, `vite`, `@vitejs/plugin-react` and the `actions/setup-python` pin
-    went through `baton:deps`; the PR lists each version and the reason. The font files are
-    vetted the same way: upstream repository, release tag or commit, and SHA-256 of each file,
-    in the PR body.
+  - [ ] **First, before any other T1 work (checkpoint 1):** the first commit holds the pinned
+    `@playwright/test`, `smoke.spec.ts`, the `ci.yml` setup, cache and `pnpm exec playwright
+    install webkit` steps, a temporary `just layout` recipe that runs `smoke.spec.ts`, and a
+    `layout` call in the `ci` recipe. The draft PR's `ci` run on `macos-26` passes and its log
+    shows the WebKit launch line; the PR links that log line. If the line is missing, the task
+    stops and asks even when the run is green. The owner's macOS 27 run is recorded as a PR
+    comment with `playwright --version` and the launch output. If either fails, the task stops
+    and asks (planner decision 6).
+  - [ ] `@playwright/test`, `vite`, `@vitejs/plugin-react`, the `actions/setup-python` pin and
+    the `actions/cache` pin (SHA-pinned, with a version comment) went through `baton:deps`; the PR
+    lists each version and the reason. The font files are vetted the same way: upstream
+    repository, release tag or commit, and SHA-256 of each file, in the PR body, matching the
+    step-zero record in the issue.
   - [ ] **Design-first, in order:** the orchestrator republishes the artifact with `type.fonts`
-    filled and the README's Type line ("`type.fonts` is empty…") and Colour line ("to be added as
+    filled from the step-zero record and the README's Type line ("`type.fonts` is empty…") and Colour line ("to be added as
     `verification/contrast.py`") saying both exist; `design/system/` is refreshed byte for byte;
     the PR links the artifact version. Only `tokens.json`, `README.md` and `design-system.json`
     change in `design/system/`.
@@ -377,7 +436,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   `@playwright/test` with the workspace but never downloads a browser; `layout` skips there.
   Upstream font repositories: `googlefonts/atkinson-hyperlegible-next`,
   `googlefonts/atkinson-hyperlegible-next-mono` (the spec's "-mono"), `googlefonts/lexend`;
-  check each file's `wght` range against the weights above before writing `type.fonts`. Lexend
+  their file names and `wght` ranges come from step zero, and the implementer only checks the
+  downloaded files' SHA-256 against that record. Lexend
   has no P1 consumer but ships because `--font-alt` names it.
 
 ### T2: The small controls and the key table
@@ -410,8 +470,11 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
       "Control-Option-F" }`; `⌘.` → `{ aria: "Meta+Period", spoken: "Command-Period" }`
     - `window.Orasenda.strictShortcuts?: boolean` (proposed, planner decision 5)
     - `IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string; size?: 'md' |
-      'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string }`
-      (the spec adds `id`; `shortcut` is one canonical glyph string)
+      'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string;
+      'aria-expanded'?: boolean; 'aria-controls'?: string }` (the spec adds `id`; `shortcut` is
+      one canonical glyph string; `aria-expanded` and `aria-controls` are passed through to the
+      `button` so a host trigger can point at T4's `PopoverMenu`: the plan's ruling on who sets
+      them, see T4)
     - `TooltipProps { label: string; shortcut?: string; placement?: 'auto' }` plus whatever the
       artifact round adds for the anchor (proposed: `IconButton` renders its own `Tooltip`; a
       standalone `Tooltip` wraps one focusable child)
@@ -422,7 +485,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 - Acceptance:
   - [ ] **Design-first, in order:** the orchestrator republishes with `IconButton`, `Tooltip`,
     `Kbd` and `describeShortcut` in `bundle.js`; the "Shortcut glyphs" section in the `Kbd`
-    README; `id` on `IconButton`; the Tooltip placement paragraph (positioned panel, nearest open
+    README; `id`, `aria-expanded` and `aria-controls` on `IconButton` (in `index.d.ts` and its
+    README); the Tooltip placement paragraph (positioned panel, nearest open
     dialog or page root, no popover API); and the strict-mode mechanism. `design/system/` is
     refreshed byte for byte; the PR links the version.
   - [ ] `index.d.ts` no longer marks `IconButton`, `Tooltip` or `Kbd` "Not implemented in
@@ -455,6 +519,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `iconButton.test.tsx`: `icon_button_name_is_label_and_icon_hidden`,
     `icon_button_shortcut_sets_aria_keyshortcuts`, `icon_button_without_shortcut_has_no_keyshortcuts`,
     `icon_button_id_passes_through`, `icon_button_haspopup_passes_through`,
+    `icon_button_expanded_and_controls_pass_through`,
     `icon_button_round_size_class`
   - `tooltip.test.tsx`: `tooltip_shows_on_hover_after_duration_quick`,
     `tooltip_shows_on_focus_only_after_keyboard_event`, `tooltip_esc_hides`,
@@ -487,7 +552,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `verification/contrast-pairs.json` (append: strip bar and triangle, break and warning arcs
     and chips, Start's play glyph, both themes)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T3 line;
-  if the canvas's content boxes give a different Today result in the `timerLayout` table, the
+  adds one amendment line recording the `singleKeys` ruling, planner decision 11; if the canvas's content boxes give a different Today result in the `timerLayout` table, the
   README value wins and the PR says which row changed: the spec table is not edited);
   `apps/orasenda/src/pages/Today.tsx` and `Today.test.tsx`, `App.test.tsx` (read: they must pass
   unchanged); `design/system/tokens.json` (read: the `layout-*` and `timer-*` constants)
@@ -501,29 +566,40 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     - `TimerRingProps.size?: number | 'fluid'`; the warning arc and chip transition on
       `duration-slow`; the `task` slot clamped to two lines and whole in the accessible name
     - `TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?:
-      TimerMode; idleLength?: string; task?: string; stacked?: boolean }` (`task` proposed, for
-      E's intent line; spec, "E's intent line")
+      TimerMode; idleLength?: string; task?: string; stacked?: boolean }`. `task` is required in
+      the design-first round (not proposed): it is E's intent line (spec, "E's intent line") and
+      `FullScreenFocus` passes it in strip layout (T5). Clamped to two lines, whole in the
+      accessible name.
     - `StartButtonProps` gains `unavailable?: boolean`, `compactLabel?: string`,
-      `singleKeys?: boolean` (default `true`); `finishTime` and `disabled` stay, marked
-      `@deprecated`
+      `singleKeys?: boolean` (default per planner decision 11's ruling); `finishTime` and
+      `disabled` stay, marked `@deprecated`
 - Acceptance:
   - [ ] **Design-first, in order:** the artifact implements the fluid ring, the `duration-slow`
-    warning fade, `TimerStrip` with `stacked`, `timerLayout` with its "Choosing the layout"
-    README section (expected results from the a-timer canvas content boxes), and the
-    `StartButton` redesign; the compatibility check passes before the republish; refresh byte
-    for byte; the PR links the version.
+    warning fade, `TimerStrip` with `stacked` and `task`, `timerLayout` with its "Choosing the
+    layout" README section, and the `StartButton` redesign with `singleKeys` per the ruling
+    (planner decision 11). The README's "Choosing the layout" table gives, per row,
+    `contentWidth`, `contentHeight`, `windowWidth` and the expected result, for both Today (boxes
+    from the a-timer canvas) and the Focus window (window minus `space-8`, or `space-4` where the
+    spec says so). The orchestrator's compatibility check passed before the republish, with its
+    output in the issue; refresh byte for byte; the PR links the version.
+  - [ ] After the refresh, `pnpm --filter orasenda typecheck` passes against the refreshed
+    `index.d.ts` with no app edit (recorded in the PR's Checks).
   - [ ] `TimerRingNextProps` and `StartButtonNextProps` are gone from `index.d.ts`.
-  - [ ] `timerLayout` returns the spec table's value for every row (Today and Focus window
-    boxes), and its constants equal `layout-ring-min-height`, `layout-compact-width` and
-    `layout-strip-height` in `tokens.json`.
+  - [ ] `timerLayout` returns the README table's value for every row (its inputs are the
+    README's `contentWidth`, `contentHeight` and `windowWidth`, never window sizes), and its
+    constants equal `layout-ring-min-height`, `layout-compact-width` and `layout-strip-height` in
+    `tokens.json`. The PR lists every row whose result differs from the spec's table.
+  - [ ] `TimerStrip`'s `task` is whole in the accessible name with a two-line intent.
   - [ ] Fluid ring: in containers from 160 to 1200px its diameter is clamped to
     [`timer-min-size`, `timer-full-size`] and its digits' computed font size is at least
     `timer-md` (28px).
   - [ ] `TimerStrip` and its stacked form fit at 360, 640 and 1440 wide with a two-line intent in
     the `task` slot, in `focus`, `paused`, `idle`, `break` and `warning`.
   - [ ] `StartButton` at 399px of content shows "Start" and at 400px "Start focus"; its name is
-    "Start focus" in both; `aria-keyshortcuts` is `Space Meta+Enter` with `singleKeys` and
-    `Meta+Enter` without; the play glyph is `aria-hidden`; `unavailable` keeps it focusable and
+    "Start focus" in both; `aria-keyshortcuts` is `Space Meta+Enter` with `singleKeys` true and
+    `Meta+Enter` with it false; with the prop omitted (as `Today.tsx` passes it) the output is
+    the ruled one (planner decision 11), and an unaccepted gap is listed under "Not yet
+    verified"; the play glyph is `aria-hidden`; `unavailable` keeps it focusable and
     names why through the host's status line (README).
   - [ ] **Compatibility:** with Today's props, `TimerRing` renders its numeric size as before and
     `StartButton` with `finishTime` still renders "Realistic finish · <time>";
@@ -532,7 +608,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     Focus window, break and warning) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
-  - `timerLayout.test.tsx`: `timer_layout_matches_spec_table`,
+  - `timerLayout.test.tsx`: `timer_layout_matches_spec_table` (inputs and expected values are
+    the README's "Choosing the layout" rows, Today and Focus window),
     `timer_layout_constants_match_tokens_json`, `timer_layout_boundaries` (height exactly 360,
     width exactly twice the height, height exactly 420, window exactly 640)
   - `timerRing.test.tsx`: `timer_ring_fluid_uses_container_sizing`,
@@ -540,9 +617,12 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `timer_ring_every_mode_has_word_or_shape` (incl. `break`, `warning`)
   - `timerStrip.test.tsx`: `timer_strip_name_has_remaining_label_and_mode`,
     `timer_strip_stacked_form`, `timer_strip_idle_shows_idle_length`,
-    `timer_strip_every_mode_has_word_or_shape`, `timer_strip_adds_no_live_region`
+    `timer_strip_every_mode_has_word_or_shape`, `timer_strip_adds_no_live_region`,
+    `timer_strip_task_whole_in_accessible_name`
   - `startButton.test.tsx`: `start_button_name_stays_start_focus_with_compact_label`,
-    `start_button_keyshortcuts_follow_single_keys`, `start_button_unavailable_stays_focusable`,
+    `start_button_keyshortcuts_follow_single_keys`,
+    `start_button_without_single_keys_prop_matches_current_output`,
+    `start_button_unavailable_stays_focusable`,
     `start_button_finish_time_still_renders_realistic_finish`,
     `start_button_disabled_still_disables`, `start_button_play_glyph_hidden`
   - harness: `fluid_ring_diameter_clamped_in_160_to_1200_containers`,
@@ -577,15 +657,26 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - Produces: `PopoverMenuProps { heading: string; description?: string; items:
     PopoverMenuItem[]; readOnly?: boolean; onSelect: (id: string) => void; onClose: () => void;
     id?: string; anchor: React.RefObject<HTMLElement | null>; singleKeys?: boolean }` (`id`,
-    `anchor` and `singleKeys` proposed; the trigger keeps `aria-expanded` and `aria-controls`
-    pointing at `id`). `PopoverMenuItem` unchanged. The Focus-window form is the host passing
+    `anchor` and `singleKeys` proposed). `PopoverMenu` reads `anchor` only to place itself and
+    return focus; it never writes the trigger's attributes. The host sets the trigger's
+    `aria-expanded` (from `open`) and `aria-controls` (the menu's `id`), through T2's
+    `IconButton` pass-through or on its own summary element (planner decision 10). `singleKeys`:
+    the T4 artifact round states its effect in the README; proposed: when `true`, the menu's
+    README tells the host to add `P` to the trigger's `aria-keyshortcuts`, and the menu shows
+    `P` as a `Kbd` in its heading row; when not `true`, neither appears. `PopoverMenuItem`
+    unchanged. The Focus-window form is the host passing
     items without the Settings link row and the Focus-window heading and line.
 - Acceptance:
   - [ ] **Design-first, in order:** the artifact implements `PopoverMenu` as a positioned panel
-    (not the popover API) anchored to its trigger, with a settable `id`; refresh byte for byte;
-    the PR links the version.
+    (not the popover API) anchored to its trigger, with a settable `id`; its README says the
+    host sets the trigger's `aria-expanded` and `aria-controls` (planner decision 10) and states
+    what `singleKeys` does; refresh byte for byte; the PR links the version.
   - [ ] Radio, checkbox and link rows; ↑/↓ move; Return or Space chooses and closes; Esc closes
-    and returns focus to the trigger; the trigger carries `aria-expanded` and `aria-controls`.
+    and returns focus to the trigger. In the specimen, the host trigger (an `IconButton` with
+    `aria-haspopup="menu"`) sets `aria-expanded` from `open` and `aria-controls` to the menu's
+    `id`, and that id resolves to the open menu.
+  - [ ] `singleKeys` does exactly what the README states (proposed: `P` appears only when
+    `true`), and nothing when omitted.
   - [ ] Read-only form: the current radio checked, the others `aria-disabled`, the Settings row
     still live, the line "Presets can change between sessions.".
   - [ ] Fits at 360 wide; rows are at least `hit-min`; inside an open `Dialog` the menu is
@@ -595,7 +686,9 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     summary on Today and in the Focus window) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
-  - `popoverMenu.test.tsx`: `popover_menu_trigger_has_expanded_and_controls`,
+  - `popoverMenu.test.tsx`:
+    `popover_menu_host_trigger_expanded_and_controls_point_at_menu_id`,
+    `popover_menu_single_keys_controls_p_shortcut`,
     `popover_menu_id_settable`, `popover_menu_arrows_move_and_return_selects`,
     `popover_menu_space_chooses_checkbox`, `popover_menu_esc_closes_and_returns_focus_to_trigger`,
     `popover_menu_read_only_marks_radios_aria_disabled`,
@@ -606,8 +699,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `popover_menu_flips_inside_viewport`, `popover_menu_aria_snapshot`,
     `popover_menu_no_motion_when_reduced`
 - Notes: the P key that opens the menu on Today is the host's (C) when `singleKeys` is on; the
-  component only reflects it in `aria-keyshortcuts` on the trigger if the README says so. Don't
-  hold the roving index anywhere but component state.
+  component never listens for it. Don't hold the roving index anywhere but component state.
 
 ### T5: Focus window and floater
 - Priority: 1
@@ -640,8 +732,15 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 - Acceptance:
   - [ ] **Design-first, in order:** the artifact implements both and settles the gaps (`summary`,
     `singleKeys`, `ended`, the floater's "Session ended." announcement, `data-*` pass-through);
-    compatibility check before the republish; refresh byte for byte; the PR links the version.
+    the orchestrator's compatibility check passed before the republish, with its output in the
+    issue; refresh byte for byte; the PR links the version.
+  - [ ] After the refresh, `pnpm --filter orasenda typecheck` passes against the refreshed
+    `index.d.ts` with no app edit (recorded in the PR's Checks).
   - [ ] `FullScreenFocusNextProps` is gone from `index.d.ts`.
+  - [ ] E's intent line: every `FullScreenFocus` frame (1280×720, 1920×1080, the strip frame)
+    renders a two-line intent in the task slot in `focus`, `paused`, `idle`, `break`, `warning`
+    and ended; it fits, and the intent is whole in the accessible name in ring and strip
+    layouts (in strip layout `FullScreenFocus` passes it to `TimerStrip`'s `task`, T3).
   - [ ] `FullScreenFocus`: fluid ring or strip from `timerLayout` on its own box, recomputed on
     resize only; the Leave `IconButton` and Esc open the leave `Dialog` with "Stay in full screen"
     as the initial focus; Pause or Resume and End per mode; the idle state with Start; the
@@ -663,13 +762,15 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `full_screen_focus_esc_opens_leave_dialog`, `full_screen_focus_controls_per_mode`,
     `full_screen_focus_idle_shows_start`, `full_screen_focus_caption_follows_single_keys`,
     `full_screen_focus_ended_says_session_ended`, `full_screen_focus_renders_host_summary`,
-    `full_screen_focus_calls_timer_layout_on_resize_only`
+    `full_screen_focus_calls_timer_layout_on_resize_only`,
+    `full_screen_focus_task_whole_in_accessible_name_ring_and_strip`
   - `floatingTimer.test.tsx`: `floating_timer_pause_resume_and_open_buttons`,
     `floating_timer_idle_start_named_start_focus`, `floating_timer_passes_data_attributes_to_body`,
     `floating_timer_ended_announced_once`, `floating_timer_deep_shows_hours`,
     `floating_timer_every_mode_has_word_or_shape`
   - harness: `full_screen_focus_ring_at_1280x720_and_1920x1080`,
-    `full_screen_focus_strip_in_strip_frame`, `full_screen_focus_keyboard_path`,
+    `full_screen_focus_strip_in_strip_frame`, `full_screen_focus_two_line_intent_fits_every_frame`,
+    `full_screen_focus_keyboard_path`,
     `floating_timer_fits_every_size_and_state`, `floating_timer_buttons_meet_hit_min_at_280x56`,
     `focus_views_aria_snapshot`, `focus_views_no_motion_when_reduced`
 - Notes: always-on-top, the window frame and the context menu are D's. The floater never changes
@@ -708,9 +809,12 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
       glyph string, or `null` for ⌫ (off)
 - Acceptance:
   - [ ] **Design-first, in order:** the artifact settles the three gaps (CapturePad's host
-    announcement, `compact` as a prop, canonical glyphs from the recorder) and implements the
-    three; compatibility check before the republish; refresh byte for byte; the PR links the
-    version.
+    announcement, `compact` as a prop, canonical glyphs from the recorder), adds
+    `ShortcutRecorder`'s `id` to `index.d.ts` and its README, and implements the three; the
+    orchestrator's compatibility check passed before the republish, with its output in the
+    issue; refresh byte for byte; the PR links the version.
+  - [ ] After the refresh, `pnpm --filter orasenda typecheck` passes against the refreshed
+    `index.d.ts` with no app edit (recorded in the PR's Checks).
   - [ ] `CommandPaletteNextProps` and `CommandNext` are gone from `index.d.ts`.
   - [ ] Palette: the shortcut column is a `Kbd` whose spoken form is in the row's name; the
     compact form fits at 360×240 with a Close `IconButton`; a long label and hint wrap without
@@ -834,8 +938,10 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 | Contract gaps per task, settled in the artifact first and recorded in the PR | T1–T7 (first acceptance item each) |
 | Copy and colour guard (no "!", no emoji, `critical` only in two places) | T1 (`guard.test.ts`), every later task (it scans the whole `bundle.js`) |
 | No live region unless the README names one; ids settable | T2 (`tooltip_adds_no_live_region`, `icon_button_id_passes_through`), T3 (`timer_strip_adds_no_live_region`), T4 (`popover_menu_id_settable`, `popover_menu_adds_no_live_region`), T5 (`floating_timer_ended_announced_once`), T6 (`capture_pad_adds_no_live_region_besides_error`, `shortcut_recorder_id_settable`, `shortcut_recorder_conflict_is_described_not_live`) |
-| Components never read a setting; `singleKeys` from the host | T3 (`start_button_keyshortcuts_follow_single_keys`), T5 (`full_screen_focus_caption_follows_single_keys`), T4 (`singleKeys` prop) |
-| E's intent line: two-line intent in the `task` slot of ring, strip and full screen | T3 (`timer_ring_task_whole_in_accessible_name`, `timer_strip_fits_at_360_640_1440_with_two_line_intent`), T5 (full-screen frames) |
+| Components never read a setting; `singleKeys` from the host | T3 (`start_button_keyshortcuts_follow_single_keys`, `start_button_without_single_keys_prop_matches_current_output`), T5 (`full_screen_focus_caption_follows_single_keys`), T4 (`popover_menu_single_keys_controls_p_shortcut`) |
+| Menu trigger's `aria-expanded` and `aria-controls` (set by the host) | T2 (`icon_button_expanded_and_controls_pass_through`), T4 (`popover_menu_host_trigger_expanded_and_controls_point_at_menu_id`) |
+| E's intent line: two-line intent in the `task` slot of ring, strip and full screen | T3 (`timer_ring_task_whole_in_accessible_name`, `timer_strip_task_whole_in_accessible_name`, `timer_strip_fits_at_360_640_1440_with_two_line_intent`), T5 (`full_screen_focus_task_whole_in_accessible_name_ring_and_strip`, `full_screen_focus_two_line_intent_fits_every_frame`) |
+| Playwright has no WebKit for the host's macOS: stop and ask | T1 (checkpoint 1: the draft PR's log shows the WebKit launch line; the owner's macOS 27 comment) |
 | Three visible changes: fonts (T1 manual Settings check), rail (T7), warning fade (T3) | T1 (manual, four screenshots), T7 (`nav_rail_is_one_roving_tab_stop`), T3 (`warning_fade_uses_duration_slow`) |
 | Missing WebKit offline fails with the install command; never skips on macOS | T1 (acceptance, checked by hand) |
 | Flaky harness: `retries: 1` in CI with trace, `0` locally | T1 (`playwright.config.ts`) |
