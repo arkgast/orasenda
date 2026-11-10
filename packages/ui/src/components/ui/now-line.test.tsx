@@ -7,10 +7,9 @@ test("renders_now_with_word_and_time", () => {
   expect(screen.getByText("Now · 09:41")).toBeTruthy();
 });
 
-test("exposes_group_with_name", () => {
-  const { container } = render(<NowLine time="09:41" />);
-  const root = container.querySelector("[data-slot=now-line]");
-  expect(root?.getAttribute("aria-label")).toBe("Now, 09:41");
+test("exposes_img_with_name", () => {
+  render(<NowLine time="09:41" />);
+  expect(screen.getByRole("img", { name: "Now, 09:41" })).toBeTruthy();
 });
 
 test("renders_line_and_dot_hidden_from_assistive_tech", () => {
