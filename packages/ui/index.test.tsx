@@ -341,6 +341,7 @@ test("field_error_is_described_not_live", () => {
     const err = errorParagraph(control);
     expect(err.textContent).toBe(FIELD_ERROR);
     expect(err.hasAttribute("role"), c.name).toBe(false);
+    expect(err.hasAttribute("aria-live"), c.name).toBe(false);
     expect(err.querySelector("svg.os-glyph")).not.toBeNull();
     expect(err.querySelector(".os-shape")).toBeNull();
     unmount();
