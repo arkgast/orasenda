@@ -91,17 +91,6 @@ function timerLayout(box) {
 }
 // end timerLayout
 timerLayout.tokens = Object.freeze(Object.assign({}, LAYOUT_TOKENS));
-// MenuBarTimer
-function MenuBarTimer(p) {
-  var mode = p.mode || "focus", c = 2 * Math.PI * 5;
-  return h("span", { className: cx("os-menubar", "os-menubar-" + mode, p.compact === false && "os-menubar-floating"), role: "timer", "aria-live": "off", "aria-label": timerLabel(p, mode) },
-    mode === "focus" ? h("svg", { className: "os-menu-ring", viewBox: "0 0 14 14", "aria-hidden": "true" },
-      h("circle", { className: "ring-track", cx: 7, cy: 7, r: 5 }),
-      h("circle", { className: "ring-prog", cx: 7, cy: 7, r: 5, strokeDasharray: c, strokeDashoffset: c * clamp(p.progress) })) : h(Shape, { mode: mode }),
-    mode !== "idle" ? h("span", { "aria-hidden": "true" }, p.remaining || "25:00") : null,
-    p.compact === false && p.task ? h("span", { className: "os-menubar-task", "aria-hidden": "true" }, p.task) : null);
-}
-// end MenuBarTimer
 // TaskCard
 function TaskCard(p) {
   var est = count(p.estimate), done = count(p.done), dots = [], hasEstimate = p.estimate != null;
@@ -607,7 +596,6 @@ function PopoverMenu(p) {
 export {
   TimerRing,
   TimerStrip,
-  MenuBarTimer,
   TaskCard,
   TimeBlock,
   IntentPrompt,

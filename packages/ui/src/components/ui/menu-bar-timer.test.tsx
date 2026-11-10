@@ -32,7 +32,9 @@ test("renders_warning_with_triangle_and_word", () => {
 test("renders_break_with_half_circle_and_word", () => {
   const { container } = render(<MenuBarTimer {...RUN} mode="break" />);
   expect(screen.getByRole("timer").getAttribute("aria-label")).toMatch(/^Break, /);
-  expect(container.querySelector("svg.os-shape path")?.getAttribute("d")).toBe("M5 0a5 5 0 0 1 0 10z");
+  expect(container.querySelector("svg.os-shape path")?.getAttribute("d")).toBe(
+    "M5 0a5 5 0 0 1 0 10z",
+  );
 });
 
 test("renders_paused_with_bars_and_word", () => {
@@ -73,7 +75,9 @@ test("ring_drains_with_progress_and_clamps", () => {
   const offset = (progress: number) => {
     const { container, unmount } = render(<MenuBarTimer mode="focus" progress={progress} />);
     const value = Number(
-      container.querySelector("[data-slot=menu-bar-timer-ring] .ring-prog")?.getAttribute("stroke-dashoffset"),
+      container
+        .querySelector("[data-slot=menu-bar-timer-ring] [data-slot=menu-bar-timer-progress]")
+        ?.getAttribute("stroke-dashoffset"),
     );
     unmount();
     return value;

@@ -3,6 +3,7 @@
 import type * as React from "react";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
+import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type {
   Command,
   CommandPaletteProps,
@@ -10,7 +11,6 @@ import type {
   FullScreenFocusProps,
   IntentPromptProps,
   KanbanColumnProps,
-  MenuBarTimerProps,
   TaskCardProps,
 } from "./legacy.d.ts";
 
