@@ -18,7 +18,8 @@
   function Frame(props) {
     return h('div', { className: 'os-stack', style: { gap: 'var(--space-1)', width: props.width, maxWidth: '100%' } },
       h('span', { className: 'os-caption' }, props.caption),
-      h('div', { style: { padding: 'var(--space-3)', outline: '1px dashed var(--line-strong)' } }, props.children));
+      h('div', { style: { padding: 'var(--space-3)', outline: '1px dashed var(--line-strong)' } },
+        props.track ? h('div', { style: { height: props.track, outline: '1px dotted var(--line-strong)', display: 'flex', alignItems: 'center' } }, props.children) : props.children));
   }
   function Panel(props) {
     var theme = props.theme;
@@ -29,7 +30,7 @@
         return h(Frame, { key: st.mode, width: 640, caption: 'strip, ' + st.mode + ', two-line intent' }, h(O.TimerStrip, Object.assign({ task: INTENT }, st)));
       })),
       h('div', { className: 'os-row', style: { padding: 0, alignItems: 'flex-start' } }, STATES.map(function (st) {
-        return h(Frame, { key: st.mode, width: 360, caption: 'stacked, ' + st.mode }, h(O.TimerStrip, Object.assign({ stacked: true, task: INTENT }, st)));
+        return h(Frame, { key: st.mode, width: 360, track: 52, caption: 'stacked, ' + st.mode + ', Today 360 × 240: 52px time track, no intent' }, h(O.TimerStrip, Object.assign({ stacked: true }, st)));
       })),
       h('div', { className: 'os-actions' },
         h(Frame, { width: 640, caption: 'warning fade' }, h(O.TimerStrip, { mode: late ? 'warning' : 'focus', remaining: late ? '01:59' : '02:01', remainingLabel: late ? '1 minute 59 seconds' : '2 minutes 1 second', progress: late ? 0.92 : 0.91, task: 'Finish the thought' })),

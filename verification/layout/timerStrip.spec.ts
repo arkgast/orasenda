@@ -56,7 +56,18 @@ test("timer_strip_long_intent_clamps_to_two_lines", async ({ page }) => {
 
 test("stacked_strip_fits_at_360", async ({ page }) => {
   await openSpecimen(page, "TimerStrip");
-  for (const m of MODES) await checkFrame(page, `timer-strip-stacked-360-${m}`);
+  for (const m of MODES) {
+    await checkFrame(page, `timer-strip-stacked-360-${m}`);
+    // The frame is Today's 52px time track; the strip must be no taller.
+    const h = await page
+      .locator(`[data-state="timer-strip-stacked-360-${m}"] .os-strip`)
+      .evaluate((el) => ({
+        strip: el.getBoundingClientRect().height,
+        frame: el.parentElement?.getBoundingClientRect().height ?? 0,
+      }));
+    expect(h.frame).toBe(52);
+    expect(h.strip).toBeLessThanOrEqual(h.frame);
+  }
 });
 
 test("timer_strip_warning_fade_uses_duration_slow", async ({ page }, info) => {
@@ -97,11 +108,16 @@ test("timer_faces_aria_snapshot (TimerStrip)", async ({ page }) => {
     ["warning", `Almost up, 1 minute 48 seconds remaining, ${t}`],
   ];
   for (const [mode, name] of cases) {
-    for (const state of [`timer-strip-360-${mode}`, `timer-strip-stacked-360-${mode}`]) {
-      await expect(page.locator(`[data-state="${state}"]`)).toMatchAriaSnapshot(`
-        - timer "${name}"
-      `);
-    }
+    await expect(page.locator(`[data-state="timer-strip-360-${mode}"]`)).toMatchAriaSnapshot(`
+      - timer "${name}"
+    `);
+    // Today's stacked strip takes no task, so its name is the mode word and the time only.
+    const bare = name.slice(0, name.length - t.length - 2);
+    await expect(
+      page.locator(`[data-state="timer-strip-stacked-360-${mode}"]`),
+    ).toMatchAriaSnapshot(`
+      - timer "${bare}"
+    `);
   }
 });
 

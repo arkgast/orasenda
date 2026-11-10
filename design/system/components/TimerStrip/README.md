@@ -4,13 +4,22 @@ The time on Today and in the Focus window when the window is a strip: the state 
 - **Anatomy:** a `ModeChip` (the state word and shape, as inside the ring) beside the digits (`timer-lg` scaled to the strip's width, never below `timer-md`, `ink`; `ink-muted` while paused), over a horizon bar in a 10px box: a 2px `line-strong` track and a 6px fill that shows time left (three times the track, as in the ring, so the fill end reads by thickness, not colour), plus a 10px `amber` triangle at the fill's end when almost up. Under it, the `task` line.
 - **Props:** as `TimerRing` (`remaining`, `remainingLabel`, `progress`, `mode`) plus `idleLength` ("25 min"), `task` and `stacked`.
 - **`task`:** E's intent line ("What will be done?"), the same slot as the ring's `task`: `body-sm` in `ink-muted`, clamped to two lines, kept whole in the accessible name.
-- **`stacked`:** the narrow form for `stackedStrip`: centred, the chip beside the digits (digits from `timer-md`, about 36px at 360 wide), the bar across the full width, the task under it. Without `stacked` the strip is start-aligned and its digits grow to `timer-lg`.
+- **`stacked`:** the narrow form for `stackedStrip`: centred, the chip beside the digits (digits from `timer-md`, about 36px at 360 wide), `space-1` between that head and the bar, the bar across the full width. On Today it takes no `task` (see "Today's stacked strip" below). Without `stacked` the strip is start-aligned, keeps `space-2` between its rows, and its digits grow to `timer-lg`.
 - **States:** focus (fill `focus`); break (fill `break`, half-filled circle); paused (fill `ink-muted`, frozen; digits `ink-muted`); warning (fill `amber` plus the triangle; the fill and chip colour fade over `duration-slow`, the triangle and the chip's word switch at once); idle (no bar; `idleLength` in `ink-muted` at `timer-md`, never fake digits).
 - **Keyboard:** none; it is not a control.
 - **VoiceOver:** `role="timer"`, `aria-live="off"` (no live region); the name is the mode word, `remainingLabel` and the task: "Almost up, 1 minute 48 seconds remaining, Finish the chapter 3 outline". Idle: "No session, 25 min".
 - **Contrast:** track and every fill hold 3:1 on `surface` in both themes (`line-strong` 4.35 / 5.56, `focus` 5.31 / 8.74, `ink-muted` 5.36 / 7.52, `amber` 5.51 / 9.53; `break` as the ring's break arc). Fill against track is not relied on.
 
 Do: let the strip's own chip be the state word; the host's state column holds only the status line. Don't: add a second chip, let the digits shrink below `timer-md`, or colour the track.
+
+## Today's stacked strip
+
+The timer-surfaces canvas (a-timer) draws Today at 360 × 240 as 188px of fixed tracks plus a 52px time track, and the stacked strip must fit that track.
+
+- **What fits:** the head (digits about 36px at 360 wide, the 28px chip centred beside them), `space-1`, and the 10px bar: 50px. Idle is the chip and `idleLength` alone, 32px.
+- **No intent:** Today passes no `task` to its stacked strip. Two clamped lines would add 40px and overflow the track. The ring and the wide strip show the intent again when the window grows. The accessible name then has the mode word and the time only.
+- **The wide strip:** `strip` keeps `space-2` and the `task` line.
+- **Test:** a host test sizes the stacked strip's frame to the 52px time track and checks that the strip's height is no more than the frame's height in every state.
 
 ## Choosing the layout
 
