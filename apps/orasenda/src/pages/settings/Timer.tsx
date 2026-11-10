@@ -1,12 +1,7 @@
 import { Input, SettingsRow } from "@orasenda/ui";
 import { useId } from "react";
 import type { CustomSpec, Preset, Settings } from "../../bindings";
-import {
-  BREAK_RANGE,
-  BREAK_RANGE_HELP,
-  FOCUS_RANGE,
-  FOCUS_RANGE_HELP,
-} from "../../customRange";
+import { BREAK_RANGE, BREAK_RANGE_HELP, FOCUS_RANGE, FOCUS_RANGE_HELP } from "../../customRange";
 
 export type Draft = { focus: string; break: string };
 export type FieldKey = keyof Draft;
@@ -62,7 +57,13 @@ export function Timer({
   onRestore,
 }: Props) {
   const name = useId();
-  const field = (key: FieldKey, label: string, id: string, help: string, range: typeof FOCUS_RANGE) => (
+  const field = (
+    key: FieldKey,
+    label: string,
+    id: string,
+    help: string,
+    range: typeof FOCUS_RANGE,
+  ) => (
     <Input
       id={id}
       label={label}

@@ -1,8 +1,14 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { NotificationStatus } from "./bindings";
+import {
+  askMacOS,
+  isAsking,
+  resetNotificationsToggleForTests,
+  tick,
+  untick,
+} from "./notificationsToggle";
 import { argsOf, deferred, mockBackend, SETTINGS, settle } from "./pages/testing";
-import { askMacOS, isAsking, resetNotificationsToggleForTests, tick, untick } from "./notificationsToggle";
 import { load, register, resetSettingsQueueForTests } from "./settingsQueue";
 
 const OFF = { ...SETTINGS, notifySessionEnd: false };
@@ -14,6 +20,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await settle();
+  resetSettingsQueueForTests();
   clearMocks();
   vi.restoreAllMocks();
 });

@@ -123,7 +123,11 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
   const [current, setCurrent] = useState<SectionId>("general");
   const asking = useSyncExternalStore(subscribeAsking, isAsking);
   // The minutes a field save in flight carries, for the "Saved." line.
-  const pendingSaved = useRef<{ focus: boolean; break: boolean; custom: SettingsValue["custom"] } | null>(null);
+  const pendingSaved = useRef<{
+    focus: boolean;
+    break: boolean;
+    custom: SettingsValue["custom"];
+  } | null>(null);
   const shownCustom = useRef<SettingsValue["custom"] | null>(null);
 
   useEffect(() => {
@@ -132,7 +136,10 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
         setSettings(shown);
         // The draft follows only when the saved minutes changed: a reload for another setting
         // (a theme change from the menu bar) never overwrites text being typed.
-        if (resetDraft && (!shownCustom.current || !sameCustom(shownCustom.current, shown.custom))) {
+        if (
+          resetDraft &&
+          (!shownCustom.current || !sameCustom(shownCustom.current, shown.custom))
+        ) {
           setDraft(draftOf(shown.custom));
         }
         shownCustom.current = shown.custom;
@@ -167,6 +174,7 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
   }, []);
 
   // Arrival: the h1 (or the target) takes focus on each visit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new arrival is the trigger.
   useEffect(() => {
     const target = arrival.target;
     const node = root.current;
@@ -180,7 +188,6 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
     } else {
       jump(target);
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: a new arrival is the trigger.
   }, [arrival.seq]);
 
   // `current` follows the scroll: the last heading at or above the region's top edge.
@@ -307,7 +314,8 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
         action: {
           label: "Show",
           name: fieldErr.focus ? "Show focus minutes" : "Show break minutes",
-          run: () => document.getElementById(fieldErr.focus ? "focusMinutes" : "breakMinutes")?.focus(),
+          run: () =>
+            document.getElementById(fieldErr.focus ? "focusMinutes" : "breakMinutes")?.focus(),
         },
       };
     }
@@ -390,7 +398,12 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
     timer: presetLabel(shown),
     notifications: row.value,
     appsAndSites: "Nothing recorded",
-    about: info.status === "ok" ? `Version ${info.info.version}` : info.status === "error" ? "Version unavailable" : "",
+    about:
+      info.status === "ok"
+        ? `Version ${info.info.version}`
+        : info.status === "error"
+          ? "Version unavailable"
+          : "",
   };
   const sections = SECTIONS.map(({ id, name }) => ({
     id,
@@ -416,7 +429,11 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
         }
       >
         <div className="settings-body">
-          <SettingsIndex sections={sections} current={current} onJump={(id) => jump(id as SectionId)} />
+          <SettingsIndex
+            sections={sections}
+            current={current}
+            onJump={(id) => jump(id as SectionId)}
+          />
           <ScrollRegion label="Settings">
             <div className="settings-content">
               <General

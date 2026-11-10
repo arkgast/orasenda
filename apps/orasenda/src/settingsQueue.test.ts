@@ -4,7 +4,14 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Settings } from "./bindings";
-import { argsOf, deferred, emitSettingsChanged, mockBackend, SETTINGS, settle } from "./pages/testing";
+import {
+  argsOf,
+  deferred,
+  emitSettingsChanged,
+  mockBackend,
+  SETTINGS,
+  settle,
+} from "./pages/testing";
 import {
   load,
   register,
@@ -19,6 +26,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   await settle();
+  resetSettingsQueueForTests();
   clearMocks();
 });
 

@@ -78,7 +78,11 @@ export function App() {
   }, [navigate]);
 
   const infoText =
-    info.status === "ok" ? infoLine(info.info) : info.status === "error" ? "version unavailable" : null;
+    info.status === "ok"
+      ? infoLine(info.info)
+      : info.status === "error"
+        ? "version unavailable"
+        : null;
 
   return (
     <div className={current === "settings" ? "app app-bound" : "app"}>

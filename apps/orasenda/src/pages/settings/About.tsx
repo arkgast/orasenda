@@ -2,7 +2,10 @@ import { SettingsRow } from "@orasenda/ui";
 import type { AppInfo } from "../../bindings";
 import { osLabel } from "../../format";
 
-export type AboutInfo = { status: "loading" } | { status: "ok"; info: AppInfo } | { status: "error" };
+export type AboutInfo =
+  | { status: "loading" }
+  | { status: "ok"; info: AppInfo }
+  | { status: "error" };
 
 export function aboutLine(info: AboutInfo): string | null {
   if (info.status === "ok") return `Orasenda ${info.info.version} for ${osLabel(info.info.os)}`;

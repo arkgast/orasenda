@@ -1,8 +1,16 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { deferred, emitSettingsChanged, mockBackend, SETTINGS, settle } from "./pages/testing";
+import { App } from "./App";
 import type { Settings } from "./bindings";
+import {
+  argsOf,
+  deferred,
+  emitSettingsChanged,
+  mockBackend,
+  SETTINGS,
+  settle,
+} from "./pages/testing";
 import { resetSettingsQueueForTests } from "./settingsQueue";
 import { useTheme } from "./useTheme";
 
@@ -18,6 +26,7 @@ beforeEach(() => {
 afterEach(async () => {
   cleanup();
   await settle();
+  resetSettingsQueueForTests();
   clearMocks();
   vi.restoreAllMocks();
   delete document.documentElement.dataset.theme;
@@ -52,4 +61,21 @@ test("get_answer_sets_theme_at_mount", async () => {
   render(<Probe />);
   await settle();
   expect(document.documentElement.dataset.theme).toBe("light");
+});
+
+test("theme_change_sends_settings_set_with_theme", async () => {
+  const backend = mockBackend();
+  render(<App />);
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  await settle();
+  fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
+  await settle();
+  expect(argsOf(backend.calls, "settings_set")).toEqual([
+    { settings: { ...SETTINGS, theme: "dark" } },
+  ]);
+  // The webview follows Rust's settings-changed, not the radio.
+  expect(document.documentElement.dataset.theme).toBeUndefined();
+  await emitSettingsChanged({ ...SETTINGS, theme: "dark" });
+  expect(document.documentElement.dataset.theme).toBe("dark");
 });

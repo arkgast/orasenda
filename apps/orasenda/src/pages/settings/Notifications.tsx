@@ -97,7 +97,9 @@ export function Notifications({
         label="Session end"
         helper="Orasenda only notifies you when a session ends. Never about stats or streaks."
         status={line ?? undefined}
-        actionLabel={action === "ask" ? "Ask macOS" : action === "open" ? "Open System Settings" : undefined}
+        actionLabel={
+          action === "ask" ? "Ask macOS" : action === "open" ? "Open System Settings" : undefined
+        }
         actionName={
           action === "open" ? "Open System Settings, Notifications for Orasenda" : undefined
         }

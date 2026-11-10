@@ -193,22 +193,25 @@ function sendSave(next: Settings): void {
   };
   commands
     .settingsSet(next)
-    .then((result) => {
-      if (mine !== generation) return;
-      if (result.status === "ok") {
-        accepted = next;
-        if (sameSettings(intended, next)) listener?.accepted();
-      } else if (result.error.kind === "invalidSpec") {
-        const current = intended;
-        // A spec typed since this one was sent replaces it, and its own save decides.
-        if (!current || !sameCustom(current.custom, next.custom) || !accepted) return;
-        // Keep the typed draft beside the helper, but never resend the rejected spec.
-        intended = { ...current, custom: accepted.custom };
-        listener?.refused(next.custom);
-      } else {
-        failed(result.error, result.error.kind === "unavailable" ? "unavailable" : "write");
-      }
-    }, (error: unknown) => failed(error))
+    .then(
+      (result) => {
+        if (mine !== generation) return;
+        if (result.status === "ok") {
+          accepted = next;
+          if (sameSettings(intended, next)) listener?.accepted();
+        } else if (result.error.kind === "invalidSpec") {
+          const current = intended;
+          // A spec typed since this one was sent replaces it, and its own save decides.
+          if (!current || !sameCustom(current.custom, next.custom) || !accepted) return;
+          // Keep the typed draft beside the helper, but never resend the rejected spec.
+          intended = { ...current, custom: accepted.custom };
+          listener?.refused(next.custom);
+        } else {
+          failed(result.error, result.error.kind === "unavailable" ? "unavailable" : "write");
+        }
+      },
+      (error: unknown) => failed(error),
+    )
     .finally(() => {
       if (mine !== generation) return;
       busy = false;
