@@ -6,7 +6,7 @@ import { defineConfig } from "vitest/config";
 // The Tauri CLI sets TAURI_DEV_HOST for a physical iOS device or with `--host`; the device must reach the dev server over the network.
 const host = process.env.TAURI_DEV_HOST;
 
-// Tauri expects a fixed dev port (tauri.conf.json `devUrl`) and a WebKit target (macOS 13+, iOS 16+).
+// Tauri expects a fixed dev port (tauri.conf.json `devUrl`) and a WebKit target (macOS 15.8.2 and later, iOS 16+).
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   clearScreen: false,
@@ -18,7 +18,10 @@ export default defineConfig({
     watch: { ignored: ["**/src-tauri/**"] },
   },
   build: {
-    target: "safari16",
+    // Safari 18 is the WebKit that macOS Sequoia 15.x ships. The 15.8.2 security notes
+    // (https://support.apple.com/en-us/149523) do not name a Safari version, so this is the Sequoia
+    // baseline, not a number read from that page.
+    target: "safari18",
     rolldownOptions: {
       // Setting `input` replaces the default entry, so the main page is listed too.
       input: {

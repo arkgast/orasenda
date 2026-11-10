@@ -63,3 +63,65 @@ test("critical_used_only_by_destructive_dialog_and_critical_button", () => {
   ]);
   expect(criticalOutsideDialog(`${js}\n  var x = "critical";`)).toHaveLength(1);
 });
+
+// ---- code-first guards (#187) ----
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { arbitraryValues, scan } from "../../tools/tailwind-strict.ts";
+
+function tsFiles(folder: string): string[] {
+  return readdirSync(folder).flatMap((name) => {
+    const path = join(folder, name);
+    if (name === "node_modules" || name === "dist") return [];
+    if (statSync(path).isDirectory()) return tsFiles(path);
+    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
+const here = (name: string) => resolve(import.meta.dirname, name);
+// legacy.js is the hand-written bundle; the guards above read it. The rest of src is typed source.
+const typed = tsFiles(dir).filter((f) => !/\.(test|test-d|d)\.tsx?$/.test(f));
+
+test("guard_rejects_create_element", () => {
+  const hits = tsFiles(dir).filter((f) => /createElement/.test(readFileSync(f, "utf8")));
+  expect(hits.map((f) => f.replace(`${dir}/`, ""))).toEqual([]);
+  expect(/createElement/.test(`React.createElement("div")`)).toBe(true);
+});
+
+test("source_copy_has_no_exclamation_mark_or_emoji", () => {
+  for (const file of typed) {
+    const text = readFileSync(file, "utf8");
+    // JSX text between tags counts as copy too; "!" in code (!x, !==) does not.
+    const jsxText = [...text.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)].map(
+      (m) => m[1] as string,
+    );
+    const copy = [...literals(text), ...jsxText];
+    expect(
+      copy.filter((s) => s.includes("!")),
+      file,
+    ).toEqual([]);
+    expect(
+      copy.filter((s) => /\p{Extended_Pictographic}/u.test(s)),
+      file,
+    ).toEqual([]);
+  }
+});
+
+test("source_critical_only_in_dialog_destructive_and_button_critical", () => {
+  const allowed = /(^|\/)(dialog|button)\.tsx$/;
+  const hits = typed
+    .filter((f) => !allowed.test(f))
+    .filter((f) => /critical|destructive/i.test(readFileSync(f, "utf8")))
+    .map((f) => f.replace(`${dir}/`, ""));
+  // types.ts and index.ts name the Dialog prop and the Button variant; nothing else may.
+  expect(hits.filter((f) => !/^(types|index)\.tsx?$/.test(f))).toEqual([]);
+});
+
+test("lint_rejects_arbitrary_tailwind_value", () => {
+  const fixture = readFileSync(here("../../tools/fixtures/arbitrary.tsx"), "utf8");
+  expect(arbitraryValues(fixture)).toEqual(["w-[13px]", "bg-(--x)", "hover:text-[#fff]"]);
+  expect(
+    arbitraryValues(`const a = "data-[state=open]:bg-focus p-4 arr[0] [&>svg]:size-4";`),
+  ).toEqual([]);
+  expect(arbitraryValues("const c = `size-[2px]`;")).toEqual(["size-[2px]"]);
+  expect(scan([here("src"), here("../../apps/orasenda/src")])).toEqual([]);
+});

@@ -32,6 +32,7 @@ fmt:
 lint:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     pnpm exec biome lint .
+    "{{ just_executable() }}" tailwind-strict
 
 # Run every test suite.
 test:
@@ -53,6 +54,21 @@ tokens:
 # README, tokens.json, design-system.json) into design/system/ (git-ignored), or into --out <dir>.
 design-system *args:
     pnpm --filter @orasenda/ui design-system {{ args }}
+
+# Fails on an arbitrary Tailwind value (w-[13px], bg-(--x), text-[#fff]) in packages/ui/src or apps/orasenda/src.
+tailwind-strict:
+    node tools/tailwind-strict.ts
+
+# Build the library, then typecheck the app's type test against the built declarations.
+ui-build:
+    pnpm --filter @orasenda/ui build
+    pnpm --filter @orasenda/ui design-system --out dist/system
+    pnpm --filter orasenda exec tsc -p tsconfig.ui-built.json
+
+# Build the Design System artifact files into a scratch folder and load them as classic scripts.
+design-system-check:
+    "{{ just_executable() }}" design-system --out "$(mktemp -d)"
+    pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
 # Every check, fastest first. Stops at the first failure.
 ci:
@@ -77,12 +93,18 @@ ci:
     git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
+    @echo "==> lint (no arbitrary Tailwind values)"
+    "{{ just_executable() }}" tailwind-strict
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
     @echo "==> typecheck (verification)"
     pnpm --filter @orasenda/ui exec tsc -p ../../verification/layout/tsconfig.json
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
+    @echo "==> ui (library build and the app's types against it)"
+    "{{ just_executable() }}" ui-build
+    @echo "==> design system (files build and load as classic scripts)"
+    "{{ just_executable() }}" design-system-check
     @echo "==> typecheck (tsc)"
     pnpm --filter orasenda typecheck
     @echo "==> test (vitest)"

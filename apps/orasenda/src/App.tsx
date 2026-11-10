@@ -1,16 +1,53 @@
 import { type NavPage, NavRail } from "@orasenda/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  type ComponentType,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 import { commands, events } from "./bindings";
 import { infoLine } from "./format";
-import { Placeholder } from "./pages/Placeholder";
-import { type Arrival, Settings, type SettingsTarget } from "./pages/Settings";
+import type { Arrival, SettingsTarget } from "./pages/Settings";
 import type { AboutInfo } from "./pages/settings/About";
 import { Today } from "./pages/Today";
 import { subscribe } from "./subscribe";
 import { useTheme } from "./useTheme";
 
 export type { SettingsTarget };
+
+// Today is the first page and stays in the main chunk. The others are their own chunks; they start loading right away, and a page that has loaded renders
+// without suspending (React's `use` reads a settled promise at once), so a click on the rail finds the new
+// heading in place and focus can move to it straight away.
+type Loaded<P> = Promise<ComponentType<P>> & { status?: string; value?: ComponentType<P> };
+
+function load<P>(importer: () => Promise<ComponentType<P>>) {
+  const promise: Loaded<P> = importer();
+  promise.then((component) => {
+    promise.status = "fulfilled";
+    promise.value = component;
+  });
+  return { ready: promise, use: () => use(promise as Parameters<typeof use<ComponentType<P>>>[0]) };
+}
+
+const settingsPage = load(() => import("./pages/Settings").then((m) => m.Settings));
+const placeholderPage = load(() => import("./pages/Placeholder").then((m) => m.Placeholder));
+
+/** Settles when every lazy page has loaded; the test setup waits for it. */
+export const pagesReady = Promise.all([settingsPage.ready, placeholderPage.ready]);
+
+function Settings(props: ComponentProps<typeof import("./pages/Settings").Settings>) {
+  const Page = settingsPage.use();
+  return <Page {...props} />;
+}
+function Placeholder(props: { title: string }) {
+  const Page = placeholderPage.use();
+  return <Page {...props} />;
+}
 
 const TITLES: Readonly<Record<NavPage, string>> = {
   today: "Today",
@@ -96,11 +133,13 @@ export function App() {
           <p className="app-info">{infoText}</p>
         </header>
         <main ref={main} className="app-main">
-          {current === "today" ? <Today /> : null}
-          {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
-          {current !== "today" && current !== "settings" ? (
-            <Placeholder title={TITLES[current]} />
-          ) : null}
+          <Suspense fallback={null}>
+            {current === "today" ? <Today /> : null}
+            {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
+            {current !== "today" && current !== "settings" ? (
+              <Placeholder title={TITLES[current]} />
+            ) : null}
+          </Suspense>
         </main>
       </div>
     </div>
