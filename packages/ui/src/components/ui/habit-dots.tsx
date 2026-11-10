@@ -31,16 +31,27 @@ const SHAPES: Record<HabitState, string> = {
   future: "rounded-sm border-2 border-dotted border-line-strong",
 };
 
-function Dot({ state, today, label }: { state: HabitState; today?: boolean; label?: string }) {
+function Dot({
+  state,
+  today,
+  label,
+  decorative,
+}: {
+  state: HabitState;
+  today?: boolean;
+  label?: string;
+  decorative?: boolean;
+}) {
   const text = `${label ? `${label}, ` : ""}${today ? "Today, " : ""}${WORDS[state]}`;
+  const a11y = decorative
+    ? { "aria-hidden": true as const }
+    : { role: "img", "aria-label": text, title: text };
   return (
     <span
       data-slot="habit-dot"
       data-state={state}
       data-today={today ? "" : undefined}
-      role="img"
-      aria-label={text}
-      title={text}
+      {...a11y}
       className={cn(
         "inline-flex size-icon-md flex-none items-center justify-center rounded-pill",
         SHAPES[state],
@@ -93,12 +104,12 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
         >
           {states.map((s) => (
             <span key={s} className="inline-flex items-center gap-2">
-              <Dot state={s} />
+              <Dot state={s} decorative />
               {WORDS[s]}
             </span>
           ))}
           <span className="inline-flex items-center gap-2">
-            <Dot state="future" today />
+            <Dot state="future" today decorative />
             Today
           </span>
         </div>

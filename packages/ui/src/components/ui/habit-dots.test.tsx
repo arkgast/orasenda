@@ -69,3 +69,20 @@ test("marks_today_independent_of_state", () => {
   expect(dot?.getAttribute("data-state")).toBe("skipped");
   expect(dot?.hasAttribute("data-today")).toBe(true);
 });
+
+test("each_state_has_a_shape_not_colour_alone", () => {
+  const { container } = render(<HabitDots days={["done", "skipped", "rest", "future"]} />);
+  const dots = container.querySelectorAll("[data-slot='habit-dot']");
+  const [done, skipped, rest, future] = Array.from(dots);
+  expect(done.getAttribute("data-state")).toBe("done");
+  expect(done.className).toContain("bg-break");
+  expect(done.querySelector("span[aria-hidden='true']")?.textContent).toBe("✓");
+  expect(skipped.className).toContain("border-2");
+  expect(rest.className).toContain("border-dashed");
+  expect(future.className).toContain("border-dotted");
+});
+
+test("legend_dots_are_decorative", () => {
+  render(<HabitDots days={["done"]} legend />);
+  expect(screen.getAllByRole("img")).toHaveLength(1);
+});
