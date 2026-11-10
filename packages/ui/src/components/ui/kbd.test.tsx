@@ -10,7 +10,7 @@ test("kbd_glyph_hidden_and_spoken_in_text", () => {
   );
   const glyph = screen.getByText("⌃⌥F");
   expect(glyph.getAttribute("aria-hidden")).toBe("true");
-  const spoken = container.querySelector(".os-sr-only");
+  const spoken = container.querySelector("[data-slot=kbd-spoken]");
   expect(spoken?.textContent).toBe("Control-Option-F");
   expect(spoken?.getAttribute("aria-hidden")).toBeNull();
 });
@@ -18,5 +18,5 @@ test("kbd_glyph_hidden_and_spoken_in_text", () => {
 test("kbd_in_tooltip_needs_no_spoken", () => {
   const { container } = render(<Kbd keys="⌘." inTooltip />);
   expect(screen.getByText("⌘.").getAttribute("aria-hidden")).toBe("true");
-  expect(container.querySelector(".os-sr-only")).toBeNull();
+  expect(container.querySelector("[data-slot=kbd-spoken]")).toBeNull();
 });
