@@ -12,6 +12,7 @@ import type {
   TimerView_Serialize,
 } from "../bindings";
 import { commands } from "../bindings";
+import { BREAK_RANGE, BREAK_RANGE_HELP, FOCUS_RANGE, FOCUS_RANGE_HELP } from "../customRange";
 import { latest, load, register, sameCustom, save } from "../settingsQueue";
 import { DevPanel } from "../spike/DevPanel";
 import { useClock } from "../useClock";
@@ -26,13 +27,6 @@ const PRESETS: ReadonlyArray<{ preset: Preset; label: string }> = [
 
 // The preset Rust uses when nothing is saved; Start uses it until `settings_get` answers.
 const DEFAULT_PRESET: Preset = "classic";
-
-// Mirrors `CustomSpec::validate` in crates/core/src/timer/mod.rs: the refusal does not say which
-// field failed, so the helpers are chosen from the spec that was sent.
-const FOCUS_RANGE = { min: 5, max: 180 };
-const BREAK_RANGE = { min: 1, max: 60 };
-const FOCUS_RANGE_HELP = `Between ${FOCUS_RANGE.min} and ${FOCUS_RANGE.max} minutes.`;
-const BREAK_RANGE_HELP = `Between ${BREAK_RANGE.min} and ${BREAK_RANGE.max} minutes.`;
 
 type RangeHelp = { focus: boolean; break: boolean };
 const NO_RANGE_HELP: RangeHelp = { focus: false, break: false };
