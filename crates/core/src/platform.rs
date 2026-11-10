@@ -185,6 +185,9 @@ mod tests {
 
     #[test]
     fn noop_notifier_open_settings_is_unsupported() {
-        assert_eq!(NoopNotifier.open_settings(), Err(PlatformError::Unsupported));
+        assert_eq!(
+            NoopNotifier.open_settings(),
+            Err(PlatformError::Unsupported)
+        );
     }
 }

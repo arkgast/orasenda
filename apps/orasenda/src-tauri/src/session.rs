@@ -1139,7 +1139,10 @@ pub(crate) mod test_support {
         /// What `open_settings` answers next.
         #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
         pub(crate) fn set_open_result(&self, result: Result<(), PlatformError>) {
-            *self.open_result.lock().unwrap_or_else(PoisonError::into_inner) = result;
+            *self
+                .open_result
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner) = result;
         }
 
         /// Holds every `status` read until the returned sender sends or drops.
@@ -1157,6 +1160,7 @@ pub(crate) mod test_support {
         }
 
         /// Answers the oldest open request, as the OS would on a Foundation thread.
+        #[allow(dead_code, reason = "T4 (#145) answers requests")]
         pub(crate) fn answer(&self, status: NotificationStatus) {
             self.set_status(status);
             let answer = self
@@ -1175,7 +1179,12 @@ pub(crate) mod test_support {
                 !self.panic_on_status.load(Ordering::SeqCst),
                 "fake status read panics"
             );
-            if let Some(rx) = self.gate.lock().unwrap_or_else(PoisonError::into_inner).take() {
+            if let Some(rx) = self
+                .gate
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take()
+            {
                 let _ = rx.recv();
             }
             *self.status.lock().unwrap_or_else(PoisonError::into_inner)
