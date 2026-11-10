@@ -123,3 +123,4 @@ export interface BarRowProps {
   spoken: string;
   goal?: { minutes: number; words: string };
 }
+export type NavPage = "today" | "board" | "calendar" | "routines" | "review" | "settings";

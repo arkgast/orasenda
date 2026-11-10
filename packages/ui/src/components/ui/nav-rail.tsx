@@ -1,7 +1,5 @@
 import type { ReactElement } from "react";
-import { cn } from "../../lib/utils";
-
-export type NavPage = "today" | "board" | "calendar" | "routines" | "review" | "settings";
+import type { NavPage } from "../../types.ts";
 
 export interface NavRailProps {
   current: NavPage;
@@ -35,12 +33,11 @@ export function NavRail({ current, onNavigate }: NavRailProps): ReactElement {
             type="button"
             aria-current={isCurrent ? "page" : undefined}
             onClick={() => onNavigate(id)}
-            className={cn(
-              "flex min-h-control-lg w-full cursor-pointer flex-col items-center justify-center gap-1 border-s-3 p-1 text-caption",
+            className={`flex min-h-control-lg w-full cursor-pointer flex-col items-center justify-center gap-1 border-s-3 p-1 ${
               isCurrent
-                ? "border-focus bg-selection font-semibold text-focus"
-                : "border-clear bg-clear text-ink-muted hover:bg-surface-sunken",
-            )}
+                ? "border-focus bg-selection text-focus"
+                : "border-clear bg-clear text-ink-muted hover:bg-surface-sunken"
+            }`}
           >
             <svg
               viewBox="0 0 20 20"
@@ -55,7 +52,7 @@ export function NavRail({ current, onNavigate }: NavRailProps): ReactElement {
             >
               <path d={path} />
             </svg>
-            <span>{label}</span>
+            <span className="text-caption">{label}</span>
           </button>
         );
       })}

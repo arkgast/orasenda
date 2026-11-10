@@ -41,6 +41,6 @@ export { WellnessNote } from "./components/ui/wellness-note";
 export type { KbdProps } from "./components/ui/kbd";
 export type { RoutineItemProps } from "./components/ui/routine-item";
 export type { WellnessNoteProps } from "./components/ui/wellness-note";
-export type { NavPage, NavRailProps } from "./components/ui/nav-rail";
+export type { NavRailProps } from "./components/ui/nav-rail";
 export type * from "./legacy.d.ts";
 export type * from "./types.ts";

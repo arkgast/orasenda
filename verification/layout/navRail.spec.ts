@@ -31,6 +31,29 @@ test("nav_rail_fits_and_hit_targets", async ({ page }, info) => {
   await shoot(page, info, "nav-rail");
 });
 
+test("nav_rail_label_is_caption_size_and_current_has_side_bar", async ({ page }) => {
+  await openSpecimen(page, "NavRail");
+  const rail = page.locator("[data-state=nav-rail-today]");
+  const label = await rail
+    .locator("[data-slot=nav-rail-item] span")
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(label).toBeGreaterThanOrEqual(10);
+  expect(label).toBeLessThanOrEqual(12);
+  const bar = async (sel: string) =>
+    rail.locator(sel).evaluate((el) => parseFloat(getComputedStyle(el).borderInlineStartWidth));
+  expect(await bar("[aria-current=page]")).toBeGreaterThanOrEqual(2);
+  expect(await bar("[aria-current=page]")).toBeLessThanOrEqual(4);
+  const other = await rail
+    .locator("button:not([aria-current])")
+    .first()
+    .evaluate((el) => getComputedStyle(el).borderInlineStartColor);
+  const cur = await rail
+    .locator("[aria-current=page]")
+    .evaluate((el) => getComputedStyle(el).borderInlineStartColor);
+  expect(other).not.toBe(cur);
+});
+
 test("nav_rail_focus_ring_visible_on_keyboard", async ({ page }, info) => {
   await openSpecimen(page, "NavRail");
   const first = page.locator("[data-state=nav-rail-today] [data-slot=nav-rail-item]");
@@ -50,8 +73,11 @@ test("nav_rail_keyboard_activates_and_marks_current", async ({ page }) => {
   await board.focus();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
-  // The specimen's current page is fixed by the host; activation leaves aria-current where it was.
-  await expect(page.locator("[data-state=nav-rail-today] [aria-current=page]")).toHaveText("Today");
+  const current = page.locator("[data-state=nav-rail-today] [aria-current=page]");
+  await expect(current).toHaveText("Board");
+  await page.locator("[data-state=nav-rail-today] button", { hasText: "Calendar" }).focus();
+  await page.keyboard.press("Space");
+  await expect(current).toHaveText("Calendar");
   await expect(page.locator("[data-state=nav-rail-settings] [aria-current=page]")).toHaveText(
     "Settings",
   );
