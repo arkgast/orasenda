@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-09T23:49:26Z",
+    "at": "2026-11-10T03:36:59Z",
     "via": "Claude Code",
-    "note": "Built PageFrame, ScrollRegion, SettingsIndex, SettingsRow, InlineNotice row, Input unit and EmptyState inline in bundle.js; ScrollRegion now watches its content and the default InlineNotice honours actionName; READMEs gain the Notifications row table, the new index values, the theme-override line and the Try again condition."
+    "note": "T1 (issue #168): type.fonts lists the bundled Atkinson Hyperlegible Next and Mono variable woff2 (200 800) and Lexend Regular (400); README Type and Colour lines now say the fonts and verification/contrast.py exist."
   }
 }

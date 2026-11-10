@@ -5,6 +5,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set windows-shell := ["bash", "-euo", "pipefail", "-c"]
 set script-interpreter := ["bash", "-euo", "pipefail"]
 
+python := if os_family() == "windows" { "python" } else { "python3" }
 mobile_targets := "--target aarch64-apple-ios --target aarch64-linux-android"
 
 default:
@@ -39,6 +40,11 @@ test:
     pnpm --filter @orasenda/tokens test
     pnpm --filter @orasenda/ui test
 
+# Check the declared colour pairs (verification/contrast-pairs.json) in both themes.
+contrast:
+    {{ python }} -m unittest discover -s verification -p "contrast_test.py"
+    {{ python }} verification/contrast.py
+
 # Regenerate packages/tokens/tokens.css from design/system/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
@@ -64,6 +70,8 @@ ci:
     "{{ just_executable() }}" core-boundary
     @echo "==> core purity (no target_os in core)"
     "{{ just_executable() }}" core-purity
+    @echo "==> contrast (self test, then the declared pairs)"
+    "{{ just_executable() }}" contrast
     @echo "==> tokens (tokens.css is up to date)"
     "{{ just_executable() }}" tokens
     git diff --exit-code -- packages/tokens/tokens.css
@@ -84,6 +92,8 @@ ci:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
+    @echo "==> layout (real-engine WebKit checks, macOS only)"
+    "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/bindings.ts
     git diff --exit-code -- apps/orasenda/src/bindings.ts
@@ -91,6 +101,25 @@ ci:
     "{{ just_executable() }}" mobile
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
+
+# Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=Seed&theme=dark
+specimens:
+    pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
+
+# Real-engine layout checks: runs every spec in verification/layout with Playwright WebKit. macOS only
+# (other hosts skip); fails with the install command when WebKit is missing.
+[script]
+layout:
+    host="$(uname -s)"
+    if [ "$host" != Darwin ]; then
+        echo "layout: skipped on $host; the required macOS ci job runs the WebKit checks"
+        exit 0
+    fi
+    if ! node -e "const {webkit}=require('@playwright/test'); process.exit(require('fs').existsSync(webkit.executablePath()) ? 0 : 1)"; then
+        echo "layout: Playwright's WebKit is not installed. Run: pnpm exec playwright install webkit" >&2
+        exit 1
+    fi
+    pnpm exec playwright test --config verification/layout/playwright.config.ts
 
 # Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]

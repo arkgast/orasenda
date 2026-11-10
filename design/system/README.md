@@ -25,7 +25,7 @@ Four modes, each a hue with a `-soft` tint; `focus` and `break` also have `on-`,
 - A mode hue reads as text on the surfaces and on its own tint. On a solid fill use the matching `on-` token.
 - `line` is a hairline that carries no meaning. `line-strong` is for marks that do: control borders, the timer track and the strip track, tooltip, popover, Kbd and floater edges, segment separators, the scrollbar thumb, `BarRow` fills, hollow habit dots, the overflow hatch. It holds 3:1 on every surface and tint.
 - `ink-muted` as a mark means paused or shallow only (the paused arc and strip fill, the hollow mode shapes). A neutral bar is `line-strong`, never `ink-muted`.
-- **The floater's edge.** The floating timer's boundary is shared by its fill and its 1px `line-strong` edge: in every theme × wallpaper combination at least one of the two holds 3:1 (see `FloatingTimer`). Its controls are measured against the floater's own fill. The repo's contrast check (to be added as `verification/contrast.py`) carries light (#EDEDED), mid-grey (#808080) and dark (#1C1C1E) wallpaper fixtures.
+- **The floater's edge.** The floating timer's boundary is shared by its fill and its 1px `line-strong` edge: in every theme × wallpaper combination at least one of the two holds 3:1 (see `FloatingTimer`). Its controls are measured against the floater's own fill. The repo's contrast check, `verification/contrast.py`, carries light (#EDEDED), mid-grey (#808080) and dark (#1C1C1E) wallpaper fixtures.
 - `selection` (an alias of `focus-soft`) is the ground of a selected card, row, command or rail item, always with a word, a check or `aria-current`.
 - `critical` appears once in the whole app: the confirm button of the delete-data `Dialog`. Never on a card, in a list or for time.
 - Dark is a first-class theme, not an inversion: deep slate ground, lighter hues, dark `on-` text. In dark, raise with `surface-raised` and `surface-overlay`; borders separate and shadows barely exist.
@@ -42,7 +42,7 @@ Don'ts that would have caused real bugs: no `filter` or `opacity` to make states
 - The reading-comfort setting (`[data-reading-comfort="true"]`) swaps `body`, `body-sm`, `heading` and `title` to `--font-alt` (Lexend). It never touches timer digits.
 - Keep running text within about 65 characters.
 - The token sheet emits one CSS font shorthand per type style, `--type-<name>` (for example `--type-body-sm: 400 13px/18px var(--font-sans)`), so app code never writes a font size, line height or family.
-- **Fonts ship inside the app bundle.** Atkinson Hyperlegible Next, Atkinson Hyperlegible Mono (Braille Institute, SIL OFL 1.1) and Lexend (SIL OFL 1.1) are declared as families only; `type.fonts` is empty because no font files are in this repository yet. The `@import` at the top of `bundle.css` exists for the design-system preview and must not ship: a private app does not ping a font CDN.
+- **Fonts ship inside the app bundle.** Atkinson Hyperlegible Next, Atkinson Hyperlegible Mono (Braille Institute, SIL OFL 1.1) and Lexend (SIL OFL 1.1) ship as unmodified upstream `woff2` files under `packages/tokens/fonts/`, each beside its `OFL.txt`, and `type.fonts` lists them: one variable file each for Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono (weights 200 to 800), and Lexend's static Regular (400, the only weight `alt` uses). The token sheet emits one `@font-face` per entry. The `@import` at the top of `bundle.css` exists for the design-system preview and must not ship: a private app does not ping a font CDN.
 
 ## Layout and hit targets
 

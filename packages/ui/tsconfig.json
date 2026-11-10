@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["@testing-library/jest-dom/vitest"]
   },
-  "include": ["*.ts", "*.tsx"]
+  "include": ["*.ts", "*.tsx", "specimens/**/*.ts", "specimens/**/*.tsx"]
 }

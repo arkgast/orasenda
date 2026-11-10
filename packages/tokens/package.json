@@ -5,10 +5,12 @@
   "license": "MPL-2.0",
   "type": "module",
   "exports": {
-    "./tokens.css": "./tokens.css"
+    "./tokens.css": "./tokens.css",
+    "./fonts/*": "./fonts/*"
   },
   "files": [
-    "tokens.css"
+    "tokens.css",
+    "fonts/**"
   ],
   "scripts": {
     "build": "node build.ts",
