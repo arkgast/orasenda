@@ -95,8 +95,8 @@ live region on a page whose spec allows exactly one (#157, PR #159).
 - A design-system task's review reads the consuming spec's accessibility acceptance (live regions,
   labels, `aria-describedby`, focus). It checks every new or changed component against that
   acceptance, not only against its own README.
-- A component inside a field or row never makes its own text a live region (`role="status"`,
-  `role="alert"`, `aria-live`). It links that text to its control with `aria-describedby`, and the
-  page's one status component (the `InlineNotice` row or a `Toast`, whose READMEs make them live
-  regions) announces the change.
+- A field's error is never a live region: it links to its control with `aria-describedby`, and the
+  page's status component announces the change. Any other component adds a live region of its own
+  (`role="status"`, `role="alert"`, `aria-live`) only when its README names one, as `AppRow` does
+  for a failed save.
 - An id that another element must reference is settable by prop, so the consumer can pass it in.
