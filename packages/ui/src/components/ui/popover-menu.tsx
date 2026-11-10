@@ -90,10 +90,9 @@ function AnchorProxy({ anchor, ref }: { anchor: HTMLElement | null; ref?: Ref<HT
   return null;
 }
 
-// The inset ring: the legacy base focus rule (unlayered, offset 2px) is stronger than a layered utility, so the
-// offset is important until that rule leaves with the last legacy component.
+// Rows sit mx-1 inside the panel so the 2px ring and its 2px offset (the fixed ring) stay inside the scrolling panel.
 const row =
-  "group flex min-h-hit-min w-full cursor-pointer items-center gap-3 px-4 text-start text-body text-ink outline-focus-ring focus-visible:-outline-offset-2! focus-visible:outline-2 hover:bg-surface-sunken aria-checked:bg-selection aria-checked:hover:bg-selection aria-disabled:cursor-default aria-disabled:text-ink-muted aria-disabled:hover:bg-clear aria-checked:aria-disabled:hover:bg-selection";
+  "group mx-1 flex min-h-hit-min cursor-pointer rounded-sm items-center gap-3 px-4 text-start text-body text-ink outline-focus-ring outline-offset-2 focus-visible:outline-2 hover:bg-surface-sunken aria-checked:bg-selection aria-checked:hover:bg-selection aria-disabled:cursor-default aria-disabled:text-ink-muted aria-disabled:hover:bg-clear aria-checked:aria-disabled:hover:bg-selection";
 const mark =
   "grid size-icon-md flex-none place-items-center border-2 border-line-strong bg-surface-overlay forced-colors:forced-color-adjust-none group-aria-checked:border-focus group-aria-checked:bg-focus group-aria-disabled:border-dashed";
 
