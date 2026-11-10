@@ -80,3 +80,8 @@ test("scroll_region_remeasures_when_content_grows", async () => {
     if (ch) Object.defineProperty(HTMLElement.prototype, "clientHeight", ch);
   }
 });
+
+test("fills its PageFrame body track so it is bounded and scrolls", () => {
+  const { container } = render(<ScrollRegion label="Settings">x</ScrollRegion>);
+  expect(container.querySelector("[data-slot=scroll-region]")?.className).toContain("h-full");
+});
