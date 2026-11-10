@@ -114,6 +114,42 @@ test("tooltip_esc_inside_dialog_hides_tip_and_keeps_dialog", async ({ page }) =>
   await expect(inner).toBeFocused();
 });
 
+test("tooltip_inside_native_dialog_is_visible", async ({ page }) => {
+  await openSpecimen(page, "Tooltip");
+  await page.getByRole("button", { name: "Open native dialog" }).click();
+  const dialog = page.locator("dialog[open]");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Native tip" }).hover();
+  const panel = dialog.locator(PANEL);
+  await expect(panel).toBeVisible();
+  const inside = await panel.evaluate((p) => {
+    const b = p.getBoundingClientRect();
+    const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+    return !!hit && p.contains(hit);
+  });
+  expect(inside).toBe(true);
+});
+
+test("escape_closes_only_topmost_layer", async ({ page }) => {
+  await openSpecimen(page, "Tooltip");
+  await page.getByRole("button", { name: "Open native dialog" }).click();
+  const dialog = page.locator("dialog[open]");
+  await expect(dialog).toBeVisible();
+  const inner = dialog.getByRole("button", { name: "Native tip" });
+  await inner.focus();
+  await pressTab(page);
+  await page.keyboard.press("Shift+Alt+Tab");
+  await expect(inner).toBeFocused();
+  await expect(dialog.locator(PANEL)).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(dialog.locator(PANEL)).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("data-cancels", "0");
+  await expect(inner).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
+});
+
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },

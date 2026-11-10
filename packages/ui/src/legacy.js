@@ -220,7 +220,7 @@ function describeShortcut(glyphs) {
   return { aria: aria.join("+"), spoken: spoken.join("-") };
 }
 // end describeShortcut
-// Kbd (internal: legacy Tooltip, PopoverMenu and IconButton still call it; TSX Kbd is the public one)
+// Kbd (internal: PopoverMenu and IconButton still call it; TSX Kbd is the public one)
 function Kbd(p) {
   var glyph = h("span", { className: "os-kbd", "aria-hidden": "true" }, p.keys);
   if (p.inTooltip && p.spoken == null) return glyph;
@@ -232,7 +232,7 @@ function tokenNumber(el, name) {
   var v = el && el.ownerDocument.defaultView ? el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(name).trim() : "", n = parseFloat(v);
   return !Number.isFinite(n) ? 0 : /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
 }
-// Positioned panel, shared by Tooltip and PopoverMenu (internal, not exported). No popover API, no anchor
+// Positioned panel, used by PopoverMenu (internal, not exported). No popover API, no anchor
 // positioning: the macOS 13 WebKit has neither. The panel lives in the nearest open dialog (already in the top
 // layer) or the page body, is placed from the trigger rect below it, flipped above when it does not fit,
 // kept inside the viewport, and re-placed on resize and on any scroll.
