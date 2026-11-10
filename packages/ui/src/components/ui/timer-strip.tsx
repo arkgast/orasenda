@@ -36,6 +36,11 @@ const FILL: Record<StripMode, string> = {
   idle: "bg-ink-muted",
 };
 
+// Fluid digits from tokens: never below timer-md, never above timer-lg (as TimerRing's fluid digits).
+const FLUID_WIDE = "clamp(var(--type-timer-md-font-size), 14cqi, var(--type-timer-lg-font-size))";
+const FLUID_STACKED =
+  "clamp(var(--type-timer-md-font-size), 10cqi, var(--type-timer-lg-font-size))";
+
 function clamp(n: number | undefined): number {
   return typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
 }
@@ -44,7 +49,7 @@ function label(p: TimerStripProps, mode: StripMode): string {
   const parts =
     mode === "idle"
       ? ["No session", p.idleLength]
-      : [`${WORD[mode] ?? mode}, ${p.remainingLabel || p.remaining || "25:00"} remaining`];
+      : [`${WORD[mode]}, ${p.remainingLabel || p.remaining || "25:00"} remaining`];
   if (p.task) parts.push(p.task);
   return parts.filter(Boolean).join(", ");
 }
@@ -95,9 +100,9 @@ export function TimerStrip(props: TimerStripProps): ReactElement {
             data-slot="timer-strip-digits"
             className={cn(
               "whitespace-nowrap font-light font-mono text-timer-md tabular-nums",
-              stacked ? "@xl:text-timer-lg" : "@md:text-timer-lg",
               mode === "paused" ? "text-ink-muted" : "text-ink",
             )}
+            style={{ fontSize: stacked ? FLUID_STACKED : FLUID_WIDE }}
           >
             {remaining || "25:00"}
           </span>

@@ -7,7 +7,7 @@ export interface TimerLayoutBox {
   windowWidth: number;
 }
 
-// The px values of these tokens in tokens.json (timer-layout.test.ts reads the file and compares).
+// The px values of these tokens in tokens.json (timerLayout.test.tsx reads the file and compares).
 const LAYOUT_TOKENS = {
   "layout-ring-min-height": 360,
   "layout-compact-width": 640,

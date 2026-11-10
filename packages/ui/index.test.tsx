@@ -111,6 +111,8 @@ test("index_d_ts_has_no_timer_or_start_next_props", () => {
   const dts = readFileSync(resolve(import.meta.dirname, "src/legacy.d.ts"), "utf8");
   expect(dts).not.toContain("TimerRingNextProps");
   expect(dts).not.toContain("StartButtonNextProps");
+  expect(dts).not.toContain("declare function TimerStrip");
+  expect(dts).not.toContain("declare function timerLayout");
 });
 
 test("settings_row_links_helper_and_status_by_describedby", () => {
