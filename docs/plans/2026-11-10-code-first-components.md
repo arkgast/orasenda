@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-10-code-first-components.md](../specs/2026-11-10-code-first-components.md) (approved 2026-11-10)
 - Date: 2026-11-10
-- Status: draft
+- Status: approved (2026-11-10)
 
 ## Overview
 One foundation task (F), then one task per runtime component (C1–C32) in the spec's three waves, then the paused P1 Components tasks re-cut for TSX (T5 #172, T6 #173, T7 #174) and the close-out (#175). The owner fixed the shape (decision 12): one foundation PR, one PR per component, at most three component pipelines at once.
