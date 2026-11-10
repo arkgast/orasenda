@@ -311,9 +311,7 @@ const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";
 
 function errorParagraph(control: HTMLElement): HTMLElement {
   const ids = (control.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean);
-  const err = ids
-    .map((id) => document.getElementById(id))
-    .find((n) => n?.id.endsWith("-error"));
+  const err = ids.map((id) => document.getElementById(id)).find((n) => n?.id.endsWith("-error"));
   if (!err) throw new Error("no error paragraph in aria-describedby");
   return err;
 }
@@ -327,7 +325,11 @@ test("input_error_uses_alert_glyph_not_mode_shape", () => {
 
 test("field_error_is_described_not_live", () => {
   const cases = [
-    { name: "Input", node: <ui.Input label="Focus minutes" error={FIELD_ERROR} />, label: "Focus minutes" },
+    {
+      name: "Input",
+      node: <ui.Input label="Focus minutes" error={FIELD_ERROR} />,
+      label: "Focus minutes",
+    },
     { name: "TextArea", node: <ui.TextArea label="Notes" error={FIELD_ERROR} />, label: "Notes" },
   ];
   for (const c of cases) {
