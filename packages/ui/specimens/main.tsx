@@ -4,6 +4,9 @@ import "../components.css";
 import "./specimens.css";
 import { specimens } from "./registry.ts";
 
+// describeShortcut throws on an unknown glyph string in specimens, as in tests.
+window.Orasenda.strictShortcuts = true;
+
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");
 if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
