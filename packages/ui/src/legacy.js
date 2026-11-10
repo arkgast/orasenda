@@ -324,30 +324,6 @@ function StartButton(p) {
 }
 // end StartButton
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
-// SettingsIndex
-function SettingsIndex(p) {
-  var secs = p.sections || [], refs = R.useRef({}), last = R.useState(null);
-  var stop = secs.some(function (s) { return s.id === last[0]; }) ? last[0] : secs.some(function (s) { return s.id === p.current; }) ? p.current : secs.length ? secs[0].id : null;
-  R.useEffect(function () { last[1](null); }, [p.current]);
-  function move(i, d) {
-    var j = (i + d + secs.length) % secs.length, n = refs.current[secs[j].id];
-    last[1](secs[j].id); if (n) n.focus();
-  }
-  return h("nav", { "aria-label": "Settings sections" }, h("ul", { className: "os-sindex" }, secs.map(function (s, i) {
-    return h("li", { key: s.id }, h("button", {
-      type: "button", className: "os-sindex-item", ref: function (n) { refs.current[s.id] = n; },
-      tabIndex: s.id === stop ? 0 : -1, "aria-current": s.id === p.current ? "location" : undefined,
-      onFocus: function () { last[1](s.id); },
-      onClick: function () { p.onJump(s.id); },
-      onKeyDown: function (e) {
-        if (e.key === "ArrowDown") { e.preventDefault(); move(i, 1); }
-        else if (e.key === "ArrowUp") { e.preventDefault(); move(i, -1); }
-        else if (e.key === "Enter") { e.preventDefault(); p.onJump(s.id); }
-      }
-    }, s.name, h("span", { className: "os-sindex-value" }, s.problem ? [s.problem.alert ? h(AlertGlyph, { key: "g" }) : null, s.problem.text] : s.value)));
-  })));
-}
-// end SettingsIndex
 // SettingsRow
 function SettingsRow(p) {
   var generated = R.useId(), id = p.id || generated, described = [id + "-help", p.status ? id + "-status" : "", p.disabledReason ? id + "-why" : ""].filter(Boolean).join(" ");
@@ -645,7 +621,6 @@ export {
   CommandPalette,
   EmptyState,
   StartButton,
-  SettingsIndex,
   SettingsRow,
   IconButton,
   Tooltip,
