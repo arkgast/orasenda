@@ -3,7 +3,10 @@
 use rusqlite::Connection;
 
 /// Every migration, in order. Each later sub-project appends `(N, include_str!(…000N_….sql))`.
-const MIGRATIONS: &[(u32, &str)] = &[(1, include_str!("../migrations/0001_init.sql"))];
+const MIGRATIONS: &[(u32, &str)] = &[
+    (1, include_str!("../migrations/0001_init.sql")),
+    (2, include_str!("../migrations/0002_notify_review.sql")),
+];
 
 const _: () = assert!(
     MIGRATIONS[MIGRATIONS.len() - 1].0 == crate::SCHEMA_VERSION,

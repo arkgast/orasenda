@@ -13,6 +13,7 @@ pub mod active_session;
 pub mod focus_sessions;
 #[cfg(any(test, feature = "test-hooks"))]
 mod hooks;
+pub mod meta;
 mod migrate;
 pub mod settings;
 mod txn;
@@ -27,7 +28,7 @@ use std::path::Path;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// The schema version this build writes, kept only in `PRAGMA user_version` (ADR-012).
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 const META_DEVICE_ID: &str = "device_id";
 const META_HLC_LAST: &str = "hlc_last";
@@ -394,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn fresh_file_reaches_user_version_1_with_wal_and_meta() {
+    fn fresh_file_reaches_v2_without_review_marker() {
         let dir = TempDir::new("fresh");
         let store = Store::open(&dir.db(), DEVICE).expect("opens");
         assert_eq!(store.device_id(), DEVICE);
@@ -405,7 +406,8 @@ mod tests {
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .expect("user_version");
         assert_eq!(version, SCHEMA_VERSION);
-        assert_eq!(version, 1);
+        assert_eq!(version, 2);
+        assert_eq!(meta(&conn, "notify_review"), None);
         let mode: String = conn
             .pragma_query_value(None, "journal_mode", |row| row.get(0))
             .expect("journal_mode");
@@ -493,6 +495,72 @@ mod tests {
             .expect("user_version");
         assert_eq!(version, SCHEMA_VERSION);
         assert_eq!(count(&conn, "SELECT count(*) FROM meta"), 2);
+    }
+
+    fn v1_file(dir: &TempDir) {
+        let conn = raw(&dir.db());
+        conn.execute_batch(include_str!("../migrations/0001_init.sql"))
+            .expect("0001 applies");
+        conn.pragma_update(None, "user_version", 1).expect("v1");
+        conn.execute(
+            "INSERT INTO meta (key, value) VALUES ('device_id', 'device-a')",
+            [],
+        )
+        .expect("device_id");
+    }
+
+    fn user_version(path: &Path) -> u32 {
+        raw(path)
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("user_version")
+    }
+
+    #[test]
+    fn v1_file_with_device_id_gets_review_marker() {
+        let dir = TempDir::new("v1marker");
+        v1_file(&dir);
+        drop(Store::open(&dir.db(), "other").expect("opens"));
+        assert_eq!(user_version(&dir.db()), 2);
+        let conn = raw(&dir.db());
+        assert_eq!(meta(&conn, "notify_review").as_deref(), Some("pending"));
+        assert_eq!(meta(&conn, "device_id").as_deref(), Some("device-a"));
+    }
+
+    #[test]
+    fn meta_get_and_remove_write_no_change_log() {
+        let dir = TempDir::new("metalog");
+        v1_file(&dir);
+        let store = Store::open(&dir.db(), "other").expect("opens");
+        let got = store
+            .read(|txn| meta::get(txn, "notify_review"))
+            .expect("reads");
+        assert_eq!(got.as_deref(), Some("pending"));
+        store
+            .write(1_000, |txn| meta::remove(txn, "notify_review"))
+            .expect("removes");
+        store
+            .write(2_000, |txn| meta::remove(txn, "notify_review"))
+            .expect("removing an absent key is fine");
+        let got = store
+            .read(|txn| meta::get(txn, "notify_review"))
+            .expect("reads");
+        assert_eq!(got, None);
+        drop(store);
+        assert_eq!(count(&raw(&dir.db()), "SELECT count(*) FROM change_log"), 0);
+    }
+
+    #[test]
+    fn v2_reopen_after_review_keeps_no_marker() {
+        let dir = TempDir::new("v2reopen");
+        v1_file(&dir);
+        let store = Store::open(&dir.db(), "other").expect("opens");
+        store
+            .write(1_000, |txn| meta::remove(txn, "notify_review"))
+            .expect("removes");
+        drop(store);
+        drop(Store::open(&dir.db(), "other").expect("reopens"));
+        assert_eq!(user_version(&dir.db()), 2);
+        assert_eq!(meta(&raw(&dir.db()), "notify_review"), None);
     }
 
     #[test]

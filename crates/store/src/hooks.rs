@@ -59,6 +59,32 @@ impl Store {
         self.hooks.fail_reads.store(fail, Ordering::SeqCst);
     }
 
+    /// Test seed: sets a `meta` row (for example `notify_review = pending`).
+    pub fn put_meta_for_tests(&self, key: &str, value: &str) {
+        self.write(0, |txn| {
+            txn.conn().execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+                [key, value],
+            )?;
+            Ok(())
+        })
+        .expect("test meta row is written");
+    }
+
+    /// Test read: the `change_log` entity ids, oldest first.
+    pub fn change_log_ids(&self) -> Vec<String> {
+        self.read(|txn| {
+            let mut stmt = txn
+                .conn()
+                .prepare("SELECT entity_id FROM change_log ORDER BY seq")?;
+            let ids = stmt
+                .query_map([], |row| row.get(0))?
+                .collect::<Result<Vec<String>, _>>()?;
+            Ok(ids)
+        })
+        .expect("change_log reads")
+    }
+
     /// While a gate is set, every `write` parks on it before taking the connection mutex.
     /// Writes that arrive while one is parked queue behind it, each parking in turn. `None`
     /// removes the gate; it waits for a parked write to be released first.
