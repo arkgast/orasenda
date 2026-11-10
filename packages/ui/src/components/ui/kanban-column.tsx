@@ -1,5 +1,4 @@
 import { type ReactElement, type ReactNode, useId } from "react";
-import { cn } from "../../lib/utils";
 import { ModeChip } from "./mode-chip";
 
 export interface KanbanColumnProps {
@@ -24,9 +23,7 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
     <section
       data-slot="kanban-column"
       aria-labelledby={id}
-      className={cn(
-        "flex min-w-0 max-w-column-width flex-1 basis-column-min-width flex-col gap-3 rounded-lg bg-surface-sunken p-3",
-      )}
+      className="flex min-w-0 max-w-column-width flex-1 basis-column-min-width flex-col gap-3 rounded-lg bg-surface-sunken p-3"
     >
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={id} className="m-0 text-heading">

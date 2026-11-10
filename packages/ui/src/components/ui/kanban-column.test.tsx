@@ -17,7 +17,9 @@ test("renders_below_limit_with_word_or_shape", () => {
 
 test("renders_at_limit_with_word_or_shape", () => {
   render(<KanbanColumn title="Today" count={3} limit={3} />);
-  expect(screen.getByText("At limit")).toBeTruthy();
+  const chip = screen.getByText("At limit");
+  expect(chip.getAttribute("data-slot")).toBe("mode-chip");
+  expect(chip.getAttribute("data-mode")).toBe("warning");
 });
 
 test("renders_over_limit_with_word_or_shape", () => {
