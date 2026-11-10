@@ -3272,7 +3272,7 @@ mod tests {
         )
         .expect("saves");
         let events = host.log().take();
-        let at = |f: &dyn Fn(&Event) -> bool| events.iter().position(|e| f(e));
+        let at = |f: &dyn Fn(&Event) -> bool| events.iter().position(f);
         assert_eq!(
             events
                 .iter()
