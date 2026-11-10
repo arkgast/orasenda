@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
+import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
-import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { IconButtonSpecimen } from "./IconButton.tsx";
 import { PopoverMenuSpecimen } from "./PopoverMenu.tsx";
 import { Seed } from "./Seed.tsx";
