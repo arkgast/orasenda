@@ -56,12 +56,9 @@ export declare function Dialog(props: DialogProps): React.ReactElement;
 export interface FullScreenFocusProps extends Omit<TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
 export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
 // end FullScreenFocus
-// Input
+// Field
 export interface FieldProps { label: string; helper?: string; error?: string }
-/** unit adds a suffix ("min") after a number field sized to number-width. */
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, FieldProps { unit?: string }
-export declare function Input(props: InputProps): React.ReactElement;
-// end Input
+// end Field
 // TextArea
 export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement>, FieldProps {}
 export declare function TextArea(props: TextAreaProps): React.ReactElement;
@@ -167,7 +164,7 @@ declare global {
       ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof HabitDots; RoutineItem: typeof RoutineItem;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
-      Input: typeof Input; TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
+      TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
       PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
