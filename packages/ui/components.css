@@ -58,6 +58,15 @@ button { font-family: inherit; }
 .os-timer-task { font-size: 13px; line-height: 18px; color: var(--ink-muted); max-width: 60%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .os-timer-clock { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); font-size: 13px; line-height: 16px; }
 .os-timer-full .os-timer-clock { font-size: 28px; line-height: 32px; }
+/* At two minutes the arc and chip colour fade into amber over duration-slow; the word and shape switch at once. */
+.os-timer-warning .prog { transition: stroke-dashoffset var(--duration-calm) var(--easing-calm), stroke var(--duration-slow) var(--easing-calm); }
+.os-timer-warning .os-chip { transition-duration: var(--duration-slow); }
+/* size="fluid": the box fills its host's slot (square when the slot has no height of its own) and the ring takes the
+   shorter side, clamped to timer-min-size .. timer-full-size. Digits scale with the diameter: timer-md (28) to timer-xl (168). */
+.os-timer-box { container-type: size; display: grid; place-items: center; width: 100%; aspect-ratio: 1; max-height: 100%; min-width: var(--timer-min-size); min-height: var(--timer-min-size); }
+.os-timer-fluid { width: clamp(var(--timer-min-size), min(100cqi, 100cqb), var(--timer-full-size)); }
+.os-timer-fluid .os-timer-digits { font-size: clamp(28px, 23cqi, 168px); }
+@container (min-width: 480px) { .os-timer-fluid .os-timer-clock { font-size: 28px; line-height: 32px; } }
 
 /* MenuBarTimer: compact digits plus a shape; the floating variant adds the task. */
 .os-menubar { display: inline-flex; align-items: center; gap: var(--space-1-5); min-height: var(--hit-floor); padding: 0 var(--space-2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 16px; font-weight: 500; color: var(--ink); background: var(--surface-raised); }
@@ -206,6 +215,16 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-empty p { margin: 0; color: var(--ink-muted); }
 .os-start { display: flex; flex-direction: column; gap: var(--space-3); }
 .os-start p { margin: 0; }
+/* Start carries the play glyph. With compactLabel the StartButton fills its host's width and, below 400px of that
+   content, shows the compact label; the full label stays in the DOM (visually hidden) and in the name. */
+.os-start-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.os-start-glyph { width: var(--icon-lg); height: var(--icon-lg); flex: none; fill: currentColor; }
+.os-start-fit { container-type: inline-size; width: 100%; }
+.os-start-compact { display: none; }
+@container (max-width: 399.98px) {
+  .os-start-fit .os-start-full { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .os-start-fit .os-start-compact { display: inline; }
+}
 
 @media (max-width: 600px) { .os-fullscreen { padding: var(--space-4); } }
 @media (prefers-reduced-motion: reduce) {
@@ -214,6 +233,10 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 }
 @media (forced-colors: active) {
   .os-timer .track { stroke-dasharray: 2 4; }
+  .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
+  .os-strip-bar::before { background: GrayText; }
+  .os-strip-fill { background: CanvasText; }
+  .os-strip-tri { color: CanvasText; }
   .os-chip, .os-pomo, .os-dot-done { border: 1px solid; }
   .os-dot-done::after { content: "✓"; font-size: 11px; }
   /* Keep the checked radio dot and the checkbox fill: forced colors would repaint them as Canvas (#45). */
@@ -252,15 +275,27 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-tip-anchor { display: inline-flex; flex: none; vertical-align: middle; }
 .os-iconbtn-icon { display: inline-flex; }
 
-/* TimerStrip: digits over a horizon bar; the fill end reads by thickness, not colour. */
+/* TimerStrip: chip and digits over a horizon bar; the fill end reads by thickness, not colour. Digits run from
+   timer-md (28) to timer-lg (64) with the strip's width; the task (E's intent line) is clamped to two lines. */
 .os-strip { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-width: 0; container-type: inline-size; }
-.os-strip-digits { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 300; letter-spacing: 0; font-size: clamp(28px, 14cqi, 64px); line-height: 1; color: var(--ink); }
-.os-strip-idle { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 32px; color: var(--ink-muted); }
-.os-strip-bar { position: relative; height: 10px; }
+.os-strip-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.os-strip-head .os-chip { flex: none; }
+.os-strip-digits { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 300; letter-spacing: 0; font-size: clamp(28px, 14cqi, 64px); line-height: 1; color: var(--ink); white-space: nowrap; }
+.os-strip-paused .os-strip-digits { color: var(--ink-muted); }
+.os-strip-length { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 32px; color: var(--ink-muted); white-space: nowrap; }
+.os-strip-bar { position: relative; width: 100%; height: 10px; flex: none; }
 .os-strip-bar::before { content: ""; position: absolute; inset-inline: 0; top: 4px; height: 2px; border-radius: var(--radius-pill); background: var(--line-strong); }
-.os-strip-fill { position: absolute; inset-inline-start: 0; top: 2px; height: 6px; border-radius: var(--radius-pill); background: var(--focus); transition: background-color var(--duration-slow) var(--easing-calm); }
+.os-strip-fill { position: absolute; inset-inline-start: 0; top: 2px; height: 6px; border-radius: var(--radius-pill); background: var(--focus); transition: width var(--duration-calm) var(--easing-calm), background-color var(--duration-slow) var(--easing-calm); }
+.os-strip-break .os-strip-fill { background: var(--break); }
+.os-strip-routine .os-strip-fill { background: var(--routine); }
 .os-strip-paused .os-strip-fill { background: var(--ink-muted); }
 .os-strip-warning .os-strip-fill { background: var(--amber); }
+.os-strip-warning .os-chip { transition-duration: var(--duration-slow); }
+.os-strip-task { font-size: 13px; line-height: 18px; color: var(--ink-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+/* stacked: the narrow form below layout-compact-width; centred, chip beside the digits. */
+.os-strip-stacked { align-items: center; text-align: center; gap: var(--space-1); }
+.os-strip-stacked .os-strip-head { justify-content: center; gap: var(--space-2); }
+.os-strip-stacked .os-strip-digits { font-size: clamp(28px, 10cqi, 64px); }
 .os-strip-tri { position: absolute; top: 0; width: 10px; height: 10px; margin-inline-start: -5px; color: var(--amber); fill: currentColor; }
 
 /* FloatingTimer: its own composition, sized by the floater-* tokens. */

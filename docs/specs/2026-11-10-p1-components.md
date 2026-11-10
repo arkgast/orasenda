@@ -202,6 +202,7 @@ Each gap below is a README or `index.d.ts` change. It is made in the artifact be
 
   The key table: `describeShortcut` in `index.d.ts` and the `Kbd` README's "Shortcut glyphs" section.
 - **T3.** `StartButton` gains `singleKeys?: boolean` (default `true`). `TimerRing` warning: the arc and chip colour transition uses `duration-slow`. `TimerStrip` gains `stacked?: boolean`. `timerLayout` in `index.d.ts` and the README section above.
+  Amended 2026-11-10 (controller ruling, plan planner decision 11; #170): when `singleKeys` is left out, `StartButton` renders no `aria-keyshortcuts`, exactly as today; `true` gives `Space Meta+Enter` and `false` gives `Meta+Enter`. The host passes it only while those keys are live.
 - **T4.** `PopoverMenu`:
   - it anchors to its trigger, which carries `aria-expanded` and `aria-controls` (the menu's `id` is settable);
   - it is a positioned panel, not the popover API ([Engine baseline](#engine-baseline)).
@@ -362,7 +363,7 @@ Updated by the PRs that implement this spec.
 - [x] Plan: [`docs/plans/2026-11-10-p1-components.md`](../plans/2026-11-10-p1-components.md) (seven design-first tasks in series, as cut here)
 - [x] T1 Real-engine harness, bundled fonts and the contrast check
 - [x] T2 The small controls and the key table (VoiceOver: [ ] IconButton [ ] Tooltip [ ] Kbd)
-- [ ] T3 Timer faces and Start (VoiceOver: [ ] TimerRing [ ] TimerStrip [ ] StartButton)
+- [x] T3 Timer faces and Start (VoiceOver: [ ] TimerRing [ ] TimerStrip [ ] StartButton)
 - [ ] T4 The preset popover (VoiceOver: [ ] PopoverMenu)
 - [ ] T5 Focus window and floater (VoiceOver: [ ] FullScreenFocus [ ] FloatingTimer)
 - [ ] T6 Commands, capture and the shortcut recorder (VoiceOver: [ ] CommandPalette [ ] CapturePad [ ] ShortcutRecorder)

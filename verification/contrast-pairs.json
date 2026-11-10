@@ -234,5 +234,47 @@
     "bg": "surface-raised",
     "kind": "mark",
     "where": "T2: IconButton round focus ring"
+  },
+  {
+    "fg": "break",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T3: TimerRing break arc, TimerStrip break fill"
+  },
+  {
+    "fg": "amber",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T3: TimerRing warning arc"
+  },
+  {
+    "fg": "break",
+    "bg": "break-soft",
+    "kind": "text",
+    "where": "T3: Break chip word in TimerRing and TimerStrip"
+  },
+  {
+    "fg": "break",
+    "bg": "break-soft",
+    "kind": "mark",
+    "where": "T3: Break chip half-filled circle"
+  },
+  {
+    "fg": "amber",
+    "bg": "amber-soft",
+    "kind": "mark",
+    "where": "T3: Almost up chip triangle shape"
+  },
+  {
+    "fg": "on-focus",
+    "bg": "focus",
+    "kind": "mark",
+    "where": "T3: StartButton play glyph"
+  },
+  {
+    "fg": "on-focus",
+    "bg": "focus",
+    "kind": "text",
+    "where": "T3: StartButton label"
   }
 ]
