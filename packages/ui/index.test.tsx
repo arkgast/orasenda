@@ -115,17 +115,6 @@ test("index_d_ts_has_no_timer_or_start_next_props", () => {
   expect(dts).not.toContain("declare function timerLayout");
 });
 
-test("empty_state_inline_has_one_line_and_no_action", () => {
-  const text =
-    "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
-  const { container } = render(<ui.EmptyState variant="inline" message={text} />);
-  expect(screen.queryByRole("heading")).toBeNull();
-  expect(screen.queryByRole("button")).toBeNull();
-  const paras = container.querySelectorAll("p");
-  expect(paras).toHaveLength(1);
-  expect(paras[0]).toHaveTextContent(text);
-});
-
 const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";
 
 function errorParagraph(control: HTMLElement): HTMLElement {

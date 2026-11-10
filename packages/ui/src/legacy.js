@@ -218,12 +218,6 @@ function CommandPalette(p) {
     h(Button, { variant: "ghost", onClick: p.onClose }, "Close"));
 }
 // end CommandPalette
-// EmptyState
-function EmptyState(p) {
-  if (p.variant === "inline") return h("p", { className: "os-empty-inline" }, p.message || "Nothing here yet.");
-  return h("div", { className: "os-empty" }, h("h2", null, p.title || "Nothing here yet"), h("p", null, p.message || "That's fine. Start when you're ready."), p.actionLabel && p.onAction ? h(Button, { onClick: p.onAction }, p.actionLabel) : null);
-}
-// end EmptyState
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
 // Key table (Kbd README, Shortcut glyphs). Canonical glyph strings only: modifiers in macOS order
 // (Control, Option, Shift, Command), then exactly one key. Glyphs are written as escapes here.
@@ -502,7 +496,6 @@ export {
   Toast,
   KanbanColumn,
   CommandPalette,
-  EmptyState,
   IconButton,
   Tooltip,
   PopoverMenu,
