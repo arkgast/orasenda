@@ -382,15 +382,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-sessionslot .os-iconbtn { border-radius: var(--radius-pill); }
 /* end SessionSlot (CSS only) */
 
-/* SettingsIndex */
-/* SettingsIndex and SettingsRow */
-.os-sindex { display: flex; flex-direction: column; gap: var(--space-1); width: var(--index-width); flex: none; margin: 0; padding: 0; list-style: none; }
-.os-sindex-item { display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: var(--control-lg); padding: var(--space-1) var(--space-3); border: 0; border-inline-start: 3px solid var(--clear); border-radius: var(--radius-sm); background: var(--clear); color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
-.os-sindex-item:hover { background: var(--surface-sunken); }
-.os-sindex-item[aria-current="location"] { background: var(--selection); border-inline-start-color: var(--focus); }
-.os-sindex-value { display: flex; align-items: center; gap: var(--space-1); font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-/* end SettingsIndex */
-
 /* SettingsRow */
 .os-srow { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-4); border-bottom: 1px solid var(--line); }
 .os-srow-label { margin: 0; font-weight: 600; }
