@@ -115,43 +115,6 @@ test("index_d_ts_has_no_timer_or_start_next_props", () => {
   expect(dts).not.toContain("declare function timerLayout");
 });
 
-test("settings_row_links_helper_and_status_by_describedby", () => {
-  const onAction = vi.fn();
-  const { container, rerender } = render(
-    <ui.SettingsRow
-      label="Notifications"
-      helper="Orasenda only notifies you when a session ends."
-      status="macOS has notifications off for Orasenda."
-      actionLabel="Open System Settings"
-      onAction={onAction}
-    >
-      <input type="checkbox" aria-label="Tell me" />
-    </ui.SettingsRow>,
-  );
-  const group = screen.getByRole("group", { name: "Notifications" });
-  expect(group).toHaveAccessibleDescription(
-    "Orasenda only notifies you when a session ends. macOS has notifications off for Orasenda.",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Open System Settings" }));
-  expect(onAction).toHaveBeenCalledTimes(1);
-
-  rerender(
-    <ui.SettingsRow
-      label="Notifications"
-      helper="Helper only."
-      disabledReason="Read-only until you update Orasenda."
-    >
-      <input type="checkbox" aria-label="Tell me" />
-    </ui.SettingsRow>,
-  );
-  const ids =
-    (container.querySelector("[aria-describedby]") as HTMLElement).getAttribute(
-      "aria-describedby",
-    ) ?? "";
-  for (const id of ids.split(" ")) expect(container.querySelector(`[id="${id}"]`)).not.toBeNull();
-  expect(screen.getByText("Read-only until you update Orasenda.")).toBeVisible();
-});
-
 test("empty_state_inline_has_one_line_and_no_action", () => {
   const text =
     "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
@@ -190,27 +153,6 @@ test("field_error_is_described_not_live", () => {
     expect(err.querySelector(".os-shape")).toBeNull();
     unmount();
   }
-});
-
-test("settings_row_id_fixes_generated_ids", () => {
-  const { container } = render(
-    <ui.SettingsRow
-      id="notif"
-      label="Notifications"
-      helper="Helper."
-      status="Status."
-      disabledReason="Why."
-    >
-      <input type="checkbox" aria-label="Tell me" />
-    </ui.SettingsRow>,
-  );
-  for (const part of ["label", "help", "status", "why"]) {
-    expect(container.querySelector(`[id="notif-${part}"]`)).not.toBeNull();
-  }
-  expect(screen.getByRole("group", { name: "Notifications" })).toHaveAttribute(
-    "aria-describedby",
-    "notif-help notif-status notif-why",
-  );
 });
 
 test("exports_preset_popover", () => {

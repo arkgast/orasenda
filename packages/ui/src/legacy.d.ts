@@ -62,11 +62,6 @@ export interface PopoverMenuItem { id: string; label: string; meta?: string; kin
 export interface PopoverMenuProps { heading: string; description?: string; items: PopoverMenuItem[]; readOnly?: boolean; /** Called with the chosen row's id, then onClose. */ onSelect: (id: string) => void; /** Esc, Tab, a press outside, or after onSelect. The host sets open to false. */ onClose: () => void; /** The id of the role="menu" element, for the trigger's aria-controls; otherwise useId(). The heading and description use <id>-heading and <id>-desc. */ id?: string; /** The trigger, or an element that holds it (an IconButton takes no ref: wrap it in a span with the ref). */ anchor: React.RefObject<HTMLElement | null>; /** true: the heading row shows P as an aria-hidden Kbd, and the host adds P to the trigger's aria-keyshortcuts. Omitted or false: neither. Pass it only while single-key shortcuts are on; the menu never listens for P. */ singleKeys?: boolean }
 export declare function PopoverMenu(props: PopoverMenuProps): React.ReactElement;
 // end PopoverMenu
-// SettingsRow
-/** actionName is the accessible name when it differs from actionLabel; actionVariant defaults to 'quiet'. The row is role="group", labelled by label and described by helper, status and disabledReason. */
-export interface SettingsRowProps { /** Fixes the base of the generated ids (<id>-label, <id>-help, <id>-status, <id>-why); otherwise useId(). */ id?: string; label: string; helper: string; status?: React.ReactNode; actionLabel?: string; actionName?: string; actionVariant?: 'quiet' | 'ghost'; onAction?: () => void; disabledReason?: string; children: React.ReactNode }
-export declare function SettingsRow(props: SettingsRowProps): React.ReactElement;
-// end SettingsRow
 // Shared: window.Orasenda
 declare global {
   interface Window {
@@ -77,7 +72,7 @@ declare global {
       TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
-      ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof SettingsRow;
+      ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;

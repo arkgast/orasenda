@@ -225,18 +225,6 @@ function EmptyState(p) {
 }
 // end EmptyState
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
-// SettingsRow
-function SettingsRow(p) {
-  var generated = R.useId(), id = p.id || generated, described = [id + "-help", p.status ? id + "-status" : "", p.disabledReason ? id + "-why" : ""].filter(Boolean).join(" ");
-  var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "ghost" ? "ghost" : "quiet", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
-  return h("div", { className: "os-srow", role: "group", "aria-labelledby": id + "-label", "aria-describedby": described },
-    h("p", { id: id + "-label", className: "os-srow-label" }, p.label),
-    p.children,
-    h("p", { id: id + "-help", className: "os-srow-help" }, p.helper),
-    p.status || action ? h("div", { className: "os-srow-line" }, p.status ? h("p", { id: id + "-status", className: "os-srow-status" }, p.status) : null, action) : null,
-    p.disabledReason ? h("p", { id: id + "-why", className: "os-srow-status" }, p.disabledReason) : null);
-}
-// end SettingsRow
 // Key table (Kbd README, Shortcut glyphs). Canonical glyph strings only: modifiers in macOS order
 // (Control, Option, Shift, Command), then exactly one key. Glyphs are written as escapes here.
 var KEY_MODIFIERS = [["\u2303", "Control", "Control"], ["\u2325", "Alt", "Option"], ["\u21e7", "Shift", "Shift"], ["\u2318", "Meta", "Command"]];
@@ -515,7 +503,6 @@ export {
   KanbanColumn,
   CommandPalette,
   EmptyState,
-  SettingsRow,
   IconButton,
   Tooltip,
   PopoverMenu,
