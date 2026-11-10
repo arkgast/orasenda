@@ -4,3 +4,5 @@ node_modules/
 target/
 dist/
 apps/orasenda/src-tauri/gen/schemas/
+test-results/
+playwright-report/

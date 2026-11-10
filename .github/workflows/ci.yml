@@ -51,6 +51,11 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          python-version: "3.13"
+
       - name: Install Rust toolchain (rust-toolchain.toml)
         if: steps.scope.outputs.docs_only != 'true'
         run: rustup toolchain install
@@ -96,6 +101,21 @@ jobs:
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
           ./gitleaks version
 
+      - name: Read the Playwright version
+        id: playwright
+        if: steps.scope.outputs.docs_only != 'true'
+        run: echo "version=$(node -p "require('./package.json').devDependencies['@playwright/test']")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          path: ~/Library/Caches/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright WebKit
+        if: steps.scope.outputs.docs_only != 'true'
+        run: pnpm exec playwright install webkit
+
       - name: Run checks
         if: steps.scope.outputs.docs_only != 'true'
         run: ./scripts/ci.sh
@@ -133,6 +153,11 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          python-version: "3.13"
 
       - name: Install Rust toolchain (rust-toolchain.toml)
         if: steps.scope.outputs.docs_only != 'true'

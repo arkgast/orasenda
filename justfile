@@ -84,6 +84,8 @@ ci:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
+    @echo "==> layout (real-engine WebKit checks, macOS only)"
+    "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/bindings.ts
     git diff --exit-code -- apps/orasenda/src/bindings.ts
@@ -91,6 +93,21 @@ ci:
     "{{ just_executable() }}" mobile
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
+
+# Real-engine layout checks with Playwright WebKit. Temporary: runs only the smoke case until the
+# harness lands. Runs only on macOS; other hosts skip.
+[private]
+[script]
+layout:
+    host="$(uname -s)"
+    if [ "$host" != Darwin ]; then
+        echo "layout: skipped on $host; the required macOS ci job runs the WebKit checks"
+        exit 0
+    fi
+    pnpm exec playwright test --config verification/layout/playwright.config.ts smoke.spec.ts || {
+        echo "if the browser is missing, run: pnpm exec playwright install webkit" >&2
+        exit 1
+    }
 
 # Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]
