@@ -74,16 +74,14 @@ is copied here before `baton:backlog`.
     `aria-expanded?: boolean` and `aria-controls?: string` to `IconButtonProps` (passed through to
     the `button`) in its design-first round. T4's README says the host sets them from `open` and
     the menu's `id`, and T4's specimen and test use a host trigger that does.
-11. **`StartButton`'s `singleKeys` default needs a ruling (asked before `baton:backlog`).** The
-    spec defaults `singleKeys` to `true`. `Today.tsx:269-274` passes no `singleKeys`, so after T3
-    the app's Start button would carry `aria-keyshortcuts="Space Meta+Enter"`, and VoiceOver would
-    announce two shortcuts the app doesn't implement until C or F. That breaks Goal 6 ("render as
-    before") and the "host passes only what is live" invariant. Recommended: `singleKeys`
-    defaults to `undefined`, and with it omitted the button has no `aria-keyshortcuts` (as
-    today); `true` gives `Space Meta+Enter`, `false` gives `Meta+Enter`. The alternative is to
-    keep the spec's default and record the gap under the T3 PR's "Not yet verified". Either way
+11. **`StartButton`'s `singleKeys` default.** **Ruled (controller, 2026-11-10): when `singleKeys`
+    is left out, StartButton renders no `aria-keyshortcuts`, exactly as today.** A control must
+    never advertise shortcuts that don't work; single-key shortcuts and their off switch ship
+    together in F (WCAG 2.1.4). The T3 PR adds the matching amendment line to the spec. The spec's
+    default of `true` would make `Today.tsx:269-274` (which passes no `singleKeys`) announce
+    `Space Meta+Enter`, which breaks Goal 6 and the "host passes only what is live" invariant.
     T3 has the test `start_button_without_single_keys_prop_matches_current_output`, asserting
-    the ruled behaviour, and the ruling is copied into the spec as an amendment line in the T3 PR.
+    the ruled behaviour.
 
 ## Overview
 The spec's seven tasks are kept as cut, in series. Each one is **design-first** and
@@ -571,13 +569,13 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
       `FullScreenFocus` passes it in strip layout (T5). Clamped to two lines, whole in the
       accessible name.
     - `StartButtonProps` gains `unavailable?: boolean`, `compactLabel?: string`,
-      `singleKeys?: boolean` (default per planner decision 11's ruling); `finishTime` and
+      `singleKeys?: boolean` (when omitted, no `aria-keyshortcuts`, per planner decision 11's ruling); `finishTime` and
       `disabled` stay, marked `@deprecated`
 - Acceptance:
   - [ ] **Design-first, in order:** the artifact implements the fluid ring, the `duration-slow`
     warning fade, `TimerStrip` with `stacked` and `task`, `timerLayout` with its "Choosing the
     layout" README section, and the `StartButton` redesign with `singleKeys` per the ruling
-    (planner decision 11). The README's "Choosing the layout" table gives, per row,
+    (planner decision 11: default, no `aria-keyshortcuts`). The README's "Choosing the layout" table gives, per row,
     `contentWidth`, `contentHeight`, `windowWidth` and the expected result, for both Today (boxes
     from the a-timer canvas) and the Focus window (window minus `space-8`, or `space-4` where the
     spec says so). The orchestrator's compatibility check passed before the republish, with its
@@ -597,9 +595,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     the `task` slot, in `focus`, `paused`, `idle`, `break` and `warning`.
   - [ ] `StartButton` at 399px of content shows "Start" and at 400px "Start focus"; its name is
     "Start focus" in both; `aria-keyshortcuts` is `Space Meta+Enter` with `singleKeys` true and
-    `Meta+Enter` with it false; with the prop omitted (as `Today.tsx` passes it) the output is
-    the ruled one (planner decision 11), and an unaccepted gap is listed under "Not yet
-    verified"; the play glyph is `aria-hidden`; `unavailable` keeps it focusable and
+    `Meta+Enter` with it false; with the prop omitted (as `Today.tsx` passes it) the button has
+    no `aria-keyshortcuts` (planner decision 11's ruling); the play glyph is `aria-hidden`; `unavailable` keeps it focusable and
     names why through the host's status line (README).
   - [ ] **Compatibility:** with Today's props, `TimerRing` renders its numeric size as before and
     `StartButton` with `finishTime` still renders "Realistic finish · <time>";
