@@ -13,6 +13,7 @@ test("renders_neutral_with_word_or_shape", () => {
 test("renders_warning_with_word_or_shape", () => {
   const { container } = render(<Toast tone="warning">Two minutes left.</Toast>);
   expect(screen.getByRole("status")).toHaveTextContent("Two minutes left.");
+  expect(container.querySelector("[data-slot='inline-notice'][data-tone='warning']")).not.toBeNull();
   expect(container.querySelector("path[d^='M5 0.5']")).not.toBeNull();
 });
 
