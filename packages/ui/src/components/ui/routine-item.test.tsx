@@ -49,6 +49,18 @@ test("controlled_host_owns_completion", () => {
 test("disabled_does_not_toggle", () => {
   const onChange = vi.fn();
   render(<RoutineItem label="Stretch" done={false} onChange={onChange} disabled />);
-  fireEvent.click(screen.getByRole("checkbox"));
+  const box = screen.getByRole("checkbox");
+  expect(box.hasAttribute("disabled")).toBe(true);
+  fireEvent.click(box);
   expect(onChange).not.toHaveBeenCalled();
+});
+
+test("enter_does_not_toggle_and_box_is_focusable", () => {
+  render(<RoutineItem label="Stretch" />);
+  const box = screen.getByRole("checkbox");
+  box.focus();
+  expect(document.activeElement).toBe(box);
+  expect(box.getAttribute("tabindex")).not.toBe("-1");
+  fireEvent.keyDown(box, { key: "Enter" });
+  expect(box.getAttribute("aria-checked")).toBe("false");
 });
