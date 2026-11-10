@@ -23,6 +23,7 @@ The Notifications row, by status and preference (index value in brackets). The *
 ## Props and accessibility
 
 - `label`, `helper` (always visible), optional `status` (the row's own line), optional action: `actionLabel` and `onAction`, with `actionName` for an accessible name that differs from the visible text, and `actionVariant` (`'quiet'` by default, or `'ghost'`). `disabledReason` is a visible line saying why the control is disabled.
+- `id` fixes the base of the generated ids (`<id>-label`, `<id>-help`, `<id>-status`, `<id>-why`) so a control inside the row can be `aria-describedby` its helper and status line.
 - The row is `role="group"` named by its label and described (`aria-describedby`) by the helper, the status line and the disabled reason. The action sits beside the status line, outside it, so the description stays the words.
 
 Do: say a problem beside the field that caused it. Don't: move or hide the control while a save is pending.

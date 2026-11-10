@@ -352,3 +352,34 @@ test("scroll_region_remeasures_when_content_grows", async () => {
     if (ch) Object.defineProperty(HTMLElement.prototype, "clientHeight", ch);
   }
 });
+
+test("settings_row_id_fixes_generated_ids", () => {
+  const { container } = render(
+    <ui.SettingsRow id="notif" label="Notifications" helper="Helper." status="Status.">
+      <input type="checkbox" aria-label="Tell me" />
+    </ui.SettingsRow>,
+  );
+  for (const part of ["label", "help", "status"]) {
+    expect(container.querySelector(`[id="notif-${part}"]`)).not.toBeNull();
+  }
+  expect(screen.getByRole("group", { name: "Notifications" })).toHaveAttribute(
+    "aria-describedby",
+    "notif-help notif-status",
+  );
+});
+
+test("inline_notice_row_action_variant_defaults_ghost_and_accepts_quiet", () => {
+  const { rerender } = render(
+    <ui.InlineNotice variant="row" actionLabel="Show" onAction={() => {}}>
+      Saved.
+    </ui.InlineNotice>,
+  );
+  const ghost = screen.getByRole("button", { name: "Show" }).className;
+  rerender(
+    <ui.InlineNotice variant="row" actionVariant="quiet" actionLabel="Show" onAction={() => {}}>
+      Saved.
+    </ui.InlineNotice>,
+  );
+  expect(screen.getByRole("button", { name: "Show" }).className).not.toBe(ghost);
+  expect(ghost).toContain("ghost");
+});

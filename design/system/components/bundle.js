@@ -217,7 +217,7 @@
   function StatusRow(p) {
     var tone = p.tone === "attention" || p.tone === "warning" || p.tone === "rest" ? p.tone : "neutral";
     var glyph = tone === "attention" ? h(AlertGlyph) : tone === "warning" ? h(Shape, { mode: "warning" }) : null;
-    var action = p.actionLabel && p.onAction ? h(Button, { variant: "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
+    var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "quiet" ? "quiet" : "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
     return h("div", { className: cx("os-statusrow", tone === "warning" && "os-statusrow-warning") },
       h("p", { className: cx("os-statusrow-msg", tone === "rest" && "os-statusrow-rest"), role: "status", "aria-live": "polite" }, glyph, p.children), action);
   }
@@ -326,7 +326,7 @@
     })));
   }
   function SettingsRow(p) {
-    var id = R.useId(), described = [id + "-help", p.status ? id + "-status" : "", p.disabledReason ? id + "-why" : ""].filter(Boolean).join(" ");
+    var generated = R.useId(), id = p.id || generated, described = [id + "-help", p.status ? id + "-status" : "", p.disabledReason ? id + "-why" : ""].filter(Boolean).join(" ");
     var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "ghost" ? "ghost" : "quiet", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
     return h("div", { className: "os-srow", role: "group", "aria-labelledby": id + "-label", "aria-describedby": described },
       h("p", { id: id + "-label", className: "os-srow-label" }, p.label),

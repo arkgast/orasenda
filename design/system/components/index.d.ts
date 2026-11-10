@@ -44,7 +44,7 @@ export type InterruptionKind = 'internal' | 'external';
 export interface CapturePadProps { open?: boolean; value: string; kind: InterruptionKind; onChange: (value: string) => void; onKindChange: (kind: InterruptionKind) => void; onSave: (note: { text: string; kind: InterruptionKind }) => void | Promise<void>; onClose: () => void }
 export declare function CapturePad(props: CapturePadProps): React.ReactElement;
 /** variant 'row' is the reserved 44px status row; tone 'attention' (alert glyph) and 'rest' (ink-muted, no glyph) are for that row only. actionName is the accessible name when it differs from the visible actionLabel (e.g. "Try again saving break minutes"). */
-export type InlineNoticeProps = { children: React.ReactNode; actionLabel?: string; actionName?: string; onAction?: () => void } & ({ variant?: 'default'; tone?: 'neutral' | 'warning' } | { variant: 'row'; tone?: 'neutral' | 'attention' | 'rest' | 'warning' })
+export type InlineNoticeProps = { children: React.ReactNode; actionLabel?: string; actionName?: string; onAction?: () => void } & ({ variant?: 'default'; tone?: 'neutral' | 'warning' } | { variant: 'row'; tone?: 'neutral' | 'attention' | 'rest' | 'warning'; /** Defaults to 'ghost'. */ actionVariant?: 'quiet' | 'ghost' })
 export declare function InlineNotice(props: InlineNoticeProps): React.ReactElement;
 export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
 export declare function Toast(props: ToastProps): React.ReactElement;
@@ -104,7 +104,7 @@ export interface SessionSlotProps extends Omit<MenuBarTimerProps, 'compact'> { o
 export interface SettingsIndexSection { id: string; name: string; value: string; problem?: { text: string; alert?: boolean } }
 export interface SettingsIndexProps { sections: SettingsIndexSection[]; current: string; onJump: (id: string) => void }
 /** actionName is the accessible name when it differs from actionLabel; actionVariant defaults to 'quiet'. The row is role="group", labelled by label and described by helper, status and disabledReason. */
-export interface SettingsRowProps { label: string; helper: string; status?: React.ReactNode; actionLabel?: string; actionName?: string; actionVariant?: 'quiet' | 'ghost'; onAction?: () => void; disabledReason?: string; children: React.ReactNode }
+export interface SettingsRowProps { /** Fixes the base of the generated ids (<id>-label, <id>-help, <id>-status, <id>-why); otherwise useId(). */ id?: string; label: string; helper: string; status?: React.ReactNode; actionLabel?: string; actionName?: string; actionVariant?: 'quiet' | 'ghost'; onAction?: () => void; disabledReason?: string; children: React.ReactNode }
 export declare function SettingsIndex(props: SettingsIndexProps): React.ReactElement;
 export declare function SettingsRow(props: SettingsRowProps): React.ReactElement;
 export interface ShortcutRecorderProps { label: string; keys?: string; spokenKeys?: string; recording?: boolean; conflict?: string; onRecord: (keys: string | null) => void; onRestoreDefault?: () => void }

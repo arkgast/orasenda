@@ -10,7 +10,7 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 - **Anatomy:** a fixed 44px row with no box; an optional `ModeChip` (stacked strip only) and one ghost or quiet action as siblings. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. The row is never the live region, so chip changes are never announced.
 - **Text:** `body-sm` `ink`, at most two lines; it never grows and never truncates. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
 - **Tones:** `neutral` (no glyph), `attention` (the alert glyph in `ink`), `warning` (the amber triangle, time only).
-- **Actions:** names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
+- **Actions:** `actionVariant` is `'ghost'` by default, or `'quiet'`; names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
 - **Focus:** at a session end the line is announced first, then focus moves to Start focus, with the action one Shift-Tab away.
 
 ### Priority
@@ -45,7 +45,7 @@ A refused start shows here, on the same screen as Start. Focus stays on Start; t
 
 | Event | Beside the field | Save line |
 | --- | --- | --- |
-| At rest | helper only | "Changes save as you make them." (neutral, `ink-muted`) |
+| At rest | helper only | "Changes save as you make them." (`rest`) |
 | Field saved | none | "Saved. Custom focus is now 50 minutes." |
 | Invalid value | `Input` error: alert glyph + "Between 5 and 180 minutes. Still using 45." (Break: "Between 1 and 60 minutes. Still using 10."); typed value kept, `aria-invalid` | "Focus minutes weren't saved. Still using 45." + ghost "Show" (moves focus to the field) |
 | Write failed | "Orasenda can't write its data file." | "Break minutes weren't saved. Back to 10." + "Try again" (name "Try again saving break minutes") |
