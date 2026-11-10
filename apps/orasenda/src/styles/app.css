@@ -165,8 +165,7 @@ body {
 
 .settings-body {
   display: grid;
-  grid-template-columns: var(--index-width) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: var(--index-width) auto;
   gap: var(--space-4);
   min-block-size: 0;
 }
