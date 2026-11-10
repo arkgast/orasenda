@@ -35,13 +35,13 @@ export function StartButton(props: StartButtonProps): JSX.Element {
     "Starting…"
   ) : props.compactLabel ? (
     <>
-      <span data-slot="start-button-full" className="[@container(max-width:399.98px)]:sr-only">
+      <span data-slot="start-button-full" className="@max-start-compact:sr-only">
         Start focus
       </span>
       <span
         data-slot="start-button-compact"
         aria-hidden="true"
-        className="hidden [@container(max-width:399.98px)]:inline"
+        className="hidden @max-start-compact:inline"
       >
         {props.compactLabel}
       </span>
