@@ -1,6 +1,6 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import type { FocusEvent, JSX, ReactElement } from "react";
-import { cloneElement, useCallback, useEffect, useRef, useState } from "react";
+import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from "react";
 import { layerContainer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Kbd } from "./kbd";
