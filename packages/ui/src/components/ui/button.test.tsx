@@ -14,7 +14,9 @@ test("renders_quiet_by_default_and_each_variant_by_data_attribute", () => {
   expect(screen.getByRole("button").getAttribute("data-variant")).toBe("quiet");
   for (const variant of ["primary", "break", "quiet", "ghost", "critical"] as const) {
     rerender(<Button variant={variant}>Label</Button>);
-    expect(screen.getByRole("button", { name: "Label" }).getAttribute("data-variant")).toBe(variant);
+    expect(screen.getByRole("button", { name: "Label" }).getAttribute("data-variant")).toBe(
+      variant,
+    );
   }
 });
 

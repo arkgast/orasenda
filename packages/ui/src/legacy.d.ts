@@ -3,10 +3,6 @@ import type * as React from 'react';
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
-// Button
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { variant?: 'primary' | 'break' | 'quiet' | 'ghost' | 'critical'; size?: 'md' | 'lg'; loading?: boolean }
-export declare function Button(props: ButtonProps): React.ReactElement;
-// end Button
 // ModeChip
 export interface ModeChipProps { mode?: Mode; children?: React.ReactNode }
 export declare function ModeChip(props: ModeChipProps): React.ReactElement;
@@ -168,7 +164,7 @@ export declare function SettingsRow(props: SettingsRowProps): React.ReactElement
 declare global {
   interface Window {
     Orasenda: {
-      Button: typeof Button; ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
+      ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof HabitDots; RoutineItem: typeof RoutineItem;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       Input: typeof Input; TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;

@@ -302,7 +302,7 @@ test("overlay_listen_failure_renders_return_button", async () => {
   expect(screen.getByText("The overlay could not connect.")).toBeInTheDocument();
   const back = screen.getByRole("button", { name: "Back to focus" });
   expect(screen.getAllByRole("button")).toHaveLength(1);
-  expect(back).toHaveClass("os-btn");
+  expect(back).toHaveAttribute("data-slot", "button");
   expect(back).toHaveFocus();
   expect(argsOf(calls, "spike_overlay_ready")).toHaveLength(0);
   expect(error).toHaveBeenCalled();
