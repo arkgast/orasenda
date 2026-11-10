@@ -52,17 +52,29 @@ test("row_neutral_has_no_shape", () => {
 });
 
 test("renders_row_attention_with_word_or_shape", () => {
-  render(<InlineNotice variant="row" tone="attention">Focus didn't start.</InlineNotice>);
+  render(
+    <InlineNotice variant="row" tone="attention">
+      Focus didn't start.
+    </InlineNotice>,
+  );
   expect(screen.getByRole("status").querySelector("svg circle[r='5.75']")).not.toBeNull();
 });
 
 test("renders_row_warning_with_word_or_shape", () => {
-  render(<InlineNotice variant="row" tone="warning">Two minutes left.</InlineNotice>);
+  render(
+    <InlineNotice variant="row" tone="warning">
+      Two minutes left.
+    </InlineNotice>,
+  );
   expect(screen.getByRole("status").querySelector("path[d^='M5 0.5']")).not.toBeNull();
 });
 
 test("row_rest_is_muted_without_glyph", () => {
-  render(<InlineNotice variant="row" tone="rest">Changes save as you make them.</InlineNotice>);
+  render(
+    <InlineNotice variant="row" tone="rest">
+      Changes save as you make them.
+    </InlineNotice>,
+  );
   const status = screen.getByRole("status");
   expect(status.querySelector("svg")).toBeNull();
   expect(status.className).toContain("text-ink-muted");
@@ -86,4 +98,35 @@ test("row_action_defaults_to_ghost_and_can_be_quiet", () => {
     </InlineNotice>,
   );
   expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe("quiet");
+});
+
+test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
+  const onAction = vi.fn();
+  const { container, rerender } = render(<InlineNotice variant="row">{""}</InlineNotice>);
+  const live = screen.getByRole("status");
+  expect(live.tagName).toBe("P");
+  expect(live).toHaveAttribute("aria-live", "polite");
+  expect(live).toBeEmptyDOMElement();
+  expect(container.querySelectorAll("[role=status]")).toHaveLength(1);
+
+  rerender(<InlineNotice variant="row">Saved. Custom focus is now 50 minutes.</InlineNotice>);
+  expect(screen.getByRole("status")).toBe(live);
+  expect(live).toHaveTextContent("Saved. Custom focus is now 50 minutes.");
+  expect((container.firstElementChild as HTMLElement).getAttribute("role")).toBeNull();
+
+  rerender(
+    <InlineNotice
+      variant="row"
+      tone="attention"
+      actionLabel="Try again"
+      actionName="Try again saving"
+      onAction={onAction}
+    >
+      Theme wasn't saved. Back to Match system.
+    </InlineNotice>,
+  );
+  expect(live.querySelector("svg[aria-hidden=true]")).not.toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Try again saving" }));
+  expect(onAction).toHaveBeenCalledTimes(1);
+  expect(live.contains(screen.getByRole("button"))).toBe(false);
 });

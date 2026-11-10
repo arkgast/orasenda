@@ -543,7 +543,6 @@ export {
   FullScreenFocus,
   TextArea,
   CapturePad,
-  InlineNotice,
   Toast,
   KanbanColumn,
   CommandPalette,
