@@ -26,6 +26,8 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Notify review | The one-time check on a database created before the Settings spec: the preference stays on only if macOS already reports `granted`. Marked by the device-only `meta.notify_review` row. | A schema migration (the marker is written by one; the review itself needs the OS status) |
 | Save line | The Settings page's reserved status row (`InlineNotice variant="row"`): at rest "Changes save as you make them.", otherwise the answer to the last save or the standing store line. | A toast (Orasenda has none for saves) |
 | Theme override | `ui.theme` set to Light or Dark: Rust sets the app appearance and the webview sets `data-theme` on `<html>`. *Match system* removes both. | The system appearance |
+| Specimen | A page in `packages/ui/specimens/` that renders every state of one design-system component in fixed frames, in both themes; the WebKit layout harness, the VoiceOver pass and PR screenshots read it. | A design-system preview (`design/system/components/<Name>/preview.html`, the artifact's own page) |
+| First-consumer check | Checking a design-system change against the screen that will use it: its spec's accessibility acceptance, or, before that spec exists, its approved canvas and README slot tables, plus a component test and a specimen. | The component's own README review |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
