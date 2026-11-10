@@ -34,11 +34,7 @@ const TINT = {
 /** A shape and a word for a mode. A label, never a control. */
 export function ModeChip({ mode = "focus", children }: ModeChipProps): ReactElement {
   return (
-    <span
-      data-slot="mode-chip"
-      data-mode={mode}
-      className={`${BASE} ${TINT[mode]}`}
-    >
+    <span data-slot="mode-chip" data-mode={mode} className={`${BASE} ${TINT[mode]}`}>
       <ModeShape mode={mode} />
       {children || WORD[mode]}
     </span>
