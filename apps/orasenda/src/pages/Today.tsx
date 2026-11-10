@@ -104,6 +104,8 @@ export function Today() {
       accepted: () => setRangeHelp(NO_RANGE_HELP),
       refused: (custom) => setRangeHelp(rangeHelpFor(custom)),
       loadFailed: () => setSettingsFailed(true),
+      // Today rolls back silently; the write is already logged (spec A).
+      saveFailed: () => {},
     });
     load();
     return unregister;

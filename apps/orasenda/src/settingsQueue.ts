@@ -1,5 +1,6 @@
 import type { CustomSpec, Settings } from "./bindings";
-import { commands } from "./bindings";
+import { commands, events } from "./bindings";
+import { subscribe } from "./subscribe";
 
 // The settings save chain (docs/conventions.md, "Newest wins"; #101, #113).
 // `intended` is the latest value the user asked for, set synchronously, so a change made while a
@@ -76,6 +77,11 @@ export type SettingsListener = {
   refused: (custom: CustomSpec) => void;
   /** settings_get failed and there is nothing to show. */
   loadFailed: () => void;
+  /**
+   * A save failed and Rust still holds `restored`; called just before the page is rolled back to
+   * it. A promise rejection reports as `write`.
+   */
+  saveFailed: (sent: Settings, restored: Settings, kind: "write" | "unavailable") => void;
 };
 
 let listener: SettingsListener | null = null;
@@ -87,12 +93,34 @@ let getWanted = false;
 let getSentUnder: { intent: Settings | null } | null = null;
 // Bumped by the test reset: a reply from an earlier generation is dropped.
 let generation = 0;
+// The one `settings-changed` subscription, made on first use (not at import, before any IPC
+// exists) and kept for the module's life; `watchers` share it.
+let stopChanged: (() => void) | null = null;
+const watchers = new Set<(settings: Settings) => void>();
+
+function ensureSubscribed(): void {
+  if (stopChanged) return;
+  stopChanged = subscribe("settings-changed", events.settingsChanged.listen, (settings) => {
+    for (const watcher of watchers) watcher(settings);
+    load();
+  });
+}
+
+/** Calls `watcher` on each `settings-changed`, through the queue's single listener. */
+export function watchSettingsChanged(watcher: (settings: Settings) => void): () => void {
+  ensureSubscribed();
+  watchers.add(watcher);
+  return () => {
+    watchers.delete(watcher);
+  };
+}
 
 /**
  * Makes `next` the live listener and shows it the current intent, if there is one. The returned
  * cleanup empties the slot only if `next` still holds it.
  */
 export function register(next: SettingsListener): () => void {
+  ensureSubscribed();
   listener = next;
   if (intended) next.shown(intended, true);
   return () => {
@@ -110,6 +138,7 @@ export function latest(): Settings | null {
  * change since, is a no-op.
  */
 export function load(): void {
+  ensureSubscribed();
   if (getSentUnder && getSentUnder.intent === intended) return;
   getWanted = true;
   pump();
@@ -125,6 +154,9 @@ export function save(next: Settings): void {
 /** Empties all state and drops replies still in flight (Vitest shares this module within a file). */
 export function resetSettingsQueueForTests(): void {
   generation += 1;
+  stopChanged?.();
+  stopChanged = null;
+  watchers.clear();
   listener = null;
   intended = null;
   accepted = null;
@@ -153,9 +185,10 @@ function pump(): void {
 function sendSave(next: Settings): void {
   busy = true;
   const mine = generation;
-  const failed = (error: unknown) => {
+  const failed = (error: unknown, kind: "write" | "unavailable" = "write") => {
     if (mine !== generation) return;
     console.error("settings_set failed", error);
+    if (accepted) listener?.saveFailed(next, accepted, kind);
     rollBack();
   };
   commands
@@ -173,9 +206,9 @@ function sendSave(next: Settings): void {
         intended = { ...current, custom: accepted.custom };
         listener?.refused(next.custom);
       } else {
-        failed(result.error);
+        failed(result.error, result.error.kind === "unavailable" ? "unavailable" : "write");
       }
-    }, failed)
+    }, (error: unknown) => failed(error))
     .finally(() => {
       if (mine !== generation) return;
       busy = false;
