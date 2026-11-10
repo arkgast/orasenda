@@ -355,16 +355,22 @@ test("scroll_region_remeasures_when_content_grows", async () => {
 
 test("settings_row_id_fixes_generated_ids", () => {
   const { container } = render(
-    <ui.SettingsRow id="notif" label="Notifications" helper="Helper." status="Status.">
+    <ui.SettingsRow
+      id="notif"
+      label="Notifications"
+      helper="Helper."
+      status="Status."
+      disabledReason="Why."
+    >
       <input type="checkbox" aria-label="Tell me" />
     </ui.SettingsRow>,
   );
-  for (const part of ["label", "help", "status"]) {
+  for (const part of ["label", "help", "status", "why"]) {
     expect(container.querySelector(`[id="notif-${part}"]`)).not.toBeNull();
   }
   expect(screen.getByRole("group", { name: "Notifications" })).toHaveAttribute(
     "aria-describedby",
-    "notif-help notif-status",
+    "notif-help notif-status notif-why",
   );
 });
 
@@ -382,4 +388,7 @@ test("inline_notice_row_action_variant_defaults_ghost_and_accepts_quiet", () => 
   );
   expect(screen.getByRole("button", { name: "Show" }).className).not.toBe(ghost);
   expect(ghost).toContain("ghost");
+  const quiet = screen.getByRole("button", { name: "Show" }).className;
+  expect(quiet).toContain("quiet");
+  expect(quiet).not.toContain("ghost");
 });
