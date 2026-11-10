@@ -67,7 +67,7 @@
     return h("div", { className: cx("os-strip", "os-strip-" + mode, p.stacked && "os-strip-stacked"), role: "timer", "aria-live": "off", "aria-label": stripLabel(p, mode) },
       h("div", { className: "os-strip-head", "aria-hidden": "true" },
         h(ModeChip, { mode: mode }),
-        mode === "idle" ? (p.idleLength ? h("span", { className: "os-strip-idle" }, p.idleLength) : null) : h("span", { className: "os-strip-digits" }, p.remaining || "25:00")),
+        mode === "idle" ? (p.idleLength ? h("span", { className: "os-strip-length" }, p.idleLength) : null) : h("span", { className: "os-strip-digits" }, p.remaining || "25:00")),
       mode !== "idle" ? h("div", { className: "os-strip-bar", "aria-hidden": "true" },
         h("span", { className: "os-strip-fill", style: { width: left } }),
         mode === "warning" ? h("svg", { className: "os-strip-tri", viewBox: "0 0 10 10", "aria-hidden": "true", focusable: "false", style: { insetInlineStart: left } }, h("path", { d: "M5 0.5 9.6 9.5H0.4z" })) : null) : null,

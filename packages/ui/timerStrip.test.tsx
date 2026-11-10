@@ -27,7 +27,7 @@ test("timer_strip_stacked_form", () => {
 
 test("timer_strip_idle_shows_idle_length", () => {
   const { container, rerender } = render(<TimerStrip mode="idle" idleLength="25 min" />);
-  expect(container.querySelector("span.os-strip-idle")?.textContent).toBe("25 min");
+  expect(container.querySelector("span.os-strip-length")?.textContent).toBe("25 min");
   expect(container.querySelector(".os-strip-digits")).toBeNull();
   expect(container.querySelector(".os-strip-bar")).toBeNull();
   expect(screen.getByRole("timer").getAttribute("aria-label")).toBe("No session, 25 min");

@@ -81,7 +81,7 @@ test("timer_strip_aria_snapshot", async ({ page }) => {
     ["warning", `Almost up, 1 minute 48 seconds remaining, ${t}`],
   ];
   for (const [mode, name] of cases) {
-    for (const state of [`timer-strip-640-${mode}`, `timer-strip-stacked-360-${mode}`]) {
+    for (const state of [`timer-strip-360-${mode}`, `timer-strip-stacked-360-${mode}`]) {
       await expect(page.locator(`[data-state="${state}"]`)).toMatchAriaSnapshot(`
         - timer "${name}"
       `);
