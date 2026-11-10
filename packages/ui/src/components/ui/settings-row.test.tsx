@@ -39,7 +39,6 @@ test("settings_row_links_helper_and_status_by_describedby", () => {
   expect(screen.getByText("Read-only until you update Orasenda.")).toBeVisible();
 });
 
-
 test("settings_row_id_fixes_generated_ids", () => {
   const { container } = render(
     <SettingsRow
@@ -61,10 +60,16 @@ test("settings_row_id_fixes_generated_ids", () => {
   );
 });
 
-
 test("renders_ghost_action_variant_with_word", () => {
   render(
-    <SettingsRow label="L" helper="H" status="S" actionLabel="Show" onAction={() => {}} actionVariant="ghost">
+    <SettingsRow
+      label="L"
+      helper="H"
+      status="S"
+      actionLabel="Show"
+      onAction={() => {}}
+      actionVariant="ghost"
+    >
       <input type="checkbox" aria-label="Tell me" />
     </SettingsRow>,
   );
@@ -86,6 +91,9 @@ test("exposes_group_with_name", () => {
       <input aria-label="Minutes" />
     </SettingsRow>,
   );
-  expect(screen.getByRole("group", { name: "Length" })).toHaveAttribute("data-slot", "settings-row");
+  expect(screen.getByRole("group", { name: "Length" })).toHaveAttribute(
+    "data-slot",
+    "settings-row",
+  );
   expect(screen.getByRole("button", { name: "Go now" })).toBeInTheDocument();
 });

@@ -277,17 +277,12 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-sessionslot .os-iconbtn { border-radius: var(--radius-pill); }
 /* end SessionSlot (CSS only) */
 
-/* SettingsRow */
-.os-srow { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-4); border-bottom: 1px solid var(--line); }
-.os-srow-label { margin: 0; font-weight: 600; }
-.os-srow-help, .os-srow-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-srow-status { color: var(--ink); }
+/* Settings helpers: os-unit and os-empty-inline (still used by Settings and legacy EmptyState) */
 .os-unit { display: flex; align-items: center; gap: var(--space-2); }
 .os-unit .os-input { width: var(--number-width); }
 .os-unit > span { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-srow-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .os-empty-inline { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-/* end SettingsRow */
+/* end Settings helpers */
 
 /* ShortcutRecorder (CSS only) */
 /* ShortcutRecorder: a field-like button. */
