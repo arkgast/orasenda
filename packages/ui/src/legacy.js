@@ -108,21 +108,6 @@ function TaskCard(p) {
     p.project ? h("span", { className: "os-card-meta" }, p.project) : null);
 }
 // end TaskCard
-var BLOCK_LABEL = { deep: "Deep", shallow: "Shallow", break: "Break", routine: "Routine", personal: "Personal", overflow: "Overflow" };
-var BLOCK_SHAPE = { deep: "focus", shallow: "shallow", break: "break", routine: "routine", personal: "routine", overflow: "overflow" };
-// TimeBlock
-function TimeBlock(p) {
-  var type = p.type || "deep", title = p.title || BLOCK_LABEL[type];
-  var numericHeight = typeof p.height === "number" ? p.height : /^\d+(\.\d+)?px$/.test(p.height || "") ? parseFloat(p.height) : null;
-  var compact = p.compact == null ? numericHeight != null && numericHeight < 60 : p.compact;
-  return h(p.onSelect ? "button" : "div", { type: p.onSelect ? "button" : undefined, onClick: p.onSelect, disabled: p.onSelect ? p.disabled : undefined,
-    className: cx("os-block", "os-block-" + type, p.now && "os-block-now", compact && "os-block-compact", p.selected && "os-block-selected"),
-    style: p.height != null ? { height: numericHeight != null ? Math.max(24, numericHeight) : p.height } : null,
-    "aria-label": (p.now ? "Now, " : "") + title + ", " + BLOCK_LABEL[type] + ", " + (p.start || "") + " to " + (p.end || "") + (p.selected ? ", Selected" : "") },
-    h("span", { className: "os-block-title" }, h(Shape, { mode: BLOCK_SHAPE[type] }), h("span", null, (p.now ? "Now · " : "") + title)),
-    h("span", { className: "os-block-time" }, (compact ? "" : BLOCK_LABEL[type] + " · ") + (p.start || "") + (compact ? "" : "–" + (p.end || "")) + (p.selected ? " · Selected" : "")));
-}
-// end TimeBlock
 // Native modal dialogs supply inert background and focus containment. Keep one open at a time.
 function Modal(p) {
   var ref = R.useRef(null), titleId = R.useId(), bodyId = R.useId(), open = p.open !== false;
@@ -597,7 +582,6 @@ export {
   TimerRing,
   TimerStrip,
   TaskCard,
-  TimeBlock,
   IntentPrompt,
   Dialog,
   FullScreenFocus,
