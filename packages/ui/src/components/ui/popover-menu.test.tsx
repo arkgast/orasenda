@@ -1,7 +1,11 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { describeShortcut, IconButton, PopoverMenu } from "./src/index.ts";
+import { describeShortcut } from "../../lib/shortcuts";
+import { IconButton } from "../../legacy.js";
+import { PopoverMenu } from "./popover-menu";
+
+const PANEL = '[data-slot="popover-menu"]';
 
 type Item = Parameters<typeof PopoverMenu>[0]["items"][number];
 
@@ -127,18 +131,18 @@ test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
 test("popover_menu_single_keys_controls_p_shortcut", () => {
   const log: string[] = [];
   const { rerender } = render(<Host log={log} singleKeys keys={describeShortcut("P").aria} />);
-  const panel = () => document.querySelector(".os-popover-panel") as Element;
-  const kbd = panel().querySelector(".os-popover-headline .os-kbd");
+  const panel = () => document.querySelector(PANEL) as Element;
+  const kbd = panel().querySelector('[data-slot="kbd"]');
   expect(kbd?.textContent).toBe("P");
   expect(kbd?.getAttribute("aria-hidden")).toBe("true");
   expect(trigger().getAttribute("aria-keyshortcuts")).toBe(describeShortcut("P").aria);
   key("p");
   expect(log).toEqual([]);
   rerender(<Host log={log} />);
-  expect(panel().querySelector(".os-kbd")).toBeNull();
+  expect(panel().querySelector('[data-slot="kbd"]')).toBeNull();
   expect(trigger().hasAttribute("aria-keyshortcuts")).toBe(false);
   rerender(<Host log={log} singleKeys={false} />);
-  expect(panel().querySelector(".os-kbd")).toBeNull();
+  expect(panel().querySelector('[data-slot="kbd"]')).toBeNull();
   expect(within(panel() as HTMLElement).queryByText("P")).toBeNull();
 });
 
@@ -334,7 +338,7 @@ test("popover_menu_focus_window_form_has_no_settings_row", () => {
   expect(screen.getAllByRole("menuitemradio")).toHaveLength(4);
   expect(screen.queryByRole("menuitem")).toBeNull();
   expect(screen.queryByText("Timer settings…")).toBeNull();
-  expect(document.querySelector("hr.os-popover-sep")).toBeNull();
+  expect(document.querySelector('[role="separator"]')).toBeNull();
 });
 
 function InDialog() {
@@ -358,12 +362,12 @@ function InDialog() {
 test("popover_menu_renders_inside_open_dialog", () => {
   const { unmount } = render(<InDialog />);
   const dialog = screen.getByTestId("dlg");
-  expect(document.querySelector(".os-popover-panel")?.closest("dialog")).toBe(dialog);
+  expect(document.querySelector(PANEL)?.closest("dialog")).toBe(dialog);
   expect(within(dialog).getByRole("menu")).toBeTruthy();
   unmount();
 
   render(<Host log={[]} />);
-  expect(document.querySelector(".os-popover-panel")?.parentElement).toBe(document.body);
+  expect(document.querySelector(PANEL)?.parentElement).toBe(document.body);
 });
 
 test("popover_menu_adds_no_live_region", () => {
