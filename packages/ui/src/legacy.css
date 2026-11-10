@@ -144,9 +144,9 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-kanban > p { margin: 0; }
 /* end KanbanColumn */
 
-/* Shared: card headings (KanbanColumn, EmptyState) */
-.os-kanban h2, .os-empty h2 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; }
-/* end Shared: card headings (KanbanColumn, EmptyState) */
+/* Shared: card headings (KanbanColumn) */
+.os-kanban h2 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; }
+/* end Shared: card headings (KanbanColumn) */
 
 /* CommandPalette */
 .os-command-list { display: flex; flex-direction: column; gap: var(--space-1); max-height: min(320px, 50vh); overflow: auto; padding: var(--space-1); }
@@ -154,11 +154,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-command[aria-selected="true"] { background: var(--selection); border-inline-start-color: var(--focus); }
 .os-command-selected { color: var(--focus); font-size: 13px; line-height: 18px; }
 /* end CommandPalette */
-
-/* EmptyState */
-.os-empty { max-width: var(--panel-width); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
-.os-empty p { margin: 0; color: var(--ink-muted); }
-/* end EmptyState */
 
 /* Shared: reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -277,11 +272,10 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-sessionslot .os-iconbtn { border-radius: var(--radius-pill); }
 /* end SessionSlot (CSS only) */
 
-/* Settings helpers: os-unit and os-empty-inline (still used by Settings and legacy EmptyState) */
+/* Settings helpers: os-unit (still used by Settings) */
 .os-unit { display: flex; align-items: center; gap: var(--space-2); }
 .os-unit .os-input { width: var(--number-width); }
 .os-unit > span { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-empty-inline { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
 /* end Settings helpers */
 
 /* ShortcutRecorder (CSS only) */

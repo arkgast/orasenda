@@ -40,11 +40,6 @@ export interface Command { id: string; label: string; hint?: string }
 export interface CommandPaletteProps { open?: boolean; commands: Command[]; onSelect: (id: string) => void; onClose: () => void }
 export declare function CommandPalette(props: CommandPaletteProps): React.ReactElement;
 // end CommandPalette
-// EmptyState
-/** 'inline' sits inside a SettingsRow: one line, no action. */
-export type EmptyStateProps = { title?: string; message?: string; actionLabel?: string; onAction?: () => void; variant?: 'default' } | { title?: never; message?: string; variant: 'inline'; actionLabel?: never; onAction?: never }
-export declare function EmptyState(props: EmptyStateProps): React.ReactElement;
-// end EmptyState
 // IconButton
 /** label is the accessible name and the built-in Tooltip's text; the icon is aria-hidden. shortcut is one canonical glyph string, shown as a Kbd in the tooltip and set as aria-keyshortcuts (describeShortcut(shortcut).aria); pass it only while that shortcut is live. Several chords: an array (aria-keyshortcuts joins them with spaces); shortcutLabel is the text the Kbd shows when it differs (a range such as '⌘1–6'); keyshortcuts={false} shows the Kbd but sets no aria-keyshortcuts (Pause/Resume, whose key belongs to the page). aria-describedby points a disabled button at the line that says why. id, aria-haspopup, aria-expanded and aria-controls land on the button; the host sets aria-expanded and aria-controls from its menu's open state and id. */
 export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string | string[]; shortcutLabel?: string; keyshortcuts?: boolean; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string; 'aria-expanded'?: boolean; 'aria-controls'?: string; 'aria-describedby'?: string }
@@ -70,7 +65,7 @@ declare global {
       TaskCard: typeof TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof Toast;
-      NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
+      NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
       ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
