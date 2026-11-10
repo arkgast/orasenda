@@ -134,23 +134,6 @@ function TimeBlock(p) {
     h("span", { className: "os-block-time" }, (compact ? "" : BLOCK_LABEL[type] + " · ") + (p.start || "") + (compact ? "" : "–" + (p.end || "")) + (p.selected ? " · Selected" : "")));
 }
 // end TimeBlock
-// HabitDots
-function HabitDots(p) {
-  var labels = { done: "Done", skipped: "Not done", rest: "Rest day", future: "Upcoming" };
-  var days = (p.days || []).map(function (d) {
-    var v = typeof d === "string" ? { state: d } : d;
-    return { state: labels[v.state] ? v.state : "future", today: !!v.today, label: v.label };
-  });
-  function dot(d, key) { var text = (d.label ? d.label + ", " : "") + (d.today ? "Today, " : "") + labels[d.state];
-    return h("span", { key: key, className: cx("os-dot", "os-dot-" + d.state, d.today && "os-dot-today"), role: "img", "aria-label": text, title: text }); }
-  return h("div", { className: "os-habit" },
-    p.name ? h("div", { className: "os-habit-name" }, p.name) : null,
-    h("div", { className: "os-dots", role: "group", "aria-label": (p.name || "Habit") + ", daily record" }, days.map(dot)),
-    p.legend ? h("div", { className: "os-habit-legend" }, Object.keys(labels).map(function (s) { return h("span", { key: s }, dot({ state: s }, s), labels[s]); }), h("span", null, dot({ state: "future", today: true }, "today"), "Today")) : null,
-    p.note ? h("div", { className: "os-habit-note" }, p.note) : null,
-    p.restartNote ? h("div", { className: "os-habit-note" }, p.restartNote) : null);
-}
-// end HabitDots
 // RoutineItem
 function RoutineItem(p) {
   var st = R.useState(!!(p.defaultDone == null ? p.done : p.defaultDone)), done = p.onChange ? !!p.done : st[0];
@@ -714,7 +697,6 @@ export {
   MenuBarTimer,
   TaskCard,
   TimeBlock,
-  HabitDots,
   RoutineItem,
   WellnessNote,
   IntentPrompt,

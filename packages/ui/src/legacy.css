@@ -133,22 +133,6 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-nowline i::before { content: ""; position: absolute; inset-inline-start: 0; top: -2px; width: var(--space-1-5); height: var(--space-1-5); border-radius: var(--radius-pill); background: var(--focus); }
 /* end TimeBlock */
 
-/* HabitDots */
-/* HabitDots: the day state is a shape; today is an independent outer ring. */
-.os-habit { display: flex; flex-direction: column; gap: var(--space-3); }
-.os-habit-name { font-size: 15px; font-weight: 600; }
-.os-dots { display: flex; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-1); }
-.os-dot { display: inline-block; width: 14px; height: 14px; border-radius: var(--radius-pill); flex: none; }
-.os-dot-done { background: var(--break); }
-.os-dot-skipped { border: 1.5px solid var(--line-strong); }
-.os-dot-rest { border: 1.5px dashed var(--line-strong); }
-.os-dot-future { border: 1.5px dotted var(--line-strong); border-radius: var(--radius-sm); }
-.os-dot-today { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
-.os-habit-note { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-habit-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-habit-legend > span { display: inline-flex; align-items: center; gap: var(--space-2); }
-/* end HabitDots */
-
 /* RoutineItem */
 /* RoutineItem: the whole row is the checkbox. */
 .os-ritem { display: flex; gap: var(--space-3); align-items: flex-start; min-height: var(--hit-min); width: 100%; max-width: var(--panel-width); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line-strong); text-align: start; font: inherit; cursor: pointer; }
@@ -310,15 +294,14 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 }
 /* end Shared: reduced motion */
 
-/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, HabitDots, Choice) */
+/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
 @media (forced-colors: active) {
   .os-timer .track { stroke-dasharray: 2 4; }
   .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
   .os-strip-bar::before { background: GrayText; }
   .os-strip-fill { background: CanvasText; }
   .os-strip-tri { color: CanvasText; }
-  .os-chip, .os-pomo, .os-dot-done { border: 1px solid; }
-  .os-dot-done::after { content: "✓"; font-size: 11px; }
+  .os-chip, .os-pomo { border: 1px solid; }
   /* Keep the checked radio dot and the checkbox fill: forced colors would repaint them as Canvas (#45). */
   .os-choice input:checked { forced-color-adjust: none; background: Highlight; border-color: Highlight; box-shadow: inset 0 0 0 2px Canvas; }
   .os-choice input[type="checkbox"]:checked { box-shadow: none; }
@@ -326,7 +309,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-choice input:checked:focus-visible { outline-color: Highlight; }
   .os-choice input:checked:disabled { background: GrayText; border-color: GrayText; }
 }
-/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, HabitDots, Choice) */
+/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
 
 /* Shared: redesign pass glyphs */
 /* ---------------------------------------------------------------------------

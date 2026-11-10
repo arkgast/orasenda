@@ -21,12 +21,6 @@ export declare function TaskCard(props: TaskCardProps): React.ReactElement;
 export interface TimeBlockProps { type?: 'deep' | 'shallow' | 'break' | 'routine' | 'personal' | 'overflow'; title?: string; start?: string; end?: string; now?: boolean; height?: number | string; compact?: boolean; selected?: boolean; disabled?: boolean; onSelect?: () => void }
 export declare function TimeBlock(props: TimeBlockProps): React.ReactElement;
 // end TimeBlock
-// HabitDots
-export type HabitState = 'done' | 'skipped' | 'rest' | 'future';
-export interface HabitDay { state: HabitState; today?: boolean; /** A localised date, e.g. Monday 9 November. */ label?: string }
-export interface HabitDotsProps { name?: string; days: Array<HabitDay | HabitState>; note?: string; legend?: boolean; restartNote?: string }
-export declare function HabitDots(props: HabitDotsProps): React.ReactElement;
-// end HabitDots
 // RoutineItem
 /** With onChange, done is controlled. Without it, defaultDone (or initial done) is local preview state. */
 export interface RoutineItemProps { label: string; detail?: string; done?: boolean; defaultDone?: boolean; optional?: boolean; disabled?: boolean; onChange?: (done: boolean) => void }
@@ -158,7 +152,7 @@ declare global {
   interface Window {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
-      TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof HabitDots; RoutineItem: typeof RoutineItem;
+      TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots; RoutineItem: typeof RoutineItem;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
