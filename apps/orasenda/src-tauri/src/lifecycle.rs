@@ -2,12 +2,10 @@
 //! bring it back, ⌘Q and *Quit Orasenda* quit. The activation policy stays `Regular`.
 
 use std::sync::{Mutex, PoisonError};
-#[cfg(desktop)]
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager, Wry};
+use tauri_specta::Event as _;
 
-use tauri::{Manager, Wry};
-
-use crate::ipc::NavigatePage;
+use crate::ipc::{Navigate, NavigatePage, Theme};
 use crate::scheduler;
 
 /// The label of the app's main window (`tauri.conf.json`).
@@ -21,8 +19,8 @@ pub(crate) struct PendingNavigate(Mutex<Option<NavigatePage>>);
 impl PendingNavigate {
     /// Stores the page; the last one wins.
     #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "called by lifecycle::show_settings, T5 (#146)")
+        not(any(desktop, test)),
+        expect(dead_code, reason = "called by show_settings, which is desktop only")
     )]
     pub(crate) fn set(&self, page: NavigatePage) {
         *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(page);
@@ -98,6 +96,88 @@ pub fn show_main(app: &AppHandle) {
     }
 }
 
+/// The theme, window and navigation calls that launch and *Settings…* make, behind a small
+/// trait so their order is tested with a recording fake. None of them holds a lock.
+#[cfg_attr(
+    not(any(desktop, test)),
+    expect(dead_code, reason = "the navigation calls are desktop only")
+)]
+pub(crate) trait Shell {
+    /// The saved theme; the session lock is released before this returns.
+    fn theme(&self) -> Theme;
+    fn apply_theme(&self, theme: Theme);
+    fn store_pending(&self, page: NavigatePage);
+    fn show_main(&self);
+    fn emit_navigate(&self, page: NavigatePage);
+}
+
+impl Shell for AppHandle {
+    fn theme(&self) -> Theme {
+        crate::session::current_settings(self).theme
+    }
+
+    fn apply_theme(&self, theme: Theme) {
+        scheduler::Host::apply_theme(self, theme);
+    }
+
+    fn store_pending(&self, page: NavigatePage) {
+        match self.try_state::<PendingNavigate>() {
+            Some(pending) => pending.set(page),
+            None => eprintln!("lifecycle: no pending navigation state"),
+        }
+    }
+
+    fn show_main(&self) {
+        #[cfg(desktop)]
+        show_main(self);
+        #[cfg(not(desktop))]
+        match self.get_webview_window(MAIN) {
+            Some(window) => {
+                if let Err(error) = window.show() {
+                    eprintln!("lifecycle: could not show {MAIN}: {error}");
+                }
+            }
+            None => eprintln!("lifecycle: no {MAIN} window to show"),
+        }
+    }
+
+    fn emit_navigate(&self, page: NavigatePage) {
+        if let Err(error) = (Navigate { page }).emit_to(self, MAIN) {
+            eprintln!("lifecycle: could not emit navigate: {error}");
+        }
+    }
+}
+
+/// Applies the saved theme, then shows `main`, so its first paint already follows the theme.
+pub(crate) fn finish_launch_on<S: Shell>(shell: &S) {
+    let theme = shell.theme();
+    shell.apply_theme(theme);
+    shell.show_main();
+}
+
+/// The last step of `setup()`: `main` starts hidden (`tauri.conf.json`).
+pub(crate) fn finish_launch(app: &AppHandle) {
+    finish_launch_on(app);
+}
+
+/// Stores the pending page first, so a webview that is not listening yet still finds it,
+/// then shows `main` and emits `navigate`.
+#[cfg_attr(
+    not(any(desktop, test)),
+    expect(dead_code, reason = "the menus that call it are desktop only")
+)]
+pub(crate) fn show_settings_on<S: Shell>(shell: &S) {
+    shell.store_pending(NavigatePage::Settings);
+    shell.show_main();
+    shell.emit_navigate(NavigatePage::Settings);
+}
+
+/// *Settings…* (⌘, or the menu-bar menu): show `main` on the Settings page.
+#[cfg(desktop)]
+pub fn show_settings(app: &AppHandle) {
+    show_settings_on(app);
+}
+
 /// `RunEvent::Reopen` (a Dock click): bring `main` back. The event exists on macOS only.
 #[cfg(target_os = "macos")]
 pub fn on_reopen(app: &AppHandle) {
@@ -126,5 +206,82 @@ mod tests {
         pending.set(NavigatePage::Today);
         pending.set(NavigatePage::Review);
         assert_eq!(pending.take(), Some(NavigatePage::Review));
+    }
+
+    use std::cell::RefCell;
+
+    use crate::ipc::Theme;
+
+    #[derive(Debug, PartialEq)]
+    enum Call {
+        ApplyTheme(Theme),
+        StorePending(NavigatePage),
+        ShowMain,
+        EmitNavigate(NavigatePage),
+    }
+
+    struct Recorder {
+        theme: Theme,
+        pending: PendingNavigate,
+        seen_at_show: RefCell<Option<NavigatePage>>,
+        calls: RefCell<Vec<Call>>,
+    }
+
+    impl Recorder {
+        fn new(theme: Theme) -> Self {
+            Self {
+                theme,
+                pending: PendingNavigate::default(),
+                seen_at_show: RefCell::new(None),
+                calls: RefCell::new(Vec::new()),
+            }
+        }
+    }
+
+    impl Shell for Recorder {
+        fn theme(&self) -> Theme {
+            self.theme
+        }
+        fn apply_theme(&self, theme: Theme) {
+            self.calls.borrow_mut().push(Call::ApplyTheme(theme));
+        }
+        fn store_pending(&self, page: NavigatePage) {
+            self.pending.set(page);
+            self.calls.borrow_mut().push(Call::StorePending(page));
+        }
+        fn show_main(&self) {
+            let held = *self.pending.0.lock().unwrap();
+            *self.seen_at_show.borrow_mut() = held;
+            self.calls.borrow_mut().push(Call::ShowMain);
+        }
+        fn emit_navigate(&self, page: NavigatePage) {
+            self.calls.borrow_mut().push(Call::EmitNavigate(page));
+        }
+    }
+
+    #[test]
+    fn show_settings_stores_pending_navigation() {
+        let shell = Recorder::new(Theme::System);
+        show_settings_on(&shell);
+        assert_eq!(
+            *shell.calls.borrow(),
+            vec![
+                Call::StorePending(NavigatePage::Settings),
+                Call::ShowMain,
+                Call::EmitNavigate(NavigatePage::Settings)
+            ]
+        );
+        assert_eq!(*shell.seen_at_show.borrow(), Some(NavigatePage::Settings));
+        assert_eq!(shell.pending.take(), Some(NavigatePage::Settings));
+        assert_eq!(shell.pending.take(), None);
+    }
+
+    #[test]
+    fn theme_applied_before_main_shown() {
+        for theme in [Theme::Dark, Theme::System] {
+            let shell = Recorder::new(theme);
+            finish_launch_on(&shell);
+            assert_eq!(*shell.calls.borrow(), vec![Call::ApplyTheme(theme), Call::ShowMain]);
+        }
     }
 }
