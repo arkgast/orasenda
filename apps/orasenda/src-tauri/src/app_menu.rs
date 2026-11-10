@@ -32,8 +32,22 @@ pub(crate) const SETTINGS_ACCELERATOR: &str = "CmdOrCtrl+,";
 )]
 pub(crate) const SETTINGS_AT: usize = 1;
 
-/// The app submenu's ids after `build` inserts a separator (`separator`) and *Settings…* at
-/// [`SETTINGS_AT`] into the default submenu's ids (`default`, in order).
+/// What `build` inserts into the app submenu, in order. `build` and the tested model
+/// [`app_menu_ids`] both read this, so they cannot drift.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Inserted {
+    Separator,
+    Settings,
+}
+
+#[cfg_attr(
+    not(any(target_os = "macos", test)),
+    expect(dead_code, reason = "macOS builds the menu")
+)]
+pub(crate) const INSERTED: [Inserted; 2] = [Inserted::Separator, Inserted::Settings];
+
+/// The app submenu's ids after `build` inserts [`INSERTED`] at [`SETTINGS_AT`] into the
+/// default submenu's ids (`default`, in order); `separator` is the new separator's id.
 #[cfg_attr(
     not(test),
     expect(dead_code, reason = "tested pure model of what build inserts")
@@ -41,7 +55,13 @@ pub(crate) const SETTINGS_AT: usize = 1;
 pub(crate) fn app_menu_ids(default: &[String], separator: &str) -> Vec<String> {
     let at = SETTINGS_AT.min(default.len());
     let mut ids = default.to_vec();
-    ids.splice(at..at, [separator.to_owned(), SETTINGS_ID.to_owned()]);
+    ids.splice(
+        at..at,
+        INSERTED.map(|i| match i {
+            Inserted::Separator => separator.to_owned(),
+            Inserted::Settings => SETTINGS_ID.to_owned(),
+        }),
+    );
     ids
 }
 
@@ -54,25 +74,32 @@ pub(crate) fn is_app_menu_command(id: &str) -> bool {
     id == SETTINGS_ID
 }
 
-/// `Menu::default` with *Settings…* ⌘, after *About Orasenda*. Without an app submenu first
-/// (not macOS), the default menu is returned unchanged.
+/// `Menu::default` with *Settings…* ⌘, after *About Orasenda*. Fails the launch if the
+/// default menu has no app submenu first (tauri 2.12.5 on macOS always has one).
 #[cfg(target_os = "macos")]
 pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::default(app)?;
-    match menu.items()?.first() {
-        Some(MenuItemKind::Submenu(submenu)) => {
-            let separator = PredefinedMenuItem::separator(app)?;
-            let settings = MenuItem::with_id(
-                app,
-                SETTINGS_ID,
-                SETTINGS_TEXT,
-                true,
-                Some(SETTINGS_ACCELERATOR),
-            )?;
-            submenu.insert_items(&[&separator, &settings], SETTINGS_AT)?;
-        }
-        _ => eprintln!("app_menu: no app submenu to add Settings to"),
-    }
+    let Some(MenuItemKind::Submenu(submenu)) = menu.items()?.into_iter().next() else {
+        return Err(tauri::Error::Io(std::io::Error::other(
+            "app_menu: the default menu has no app submenu to add Settings to",
+        )));
+    };
+    let separator = PredefinedMenuItem::separator(app)?;
+    let settings = MenuItem::with_id(
+        app,
+        SETTINGS_ID,
+        SETTINGS_TEXT,
+        true,
+        Some(SETTINGS_ACCELERATOR),
+    )?;
+    let items: Vec<&dyn tauri::menu::IsMenuItem<Wry>> = INSERTED
+        .iter()
+        .map(|i| match i {
+            Inserted::Separator => &separator as &dyn tauri::menu::IsMenuItem<Wry>,
+            Inserted::Settings => &settings,
+        })
+        .collect();
+    submenu.insert_items(&items, SETTINGS_AT)?;
     Ok(menu)
 }
 
@@ -116,6 +143,7 @@ mod tests {
         assert_eq!(SETTINGS_TEXT, "Settings\u{2026}");
         assert_eq!(SETTINGS_ACCELERATOR, "CmdOrCtrl+,");
         assert_eq!(SETTINGS_AT, 1);
+        assert_eq!(INSERTED, [Inserted::Separator, Inserted::Settings]);
     }
 
     #[test]
