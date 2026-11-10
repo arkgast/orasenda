@@ -1,9 +1,16 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { describeShortcut } from "../../lib/shortcuts";
 import { IconButton } from "../../legacy.js";
+import { describeShortcut } from "../../lib/shortcuts";
 import { PopoverMenu } from "./popover-menu";
+
+// Radix Popper measures with ResizeObserver, which jsdom lacks.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 const PANEL = '[data-slot="popover-menu"]';
 
@@ -85,7 +92,15 @@ function Host({
   );
 }
 
-const key = (k: string) => fireEvent.keyDown(document.activeElement as Element, { key: k });
+// Radix moves roving focus on the next task, so a key press is followed by one.
+const settle = () =>
+  act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+const key = async (k: string, init: KeyboardEventInit = {}) => {
+  fireEvent.keyDown(document.activeElement as Element, { key: k, ...init });
+  await settle();
+};
 const rowName = (n: string) => {
   const row = [...document.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find((r) =>
     r.textContent?.includes(n),
@@ -95,7 +110,7 @@ const rowName = (n: string) => {
 };
 const trigger = () => screen.getByRole("button", { name: "Change preset" });
 
-test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
+test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", async () => {
   const log: string[] = [];
   render(<Host log={log} startOpen={false} />);
   const attrs = () =>
@@ -122,13 +137,13 @@ test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
       .filter((n) => n.startsWith("aria-"))
       .sort(),
   ).toEqual(["aria-controls", "aria-expanded", "aria-haspopup", "aria-label"]);
-  key("Escape");
+  await key("Escape");
   expect(trigger().getAttribute("aria-expanded")).toBe("false");
   expect(trigger().hasAttribute("aria-controls")).toBe(false);
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("popover_menu_single_keys_controls_p_shortcut", () => {
+test("popover_menu_single_keys_controls_p_shortcut", async () => {
   const log: string[] = [];
   const { rerender } = render(<Host log={log} singleKeys keys={describeShortcut("P").aria} />);
   const panel = () => document.querySelector(PANEL) as Element;
@@ -136,7 +151,7 @@ test("popover_menu_single_keys_controls_p_shortcut", () => {
   expect(kbd?.textContent).toBe("P");
   expect(kbd?.getAttribute("aria-hidden")).toBe("true");
   expect(trigger().getAttribute("aria-keyshortcuts")).toBe(describeShortcut("P").aria);
-  key("p");
+  await key("p");
   expect(log).toEqual([]);
   rerender(<Host log={log} />);
   expect(panel().querySelector('[data-slot="kbd"]')).toBeNull();
@@ -182,30 +197,30 @@ test("popover_menu_id_generated_when_omitted", () => {
   expect(screen.getByRole("menu").id.length).toBeGreaterThan(0);
 });
 
-test("popover_menu_arrows_move_and_return_selects", () => {
+test("popover_menu_arrows_move_and_return_selects", async () => {
   const log: string[] = [];
   render(<Host log={log} />);
   expect(document.activeElement).toBe(rowName("Classic"));
-  key("ArrowDown");
+  await key("ArrowDown");
   expect(document.activeElement).toBe(rowName("Deep Block"));
   expect(rowName("Deep Block").tabIndex).toBe(0);
   expect(rowName("Classic").tabIndex).toBe(-1);
-  key("ArrowUp");
-  key("ArrowUp");
+  await key("ArrowUp");
+  await key("ArrowUp");
   expect(document.activeElement).toBe(rowName("Timer settings"));
-  key("Home");
+  await key("Home");
   expect(document.activeElement).toBe(rowName("Classic"));
-  key("End");
+  await key("End");
   expect(document.activeElement).toBe(rowName("Timer settings"));
-  key("Home");
-  key("ArrowDown");
-  key("Enter");
+  await key("Home");
+  await key("ArrowDown");
+  await key("Enter");
   expect(log).toEqual(["deep", "close"]);
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.activeElement).toBe(trigger());
 });
 
-test("popover_menu_space_chooses_checkbox", () => {
+test("popover_menu_space_chooses_checkbox", async () => {
   const log: string[] = [];
   const items: Item[] = [
     { id: "a", label: "First option", kind: "checkbox", checked: true },
@@ -216,31 +231,31 @@ test("popover_menu_space_chooses_checkbox", () => {
   expect(rowName("First option").getAttribute("role")).toBe("menuitemcheckbox");
   expect(rowName("First option").getAttribute("aria-checked")).toBe("true");
   expect(rowName("Second option").getAttribute("aria-checked")).toBe("false");
-  key("ArrowDown");
-  key(" ");
+  await key("ArrowDown");
+  await key(" ");
   expect(log).toEqual(["b", "close"]);
 });
 
-test("popover_menu_disabled_checkbox_is_focusable_and_never_chosen", () => {
+test("popover_menu_disabled_checkbox_is_focusable_and_never_chosen", async () => {
   const log: string[] = [];
   const items: Item[] = [
     { id: "a", label: "First option", kind: "checkbox" },
     { id: "c", label: "Unavailable option", kind: "checkbox", disabled: true },
   ];
   render(<Host log={log} items={items} />);
-  key("ArrowDown");
+  await key("ArrowDown");
   expect(document.activeElement).toBe(rowName("Unavailable option"));
   expect(rowName("Unavailable option").getAttribute("aria-disabled")).toBe("true");
-  key(" ");
+  await key(" ");
   expect(log).toEqual([]);
   expect(screen.getByRole("menu")).toBeTruthy();
 });
 
-test("popover_menu_esc_closes_and_returns_focus_to_trigger", () => {
+test("popover_menu_esc_closes_and_returns_focus_to_trigger", async () => {
   const log: string[] = [];
   const { unmount } = render(<Host log={log} />);
   expect(document.activeElement).not.toBe(trigger());
-  key("Escape");
+  await key("Escape");
   expect(log).toEqual(["close"]);
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.activeElement).toBe(trigger());
@@ -248,24 +263,24 @@ test("popover_menu_esc_closes_and_returns_focus_to_trigger", () => {
 
   const log2: string[] = [];
   render(<Host log={log2} />);
-  fireEvent.keyDown(document.activeElement as Element, { key: "Tab", shiftKey: true });
+  await key("Tab", { shiftKey: true });
   expect(log2).toEqual(["close"]);
   expect(document.activeElement).toBe(trigger());
 });
 
-test("popover_menu_tab_closes_and_focuses_next_tabbable_after_trigger", () => {
+test("popover_menu_tab_closes_and_focuses_next_tabbable_after_trigger", async () => {
   const log: string[] = [];
   render(<Host log={log} after />);
-  key("Tab");
+  await key("Tab");
   expect(log).toEqual(["close"]);
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "After" }));
 });
 
-test("popover_menu_tab_with_nothing_after_returns_to_trigger", () => {
+test("popover_menu_tab_with_nothing_after_returns_to_trigger", async () => {
   const log: string[] = [];
   render(<Host log={log} />);
-  key("Tab");
+  await key("Tab");
   expect(log).toEqual(["close"]);
   expect(document.activeElement).toBe(trigger());
 });
@@ -274,7 +289,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", () => {
+test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", async () => {
   vi.useFakeTimers();
   document.documentElement.style.setProperty("--duration-quick", "160ms");
   const log: string[] = [];
@@ -285,22 +300,26 @@ test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", () => {
     vi.advanceTimersByTime(200);
   });
   expect(document.querySelector("[data-slot=tooltip]")).not.toBeNull();
-  key("Escape");
+  fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
   expect(log).toEqual(["close"]);
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.querySelector("[data-slot=tooltip]")).toBeNull();
   expect(document.activeElement).toBe(trigger());
 });
 
-test("popover_menu_press_outside_closes_without_moving_focus", () => {
+test("popover_menu_press_outside_closes_without_moving_focus", async () => {
   const log: string[] = [];
   render(<Host log={log} />);
+  // Radix starts listening for outside presses on the next task.
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
   fireEvent.pointerDown(document.body);
   expect(log).toEqual(["close"]);
   expect(document.activeElement).not.toBe(trigger());
 });
 
-test("popover_menu_read_only_marks_radios_aria_disabled", () => {
+test("popover_menu_read_only_marks_radios_aria_disabled", async () => {
   const log: string[] = [];
   render(
     <Host
@@ -317,12 +336,12 @@ test("popover_menu_read_only_marks_radios_aria_disabled", () => {
   expect(rowName("Timer settings").hasAttribute("aria-disabled")).toBe(false);
   expect(screen.getByText("Presets can change between sessions.")).toBeTruthy();
   expect(menu).toHaveAccessibleDescription("Presets can change between sessions.");
-  key("ArrowDown");
-  key("Enter");
+  await key("ArrowDown");
+  await key("Enter");
   expect(log).toEqual([]);
   expect(screen.getByRole("menu")).toBeTruthy();
-  key("End");
-  key("Enter");
+  await key("End");
+  await key("Enter");
   expect(log).toEqual(["settings", "close"]);
 });
 
@@ -367,7 +386,8 @@ test("popover_menu_renders_inside_open_dialog", () => {
   unmount();
 
   render(<Host log={[]} />);
-  expect(document.querySelector(PANEL)?.parentElement).toBe(document.body);
+  // Radix wraps the panel in its own positioning element, which is the body's child.
+  expect(document.querySelector(PANEL)?.parentElement?.parentElement).toBe(document.body);
 });
 
 test("popover_menu_adds_no_live_region", () => {

@@ -1,15 +1,11 @@
 import { type ReactElement, type RefObject, useRef, useState } from "react";
-import {
-  Button,
-  Dialog,
-  describeShortcut,
-  IconButton,
-  PopoverMenu,
-  type PopoverMenuItem,
-  Tooltip,
-} from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
-import { Menu } from "./icons.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { Menu } from "../../../specimens/icons.tsx";
+import { IconButton, Tooltip } from "../../legacy.js";
+import { describeShortcut } from "../../lib/shortcuts";
+import { Button } from "./button";
+import { Dialog } from "./dialog";
+import { PopoverMenu, type PopoverMenuItem } from "./popover-menu";
 
 const PRESETS: [string, string, string][] = [
   ["classic", "Classic", "25 / 5"],
@@ -79,7 +75,7 @@ export function PopoverMenuSpecimen(): ReactElement {
   return (
     <>
       <Frame state="popover-menu-today" width={360} height={96}>
-        <span ref={today} style={{ display: "inline-flex" }}>
+        <span ref={today} className="inline-flex">
           <Tooltip label="Change preset" shortcut="P">
             <Button
               variant="ghost"
@@ -98,7 +94,7 @@ export function PopoverMenuSpecimen(): ReactElement {
         })}
       </Frame>
       <Frame state="popover-menu-read-only" width={360} height={96}>
-        <span ref={readOnly} style={{ display: "inline-flex" }}>
+        <span ref={readOnly} className="inline-flex">
           <IconButton label="Preset while a session runs" icon={glyph} {...aria("readOnly")} />
         </span>
         {menu("readOnly", readOnly, {
@@ -109,7 +105,7 @@ export function PopoverMenuSpecimen(): ReactElement {
         })}
       </Frame>
       <Frame state="popover-menu-focus-window" width={360} height={96}>
-        <span ref={focusWindow} style={{ display: "inline-flex" }}>
+        <span ref={focusWindow} className="inline-flex">
           <IconButton label="Preset for the next session" icon={glyph} {...aria("focusWindow")} />
         </span>
         {menu("focusWindow", focusWindow, {
@@ -119,7 +115,7 @@ export function PopoverMenuSpecimen(): ReactElement {
         })}
       </Frame>
       <Frame state="popover-menu-checkbox" width={360} height={96}>
-        <span ref={checkbox} style={{ display: "inline-flex" }}>
+        <span ref={checkbox} className="inline-flex">
           <IconButton label="Checkbox rows" icon={glyph} {...aria("checkbox")} />
         </span>
         {menu("checkbox", checkbox, {
@@ -154,7 +150,7 @@ export function PopoverMenuSpecimen(): ReactElement {
             setDialog(false);
           }}
         >
-          <span ref={inDialog} style={{ display: "inline-flex" }}>
+          <span ref={inDialog} className="inline-flex">
             <IconButton label="Preset in the dialog" icon={glyph} {...aria("dialog")} />
           </span>
           {menu("dialog", inDialog, {
@@ -165,8 +161,8 @@ export function PopoverMenuSpecimen(): ReactElement {
         </Dialog>
       ) : null}
       <Frame state="popover-menu-edge-end" width={360} height={96}>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <span ref={edgeEnd} style={{ display: "inline-flex" }}>
+        <div className="flex justify-end">
+          <span ref={edgeEnd} className="inline-flex">
             <IconButton label="Preset at the end" icon={glyph} {...aria("edgeEnd")} />
           </span>
         </div>
@@ -177,8 +173,8 @@ export function PopoverMenuSpecimen(): ReactElement {
       </Frame>
       <p>{last}</p>
       <Frame state="popover-menu-edge" width={360} height={240}>
-        <div style={{ display: "flex", alignItems: "flex-end", height: "100%" }}>
-          <span ref={edge} style={{ display: "inline-flex" }}>
+        <div className="flex h-full items-end">
+          <span ref={edge} className="inline-flex">
             <IconButton label="Preset at the bottom" icon={glyph} {...aria("edge")} />
           </span>
         </div>
