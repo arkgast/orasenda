@@ -64,9 +64,9 @@ function Breath(): JSX.Element {
     <div
       data-slot="intent-prompt-breath"
       aria-hidden="true"
-      className="grid size-8 flex-none place-items-center rounded-pill bg-focus-soft"
+      className="grid flex-none place-items-center rounded-pill bg-focus-soft p-5"
     >
-      <i ref={dot} className="block size-6 rounded-pill bg-focus" />
+      <i ref={dot} className="block size-7 rounded-pill bg-focus" />
     </div>
   );
 }
