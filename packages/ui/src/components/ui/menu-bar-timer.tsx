@@ -1,6 +1,5 @@
 import type { ReactElement } from "react";
 import { cn } from "../../lib/utils";
-import { ModeShape } from "./glyphs";
 
 type TimerMode = "focus" | "break" | "routine" | "warning" | "paused" | "idle";
 
@@ -21,6 +20,30 @@ const MODE_WORD: Record<TimerMode, string> = {
   paused: "Paused",
   idle: "No session",
 };
+
+function Shape({ mode }: { mode: TimerMode }): ReactElement {
+  return (
+    <svg
+      data-slot="menu-bar-timer-shape-svg"
+      className="size-icon-md shrink-0 fill-current"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {mode === "break" ? (
+        <path d="M5 0a5 5 0 0 1 0 10z" />
+      ) : mode === "routine" ? (
+        <rect x={0.5} y={0.5} width={9} height={9} rx={2.5} />
+      ) : mode === "warning" ? (
+        <path d="M5 0.5 9.6 9.5H0.4z" />
+      ) : mode === "paused" ? (
+        <path d="M1 1h3v8H1zM6 1h3v8H6z" />
+      ) : (
+        <circle cx={5} cy={5} r={4} fill="none" stroke="currentColor" strokeWidth={1.5} />
+      )}
+    </svg>
+  );
+}
 
 const RING_LENGTH = 2 * Math.PI * 5;
 
@@ -83,13 +106,13 @@ export function MenuBarTimer({
         <span
           data-slot="menu-bar-timer-shape"
           className={cn(
-            "inline-flex size-icon-md shrink-0 items-center justify-center",
+            "inline-flex shrink-0 items-center justify-center",
             mode === "warning" && "text-amber",
             mode === "break" && "text-break",
             mode === "routine" && "text-routine",
           )}
         >
-          <ModeShape mode={mode} />
+          <Shape mode={mode} />
         </span>
       )}
       {mode !== "idle" ? (

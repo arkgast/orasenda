@@ -24,31 +24,33 @@ test("renders_focus_with_ring_and_digits", () => {
 test("renders_warning_with_triangle_and_word", () => {
   const { container } = render(<MenuBarTimer {...RUN} mode="warning" />);
   expect(screen.getByRole("timer").getAttribute("aria-label")).toMatch(/^Almost up, /);
-  expect(container.querySelector("svg.os-shape path")?.getAttribute("d")).toBe(
-    "M5 0.5 9.6 9.5H0.4z",
-  );
+  expect(
+    container.querySelector("[data-slot=menu-bar-timer-shape] svg path")?.getAttribute("d"),
+  ).toBe("M5 0.5 9.6 9.5H0.4z");
 });
 
 test("renders_break_with_half_circle_and_word", () => {
   const { container } = render(<MenuBarTimer {...RUN} mode="break" />);
   expect(screen.getByRole("timer").getAttribute("aria-label")).toMatch(/^Break, /);
-  expect(container.querySelector("svg.os-shape path")?.getAttribute("d")).toBe(
-    "M5 0a5 5 0 0 1 0 10z",
-  );
+  expect(
+    container.querySelector("[data-slot=menu-bar-timer-shape] svg path")?.getAttribute("d"),
+  ).toBe("M5 0a5 5 0 0 1 0 10z");
 });
 
 test("renders_paused_with_bars_and_word", () => {
   const { container } = render(<MenuBarTimer {...RUN} mode="paused" />);
   expect(screen.getByRole("timer").getAttribute("aria-label")).toMatch(/^Paused, /);
-  expect(container.querySelector("svg.os-shape path")?.getAttribute("d")).toBe(
-    "M1 1h3v8H1zM6 1h3v8H6z",
-  );
+  expect(
+    container.querySelector("[data-slot=menu-bar-timer-shape] svg path")?.getAttribute("d"),
+  ).toBe("M1 1h3v8H1zM6 1h3v8H6z");
 });
 
 test("renders_idle_with_hollow_circle_and_no_digits", () => {
   const { container } = render(<MenuBarTimer mode="idle" remaining="18:42" />);
   expect(screen.getByRole("timer", { name: "No session" })).not.toBeNull();
-  expect(container.querySelector("svg.os-shape circle")?.getAttribute("fill")).toBe("none");
+  expect(
+    container.querySelector("[data-slot=menu-bar-timer-shape] svg circle")?.getAttribute("fill"),
+  ).toBe("none");
   expect(container.querySelector("[data-slot=menu-bar-timer-digits]")).toBeNull();
 });
 
