@@ -185,6 +185,12 @@ function loadWindow() {
   return { dom, w, errors };
 }
 
+/** Portalled components (Dialog) render outside their host; count them as rendered. */
+// biome-ignore lint/suspicious/noExplicitAny: loose jsdom window
+function portalled(w: Record<string, any>): boolean {
+  return w.document.querySelector("[data-slot=dialog-content]") !== null;
+}
+
 /** Renders each named export with its minimal props; returns the names that threw or logged an error. */
 // biome-ignore lint/suspicious/noExplicitAny: the jsdom window is driven loosely, as a page would
 function renderAll(w: Record<string, any>, errors: string[], names: readonly string[]): string[] {
@@ -198,11 +204,13 @@ function renderAll(w: Record<string, any>, errors: string[], names: readonly str
     const root = w.ReactDOM.createRoot(host);
     try {
       w.ReactDOM.flushSync(() => root.render(w.React.createElement(w.Orasenda[name], props)));
-      if (errors.length > before || host.innerHTML.length === 0) failed.push(name);
+      if (errors.length > before || (host.innerHTML.length === 0 && !portalled(w)))
+        failed.push(name);
       w.ReactDOM.flushSync(() => root.unmount());
     } catch {
       failed.push(name);
     }
+    host.remove();
   }
   return failed;
 }
@@ -238,6 +246,18 @@ test("design_system_check_fails_when_a_seeded_export_throws_on_render", () => {
     expect(renderAll(w, errors, ["Button", "Boom"])).toEqual(["Boom"]);
   } finally {
     delete MINIMAL.Boom;
+    dom.window.close();
+  }
+});
+
+test("design_system_check_fails_when_a_seeded_export_renders_nothing", () => {
+  const { dom, w, errors } = loadWindow();
+  w.Orasenda.Empty = () => null;
+  MINIMAL.Empty = {};
+  try {
+    expect(renderAll(w, errors, ["Button", "Empty"])).toEqual(["Empty"]);
+  } finally {
+    delete MINIMAL.Empty;
     dom.window.close();
   }
 });

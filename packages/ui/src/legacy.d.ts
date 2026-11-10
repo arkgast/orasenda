@@ -19,11 +19,6 @@ export type IntentReason = 'Work' | 'Quick check' | 'Other';
 export interface IntentPromptProps { open?: boolean; app?: string; title?: string; message?: string; waitLabel?: string; onReturn?: () => void; onWait?: () => void; onContinue?: (reason: IntentReason) => void }
 export declare function IntentPrompt(props: IntentPromptProps): React.ReactElement;
 // end IntentPrompt
-// Dialog
-/** Escape and the cancel button call onCancel. destructive styles confirm as critical and adds the scrim. */
-export interface DialogProps { open?: boolean; title: string; description?: string; children?: React.ReactNode; confirmLabel: string; cancelLabel?: string; onCancel: () => void; onConfirm: () => void; destructive?: boolean; scrim?: boolean; loading?: boolean }
-export declare function Dialog(props: DialogProps): React.ReactElement;
-// end Dialog
 // FullScreenFocus
 export interface FullScreenFocusProps extends Omit<TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
 export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
@@ -107,7 +102,7 @@ declare global {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout;
       TaskCard: typeof TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
-      IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
+      IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;

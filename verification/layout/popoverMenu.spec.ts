@@ -176,7 +176,7 @@ test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", async (
 test("popover_menu_placed_against_trigger_inside_open_dialog", async ({ page }, info) => {
   await openSpecimen(page, "PopoverMenu");
   await page.getByRole("button", { name: "Open a dialog" }).click();
-  const dialog = page.locator("dialog[open]");
+  const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   const trigger = dialog.getByRole("button", { name: "Preset in the dialog" });
   await trigger.click();
@@ -185,12 +185,14 @@ test("popover_menu_placed_against_trigger_inside_open_dialog", async ({ page }, 
   const space1 = await token(page, "--space-1");
   const r = await page.evaluate(() => {
     const p = document.querySelector(".os-popover-panel") as HTMLElement;
-    const t = document.querySelector('dialog[open] button[aria-haspopup="menu"]') as HTMLElement;
+    const t = document.querySelector(
+      '[data-slot="dialog-content"] button[aria-haspopup="menu"]',
+    ) as HTMLElement;
     const b = p.getBoundingClientRect();
     const tb = t.getBoundingClientRect();
     const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(b.height / 2, 40));
     return {
-      inDialog: !!p.closest("dialog[open]"),
+      inDialog: !!p.closest('[data-slot="dialog-content"]'),
       inside: !!hit && p.contains(hit),
       side: p.getAttribute("data-side"),
       b: { l: b.left, t: b.top, r: b.right, bt: b.bottom },

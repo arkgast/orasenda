@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
@@ -16,6 +17,7 @@ export const specimens: Record<string, () => ReactElement> = {
   IconButton: IconButtonSpecimen,
   Tooltip: TooltipSpecimen,
   Kbd: KbdSpecimen,
+  Dialog: DialogSpecimen,
   NavRail: NavRailSpecimen,
   PageFrame: PageFrameSpecimen,
   MenuBarTimer: MenuBarTimerSpecimen,

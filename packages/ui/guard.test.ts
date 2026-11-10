@@ -128,7 +128,7 @@ test("source_copy_has_no_exclamation_mark_or_emoji", () => {
 });
 
 test("source_critical_only_in_dialog_destructive_and_button_critical", () => {
-  const allowed = /(^|\/)(dialog|button)\.tsx$/;
+  const allowed = /(^|\/)(dialog|button)(\.specimen)?\.tsx$/;
   const hits = typed
     .filter((f) => !allowed.test(f))
     .filter((f) => /critical|destructive/i.test(readFileSync(f, "utf8")))
