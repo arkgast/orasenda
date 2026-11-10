@@ -32,4 +32,8 @@ export const {
   ScrollRegion,
   SettingsIndex,
   SettingsRow,
+  IconButton,
+  Tooltip,
+  Kbd,
+  describeShortcut,
 } = window.Orasenda;
