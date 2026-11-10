@@ -18,6 +18,8 @@ test("renders_default_with_word_heading_and_message", () => {
   expect(screen.getByRole("heading", { name: "Nothing here yet" })).toBeTruthy();
   expect(screen.getByText("That's fine. Start when you're ready.")).toBeTruthy();
   expect(screen.queryByRole("button")).toBeNull();
+  expect(screen.getByRole("heading", { level: 2 })).toBeTruthy();
+  expect(document.querySelector("[data-slot=empty-state][data-variant=default]")).not.toBeNull();
 });
 
 test("renders_inline_default_message", () => {

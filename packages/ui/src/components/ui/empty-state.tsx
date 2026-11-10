@@ -1,5 +1,4 @@
 import type { ReactElement } from "react";
-import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
 /** 'inline' sits inside a SettingsRow: one line, no action. */
@@ -32,7 +31,7 @@ export function EmptyState(props: EmptyStateProps): ReactElement {
     <div
       data-slot="empty-state"
       data-variant="default"
-      className={cn("flex max-w-panel-width flex-col items-start gap-fluid-stack p-fluid-gutter")}
+      className="flex max-w-panel-width flex-col items-start gap-fluid-stack p-fluid-gutter"
     >
       <h2 className="m-0 text-heading text-ink">{props.title || "Nothing here yet"}</h2>
       <p className="m-0 text-body text-ink-muted">
