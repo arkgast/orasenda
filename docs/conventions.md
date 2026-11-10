@@ -87,14 +87,16 @@ Seen twice in P1-A: Today rolled back over a later settings save that was still 
   or held replies, never with sleeps.
 
 ## Design-system changes are checked against their first consumer
-Seen twice in P1-B. The T1 design-system task (#142, PR #152) passed review, but the first page
-built on it (T6, #147) needed two contract changes. `SettingsRow` had no stable ids, so a control
-inside it could not point `aria-describedby` at its description; this was fixed in a second round
-of #152 (ruling on #142). `Input` rendered its error as `role="status"`, a second live region on a
-page whose spec allows exactly one (#157, PR #159).
+Seen twice in P1-B. T1's review approved the T1 design-system task (#142, PR #152), but the first
+page built on it (T6, #147) needed two contract changes. `SettingsRow` had no stable ids, so a
+control inside it could not point `aria-describedby` at its helper and status line; this was fixed
+in a second round of #152 (ruling on #142). `Input` rendered its error as `role="status"`, a second
+live region on a page whose spec allows exactly one (#157, PR #159).
 - A design-system task's review reads the consuming spec's accessibility acceptance (live regions,
   labels, `aria-describedby`, focus). It checks every new or changed component against that
   acceptance, not only against its own README.
-- A component never adds a live region (`role="status"`, `role="alert"`, `aria-live`) of its own,
-  unless its README says the page has no other live region.
+- A component inside a field or row never makes its own text a live region (`role="status"`,
+  `role="alert"`, `aria-live`). It links that text to its control with `aria-describedby`, and the
+  page's one status component (the `InlineNotice` row or a `Toast`, whose READMEs make them live
+  regions) announces the change.
 - An id that another element must reference is settable by prop, so the consumer can pass it in.
