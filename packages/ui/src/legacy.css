@@ -259,7 +259,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 /* end Toast */
 
 /* NavRail */
-/* NavRail, KanbanColumn, CommandPalette, EmptyState, StartButton */
 .os-nav { display: flex; flex-direction: column; gap: var(--space-2); width: var(--rail-width); padding-block: var(--space-3); background: var(--surface-raised); z-index: var(--z-rail); flex: none; }
 .os-nav button { width: 100%; min-height: var(--control-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-1); border: 0; border-inline-start: 3px solid var(--clear); background: var(--clear); color: var(--ink-muted); font-size: 11px; line-height: 14px; font-weight: 500; cursor: pointer; }
 .os-nav button:hover { background: var(--surface-sunken); }
