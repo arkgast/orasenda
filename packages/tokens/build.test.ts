@@ -40,7 +40,7 @@ test("emits_light_color_in_root", () => {
 
 test("emits_dark_color_under_prefers_color_scheme_dark", () => {
   const { dark } = blocks(build().css);
-  assert.match(dark, /:root \{/);
+  assert.match(dark, /:root:not\(\[data-theme="light"\]\) \{/);
   assert.match(dark, /--surface: #121a1d;/);
   assert.match(dark, /--shadow-raised: 0 1px 2px rgba\(0, 0, 0, 0.35\)/);
 });
@@ -184,4 +184,26 @@ test("type_style_missing_a_shorthand_key_fails", () => {
   assertFails((t) => {
     delete t.type.groups[1].styles.find((s: Loose) => s.name === "body").lineHeight;
   }, /"body".*lineHeight/);
+});
+
+test("dark_block_guarded_and_repeated_under_data_theme_dark", () => {
+  const { css } = build();
+  const media = "@media (prefers-color-scheme: dark) {";
+  const start = css.indexOf(media);
+  assert.notEqual(start, -1);
+  const guardSel = ':root:not([data-theme="light"]) {';
+  const g = css.indexOf(guardSel, start);
+  assert.notEqual(g, -1, "guarded selector missing");
+  const gEnd = css.indexOf("}", g);
+  const mediaEnd = css.indexOf("\n}\n", gEnd);
+  assert.ok(g < mediaEnd, "guard must be inside the media query");
+  const decls = (s: string) => s.match(/--[a-z0-9-]+: [^;]+;/g) ?? [];
+  const guarded = decls(css.slice(g + guardSel.length, gEnd));
+  const explicitSel = ':root[data-theme="dark"] {';
+  const e = css.indexOf(explicitSel);
+  assert.ok(e > mediaEnd, "data-theme dark block must be outside the media query");
+  const explicit = decls(css.slice(e + explicitSel.length, css.indexOf("}", e)));
+  assert.ok(guarded.length > 0);
+  assert.ok(guarded.includes("--surface: #121a1d;"));
+  assert.deepEqual(explicit, guarded);
 });

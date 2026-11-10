@@ -1,6 +1,9 @@
 //! Orasenda app shell: Tauri glue around `orasenda-core`. Logic and time live in Rust; the
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
+// The app menu: the pure parts build on every desktop target, the menu itself on macOS.
+#[cfg(desktop)]
+mod app_menu;
 mod commands;
 mod ipc;
 mod lifecycle;
@@ -96,8 +99,13 @@ pub fn run() {
             tray::setup(app)?;
             scheduler::spawn(app.handle().clone())?;
             spike::setup(app)?;
+            lifecycle::finish_launch(app.handle());
             Ok(())
         });
+    #[cfg(target_os = "macos")]
+    let app = app
+        .menu(app_menu::build)
+        .on_menu_event(|app, event| app_menu::on_menu_event(app, event.id().as_ref()));
     lifecycle::install(app)
         .build(context)
         .expect("error while building Orasenda")
@@ -177,6 +185,20 @@ mod tests {
                 .collect()
         };
         (strings("windows"), strings("permissions"))
+    }
+
+    #[test]
+    fn tauri_conf_main_starts_hidden() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tauri.conf.json");
+        let json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let main = json["app"]["windows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|w| w["label"] == "main")
+            .expect("main window entry");
+        assert_eq!(main["visible"], serde_json::Value::Bool(false));
     }
 
     #[test]
