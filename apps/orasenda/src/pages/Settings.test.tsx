@@ -375,19 +375,25 @@ test("saved_line_only_for_minute_fields", async () => {
   expect(saveLine()).toHaveTextContent(REST);
 });
 
-async function everyStep(includeFieldError: boolean) {
+test("exactly_one_status_node_at_every_step", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
   const fail = { on: false };
   await openSettings({ settings_set: () => (fail.on ? Promise.reject(WRITE) : null) });
   expect(statusNodes(), "rest").toHaveLength(1);
   await type(focusInput(), "50");
   await blur(focusInput());
   expect(statusNodes(), "saved").toHaveLength(1);
-  if (includeFieldError) {
-    await type(focusInput(), "");
-    await blur(focusInput());
-    expect(statusNodes(), "invalid value").toHaveLength(1);
-    fireEvent.keyDown(focusInput(), { key: "Escape" });
-  }
+  await type(focusInput(), "");
+  await blur(focusInput());
+  expect(statusNodes(), "invalid value").toHaveLength(1);
+  expect(focusInput()).toHaveAttribute("aria-invalid", "true");
+  const described = focusInput().getAttribute("aria-describedby") ?? "";
+  const errorNode = described
+    .split(" ")
+    .map((id) => document.getElementById(id))
+    .find((n) => n?.textContent?.includes("Between 5 and 180 minutes. Still using 50."));
+  expect(errorNode, "aria-describedby names the error paragraph").toBeTruthy();
+  fireEvent.keyDown(focusInput(), { key: "Escape" });
   fail.on = true;
   fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
   await settle();
@@ -396,21 +402,6 @@ async function everyStep(includeFieldError: boolean) {
   expect(statusNodes(), "unavailable").toHaveLength(1);
   await emitTimer({ ...IDLE, store: "newer" });
   expect(statusNodes(), "newer").toHaveLength(1);
-}
-
-test("exactly_one_status_node_at_every_step", async () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await everyStep(false);
-});
-
-// BLOCKED on the design system (see the PR): `Input` renders its `error` as its own
-// `role="status"` (design/system/components/bundle.js:196), so a field error makes a second
-// status node next to the save line. This runs the spec's full sequence and is expected to fail
-// until `Input` stops doing that; when it starts passing, delete `.fails` and the test above's
-// split.
-test.fails("exactly_one_status_node_with_a_field_error_shown", async () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await everyStep(true);
 });
 
 test("write_failure_rolls_back_and_try_again_resends", async () => {
