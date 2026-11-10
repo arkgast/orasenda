@@ -92,12 +92,14 @@ test("row_action_defaults_to_ghost_and_can_be_quiet", () => {
     </InlineNotice>,
   );
   expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe("ghost");
+  expect(screen.getByRole("button", { name: "Got it" })).toHaveClass("text-focus");
   rerender(
     <InlineNotice variant="row" actionVariant="quiet" actionLabel="Got it" onAction={() => {}}>
       Tip
     </InlineNotice>,
   );
   expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe("quiet");
+  expect(screen.getByRole("button", { name: "Got it" })).not.toHaveClass("text-focus");
 });
 
 test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
