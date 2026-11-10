@@ -517,13 +517,18 @@ impl SessionService {
             });
         }
         let presented = self.settings();
-        let all = self.recover_owed.settings;
-        let theme_changed = all || settings.theme != presented.theme;
-        let preset_changed = all || settings.preset != presented.preset;
-        let custom_changed = all || settings.custom != presented.custom;
-        let notify_changed = all || settings.notify_session_end != presented.notify_session_end;
-        let clear_marker = notify_changed && (all || self.review_pending);
+        let owed = self.recover_owed.settings;
+        let theme_changed = settings.theme != presented.theme;
+        let preset_changed = settings.preset != presented.preset;
+        let custom_changed = settings.custom != presented.custom;
+        let notify_changed = settings.notify_session_end != presented.notify_session_end;
+        // While the launch read is owed, the stored values are read inside this transaction
+        // (the store is reachable, since it is being written) and the changes go on top.
+        let mut stored: Option<(Settings, bool)> = None;
         self.write_owed(now_ms, |txn| {
+            if owed {
+                stored = Some(read_settings(txn)?);
+            }
             if preset_changed {
                 settings::set(txn, KEY_PRESET, &settings.preset)?;
             }
@@ -535,8 +540,6 @@ impl SessionService {
             }
             if notify_changed {
                 settings::set(txn, KEY_NOTIFY, &settings.notify_session_end)?;
-            }
-            if clear_marker {
                 meta::remove(txn, META_NOTIFY_REVIEW)?;
             }
             Ok(())
@@ -545,17 +548,30 @@ impl SessionService {
             kind: SettingsErrorKind::Write,
             message: "settings couldn't be saved".into(),
         })?;
-        self.settings.theme = settings.theme;
-        self.settings.preset = settings.preset;
-        self.settings.custom = settings.custom;
+        if let Some((base, pending)) = stored {
+            self.settings = base;
+            self.review_pending = pending;
+            self.recover_owed.settings = false;
+        }
+        if theme_changed {
+            self.settings.theme = settings.theme;
+        }
+        if preset_changed {
+            self.settings.preset = settings.preset;
+        }
+        if custom_changed {
+            self.settings.custom = settings.custom;
+        }
         // An echoed value is not copied into the cache while the review is pending: the cache
         // keeps the stored-or-true value the review will use.
         if notify_changed {
             self.settings.notify_session_end = settings.notify_session_end;
             self.review_pending = false;
         }
-        // The user's choice now wins over the values the launch could not read.
-        self.recover_owed.settings = false;
+        // A known status is applied at once; the save's one event carries the outcome.
+        if self.review_pending {
+            self.run_notify_review(now_ms);
+        }
         self.refresh_status();
         Ok(SettingsSaved {
             theme: (settings.theme != presented.theme).then_some(settings.theme),
@@ -3274,6 +3290,100 @@ mod tests {
             s.settings().notify_session_end,
             "the cache kept stored-or-true"
         );
+    }
+
+    /// A pending store with non-default preset/custom and notify stored true, whose launch
+    /// settings read failed. Returns the service and the change-log length after seeding.
+    fn read_owed_service() -> (SessionService, usize) {
+        let store = pending_store(Some(true));
+        store
+            .write(0, |txn| {
+                settings::set(txn, KEY_PRESET, &Preset::Custom)?;
+                settings::set(
+                    txn,
+                    KEY_CUSTOM,
+                    &CustomSpec {
+                        focus_min: 50,
+                        break_min: 10,
+                    },
+                )
+            })
+            .expect("seeds");
+        let before = store.change_log_ids().len();
+        store.fail_reads(true);
+        let s = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0,
+        );
+        (s, before)
+    }
+
+    fn stored_custom(s: &SessionService) -> (Option<Preset>, Option<CustomSpec>) {
+        db(s)
+            .read(|txn| Ok((settings::get(txn, KEY_PRESET)?, settings::get(txn, KEY_CUSTOM)?)))
+            .expect("reads")
+    }
+
+    #[test]
+    fn settings_set_while_settings_read_owed_writes_only_the_change() {
+        let (mut s, before) = read_owed_service();
+        assert!(s.recover_owed.settings);
+        s.set_notifications(NotificationStatus::Granted);
+        db(&s).fail_reads(false);
+        let saved = s
+            .set_settings(
+                Settings {
+                    theme: Theme::Dark,
+                    ..Settings::default()
+                },
+                T0 + 1,
+            )
+            .expect("saves");
+        assert_eq!(
+            stored_custom(&s),
+            (
+                Some(Preset::Custom),
+                Some(CustomSpec {
+                    focus_min: 50,
+                    break_min: 10
+                })
+            )
+        );
+        assert_eq!(
+            db(&s).read(|txn| settings::get::<Theme>(txn, KEY_THEME)).expect("reads"),
+            Some(Theme::Dark)
+        );
+        assert_eq!(stored_notify(&s), Some(true));
+        assert_eq!(marker(&s), None);
+        assert!(saved.presented.notify_session_end);
+        assert_eq!(saved.presented.preset, Preset::Custom);
+        assert!(!s.recover_owed.settings);
+        assert_eq!(s.store_status, StoreStatus::Ok);
+        assert_eq!(
+            db(&s).change_log_ids()[before..],
+            ["ui.theme", "notify.session_end"]
+        );
+    }
+
+    #[test]
+    fn settings_set_while_settings_read_owed_with_unknown_status_leaves_the_review_pending() {
+        let (mut s, _) = read_owed_service();
+        db(&s).fail_reads(false);
+        let saved = s
+            .set_settings(
+                Settings {
+                    theme: Theme::Dark,
+                    ..Settings::default()
+                },
+                T0 + 1,
+            )
+            .expect("saves");
+        assert_eq!(stored_notify(&s), Some(true));
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+        assert!(!saved.presented.notify_session_end);
+        assert!(s.review_pending);
+        assert_eq!(stored_custom(&s).0, Some(Preset::Custom));
     }
 
     #[test]
