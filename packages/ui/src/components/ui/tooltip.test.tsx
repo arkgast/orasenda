@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { IconButton, Kbd, Tooltip } from "./src/index.ts";
+import { IconButton, Kbd } from "../../index";
+import { Tooltip } from "./tooltip";
 
-const panel = () => document.querySelector(".os-tooltip-panel");
+const panel = () => document.querySelector<HTMLElement>("[data-slot=tooltip]");
 const advance = (ms: number) =>
   act(() => {
     vi.advanceTimersByTime(ms);
@@ -51,7 +52,7 @@ test("tooltip_panel_and_kbd_are_aria_hidden", () => {
   fireEvent.pointerEnter(screen.getByRole("button"));
   advance(1000);
   expect(panel()?.getAttribute("aria-hidden")).toBe("true");
-  expect(panel()?.querySelector(".os-kbd")).not.toBeNull();
+  expect(panel()?.querySelector("[data-slot=kbd]")).not.toBeNull();
   expect(screen.queryByRole("tooltip")).toBeNull();
 });
 
@@ -89,7 +90,8 @@ test("tooltip_renders_inside_nearest_open_dialog", () => {
   const { unmount } = render(<Preset />);
   fireEvent.pointerEnter(screen.getByRole("button"));
   advance(160);
-  expect(panel()?.parentElement).toBe(document.body);
+  // Radix wraps the panel in its own positioned element, so the body holds that wrapper.
+  expect(panel()?.parentElement?.parentElement).toBe(document.body);
   unmount();
 
   render(

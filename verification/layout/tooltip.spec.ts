@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { shoot } from "./support/shots.ts";
 import { openSpecimen, pressTab } from "./support/specimen.ts";
 
-const PANEL = ".os-tooltip-panel";
+const PANEL = "[data-slot=tooltip]";
 
 test("tooltip_40ch_two_lines_kbd_unbroken", async ({ page }, info) => {
   await openSpecimen(page, "Tooltip");
@@ -10,8 +10,8 @@ test("tooltip_40ch_two_lines_kbd_unbroken", async ({ page }, info) => {
   const panel = page.locator(PANEL);
   await expect(panel).toBeVisible();
   const m = await panel.evaluate((p) => {
-    const label = p.querySelector(".os-tooltip-label") as HTMLElement;
-    const kbd = p.querySelector(".os-kbd") as HTMLElement;
+    const label = p.querySelector("[data-slot=tooltip-label]") as HTMLElement;
+    const kbd = p.querySelector("[data-slot=kbd]") as HTMLElement;
     const probe = document.createElement("span");
     probe.style.cssText = "position:absolute;visibility:hidden;width:40ch;font:inherit";
     p.appendChild(probe);
@@ -113,3 +113,38 @@ test("tooltip_esc_inside_dialog_hides_tip_and_keeps_dialog", async ({ page }) =>
   await expect(dialog).toBeVisible();
   await expect(inner).toBeFocused();
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`tooltip_stays_inside_the_viewport_at_${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "Tooltip");
+    await page.getByRole("button", { name: /Jump to section/ }).hover();
+    const panel = page.locator(PANEL);
+    await expect(panel).toBeVisible();
+    const r = await panel.evaluate((p) => {
+      const b = p.getBoundingClientRect();
+      return {
+        left: b.left,
+        right: b.right,
+        top: b.top,
+        bottom: b.bottom,
+        vw: document.documentElement.clientWidth,
+        vh: document.documentElement.clientHeight,
+        lines: Math.round(
+          (p.querySelector("[data-slot=tooltip-label]") as HTMLElement).getBoundingClientRect()
+            .height / Number.parseFloat(getComputedStyle(p).lineHeight),
+        ),
+      };
+    });
+    expect(r.left).toBeGreaterThanOrEqual(0);
+    expect(r.top).toBeGreaterThanOrEqual(0);
+    expect(r.right).toBeLessThanOrEqual(r.vw);
+    expect(r.bottom).toBeLessThanOrEqual(r.vh);
+    expect(r.lines).toBeLessThanOrEqual(2);
+  });
+}

@@ -9,3 +9,12 @@ host.Orasenda = { ...host.Orasenda, strictShortcuts: true };
 afterEach(() => {
   cleanup();
 });
+
+// Radix Popper measures its content with a ResizeObserver, which jsdom lacks.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

@@ -61,8 +61,8 @@ test("small_controls_aria_snapshot", async ({ page }) => {
   // With a tooltip showing, its text (label and Kbd) is still absent from the accessibility tree.
   const pages = page.locator('[data-state="icon-button-pages-keys"] button');
   await pages.hover();
-  await expect(page.locator(".os-tooltip-panel")).toContainText("⌘1–6");
-  await expect(page.locator(".os-tooltip-panel")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("[data-slot=tooltip]")).toContainText("⌘1–6");
+  await expect(page.locator("[data-slot=tooltip]")).toHaveAttribute("aria-hidden", "true");
   await expect(page.locator("body")).toMatchAriaSnapshot(iconButtons);
   await expect(pages).toHaveAttribute(
     "aria-keyshortcuts",

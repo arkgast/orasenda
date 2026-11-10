@@ -1,7 +1,8 @@
 import { type ReactElement, useState } from "react";
-import { Button, Dialog, describeShortcut, IconButton, Tooltip } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
-import { Stop } from "./icons.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { Stop } from "../../../specimens/icons.tsx";
+import { Button, Dialog, describeShortcut, IconButton } from "../../index";
+import { Tooltip } from "./tooltip";
 
 export function TooltipSpecimen(): ReactElement {
   const [open, setOpen] = useState(false);

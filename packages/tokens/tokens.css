@@ -135,6 +135,7 @@
   --container-7xl: 1280px;
   --container-start-compact: 400px;
   --container-ring-clock: 480px;
+  --container-tooltip: 40ch;
   --fluid-gutter: clamp(var(--space-4), 4cqi, var(--space-6));
   --fluid-section: clamp(var(--space-5), 6cqi, var(--space-8));
   --fluid-stack: clamp(var(--space-3), 2cqi, var(--space-5));

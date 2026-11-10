@@ -1,5 +1,6 @@
 import * as R from "react";
 import { TimerRing } from "./components/ui/timer-ring";
+import { Tooltip } from "./components/ui/tooltip";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
@@ -265,70 +266,6 @@ function followTrigger(trigger, panel, opts) {
   view.addEventListener("scroll", place, true);
   return function () { view.removeEventListener("resize", place); view.removeEventListener("scroll", place, true); };
 }
-// Input modality. A focus shows a Tooltip only right after keyboard navigation (Tab, arrows, Home, End, Page keys).
-// WebKit matches :focus-visible for focus moved by script too, so this flag decides: focus restored after a dialog
-// closes, or launch focus on Start, follows no navigation key and shows nothing. A pointer press or any other key clears it.
-var NAV_KEYS = /^(Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown)$/;
-var modality = { keyboard: false };
-if (typeof document !== "undefined") {
-  document.addEventListener("keydown", function (e) { modality.keyboard = NAV_KEYS.test(e.key); }, true);
-  document.addEventListener("pointerdown", function () { modality.keyboard = false; }, true);
-  document.addEventListener("mousedown", function () { modality.keyboard = false; }, true);
-}
-// Tooltip
-function Tooltip(p) {
-  var anchor = R.useRef(null), timer = R.useRef(0);
-  var hover = R.useState(false), focus = R.useState(false), dismissed = R.useState(false);
-  // A menu trigger whose menu is open (aria-expanded true on the child) shows no tooltip, so Esc reaches the menu.
-  var kid = p.children && p.children.props, expanded = kid ? kid["aria-expanded"] === true || kid["aria-expanded"] === "true" : false;
-  var shown = !!p.label && (hover[0] || focus[0]) && !dismissed[0] && !expanded;
-  function cancel() { if (timer.current) { clearTimeout(timer.current); timer.current = 0; } }
-  function afterQuick(fn) {
-    cancel();
-    timer.current = setTimeout(function () { timer.current = 0; fn(); }, tokenNumber(anchor.current && anchor.current.ownerDocument.documentElement, "--duration-quick"));
-  }
-  function enter() { if (hover[0]) cancel(); else afterQuick(function () { hover[1](true); }); }
-  function leave() { afterQuick(function () { hover[1](false); }); }
-  R.useEffect(function () { return cancel; }, []);
-  R.useEffect(function () { if (!hover[0] && !focus[0] && dismissed[0]) dismissed[1](false); }, [hover[0], focus[0], dismissed[0]]);
-  // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler),
-  // unless the press comes from inside an open PopoverMenu: then it hides the tooltip and still reaches the menu.
-  R.useEffect(function () {
-    if (!shown || !anchor.current) return;
-    var doc = anchor.current.ownerDocument;
-    function key(e) {
-      if (e.key !== "Escape") return;
-      var t = e.target, inMenu = t && t.closest && t.closest(".os-popover-panel");
-      cancel(); dismissed[1](true);
-      if (!inMenu) { e.preventDefault(); e.stopPropagation(); }
-    }
-    doc.addEventListener("keydown", key, true);
-    return function () { doc.removeEventListener("keydown", key, true); };
-  }, [shown]);
-  R.useLayoutEffect(function () {
-    var a = anchor.current;
-    if (!shown || !a) return;
-    var doc = a.ownerDocument, trigger = a.firstElementChild || a, panel = doc.createElement("div"), text = doc.createElement("span");
-    panel.className = "os-tooltip os-tooltip-panel";
-    panel.setAttribute("aria-hidden", "true");
-    panel.setAttribute("data-placement", p.placement || "auto");
-    text.className = "os-tooltip-label";
-    text.textContent = p.label;
-    panel.appendChild(text);
-    if (p.shortcut) { var kbd = doc.createElement("span"); kbd.className = "os-kbd"; kbd.textContent = p.shortcut; panel.appendChild(kbd); }
-    // Hoverable (WCAG 1.4.13): the pointer can move onto the panel and it stays.
-    panel.addEventListener("pointerenter", enter);
-    panel.addEventListener("pointerleave", leave);
-    panelHost(a).appendChild(panel);
-    var stop = followTrigger(trigger, panel);
-    return function () { stop(); panel.removeEventListener("pointerenter", enter); panel.removeEventListener("pointerleave", leave); if (panel.parentNode) panel.parentNode.removeChild(panel); };
-  }, [shown, p.label, p.shortcut, p.placement]);
-  return h("span", { ref: anchor, className: "os-tip-anchor",
-    onPointerEnter: enter, onPointerLeave: leave,
-    onFocus: function () { if (modality.keyboard) focus[1](true); },
-    onBlur: function (e) { if (!anchor.current || !anchor.current.contains(e.relatedTarget)) focus[1](false); } }, p.children);
-}
-// end Tooltip
 // shortcut: one glyph string, or an array of chords (aria-keyshortcuts joins them with spaces).
 // shortcutLabel: the text the tooltip Kbd shows when it differs from the chords (a range such as "\u23181\u20136").
 // keyshortcuts={false}: the Kbd shows but the button sets no aria-keyshortcuts (the page, not this button, owns the key).
@@ -470,6 +407,5 @@ export {
   Toast,
   CommandPalette,
   IconButton,
-  Tooltip,
   PopoverMenu,
 };
