@@ -1124,7 +1124,6 @@ pub(crate) mod test_support {
         log: Log,
         status: Mutex<NotificationStatus>,
         answers: Mutex<Vec<Answer>>,
-        open_result: Mutex<Result<(), PlatformError>>,
         /// When set, `status` logs the read and then blocks until the gate is released.
         gate: Mutex<Option<std::sync::mpsc::Receiver<()>>>,
         panic_on_status: std::sync::atomic::AtomicBool,
@@ -1133,18 +1132,6 @@ pub(crate) mod test_support {
     impl FakeNotifier {
         pub(crate) fn set_status(&self, status: NotificationStatus) {
             *self.status.lock().unwrap_or_else(PoisonError::into_inner) = status;
-        }
-
-        /// What `open_settings` answers next.
-        #[allow(
-            dead_code,
-            reason = "open_settings takes an AppHandle, so no host-generic test drives it yet"
-        )]
-        pub(crate) fn set_open_result(&self, result: Result<(), PlatformError>) {
-            *self
-                .open_result
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner) = result;
         }
 
         /// Holds every `status` read until the returned sender sends or drops.
@@ -1204,10 +1191,7 @@ pub(crate) mod test_support {
 
         fn open_settings(&self) -> Result<(), PlatformError> {
             self.log.push(Event::OpenedSettings);
-            self.open_result
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .clone()
+            Ok(())
         }
     }
 
@@ -1223,7 +1207,6 @@ pub(crate) mod test_support {
             log: log.clone(),
             status: Mutex::new(status),
             answers: Mutex::new(Vec::new()),
-            open_result: Mutex::new(Ok(())),
             gate: Mutex::new(None),
             panic_on_status: std::sync::atomic::AtomicBool::new(false),
         });

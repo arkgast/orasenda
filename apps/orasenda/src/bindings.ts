@@ -21,7 +21,7 @@ export const commands = {
 	settingsGet: () => __TAURI_INVOKE<Settings>("settings_get"),
 	/**  Saves the settings. */
 	settingsSet: (settings: Settings) => typedError<null, SettingsError>(__TAURI_INVOKE("settings_set", { settings })),
-	/**  The notification permission status. Never asks; never errors. */
+	/**  The notification permission status. Asks macOS once when it is `notDetermined` (callers that overlap share the prompt); otherwise returns the known status. Never errors. */
 	notificationsRequest: () => __TAURI_INVOKE<NotificationStatus>("notifications_request"),
 	/**  Opens the system notification settings for the app. */
 	notificationsOpenSettings: () => typedError<null, NotificationsError>(__TAURI_INVOKE("notifications_open_settings")),
