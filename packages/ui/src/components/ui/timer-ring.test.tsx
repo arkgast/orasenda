@@ -88,5 +88,7 @@ test("warning_arc_fades_on_duration_slow", () => {
 
 test("exposes_timer_with_name", () => {
   render(<TimerRing mode="paused" remaining="12:16" remainingLabel="12 minutes 16 seconds" />);
-  expect(screen.getByRole("timer", { name: "Paused, 12 minutes 16 seconds remaining" })).toBeTruthy();
+  expect(
+    screen.getByRole("timer", { name: "Paused, 12 minutes 16 seconds remaining" }),
+  ).toBeTruthy();
 });

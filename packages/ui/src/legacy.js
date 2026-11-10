@@ -1,4 +1,5 @@
 import * as R from "react";
+import { TimerRing } from "./components/ui/timer-ring";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
@@ -35,30 +36,6 @@ function ModeChip(p) {
   return h("span", { className: "os-chip os-mode-" + mode }, h(Shape, { mode: mode }), p.children || MODE_LABEL[mode]);
 }
 // end ModeChip
-function timerLabel(p, mode) {
-  return mode === "idle" ? "No session" : MODE_LABEL[mode] + ", " + (p.remainingLabel || p.remaining || "25:00") + " remaining" + (p.task ? ", " + p.task : "") + (p.clock ? ", Wall clock, " + p.clock : "");
-}
-// size="fluid": the ring is drawn on a 400-unit grid and sized by its box (bundle.css, .os-timer-box), between
-// timer-min-size and timer-full-size; stroke is then in those units, so it scales with the diameter.
-// A numeric size renders exactly as before.
-// TimerRing
-function TimerRing(p) {
-  var fluid = p.size === "fluid";
-  var size = fluid ? 400 : Math.max(160, p.size || 280), stroke = Math.max(2, Math.min(size / 4, p.stroke || Math.round(size / 40)));
-  var r = (size - stroke) / 2, c = 2 * Math.PI * r, progress = clamp(p.progress), mode = p.mode || "focus";
-  var ring = h("div", { className: cx("os-timer", "os-timer-" + mode, fluid ? "os-timer-fluid" : size >= 480 && "os-timer-full"), style: fluid ? undefined : { width: size }, role: "timer", "aria-live": "off", "aria-label": timerLabel(p, mode) },
-    h("svg", { className: "os-timer-ring", viewBox: "0 0 " + size + " " + size, "aria-hidden": "true" },
-      h("circle", { className: "track", cx: size / 2, cy: size / 2, r: r, strokeWidth: Math.max(2, stroke / 3) }),
-      mode !== "idle" ? h("circle", { className: "prog", cx: size / 2, cy: size / 2, r: r, strokeWidth: stroke, strokeDasharray: c, strokeDashoffset: c * progress }) : null),
-    h("div", { className: "os-timer-center", "aria-hidden": "true" },
-      h(ModeChip, { mode: mode }),
-      mode !== "idle" ? h("div", { className: "os-timer-digits" }, p.remaining || "25:00") : null,
-      p.task ? h("div", { className: "os-timer-task" }, p.task) : null,
-      p.clock ? h("div", { className: "os-timer-clock" }, "Clock · " + p.clock) : null),
-    p.clock ? h("span", { className: "os-sr-only" }, "Wall clock, " + p.clock) : null);
-  return fluid ? h("div", { className: "os-timer-box" }, ring) : ring;
-}
-// end TimerRing
 // TimerStrip: the time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the
 // ring; the fill shows time left; warning adds the triangle at the fill's end. No live region: role="timer", aria-live off.
 function stripLabel(p, mode) {
@@ -560,7 +537,6 @@ function PopoverMenu(p) {
 // end PopoverMenu
 
 export {
-  TimerRing,
   TimerStrip,
   TaskCard,
   IntentPrompt,

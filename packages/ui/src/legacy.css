@@ -48,33 +48,6 @@ button { font-family: inherit; }
 .os-mode-shallow, .os-mode-paused, .os-mode-idle { background: var(--surface-raised); color: var(--ink-muted); box-shadow: inset 0 0 0 1px var(--line-strong); }
 /* end ModeChip */
 
-/* TimerRing */
-/* TimerRing: a thin complete track and a thicker arc that shows what is left. */
-.os-timer { position: relative; display: inline-grid; place-items: center; max-width: 100%; container-type: inline-size; flex: none; }
-.os-timer-ring { display: block; width: 100%; height: auto; transform: rotate(-90deg); }
-.os-timer .track { fill: none; stroke: var(--line-strong); }
-.os-timer .prog { fill: none; stroke-linecap: round; transition: stroke-dashoffset var(--duration-calm) var(--easing-calm), stroke var(--duration-calm) var(--easing-calm); }
-.os-timer-focus .prog { stroke: var(--focus); }
-.os-timer-break .prog { stroke: var(--break); }
-.os-timer-routine .prog { stroke: var(--routine); }
-.os-timer-warning .prog { stroke: var(--amber); }
-.os-timer-paused .prog { stroke: var(--ink-muted); }
-.os-timer-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); text-align: center; }
-.os-timer-digits { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: min(64px, 23cqi); line-height: 1; font-weight: 300; letter-spacing: 0; color: var(--ink); }
-.os-timer-full .os-timer-digits { font-size: min(168px, 30cqi); }
-.os-timer-task { font-size: 13px; line-height: 18px; color: var(--ink-muted); max-width: 60%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.os-timer-clock { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); font-size: 13px; line-height: 16px; }
-.os-timer-full .os-timer-clock { font-size: 28px; line-height: 32px; }
-/* At two minutes the arc and chip colour fade into amber over duration-slow; the word and shape switch at once. */
-.os-timer-warning .prog { transition: stroke-dashoffset var(--duration-calm) var(--easing-calm), stroke var(--duration-slow) var(--easing-calm); }
-.os-timer-warning .os-chip { transition-duration: var(--duration-slow); }
-/* size="fluid": the box fills its host's slot (square when the slot has no height of its own) and the ring takes the
-   shorter side, clamped to timer-min-size .. timer-full-size. Digits scale with the diameter: timer-md (28) to timer-xl (168). */
-.os-timer-box { container-type: size; display: grid; place-items: center; width: 100%; aspect-ratio: 1; max-height: 100%; min-width: var(--timer-min-size); min-height: var(--timer-min-size); }
-.os-timer-fluid { width: clamp(var(--timer-min-size), min(100cqi, 100cqb), var(--timer-full-size)); }
-.os-timer-fluid .os-timer-digits { font-size: clamp(28px, 23cqi, 168px); }
-@container (min-width: 480px) { .os-timer-fluid .os-timer-clock { font-size: 28px; line-height: 32px; } }
-/* end TimerRing */
 
 /* TaskCard */
 /* TaskCard: a native button when actionable, an article when read-only. */
@@ -196,7 +169,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 
 /* Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
 @media (forced-colors: active) {
-  .os-timer .track { stroke-dasharray: 2 4; }
+  [data-slot="timer-ring-track"] { stroke-dasharray: 2 4; }
   .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
   .os-strip-bar::before { background: GrayText; }
   .os-strip-fill { background: CanvasText; }

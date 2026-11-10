@@ -128,7 +128,7 @@ ci:
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
-# Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=Seed&theme=dark
+# Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=TimerRing&theme=dark
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
 
