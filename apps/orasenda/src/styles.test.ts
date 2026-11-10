@@ -143,3 +143,9 @@ test("ring_slot_reserves_the_ring_space", () => {
 test("today_keeps_the_content_width", () => {
   expect(rule(".today").get("max-inline-size")).toBe("var(--content-width)");
 });
+
+test("data_theme_sets_color_scheme", () => {
+  expect(rule(":root").get("color-scheme")).toBe("light dark");
+  expect(rule(':root[data-theme="light"]').get("color-scheme")).toBe("light");
+  expect(rule(':root[data-theme="dark"]').get("color-scheme")).toBe("dark");
+});

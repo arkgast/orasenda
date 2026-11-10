@@ -5,6 +5,15 @@
   color-scheme: light dark;
 }
 
+/* The theme chosen in Settings (useTheme): native controls and scrollbars follow it. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   background: var(--surface);
