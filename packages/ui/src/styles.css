@@ -1,0 +1,21 @@
+/* Tailwind's theme and utilities layers only: no Preflight while the legacy bundle exists, because its
+   reset would restyle the legacy os-* components and app.css. Imported once by the app, the specimens
+   and the design-system build. tokens.css (the variables) is imported by the host. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+@import "@orasenda/tokens/theme.css";
+
+/* The resets shadcn's classes assume, on elements that opt in with data-slot only. */
+@layer base {
+  [data-slot] {
+    box-sizing: border-box;
+    margin: 0;
+    border-width: 0;
+    border-style: solid;
+  }
+}
+
+/* Today's hand-written rules; each component's block leaves with it. */
+@import "./legacy.css";

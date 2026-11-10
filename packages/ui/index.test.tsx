@@ -2,19 +2,17 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import * as ui from "./index.ts";
+import * as ui from "./src/index.ts";
 
 test("exports_intent_prompt_and_button", () => {
   expect(typeof ui.IntentPrompt).toBe("function");
   expect(typeof ui.Button).toBe("function");
   for (const name of ["PageFrame", "ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
     expect(typeof ui[name]).toBe("function");
-    expect(name in window.Orasenda).toBe(true);
   }
 });
 
-test("intent_prompt_renders_with_global_react", () => {
-  expect(window.React).toBeDefined();
+test("intent_prompt_renders", () => {
   render(<ui.IntentPrompt open app="Safari" onReturn={() => {}} onWait={() => {}} />);
   expect(screen.getByText(/wait 10 minutes/i)).toBeInTheDocument();
 });
@@ -77,37 +75,27 @@ test("intent_prompt_step_two_has_no_wait_button", () => {
   ]);
 });
 
-test("exports_every_namespace_member", () => {
-  const exported = Object.keys(ui)
-    .filter((k) => typeof (ui as Record<string, unknown>)[k] === "function")
-    .sort();
-  const members = Object.entries(window.Orasenda)
-    .filter(([, v]) => typeof v === "function")
-    .map(([k]) => k)
-    .sort();
-  expect(exported).toEqual(members);
+test("exports_every_index_line", () => {
+  const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
+  const named = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
+  const exported = Object.keys(ui).sort();
+  expect(exported).toEqual([...named].sort());
+  expect(named).toEqual([...named].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())));
 });
 
 test("exports_small_controls_and_key_table", () => {
   for (const member of [ui.IconButton, ui.Tooltip, ui.Kbd, ui.describeShortcut]) {
     expect(typeof member).toBe("function");
   }
-  for (const name of ["IconButton", "Tooltip", "Kbd", "describeShortcut"]) {
-    expect(name in window.Orasenda).toBe(true);
-  }
 });
 
 test("exports_timer_faces", () => {
   for (const member of [ui.TimerStrip, ui.timerLayout]) expect(typeof member).toBe("function");
-  for (const name of ["TimerStrip", "timerLayout"]) expect(name in window.Orasenda).toBe(true);
   expect(ui.timerLayout.tokens).toBeDefined();
 });
 
 test("index_d_ts_has_no_timer_or_start_next_props", () => {
-  const dts = readFileSync(
-    resolve(import.meta.dirname, "../../design/system/components/index.d.ts"),
-    "utf8",
-  );
+  const dts = readFileSync(resolve(import.meta.dirname, "src/legacy.d.ts"), "utf8");
   expect(dts).not.toContain("TimerRingNextProps");
   expect(dts).not.toContain("StartButtonNextProps");
   expect(dts).toContain("declare function TimerStrip");
@@ -459,14 +447,10 @@ test("inline_notice_row_action_variant_defaults_ghost_and_accepts_quiet", () => 
 
 test("exports_preset_popover", () => {
   expect(typeof ui.PopoverMenu).toBe("function");
-  expect("PopoverMenu" in window.Orasenda).toBe(true);
 });
 
 test("index_d_ts_declares_popover_menu", () => {
-  const dts = readFileSync(
-    resolve(import.meta.dirname, "../../design/system/components/index.d.ts"),
-    "utf8",
-  );
+  const dts = readFileSync(resolve(import.meta.dirname, "src/legacy.d.ts"), "utf8");
   expect(dts).toContain("declare function PopoverMenu");
   expect(dts).toContain("PopoverMenu: typeof PopoverMenu");
   expect(dts).toContain("anchor: React.RefObject<HTMLElement | null>");

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { StartButton } from "../index.ts";
+import { StartButton } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 
 const noop = () => {};

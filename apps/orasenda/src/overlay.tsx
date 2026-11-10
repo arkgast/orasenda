@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Overlay } from "./spike/Overlay";
-import "@orasenda/ui/components.css";
+import "@orasenda/ui/styles.css";
 import "./spike/overlay.css";
 
 const root = document.getElementById("root");

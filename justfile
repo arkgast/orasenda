@@ -32,6 +32,7 @@ fmt:
 lint:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     pnpm exec biome lint .
+    "{{ just_executable() }}" tailwind-strict
 
 # Run every test suite.
 test:
@@ -45,14 +46,33 @@ contrast:
     {{ python }} -m unittest discover -s verification -p "contrast_test.py"
     {{ python }} verification/contrast.py
 
-# Regenerate packages/tokens/tokens.css from design/system/tokens.json.
+# Regenerate packages/tokens/tokens.css and theme.css from packages/tokens/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
 
-# Regenerate packages/ui/components.css and components.d.ts from design/system/components/
-# (bundle.css and index.d.ts).
-ui-css:
+# Build the Design System artifact's files (components/bundle.js, bundle.css, index.d.ts, lib/, previews,
+# README, tokens.json, design-system.json) into design/system/ (git-ignored), or into --out <dir>.
+design-system *args:
+    pnpm --filter @orasenda/ui design-system {{ args }}
+
+# Fails on an arbitrary Tailwind value (w-[13px], bg-(--x), text-[#fff]) in packages/ui/src or apps/orasenda/src.
+tailwind-strict:
+    node tools/tailwind-strict.ts
+
+# Build the library, then typecheck the app's type test against the built declarations.
+ui-build:
     pnpm --filter @orasenda/ui build
+    pnpm --filter @orasenda/ui design-system --out dist/system
+    pnpm --filter orasenda exec tsc -p tsconfig.ui-built.json
+
+# Build the Design System artifact files into a scratch folder and load them as classic scripts.
+design-system-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="$(mktemp -d)"
+    trap 'rm -rf "$dir"' EXIT
+    "{{ just_executable() }}" design-system --out "$dir"
+    DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
 # Every check, fastest first. Stops at the first failure.
 ci:
@@ -72,20 +92,23 @@ ci:
     "{{ just_executable() }}" core-purity
     @echo "==> contrast (self test, then the declared pairs)"
     "{{ just_executable() }}" contrast
-    @echo "==> tokens (tokens.css is up to date)"
+    @echo "==> tokens (tokens.css and theme.css are up to date)"
     "{{ just_executable() }}" tokens
-    git diff --exit-code -- packages/tokens/tokens.css
+    git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
-    @echo "==> ui (components.css and components.d.ts are up to date)"
-    "{{ just_executable() }}" ui-css
-    git diff --exit-code -- packages/ui/components.css packages/ui/components.d.ts
+    @echo "==> lint (no arbitrary Tailwind values)"
+    "{{ just_executable() }}" tailwind-strict
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
     @echo "==> typecheck (verification)"
     pnpm --filter @orasenda/ui exec tsc -p ../../verification/layout/tsconfig.json
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
+    @echo "==> ui (library build and the app's types against it)"
+    "{{ just_executable() }}" ui-build
+    @echo "==> design system (files build and load as classic scripts)"
+    "{{ just_executable() }}" design-system-check
     @echo "==> typecheck (tsc)"
     pnpm --filter orasenda typecheck
     @echo "==> test (vitest)"

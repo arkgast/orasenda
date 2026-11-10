@@ -1,0 +1,38 @@
+// The public surface. Each name is exported once, from a component file or from legacy.js, never both.
+// A migrated component's line moves from legacy.js to its own file in the same change.
+export { Button } from "./legacy.js";
+export { CapturePad } from "./legacy.js";
+export { CommandPalette } from "./legacy.js";
+export { describeShortcut } from "./legacy.js";
+export { Dialog } from "./legacy.js";
+export { EmptyState } from "./legacy.js";
+export { FullScreenFocus } from "./legacy.js";
+export { HabitDots } from "./legacy.js";
+export { IconButton } from "./legacy.js";
+export { InlineNotice } from "./legacy.js";
+export { Input } from "./legacy.js";
+export { IntentPrompt } from "./legacy.js";
+export { KanbanColumn } from "./legacy.js";
+export { Kbd } from "./legacy.js";
+export { MenuBarTimer } from "./legacy.js";
+export { ModeChip } from "./legacy.js";
+export { NavRail } from "./legacy.js";
+export { NowLine } from "./legacy.js";
+export { PageFrame } from "./legacy.js";
+export { PopoverMenu } from "./legacy.js";
+export { RoutineItem } from "./legacy.js";
+export { ScrollRegion } from "./legacy.js";
+export { SettingsIndex } from "./legacy.js";
+export { SettingsRow } from "./legacy.js";
+export { StartButton } from "./legacy.js";
+export { TaskCard } from "./legacy.js";
+export { TextArea } from "./legacy.js";
+export { TimeBlock } from "./legacy.js";
+export { timerLayout } from "./legacy.js";
+export { TimerRing } from "./legacy.js";
+export { TimerStrip } from "./legacy.js";
+export { Toast } from "./legacy.js";
+export { Tooltip } from "./legacy.js";
+export { WellnessNote } from "./legacy.js";
+export type * from "./legacy.d.ts";
+export type * from "./types.ts";

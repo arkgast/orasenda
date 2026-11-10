@@ -7,3 +7,5 @@ apps/orasenda/src-tauri/gen/schemas/
 test-results/
 playwright-report/
 __pycache__/
+design/system/
+.build/

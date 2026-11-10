@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { IconButton, Kbd, Tooltip } from "./index.ts";
+import { IconButton, Kbd, Tooltip } from "./src/index.ts";
 
 const panel = () => document.querySelector(".os-tooltip-panel");
 const advance = (ms: number) =>

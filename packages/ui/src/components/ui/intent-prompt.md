@@ -1,0 +1,18 @@
+The Gentle overlay in two steps: first "Is this what you intended?" with one clear way back, then, only if the user says they need the app, a short reason step before Continue.
+
+- **Step 1** shows the breathing circle and up to three actions, in this order: `primary` "Back to focus", `quiet` "Wait 10 minutes, then decide" (only when `onWait` is passed; the host owns the wait) and `ghost` "I need <app> now" (only when `onContinue` is passed). Fill, border and bare text make the three levels differ by shape as well as colour. Initial focus is on "Back to focus".
+- **Step 2** replaces those actions with only the reason group ("What do you need <app> for?": Work, Quick check, Other), `quiet` "Continue to <app>" and `primary` "Back to focus". Wait is not offered here, and there is no separate "back to step 1" control: "Back to focus" is the safe way out, and the next show starts at step 1 again.
+- **Reason is required to continue.** Continue is `aria-disabled` until a reason is picked: it stays in the tab order, looks disabled (dashed `line-strong`, `ink-muted`, no opacity) and is described by the visible hint "Pick one to continue. Your reason stays on this device." `onContinue(reason)` always receives one of `IntentReason`. The reason stays local and can be deleted.
+- **One primary in both steps, and it is always "Back to focus".** The loud button never changes meaning between steps, so a habitual click or Enter on it never becomes a bypass. Continue is the step's purpose and sits right under the reasons, but it is the honest way through, not the suggested one.
+- **Keyboard and VoiceOver.** Escape is "Back to focus" in both steps. Choosing "I need <app> now" moves focus to the first reason, so VoiceOver reads the radio with the group's question; there is no live region, so nothing is announced twice. Tab order in step 2 is reasons, Continue, Back to focus. Arrow keys pick a reason.
+- `app` is the name in the copy; `title`, `message` and `waitLabel` override step 1's defaults. Native modal: background inert, focus contained, `scrim` backdrop, focus returns to the still-mounted trigger. Unmount or set `open: false` when done; reopening or a new `app` resets to step 1 and clears the reason.
+- No new motion: steps swap instantly. The breathing circle stays in both steps and is static under reduced motion.
+- **Context lines.** An optional context line (the focus shape and "Focus · ends 15:20") and a strength line ("Gentle pause. Esc or Return goes back to focus.").
+- **Variants.**
+  - Waiting: "You chose to wait until 15:12" / "Discord stays hidden until then."; keeps "I need <app> now".
+  - Firm: Continue is `aria-disabled`, described by a `role="status"` hint "Available at 15:21." that changes once to "You can continue now.", then a typed reason in `TextArea`.
+  - StrongLock: title "<app> is locked until 15:20", Back to focus only; the description follows the helper's approval state, independent of the selected strength; strength line "It ends when the session ends; End on Today asks once."
+  - Fallback: "Orasenda couldn't show the pause" / "Your session is still running. If an app was hidden, you can bring it back from the Dock."; Back to focus only, no app name, no scrim.
+- **Short displays.** Below `layout-tight-height` the step 2 and typed-reason steps drop the breathing circle and the gap goes from `space-5` to `space-4`. Back to focus stays the only primary and the initial focus.
+
+Do: keep "Back to focus" the only primary in both steps. Don't: show bypass counts here, pre-select a reason, or omit `onContinue` unless the user chose a stricter mode.

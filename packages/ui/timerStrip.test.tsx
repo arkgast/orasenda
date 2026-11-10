@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { TimerStrip } from "./index.ts";
+import { TimerStrip } from "./src/index.ts";
 
 const TASK =
   "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";

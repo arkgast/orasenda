@@ -1,0 +1,3 @@
+/* Entry for components/bundle.css: the variables and font faces, then the package styles. */
+@import "@orasenda/tokens/tokens.css";
+@import "../src/styles.css";

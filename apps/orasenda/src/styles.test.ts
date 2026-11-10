@@ -61,7 +61,7 @@ test("app_css_imports_tokens", () => {
 });
 
 test("main_imports_design_system_css", () => {
-  expect(mainTsx).toMatch(/^import "@orasenda\/ui\/components\.css";$/m);
+  expect(mainTsx).toMatch(/^import "@orasenda\/ui\/styles\.css";$/m);
 });
 
 test("styles_css_has_no_hex_px_or_font_name", () => {

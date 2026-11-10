@@ -1,5 +1,5 @@
 import { type ReactElement, useState } from "react";
-import { Button, Dialog, describeShortcut, IconButton, Tooltip } from "../index.ts";
+import { Button, Dialog, describeShortcut, IconButton, Tooltip } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 import { Stop } from "./icons.tsx";
 

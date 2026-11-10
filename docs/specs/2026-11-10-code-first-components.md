@@ -137,7 +137,7 @@ The app imports `@orasenda/ui` from source (`exports["."]` → `./src/index.ts`,
 ### Builds (Vite 8, one config per output, all in `packages/ui/vite.config.ts` unless noted)
 | Output | How | Notes |
 |---|---|---|
-| App | `apps/orasenda/vite.config.ts` with `@tailwindcss/vite` | Pages load with `React.lazy` routes (Today, Settings, Placeholder pages); the overlay entry stays separate |
+| App | `apps/orasenda/vite.config.ts` with `@tailwindcss/vite` | Pages load as their own preloaded chunks read with `use()` inside an error boundary (Today, Settings, Placeholder pages); `React.lazy` is not used because it suspends on first render and the rail moves focus to the new heading at once; the overlay entry stays separate |
 | `@orasenda/ui` library | library mode, ES, `react`, `react-dom`, `radix-ui` external | `rolldown-plugin-dts` emits one `index.d.ts` from `isolatedDeclarations` |
 | `components/bundle.js` | library mode, `iife`, `react` → `window.React`, `react-dom` → `window.ReactDOM`; `react/jsx-runtime` bundled in | Line 1 is the `@ds-bundle` header (format 4, namespace, runtime component list generated from `index.ts`); minified; footer `window.Orasenda = Object.assign(window.Orasenda \|\| {}, {…})` |
 | `components/bundle.css` | Tailwind build of `src/styles.css` | Includes `tokens.css` and the font faces; no CDN `@import` |

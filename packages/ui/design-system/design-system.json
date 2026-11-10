@@ -1,0 +1,33 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-07T16:51:10Z"
+  },
+  "title": "Orasenda",
+  "namespace": "Orasenda",
+  "libraries": [
+    {
+      "name": "react",
+      "version": "18"
+    },
+    {
+      "name": "react-dom",
+      "version": "18"
+    }
+  ],
+  "sections": {},
+  "groups": [],
+  "assetGroups": {},
+  "blobs": {},
+  "docs": {
+    "sections": []
+  },
+  "lastChange": {
+    "by": "Arnold Gandarillas Castillo",
+    "at": "2026-11-10T10:18:28Z",
+    "via": "Claude Code",
+    "note": "T4 (issue #171) review fixes: (1) bundle.css .os-popover-sep now stretches full width (align-self: stretch; margin: space-2 0), overriding the UA hr margin-inline: auto that shrank the separator before the link row to 0 width in the live menu and the static preview; PopoverMenu README anatomy names the rule. (2) Tooltip's Esc listener still hides a tooltip showing on another trigger but no longer stops an Esc pressed inside an open PopoverMenu, so one press closes the menu; Tooltip and PopoverMenu READMEs updated. (3) PopoverMenu Tab follows the WAI-ARIA menu pattern: Tab closes and moves focus to the next tabbable element after the trigger (scoped to the open dialog holding it; none: the trigger), Shift+Tab closes and returns focus to the trigger; README, index.d.ts and preview text updated. (4) PopoverMenu preview notice is a plain p, no role=status live region."
+  }
+}

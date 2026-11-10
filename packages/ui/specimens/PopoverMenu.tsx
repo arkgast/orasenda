@@ -7,7 +7,7 @@ import {
   PopoverMenu,
   type PopoverMenuItem,
   Tooltip,
-} from "../index.ts";
+} from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 import { Menu } from "./icons.tsx";
 

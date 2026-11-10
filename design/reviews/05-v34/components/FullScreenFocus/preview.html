@@ -1,0 +1,86 @@
+<!-- @dsCard group="Timer" height=7800 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>FullScreenFocus</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  var INTENT = 'Draft chapter 3: organise the long opening argument and the notes for the research team';
+  var STATES = [
+    { name: 'focus', p: { mode: 'focus', remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25 } },
+    { name: 'paused', p: { mode: 'paused', remaining: '12:16', remainingLabel: '12 minutes 16 seconds', progress: 0.51 } },
+    { name: 'break', p: { mode: 'break', remaining: '04:10', remainingLabel: '4 minutes 10 seconds', progress: 0.17 } },
+    { name: 'warning', p: { mode: 'warning', remaining: '01:48', remainingLabel: '1 minute 48 seconds', progress: 0.93 } },
+    { name: 'idle', p: { mode: 'idle' } },
+    { name: 'ended', p: { mode: 'idle', ended: true } }
+  ];
+  var FRAMES = [
+    { w: 1280, h: 720, s: 0.35, label: '1280 × 720 at 35%: ring' },
+    { w: 1000, h: 440, s: 0.45, label: '1000 × 440 at 45%: strip' },
+    { w: 360, h: 240, s: 1, label: '360 × 240, the minimum: stacked strip, no intent line' }
+  ];
+  var PRESETS = [['classic', 'Classic', '25 / 5'], ['deep', 'Deep Block', '90 / 15'], ['short', 'Short', '15 / 3'], ['custom', 'Custom', '50 / 10']];
+  function noop() {}
+  function Frame(props) {
+    return h('div', { className: 'os-stack', style: { gap: 'var(--space-1)' } },
+      h('span', { className: 'os-caption' }, props.label),
+      h('div', { style: { width: props.w * props.s, height: props.h * props.s, overflow: 'hidden', outline: '1px solid var(--line-strong)' } },
+        h('div', { style: { width: props.w, height: props.h, transform: 'scale(' + props.s + ')', transformOrigin: '0 0' } }, props.children)));
+  }
+  // Static frames are inert: nothing in them takes focus, so the page does not jump to them on load.
+  function Inert(props) { return h('div', { ref: function (n) { if (n) n.setAttribute('inert', ''); } }, props.children); }
+  function staticSummary() { return h('button', { type: 'button', className: 'os-btn os-btn-ghost' }, 'Classic · 25 min · ends 15:27'); }
+  function Panel(props) {
+    var theme = props.theme;
+    return h('section', { 'data-theme': theme, 'aria-label': (theme === 'light' ? 'Light' : 'Dark') + ' theme, every state', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, (theme === 'light' ? 'Light' : 'Dark') + ': every state in the ring, the strip and the minimum, with a two-line intent. Single-key captions in light, the ⌘ captions in dark.'),
+      h(Inert, null, STATES.map(function (st) {
+        return h('div', { key: st.name, className: 'os-stack', style: { gap: 'var(--space-2)', marginBottom: 'var(--space-5)' } },
+          h('p', { className: 'os-muted', style: { margin: 0 } }, st.name),
+          h('div', { className: 'os-actions', style: { alignItems: 'flex-start' } }, FRAMES.map(function (f) {
+            return h(Frame, Object.assign({ key: f.label }, f), h(O.FullScreenFocus, Object.assign({ task: INTENT, clock: '09:41', singleKeys: theme === 'light', summary: staticSummary(), onExit: noop, onPause: noop, onResume: noop, onEnd: noop, onStart: noop }, st.p)));
+          })));
+      })));
+  }
+  function Live() {
+    var t = React.useState('light'), theme = t[0], setTheme = t[1];
+    var k = React.useState(true), keys = k[0], setKeys = k[1];
+    var m = React.useState('idle'), mode = m[0], setMode = m[1];
+    var e = React.useState(false), ended = e[0], setEnded = e[1];
+    var o = React.useState(false), open = o[0], setOpen = o[1];
+    var c = React.useState('classic'), preset = c[0], setPreset = c[1];
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    var anchor = React.useRef(null);
+    var name = PRESETS.filter(function (x) { return x[0] === preset; })[0][1];
+    var line = name + ' · 25 min · ends 15:27';
+    function go(next) { setEnded(false); setMode(next); }
+    var summary = h(O.Tooltip, { label: 'Change preset', shortcut: keys ? 'P' : undefined },
+      h('button', { ref: anchor, type: 'button', className: 'os-btn os-btn-ghost', 'aria-label': line + ', Change preset', 'aria-haspopup': 'menu', 'aria-expanded': open, 'aria-controls': open ? 'fsf-preset-menu' : undefined,
+        'aria-keyshortcuts': keys ? O.describeShortcut('P').aria : undefined, onClick: function () { setOpen(!open); } }, line));
+    var times = { focus: ['18:42', '18 minutes 42 seconds', 0.25], paused: ['18:42', '18 minutes 42 seconds', 0.25], warning: ['01:48', '1 minute 48 seconds', 0.93], break: ['04:10', '4 minutes 10 seconds', 0.17] }[mode] || [];
+    return h('section', { 'aria-label': 'Try it', className: 'os-col' },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, 'Live, 720 × 480: Start, Pause, Resume and End; Esc or Leave full screen opens the leave dialog; the summary opens the preset menu while idle.'),
+      h('div', { className: 'os-actions' },
+        h('fieldset', { className: 'os-choice-group', style: { display: 'flex', gap: 'var(--space-3)', border: 0, padding: 0, margin: 0 } },
+          h('legend', { className: 'os-sr-only' }, 'Theme'),
+          ['light', 'dark'].map(function (v) { return h('label', { key: v, className: 'os-choice' }, h('input', { type: 'radio', name: 'fsf-theme', checked: theme === v, onChange: function () { setTheme(v); } }), v === 'light' ? 'Light' : 'Dark'); })),
+        h('label', { className: 'os-choice' }, h('input', { type: 'checkbox', checked: keys, onChange: function (ev) { setKeys(ev.target.checked); } }), 'Single-key shortcuts'),
+        h(O.Button, { onClick: function () { go('warning'); } }, 'Show almost up'),
+        h(O.Button, { onClick: function () { go('break'); } }, 'Show a break')),
+      h('div', { 'data-theme': theme, style: { width: 720, height: 480, maxWidth: '100%', outline: '1px solid var(--line-strong)' } },
+        h(O.FullScreenFocus, { mode: ended ? 'idle' : mode, ended: ended, remaining: times[0], remainingLabel: times[1], progress: times[2], task: INTENT, clock: '09:41', singleKeys: keys, summary: summary,
+          onStart: function () { setNotice(''); go('focus'); }, onPause: function () { setMode('paused'); }, onResume: function () { setMode('focus'); },
+          onEnd: function () { setMode('idle'); setEnded(true); }, onExit: function () { setNotice('Leave confirmed. The host closes the Focus window; the session keeps running.'); } })),
+      open ? h(O.PopoverMenu, { id: 'fsf-preset-menu', anchor: anchor, heading: 'Preset for the next session', description: 'Choosing one applies it and closes.', singleKeys: keys,
+        items: PRESETS.map(function (p) { return { id: p[0], label: p[1], meta: p[2], kind: 'radio', checked: p[0] === preset }; }),
+        onSelect: function (id) { setPreset(id); }, onClose: function () { setOpen(false); } }) : null,
+      notice ? h('p', { className: 'os-muted', style: { margin: 0 } }, notice) : null);
+  }
+  function Demo() {
+    return h('div', null, h(Live), h(Panel, { theme: 'light' }), h(Panel, { theme: 'dark' }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 // biome-ignore lint/suspicious/noExplicitAny: tokens.json is read loosely
 type Json = Record<string, any>;
 const tokens: Json = JSON.parse(
-  readFileSync(resolve(__dirname, "../../../design/system/tokens.json"), "utf8"),
+  readFileSync(resolve(__dirname, "../../../packages/tokens/tokens.json"), "utf8"),
 );
 
 const firstName = (stack: string) => stack.split(",")[0].trim().replace(/^"|"$/g, "");

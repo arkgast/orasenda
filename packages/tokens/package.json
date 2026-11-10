@@ -6,14 +6,19 @@
   "type": "module",
   "exports": {
     "./tokens.css": "./tokens.css",
+    "./theme.css": "./theme.css",
     "./fonts/*": "./fonts/*"
   },
   "files": [
     "tokens.css",
+    "theme.css",
     "fonts/**"
   ],
   "scripts": {
     "build": "node build.ts",
     "test": "node --test"
+  },
+  "devDependencies": {
+    "tailwindcss": "4.3.5"
   }
 }

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { IconButton } from "../index.ts";
+import { IconButton } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 import { Menu, Pause, Play, Shrink, Stop } from "./icons.tsx";
 

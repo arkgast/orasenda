@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": { "@orasenda/ui": ["../../packages/ui/dist/system/components/index.d.ts"] }
+  },
+  "include": ["src/ui-types.test-d.tsx"]
+}

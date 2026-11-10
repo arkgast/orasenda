@@ -1,4 +1,4 @@
-"""Checks the declared colour pairs against design/system/tokens.json in both themes.
+"""Checks the declared colour pairs against packages/tokens/tokens.json in both themes.
 
 Standard library only. Usage: python3 verification/contrast.py [--tokens <path>] [--pairs <path>]
 Exit 0 when every pair holds, 1 when a pair fails, 2 on bad input (unknown token, bad entry).
@@ -120,7 +120,7 @@ def check(tokens, pairs):
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tokens", default=str(ROOT / "design" / "system" / "tokens.json"))
+    parser.add_argument("--tokens", default=str(ROOT / "packages" / "tokens" / "tokens.json"))
     parser.add_argument("--pairs", default=str(ROOT / "verification" / "contrast-pairs.json"))
     args = parser.parse_args(argv)
     try:

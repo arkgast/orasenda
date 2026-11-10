@@ -10,8 +10,20 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "isolatedDeclarations": true,
+    "paths": { "@/*": ["./src/*"] },
     "skipLibCheck": true,
     "types": ["@testing-library/jest-dom/vitest"]
   },
-  "include": ["*.ts", "*.tsx", "specimens/**/*.ts", "specimens/**/*.tsx"]
+  "include": [
+    "*.ts",
+    "*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "specimens/**/*.ts",
+    "specimens/**/*.tsx",
+    "design-system/**/*.ts"
+  ]
 }
