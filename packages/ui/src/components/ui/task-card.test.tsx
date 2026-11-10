@@ -85,3 +85,13 @@ test("renders_disabled_button_not_clickable", () => {
   fireEvent.click(card);
   expect(onOpen).not.toHaveBeenCalled();
 });
+
+test("disabled_button_has_dashed_border_shape", () => {
+  render(<TaskCard title="Write" disabled onOpen={() => {}} />);
+  expect(screen.getByRole("button").className).toContain("disabled:border-dashed");
+});
+
+test("button_label_says_no_estimate_when_none", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} />);
+  expect(screen.getByRole("button").getAttribute("aria-label")).toContain("no estimate");
+});
