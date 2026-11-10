@@ -21,11 +21,6 @@ export declare function TaskCard(props: TaskCardProps): React.ReactElement;
 export interface TimeBlockProps { type?: 'deep' | 'shallow' | 'break' | 'routine' | 'personal' | 'overflow'; title?: string; start?: string; end?: string; now?: boolean; height?: number | string; compact?: boolean; selected?: boolean; disabled?: boolean; onSelect?: () => void }
 export declare function TimeBlock(props: TimeBlockProps): React.ReactElement;
 // end TimeBlock
-// RoutineItem
-/** With onChange, done is controlled. Without it, defaultDone (or initial done) is local preview state. */
-export interface RoutineItemProps { label: string; detail?: string; done?: boolean; defaultDone?: boolean; optional?: boolean; disabled?: boolean; onChange?: (done: boolean) => void }
-export declare function RoutineItem(props: RoutineItemProps): React.ReactElement;
-// end RoutineItem
 // WellnessNote
 export interface WellnessNoteProps { children?: React.ReactNode; as?: 'span' | 'p' }
 export declare function WellnessNote(props: WellnessNoteProps): React.ReactElement;
@@ -152,7 +147,7 @@ declare global {
   interface Window {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
-      TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots; RoutineItem: typeof RoutineItem;
+      TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;

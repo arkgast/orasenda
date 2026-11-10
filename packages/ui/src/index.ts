@@ -23,7 +23,7 @@ export { NavRail } from "./legacy.js";
 export { NowLine } from "./legacy.js";
 export { PageFrame } from "./legacy.js";
 export { PopoverMenu } from "./legacy.js";
-export { RoutineItem } from "./legacy.js";
+export { RoutineItem } from "./components/ui/routine-item";
 export { ScrollRegion } from "./legacy.js";
 export { SettingsIndex } from "./legacy.js";
 export { SettingsRow } from "./legacy.js";

@@ -134,16 +134,8 @@ function TimeBlock(p) {
     h("span", { className: "os-block-time" }, (compact ? "" : BLOCK_LABEL[type] + " · ") + (p.start || "") + (compact ? "" : "–" + (p.end || "")) + (p.selected ? " · Selected" : "")));
 }
 // end TimeBlock
-// RoutineItem
-function RoutineItem(p) {
-  var st = R.useState(!!(p.defaultDone == null ? p.done : p.defaultDone)), done = p.onChange ? !!p.done : st[0];
-  return h("button", { type: "button", className: cx("os-ritem", done && "os-ritem-done"), role: "checkbox", "aria-checked": done, disabled: p.disabled,
-    onClick: function () { if (p.onChange) p.onChange(!done); else st[1](!done); } },
-    h("span", { className: "os-check", "aria-hidden": "true" }, done ? h("svg", { viewBox: "0 0 12 12" }, h("path", { d: "M2 6.5 5 9.2 10 3" })) : null),
-    h("span", null, h("span", { className: "os-ritem-label" }, p.label, p.optional ? h("span", { className: "os-optional" }, "Optional") : null),
-      p.detail ? h("span", { className: "os-ritem-detail" }, p.detail) : null));
+    else st[1](!done); } },
 }
-// end RoutineItem
 // WellnessNote
 function WellnessNote(p) {
   return h(p.as || "span", { className: "os-note", role: "note" }, h("svg", { viewBox: "0 0 14 14", "aria-hidden": "true" }, h("circle", { cx: 7, cy: 7, r: 6 }), h("path", { d: "M7 6v4M7 4.2v.1" })), p.children || "Wellness suggestion, not medical advice.");
@@ -697,7 +689,6 @@ export {
   MenuBarTimer,
   TaskCard,
   TimeBlock,
-  RoutineItem,
   WellnessNote,
   IntentPrompt,
   Dialog,

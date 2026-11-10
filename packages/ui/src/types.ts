@@ -1,6 +1,7 @@
 // Type-only exports: the *NextProps contracts and the contract-only components (README and static
 // preview, no implementation yet). Each one is exported as a type; none has a runtime export.
 import type * as React from "react";
+import type { RoutineItemProps } from "./components/ui/routine-item";
 import type {
   Command,
   CommandPaletteProps,
@@ -10,7 +11,6 @@ import type {
   KanbanColumnProps,
   MenuBarTimerProps,
   NowLineProps,
-  RoutineItemProps,
   TaskCardProps,
 } from "./legacy.d.ts";
 
