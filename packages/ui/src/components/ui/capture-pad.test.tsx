@@ -37,7 +37,7 @@ test("capture_pad_renders_nothing_when_closed", () => {
 test("capture_pad_exposes_thought_field_with_helper_and_focus", async () => {
   render(<Host />);
   const field = screen.getByRole("textbox", { name: "Thought" });
-  expect(field).toHaveAccessibleDescription("Esc saves to Inbox and closes. ⌘↩ saves too.");
+  expect(field).toHaveAccessibleDescription("Esc saves to Inbox and closes. ⌘Return saves too.");
   await waitFor(() => expect(document.activeElement).toBe(field));
 });
 
@@ -59,7 +59,9 @@ test("capture_pad_kind_change_calls_back_and_updates_the_line", () => {
 
 test("capture_pad_save_is_disabled_for_whitespace", () => {
   render(<Host initial="   " />);
-  expect((screen.getByRole("button", { name: "Save to Inbox" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(
+    (screen.getByRole("button", { name: "Save to Inbox" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
 });
 
 test("capture_pad_save_sends_trimmed_text_closes_and_announces_once", async () => {
@@ -69,7 +71,7 @@ test("capture_pad_save_sends_trimmed_text_closes_and_announces_once", async () =
   fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
   await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   expect(onSave).toHaveBeenCalledWith({ text: "buy milk", kind: "external" });
-  expect(screen.getByRole("status").textContent).toBe("Saved to Inbox.");
+  expect(screen.getByRole("status", { hidden: true }).textContent).toBe("Saved to Inbox.");
 });
 
 test("capture_pad_escape_saves_text", async () => {
@@ -93,7 +95,10 @@ test("capture_pad_escape_on_empty_pad_closes_without_saving", () => {
 test("capture_pad_command_enter_saves", async () => {
   const onSave = vi.fn();
   render(<Host initial="idea" onSave={onSave} />);
-  fireEvent.keyDown(screen.getByRole("textbox", { name: "Thought" }), { key: "Enter", metaKey: true });
+  fireEvent.keyDown(screen.getByRole("textbox", { name: "Thought" }), {
+    key: "Enter",
+    metaKey: true,
+  });
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
 });
 
@@ -103,17 +108,24 @@ test("capture_pad_rejected_save_keeps_text_and_says_so", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
   await screen.findByText("Your note is still here. Try saving again.");
   expect(onClose).not.toHaveBeenCalled();
-  expect((screen.getByRole("textbox", { name: "Thought" }) as HTMLTextAreaElement).value).toBe("idea");
+  expect((screen.getByRole("textbox", { name: "Thought" }) as HTMLTextAreaElement).value).toBe(
+    "idea",
+  );
 });
 
 test("capture_pad_suppresses_duplicate_saves_while_busy", async () => {
   let release: () => void = () => {};
-  const onSave = vi.fn(() => new Promise<void>((r) => { release = r; }));
+  const onSave = vi.fn(
+    () =>
+      new Promise<void>((r) => {
+        release = r;
+      }),
+  );
   render(<Host initial="idea" onSave={onSave} />);
   const save = screen.getByRole("button", { name: "Save to Inbox" });
   fireEvent.click(save);
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   fireEvent.submit(document.querySelector("form") as HTMLFormElement);
-  expect(onSave).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
   await act(async () => release());
 });

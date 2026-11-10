@@ -88,28 +88,6 @@ function Field(p) {
 // Input (private: CommandPalette still renders it; the public Input lives in components/ui/input.tsx)
 function Input(p) { return h(Field, p); }
 // end Input
-// TextArea (private: CapturePad still renders it; the public TextArea lives in components/ui/text-area.tsx)
-function TextArea(p) { return h(Field, Object.assign({ rows: 4 }, p, { multiline: true })); }
-// end TextArea
-// CapturePad
-function CapturePad(p) {
-  var busy = R.useState(false), error = R.useState(""), saving = R.useRef(false), group = R.useId();
-  function save() {
-    if (saving.current) return;
-    if (!p.value.trim()) { p.onClose(); return; }
-    saving.current = true; busy[1](true); error[1]("");
-    Promise.resolve().then(function () { return p.onSave({ text: p.value.trim(), kind: p.kind }); }).then(function () {
-      saving.current = false; busy[1](false); p.onClose();
-    }, function () { saving.current = false; busy[1](false); error[1]("Your note is still here. Try saving again."); });
-  }
-  return h(Modal, { open: p.open, title: "Capture a thought", description: "Leave it here. Return to your focus.", onSafe: save },
-    h("form", { className: "os-stack", onSubmit: function (e) { e.preventDefault(); save(); } },
-      h(TextArea, { label: "Thought", value: p.value, onChange: function (e) { p.onChange(e.target.value); }, disabled: busy[0], "data-initial-focus": true, helper: "Escape saves to Inbox and closes.", error: error[0] }),
-      h("fieldset", { className: "os-choice-group", disabled: busy[0] }, h("legend", null, "Interruption source"),
-        ["internal", "external"].map(function (kind) { return h("label", { key: kind, className: "os-choice" }, h("input", { type: "radio", name: group, value: kind, checked: p.kind === kind, onChange: function () { p.onKindChange(kind); } }), kind === "internal" ? "Internal" : "External"); })),
-      h(Button, { variant: "primary", type: "submit", loading: busy[0], disabled: !p.value.trim() }, busy[0] ? "Saving…" : "Save to Inbox")));
-}
-// end CapturePad
 // CommandPalette
 function CommandPalette(p) {
   var query = R.useState(""), active = R.useState(0), listId = R.useId();
@@ -161,6 +139,5 @@ function describeShortcut(glyphs) {
 
 export {
   FullScreenFocus,
-  CapturePad,
   CommandPalette,
 };
