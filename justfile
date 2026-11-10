@@ -82,6 +82,8 @@ ci:
     git diff --exit-code -- packages/ui/components.css packages/ui/components.d.ts
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
+    @echo "==> typecheck (verification)"
+    pnpm --filter @orasenda/ui exec tsc -p ../../verification/layout/tsconfig.json
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
     @echo "==> typecheck (tsc)"
