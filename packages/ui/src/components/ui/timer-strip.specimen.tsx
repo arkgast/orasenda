@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import { TimerStrip } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { TimerStrip } from "./timer-strip.tsx";
 
 const SHORT = "Finish the chapter 3 outline and send the draft to Maya before the review";
 const MEDIUM = `${SHORT} meeting on Thursday afternoon, then list the open questions for the editor`;
