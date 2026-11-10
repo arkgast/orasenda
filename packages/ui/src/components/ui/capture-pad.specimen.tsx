@@ -22,16 +22,15 @@ export function CapturePadSpecimen(): ReactElement {
       <Frame state="capture-pad-fails" width={300} height={72}>
         <Button onClick={() => setMode("fails")}>Open a capture pad that cannot save</Button>
       </Frame>
-      {mode ? (
-        <CapturePad
-          value={value}
-          kind={kind}
-          onChange={setValue}
-          onKindChange={setKind}
-          onSave={() => (mode === "fails" ? Promise.reject(new Error("offline")) : undefined)}
-          onClose={close}
-        />
-      ) : null}
+      <CapturePad
+        open={mode !== ""}
+        value={value}
+        kind={kind}
+        onChange={setValue}
+        onKindChange={setKind}
+        onSave={() => (mode === "fails" ? Promise.reject(new Error("offline")) : undefined)}
+        onClose={close}
+      />
     </>
   );
 }
