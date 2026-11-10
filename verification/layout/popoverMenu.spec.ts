@@ -22,13 +22,9 @@ const FORMS = [
   { shot: "popover-menu-checkbox", trigger: "Checkbox rows", menu: "Checkbox rows" },
 ] as const;
 
-/**
- * Opens a menu and waits until focus has moved into it, so the next key reaches the menu. A tooltip
- * still showing on the previous trigger takes the first Esc (Tooltip README), so wait for it to go.
- */
+/** Opens a menu and waits until focus has moved into it, so the next key reaches the menu. */
 async function openMenu(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name, exact: true }).click();
-  await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
   await expect(page.locator(`${PANEL} [role^="menuitem"]:focus`)).toHaveCount(1);
 }
 
@@ -62,9 +58,22 @@ test("popover_menu_fits_at_360", async ({ page }, info) => {
     });
     expect(r.left).toBeGreaterThanOrEqual(space2 - 1);
     expect(r.right).toBeLessThanOrEqual(r.vw - space2 + 1);
-    expect(r.top).toBeGreaterThanOrEqual(0);
-    expect(r.bottom).toBeLessThanOrEqual(r.vh);
+    expect(r.top).toBeGreaterThanOrEqual(space2 - 1);
+    expect(r.bottom).toBeLessThanOrEqual(r.vh - space2 + 1);
     expect(r.wide).toBe(false);
+    const sep = await panel.evaluate((p) => {
+      const hr = p.querySelector("[role=separator]");
+      const list = p.querySelector(".os-popover-list");
+      return {
+        has: !!hr,
+        hr: hr ? hr.getBoundingClientRect().width : 0,
+        list: list ? list.getBoundingClientRect().width : 0,
+      };
+    });
+    if (sep.has) {
+      expect(sep.hr).toBeGreaterThan(0);
+      expect(Math.abs(sep.hr - sep.list)).toBeLessThanOrEqual(1);
+    }
     await shoot(page, info, form.shot);
     await page.keyboard.press("Escape");
     await expect(panel).toHaveCount(0);
@@ -122,7 +131,9 @@ test("popover_menu_keyboard_path", async ({ page }) => {
     "false",
   );
   await expect(page.getByText("Deep Block chosen.")).toBeVisible();
-  await page.waitForTimeout(400);
+  const quickMs = (await token(page, "--duration-quick")) * 1000;
+  expect(quickMs).toBeGreaterThan(0);
+  await page.waitForTimeout(quickMs + 250);
   await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
   await page.keyboard.press("Space");
   await expect(panel).toBeVisible();
@@ -133,7 +144,33 @@ test("popover_menu_keyboard_path", async ({ page }) => {
   await expect(panel).toBeVisible();
   await pressTab(page);
   await expect(panel).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Change preset/ })).toBeFocused();
+  const next = page.getByRole("button", { name: "Preset while a session runs" });
+  await expect(next).toBeFocused();
+});
+
+test("popover_menu_shift_tab_closes_and_focuses_trigger", async ({ page }) => {
+  await openSpecimen(page, "PopoverMenu");
+  const trigger = page.getByRole("button", { name: "Classic · ends 15:20, Change preset" });
+  await openMenu(page, "Classic · ends 15:20, Change preset");
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator(PANEL)).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", async ({ page }) => {
+  await openSpecimen(page, "PopoverMenu");
+  await page.mouse.click(2, 2);
+  const other = page.getByRole("button", { name: "Checkbox rows", exact: true });
+  await other.hover();
+  await expect(page.locator(".os-tooltip-panel")).toHaveCount(1);
+  const name = "Preset for the next session";
+  const trigger = page.getByRole("button", { name, exact: true });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(`${PANEL} [role^="menuitem"]:focus`)).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(PANEL)).toHaveCount(0);
+  await expect(trigger).toBeFocused();
 });
 
 test("popover_menu_placed_against_trigger_inside_open_dialog", async ({ page }, info) => {

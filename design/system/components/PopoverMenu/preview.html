@@ -65,7 +65,7 @@
       menu('fw', fw, { heading: 'Preset for the next session', description: 'Choosing one applies it and closes.', items: presetItems(preset, false), onSelect: pick }),
       menu('boxes', boxes, { heading: 'Checkbox rows', description: 'Choosing one toggles it and closes.', items: [{ id: 'a', label: 'First option', kind: 'checkbox', checked: checks.a }, { id: 'b', label: 'Second option', kind: 'checkbox', checked: checks.b }, { id: 'c', label: 'Unavailable option', kind: 'checkbox', disabled: true }],
         onSelect: function (id) { var next = Object.assign({}, checks); next[id] = !next[id]; setChecks(next); setNotice((id === 'a' ? 'First' : 'Second') + ' option ' + (next[id] ? 'on.' : 'off.')); } }),
-      notice ? h('p', { role: 'status', className: 'os-muted', style: { margin: 0 } }, notice) : null,
+      notice ? h('p', { className: 'os-muted', style: { margin: 0 } }, notice) : null,
       h('div', { className: 'os-actions', style: { alignItems: 'flex-start' } },
         h(Shown, { caption: 'Idle, single keys on', heading: 'Preset', keys: true, items: presetItems('classic', true) }),
         h(Shown, { caption: 'Read-only while a session runs', heading: 'Classic · 25 / 5', description: 'Presets can change between sessions.', readOnly: true, items: presetItems('classic', true) }),
@@ -79,7 +79,7 @@
     return h('div', null,
       h(Panel, { theme: 'light' }),
       h(Panel, { theme: 'dark' }),
-      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Open a trigger with a click, Return or Space. Up and down arrows move, Return or Space chooses and closes, Esc closes; focus returns to the trigger. Each trigger sets aria-expanded and aria-controls itself; the menu never touches it. Near a window edge the menu flips above its trigger and stays inside.'));
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Open a trigger with a click, Return or Space. Up and down arrows move, Return or Space chooses and closes, Esc or Shift+Tab closes and focus returns to the trigger; Tab closes and moves on to the next control. Each trigger sets aria-expanded and aria-controls itself; the menu never touches it. Near a window edge the menu flips above its trigger and stays inside.'));
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
 </script>

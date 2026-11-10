@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { describeShortcut, IconButton, PopoverMenu } from "./index.ts";
 
 type Item = Parameters<typeof PopoverMenu>[0]["items"][number];
@@ -18,12 +18,18 @@ type HostProps = Partial<Parameters<typeof PopoverMenu>[0]> & {
   log: string[];
   startOpen?: boolean;
   keys?: string;
+  /** A tabbable control placed after the trigger in DOM order. */
+  after?: boolean;
+  /** A second trigger with a Tooltip, to leave a tooltip showing elsewhere. */
+  other?: boolean;
 };
 
 function Host({
   log,
   startOpen = true,
   keys,
+  after,
+  other,
   items = WITH_SETTINGS,
   heading = "Preset",
   ...rest
@@ -55,6 +61,8 @@ function Host({
           />
         )}
       </span>
+      {after ? <button type="button">After</button> : null}
+      {other ? <IconButton label="Elsewhere" icon={<svg aria-hidden="true" />} /> : null}
       {open ? (
         <PopoverMenu
           id={id}
@@ -86,6 +94,13 @@ const trigger = () => screen.getByRole("button", { name: "Change preset" });
 test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
   const log: string[] = [];
   render(<Host log={log} startOpen={false} />);
+  const attrs = () =>
+    Object.fromEntries(
+      [...trigger().attributes]
+        .filter((a) => !a.name.startsWith("aria-"))
+        .map((a) => [a.name, a.value]),
+    );
+  const before = attrs();
   expect(trigger().getAttribute("aria-expanded")).toBe("false");
   expect(screen.queryByRole("menu")).toBeNull();
   fireEvent.click(trigger());
@@ -95,8 +110,17 @@ test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
   expect(menu).toBe(screen.getByRole("menu"));
   expect(trigger().getAttribute("aria-haspopup")).toBe("menu");
   expect(trigger().hasAttribute("aria-keyshortcuts")).toBe(false);
+  // The menu writes nothing of its own on the trigger: only the host's four aria attributes differ.
+  expect(attrs()).toEqual(before);
+  expect(
+    [...trigger().attributes]
+      .map((a) => a.name)
+      .filter((n) => n.startsWith("aria-"))
+      .sort(),
+  ).toEqual(["aria-controls", "aria-expanded", "aria-haspopup", "aria-label"]);
   key("Escape");
   expect(trigger().getAttribute("aria-expanded")).toBe("false");
+  expect(trigger().hasAttribute("aria-controls")).toBe(false);
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
@@ -220,8 +244,47 @@ test("popover_menu_esc_closes_and_returns_focus_to_trigger", () => {
 
   const log2: string[] = [];
   render(<Host log={log2} />);
-  key("Tab");
+  fireEvent.keyDown(document.activeElement as Element, { key: "Tab", shiftKey: true });
   expect(log2).toEqual(["close"]);
+  expect(document.activeElement).toBe(trigger());
+});
+
+test("popover_menu_tab_closes_and_focuses_next_tabbable_after_trigger", () => {
+  const log: string[] = [];
+  render(<Host log={log} after />);
+  key("Tab");
+  expect(log).toEqual(["close"]);
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "After" }));
+});
+
+test("popover_menu_tab_with_nothing_after_returns_to_trigger", () => {
+  const log: string[] = [];
+  render(<Host log={log} />);
+  key("Tab");
+  expect(log).toEqual(["close"]);
+  expect(document.activeElement).toBe(trigger());
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", () => {
+  vi.useFakeTimers();
+  document.documentElement.style.setProperty("--duration-quick", "160ms");
+  const log: string[] = [];
+  render(<Host log={log} other />);
+  const elsewhere = screen.getByRole("button", { name: "Elsewhere" });
+  fireEvent.pointerEnter(elsewhere);
+  act(() => {
+    vi.advanceTimersByTime(200);
+  });
+  expect(document.querySelector(".os-tooltip-panel")).not.toBeNull();
+  key("Escape");
+  expect(log).toEqual(["close"]);
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(document.querySelector(".os-tooltip-panel")).toBeNull();
   expect(document.activeElement).toBe(trigger());
 });
 

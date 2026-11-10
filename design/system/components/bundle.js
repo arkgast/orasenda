@@ -474,11 +474,17 @@
     function leave() { afterQuick(function () { hover[1](false); }); }
     R.useEffect(function () { return cancel; }, []);
     R.useEffect(function () { if (!hover[0] && !focus[0] && dismissed[0]) dismissed[1](false); }, [hover[0], focus[0], dismissed[0]]);
-    // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler).
+    // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler),
+    // unless the press comes from inside an open PopoverMenu: then it hides the tooltip and still reaches the menu.
     R.useEffect(function () {
       if (!shown || !anchor.current) return;
       var doc = anchor.current.ownerDocument;
-      function key(e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel(); dismissed[1](true); } }
+      function key(e) {
+        if (e.key !== "Escape") return;
+        var t = e.target, inMenu = t && t.closest && t.closest(".os-popover-panel");
+        cancel(); dismissed[1](true);
+        if (!inMenu) { e.preventDefault(); e.stopPropagation(); }
+      }
       doc.addEventListener("keydown", key, true);
       return function () { doc.removeEventListener("keydown", key, true); };
     }, [shown]);
@@ -526,6 +532,19 @@
   var MENU_ROLE = { radio: "menuitemradio", checkbox: "menuitemcheckbox", link: "menuitem" };
   function menuRowLive(item, readOnly) { return !!item && !item.disabled && !(readOnly && item.kind !== "link"); }
   function menuFocusTarget(a) { return !a ? null : a.matches && a.matches(FOCUSABLE) ? a : a.querySelector ? a.querySelector(FOCUSABLE) : null; }
+  // Tab out of a menu (WAI-ARIA APG): the next tabbable element after the trigger in DOM order, inside the open dialog
+  // that holds the trigger if there is one, never inside the menu itself. None: null (focus goes back to the trigger).
+  function menuNextTabbable(from, menu) {
+    if (!from || !from.ownerDocument) return null;
+    var scope = panelHost(from), all = scope.querySelectorAll(FOCUSABLE);
+    for (var i = 0; i < all.length; i++) {
+      var n = all[i];
+      if (n === from || from.contains(n) || (menu && menu.contains(n)) || n.tabIndex < 0) continue;
+      if (n.closest && n.closest("[hidden],[inert],[aria-hidden='true']")) continue;
+      if (from.compareDocumentPosition(n) & 4) return n;
+    }
+    return null;
+  }
   function PopoverMenu(p) {
     var generated = R.useId(), id = p.id || generated, items = p.items || [];
     var slot = R.useRef(null), panel = R.useRef(null), rows = R.useRef([]), restore = R.useRef(true), latest = R.useRef(null);
@@ -559,7 +578,13 @@
           if (n) setIndex(k === "Home" ? 0 : k === "End" ? n - 1 : (cur.index + (k === "ArrowDown" ? 1 : -1) + n) % n);
         } else if (k === "Enter" || k === " " || k === "Spacebar") { e.preventDefault(); e.stopPropagation(); if (n) choose(cur.index); }
         else if (k === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
-        else if (k === "Tab") { e.preventDefault(); e.stopPropagation(); close(); }
+        else if (k === "Tab") {
+          // Shift+Tab goes back to the trigger; Tab moves on to the next tabbable element after it.
+          e.preventDefault(); e.stopPropagation();
+          var next = e.shiftKey ? null : menuNextTabbable(menuFocusTarget(anchorEl()), el);
+          if (!next) close();
+          else { restore.current = false; next.focus(); latest.current.onClose(); }
+        }
       }
       function click(e) {
         var row = e.target && e.target.closest ? e.target.closest("[data-menu-index]") : null;
