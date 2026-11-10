@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Orasenda","components":[{"name":"Button"},{"name":"ModeChip"},{"name":"TimerRing"},{"name":"MenuBarTimer"},{"name":"TaskCard"},{"name":"TimeBlock"},{"name":"HabitDots"},{"name":"RoutineItem"},{"name":"WellnessNote"},{"name":"IntentPrompt"},{"name":"Dialog"},{"name":"FullScreenFocus"},{"name":"Input"},{"name":"TextArea"},{"name":"CapturePad"},{"name":"InlineNotice"},{"name":"Toast"},{"name":"NavRail"},{"name":"KanbanColumn"},{"name":"CommandPalette"},{"name":"EmptyState"},{"name":"StartButton"},{"name":"NowLine"},{"name":"PageFrame"},{"name":"ScrollRegion"},{"name":"SettingsIndex"},{"name":"SettingsRow"},{"name":"IconButton"},{"name":"Tooltip"},{"name":"Kbd"}]} */
 (function () {
   "use strict";
   var R = window.React, h = R.createElement;
@@ -335,6 +335,133 @@
       p.status || action ? h("div", { className: "os-srow-line" }, p.status ? h("p", { id: id + "-status", className: "os-srow-status" }, p.status) : null, action) : null,
       p.disabledReason ? h("p", { id: id + "-why", className: "os-srow-status" }, p.disabledReason) : null);
   }
+  // Key table (Kbd README, Shortcut glyphs). Canonical glyph strings only: modifiers in macOS order
+  // (Control, Option, Shift, Command), then exactly one key. Glyphs are written as escapes here.
+  var KEY_MODIFIERS = [["\u2303", "Control", "Control"], ["\u2325", "Alt", "Option"], ["\u21e7", "Shift", "Shift"], ["\u2318", "Meta", "Command"]];
+  var KEY_NAMES = { ".": ["Period", "Period"], ",": ["Comma", "Comma"], "\u21a9": ["Enter", "Return"], "Space": ["Space", "Space"], "Esc": ["Escape", "Escape"], "\u232b": ["Backspace", "Delete"],
+    "\u2190": ["ArrowLeft", "Left Arrow"], "\u2191": ["ArrowUp", "Up Arrow"], "\u2192": ["ArrowRight", "Right Arrow"], "\u2193": ["ArrowDown", "Down Arrow"], "Tab": ["Tab", "Tab"] };
+  // Strict mode is a flag on the namespace, read at every call, so a host can set it before or after this script runs
+  // (window.Orasenda = { strictShortcuts: true } survives the Object.assign below). A plain script has no NODE_ENV.
+  function unknownShortcut(glyphs) {
+    var ns = window.Orasenda;
+    if (ns && ns.strictShortcuts === true) throw new Error("describeShortcut: unknown shortcut " + JSON.stringify(glyphs) + ". Use the glyphs in the Kbd README key table.");
+    if (typeof console !== "undefined" && console.warn) console.warn("describeShortcut: unknown shortcut " + JSON.stringify(glyphs) + ", passed through as typed.");
+    return { aria: glyphs, spoken: glyphs };
+  }
+  function describeShortcut(glyphs) {
+    var s = typeof glyphs === "string" ? glyphs : String(glyphs), at = 0, aria = [], spoken = [];
+    KEY_MODIFIERS.forEach(function (m) { if (s.charAt(at) === m[0]) { aria.push(m[1]); spoken.push(m[2]); at++; } });
+    var key = s.slice(at), named = Object.prototype.hasOwnProperty.call(KEY_NAMES, key) ? KEY_NAMES[key] : null;
+    if (!named && !/^[A-Z0-9]$/.test(key)) return unknownShortcut(s);
+    var alone = aria.length === 0;
+    aria.push(named ? named[0] : key);
+    spoken.push(named ? named[1] : alone ? key + " key" : key);
+    return { aria: aria.join("+"), spoken: spoken.join("-") };
+  }
+  function Kbd(p) {
+    var glyph = h("span", { className: "os-kbd", "aria-hidden": "true" }, p.keys);
+    if (p.inTooltip && p.spoken == null) return glyph;
+    return h(R.Fragment, null, glyph, h("span", { className: "os-sr-only" }, p.spoken != null ? p.spoken : describeShortcut(p.keys).spoken));
+  }
+  // A token read as a number: "160ms" and "0.16s" give 160, "4px" gives 4, a missing token gives 0.
+  function tokenNumber(el, name) {
+    var v = el && el.ownerDocument.defaultView ? el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(name).trim() : "", n = parseFloat(v);
+    return !Number.isFinite(n) ? 0 : /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
+  }
+  // Positioned panel, shared by Tooltip and later PopoverMenu (internal, not exported). No popover API, no anchor
+  // positioning: the macOS 13 WebKit has neither. The panel lives in the nearest open dialog (already in the top
+  // layer) or the page body, is placed from the trigger rect below it, flipped above when it does not fit,
+  // kept inside the viewport, and re-placed on resize and on any scroll.
+  function panelHost(trigger) {
+    var dialog = trigger.closest ? trigger.closest("dialog[open]") : null;
+    return dialog || trigger.ownerDocument.body;
+  }
+  function placePanel(trigger, panel) {
+    var doc = trigger.ownerDocument, root = doc.documentElement, view = doc.defaultView;
+    var t = trigger.getBoundingClientRect(), w = panel.offsetWidth, ht = panel.offsetHeight;
+    var gap = tokenNumber(root, "--space-1"), edge = tokenNumber(root, "--space-2");
+    var vw = root.clientWidth || view.innerWidth, vh = root.clientHeight || view.innerHeight;
+    var below = t.bottom + gap, above = t.top - gap - ht;
+    var side = below + ht <= vh - edge || (above < edge && vh - t.bottom >= t.top) ? "below" : "above";
+    var left = Math.min(Math.max(edge, t.left + t.width / 2 - w / 2), Math.max(edge, vw - edge - w));
+    panel.style.left = Math.round(left) + "px";
+    panel.style.top = Math.round(side === "below" ? below : above) + "px";
+    panel.setAttribute("data-side", side);
+  }
+  function followTrigger(trigger, panel) {
+    var view = trigger.ownerDocument.defaultView;
+    function place() { if (trigger.isConnected && panel.isConnected) placePanel(trigger, panel); }
+    place();
+    view.addEventListener("resize", place);
+    view.addEventListener("scroll", place, true);
+    return function () { view.removeEventListener("resize", place); view.removeEventListener("scroll", place, true); };
+  }
+  // Input modality. A focus shows a Tooltip only right after keyboard navigation (Tab, arrows, Home, End, Page keys).
+  // WebKit matches :focus-visible for focus moved by script too, so this flag decides: focus restored after a dialog
+  // closes, or launch focus on Start, follows no navigation key and shows nothing. A pointer press or any other key clears it.
+  var NAV_KEYS = /^(Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown)$/;
+  var modality = { keyboard: false };
+  if (typeof document !== "undefined") {
+    document.addEventListener("keydown", function (e) { modality.keyboard = NAV_KEYS.test(e.key); }, true);
+    document.addEventListener("pointerdown", function () { modality.keyboard = false; }, true);
+    document.addEventListener("mousedown", function () { modality.keyboard = false; }, true);
+  }
+  function Tooltip(p) {
+    var anchor = R.useRef(null), timer = R.useRef(0);
+    var hover = R.useState(false), focus = R.useState(false), dismissed = R.useState(false);
+    var shown = !!p.label && (hover[0] || focus[0]) && !dismissed[0];
+    function cancel() { if (timer.current) { clearTimeout(timer.current); timer.current = 0; } }
+    function afterQuick(fn) {
+      cancel();
+      timer.current = setTimeout(function () { timer.current = 0; fn(); }, tokenNumber(anchor.current && anchor.current.ownerDocument.documentElement, "--duration-quick"));
+    }
+    function enter() { if (hover[0]) cancel(); else afterQuick(function () { hover[1](true); }); }
+    function leave() { afterQuick(function () { hover[1](false); }); }
+    R.useEffect(function () { return cancel; }, []);
+    R.useEffect(function () { if (!hover[0] && !focus[0] && dismissed[0]) dismissed[1](false); }, [hover[0], focus[0], dismissed[0]]);
+    // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host key handler).
+    R.useEffect(function () {
+      if (!shown || !anchor.current) return;
+      var doc = anchor.current.ownerDocument;
+      function key(e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel(); dismissed[1](true); } }
+      doc.addEventListener("keydown", key, true);
+      return function () { doc.removeEventListener("keydown", key, true); };
+    }, [shown]);
+    R.useLayoutEffect(function () {
+      var a = anchor.current;
+      if (!shown || !a) return;
+      var doc = a.ownerDocument, trigger = a.firstElementChild || a, panel = doc.createElement("div"), text = doc.createElement("span");
+      panel.className = "os-tooltip os-tooltip-panel";
+      panel.setAttribute("aria-hidden", "true");
+      panel.setAttribute("data-placement", p.placement || "auto");
+      text.className = "os-tooltip-label";
+      text.textContent = p.label;
+      panel.appendChild(text);
+      if (p.shortcut) { var kbd = doc.createElement("span"); kbd.className = "os-kbd"; kbd.textContent = p.shortcut; panel.appendChild(kbd); }
+      // Hoverable (WCAG 1.4.13): the pointer can move onto the panel and it stays.
+      panel.addEventListener("pointerenter", enter);
+      panel.addEventListener("pointerleave", leave);
+      panelHost(a).appendChild(panel);
+      var stop = followTrigger(trigger, panel);
+      return function () { stop(); panel.removeEventListener("pointerenter", enter); panel.removeEventListener("pointerleave", leave); if (panel.parentNode) panel.parentNode.removeChild(panel); };
+    }, [shown, p.label, p.shortcut, p.placement]);
+    return h("span", { ref: anchor, className: "os-tip-anchor",
+      onPointerEnter: enter, onPointerLeave: leave,
+      onFocus: function () { if (modality.keyboard) focus[1](true); },
+      onBlur: function (e) { if (!anchor.current || !anchor.current.contains(e.relatedTarget)) focus[1](false); } }, p.children);
+  }
+  // shortcut: one glyph string, or an array of chords (aria-keyshortcuts joins them with spaces).
+  // shortcutLabel: the text the tooltip Kbd shows when it differs from the chords (a range such as "\u23181\u20136").
+  // keyshortcuts={false}: the Kbd shows but the button sets no aria-keyshortcuts (the page, not this button, owns the key).
+  function IconButton(p) {
+    var chords = p.shortcut == null ? [] : [].concat(p.shortcut), shown = p.shortcutLabel != null ? p.shortcutLabel : chords.join(" ");
+    return h(Tooltip, { label: p.label, shortcut: shown || undefined },
+      h("button", { type: "button", id: p.id, className: cx("os-iconbtn", p.size === "round" && "os-iconbtn-round"), "aria-label": p.label,
+        "aria-keyshortcuts": chords.length && p.keyshortcuts !== false ? chords.map(function (c) { return describeShortcut(c).aria; }).join(" ") : undefined,
+        "aria-describedby": p["aria-describedby"], "aria-haspopup": p["aria-haspopup"], "aria-expanded": p["aria-expanded"], "aria-controls": p["aria-controls"],
+        disabled: p.disabled, onClick: p.onClick },
+        h("span", { className: "os-iconbtn-icon", "aria-hidden": "true" }, p.icon)));
+  }
   function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "Now, " + p.time }, h("span", { className: "os-num" }, "Now · " + p.time), h("i", { "aria-hidden": "true" })); }
-  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow });
+  window.Orasenda = Object.assign(window.Orasenda || {}, { Button: Button, ModeChip: ModeChip, TimerRing: TimerRing, MenuBarTimer: MenuBarTimer, TaskCard: TaskCard, TimeBlock: TimeBlock, HabitDots: HabitDots, RoutineItem: RoutineItem, WellnessNote: WellnessNote, IntentPrompt: IntentPrompt, Dialog: Dialog, FullScreenFocus: FullScreenFocus, Input: Input, TextArea: TextArea, CapturePad: CapturePad, InlineNotice: InlineNotice, Toast: Toast, NavRail: NavRail, KanbanColumn: KanbanColumn, CommandPalette: CommandPalette, EmptyState: EmptyState, StartButton: StartButton, NowLine: NowLine, PageFrame: PageFrame, ScrollRegion: ScrollRegion, SettingsIndex: SettingsIndex, SettingsRow: SettingsRow, IconButton: IconButton, Tooltip: Tooltip, Kbd: Kbd, describeShortcut: describeShortcut });
 })();

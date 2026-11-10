@@ -162,5 +162,77 @@
     "kind": "mark",
     "where": "FloatingTimer edge against the desktop",
     "rule": "fill-or-edge"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "T2: Tooltip label"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "T2: Tooltip edge"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "T2: Kbd glyph"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T2: Kbd edge"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T2: IconButton glyph, rest"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T2: IconButton round glyph, rest"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "T2: IconButton glyph, hover"
+  },
+  {
+    "fg": "ink",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "T2: IconButton glyph, pressed"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T2: IconButton round edge and disabled dashed edge"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T2: IconButton glyph, disabled"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T2: IconButton focus ring"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T2: IconButton round focus ring"
   }
 ]

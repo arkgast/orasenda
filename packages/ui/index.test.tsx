@@ -79,7 +79,20 @@ test("exports_every_namespace_member", () => {
   const exported = Object.keys(ui)
     .filter((k) => typeof (ui as Record<string, unknown>)[k] === "function")
     .sort();
-  expect(exported).toEqual(Object.keys(window.Orasenda).sort());
+  const members = Object.entries(window.Orasenda)
+    .filter(([, v]) => typeof v === "function")
+    .map(([k]) => k)
+    .sort();
+  expect(exported).toEqual(members);
+});
+
+test("exports_small_controls_and_key_table", () => {
+  for (const member of [ui.IconButton, ui.Tooltip, ui.Kbd, ui.describeShortcut]) {
+    expect(typeof member).toBe("function");
+  }
+  for (const name of ["IconButton", "Tooltip", "Kbd", "describeShortcut"]) {
+    expect(name in window.Orasenda).toBe(true);
+  }
 });
 
 test("page_frame_renders_h1_and_three_tracks", () => {

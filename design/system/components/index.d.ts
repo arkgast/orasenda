@@ -63,7 +63,7 @@ export interface StartButtonProps { onStart: () => void; onQuickStart: () => voi
 export declare function StartButton(props: StartButtonProps): React.ReactElement;
 export interface NowLineProps { time: string }
 export declare function NowLine(props: NowLineProps): React.ReactElement;
-/* Redesign pass, 2026-11-09: contracts documented with static previews. Nothing below is implemented in bundle.js yet: these are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
+/* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. 'fluid' sizes to the container between timer-min-size and timer-full-size. */
 export interface TimerRingNextProps extends Omit<TimerRingProps, 'size'> { size?: number | 'fluid' }
 /** Not implemented in bundle.js yet. */
@@ -86,10 +86,17 @@ export interface CommandPaletteNextProps extends Omit<CommandPaletteProps, 'comm
 export interface StartButtonNextProps extends Omit<StartButtonProps, 'disabled'> { unavailable?: boolean; compactLabel?: string }
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps { compact?: boolean }
-export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu' }
-export interface TooltipProps { label: string; shortcut?: string; placement?: 'auto' }
+/** The ARIA and spoken forms of one canonical glyph string (Kbd README, "Shortcut glyphs"): modifiers in the order ⌃⌥⇧⌘, then one key from A-Z, 0-9, '.', ',', '↩', 'Space', 'Esc', '⌫', '←', '↑', '→', '↓', 'Tab'. '⌃⌥F' gives { aria: 'Control+Alt+F', spoken: 'Control-Option-F' }; '⌘.' gives { aria: 'Meta+Period', spoken: 'Command-Period' }. An unknown string throws when window.Orasenda.strictShortcuts is true; otherwise it returns { aria: glyphs, spoken: glyphs } and logs one console.warn. */
+export declare function describeShortcut(glyphs: string): { aria: string; spoken: string };
+/** label is the accessible name and the built-in Tooltip's text; the icon is aria-hidden. shortcut is one canonical glyph string, shown as a Kbd in the tooltip and set as aria-keyshortcuts (describeShortcut(shortcut).aria); pass it only while that shortcut is live. Several chords: an array (aria-keyshortcuts joins them with spaces); shortcutLabel is the text the Kbd shows when it differs (a range such as '⌘1–6'); keyshortcuts={false} shows the Kbd but sets no aria-keyshortcuts (Pause/Resume, whose key belongs to the page). aria-describedby points a disabled button at the line that says why. id, aria-haspopup, aria-expanded and aria-controls land on the button; the host sets aria-expanded and aria-controls from its menu's open state and id. */
+export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string | string[]; shortcutLabel?: string; keyshortcuts?: boolean; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string; 'aria-expanded'?: boolean; 'aria-controls'?: string; 'aria-describedby'?: string }
+export declare function IconButton(props: IconButtonProps): React.ReactElement;
+/** Wraps one focusable trigger whose accessible name holds label (an IconButton's is exactly label); the host sets that trigger's aria-keyshortcuts from describeShortcut(shortcut).aria (IconButton does this itself). The panel is aria-hidden, placed by script in the nearest open dialog or the page body. */
+export interface TooltipProps { label: string; shortcut?: string; placement?: 'auto'; children: React.ReactElement }
+export declare function Tooltip(props: TooltipProps): React.ReactElement;
 /** In running text, spoken is required because the glyph is aria-hidden; inside a Tooltip the tooltip label speaks. */
 export type KbdProps = { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })
+export declare function Kbd(props: KbdProps): React.ReactElement;
 export interface TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; idleLength?: string }
 export interface FloatingTimerProps extends Omit<MenuBarTimerProps, 'compact'> { onPause?: () => void; onResume?: () => void; onStart?: () => void; onOpen?: () => void }
 export interface PopoverMenuItem { id: string; label: string; meta?: string; kind: 'radio' | 'checkbox' | 'link'; checked?: boolean; disabled?: boolean }
@@ -125,6 +132,9 @@ declare global {
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
       PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
+      IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: typeof Kbd; describeShortcut: typeof describeShortcut;
+      /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
+      strictShortcuts?: boolean;
     };
   }
 }
