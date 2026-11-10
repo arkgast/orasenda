@@ -133,11 +133,9 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-nowline i::before { content: ""; position: absolute; inset-inline-start: 0; top: -2px; width: var(--space-1-5); height: var(--space-1-5); border-radius: var(--radius-pill); background: var(--focus); }
 /* end TimeBlock */
 
-/* Shared: disabled cards and blocks; WellnessNote */
+/* Shared: disabled cards and blocks */
 button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
-.os-note { display: inline-flex; gap: var(--space-2); align-items: center; font-size: 13px; line-height: 18px; color: var(--ink-muted); margin: 0; }
-.os-note svg { width: var(--icon-md); height: var(--icon-md); fill: none; stroke: currentColor; stroke-width: 1.5; flex: none; }
-/* end Shared: disabled cards and blocks; WellnessNote */
+/* end Shared: disabled cards and blocks */
 
 /* Dialog */
 /* Dialog shell shared by Dialog, IntentPrompt, CapturePad and CommandPalette. Backdrops never dismiss. */

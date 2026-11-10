@@ -21,10 +21,6 @@ export declare function TaskCard(props: TaskCardProps): React.ReactElement;
 export interface TimeBlockProps { type?: 'deep' | 'shallow' | 'break' | 'routine' | 'personal' | 'overflow'; title?: string; start?: string; end?: string; now?: boolean; height?: number | string; compact?: boolean; selected?: boolean; disabled?: boolean; onSelect?: () => void }
 export declare function TimeBlock(props: TimeBlockProps): React.ReactElement;
 // end TimeBlock
-// WellnessNote
-export interface WellnessNoteProps { children?: React.ReactNode; as?: 'span' | 'p' }
-export declare function WellnessNote(props: WellnessNoteProps): React.ReactElement;
-// end WellnessNote
 // IntentPrompt
 /** The reasons offered on step 2, in order. */
 export type IntentReason = 'Work' | 'Quick check' | 'Other';
@@ -148,7 +144,7 @@ declare global {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
-      WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
+      IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
