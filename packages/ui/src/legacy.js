@@ -134,11 +134,6 @@ function TimeBlock(p) {
     h("span", { className: "os-block-time" }, (compact ? "" : BLOCK_LABEL[type] + " · ") + (p.start || "") + (compact ? "" : "–" + (p.end || "")) + (p.selected ? " · Selected" : "")));
 }
 // end TimeBlock
-// WellnessNote
-function WellnessNote(p) {
-  return h(p.as || "span", { className: "os-note", role: "note" }, h("svg", { viewBox: "0 0 14 14", "aria-hidden": "true" }, h("circle", { cx: 7, cy: 7, r: 6 }), h("path", { d: "M7 6v4M7 4.2v.1" })), p.children || "Wellness suggestion, not medical advice.");
-}
-// end WellnessNote
 // Native modal dialogs supply inert background and focus containment. Keep one open at a time.
 function Modal(p) {
   var ref = R.useRef(null), titleId = R.useId(), bodyId = R.useId(), open = p.open !== false;
@@ -687,7 +682,6 @@ export {
   MenuBarTimer,
   TaskCard,
   TimeBlock,
-  WellnessNote,
   IntentPrompt,
   Dialog,
   FullScreenFocus,
