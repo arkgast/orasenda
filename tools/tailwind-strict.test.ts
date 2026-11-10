@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { classWords, noOpClasses, scanNoOp, themeCompiler } from "./tailwind-strict.ts";
+import { classWords, noOpClasses, ownClasses, scanNoOp, themeCompiler } from "./tailwind-strict.ts";
 
 const root = join(import.meta.dirname, "..");
 const folders = [join(root, "packages/ui/src"), join(root, "apps/orasenda/src")];
@@ -20,4 +21,22 @@ test("lint_rejects_no_op_tailwind_class", async () => {
   assert.deepEqual(noOpClasses(mixed, compiler), ["font-semibold", "m-9"]);
   assert.deepEqual(classWords(`const x = "font-bold"; const y = 1;`), []);
   assert.deepEqual(scanNoOp(folders, compiler), []);
+  // A real utility repeated in the same file is not a false positive (build() is cumulative).
+  const repeat = `const a = <p className="p-4 p-4 m-0" />; const b = <p className="p-4 m-0" />;`;
+  assert.deepEqual(noOpClasses(repeat, compiler), []);
+});
+
+test("own_classes_exempt_only_legacy_prefixes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "own-"));
+  writeFileSync(
+    join(dir, "x.css"),
+    ".os-card{} .app-bar{} .settings-row{} .spike-a{} .font-bold{} .dark{} .today-ring{} .ring-x{}",
+  );
+  assert.deepEqual([...ownClasses([dir])].sort(), [
+    "app-bar",
+    "os-card",
+    "settings-row",
+    "spike-a",
+    "today-ring",
+  ]);
 });

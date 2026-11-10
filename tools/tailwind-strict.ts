@@ -24,7 +24,7 @@ export function arbitraryValues(source: string): string[] {
 }
 
 // Marker classes that emit no CSS by design: other selectors or the code look for them.
-const MARKERS = new Set(["group", "peer", "dark", "light", "sr-only-focusable"]);
+const MARKERS = new Set(["group", "peer"]);
 // Variants that carry a name (group/name, peer/name, group-hover/name) are still markers.
 const MARKER_NAMED = /^(?:group|peer)\/[\w-]+$/;
 
@@ -133,7 +133,7 @@ export function noOpClasses(
   return classWords(source).filter(noop);
 }
 
-/** Class names the project's own stylesheets define (legacy os-* and app-* classes): not Tailwind, so not judged. */
+/** Class names the project's own stylesheets define (legacy os, app, settings, spike, today, placeholder and overlay families only): not Tailwind, so not judged. */
 export function ownClasses(folders: readonly string[]): Set<string> {
   const names = new Set<string>();
   const walk = (dir: string) => {
@@ -143,7 +143,10 @@ export function ownClasses(folders: readonly string[]): Set<string> {
       if (statSync(path).isDirectory()) walk(path);
       else if (name.endsWith(".css") && name !== "styles.css") {
         const css = readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-        for (const m of css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) names.add(m[1]);
+        for (const m of css.matchAll(
+          /\.((?:os|app|settings|spike|today|placeholder|overlay)(?:-[\w-]*)?)(?![\w-])/g,
+        ))
+          names.add(m[1]);
       }
     }
   };
