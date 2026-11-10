@@ -46,9 +46,9 @@ export function App() {
     };
   }, []);
 
-  const navigate = useCallback((page: NavPage, target?: SettingsTarget) => {
-    // Going to the page you are on does nothing, so a page delivered twice navigates once.
-    if (page === currentRef.current && !target) return;
+  const navigate = useCallback((page: NavPage, target?: SettingsTarget, fromShell = false) => {
+    // A page the shell delivers twice (event and take) navigates once; the rail always moves focus.
+    if (fromShell && page === currentRef.current && !target) return;
     currentRef.current = page;
     // Render the new page now so its heading exists, then move focus to it (NavRail README).
     flushSync(() => {
@@ -65,7 +65,7 @@ export function App() {
     const take = () => {
       commands.navigateTake().then(
         (page) => {
-          if (page && !cancelled) navigate(page);
+          if (page && !cancelled) navigate(page, undefined, true);
         },
         (error: unknown) => console.error("navigate_take failed", error),
       );
@@ -86,7 +86,7 @@ export function App() {
 
   return (
     <div className={current === "settings" ? "app app-bound" : "app"}>
-      <NavRail current={current} onNavigate={navigate} />
+      <NavRail current={current} onNavigate={(page) => navigate(page)} />
       <div className="app-column">
         <header className="app-header">
           <p className="app-brand">Orasenda</p>

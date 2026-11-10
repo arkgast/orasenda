@@ -94,7 +94,7 @@ export function Notifications({
       </h2>
       <SettingsRow
         id="notifications"
-        label="Session end"
+        label="Notifications"
         helper="Orasenda only notifies you when a session ends. Never about stats or streaks."
         status={line ?? undefined}
         actionLabel={

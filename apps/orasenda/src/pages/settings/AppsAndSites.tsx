@@ -9,7 +9,7 @@ export function AppsAndSites() {
       <SettingsRow
         id="apps"
         label="Apps and sites"
-        helper="Choose which apps count as focus or distraction."
+        helper=""
       >
         <EmptyState
           variant="inline"

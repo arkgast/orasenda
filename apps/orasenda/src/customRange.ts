@@ -14,3 +14,12 @@ export function outOfRange(custom: CustomSpec): { focus: boolean; break: boolean
     break: custom.breakMin < BREAK_RANGE.min || custom.breakMin > BREAK_RANGE.max,
   };
 }
+
+const MAX_MINUTES = 4_294_967_295; // u32, what Rust takes
+
+/** The whole number in `text`, or null when it is not one (or too big to send). */
+export function parseMinutes(text: string): number | null {
+  if (!/^\d+$/.test(text)) return null;
+  const value = Number(text);
+  return Number.isSafeInteger(value) && value <= MAX_MINUTES ? value : null;
+}

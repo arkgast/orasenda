@@ -2,7 +2,7 @@ import { InlineNotice, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preset, Settings as SettingsValue, Theme } from "../bindings";
 import { commands } from "../bindings";
-import { BREAK_RANGE_HELP, FOCUS_RANGE_HELP, outOfRange } from "../customRange";
+import { BREAK_RANGE_HELP, FOCUS_RANGE_HELP, outOfRange, parseMinutes } from "../customRange";
 import { askMacOS, isAsking, subscribeAsking, tick, untick } from "../notificationsToggle";
 import { latest, load, register, sameCustom, save } from "../settingsQueue";
 import { useTimer } from "../useTimer";
@@ -119,6 +119,7 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
     break: false,
   });
   const [line, setLine] = useState<Line>({ kind: "rest" });
+  const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
   const asking = useSyncExternalStore(subscribeAsking, isAsking);
@@ -133,6 +134,7 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
   useEffect(() => {
     const unregister = register({
       shown: (shown, resetDraft) => {
+        setLoadError(false);
         setSettings(shown);
         // The draft follows only when the saved minutes changed: a reload for another setting
         // (a theme change from the menu bar) never overwrites text being typed.
@@ -163,7 +165,7 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
         setFieldErr(range.focus || range.break ? range : { focus: true, break: true });
         setLine({ kind: "fields" });
       },
-      loadFailed: () => {},
+      loadFailed: () => setLoadError(true),
       saveFailed: (sent, restored, cause) => {
         pendingSaved.current = null;
         setLine({ kind: "failed", sent, restored, cause, keys: changedKeys(sent, restored) });
@@ -240,8 +242,10 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
   const commit = () => {
     const base = latest();
     if (!base) return;
-    const focusOk = /^\d+$/.test(draft.focus);
-    const breakOk = /^\d+$/.test(draft.break);
+    const focusMin = parseMinutes(draft.focus);
+    const breakMin = parseMinutes(draft.break);
+    const focusOk = focusMin !== null;
+    const breakOk = breakMin !== null;
     const savedDraft = draftOf(base.custom);
     const bad = {
       focus: !focusOk && draft.focus !== savedDraft.focus,
@@ -252,8 +256,8 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
       setLine({ kind: "fields" });
       return;
     }
-    if (!focusOk || !breakOk) return;
-    const custom = { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
+    if (focusMin === null || breakMin === null) return;
+    const custom = { focusMin, breakMin };
     if (sameCustom(custom, base.custom)) {
       setFieldErr({ focus: false, break: false });
       setLine((previous) => (previous.kind === "fields" ? { kind: "rest" } : previous));
@@ -271,8 +275,12 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
     const base = latest() ?? shown;
     const saved = draftOf(base.custom);
     setDraft((previous) => ({ ...previous, [key]: saved[key] }));
+    const other: FieldKey = key === "focus" ? "break" : "focus";
     setFieldErr((previous) => ({ ...previous, [key]: false }));
-    setLine((previous) => (previous.kind === "fields" ? { kind: "rest" } : previous));
+    // The other field's error, its save line and its Show action stay while it still shows.
+    setLine((previous) =>
+      previous.kind === "fields" && !fieldErr[other] ? { kind: "rest" } : previous,
+    );
   };
 
   const openSystemSettings = () => {
@@ -357,6 +365,9 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
       };
     }
     if (line.kind === "saved") return { text: line.text, tone: "neutral" };
+    if (loadError && !settings) {
+      return { text: "Orasenda can't read settings right now.", tone: "attention" };
+    }
     if (store === "unavailable") {
       return {
         text: "Orasenda can't save settings right now. Changes you make here may not be kept.",
