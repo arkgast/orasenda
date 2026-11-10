@@ -31,8 +31,6 @@ const DEFAULT_PRESET: Preset = "classic";
 type RangeHelp = { focus: boolean; break: boolean };
 const NO_RANGE_HELP: RangeHelp = { focus: false, break: false };
 
-const EXPLANATION = "Orasenda can tell you when a session ends, even when its window is hidden.";
-
 /** One-shot notices; the other milestones (`started`, `paused`, `resumed`) dismiss them. */
 const MILESTONE_NOTICES: Partial<Record<MilestoneKind, string>> = {
   ended: "Session ended.",
@@ -291,9 +289,6 @@ export function Today() {
               </Button>
             </div>
           )}
-          {view.notifications === "notDetermined" ? (
-            <p className="app-muted">{EXPLANATION}</p>
-          ) : null}
         </div>
       ) : null}
 

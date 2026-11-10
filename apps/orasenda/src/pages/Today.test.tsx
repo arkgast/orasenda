@@ -22,7 +22,6 @@ import {
 
 const RANGE_HELP = "Between 5 and 180 minutes.";
 const INVALID_SPEC = { kind: "invalidSpec", message: "focus_min out of range" };
-const EXPLANATION = "Orasenda can tell you when a session ends, even when its window is hidden.";
 
 async function renderToday(replies: Replies = {}) {
   const backend = mockBackend(replies);
@@ -303,19 +302,14 @@ test("next_transition_dismisses_one_shot_notice", async () => {
   expect(statusNodes()).toHaveLength(0);
 });
 
-test("explanation_line_only_while_not_determined", async () => {
+test("no_notification_line_on_today", async () => {
   await renderToday({
     timer_state: () => ({ view: { ...IDLE, notifications: "notDetermined" }, pending: [] }),
   });
-  const line = screen.getByText(EXPLANATION);
-  expect(line.tagName).toBe("P");
-  expect(line).toHaveClass("app-muted");
-
-  await emitTimer({ ...IDLE, notifications: "granted" });
-  expect(screen.queryByText(EXPLANATION)).toBeNull();
-
-  await emitTimer({ ...IDLE, notifications: "denied" });
-  expect(screen.queryByText(EXPLANATION)).toBeNull();
+  for (const notifications of ["notDetermined", "granted", "denied", "unavailable"] as const) {
+    await emitTimer({ ...IDLE, notifications });
+    expect(screen.queryByText(/Orasenda can tell you/)).toBeNull();
+  }
 });
 
 test("rejected_timer_state_shows_timer_unavailable", async () => {

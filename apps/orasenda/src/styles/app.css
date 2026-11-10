@@ -64,7 +64,7 @@ body {
   font-weight: var(--type-title-font-weight);
 }
 
-/* Secondary lines: the finish time, the notifications explanation, "Timer unavailable.". */
+/* Secondary lines: the finish time, "Timer unavailable.". */
 .app-muted {
   margin: 0;
   color: var(--ink-muted);
