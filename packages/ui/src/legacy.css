@@ -128,9 +128,6 @@ button.os-block { cursor: pointer; }
 .os-block-compact .os-block-title { flex: 1; }
 .os-block-compact .os-block-time { flex: none; }
 button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .os-block-title { text-decoration: underline; }
-.os-nowline { display: flex; align-items: center; gap: var(--space-2); color: var(--focus); font-size: 13px; line-height: 16px; font-weight: 500; }
-.os-nowline i { flex: 1; height: 1px; background: var(--focus); position: relative; }
-.os-nowline i::before { content: ""; position: absolute; inset-inline-start: 0; top: -2px; width: var(--space-1-5); height: var(--space-1-5); border-radius: var(--radius-pill); background: var(--focus); }
 /* end TimeBlock */
 
 /* Shared: disabled cards and blocks */

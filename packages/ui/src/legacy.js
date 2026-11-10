@@ -661,9 +661,6 @@ function PopoverMenu(p) {
       h("div", { id: id, role: "menu", className: "os-popover-list", "aria-labelledby": headingId, "aria-describedby": p.description ? descId : undefined }, list)));
 }
 // end PopoverMenu
-// NowLine
-function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "Now, " + p.time }, h("span", { className: "os-num" }, "Now · " + p.time), h("i", { "aria-hidden": "true" })); }
-// end NowLine
 
 export {
   TimerRing,
@@ -682,7 +679,6 @@ export {
   CommandPalette,
   EmptyState,
   StartButton,
-  NowLine,
   PageFrame,
   ScrollRegion,
   SettingsIndex,
