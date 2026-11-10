@@ -44,20 +44,28 @@ test("stacked_strip_fits_at_360", async ({ page }) => {
 });
 
 test("timer_strip_warning_fade_uses_duration_slow", async ({ page }, info) => {
-  test.skip(info.project.name === "light-reduced-motion", "the fade is instant under reduced motion");
+  test.skip(
+    info.project.name === "light-reduced-motion",
+    "the fade is instant under reduced motion",
+  );
   await openSpecimen(page, "TimerStrip");
   const read = (sel: string) =>
-    page.locator(`[data-state="timer-strip-640-warning"] ${sel}`).first().evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return {
-        props: cs.transitionProperty.split(",").map((s) => s.trim()),
-        durations: cs.transitionDuration.split(",").map((s) => s.trim()),
-      };
-    });
+    page
+      .locator(`[data-state="timer-strip-640-warning"] ${sel}`)
+      .first()
+      .evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return {
+          props: cs.transitionProperty.split(",").map((s) => s.trim()),
+          durations: cs.transitionDuration.split(",").map((s) => s.trim()),
+        };
+      });
   const chip = await read(".os-chip");
   expect(chip.durations.every((d) => d === "1.6s")).toBe(true);
   const fill = await read(".os-strip-fill");
-  const i = fill.props.findIndex((p) => p === "background-color" || p === "background" || p === "all");
+  const i = fill.props.findIndex(
+    (p) => p === "background-color" || p === "background" || p === "all",
+  );
   expect(i).toBeGreaterThanOrEqual(0);
   expect(fill.durations[i]).toBe("1.6s");
 });

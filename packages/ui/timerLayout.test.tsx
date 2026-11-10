@@ -3,8 +3,13 @@ import { resolve } from "node:path";
 import { expect, test } from "vitest";
 import { timerLayout } from "./index.ts";
 
-const readme = readFileSync(resolve(import.meta.dirname, "../../design/system/components/TimerStrip/README.md"), "utf8");
-const tokens = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../design/system/tokens.json"), "utf8"));
+const readme = readFileSync(
+  resolve(import.meta.dirname, "../../design/system/components/TimerStrip/README.md"),
+  "utf8",
+);
+const tokens = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, "../../design/system/tokens.json"), "utf8"),
+);
 
 // Rows come from the README table. Two Today rows differ from the spec table (README wins):
 // 360x360 -> ring (spec stackedStrip) and 1000x440 -> ring (spec strip).
@@ -13,7 +18,14 @@ const rows = readme
   .filter((l) => /^\| (Today|Focus window) \|/.test(l))
   .map((l) => {
     const c = l.split("|").map((s) => s.trim());
-    return { surface: c[1], window: c[2], contentWidth: +c[3], contentHeight: +c[4], windowWidth: +c[5], result: c[6].split(" ")[0] };
+    return {
+      surface: c[1],
+      window: c[2],
+      contentWidth: +c[3],
+      contentHeight: +c[4],
+      windowWidth: +c[5],
+      result: c[6].split(" ")[0],
+    };
   });
 
 test("timer_layout_matches_spec_table", () => {

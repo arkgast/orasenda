@@ -15,13 +15,17 @@ test("start_button_name_stays_start_focus_with_compact_label", () => {
 test("start_button_keyshortcuts_follow_single_keys", () => {
   const both = `${describeShortcut("Space").aria} ${describeShortcut("⌘↩").aria}`;
   const { rerender } = render(<StartButton {...props} singleKeys />);
-  expect(screen.getByRole("button", { name: "Start focus" }).getAttribute("aria-keyshortcuts")).toBe("Space Meta+Enter");
+  expect(
+    screen.getByRole("button", { name: "Start focus" }).getAttribute("aria-keyshortcuts"),
+  ).toBe("Space Meta+Enter");
   expect(both).toBe("Space Meta+Enter");
   rerender(<StartButton {...props} singleKeys={false} />);
-  expect(screen.getByRole("button", { name: "Start focus" }).getAttribute("aria-keyshortcuts")).toBe(
-    describeShortcut("⌘↩").aria,
-  );
-  expect(screen.getByRole("button", { name: "Just 2 minutes" }).hasAttribute("aria-keyshortcuts")).toBe(false);
+  expect(
+    screen.getByRole("button", { name: "Start focus" }).getAttribute("aria-keyshortcuts"),
+  ).toBe(describeShortcut("⌘↩").aria);
+  expect(
+    screen.getByRole("button", { name: "Just 2 minutes" }).hasAttribute("aria-keyshortcuts"),
+  ).toBe(false);
 });
 
 test("start_button_without_single_keys_prop_matches_current_output", () => {
@@ -34,7 +38,9 @@ test("start_button_without_single_keys_prop_matches_current_output", () => {
 test("start_button_unavailable_stays_focusable", () => {
   const onStart = vi.fn();
   const onQuickStart = vi.fn();
-  const { container } = render(<StartButton onStart={onStart} onQuickStart={onQuickStart} unavailable />);
+  const { container } = render(
+    <StartButton onStart={onStart} onQuickStart={onQuickStart} unavailable />,
+  );
   for (const name of ["Start focus", "Just 2 minutes"]) {
     const b = screen.getByRole("button", { name });
     expect(b.getAttribute("aria-disabled")).toBe("true");
@@ -55,7 +61,8 @@ test("start_button_finish_time_still_renders_realistic_finish", () => {
 
 test("start_button_disabled_still_disables", () => {
   render(<StartButton {...props} disabled />);
-  for (const b of screen.getAllByRole("button")) expect((b as HTMLButtonElement).disabled).toBe(true);
+  for (const b of screen.getAllByRole("button"))
+    expect((b as HTMLButtonElement).disabled).toBe(true);
 });
 
 test("start_button_play_glyph_hidden", () => {

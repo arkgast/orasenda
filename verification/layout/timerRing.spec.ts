@@ -57,7 +57,9 @@ test("timer_ring_frames_fit", async ({ page }) => {
   for (let i = 0; i < (await all.count()); i++) {
     // The clamped task box reports its hidden lines as scroll overflow; its visible box must be two lines at most.
     const reported = await overflows(all.nth(i));
-    expect(reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("div.os-timer-task"))).toEqual([]);
+    expect(
+      reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("div.os-timer-task")),
+    ).toEqual([]);
     const task = all.nth(i).locator(".os-timer-task");
     if ((await task.count()) > 0) {
       const h = await task.evaluate((el) => ({
@@ -70,21 +72,27 @@ test("timer_ring_frames_fit", async ({ page }) => {
 });
 
 test("warning_fade_uses_duration_slow", async ({ page }, info) => {
-  test.skip(info.project.name === "light-reduced-motion", "the fade is instant under reduced motion");
+  test.skip(
+    info.project.name === "light-reduced-motion",
+    "the fade is instant under reduced motion",
+  );
   await openSpecimen(page, "TimerRing");
   const slow = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue("--duration-slow").trim(),
   );
   expect(slow).toBe("1600ms");
   const read = (frame: string, sel: string) =>
-    page.locator(`[data-state="${frame}"] ${sel}`).first().evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return {
-        props: cs.transitionProperty.split(",").map((s) => s.trim()),
-        durations: cs.transitionDuration.split(",").map((s) => s.trim()),
-        easing: cs.transitionTimingFunction,
-      };
-    });
+    page
+      .locator(`[data-state="${frame}"] ${sel}`)
+      .first()
+      .evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return {
+          props: cs.transitionProperty.split(",").map((s) => s.trim()),
+          durations: cs.transitionDuration.split(",").map((s) => s.trim()),
+          easing: cs.transitionTimingFunction,
+        };
+      });
   const arc = await read("timer-ring-fluid-warning", ".os-timer-warning .prog");
   const stroke = arc.props.indexOf("stroke");
   expect(stroke).toBeGreaterThanOrEqual(0);

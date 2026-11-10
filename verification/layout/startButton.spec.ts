@@ -7,22 +7,25 @@ import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
 import { frames, openSpecimen, pressTab } from "./support/specimen.ts";
 
-const frame = (page: Page, state: string) =>
-  page.locator(`[data-frame][data-state="${state}"]`);
+const frame = (page: Page, state: string) => page.locator(`[data-frame][data-state="${state}"]`);
 
 /** In the compact form the full label is visually hidden in a 1x1 clip box, like .os-sr-only. */
 async function expectFitsWithHiddenFull(f: Locator) {
   const reported = await overflows(f);
-  expect(reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("span.os-start-full"))).toEqual([]);
+  expect(
+    reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("span.os-start-full")),
+  ).toEqual([]);
 }
 
 /** The label span a sighted user can read: wider than the 1px sr-only box and not display:none. */
 const shown = (page: Page, state: string) =>
-  frame(page, state).locator(".os-start-btn").evaluate((btn) =>
-    Array.from(btn.querySelectorAll(".os-start-full, .os-start-compact"))
-      .filter((s) => s.getBoundingClientRect().width > 1)
-      .map((s) => s.textContent),
-  );
+  frame(page, state)
+    .locator(".os-start-btn")
+    .evaluate((btn) =>
+      Array.from(btn.querySelectorAll(".os-start-full, .os-start-compact"))
+        .filter((s) => s.getBoundingClientRect().width > 1)
+        .map((s) => s.textContent),
+    );
 
 test("start_button_label_switches_at_400px_content", async ({ page }, info) => {
   await openSpecimen(page, "StartButton");
@@ -53,7 +56,6 @@ test("start_button_keyboard_path", async ({ page }) => {
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.evaluate((s) => {
       const f = document.querySelector(`[data-state="${s}"]`) as HTMLElement;
-      const first = f.querySelector("button") as HTMLElement;
       // Put the starting point just before the frame, then use the real key.
       const marker = document.createElement("span");
       marker.tabIndex = -1;
@@ -91,8 +93,14 @@ test("start_button_keyboard_path", async ({ page }) => {
 test("start_button_aria_keyshortcuts", async ({ page }) => {
   await openSpecimen(page, "StartButton");
   const start = (s: string) => frame(page, s).getByRole("button", { name: "Start focus" });
-  await expect(start("start-button-single-keys")).toHaveAttribute("aria-keyshortcuts", "Space Meta+Enter");
-  await expect(start("start-button-single-keys-off")).toHaveAttribute("aria-keyshortcuts", "Meta+Enter");
+  await expect(start("start-button-single-keys")).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Space Meta+Enter",
+  );
+  await expect(start("start-button-single-keys-off")).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Meta+Enter",
+  );
   await expect(start("start-button-default")).not.toHaveAttribute("aria-keyshortcuts");
   await expect(
     frame(page, "start-button-single-keys").getByRole("button", { name: "Just 2 minutes" }),

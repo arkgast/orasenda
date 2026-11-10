@@ -104,7 +104,10 @@ test("exports_timer_faces", () => {
 });
 
 test("index_d_ts_has_no_timer_or_start_next_props", () => {
-  const dts = readFileSync(resolve(import.meta.dirname, "../../design/system/components/index.d.ts"), "utf8");
+  const dts = readFileSync(
+    resolve(import.meta.dirname, "../../design/system/components/index.d.ts"),
+    "utf8",
+  );
   expect(dts).not.toContain("TimerRingNextProps");
   expect(dts).not.toContain("StartButtonNextProps");
   expect(dts).toContain("declare function TimerStrip");

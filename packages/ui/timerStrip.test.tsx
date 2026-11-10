@@ -2,13 +2,16 @@ import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { TimerStrip } from "./index.ts";
 
-const TASK = "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";
+const TASK =
+  "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";
 const run = { remaining: "1:48", remainingLabel: "1 minute 48 seconds", progress: 0.94 };
 
 test("timer_strip_name_has_remaining_label_and_mode", () => {
   render(<TimerStrip mode="warning" {...run} task="Finish the chapter 3 outline" />);
   expect(
-    screen.getByRole("timer", { name: "Almost up, 1 minute 48 seconds remaining, Finish the chapter 3 outline" }),
+    screen.getByRole("timer", {
+      name: "Almost up, 1 minute 48 seconds remaining, Finish the chapter 3 outline",
+    }),
   ).toBeTruthy();
 });
 
@@ -51,7 +54,8 @@ test("timer_strip_adds_no_live_region", () => {
   const root = container.querySelector("[role=timer]") as HTMLElement;
   expect(root.getAttribute("aria-live")).toBe("off");
   expect(container.querySelector("[role=status],[role=alert]")).toBeNull();
-  for (const el of container.querySelectorAll("[aria-live]")) expect(el.getAttribute("aria-live")).toBe("off");
+  for (const el of container.querySelectorAll("[aria-live]"))
+    expect(el.getAttribute("aria-live")).toBe("off");
 });
 
 test("timer_strip_task_whole_in_accessible_name", () => {
