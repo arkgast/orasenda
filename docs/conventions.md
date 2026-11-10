@@ -26,7 +26,11 @@ Project rules for every contributor and agent. They override baton's general gui
   TypeScript tests that build an IPC type it changes, the test hooks it needs in another crate,
   and the spec line for a failure case it settles. Three P1-A tasks (#87, #91, #104) each needed
   an architect ruling for an ownership exception: the plan left a file out of #87 and #91, and
-  #104, a review follow-up, had no Owns or Touches at all.
+  #104, a review follow-up, had no Owns or Touches at all. In P1-B, T4 (#145) changed a managed
+  state type from a unit struct. That forced a one-line `.manage(...)` edit in `lib.rs`, which the
+  parallel T5 (#146) owned, and needed a ruling
+  (https://github.com/arkgast/orasenda/issues/145#issuecomment-6755881829). So a task that adds or
+  reshapes a managed or registered type lists the file with the registration line in Touches.
 
 ## Code structure (ADR-001, ADR-007)
 - `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
@@ -81,3 +85,16 @@ Seen twice in P1-A: Today rolled back over a later settings save that was still 
   waiting on the main thread.
 - Test it with two threads (or two pending promises) forced into the stale order with barriers
   or held replies, never with sleeps.
+
+## Design-system changes are checked against their first consumer
+Seen twice in P1-B. The T1 design-system task (#142, PR #152) passed review, but the first page
+built on it (T6, #147) needed two contract changes. `SettingsRow` had no stable ids, so a control
+inside it could not point `aria-describedby` at its description; this was fixed in a second round
+of #152 (ruling on #142). `Input` rendered its error as `role="status"`, a second live region on a
+page whose spec allows exactly one (#157, PR #159).
+- A design-system task's review reads the consuming spec's accessibility acceptance (live regions,
+  labels, `aria-describedby`, focus). It checks every new or changed component against that
+  acceptance, not only against its own README.
+- A component never adds a live region (`role="status"`, `role="alert"`, `aria-live`) of its own,
+  unless its README says the page has no other live region.
+- An id that another element must reference is settable by prop, so the consumer can pass it in.
