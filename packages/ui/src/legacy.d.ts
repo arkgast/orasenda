@@ -1,6 +1,5 @@
 // Shared: React import and modes
 import type * as React from 'react';
-import type { TimerRingProps } from './components/ui/timer-ring';
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
@@ -16,7 +15,7 @@ export interface IntentPromptProps { open?: boolean; app?: string; title?: strin
 export declare function IntentPrompt(props: IntentPromptProps): React.ReactElement;
 // end IntentPrompt
 // FullScreenFocus
-export interface FullScreenFocusProps extends Omit<TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
+export interface FullScreenFocusProps extends Omit<import('./components/ui/timer-ring').TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
 export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
 // end FullScreenFocus
 // Field

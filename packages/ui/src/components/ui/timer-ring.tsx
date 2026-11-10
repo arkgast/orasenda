@@ -2,14 +2,14 @@ import type { CSSProperties, ReactElement } from "react";
 import { cn } from "../../lib/utils";
 import { ModeChip } from "./mode-chip";
 
-type TimerMode = "focus" | "break" | "routine" | "warning" | "paused" | "idle";
+type Mode = NonNullable<TimerRingProps["mode"]>;
 
 export interface TimerRingProps {
   remaining?: string;
   remainingLabel?: string;
   /** The elapsed fraction [0,1]; the arc shows what is left. */
   progress?: number;
-  mode?: TimerMode;
+  mode?: "focus" | "break" | "routine" | "warning" | "paused" | "idle";
   /** Clamped to two lines, whole in the accessible name. */
   task?: string;
   /**
@@ -23,7 +23,7 @@ export interface TimerRingProps {
   clock?: string;
 }
 
-const WORD: Record<TimerMode, string> = {
+const WORD: Record<Mode, string> = {
   focus: "Focus",
   break: "Break",
   routine: "Routine",
@@ -32,7 +32,7 @@ const WORD: Record<TimerMode, string> = {
   idle: "No session",
 };
 
-const ARC: Record<TimerMode, string> = {
+const ARC: Record<Mode, string> = {
   focus: "stroke-focus",
   break: "stroke-break",
   routine: "stroke-routine",
@@ -60,7 +60,7 @@ function clamp(n: number | undefined): number {
   return typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
 }
 
-function label(p: TimerRingProps, mode: TimerMode): string {
+function label(p: TimerRingProps, mode: Mode): string {
   if (mode === "idle") return WORD.idle;
   const spoken = p.remainingLabel || p.remaining || "25:00";
   return `${WORD[mode]}, ${spoken} remaining${p.task ? `, ${p.task}` : ""}${p.clock ? `, Wall clock, ${p.clock}` : ""}`;
@@ -161,8 +161,7 @@ export function TimerRing(p: TimerRingProps): ReactElement {
   return fluid ? (
     <div
       data-slot="timer-ring-box"
-      style={{ containerType: "size" }}
-      className="grid aspect-square max-h-full min-h-timer-min-size w-full min-w-timer-min-size place-items-center"
+      className="@container-size grid aspect-square max-h-full min-h-timer-min-size w-full min-w-timer-min-size place-items-center"
     >
       {ring}
     </div>

@@ -260,6 +260,16 @@ test.describe("viewport slot", () => {
       expect(Math.abs(m.w - m.h), "round").toBeLessThanOrEqual(1);
       expect(Math.abs(m.w - want), "diameter").toBeLessThanOrEqual(1);
       await expectClampedFits(slot, "[data-slot=timer-ring-task]", 2);
+      const clockSize = await slot.evaluate(
+        (el) =>
+          getComputedStyle(el.querySelector("[data-slot=timer-ring-clock]") as HTMLElement)
+            .fontSize,
+      );
+      const wantClock = await px(
+        page,
+        m.w >= 512 ? "--type-timer-md-font-size" : "--type-timer-sm-font-size",
+      );
+      expect(Math.abs(parseFloat(clockSize) - wantClock), "clock size").toBeLessThanOrEqual(0.5);
       // Other specimen frames are fixed-width and may scroll the page; the slot itself must fit.
       const inView = await slot.evaluate(
         (el) => el.getBoundingClientRect().right <= window.innerWidth,
