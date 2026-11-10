@@ -1,0 +1,166 @@
+[
+  {
+    "fg": "ink",
+    "bg": "surface",
+    "kind": "text",
+    "where": "changeset 9.1: status-row message, BarRow label, goal stubs"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface",
+    "kind": "text",
+    "where": "changeset 9.1: More below, at-rest save line, idle length, hour labels"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "changeset 9.1: Kbd text, floater digits"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "changeset 9.1: RoleTag, AppRow second line"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "changeset 9.1: Tooltip, PopoverMenu rows"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "changeset 9.1: PopoverMenu second line, disabled rows"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-sunken",
+    "kind": "text",
+    "where": "changeset 9.1: ShortcutRecorder keys, Select value, kanban strip on hover, TaskCard hover"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-sunken",
+    "kind": "text",
+    "where": "changeset 9.1: kanban strip count at rest, Select chevron"
+  },
+  {
+    "fg": "ink",
+    "bg": "selection",
+    "kind": "text",
+    "where": "changeset 9.1: selected segment, checked popover row, pressed strip"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "selection",
+    "kind": "text",
+    "where": "changeset 9.1: SettingsIndex value on the current item"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface",
+    "kind": "text",
+    "where": "changeset 9.1: ghost actions in the status row (Got it, Open Settings)"
+  },
+  {
+    "fg": "focus",
+    "bg": "selection",
+    "kind": "text",
+    "where": "changeset 9.1: Today on the week head"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "changeset 9.1: Focus RoleTag in a raised list"
+  },
+  {
+    "fg": "amber",
+    "bg": "amber-soft",
+    "kind": "text",
+    "where": "changeset 9.1: Warning chip"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "changeset 9.2: strip track, scrollbar thumb, BarRow fill, IconButton round edge, tooltip and popover edges against the page"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "changeset 9.2: segment separators, Kbd edge, SessionSlot inset edge, BarRow in cards"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "changeset 9.2: Kbd edge inside a tooltip, dashed disabled radio rings, scrollbar in dialogs"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "changeset 9.2: kanban strip hover edge, recorder border, Select border"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "changeset 9.2: a separator beside the selected segment"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "changeset 9.2: strip fill (running), goal fill, compact NowLine; TimerStrip focus fill"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "changeset 9.2: strip fill (paused); TimerStrip paused fill"
+  },
+  {
+    "fg": "amber",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "changeset 9.2: strip fill and end triangle, warning-tone triangle; TimerStrip warning fill"
+  },
+  {
+    "fg": "focus",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "changeset 9.2: selected-segment underline, SettingsIndex side bar, recorder border while recording"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "changeset 9.2: focus ring on segments"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "changeset 9.2: focus ring on popover rows"
+  },
+  {
+    "fg": "focus-ring",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "changeset 9.2: focus ring on the recorder"
+  },
+  {
+    "fill": "surface-raised",
+    "edge": "line-strong",
+    "wallpaper": ["#EDEDED", "#808080", "#1C1C1E"],
+    "kind": "mark",
+    "where": "FloatingTimer edge against the desktop",
+    "rule": "fill-or-edge"
+  }
+]

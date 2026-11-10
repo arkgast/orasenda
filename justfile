@@ -5,6 +5,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set windows-shell := ["bash", "-euo", "pipefail", "-c"]
 set script-interpreter := ["bash", "-euo", "pipefail"]
 
+python := if os_family() == "windows" { "python" } else { "python3" }
 mobile_targets := "--target aarch64-apple-ios --target aarch64-linux-android"
 
 default:
@@ -39,6 +40,11 @@ test:
     pnpm --filter @orasenda/tokens test
     pnpm --filter @orasenda/ui test
 
+# Check the declared colour pairs (verification/contrast-pairs.json) in both themes.
+contrast:
+    {{ python }} -m unittest discover -s verification -p "contrast_test.py"
+    {{ python }} verification/contrast.py
+
 # Regenerate packages/tokens/tokens.css from design/system/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
@@ -64,6 +70,8 @@ ci:
     "{{ just_executable() }}" core-boundary
     @echo "==> core purity (no target_os in core)"
     "{{ just_executable() }}" core-purity
+    @echo "==> contrast (self test, then the declared pairs)"
+    "{{ just_executable() }}" contrast
     @echo "==> tokens (tokens.css is up to date)"
     "{{ just_executable() }}" tokens
     git diff --exit-code -- packages/tokens/tokens.css
