@@ -46,7 +46,9 @@ test.each([
   const chip = container.querySelector("[data-slot=mode-chip]") as HTMLElement;
   expect(chip.textContent).toBe(word);
   expect(chip.querySelector("svg[aria-hidden=true]")).not.toBeNull();
-  expect(container.querySelector("[data-slot=timer-strip-triangle]") !== null).toBe(mode === "warning");
+  expect(container.querySelector("[data-slot=timer-strip-triangle]") !== null).toBe(
+    mode === "warning",
+  );
 });
 
 test("timer_strip_adds_no_live_region", () => {

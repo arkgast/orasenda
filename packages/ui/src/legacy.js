@@ -36,38 +36,6 @@ function ModeChip(p) {
   return h("span", { className: "os-chip os-mode-" + mode }, h(Shape, { mode: mode }), p.children || MODE_LABEL[mode]);
 }
 // end ModeChip
-// TimerStrip: the time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the
-// ring; the fill shows time left; warning adds the triangle at the fill's end. No live region: role="timer", aria-live off.
-function stripLabel(p, mode) {
-  var parts = mode === "idle" ? ["No session", p.idleLength] : [MODE_LABEL[mode] + ", " + (p.remainingLabel || p.remaining || "25:00") + " remaining"];
-  if (p.task) parts.push(p.task);
-  return parts.filter(Boolean).join(", ");
-}
-// TimerStrip
-function TimerStrip(p) {
-  var mode = p.mode || "focus", left = (1 - clamp(p.progress)) * 100 + "%";
-  return h("div", { className: cx("os-strip", "os-strip-" + mode, p.stacked && "os-strip-stacked"), role: "timer", "aria-live": "off", "aria-label": stripLabel(p, mode) },
-    h("div", { className: "os-strip-head", "aria-hidden": "true" },
-      h(ModeChip, { mode: mode }),
-      mode === "idle" ? (p.idleLength ? h("span", { className: "os-strip-length" }, p.idleLength) : null) : h("span", { className: "os-strip-digits" }, p.remaining || "25:00")),
-    mode !== "idle" ? h("div", { className: "os-strip-bar", "aria-hidden": "true" },
-      h("span", { className: "os-strip-fill", style: { width: left } }),
-      mode === "warning" ? h("svg", { className: "os-strip-tri", viewBox: "0 0 10 10", "aria-hidden": "true", focusable: "false", style: { insetInlineStart: left } }, h("path", { d: "M5 0.5 9.6 9.5H0.4z" })) : null) : null,
-    p.task ? h("div", { className: "os-strip-task", "aria-hidden": "true" }, p.task) : null);
-}
-// end TimerStrip
-// timerLayout (TimerStrip README, Choosing the layout). Pure; hosts call it on resize only, never on a tick.
-// The constants are the px values of these tokens in tokens.json (a plain script cannot read the file).
-var LAYOUT_TOKENS = { "layout-ring-min-height": 360, "layout-compact-width": 640, "layout-strip-height": 420 };
-// timerLayout
-function timerLayout(box) {
-  var width = box.contentWidth, height = box.contentHeight;
-  if (height < LAYOUT_TOKENS["layout-ring-min-height"]) return box.windowWidth >= LAYOUT_TOKENS["layout-compact-width"] ? "strip" : "stackedStrip";
-  if (width > 2 * height && height < LAYOUT_TOKENS["layout-strip-height"]) return "strip";
-  return "ring";
-}
-// end timerLayout
-timerLayout.tokens = Object.freeze(Object.assign({}, LAYOUT_TOKENS));
 // TaskCard
 function TaskCard(p) {
   var est = count(p.estimate), done = count(p.done), dots = [], hasEstimate = p.estimate != null;
@@ -539,7 +507,6 @@ function PopoverMenu(p) {
 // end PopoverMenu
 
 export {
-  TimerStrip,
   TaskCard,
   IntentPrompt,
   FullScreenFocus,
@@ -553,5 +520,4 @@ export {
   IconButton,
   Tooltip,
   PopoverMenu,
-  timerLayout,
 };

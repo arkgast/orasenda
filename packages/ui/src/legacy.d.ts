@@ -59,22 +59,6 @@ export declare function IconButton(props: IconButtonProps): React.ReactElement;
 export interface TooltipProps { label: string; shortcut?: string; placement?: 'auto'; children: React.ReactElement }
 export declare function Tooltip(props: TooltipProps): React.ReactElement;
 // end Tooltip
-// TimerStrip
-/** The time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the ring. progress is the elapsed fraction [0,1]; the bar shows what is left. idleLength ("25 min") shows when idle, never fake digits. task is E's intent line: clamped to two lines, whole in the accessible name. stacked is the narrow form (stackedStrip). role="timer", aria-live="off": no live region. */
-export interface TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; idleLength?: string; task?: string; stacked?: boolean }
-export declare function TimerStrip(props: TimerStripProps): React.ReactElement;
-// end TimerStrip
-// timerLayout
-export type TimerLayout = 'ring' | 'strip' | 'stackedStrip';
-/** contentWidth and contentHeight: the timer surface's content box (Today: the window's content area; the Focus window: the window minus space-8, or space-4 below layout-compact-width). windowWidth: the window's inner width, for the compact test only. */
-export interface TimerLayoutBox { contentWidth: number; contentHeight: number; windowWidth: number }
-/** TimerStrip README, "Choosing the layout". Pure; call it on resize only, never on a tick. contentHeight < layout-ring-min-height: 'strip' when windowWidth >= layout-compact-width, else 'stackedStrip'. Otherwise contentWidth > 2 × contentHeight and contentHeight < layout-strip-height: 'strip'. Otherwise 'ring'. */
-export declare function timerLayout(box: TimerLayoutBox): TimerLayout;
-export declare namespace timerLayout {
-  /** The px values of the tokens the rule reads, by token name (equal to tokens.json). */
-  const tokens: { readonly 'layout-ring-min-height': number; readonly 'layout-compact-width': number; readonly 'layout-strip-height': number };
-}
-// end timerLayout
 // PopoverMenu
 /** One row. kind 'radio' is a menuitemradio, 'checkbox' a menuitemcheckbox (choosing it toggles: the host flips checked), 'link' a menuitem (the Settings row; a separator comes before the first link row that follows another kind). meta is the right-aligned detail ("25 / 5"). disabled gives aria-disabled: the row stays focusable and is never chosen. */
 export interface PopoverMenuItem { id: string; label: string; meta?: string; kind: 'radio' | 'checkbox' | 'link'; checked?: boolean; disabled?: boolean }
@@ -91,7 +75,7 @@ export declare function SettingsRow(props: SettingsRowProps): React.ReactElement
 declare global {
   interface Window {
     Orasenda: {
-      ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout;
+      ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof import("./components/ui/timer-strip").TimerStrip; timerLayout: typeof import("./lib/timer-layout").timerLayout;
       TaskCard: typeof TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof Toast;

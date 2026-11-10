@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectClampedFits } from "./support/clampedFits.ts";
 import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
-import { openSpecimen } from "./support/specimen.ts";
+import { frames, openSpecimen } from "./support/specimen.ts";
 
 const MODES = ["focus", "paused", "idle", "break", "warning"];
 const WIDTHS = [360, 640, 1440];
@@ -11,8 +11,8 @@ async function checkFrame(page: import("@playwright/test").Page, state: string, 
   const frame = page.locator(`[data-frame][data-state="${state}"]`);
   await expect(frame, state).toHaveCount(1);
   if (withTask) {
-    await expectClampedFits(frame, ".os-strip-task", 2);
-    const task = await frame.locator(".os-strip-task").evaluate((el) => {
+    await expectClampedFits(frame, "[data-slot=timer-strip-task]", 2);
+    const task = await frame.locator("[data-slot=timer-strip-task]").evaluate((el) => {
       const cs = getComputedStyle(el);
       const line = Number.parseFloat(cs.lineHeight);
       return { height: el.getBoundingClientRect().height, line, clamp: cs.webkitLineClamp };
@@ -26,7 +26,7 @@ async function checkFrame(page: import("@playwright/test").Page, state: string, 
       getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
     ),
   );
-  const digits = frame.locator(".os-strip-digits");
+  const digits = frame.locator("[data-slot=timer-strip-digits]");
   if ((await digits.count()) > 0) {
     const size = await digits.evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
     expect(size, `${state} digits`).toBeGreaterThanOrEqual(md);
@@ -45,8 +45,8 @@ test("timer_strip_long_intent_clamps_to_two_lines", async ({ page }) => {
   for (const w of WIDTHS) {
     const frame = page.locator(`[data-frame][data-state="timer-strip-long-${w}"]`);
     await expect(frame).toHaveCount(1);
-    await expectClampedFits(frame, ".os-strip-task", 2);
-    const t = await frame.locator(".os-strip-task").evaluate((el) => ({
+    await expectClampedFits(frame, "[data-slot=timer-strip-task]", 2);
+    const t = await frame.locator("[data-slot=timer-strip-task]").evaluate((el) => ({
       box: el.clientHeight,
       full: el.scrollHeight,
       line: Number.parseFloat(getComputedStyle(el).lineHeight),
@@ -62,7 +62,7 @@ test("stacked_strip_fits_at_360", async ({ page }) => {
     await checkFrame(page, `timer-strip-stacked-360-${m}`, false);
     // The frame is Today's 52px time track; the strip must be no taller.
     const h = await page
-      .locator(`[data-state="timer-strip-stacked-360-${m}"] .os-strip`)
+      .locator(`[data-state="timer-strip-stacked-360-${m}"] [data-slot=timer-strip]`)
       .evaluate((el) => ({
         strip: el.getBoundingClientRect().height,
         frame: el.parentElement?.getBoundingClientRect().height ?? 0,
@@ -89,9 +89,9 @@ test("timer_strip_warning_fade_uses_duration_slow", async ({ page }, info) => {
           durations: cs.transitionDuration.split(",").map((s) => s.trim()),
         };
       });
-  const chip = await read(".os-chip");
+  const chip = await read("[data-slot=mode-chip]");
   expect(chip.durations.every((d) => d === "1.6s")).toBe(true);
-  const fill = await read(".os-strip-fill");
+  const fill = await read("[data-slot=timer-strip-fill-color]");
   const i = fill.props.findIndex(
     (p) => p === "background-color" || p === "background" || p === "all",
   );
@@ -128,3 +128,33 @@ test("timer_faces_no_motion_when_reduced (TimerStrip)", async ({ page }, info) =
   await openSpecimen(page, "TimerStrip");
   expect(await animatedElements(page)).toEqual([]);
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`timer_strip_keeps_its_shape_at_${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "TimerStrip");
+    expect(await frames(page).count()).toBeGreaterThan(0);
+    const noScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    );
+    expect(noScroll).toBe(true);
+    for (const w of WIDTHS) {
+      const state = `timer-strip-${w}-focus`;
+      const m = await page.locator(`[data-state="${state}"]`).evaluate((frame) => {
+        const strip = frame.querySelector("[data-slot=timer-strip]") as HTMLElement;
+        const bar = frame.querySelector("[data-slot=timer-strip-bar]") as HTMLElement;
+        return {
+          frame: frame.getBoundingClientRect().width,
+          strip: strip.getBoundingClientRect().width,
+          bar: bar.getBoundingClientRect().height,
+        };
+      });
+      expect(m.strip, state).toBeLessThanOrEqual(m.frame + 1);
+      expect(m.bar, `${state} bar box is 10px`).toBeGreaterThanOrEqual(9);
+      expect(m.bar).toBeLessThanOrEqual(11);
+    }
+  });
+}

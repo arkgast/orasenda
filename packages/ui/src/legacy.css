@@ -167,16 +167,12 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 }
 /* end Shared: reduced motion */
 
-/* Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
+/* Shared: forced colors (TimerRing, ModeChip) */
 @media (forced-colors: active) {
   [data-slot="timer-ring-track"] { stroke-dasharray: 2 4; }
-  .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
-  .os-strip-bar::before { background: GrayText; }
-  .os-strip-fill { background: CanvasText; }
-  .os-strip-tri { color: CanvasText; }
   .os-chip, .os-pomo { border: 1px solid; }
 }
-/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
+/* end Shared: forced colors (TimerRing, ModeChip) */
 
 /* Shared: redesign pass glyphs */
 /* ---------------------------------------------------------------------------
@@ -213,31 +209,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-tip-anchor { display: inline-flex; flex: none; vertical-align: middle; }
 .os-iconbtn-icon { display: inline-flex; }
 /* end Tooltip */
-
-/* TimerStrip */
-/* TimerStrip: chip and digits over a horizon bar; the fill end reads by thickness, not colour. Digits run from
-   timer-md (28) to timer-lg (64) with the strip's width; the task (E's intent line) is clamped to two lines. */
-.os-strip { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-width: 0; container-type: inline-size; }
-.os-strip-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-.os-strip-head .os-chip { flex: none; }
-.os-strip-digits { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 300; letter-spacing: 0; font-size: clamp(28px, 14cqi, 64px); line-height: 1; color: var(--ink); white-space: nowrap; }
-.os-strip-paused .os-strip-digits { color: var(--ink-muted); }
-.os-strip-length { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 32px; color: var(--ink-muted); white-space: nowrap; }
-.os-strip-bar { position: relative; width: 100%; height: 10px; flex: none; }
-.os-strip-bar::before { content: ""; position: absolute; inset-inline: 0; top: 4px; height: 2px; border-radius: var(--radius-pill); background: var(--line-strong); }
-.os-strip-fill { position: absolute; inset-inline-start: 0; top: 2px; height: 6px; border-radius: var(--radius-pill); background: var(--focus); transition: width var(--duration-calm) var(--easing-calm), background-color var(--duration-slow) var(--easing-calm); }
-.os-strip-break .os-strip-fill { background: var(--break); }
-.os-strip-routine .os-strip-fill { background: var(--routine); }
-.os-strip-paused .os-strip-fill { background: var(--ink-muted); }
-.os-strip-warning .os-strip-fill { background: var(--amber); }
-.os-strip-warning .os-chip { transition-duration: var(--duration-slow); }
-.os-strip-task { font-size: 13px; line-height: 18px; color: var(--ink-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-/* stacked: the narrow form below layout-compact-width; centred, chip beside the digits. */
-.os-strip-stacked { align-items: center; text-align: center; gap: var(--space-1); }
-.os-strip-stacked .os-strip-head { justify-content: center; gap: var(--space-2); }
-.os-strip-stacked .os-strip-digits { font-size: clamp(28px, 10cqi, 64px); }
-.os-strip-tri { position: absolute; top: 0; width: 10px; height: 10px; margin-inline-start: -5px; color: var(--amber); fill: currentColor; }
-/* end TimerStrip */
 
 /* FloatingTimer (CSS only: TimerStrip README) */
 /* FloatingTimer: its own composition, sized by the floater-* tokens. */
