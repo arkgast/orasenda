@@ -20,7 +20,7 @@ pub use foreground::MacForeground;
 pub use idle::MacIdle;
 pub use keep_awake::{ActivityToken, MacKeepAwake};
 pub use local_time::MacLocalTime;
-pub use notifier::MacNotifier;
+pub use notifier::{MacNotifier, notification_settings_url};
 pub use overlay::{configure_overlay, cover_main_screen, focus_overlay};
 pub use status_item::set_status_item_accessibility_label;
 

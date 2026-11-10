@@ -170,7 +170,7 @@ pub fn publish_focus<H: Host>(host: &H) {
 }
 
 /// Carries out `effects` after the service lock is released, in this order: the view and
-/// the surfaces, `settings-changed` (when owed), the end notification, the guard drop, the
+/// the surfaces, the theme (when a recovered read changed it), `settings-changed` (when owed), the end notification, the guard drop, the
 /// milestones.
 pub fn publish<H: Host>(host: &H, effects: Effects) {
     let Effects {
@@ -182,11 +182,15 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         notify_session_end,
         drop_after_unlock,
         settings_changed,
+        apply_theme,
         seq,
         ..
     } = effects;
     if !was_idle || view.state != EngineState::Idle || store_changed {
         publish_view(host, seq, &view);
+    }
+    if let Some(theme) = apply_theme {
+        host.apply_theme(theme);
     }
     if let Some(settings) = &settings_changed {
         host.emit_settings_changed(settings);
@@ -225,22 +229,40 @@ fn notify_end<H: Host>(host: &H) {
 
 /// Stores a status read or answer; emits one `timer-tick` when the shown status changed,
 /// in every state (plan amendment 4).
+///
+/// Then runs the pending notify review, which this status may complete (the launch read,
+/// the focus re-read, a request's answer, the re-read before posting). After unlock, one
+/// `settings-changed` goes out when the review wrote.
 pub(crate) fn store_status<H: Host>(host: &H, status: NotificationStatus) {
-    if let Some((seq, view)) = status_snapshot(host, status) {
+    let Some(service) = host.service() else {
+        return;
+    };
+    let (view, reviewed) = {
+        let mut service = lock(service);
+        let now_ms = host.now_ms();
+        let view = apply_status(&mut service, status, now_ms);
+        let reviewed = service
+            .run_notify_review(now_ms)
+            .then(|| service.settings());
+        (view, reviewed)
+    };
+    if let Some((seq, view)) = view {
         publish_view(host, seq, &view);
+    }
+    if let Some(settings) = reviewed {
+        host.emit_settings_changed(&settings);
     }
 }
 
-/// Stores `status` under the service lock; the numbered view to publish when it changed.
-pub(crate) fn status_snapshot<H: Host>(
-    host: &H,
+/// Stores `status` in the locked service; the numbered view to publish when it changed.
+fn apply_status(
+    service: &mut crate::session::SessionService,
     status: NotificationStatus,
+    now_ms: u64,
 ) -> Option<(u64, TimerView)> {
-    let service = host.service()?;
-    let mut service = lock(service);
     service
         .set_notifications(status)
-        .then(|| service.snapshot(host.now_ms()))
+        .then(|| service.snapshot(now_ms))
 }
 
 /// Emits `timer-tick` and renders the surfaces for `view`, unless a newer view (by `seq`)
@@ -372,6 +394,7 @@ mod tests {
                 Event::Begun => "begun",
                 Event::SettingsChanged(_) => "settings",
                 Event::ApplyTheme(_) => "theme",
+                Event::OpenedSettings => "opened",
             })
             .collect();
         assert_eq!(
@@ -402,6 +425,44 @@ mod tests {
 
     fn idle_session_id(running: &[Event]) -> Option<orasenda_core::SessionId> {
         ticks(running)[0].session_id.clone()
+    }
+
+    #[test]
+    fn store_status_runs_the_pending_review_once() {
+        let store = memory_store();
+        store.put_meta_for_tests("notify_review", "pending");
+        store
+            .write(0, |txn| {
+                orasenda_store::settings::set(txn, "notify.session_end", &true)
+            })
+            .expect("seeds");
+        let f = fakes(NotificationStatus::Unavailable, false);
+        let s = SessionService::new(Ok(store), f.platform, T0);
+        let host = TestHost::with(s, f.log, f.notifier);
+        host.log().take();
+        let changes = |h: &TestHost| {
+            crate::session::test_support::db(&lock(&h.0.service))
+                .change_log_ids()
+                .iter()
+                .filter(|id| *id == "notify.session_end")
+                .count()
+        };
+        let before = changes(&host);
+        read_launch_status(&host);
+        assert_eq!(changes(&host), before, "unknown status leaves it pending");
+        store_status(&host, NotificationStatus::Granted);
+        store_status(&host, NotificationStatus::Denied);
+        assert_eq!(changes(&host), before + 1);
+        let events = host.log().take();
+        let n = events
+            .iter()
+            .filter(|e| matches!(e, Event::SettingsChanged(_)))
+            .count();
+        assert_eq!(n, 1, "{events:?}");
+        assert_eq!(
+            host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+            0
+        );
     }
 
     #[test]
@@ -724,8 +785,15 @@ mod tests {
         let answer = {
             let host = host.clone();
             thread::spawn(move || {
-                let (seq, view) =
-                    status_snapshot(&host, NotificationStatus::Granted).expect("changed");
+                let (seq, view) = {
+                    let service = host.service().expect("service");
+                    apply_status(
+                        &mut lock(service),
+                        NotificationStatus::Granted,
+                        host.now_ms(),
+                    )
+                    .expect("changed")
+                };
                 assert_eq!(view.state, EngineState::Running);
                 taken.send(()).unwrap();
                 may_publish.recv_timeout(WAIT).expect("released");

@@ -115,7 +115,7 @@ fn app_info_from(package: &PackageInfo) -> AppInfo {
     AppInfo::new(package.name.as_str(), package.version.to_string())
 }
 
-/// The notification permission status. Never asks; never errors.
+/// The notification permission status. Asks macOS once when it is `notDetermined` (callers that overlap share the prompt); otherwise returns the known status. Never errors.
 #[tauri::command]
 #[specta::specta]
 pub async fn notifications_request(app: tauri::AppHandle) -> NotificationStatus {
