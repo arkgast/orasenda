@@ -53,8 +53,10 @@ export function Tooltip({
   label,
   shortcut,
   placement = "auto",
-  children,
+  children: given,
 }: TooltipProps): JSX.Element {
+  // The type says one element; a bare string or number (design-system sample data) is wrapped, as the legacy one did.
+  const children = isValidElement(given) ? given : <span>{given}</span>;
   const anchor = useRef<HTMLElement | null>(null);
   const timer = useRef(0);
   const [hover, setHover] = useState(false);
