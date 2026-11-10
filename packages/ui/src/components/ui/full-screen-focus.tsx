@@ -11,14 +11,21 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
 /**
  * The Focus window: a fluid ring, the task, a small wall clock and one quiet way out. A page component, so
  * its margins follow the viewport: space-4 below `sm`, space-8 above. The layout takes focus on mount so Escape
- * works at once; `onExit` fires only after the Dialog is confirmed.
+ * works at once; `onExit` fires only after the Dialog is confirmed. Fills its host: the host must have a definite
+ * height (the ring is sized by the height left over).
  */
 export function FullScreenFocus({ onExit, ...ring }: FullScreenFocusProps): JSX.Element {
   const [leaving, setLeaving] = useState(false);
   const root = useRef<HTMLElement>(null);
+  const wasLeaving = useRef(false);
   useEffect(() => {
     root.current?.focus();
   }, []);
+  // The Dialog unmounts on close, so hand focus back to the layout (Esc keeps working).
+  useEffect(() => {
+    if (wasLeaving.current && !leaving) root.current?.focus();
+    wasLeaving.current = leaving;
+  }, [leaving]);
   return (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: the README asks the layout to take focus on mount so Escape works at once; the Leave button is the visible control
     <section

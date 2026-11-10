@@ -1,5 +1,4 @@
 import * as R from "react";
-import { TimerRing } from "./components/ui/timer-ring";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
@@ -54,15 +53,6 @@ function Modal(p) {
     h("h2", { id: titleId }, p.title),
     p.description ? h("p", { id: bodyId, className: "os-dialog-description" }, p.description) : null, p.children);
 }
-// Dialog
-function Dialog(p) {
-  return h(Modal, { open: p.open, title: p.title, description: p.description, onSafe: p.onCancel, scrim: p.scrim || p.destructive },
-    p.children,
-    h("div", { className: "os-dialog-actions" },
-      h(Button, { variant: "ghost", onClick: p.onCancel, "data-initial-focus": true }, p.cancelLabel || "Cancel"),
-      h(Button, { variant: p.destructive ? "critical" : "primary", onClick: p.onConfirm, loading: p.loading }, p.confirmLabel)));
-}
-// end Dialog
 function Field(p) {
   var generated = R.useId(), id = p.id || generated, described = [p["aria-describedby"], p.helper ? id + "-helper" : "", p.error ? id + "-error" : ""].filter(Boolean).join(" ");
   var rest = Object.assign({}, p);

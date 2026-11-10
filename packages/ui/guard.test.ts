@@ -56,7 +56,9 @@ test("bundle_copy_has_no_emoji", () => {
 test("critical_used_only_by_destructive_dialog_and_critical_button", () => {
   expect(criticalOutsideDialog(js)).toEqual([]);
   expect(criticalRulesOutsideButton(css)).toEqual([]);
-  expect(js).toContain('p.destructive ? "critical" : "primary"');
+  expect(readFileSync("src/components/ui/dialog.tsx", "utf8")).toContain(
+    'destructive ? "critical" : "primary"',
+  );
   expect(css).toMatch(/\.os-btn-critical/);
   // The checks bite: a chip that borrows the colour, or a stray use in a component, is found.
   expect(criticalRulesOutsideButton(`${css}\n.os-chip { color: var(--critical); }`)).toEqual([

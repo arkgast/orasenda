@@ -13,7 +13,7 @@ const base = {
 
 test("full_screen_focus_exposes_region_with_name", () => {
   render(<FullScreenFocus {...base} onExit={() => {}} />);
-  const region = screen.getByLabelText("Full-screen focus");
+  const region = screen.getByRole("region", { name: "Full-screen focus" });
   expect(region.getAttribute("data-slot")).toBe("full-screen-focus");
 });
 
@@ -61,4 +61,20 @@ test("full_screen_focus_escape_asks_before_leaving", () => {
   fireEvent.keyDown(screen.getByLabelText("Full-screen focus"), { key: "Escape" });
   expect(screen.getByRole("dialog", { name: "Leave full screen?" })).toBeTruthy();
   expect(onExit).not.toHaveBeenCalled();
+});
+
+test("full_screen_focus_escape_in_dialog_stays_without_exit", () => {
+  const onExit = vi.fn();
+  render(<FullScreenFocus {...base} onExit={onExit} />);
+  fireEvent.click(screen.getByRole("button", { name: "Leave full screen" }));
+  fireEvent.keyDown(screen.getByRole("dialog", { name: "Leave full screen?" }), { key: "Escape" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(onExit).not.toHaveBeenCalled();
+});
+
+test("full_screen_focus_stay_focused_returns_focus_to_layout", () => {
+  render(<FullScreenFocus {...base} onExit={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "Leave full screen" }));
+  fireEvent.click(screen.getByRole("button", { name: "Stay focused" }));
+  expect(document.activeElement).toBe(screen.getByRole("region", { name: "Full-screen focus" }));
 });
