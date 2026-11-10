@@ -3,10 +3,6 @@ import type * as React from 'react';
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
-// ModeChip
-export interface ModeChipProps { mode?: Mode; children?: React.ReactNode }
-export declare function ModeChip(props: ModeChipProps): React.ReactElement;
-// end ModeChip
 // TimerRing
 /** progress is the elapsed fraction [0,1]; the arc shows what is left. task is clamped to two lines and whole in the accessible name. At warning the arc and chip colour fade over duration-slow. */
 export interface TimerRingProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; /** A number renders that diameter in px, as before. 'fluid' fills the host's slot: the diameter is the slot's shorter side clamped to [timer-min-size, timer-full-size] (container query), digits never below timer-md. */ size?: number | 'fluid'; /** px for a numeric size; with 'fluid', units of the 400-unit drawing (default 10), so it scales with the diameter. */ stroke?: number; clock?: string }
@@ -161,7 +157,7 @@ export declare function SettingsRow(props: SettingsRowProps): React.ReactElement
 declare global {
   interface Window {
     Orasenda: {
-      ModeChip: typeof ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
+      ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof HabitDots; RoutineItem: typeof RoutineItem;
       WellnessNote: typeof WellnessNote; IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;

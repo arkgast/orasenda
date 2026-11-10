@@ -709,7 +709,6 @@ function NowLine(p) { return h("div", { className: "os-nowline", "aria-label": "
 // end NowLine
 
 export {
-  ModeChip,
   TimerRing,
   TimerStrip,
   MenuBarTimer,
