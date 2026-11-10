@@ -137,8 +137,8 @@ export function TimeBlock({
       {content}
     </button>
   ) : (
-    <div role="group" data-slot="time-block" className={className} style={style} aria-label={label}>
+    <article data-slot="time-block" className={className} style={style} aria-label={label}>
       {content}
-    </div>
+    </article>
   );
 }
