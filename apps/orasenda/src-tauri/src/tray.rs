@@ -45,6 +45,7 @@ pub(crate) const PAUSE: &str = "Pause";
 pub(crate) const RESUME: &str = "Resume";
 pub(crate) const END_SESSION: &str = "End session";
 pub(crate) const SHOW: &str = "Show Orasenda";
+pub(crate) const SETTINGS: &str = "Settings…";
 pub(crate) const QUIT: &str = "Quit Orasenda";
 
 const FOCUS_ICON: Image<'static> = tauri::include_image!("src/tray/icons/focus.png");
@@ -94,9 +95,9 @@ pub(crate) fn tray_label(view: &TimerView) -> String {
 /// session runs or is paused.
 pub(crate) fn menu_items(view: &TimerView) -> Vec<&'static str> {
     match view.mode {
-        Mode::Focus => vec![PAUSE, END_SESSION, SHOW, QUIT],
-        Mode::Paused => vec![RESUME, END_SESSION, SHOW, QUIT],
-        Mode::Idle => vec![SHOW, QUIT],
+        Mode::Focus => vec![PAUSE, END_SESSION, SHOW, SETTINGS, QUIT],
+        Mode::Paused => vec![RESUME, END_SESSION, SHOW, SETTINGS, QUIT],
+        Mode::Idle => vec![SHOW, SETTINGS, QUIT],
     }
 }
 
@@ -288,6 +289,7 @@ fn report(call: &str, result: Result<(), String>) -> bool {
 pub(crate) enum MenuCommand {
     Session(Action),
     Show,
+    Settings,
     Quit,
 }
 
@@ -298,6 +300,7 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
         RESUME => Some(MenuCommand::Session(Action::Resume)),
         END_SESSION => Some(MenuCommand::Session(Action::Stop)),
         SHOW => Some(MenuCommand::Show),
+        SETTINGS => Some(MenuCommand::Settings),
         QUIT => Some(MenuCommand::Quit),
         _ => None,
     }
@@ -317,6 +320,7 @@ fn on_menu_event(app: &AppHandle, id: &str) {
             });
         }
         Some(MenuCommand::Show) => lifecycle::show_main(app),
+        Some(MenuCommand::Settings) => lifecycle::show_settings(app),
         Some(MenuCommand::Quit) => app.exit(0),
         None => {}
     }
@@ -394,11 +398,11 @@ impl TrayHandle for TauriTray {
     }
 }
 
-/// The native menu: the session items, a separator, then *Show* and *Quit*.
+/// The native menu: the session items, a separator, then *Show* and *Settings…*, a separator, then *Quit*.
 fn build_menu(app: &AppHandle, items: &[&'static str]) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::new(app)?;
     for (index, label) in items.iter().enumerate() {
-        if *label == SHOW && index > 0 {
+        if (*label == SHOW && index > 0) || *label == QUIT {
             menu.append(&PredefinedMenuItem::separator(app)?)?;
         }
         menu.append(&MenuItem::with_id(app, *label, *label, true, None::<&str>)?)?;
@@ -516,16 +520,17 @@ mod tests {
 
     #[test]
     fn menu_items_per_state() {
-        assert_eq!(menu_items(&idle()), [SHOW, QUIT]);
-        assert_eq!(menu_items(&running(S59)), [PAUSE, END_SESSION, SHOW, QUIT]);
-        assert_eq!(menu_items(&paused(S59)), [RESUME, END_SESSION, SHOW, QUIT]);
+        assert_eq!(menu_items(&idle()), [SHOW, SETTINGS, QUIT]);
+        assert_eq!(menu_items(&running(S59)), [PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]);
+        assert_eq!(menu_items(&paused(S59)), [RESUME, END_SESSION, SHOW, SETTINGS, QUIT]);
         assert_eq!(
-            [PAUSE, RESUME, END_SESSION, SHOW, QUIT],
+            [PAUSE, RESUME, END_SESSION, SHOW, SETTINGS, QUIT],
             [
                 "Pause",
                 "Resume",
                 "End session",
                 "Show Orasenda",
+                "Settings…",
                 "Quit Orasenda"
             ]
         );
@@ -548,6 +553,12 @@ mod tests {
         assert!(matches!(menu_command(SHOW), Some(MenuCommand::Show)));
         assert!(matches!(menu_command(QUIT), Some(MenuCommand::Quit)));
         assert!(menu_command("about").is_none());
+    }
+
+    #[test]
+    fn menu_command_settings() {
+        assert!(matches!(menu_command(SETTINGS), Some(MenuCommand::Settings)));
+        assert!(menu_command("settings").is_none());
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -721,7 +732,7 @@ mod tests {
                 tooltip(&paused(S58)),
                 accessibility_label(&paused(S58)),
                 Call::Glyph(Glyph::Paused),
-                Call::Menu(vec![RESUME, END_SESSION, SHOW, QUIT]),
+                Call::Menu(vec![RESUME, END_SESSION, SHOW, SETTINGS, QUIT]),
             ]
         );
 
@@ -732,7 +743,7 @@ mod tests {
                 tooltip(&running(S58)),
                 accessibility_label(&running(S58)),
                 Call::Glyph(Glyph::Focus),
-                Call::Menu(vec![PAUSE, END_SESSION, SHOW, QUIT]),
+                Call::Menu(vec![PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]),
             ]
         );
 
@@ -744,7 +755,7 @@ mod tests {
                 Call::Tooltip("No session".into()),
                 Call::AccessibilityLabel("No session".into()),
                 Call::Glyph(Glyph::Idle),
-                Call::Menu(vec![SHOW, QUIT]),
+                Call::Menu(vec![SHOW, SETTINGS, QUIT]),
             ]
         );
     }
