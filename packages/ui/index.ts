@@ -38,4 +38,5 @@ export const {
   describeShortcut,
   TimerStrip,
   timerLayout,
+  PopoverMenu,
 } = window.Orasenda;

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { expect, test } from "vitest";
-import { IconButton, PopoverMenu, describeShortcut } from "./index.ts";
+import { describeShortcut, IconButton, PopoverMenu } from "./index.ts";
 
 type Item = Parameters<typeof PopoverMenu>[0]["items"][number];
 
@@ -20,22 +20,40 @@ type HostProps = Partial<Parameters<typeof PopoverMenu>[0]> & {
   keys?: string;
 };
 
-function Host({ log, startOpen = true, keys, items = WITH_SETTINGS, heading = "Preset", ...rest }: HostProps) {
+function Host({
+  log,
+  startOpen = true,
+  keys,
+  items = WITH_SETTINGS,
+  heading = "Preset",
+  ...rest
+}: HostProps) {
   const anchor = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(startOpen);
   const id = "host-menu";
   return (
     <div>
       <span ref={anchor}>
-        <IconButton
-          label="Change preset"
-          icon={<svg aria-hidden="true" />}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls={open ? id : undefined}
-          aria-keyshortcuts={keys}
-          onClick={() => setOpen(!open)}
-        />
+        {keys ? (
+          <button
+            type="button"
+            aria-label="Change preset"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? id : undefined}
+            aria-keyshortcuts={keys}
+            onClick={() => setOpen(!open)}
+          />
+        ) : (
+          <IconButton
+            label="Change preset"
+            icon={<svg aria-hidden="true" />}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? id : undefined}
+            onClick={() => setOpen(!open)}
+          />
+        )}
       </span>
       {open ? (
         <PopoverMenu
@@ -56,7 +74,13 @@ function Host({ log, startOpen = true, keys, items = WITH_SETTINGS, heading = "P
 }
 
 const key = (k: string) => fireEvent.keyDown(document.activeElement as Element, { key: k });
-const rowName = (n: string) => screen.getByRole(/menuitem/, { name: new RegExp(n) });
+const rowName = (n: string) => {
+  const row = [...document.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find((r) =>
+    r.textContent?.includes(n),
+  );
+  if (!row) throw new Error(`no menu row named ${n}`);
+  return row;
+};
 const trigger = () => screen.getByRole("button", { name: "Change preset" });
 
 test("popover_menu_host_trigger_expanded_and_controls_point_at_menu_id", () => {
@@ -119,7 +143,13 @@ test("popover_menu_id_settable", () => {
 
 test("popover_menu_id_generated_when_omitted", () => {
   render(
-    <PopoverMenu anchor={{ current: null }} heading="Preset" items={PRESETS} onSelect={() => {}} onClose={() => {}} />,
+    <PopoverMenu
+      anchor={{ current: null }}
+      heading="Preset"
+      items={PRESETS}
+      onSelect={() => {}}
+      onClose={() => {}}
+    />,
   );
   expect(screen.getByRole("menu").id.length).toBeGreaterThan(0);
 });
@@ -206,11 +236,17 @@ test("popover_menu_press_outside_closes_without_moving_focus", () => {
 test("popover_menu_read_only_marks_radios_aria_disabled", () => {
   const log: string[] = [];
   render(
-    <Host log={log} readOnly heading="Classic · 25 / 5" description="Presets can change between sessions." />,
+    <Host
+      log={log}
+      readOnly
+      heading="Classic · 25 / 5"
+      description="Presets can change between sessions."
+    />,
   );
   const menu = screen.getByRole("menu");
   expect(rowName("Classic").getAttribute("aria-checked")).toBe("true");
-  for (const r of screen.getAllByRole("menuitemradio")) expect(r.getAttribute("aria-disabled")).toBe("true");
+  for (const r of screen.getAllByRole("menuitemradio"))
+    expect(r.getAttribute("aria-disabled")).toBe("true");
   expect(rowName("Timer settings").hasAttribute("aria-disabled")).toBe(false);
   expect(screen.getByText("Presets can change between sessions.")).toBeTruthy();
   expect(menu).toHaveAccessibleDescription("Presets can change between sessions.");
@@ -238,18 +274,25 @@ test("popover_menu_focus_window_form_has_no_settings_row", () => {
   expect(document.querySelector("hr.os-popover-sep")).toBeNull();
 });
 
+function InDialog() {
+  const anchor = useRef<HTMLSpanElement>(null);
+  return (
+    <dialog open data-testid="dlg">
+      <span ref={anchor}>
+        <button type="button">Trigger</button>
+      </span>
+      <PopoverMenu
+        anchor={anchor}
+        heading="Preset"
+        items={PRESETS}
+        onSelect={() => {}}
+        onClose={() => {}}
+      />
+    </dialog>
+  );
+}
+
 test("popover_menu_renders_inside_open_dialog", () => {
-  function InDialog() {
-    const anchor = useRef<HTMLSpanElement>(null);
-    return (
-      <dialog open data-testid="dlg">
-        <span ref={anchor}>
-          <button type="button">Trigger</button>
-        </span>
-        <PopoverMenu anchor={anchor} heading="Preset" items={PRESETS} onSelect={() => {}} onClose={() => {}} />
-      </dialog>
-    );
-  }
   const { unmount } = render(<InDialog />);
   const dialog = screen.getByTestId("dlg");
   expect(document.querySelector(".os-popover-panel")?.closest("dialog")).toBe(dialog);
