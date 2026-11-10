@@ -278,6 +278,12 @@ function generateTheme(t: Json): string {
   }
   const families = (t.type as Json).families as Json;
   for (const key of Object.keys(families)) open += line(`font-${key}`, literal(families[key], key));
+  // Weights: font-light, font-normal and friends read --font-weight-<name>.
+  const weights = (t.type as Json).weights as Json | undefined;
+  if (!weights || typeof weights !== "object") fail('tokens.json has no "type.weights"');
+  for (const [key, w] of Object.entries(weights)) {
+    open += line(`font-weight-${key}`, literal(w, `weight-${key}`));
+  }
   open += "}\n\n";
   // Everything else is inline so a utility reads the tokens.css variable directly.
   let inline = "@theme inline {\n";
