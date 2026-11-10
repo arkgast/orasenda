@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { TimerRing } from "../index.ts";
+import { TimerRing } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 
 const TASK = "Finish the chapter 3 outline and send the draft to Maya before the review";

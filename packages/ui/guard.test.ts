@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "vitest";
 
-const dir = resolve(import.meta.dirname, "../../design/system/components");
-const js = readFileSync(resolve(dir, "bundle.js"), "utf8");
-const css = readFileSync(resolve(dir, "bundle.css"), "utf8");
+const dir = resolve(import.meta.dirname, "src");
+const js = readFileSync(resolve(dir, "legacy.js"), "utf8");
+const css = readFileSync(resolve(dir, "legacy.css"), "utf8");
 
 const LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g;
 const literals = (source: string) => source.match(LITERAL) ?? [];
@@ -19,7 +19,7 @@ function withEmoji(source: string) {
 // Lines of bundle.js that mention critical outside function Dialog, or inside it without p.destructive.
 function criticalOutsideDialog(source: string) {
   const start = source.indexOf("function Dialog(");
-  const end = source.indexOf("\n  function ", start + 1);
+  const end = source.indexOf("\nfunction ", start + 1);
   return source
     .split("\n")
     .map((line, i) => ({ line, at: source.split("\n").slice(0, i).join("\n").length }))
@@ -30,6 +30,7 @@ function criticalOutsideDialog(source: string) {
 // Selectors of every css rule that mentions critical but is not an .os-btn-critical rule.
 function criticalRulesOutsideButton(source: string) {
   return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("}")
     .filter((rule) => /critical/.test(rule))
     .flatMap((rule) => {

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { InlineNotice, TimerRing } from "../index.ts";
+import { InlineNotice, TimerRing } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 
 // The T1 seed: a ring and the widest status row at 360 wide, plus one frame that overflows on purpose.

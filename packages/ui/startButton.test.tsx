@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { describeShortcut, StartButton } from "./index.ts";
+import { describeShortcut, StartButton } from "./src/index.ts";
 
 const noop = () => {};
 const props = { onStart: noop, onQuickStart: noop };

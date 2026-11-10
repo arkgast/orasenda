@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -7,7 +8,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 // Tauri expects a fixed dev port (tauri.conf.json `devUrl`) and a WebKit target (macOS 13+, iOS 16+).
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   clearScreen: false,
   server: {
     port: 1420,

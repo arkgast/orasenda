@@ -16,13 +16,21 @@
       "!apps/orasenda/src/bindings.ts",
       "!packages/tokens/tokens.css",
       "!packages/tokens/theme.css",
-      "!packages/ui/components.css",
-      "!packages/ui/components.d.ts",
+      "!packages/ui/design-system/Cover",
+      "!packages/ui/src/legacy.js",
+      "!packages/ui/src/legacy.css",
+      "!packages/ui/src/legacy.d.ts",
       "!**/src-tauri/gen",
       "!**/dist",
       "!**/target"
     ]
   },
+  "overrides": [
+    {
+      "includes": ["packages/ui/src/index.ts"],
+      "assist": { "actions": { "source": { "organizeImports": "off" } } }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

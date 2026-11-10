@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { describeShortcut, IconButton, PopoverMenu } from "./index.ts";
+import { describeShortcut, IconButton, PopoverMenu } from "./src/index.ts";
 
 type Item = Parameters<typeof PopoverMenu>[0]["items"][number];
 

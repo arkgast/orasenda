@@ -3,7 +3,7 @@ import { useId, useState } from "react";
 import type { BlockAction, UsageSegment } from "../bindings";
 import { formatClock } from "../format";
 import { type RuleChange, useSpike } from "./useSpike";
-import "@orasenda/ui/components.css";
+import "@orasenda/ui/styles.css";
 import "./spike.css";
 
 export type DevPanelProps = {

@@ -1,0 +1,170 @@
+{
+  "AppPicker": {
+    "group": "Apps",
+    "height": 580
+  },
+  "AppRow": {
+    "group": "Apps",
+    "height": 300
+  },
+  "BarRow": {
+    "group": "Review",
+    "height": 260
+  },
+  "Button": {
+    "group": "Actions",
+    "height": 260
+  },
+  "CapturePad": {
+    "group": "Capture",
+    "height": 540
+  },
+  "Choice": {
+    "group": "Fields",
+    "height": 520
+  },
+  "CommandPalette": {
+    "group": "Navigation",
+    "height": 760
+  },
+  "Cover": {
+    "group": "Brand",
+    "height": 288
+  },
+  "Dialog": {
+    "group": "Overlays",
+    "height": 380
+  },
+  "EmptyState": {
+    "group": "Feedback",
+    "height": 220
+  },
+  "FloatingTimer": {
+    "group": "Timer",
+    "height": 300
+  },
+  "FullScreenFocus": {
+    "group": "Timer",
+    "height": 1500
+  },
+  "HabitDots": {
+    "group": "Routines",
+    "height": 220
+  },
+  "IconButton": {
+    "group": "Actions",
+    "height": 560
+  },
+  "InlineNotice": {
+    "group": "Feedback",
+    "height": 470
+  },
+  "Input": {
+    "group": "Fields",
+    "height": 340
+  },
+  "IntentPrompt": {
+    "group": "Focus protection",
+    "height": 560
+  },
+  "KanbanColumn": {
+    "group": "Tasks",
+    "height": 420
+  },
+  "Kbd": {
+    "group": "Foundations",
+    "height": 420
+  },
+  "MenuBarTimer": {
+    "group": "Timer",
+    "height": 220
+  },
+  "ModeChip": {
+    "group": "Foundations",
+    "height": 120
+  },
+  "NavRail": {
+    "group": "Navigation",
+    "height": 420
+  },
+  "NowLine": {
+    "group": "Calendar",
+    "height": 120
+  },
+  "PageFrame": {
+    "group": "Layout",
+    "height": 380
+  },
+  "PopoverMenu": {
+    "group": "Overlays",
+    "height": 1640
+  },
+  "RoleTag": {
+    "group": "Apps",
+    "height": 160
+  },
+  "RoutineItem": {
+    "group": "Routines",
+    "height": 330
+  },
+  "ScrollRegion": {
+    "group": "Layout",
+    "height": 300
+  },
+  "Select": {
+    "group": "Fields",
+    "height": 300
+  },
+  "SessionSlot": {
+    "group": "Timer",
+    "height": 130
+  },
+  "SettingsIndex": {
+    "group": "Settings",
+    "height": 460
+  },
+  "SettingsRow": {
+    "group": "Settings",
+    "height": 520
+  },
+  "ShortcutRecorder": {
+    "group": "Settings",
+    "height": 260
+  },
+  "StartButton": {
+    "group": "Actions",
+    "height": 1500
+  },
+  "TaskCard": {
+    "group": "Tasks",
+    "height": 320
+  },
+  "TextArea": {
+    "group": "Fields",
+    "height": 230
+  },
+  "TimeBlock": {
+    "group": "Calendar",
+    "height": 360
+  },
+  "TimerRing": {
+    "group": "Timer",
+    "height": 1700
+  },
+  "TimerStrip": {
+    "group": "Timer",
+    "height": 1900
+  },
+  "Toast": {
+    "group": "Feedback",
+    "height": 230
+  },
+  "Tooltip": {
+    "group": "Overlays",
+    "height": 640
+  },
+  "WellnessNote": {
+    "group": "Routines",
+    "height": 120
+  }
+}

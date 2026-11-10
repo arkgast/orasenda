@@ -49,10 +49,10 @@ contrast:
 tokens:
     pnpm --filter @orasenda/tokens build
 
-# Regenerate packages/ui/components.css and components.d.ts from design/system/components/
-# (bundle.css and index.d.ts).
-ui-css:
-    pnpm --filter @orasenda/ui build
+# Build the Design System artifact's files (components/bundle.js, bundle.css, index.d.ts, lib/, previews,
+# README, tokens.json, design-system.json) into design/system/ (git-ignored), or into --out <dir>.
+design-system *args:
+    pnpm --filter @orasenda/ui design-system {{ args }}
 
 # Every check, fastest first. Stops at the first failure.
 ci:
@@ -77,9 +77,6 @@ ci:
     git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
-    @echo "==> ui (components.css and components.d.ts are up to date)"
-    "{{ just_executable() }}" ui-css
-    git diff --exit-code -- packages/ui/components.css packages/ui/components.d.ts
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
     @echo "==> typecheck (verification)"

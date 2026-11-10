@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
-import { TimerRing } from "./index.ts";
+import { TimerRing } from "./src/index.ts";
 
 // Captured from the Version 28 bundle (9106f88) with Today's props before the refresh.
 const V28_IDLE =

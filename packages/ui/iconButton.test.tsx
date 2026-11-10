@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { describeShortcut, IconButton } from "./index.ts";
+import { describeShortcut, IconButton } from "./src/index.ts";
 
 beforeEach(() => {
   vi.useFakeTimers();

@@ -1,11 +1,11 @@
 import { createRoot } from "react-dom/client";
 import "@orasenda/tokens/tokens.css";
-import "../components.css";
+import "../src/styles.css";
 import "./specimens.css";
 import { specimens } from "./registry.ts";
 
 // describeShortcut throws on an unknown glyph string in specimens, as in tests.
-window.Orasenda.strictShortcuts = true;
+window.Orasenda = { ...window.Orasenda, strictShortcuts: true };
 
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");

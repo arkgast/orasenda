@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test, vi } from "vitest";
-import { timerLayout } from "./index.ts";
+import { timerLayout } from "./src/index.ts";
 
 const readme = readFileSync(
-  resolve(import.meta.dirname, "../../design/system/components/TimerStrip/README.md"),
+  resolve(import.meta.dirname, "src/components/ui/timer-strip.md"),
   "utf8",
 );
 const tokens = JSON.parse(

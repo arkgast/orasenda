@@ -1,5 +1,7 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, type ViteUserConfig } from "vitest/config";
 
-export default defineConfig({
+const config: ViteUserConfig = defineConfig({
+  resolve: { alias: { "@": `${import.meta.dirname}/src` } },
   test: { environment: "jsdom", setupFiles: ["./test-setup.ts"] },
 });
+export default config;

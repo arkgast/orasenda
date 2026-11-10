@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { describeShortcut, Kbd } from "../index.ts";
+import { describeShortcut, Kbd } from "../src/index.ts";
 import { Frame } from "./Frame.tsx";
 
 const key = (keys: string): ReactElement => (

@@ -5,11 +5,12 @@
   "license": "MPL-2.0",
   "type": "module",
   "exports": {
-    ".": "./index.ts",
-    "./components.css": "./components.css"
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
   },
   "scripts": {
-    "build": "node build.ts",
+    "build": "vite build",
+    "design-system": "node design-system/build.ts",
     "specimens": "vite --config specimens/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
