@@ -8,7 +8,7 @@ Orasenda is one calm, minimal app for planning time, managing tasks and protecti
 
 **Decisions made so far:**
 - **Audience:** people with ADHD and knowledge workers on Mac who want a kind, private focus tool. Personal use first, then a private beta, then a public v1 after P4 (see ROADMAP releases).
-- **Platforms:** macOS 13+ first (gating CI); Windows 11 next (advisory CI); iOS and Android projects scaffolded and smoke-tested by hand, with no mobile features until P10. See ADR-001.
+- **Platforms:** macOS 15.8.2+ first (gating CI, ADR-015); Windows 11 next (advisory CI); iOS and Android projects scaffolded and smoke-tested by hand, with no mobile features until P10. See ADR-001.
 - **Data:** stored locally first, with optional paid end-to-end encrypted sync later (ADR-002, ADR-006).
 - **Licence:** open source under MPL-2.0; the name is a trademark (ADR-009).
 - **Telemetry:** none (ADR-008).

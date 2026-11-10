@@ -26,8 +26,14 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Notify review | The one-time check on a database created before the Settings spec: the preference stays on only if macOS already reports `granted`. Marked by the device-only `meta.notify_review` row. | A schema migration (the marker is written by one; the review itself needs the OS status) |
 | Save line | The Settings page's reserved status row (`InlineNotice variant="row"`): at rest "Changes save as you make them.", otherwise the answer to the last save or the standing store line. | A toast (Orasenda has none for saves) |
 | Theme override | `ui.theme` set to Light or Dark: Rust sets the app appearance and the webview sets `data-theme` on `<html>`. *Match system* removes both. | The system appearance |
-| Specimen | A page in `packages/ui/specimens/` that renders every state of one design-system component in fixed frames, in both themes; the WebKit layout harness, the VoiceOver pass and PR screenshots read it. | A design-system preview (`design/system/components/<Name>/preview.html`, the artifact's own page) |
+| Specimen | A `<kebab>.specimen.tsx` page in `packages/ui/src/components/ui/` that renders every state of one component in fixed frames, in both themes. It is both the artifact's `components/<Name>/preview.html` and the page the WebKit layout specs, `just specimens`, the VoiceOver pass and PR screenshots load. Only the components a WebKit spec measures have one (code-first spec). | A static card (the generated preview of a component with no specimen) |
 | First-consumer check | Checking a design-system change against the screen that will use it: its spec's accessibility acceptance, or, before that spec exists, its approved canvas and README slot tables, plus a component test and a specimen. | The component's own README review |
+| Code-first | The design-system mode from ADR-015: TSX in `packages/ui` and `packages/tokens/tokens.json` are the source; the artifact is built by `just design-system` and published from `main` after each merge. | Design-first (the earlier mode: the artifact was edited by hand and copied into `design/system/`) |
+| Legacy bundle | `packages/ui/src/legacy.js`, `legacy.css` and `legacy.d.ts`: today's hand-written `bundle.js`, `bundle.css` and `index.d.ts` as modules, kept only while components migrate, so `bundle.js` stays complete. Shrinks with each component PR; deleted at the end. | `design/system/components/bundle.js` (the generated artifact output) |
+| Wave | A set of components whose component dependencies have all migrated; any of them may start, at most three at once, one PR each. | A P1 sub-project or a plan task group |
+| Static card | The generated `preview.html` for a component with no specimen: name, the README's first paragraph and the props table, in both themes. | A specimen |
+| Closed theme | `packages/tokens/theme.css`: a Tailwind `@theme` that first clears every default (`--*: initial`) and then lists only Orasenda tokens, so a class can only name a token. Generated from `tokens.json`; also maps shadcn's semantic variables (`primary` → `focus`, `destructive` → `critical`, …). | `tokens.css` (the plain CSS variables, also generated) |
+| Type-only export | A type `@orasenda/ui` exports with no runtime: the `*NextProps` contracts and the contract-only components (`Select`, `SessionSlot`, `AppRow`, `RoleTag`, `AppPicker`, `BarRow`), in `src/types.ts`. | A runtime component (in `window.Orasenda`) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
@@ -36,4 +42,4 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 - Syncable entities write change-log rows in the same transaction; device-only entities do not.
 
 ## Decisions
-ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings).
+ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings), ADR-015 (code-first design system).
