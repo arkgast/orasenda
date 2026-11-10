@@ -243,8 +243,14 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-iconbtn-round { width: var(--control-lg); height: var(--control-lg); border-color: var(--line-strong); border-radius: var(--radius-pill); background: var(--surface-raised); }
 .os-iconbtn:disabled, .os-iconbtn[aria-disabled="true"] { border: 1px dashed var(--line-strong); background: var(--clear); color: var(--ink-muted); cursor: default; }
 
-/* Tooltip: the host positions it; this is the panel. */
+/* Tooltip: the panel. bundle.js places it (position: fixed) from the trigger rect, inside the nearest open dialog or the page body. */
 .os-tooltip { display: inline-flex; align-items: center; gap: var(--space-2); width: max-content; max-width: 40ch; padding: var(--space-1) var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-overlay); color: var(--ink); font-size: 13px; line-height: 18px; z-index: var(--z-popover); }
+.os-tooltip-panel { position: fixed; top: 0; left: 0; margin: 0; }
+.os-tooltip-label { min-width: 0; }
+.os-tooltip .os-kbd { flex: none; }
+/* The Tooltip wraps its one trigger; the wrapper takes no space of its own. */
+.os-tip-anchor { display: inline-flex; flex: none; vertical-align: middle; }
+.os-iconbtn-icon { display: inline-flex; }
 
 /* TimerStrip: digits over a horizon bar; the fill end reads by thickness, not colour. */
 .os-strip { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-width: 0; container-type: inline-size; }

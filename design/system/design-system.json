@@ -26,8 +26,8 @@
   },
   "lastChange": {
     "by": "Arnold Gandarillas Castillo",
-    "at": "2026-11-10T03:36:59Z",
+    "at": "2026-11-10T04:38:15Z",
     "via": "Claude Code",
-    "note": "T1 (issue #168): type.fonts lists the bundled Atkinson Hyperlegible Next and Mono variable woff2 (200 800) and Lexend Regular (400); README Type and Colour lines now say the fonts and verification/contrast.py exist."
+    "note": "T2 (issue #169): IconButton, Tooltip, Kbd and describeShortcut in bundle.js; key table in the Kbd README; IconButton id, aria-expanded, aria-controls; Tooltip as a script-placed panel in the nearest open dialog or the body; window.Orasenda.strictShortcuts."
   }
 }

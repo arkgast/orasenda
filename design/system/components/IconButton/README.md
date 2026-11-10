@@ -1,10 +1,12 @@
 An action shown as an icon, always with a label in its `Tooltip` and its accessible name. Used for Pause/Resume, End, Focus view, Leave full screen, Pages, Jump to section, Close and Change role.
 
-- **Anatomy:** a native `button` with one 20px (`icon-lg`) line icon at 1.5 stroke, and an optional `Tooltip`.
-- **Props:** `label` (required: the accessible name and the tooltip text), `icon`, `shortcut?` (shown as a `Kbd` in the tooltip and set as `aria-keyshortcuts`), `size: 'md' | 'round'`, `onClick`, `disabled`, and `aria-haspopup` when it opens a menu, native or `PopoverMenu`.
+- **Anatomy:** a native `button` with one 20px (`icon-lg`) line icon at 1.5 stroke, wrapped in an `aria-hidden` span, and its own built-in `Tooltip` (the host never adds one).
+- **Props:** `label` (required: the accessible name and the tooltip text), `icon` (a `ReactNode`; until the icon set lands, an inline SVG), `shortcut?`, `size: 'md' | 'round'`, `onClick`, `disabled`, `aria-haspopup` when it opens a menu, native or `PopoverMenu`, and `id`, `aria-expanded`, `aria-controls`, each passed through to the `button`.
+- **Shortcut:** one canonical glyph string from the key table (`Kbd` README, "Shortcut glyphs"), such as `"⌘."` or `"Space"`. It shows as a `Kbd` in the tooltip and sets `aria-keyshortcuts` to `describeShortcut(shortcut).aria` (`"⌘."` gives `Meta+Period`). With no `shortcut` there is no `aria-keyshortcuts` attribute. The host passes it only while that shortcut is live: a single key such as Space only while the Single-key shortcuts setting is on. The button never reads the setting.
+- **Menu triggers:** with `aria-haspopup="menu"` the host sets `aria-expanded` from the menu's open state and `aria-controls` to the menu's `id`; `id` lets the menu point back at its trigger. The button never reads the menu's state itself.
 - **Sizes:** `md` is 44 × 44 (`hit-min`). `round` is 52 × 52 (`control-lg`) on a `surface-raised` ground with a `line-strong` edge; it is Pause/Resume on Today and in the Focus window, so the target is visible and not only the glyph. Inside `SessionSlot` and `FloatingTimer` the button is `md`.
-- **States:** rest (icon `ink`, clear ground; round: `surface-raised`); hover `surface-sunken`; pressed `selection`; disabled: dashed `line-strong`, icon `ink-muted`, with a visible line elsewhere that says why; keyboard focus: the 2px `focus-ring` at a 2px offset.
+- **States:** rest (icon `ink`, clear ground; round: `surface-raised`); hover `surface-sunken`; pressed `selection`; disabled (native `disabled`): dashed `line-strong`, icon `ink-muted`, with a visible line elsewhere that says why; keyboard focus: the 2px `focus-ring` at a 2px offset. Each state differs by edge or ground as well as colour, and the press feedback uses `duration-quick`, removed under reduced motion.
 - **Keyboard:** Tab, Space, Return. Never more than one tab stop.
-- **VoiceOver:** the name is `label` exactly ("Pause session"); the shortcut is spoken through `aria-keyshortcuts`. No `title` attribute.
+- **VoiceOver:** the name is `label` exactly ("Pause session"); the shortcut is spoken through `aria-keyshortcuts`. No `title` attribute, and no live region.
 
 Do: give every IconButton a label someone would say. Don't: show an icon alone without a tooltip, or give anything with visible text an `aria-label` that drops it.
