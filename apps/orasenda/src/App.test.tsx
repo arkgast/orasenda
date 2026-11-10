@@ -117,14 +117,16 @@ test("only_one_primary_button_on_today", async () => {
   const { container } = render(<App />);
   await settle();
 
-  const primaries = container.querySelectorAll('[data-slot="button"][data-variant="primary"]');
+  const primaries = container.querySelectorAll(
+    '.os-btn-primary, [data-slot="button"][data-variant="primary"]',
+  );
   expect(primaries).toHaveLength(1);
   expect(primaries[0]).toHaveTextContent("Start focus");
 
   await emitTimer(RUNNING);
-  expect(container.querySelectorAll('[data-slot="button"][data-variant="primary"]')).toHaveLength(
-    0,
-  );
+  expect(
+    container.querySelectorAll('.os-btn-primary, [data-slot="button"][data-variant="primary"]'),
+  ).toHaveLength(0);
 });
 
 test("strict_mode_one_listener_per_event", async () => {

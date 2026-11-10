@@ -72,7 +72,7 @@ export function StartButton(props: StartButtonProps): JSX.Element {
         </Button>
       </div>
       {props.finishTime ? (
-        <p data-slot="start-button-finish" className="m-0 text-caption text-ink-muted">
+        <p data-slot="start-button-finish" className="m-0 text-body-sm text-ink-muted">
           Realistic finish · <span className="font-mono tabular-nums">{props.finishTime}</span>
         </p>
       ) : null}

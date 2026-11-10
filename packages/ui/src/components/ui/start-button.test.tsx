@@ -89,8 +89,11 @@ test("exposes_two_buttons_with_names", () => {
 
 test("loading_guards_both_buttons_and_marks_busy", () => {
   const onQuickStart = vi.fn();
-  render(<StartButton onStart={noop} onQuickStart={onQuickStart} loading />);
+  const onStart = vi.fn();
+  render(<StartButton onStart={onStart} onQuickStart={onQuickStart} loading />);
   expect(screen.getByRole("button", { name: "Starting…" }).getAttribute("aria-busy")).toBe("true");
   fireEvent.click(screen.getByRole("button", { name: "Just 2 minutes" }));
+  fireEvent.click(screen.getByRole("button", { name: "Starting…" }));
   expect(onQuickStart).not.toHaveBeenCalled();
+  expect(onStart).not.toHaveBeenCalled();
 });

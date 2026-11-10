@@ -79,9 +79,9 @@ test("rail_cmd_comma_and_tray_land_on_settings_with_h1_focus", async () => {
   const { container } = await openSettings();
   expect(h1()).toHaveFocus();
   expect(container.querySelectorAll("h1")).toHaveLength(1);
-  expect(container.querySelectorAll('[data-slot="button"][data-variant="primary"]')).toHaveLength(
-    0,
-  );
+  expect(
+    container.querySelectorAll('.os-btn-primary, [data-slot="button"][data-variant="primary"]'),
+  ).toHaveLength(0);
 
   fireEvent.click(screen.getByRole("button", { name: "Today" }));
   await settle();

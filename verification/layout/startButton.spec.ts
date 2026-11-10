@@ -12,9 +12,9 @@ const frame = (page: Page, state: string) => page.locator(`[data-frame][data-sta
 /** In the compact form the full label is visually hidden in a 1x1 clip box, like sr-only. */
 async function expectFitsWithHiddenFull(f: Locator) {
   const reported = await overflows(f);
-  expect(
-    reported.filter((l) => !l.includes("sr-only") && !l.includes("start-button-full")),
-  ).toEqual([]);
+  // overflows() names an element by its first class: the hidden full-label span is excluded
+  // because that class is the sr-only utility.
+  expect(reported.filter((l) => !l.includes("sr-only"))).toEqual([]);
 }
 
 /** The label span a sighted user can read: wider than the 1px sr-only box and not display:none. */
