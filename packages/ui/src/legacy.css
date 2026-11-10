@@ -60,11 +60,6 @@ button { font-family: inherit; }
 .os-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 /* end Dialog */
 
-/* FullScreenFocus */
-.os-fullscreen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-6); min-height: var(--window-min-height); padding: var(--space-8); background: var(--surface); color: var(--ink); }
-.os-fullscreen:focus { outline: none; }
-@media (max-width: 600px) { .os-fullscreen { padding: var(--space-4); } }
-/* end FullScreenFocus */
 
 /* Input */
 /* Input, TextArea and radio choices keep native keyboard behaviour. */

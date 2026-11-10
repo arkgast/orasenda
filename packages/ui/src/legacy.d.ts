@@ -3,10 +3,6 @@ import type * as React from 'react';
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
-// FullScreenFocus
-export interface FullScreenFocusProps extends Omit<import('./components/ui/timer-ring').TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
-export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
-// end FullScreenFocus
 // Field
 export interface FieldProps { label: string; helper?: string; error?: string }
 // end Field
@@ -19,7 +15,7 @@ declare global {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof import("./components/ui/timer-strip").TimerStrip; timerLayout: typeof import("./lib/timer-layout").timerLayout;
       TaskCard: typeof import("./components/ui/task-card").TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
-      IntentPrompt: typeof import("./components/ui/intent-prompt").IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
+      IntentPrompt: typeof import("./components/ui/intent-prompt").IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof import("./components/ui/full-screen-focus").FullScreenFocus; FullScreenFocus: typeof import("./components/ui/full-screen-focus").FullScreenFocus;
       TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof import("./components/ui/capture-pad").CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof import("./components/ui/toast").Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof import("./components/ui/kanban-column").KanbanColumn; CommandPalette: typeof import("./components/ui/command-palette").CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;

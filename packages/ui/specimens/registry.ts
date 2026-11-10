@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
+import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
@@ -16,6 +17,7 @@ import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
 export const specimens: Record<string, () => ReactElement> = {
   IconButton: IconButtonSpecimen,
   Tooltip: TooltipSpecimen,
+  FullScreenFocus: FullScreenFocusSpecimen,
   Kbd: KbdSpecimen,
   CommandPalette: CommandPaletteSpecimen,
   Dialog: DialogSpecimen,

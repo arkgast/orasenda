@@ -63,16 +63,6 @@ function Dialog(p) {
       h(Button, { variant: p.destructive ? "critical" : "primary", onClick: p.onConfirm, loading: p.loading }, p.confirmLabel)));
 }
 // end Dialog
-// FullScreenFocus
-function FullScreenFocus(p) {
-  var leaving = R.useState(false), root = R.useRef(null);
-  R.useEffect(function () { if (root.current) root.current.focus(); }, []);
-  return h("section", { ref: root, className: "os-fullscreen", tabIndex: -1, "aria-label": "Full-screen focus", onKeyDown: function (e) { if (e.key === "Escape" && !leaving[0]) { e.preventDefault(); e.stopPropagation(); leaving[1](true); } } },
-    h(TimerRing, { remaining: p.remaining, remainingLabel: p.remainingLabel, progress: p.progress, mode: p.mode, task: p.task, clock: p.clock, size: 560 }),
-    h(Button, { variant: "ghost", onClick: function () { leaving[1](true); } }, "Leave full screen"),
-    leaving[0] ? h(Dialog, { title: "Leave full screen?", description: "Your focus session will keep running.", confirmLabel: "Leave full screen", cancelLabel: "Stay focused", scrim: true, onCancel: function () { leaving[1](false); }, onConfirm: function () { leaving[1](false); p.onExit(); } }) : null);
-}
-// end FullScreenFocus
 function Field(p) {
   var generated = R.useId(), id = p.id || generated, described = [p["aria-describedby"], p.helper ? id + "-helper" : "", p.error ? id + "-error" : ""].filter(Boolean).join(" ");
   var rest = Object.assign({}, p);
@@ -113,5 +103,4 @@ function describeShortcut(glyphs) {
 // end describeShortcut
 
 export {
-  FullScreenFocus,
 };
