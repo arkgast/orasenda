@@ -81,3 +81,19 @@ for (const viewport of [
     await shoot(page, testInfo, `command-palette-${viewport.width}x${viewport.height}`);
   });
 }
+
+test("command_palette_keeps_focus_inside_while_open", async ({ page }) => {
+  await openSpecimen(page, "CommandPalette");
+  await page.getByRole("button", { name: OPEN }).click();
+  await expect(page.getByRole("dialog", { name: "Commands" })).toBeVisible();
+  // WebKit skips buttons on plain Tab, so use Alt+Tab (as the Dialog spec does).
+  await page.keyboard.press("Alt+Tab");
+  await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press("Alt+Tab");
+    const inside = await page.evaluate(
+      () => !!document.activeElement?.closest("[data-slot=dialog-content]"),
+    );
+    expect(inside).toBe(true);
+  }
+});

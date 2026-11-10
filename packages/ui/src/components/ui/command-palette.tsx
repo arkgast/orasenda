@@ -1,7 +1,7 @@
 import { Command } from "cmdk";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type { JSX } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -52,7 +52,6 @@ export function CommandPalette({
 }: CommandPaletteProps): JSX.Element {
   const [query, setQuery] = useState("");
   const [value, setValue] = useState("");
-  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -118,6 +117,8 @@ export function CommandPalette({
               value={value}
               shouldFilter={false}
               loop
+              disablePointerSelection
+              vimBindings={false}
               onValueChange={setValue}
               className="flex min-h-0 flex-col gap-2"
             >
@@ -125,11 +126,14 @@ export function CommandPalette({
                 Search commands
               </span>
               <Command.Input
-                id={inputId}
                 ref={inputRef}
                 data-slot="input"
                 value={query}
                 onValueChange={setQuery}
+                // cmdk jumps to the first or last row on Home and End; keep them moving the caret as in a plain field.
+                onKeyDown={(event) => {
+                  if (event.key === "Home" || event.key === "End") event.stopPropagation();
+                }}
                 className={cn(
                   "block min-h-hit-min w-full min-w-0 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
                   "hover:border-focus",

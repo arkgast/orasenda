@@ -134,3 +134,32 @@ test("backdrop_click_never_dismisses", () => {
   fireEvent.click(overlay);
   expect(onClose).not.toHaveBeenCalled();
 });
+
+test("pointer_move_does_not_move_highlight", () => {
+  const { box } = setup();
+  const before = box.getAttribute("aria-activedescendant");
+  const rows = screen.getAllByRole("option");
+  fireEvent.pointerMove(rows[2]);
+  fireEvent.mouseMove(rows[2]);
+  expect(rows[0]).toHaveAttribute("aria-selected", "true");
+  expect(rows[2]).toHaveAttribute("aria-selected", "false");
+  expect(box.getAttribute("aria-activedescendant")).toBe(before);
+});
+
+test("ctrl_k_does_not_move_highlight", () => {
+  const { box } = setup();
+  fireEvent.keyDown(box, { key: "ArrowDown" });
+  const rows = screen.getAllByRole("option");
+  expect(rows[1]).toHaveAttribute("aria-selected", "true");
+  for (const key of ["k", "j", "n", "p"]) fireEvent.keyDown(box, { key, ctrlKey: true });
+  expect(rows[1]).toHaveAttribute("aria-selected", "true");
+});
+
+test("home_and_end_keep_moving_the_caret", () => {
+  const { box } = setup();
+  fireEvent.keyDown(box, { key: "ArrowDown" });
+  const rows = screen.getAllByRole("option");
+  expect(fireEvent.keyDown(box, { key: "End" })).toBe(true);
+  expect(fireEvent.keyDown(box, { key: "Home" })).toBe(true);
+  expect(rows[1]).toHaveAttribute("aria-selected", "true");
+});
