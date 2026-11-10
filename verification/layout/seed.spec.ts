@@ -81,13 +81,27 @@ test("reduced_motion_leaves_no_transition_or_animation", async ({ page }, info) 
   expect(await animatedElements(page)).toEqual([]);
 });
 
+test("theme_query_applies_the_dark_tokens", async ({ page }, info) => {
+  test.skip(info.project.name !== "light", "light scheme project only");
+  const surface = async (theme: "light" | "dark") => {
+    await openSpecimen(page, "Seed", { theme });
+    return page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue("--surface").trim(),
+    );
+  };
+  const light = await surface("light");
+  const dark = await surface("dark");
+  expect(light).not.toBe("");
+  expect(dark).not.toBe(light);
+});
+
 test("seed_aria_snapshot", async ({ page }) => {
   await openSpecimen(page, "Seed");
   await expect(page.locator("body")).toMatchAriaSnapshot(`
     - paragraph: timer-ring-focus
     - timer "Focus, 25:00 remaining"
     - paragraph: inline-notice-row-attention
-    - status: Focus didn't start. Custom minutes are out of range.
+    - status: Focus didn't start. Custom focus needs 5 to 180 minutes.
     - button "Open Settings to change custom minutes": Open Settings
     - paragraph: seeded-overflow
   `);

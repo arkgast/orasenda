@@ -91,7 +91,7 @@ function fontFaces(t: Json): string {
   const families = type.families as Json;
   const fonts = type.fonts;
   if (!Array.isArray(fonts) || fonts.length === 0) fail('tokens.json has no "type.fonts" list');
-  const ranges = new Map<string, [number, number]>();
+  const ranges = new Map<string, [number, number][]>();
   const out = (fonts as Json[]).map((f, i) => {
     const family = f?.family;
     if (typeof family !== "string" || family === "") fail(`type.fonts[${i}] has no string family`);
@@ -106,16 +106,17 @@ function fontFaces(t: Json): string {
     if (!Object.values(families).some((s) => stackNames(s).includes(family))) {
       fail(`type.fonts family "${family}" is not named by any type.families stack`);
     }
-    ranges.set(family, weightRange(family, f.weight));
+    ranges.set(family, [...(ranges.get(family) ?? []), weightRange(family, f.weight)]);
     return `@font-face {\n  font-family: "${family}";\n  src: url("./${file}") format("woff2");\n  font-weight: ${f.weight};\n  font-style: normal;\n  font-display: block;\n}\n\n`;
   });
   for (const g of type.groups as Json[]) {
     const family = stackNames(families[g.family as string])[0];
-    const range = ranges.get(family);
-    if (!range) fail(`type group "${g.name}" uses "${family}", which has no type.fonts entry`);
+    const familyRanges = ranges.get(family);
+    if (!familyRanges)
+      fail(`type group "${g.name}" uses "${family}", which has no type.fonts entry`);
     for (const s of g.styles as Json[]) {
       const w = s.fontWeight;
-      if (typeof w !== "number" || w < range[0] || w > range[1]) {
+      if (typeof w !== "number" || !familyRanges.some(([lo, hi]) => w >= lo && w <= hi)) {
         fail(`type style "${s.name}" weight ${w} is outside the "${family}" weight range`);
       }
     }

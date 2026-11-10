@@ -28,7 +28,5 @@ body {
   border-radius: var(--radius-sm);
 }
 .specimen-overflow {
-  width: 300px;
-  height: 100px;
   background: var(--surface-sunken);
 }

@@ -17,11 +17,13 @@ export function Seed(): ReactElement {
           actionName="Open Settings to change custom minutes"
           onAction={() => {}}
         >
-          Focus didn't start. Custom minutes are out of range.
+          Focus didn't start. Custom focus needs 5 to 180 minutes.
         </InlineNotice>
       </Frame>
       <Frame state="seeded-overflow" width={120} height={40}>
-        <div className="specimen-overflow">Content wider and taller than its frame</div>
+        <div style={{ width: 300, height: 100 }} className="specimen-overflow">
+          Content wider and taller than its frame
+        </div>
       </Frame>
     </>
   );

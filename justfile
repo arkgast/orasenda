@@ -106,9 +106,8 @@ ci:
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
 
-# Real-engine layout checks with Playwright WebKit. Temporary: runs only the smoke case until the
-# harness lands. Runs only on macOS; other hosts skip.
-[private]
+# Real-engine layout checks: runs every spec in verification/layout with Playwright WebKit. macOS only
+# (other hosts skip); fails with the install command when WebKit is missing.
 [script]
 layout:
     host="$(uname -s)"

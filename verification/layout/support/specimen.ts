@@ -19,8 +19,9 @@ export function frames(page: Page): Locator {
 
 /**
  * Moves focus to the next control with the keyboard. Playwright's WebKit on macOS follows Safari's
- * default, where plain Tab skips buttons and only Option+Tab reaches them; WKWebView in the app
- * does not have that setting, so the harness uses the key that reaches every control.
+ * default, where plain Tab skips buttons unless Option is held, so the harness presses Alt+Tab to
+ * reach every control. Whether the app's WKWebView needs Full Keyboard Access for this is a device
+ * check owed to #61.
  */
 export async function pressTab(page: Page): Promise<void> {
   await page.keyboard.press("Alt+Tab");

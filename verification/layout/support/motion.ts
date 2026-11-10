@@ -11,10 +11,9 @@ export async function animatedElements(page: Page): Promise<string[]> {
       const timed = seconds(cs.transitionDuration).some((s) => s > 0);
       const animated =
         cs.animationName !== "none" && seconds(cs.animationDuration).some((s) => s > 0);
+      const cls = el instanceof SVGElement ? el.className.baseVal : (el as HTMLElement).className;
       if (timed || animated)
-        out.push(
-          `${el.tagName.toLowerCase()}${el.className ? `.${String(el.className.baseVal ?? el.className).split(" ")[0]}` : ""}`,
-        );
+        out.push(`${el.tagName.toLowerCase()}${cls ? `.${cls.split(" ")[0]}` : ""}`);
     }
     return out;
   });
