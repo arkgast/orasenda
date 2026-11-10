@@ -89,3 +89,45 @@ test("passes_native_props_and_merges_class_name", () => {
   expect(button.classList.contains("mt-2")).toBe(true);
   expect(button.hasAttribute("data-initial-focus")).toBe(true);
 });
+
+test("md_keeps_body_size_and_ink_colour", () => {
+  render(<Button>Pause</Button>);
+  const cls = screen.getByRole("button").classList;
+  expect(cls.contains("text-body")).toBe(true);
+  expect(cls.contains("text-ink")).toBe(true);
+});
+
+test("lg_primary_keeps_heading_size_and_on_focus_colour", () => {
+  render(
+    <Button variant="primary" size="lg">
+      Start focus
+    </Button>,
+  );
+  const cls = screen.getByRole("button").classList;
+  expect(cls.contains("text-heading")).toBe(true);
+  expect(cls.contains("text-on-focus")).toBe(true);
+  expect(cls.contains("text-body")).toBe(false);
+});
+
+test("treats_boolean_aria_disabled_as_unavailable", () => {
+  const onClick = vi.fn();
+  render(
+    <Button aria-disabled={true} onClick={onClick}>
+      Continue
+    </Button>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  expect(onClick).not.toHaveBeenCalled();
+});
+
+test("passes_aria_busy_through_when_not_loading", () => {
+  render(<Button aria-busy="true">Wait</Button>);
+  expect(screen.getByRole("button").getAttribute("aria-busy")).toBe("true");
+});
+
+test("has_dashed_disabled_look", () => {
+  render(<Button disabled>Save</Button>);
+  const cls = screen.getByRole("button").classList;
+  expect(cls.contains("disabled:border-dashed")).toBe(true);
+  expect(cls.contains("aria-disabled:border-dashed")).toBe(true);
+});
