@@ -77,7 +77,7 @@ export function MenuBarTimer({
       aria-live="off"
       aria-label={label}
       className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-sm bg-surface-raised px-2 font-medium font-mono text-timer-sm text-ink tabular-nums min-h-hit-floor",
+        "inline-flex max-w-full items-center gap-1-5 rounded-sm bg-surface-raised px-2 font-medium font-mono text-timer-sm text-ink tabular-nums min-h-hit-floor",
         floating && "gap-2 border border-line-strong p-2 text-timer-md shadow-raised",
       )}
     >
