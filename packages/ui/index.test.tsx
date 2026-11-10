@@ -456,3 +456,21 @@ test("inline_notice_row_action_variant_defaults_ghost_and_accepts_quiet", () => 
   expect(quiet).toContain("quiet");
   expect(quiet).not.toContain("ghost");
 });
+
+test("exports_preset_popover", () => {
+  expect(typeof ui.PopoverMenu).toBe("function");
+  expect("PopoverMenu" in window.Orasenda).toBe(true);
+});
+
+test("index_d_ts_declares_popover_menu", () => {
+  const dts = readFileSync(
+    resolve(import.meta.dirname, "../../design/system/components/index.d.ts"),
+    "utf8",
+  );
+  expect(dts).toContain("declare function PopoverMenu");
+  expect(dts).toContain("PopoverMenu: typeof PopoverMenu");
+  expect(dts).toContain("anchor: React.RefObject<HTMLElement | null>");
+  expect(dts).toContain("singleKeys?: boolean");
+  expect(dts).toContain("id?: string");
+  expect(dts).not.toContain("PopoverMenuNextProps");
+});
