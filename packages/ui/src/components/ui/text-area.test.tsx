@@ -54,3 +54,8 @@ test("keeps_consumer_aria_describedby_first_and_disabled", () => {
   expect(box.getAttribute("aria-describedby")).toBe("outside x-helper");
   expect(box).toBeDisabled();
 });
+
+test("keeps_minimum_hit_height_for_small_rows", () => {
+  render(<TextArea label="Notes" rows={1} />);
+  expect(screen.getByLabelText("Notes")).toHaveClass("min-h-hit-min");
+});
