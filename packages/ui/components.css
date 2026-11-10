@@ -322,6 +322,27 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-radio-mark { width: var(--icon-md); height: var(--icon-md); flex: none; border: 1.5px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface-overlay); }
 [aria-checked="true"] > .os-radio-mark { border-color: var(--focus); background: var(--focus); box-shadow: inset 0 0 0 2px var(--surface-overlay); }
 [aria-disabled="true"] > .os-radio-mark { border-style: dashed; }
+/* The live PopoverMenu: bundle.js moves the panel into the nearest open dialog or the page body and places it
+   (position: fixed) against its anchor. The slot it is rendered into takes no space. No motion. */
+.os-popover-slot { display: contents; }
+.os-popover-panel { position: fixed; top: 0; left: 0; margin: 0; max-width: calc(100vw - 2 * var(--space-2)); max-height: calc(100vh - 2 * var(--space-2)); overflow-y: auto; }
+.os-popover-list { display: flex; flex-direction: column; }
+.os-popover-headline { display: flex; align-items: center; gap: var(--space-2); }
+.os-popover-headline .os-kbd { flex: none; margin-inline-start: auto; }
+.os-popover-label { min-width: 0; }
+.os-popover-item:focus-visible { outline-offset: -2px; }
+.os-popover-item[aria-checked="true"][aria-disabled="true"]:hover { background: var(--selection); }
+.os-popover-word { margin-inline-start: auto; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+.os-popover-meta + .os-popover-word { margin-inline-start: 0; }
+.os-checkbox-mark { display: grid; place-items: center; width: var(--icon-md); height: var(--icon-md); flex: none; border: 1.5px solid var(--line-strong); border-radius: calc(var(--radius-sm) / 2); background: var(--surface-overlay); }
+.os-checkbox-mark svg { width: 100%; height: 100%; fill: none; stroke: var(--on-focus); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+[aria-checked="true"] > .os-checkbox-mark { border-color: var(--focus); background: var(--focus); }
+[aria-disabled="true"] > .os-checkbox-mark { border-style: dashed; }
+@media (forced-colors: active) {
+  [aria-checked="true"] > .os-radio-mark, [aria-checked="true"] > .os-checkbox-mark { forced-color-adjust: none; border-color: Highlight; background: Highlight; }
+  [aria-checked="true"] > .os-radio-mark { box-shadow: inset 0 0 0 2px Canvas; }
+  .os-checkbox-mark svg { stroke: HighlightText; }
+}
 
 /* Select: a native select in the Input family. */
 .os-select-wrap { position: relative; display: block; }
