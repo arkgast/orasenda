@@ -1,7 +1,7 @@
 // The public surface. Each name is exported once, from a component file or from legacy.js, never both.
 // A migrated component's line moves from legacy.js to its own file in the same change.
-export { Button } from "./components/ui/button.tsx";
-export type { ButtonProps } from "./components/ui/button.tsx";
+export { Button } from "./components/ui/button";
+export type { ButtonProps } from "./components/ui/button";
 export { CapturePad } from "./legacy.js";
 export { CommandPalette } from "./legacy.js";
 export { describeShortcut } from "./lib/shortcuts";

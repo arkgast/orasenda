@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, JSX, MouseEvent } from "react";
-import { cn } from "../../lib/utils.ts";
+import { cn } from "../../lib/utils";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "break" | "quiet" | "ghost" | "critical";
