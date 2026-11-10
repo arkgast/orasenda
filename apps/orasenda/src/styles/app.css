@@ -159,7 +159,7 @@ body {
   min-block-size: 0;
 }
 
-.settings-page .os-page-body {
+.settings-page [data-slot="page-frame-body"] {
   display: grid;
 }
 

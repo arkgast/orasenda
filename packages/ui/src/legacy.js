@@ -324,17 +324,6 @@ function StartButton(p) {
 }
 // end StartButton
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
-// PageFrame
-function PageFrame(p) {
-  var flow = p.variant === "flow";
-  var title = p.compactPicker ? h("div", { className: "os-page-title" }, p.compactPicker, h("h1", { className: "os-sr-only", tabIndex: -1 }, p.title)) : h("h1", { tabIndex: -1 }, p.title);
-  return h("div", { className: cx("os-page", flow && "os-page-flow") },
-    h("header", { className: "os-page-head" }, title, p.primary || (p.step ? h("span", { className: "os-page-step" }, p.step) : null)),
-    h("div", { className: "os-page-status" }, p.status),
-    h("div", { className: "os-page-body" }, p.children),
-    flow ? h("footer", { className: "os-page-foot" }, p.footer) : null);
-}
-// end PageFrame
 // ScrollRegion
 function ScrollRegion(p) {
   var ref = R.useRef(null), more = R.useState(false), scrolled = R.useState(false), focusable = R.useState(null);
@@ -679,7 +668,6 @@ export {
   CommandPalette,
   EmptyState,
   StartButton,
-  PageFrame,
   ScrollRegion,
   SettingsIndex,
   SettingsRow,

@@ -385,21 +385,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-scroll-more { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-1); min-height: var(--hit-floor); padding-inline: var(--space-2); border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-muted); font-size: 11px; line-height: 14px; font-weight: 500; }
 /* end ScrollRegion */
 
-/* PageFrame */
-/* PageFrame: header, status row, region; the flow variant adds a footer. */
-.os-page { display: grid; grid-template-rows: var(--hit-min) var(--hit-min) minmax(0, 1fr); gap: var(--space-2); height: 100%; min-height: 0; padding: var(--space-5) var(--space-6) var(--space-6); background: var(--surface); color: var(--ink); }
-.os-page-flow { grid-template-rows: var(--hit-min) var(--hit-min) minmax(0, 1fr) var(--control-lg); }
-.os-page-compact { padding: var(--space-4); }
-.os-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-width: 0; }
-.os-page-head h1 { margin: 0; min-width: 0; font-size: 22px; line-height: 28px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.os-page-step { font-size: 13px; line-height: 18px; color: var(--ink-muted); white-space: nowrap; }
-.os-page-foot { display: flex; align-items: center; gap: var(--space-2); }
-.os-page-foot > :last-child { margin-inline-start: auto; }
-.os-page-status, .os-page-body { min-width: 0; min-height: 0; }
-.os-page-title { display: flex; align-items: center; min-width: 0; }
-.os-page-body > .os-scroll { height: 100%; }
-/* end PageFrame */
-
 /* SessionSlot (CSS only) */
 /* SessionSlot: a running session in place of a planning page's primary. */
 .os-sessionslot { display: inline-flex; align-items: center; gap: var(--space-1); padding-inline-start: var(--space-3); border-radius: var(--radius-pill); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); }

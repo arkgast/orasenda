@@ -79,3 +79,37 @@ test("compact_picker_hides_the_h1_visually_but_keeps_it", () => {
   expect(h1.className).toContain("sr-only");
   expect(h1.getAttribute("tabindex")).toBe("-1");
 });
+
+test("page_frame_renders_h1_and_three_tracks", () => {
+  const { container, rerender } = render(
+    <PageFrame title="Settings" status={<span>s</span>}>
+      <p>body</p>
+    </PageFrame>,
+  );
+  const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
+  expect(h1.tabIndex).toBe(-1);
+  const root = container.firstElementChild as HTMLElement;
+  expect(root.getAttribute("data-slot")).toBe("page-frame");
+  expect(root.children).toHaveLength(3);
+  expect(root.children[0].getAttribute("data-slot")).toBe("page-frame-header");
+  expect(root.children[0].contains(h1)).toBe(true);
+  expect(root.children[1].textContent).toBe("s");
+  expect(root.children[2].textContent).toBe("body");
+
+  rerender(<PageFrame title="Settings" />);
+  expect((container.firstElementChild as HTMLElement).children).toHaveLength(3);
+
+  rerender(
+    <PageFrame
+      title="Shutdown"
+      variant="flow"
+      step="Step 2 of 4"
+      footer={<button type="button">Continue</button>}
+    />,
+  );
+  const flow = container.firstElementChild as HTMLElement;
+  expect(flow.getAttribute("data-variant")).toBe("flow");
+  expect(flow.children).toHaveLength(4);
+  expect(flow.children[3].textContent).toBe("Continue");
+  expect(screen.getByText("Step 2 of 4")).toBeTruthy();
+});
