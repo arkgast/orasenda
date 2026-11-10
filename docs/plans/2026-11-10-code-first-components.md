@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-10-code-first-components.md](../specs/2026-11-10-code-first-components.md) (approved 2026-11-10)
 - Date: 2026-11-10
-- Status: approved (2026-11-10)
+- Status: in backlog (2026-11-10; F #187, C1–C32 #188–#219, T5–T7 #172–#174, close-out #175)
 
 ## Overview
 One foundation task (F), then one task per runtime component (C1–C32) in the spec's three waves, then the paused P1 Components tasks re-cut for TSX (T5 #172, T6 #173, T7 #174) and the close-out (#175). The owner fixed the shape (decision 12): one foundation PR, one PR per component, at most three component pipelines at once.
@@ -46,7 +46,7 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
 
 ## Tasks
 
-### F: Code-first foundation (#issue)
+### F: Code-first foundation (#187)
 - Priority: 0
 - Depends on: none
 - Owns: `packages/ui/{package.json,tsconfig.json,vite.config.ts,components.json,design-system/**,src/index.ts,src/index.test.ts,src/types.ts,src/styles.css,src/lib/utils.ts,src/legacy.*,src/components/ui/glyphs.tsx,src/components/ui/*.md,src/guard.test.ts,src/design-system-check.test.ts}`, `packages/tokens/**`, `tools/biome/**`, `apps/orasenda/{package.json,vite.config.ts,src/main.tsx,src/App.tsx}`, `apps/orasenda/src-tauri/tauri.conf.json` (macOS minimum only), `justfile`, `.github/workflows/ci.yml`, `.gitignore`, `biome.json`, `pnpm-lock.yaml`, `verification/contrast.py`, `verification/contrast_test.py`, `verification/layout/playwright.config.ts`, `design/reviews/05-v34/**`; deletes `design/system/**` from git, `packages/ui/{build.ts,build.test.ts,index.ts,react-global.ts,components.css,components.d.ts}`
@@ -74,7 +74,7 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
 - Tests first: `design_system_bundle_header_lists_runtime_exports`, `design_system_bundle_loads_as_classic_script`, `design_system_renders_every_export`, `guard_rejects_create_element`, `guard_rejects_exclamation_in_copy`, `lint_rejects_arbitrary_tailwind_value`, `theme_is_closed`, `theme_maps_destructive_to_critical`, `fluid_tokens_stay_within_bounds`, `exports_match_previous_surface`
 - Notes: review by opus. No component is rewritten here. `glyphs.tsx` holds the three inline glyphs from `bundle.js` as TSX. Preflight off, `[data-slot]` base layer (spec, Behavior). The Python step and Playwright cache in `ci.yml` stay.
 
-### Component tasks C1–C32 (one issue each)
+### Component tasks C1–C32 (#188–#219, one issue each)
 Every component task follows the spec's [per-component pipeline](../specs/2026-11-10-code-first-components.md#per-component-pipeline-one-pr-each):
 - Priority: 1 (wave 1), 2 (wave 2), 3 (wave 3)
 - Depends on: F and the tasks named in its row
@@ -95,38 +95,38 @@ Every component task follows the spec's [per-component pipeline](../specs/2026-1
 
 | # | Component (`kebab`) | Wave | Depends on | Specimen | Adds dependency | Review | Notes |
 |---|---|---|---|---|---|---|---|
-| C1 | `Button` (`button`) | 1 | F | | | sonnet | `critical` variant is the only `destructive` use besides Dialog |
-| C2 | `ModeChip` (`mode-chip`) | 1 | F | | | sonnet | uses `ModeShape` from `glyphs.tsx` |
-| C3 | `Kbd` + `describeShortcut` (`kbd`, `src/lib/shortcuts.ts`) | 1 | F | yes | | sonnet | owns `src/lib/shortcuts.ts` and `describeShortcut.test.tsx`; keeps `strictShortcuts` |
-| C4 | `Input` (`input`) | 1 | F | | | sonnet | owns the shared field; ids settable by prop |
-| C5 | `HabitDots` (`habit-dots`) | 1 | F | | | sonnet | |
-| C6 | `RoutineItem` (`routine-item`) | 1 | F | | | sonnet | also moves the CSS-only `Choice` classes to utilities |
-| C7 | `WellnessNote` (`wellness-note`) | 1 | F | | | sonnet | |
-| C8 | `NavRail` (`nav-rail`) | 1 | F | yes | | opus | viewport variants (app shell) |
-| C9 | `NowLine` (`now-line`) | 1 | F | | | sonnet | |
-| C10 | `PageFrame` (`page-frame`) | 1 | F | yes | | sonnet | viewport variants; the Settings font check sizes |
-| C11 | `ScrollRegion` (`scroll-region`) | 1 | F | | | sonnet | "More below" stays |
-| C12 | `SettingsIndex` (`settings-index`) | 1 | F | | | sonnet | |
-| C13 | `MenuBarTimer` (`menu-bar-timer`) | 1 | F | yes | | sonnet | fits the 280×56 floater |
-| C14 | `TimeBlock` (`time-block`) | 1 | F | | | sonnet | `minute-scale` stays exact (2px per minute) |
-| C15 | `TextArea` (`text-area`) | 2 | C4 | | | sonnet | |
-| C16 | `Dialog` (`dialog`) | 2 | C1 | yes | | opus | owns `src/lib/layer.ts`; removes the `HTMLDialogElement` shims from `test-setup.ts` |
-| C17 | `EmptyState` (`empty-state`) | 2 | C1 | | | sonnet | |
-| C18 | `InlineNotice` (`inline-notice`) | 2 | C1 | | | sonnet | status row exactly 44px stays (hit target) |
-| C19 | `SettingsRow` (`settings-row`) | 2 | C1, C3 | | | sonnet | |
-| C20 | `StartButton` (`start-button`) | 2 | C1, C3 | yes | | opus | `aria-keyshortcuts` from `singleKeys` |
-| C21 | `Tooltip` (`tooltip`) | 2 | C3, C16 | yes | | opus | portals through `layer.ts`; Esc topmost only |
-| C22 | `PopoverMenu` (`popover-menu`) | 2 | C3, C16 | yes | | opus | Radix DropdownMenu; Tab per README |
-| C23 | `TimerRing` (`timer-ring`) | 2 | C2 | yes | | opus | absorbs `seed.spec.ts`; diameter a range in [`timer-min-size`, `timer-full-size`] |
-| C24 | `TimerStrip` + `timerLayout` (`timer-strip`, `src/lib/timer-layout.ts`) | 2 | C2 | yes | | opus | owns `src/lib/timer-layout.ts` and `timerLayout.test.tsx` |
-| C25 | `TaskCard` (`task-card`) | 2 | C2 | | | sonnet | |
-| C26 | `KanbanColumn` (`kanban-column`) | 2 | C2 | | | sonnet | |
-| C27 | `Toast` (`toast`) | 3 | C18 | | | sonnet | no sonner |
-| C28 | `IntentPrompt` (`intent-prompt`) | 3 | C16 | | | sonnet | |
-| C29 | `CapturePad` (`capture-pad`) | 3 | C15, C16 | yes | | sonnet | |
-| C30 | `CommandPalette` (`command-palette`) | 3 | C4, C16 | yes | `cmdk` | opus | `baton:deps` for `cmdk` |
-| C31 | `IconButton` (`icon-button`) | 3 | C21 | yes | | opus | |
-| C32 | `FullScreenFocus` (`full-screen-focus`) | 3 | C16, C23 | yes | | opus | today's behaviour only; the redesign is T5 |
+| C1 (#188) | `Button` (`button`) | 1 | F | | | sonnet | `critical` variant is the only `destructive` use besides Dialog |
+| C2 (#189) | `ModeChip` (`mode-chip`) | 1 | F | | | sonnet | uses `ModeShape` from `glyphs.tsx` |
+| C3 (#190) | `Kbd` + `describeShortcut` (`kbd`, `src/lib/shortcuts.ts`) | 1 | F | yes | | sonnet | owns `src/lib/shortcuts.ts` and `describeShortcut.test.tsx`; keeps `strictShortcuts` |
+| C4 (#191) | `Input` (`input`) | 1 | F | | | sonnet | owns the shared field; ids settable by prop |
+| C5 (#192) | `HabitDots` (`habit-dots`) | 1 | F | | | sonnet | |
+| C6 (#193) | `RoutineItem` (`routine-item`) | 1 | F | | | sonnet | also moves the CSS-only `Choice` classes to utilities |
+| C7 (#194) | `WellnessNote` (`wellness-note`) | 1 | F | | | sonnet | |
+| C8 (#195) | `NavRail` (`nav-rail`) | 1 | F | yes | | opus | viewport variants (app shell) |
+| C9 (#196) | `NowLine` (`now-line`) | 1 | F | | | sonnet | |
+| C10 (#197) | `PageFrame` (`page-frame`) | 1 | F | yes | | sonnet | viewport variants; the Settings font check sizes |
+| C11 (#198) | `ScrollRegion` (`scroll-region`) | 1 | F | | | sonnet | "More below" stays |
+| C12 (#199) | `SettingsIndex` (`settings-index`) | 1 | F | | | sonnet | |
+| C13 (#200) | `MenuBarTimer` (`menu-bar-timer`) | 1 | F | yes | | sonnet | fits the 280×56 floater |
+| C14 (#201) | `TimeBlock` (`time-block`) | 1 | F | | | sonnet | `minute-scale` stays exact (2px per minute) |
+| C15 (#202) | `TextArea` (`text-area`) | 2 | C4 | | | sonnet | |
+| C16 (#203) | `Dialog` (`dialog`) | 2 | C1 | yes | | opus | owns `src/lib/layer.ts`; removes the `HTMLDialogElement` shims from `test-setup.ts` |
+| C17 (#204) | `EmptyState` (`empty-state`) | 2 | C1 | | | sonnet | |
+| C18 (#205) | `InlineNotice` (`inline-notice`) | 2 | C1 | | | sonnet | status row exactly 44px stays (hit target) |
+| C19 (#206) | `SettingsRow` (`settings-row`) | 2 | C1, C3 | | | sonnet | |
+| C20 (#207) | `StartButton` (`start-button`) | 2 | C1, C3 | yes | | opus | `aria-keyshortcuts` from `singleKeys` |
+| C21 (#208) | `Tooltip` (`tooltip`) | 2 | C3, C16 | yes | | opus | portals through `layer.ts`; Esc topmost only |
+| C22 (#209) | `PopoverMenu` (`popover-menu`) | 2 | C3, C16 | yes | | opus | Radix DropdownMenu; Tab per README |
+| C23 (#210) | `TimerRing` (`timer-ring`) | 2 | C2 | yes | | opus | absorbs `seed.spec.ts`; diameter a range in [`timer-min-size`, `timer-full-size`] |
+| C24 (#211) | `TimerStrip` + `timerLayout` (`timer-strip`, `src/lib/timer-layout.ts`) | 2 | C2 | yes | | opus | owns `src/lib/timer-layout.ts` and `timerLayout.test.tsx` |
+| C25 (#212) | `TaskCard` (`task-card`) | 2 | C2 | | | sonnet | |
+| C26 (#213) | `KanbanColumn` (`kanban-column`) | 2 | C2 | | | sonnet | |
+| C27 (#214) | `Toast` (`toast`) | 3 | C18 | | | sonnet | no sonner |
+| C28 (#215) | `IntentPrompt` (`intent-prompt`) | 3 | C16 | | | sonnet | |
+| C29 (#216) | `CapturePad` (`capture-pad`) | 3 | C15, C16 | yes | | sonnet | |
+| C30 (#217) | `CommandPalette` (`command-palette`) | 3 | C4, C16 | yes | `cmdk` | opus | `baton:deps` for `cmdk` |
+| C31 (#218) | `IconButton` (`icon-button`) | 3 | C21 | yes | | opus | |
+| C32 (#219) | `FullScreenFocus` (`full-screen-focus`) | 3 | C16, C23 | yes | | opus | today's behaviour only; the redesign is T5 |
 
 ### T5: Focus window and floater, in TSX (#172, owns #183)
 - Priority: 3. Depends on: C32, C31, C13, C24.
