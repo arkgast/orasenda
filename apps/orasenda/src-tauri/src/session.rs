@@ -1308,6 +1308,7 @@ pub(crate) mod test_support {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::Ordering;
     use std::sync::mpsc::{RecvTimeoutError, channel};
     use std::sync::{Arc, Mutex};
     use std::thread;
@@ -3020,5 +3021,411 @@ mod tests {
         assert!(dir.join("orasenda.db").is_file());
         drop(store);
         std::fs::remove_dir_all(&root).expect("temp dir removed");
+    }
+
+    // ---- Spec B: notify review, diff save, theme and settings-changed ----
+
+    const ALL_STATUSES: [NotificationStatus; 4] = [
+        NotificationStatus::Granted,
+        NotificationStatus::Denied,
+        NotificationStatus::NotDetermined,
+        NotificationStatus::Unavailable,
+    ];
+
+    /// A pre-B store: the review marker pending and `notify.session_end` as given.
+    fn pending_store(stored: Option<bool>) -> Store {
+        let store = memory_store();
+        store.put_meta_for_tests(META_NOTIFY_REVIEW, "pending");
+        if let Some(value) = stored {
+            store
+                .write(0, |txn| settings::set(txn, KEY_NOTIFY, &value))
+                .expect("seeds notify");
+        }
+        store
+    }
+
+    fn pending_service(stored: Option<bool>) -> SessionService {
+        SessionService::new(
+            Ok(pending_store(stored)),
+            fakes(NotificationStatus::NotDetermined, false).platform,
+            T0,
+        )
+    }
+
+    fn marker(s: &SessionService) -> Option<String> {
+        db(s)
+            .read(|txn| meta::get(txn, META_NOTIFY_REVIEW))
+            .expect("reads")
+    }
+
+    fn stored_notify(s: &SessionService) -> Option<bool> {
+        db(s)
+            .read(|txn| settings::get(txn, KEY_NOTIFY))
+            .expect("reads")
+    }
+
+    fn settings_events(host: &TestHost) -> Vec<Settings> {
+        host.log()
+            .take()
+            .into_iter()
+            .filter_map(|e| match e {
+                Event::SettingsChanged(s) => Some(s),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn review_table() {
+        for stored in [None, Some(true), Some(false)] {
+            for status in ALL_STATUSES {
+                let mut s = pending_service(stored);
+                s.set_notifications(status);
+                let wrote = s.run_notify_review(T0);
+                let known = status != NotificationStatus::Unavailable;
+                let outcome = stored.unwrap_or(true) && status == NotificationStatus::Granted;
+                let case = format!("{stored:?} {status:?}");
+                assert_eq!(wrote, known, "{case}");
+                assert_eq!(s.settings().notify_session_end, outcome, "{case}");
+                if known {
+                    assert_eq!(marker(&s), None, "{case}");
+                    assert_eq!(stored_notify(&s), Some(outcome), "{case}");
+                } else {
+                    assert_eq!(marker(&s).as_deref(), Some("pending"), "{case}");
+                    assert_eq!(stored_notify(&s), stored, "{case}");
+                }
+                let rows = db(&s).change_log_ids().len();
+                assert!(!s.run_notify_review(T0), "{case}: at most once");
+                assert_eq!(db(&s).change_log_ids().len(), rows, "{case}");
+            }
+        }
+    }
+
+    #[test]
+    fn review_write_failure_keeps_marker_and_cached_value() {
+        let mut s = pending_service(Some(true));
+        s.set_notifications(NotificationStatus::Denied);
+        db(&s).fail_writes(true);
+        assert!(!s.run_notify_review(T0));
+        assert!(!s.settings().notify_session_end);
+        db(&s).fail_writes(false);
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+        assert_eq!(stored_notify(&s), Some(true));
+        assert!(!s.run_notify_review(T0 + 1), "no retry in this run");
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+    }
+
+    /// A host whose settings read failed at launch, with the review owed.
+    fn recovering_host(stored: Option<bool>) -> TestHost {
+        let store = pending_store(stored);
+        store.fail_reads(true);
+        let Fakes {
+            platform,
+            log,
+            notifier,
+        } = fakes(NotificationStatus::Granted, false);
+        TestHost::with(SessionService::new(Ok(store), platform, T0), log, notifier)
+    }
+
+    #[test]
+    fn review_emits_settings_changed_once_after_unlock() {
+        let host = recovering_host(Some(true));
+        lock(&host.0.service).set_notifications(NotificationStatus::Granted);
+        db(&lock(&host.0.service)).fail_reads(false);
+        host.log().take();
+        scheduler::iterate(&host);
+        let events = settings_events(&host);
+        assert_eq!(events.len(), 1);
+        assert!(events[0].notify_session_end);
+        assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
+        scheduler::iterate(&host);
+        assert!(settings_events(&host).is_empty());
+    }
+
+    #[test]
+    fn review_runs_after_recovered_settings_read() {
+        let store = pending_store(None);
+        store.fail_reads(true);
+        let mut s = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0,
+        );
+        s.set_notifications(NotificationStatus::Granted);
+        assert!(
+            !s.run_notify_review(T0),
+            "not reviewed while the settings are owed"
+        );
+        db(&s).fail_reads(false);
+        let e = s.tick(T0 + 1);
+        let presented = e.settings_changed.expect("one settings-changed is owed");
+        assert!(presented.notify_session_end);
+        assert_eq!(marker(&s), None);
+        assert_eq!(stored_notify(&s), Some(true));
+    }
+
+    #[test]
+    fn settings_set_without_notify_change_keeps_marker() {
+        let mut s = pending_service(None);
+        let before = db(&s).change_log_ids().len();
+        let saved = s
+            .set_settings(
+                Settings {
+                    theme: Theme::Dark,
+                    ..s.settings()
+                },
+                T0,
+            )
+            .expect("saves");
+        assert_eq!(saved.theme, Some(Theme::Dark));
+        assert!(!saved.presented.notify_session_end);
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+        assert_eq!(stored_notify(&s), None);
+        assert_eq!(db(&s).change_log_ids()[before..], ["ui.theme"]);
+        assert!(!s.settings().notify_session_end);
+        s.set_notifications(NotificationStatus::Granted);
+        assert!(
+            s.settings().notify_session_end,
+            "the cache kept stored-or-true"
+        );
+    }
+
+    #[test]
+    fn settings_set_changing_notify_clears_marker() {
+        let mut s = pending_service(None);
+        s.set_settings(
+            Settings {
+                notify_session_end: true,
+                ..s.settings()
+            },
+            T0,
+        )
+        .expect("saves");
+        assert_eq!(marker(&s), None);
+        assert_eq!(stored_notify(&s), Some(true));
+        s.set_notifications(NotificationStatus::Granted);
+        assert!(s.settings().notify_session_end);
+        s.set_notifications(NotificationStatus::Denied);
+        assert!(!s.run_notify_review(T0));
+        assert_eq!(stored_notify(&s), Some(true));
+
+        let mut failing = pending_service(None);
+        db(&failing).fail_writes(true);
+        let err = failing
+            .set_settings(
+                Settings {
+                    notify_session_end: true,
+                    ..failing.settings()
+                },
+                T0,
+            )
+            .expect_err("write fails");
+        assert_eq!(err.kind, SettingsErrorKind::Write);
+        db(&failing).fail_writes(false);
+        assert_eq!(marker(&failing).as_deref(), Some("pending"));
+        assert_eq!(stored_notify(&failing), None);
+    }
+
+    #[test]
+    fn unchanged_keys_log_no_change_log_row() {
+        let mut s = service();
+        s.set_settings(
+            Settings {
+                theme: Theme::Dark,
+                ..Settings::default()
+            },
+            T0,
+        )
+        .expect("saves");
+        assert_eq!(db(&s).change_log_ids(), ["ui.theme"]);
+        s.set_settings(
+            Settings {
+                theme: Theme::Dark,
+                ..Settings::default()
+            },
+            T0,
+        )
+        .expect("an unchanged save succeeds");
+        assert_eq!(db(&s).change_log_ids(), ["ui.theme"]);
+    }
+
+    #[test]
+    fn settings_get_presents_review_outcome_while_pending() {
+        let mut s = pending_service(None);
+        assert!(!s.settings().notify_session_end, "status unknown");
+        s.set_notifications(NotificationStatus::Granted);
+        assert!(s.settings().notify_session_end);
+        assert_eq!(stored_notify(&s), None);
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+    }
+
+    #[test]
+    fn theme_applied_after_unlock_only_when_changed() {
+        let host = TestHost::fresh(NotificationStatus::Granted);
+        host.log().take();
+        run_set_settings(
+            &host,
+            Settings {
+                theme: Theme::Dark,
+                ..Settings::default()
+            },
+        )
+        .expect("saves");
+        let events = host.log().take();
+        let at = |f: &dyn Fn(&Event) -> bool| events.iter().position(|e| f(e));
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::ApplyTheme(_)))
+                .count(),
+            1
+        );
+        let theme = at(&|e| *e == Event::ApplyTheme(Theme::Dark)).expect("applied");
+        let clock = at(&|e| matches!(e, Event::Clock(_))).expect("clock");
+        let changed = at(&|e| matches!(e, Event::SettingsChanged(_))).expect("changed");
+        assert!(theme < clock && clock < changed, "{events:?}");
+        assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
+
+        run_set_settings(
+            &host,
+            Settings {
+                theme: Theme::Dark,
+                preset: Preset::FiftyTen,
+                ..Settings::default()
+            },
+        )
+        .expect("saves");
+        let events = host.log().take();
+        assert!(!events.iter().any(|e| matches!(e, Event::ApplyTheme(_))));
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Clock(_)))
+                .count(),
+            1
+        );
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::SettingsChanged(_)))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn system_theme_clears_override() {
+        let host = TestHost::fresh(NotificationStatus::Granted);
+        for theme in [Theme::Dark, Theme::System] {
+            run_set_settings(
+                &host,
+                Settings {
+                    theme,
+                    ..Settings::default()
+                },
+            )
+            .expect("saves");
+        }
+        let applied: Vec<_> = host
+            .log()
+            .take()
+            .into_iter()
+            .filter(|e| matches!(e, Event::ApplyTheme(_)))
+            .collect();
+        assert_eq!(
+            applied,
+            [
+                Event::ApplyTheme(Theme::Dark),
+                Event::ApplyTheme(Theme::System)
+            ]
+        );
+        assert_eq!(scheduler::tauri_theme(Theme::System), None);
+        assert_eq!(
+            scheduler::tauri_theme(Theme::Light),
+            Some(tauri::Theme::Light)
+        );
+        assert_eq!(
+            scheduler::tauri_theme(Theme::Dark),
+            Some(tauri::Theme::Dark)
+        );
+    }
+
+    #[test]
+    fn settings_changed_after_save_and_after_recovered_read() {
+        let host = TestHost::fresh(NotificationStatus::Granted);
+        host.log().take();
+        run_set_settings(&host, fifty_ten()).expect("saves");
+        let events = host.log().take();
+        let clock = events
+            .iter()
+            .position(|e| matches!(e, Event::Clock(_)))
+            .expect("clock");
+        let changed = events
+            .iter()
+            .position(|e| *e == Event::SettingsChanged(fifty_ten()))
+            .expect("one settings-changed");
+        assert!(clock < changed);
+
+        let s = relaunch_with_reads_failing(T0 + 1);
+        let host = TestHost::with(
+            s,
+            Log::default(),
+            fakes(NotificationStatus::NotDetermined, false).notifier,
+        );
+        db(&lock(&host.0.service)).fail_reads(false);
+        scheduler::iterate(&host);
+        let events = settings_events(&host);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].preset, Preset::FiftyTen);
+        assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
+        scheduler::iterate(&host);
+        assert!(settings_events(&host).is_empty());
+    }
+
+    #[test]
+    fn failed_settings_set_emits_no_settings_changed() {
+        let host = TestHost::fresh(NotificationStatus::Granted);
+        host.log().take();
+        let quick = Settings {
+            preset: Preset::Quick,
+            ..Settings::default()
+        };
+        run_set_settings(&host, quick).expect_err("quick is invalid");
+        assert!(host.log().take().is_empty());
+
+        db(&lock(&host.0.service)).fail_writes(true);
+        let err = run_set_settings(
+            &host,
+            Settings {
+                theme: Theme::Dark,
+                preset: Preset::FiftyTen,
+                ..Settings::default()
+            },
+        )
+        .expect_err("write fails");
+        assert_eq!(err.kind, SettingsErrorKind::Write);
+        let events = host.log().take();
+        assert_eq!(tick_views(&events).len(), 1, "{events:?}");
+        assert!(!events.iter().any(|e| matches!(
+            e,
+            Event::SettingsChanged(_) | Event::ApplyTheme(_) | Event::Clock(_)
+        )));
+    }
+
+    #[test]
+    fn failed_theme_save_applies_no_theme() {
+        let host = TestHost::fresh(NotificationStatus::Granted);
+        db(&lock(&host.0.service)).fail_writes(true);
+        let err = run_set_settings(
+            &host,
+            Settings {
+                theme: Theme::Dark,
+                ..Settings::default()
+            },
+        )
+        .expect_err("write fails");
+        assert_eq!(err.kind, SettingsErrorKind::Write);
+        assert_eq!(host.log().count(|e| matches!(e, Event::ApplyTheme(_))), 0);
+        assert_eq!(current_settings(&host).theme, Theme::System);
     }
 }
