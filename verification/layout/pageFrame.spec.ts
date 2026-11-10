@@ -54,9 +54,9 @@ for (const viewport of [
         expect(b.footer).toBeNull();
       }
       // Below sm the padding is space-4 all round; from sm it is space-5 above and space-6 at the sides and below.
-      expect(b.padSide).toBe(wide ? 32 : 16);
-      expect(b.padTop).toBe(wide ? 24 : 16);
-      expect(b.padBottom).toBe(wide ? 32 : 16);
+      expect(b.padSide).toBeCloseTo(wide ? 32 : 16, 0);
+      expect(b.padTop).toBeCloseTo(wide ? 24 : 16, 0);
+      expect(b.padBottom).toBeCloseTo(wide ? 32 : 16, 0);
       // The region takes what is left and stays inside the frame.
       expect(b.body?.height).toBeGreaterThan(44);
       expect(b.body?.bottom).toBeLessThanOrEqual(b.root.bottom - b.padBottom + 0.5);

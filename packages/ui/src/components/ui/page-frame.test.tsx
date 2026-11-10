@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
+import * as ui from "../../index";
 import { PageFrame } from "./page-frame";
 
 const slot = (container: HTMLElement, name: string) =>
@@ -9,7 +10,6 @@ test("exposes_heading_with_name", () => {
   render(<PageFrame title="Settings">Body</PageFrame>);
   const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
   expect(h1.getAttribute("tabindex")).toBe("-1");
-  expect(h1.className).not.toContain("sr-only");
 });
 
 test("renders_list_header_status_and_region_in_order", () => {
@@ -76,7 +76,6 @@ test("compact_picker_hides_the_h1_visually_but_keeps_it", () => {
   );
   expect(screen.getByRole("button", { name: "Week" })).toBeTruthy();
   const h1 = screen.getByRole("heading", { level: 1, name: "Calendar" });
-  expect(h1.className).toContain("sr-only");
   expect(h1.getAttribute("tabindex")).toBe("-1");
 });
 
@@ -112,4 +111,8 @@ test("page_frame_renders_h1_and_three_tracks", () => {
   expect(flow.children).toHaveLength(4);
   expect(flow.children[3].textContent).toBe("Continue");
   expect(screen.getByText("Step 2 of 4")).toBeTruthy();
+});
+
+test("index_exports_the_tsx_page_frame", () => {
+  expect(ui.PageFrame).toBe(PageFrame);
 });

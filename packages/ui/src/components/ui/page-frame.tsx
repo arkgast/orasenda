@@ -1,5 +1,4 @@
 import type { ReactElement, ReactNode } from "react";
-import { cn } from "../../lib/utils";
 
 export interface PageFrameProps {
   title: string;
@@ -38,7 +37,7 @@ export function PageFrame(props: PageFrameProps): ReactElement {
     <div
       data-slot="page-frame"
       data-variant={flow ? "flow" : "list"}
-      className={cn("flex h-full flex-col gap-2 bg-surface p-4 text-ink sm:px-6 sm:pt-5 sm:pb-6")}
+      className="flex h-full flex-col gap-2 bg-surface p-4 text-ink sm:px-6 sm:pt-5 sm:pb-6"
     >
       <header
         data-slot="page-frame-header"
