@@ -5,6 +5,19 @@ import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
+// WebKit does not focus a button on click, so remember the last pressed control as the opener fallback. The
+// Dialog is often mounted after the press, so this listens from module load.
+let lastPress: HTMLElement | null = null;
+if (typeof document !== "undefined") {
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      lastPress = (event.target as HTMLElement | null)?.closest<HTMLElement>("button") ?? null;
+    },
+    true,
+  );
+}
+
 export interface DialogProps {
   open?: boolean;
   title: string;
@@ -60,7 +73,8 @@ export function Dialog({
           className={content}
           onOpenAutoFocus={(event) => {
             // There is no Trigger part (the host owns the trigger), so remember what had focus.
-            opener.current = document.activeElement as HTMLElement | null;
+            const active = document.activeElement as HTMLElement | null;
+            opener.current = active && active !== document.body ? active : lastPress;
             event.preventDefault();
             // The cancel action is the first button of the actions row.
             actionsRef.current?.querySelector<HTMLElement>("button")?.focus();

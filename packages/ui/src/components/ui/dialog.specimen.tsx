@@ -19,7 +19,7 @@ export function DialogSpecimen(): ReactElement {
   return (
     <>
       {cases.map((c) => (
-        <Frame key={c.kind} state={`dialog-${c.kind}`} width={420} height={72}>
+        <Frame key={c.kind} state={`dialog-${c.kind}`} width={300} height={72}>
           <Button onClick={() => setOpen(c.kind)}>{c.label}</Button>
         </Frame>
       ))}
