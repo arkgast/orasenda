@@ -80,16 +80,12 @@ function nextTabbable(from: HTMLElement | null, menu: HTMLElement | null): HTMLE
 // places the menu against it (flip, shift, scroll and resize) and never writes the host's attributes.
 function AnchorProxy({ anchor, ref }: { anchor: HTMLElement | null; ref?: Ref<HTMLElement> }) {
   useLayoutEffect(() => {
-    if (typeof ref === "function") {
-      ref(anchor);
-      return () => ref(null);
-    }
-    if (ref) {
-      ref.current = anchor;
-      return () => {
-        ref.current = null;
-      };
-    }
+    const set = (node: HTMLElement | null) => {
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    };
+    set(anchor);
+    return () => set(null);
   }, [anchor, ref]);
   return null;
 }
@@ -237,6 +233,19 @@ export function PopoverMenu({
     } else if (/^(ArrowUp|ArrowDown|Home|End|Enter| |Spacebar)$/.test(k)) event.stopPropagation();
   };
 
+  // Menu supports onOpenAutoFocus and DropdownMenu spreads it through, but its props type leaves it out.
+  const openFocus = {
+    onOpenAutoFocus: (event: Event) => {
+      // Focus moves to the checked radio, or the first row.
+      event.preventDefault();
+      const el = event.currentTarget as HTMLElement;
+      const first =
+        el.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]') ??
+        el.querySelector<HTMLElement>('[role^="menuitem"]');
+      first?.focus({ preventScroll: true });
+    },
+  } as object;
+
   const list: ReactNode[] = [];
   items.forEach((item, i) => {
     if (item.kind === "link" && i > 0 && items[i - 1]?.kind !== "link")
@@ -275,15 +284,7 @@ export function PopoverMenu({
           loop
           className="z-popover flex max-h-screen w-popover-width max-w-screen flex-col overflow-y-auto rounded-md border border-line-strong bg-surface-overlay py-2 text-body text-ink shadow-overlay"
           onKeyDown={onKeyDown}
-          onOpenAutoFocus={(event) => {
-            // Focus moves to the checked radio, or the first row.
-            event.preventDefault();
-            const el = event.currentTarget as HTMLElement;
-            const first =
-              el.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]') ??
-              el.querySelector<HTMLElement>('[role^="menuitem"]');
-            first?.focus({ preventScroll: true });
-          }}
+          {...openFocus}
           onCloseAutoFocus={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => {
             // One Esc press closes the menu and goes no further (no dialog, no page key).
