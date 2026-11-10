@@ -136,7 +136,9 @@ export function IntentPrompt({
         >
           <DialogPrimitive.Content
             aria-modal="true"
-            aria-describedby={body ? undefined : undefined /* step 2 has no description */}
+            // Step 2 has no description: pass undefined so Radix does not point at a missing id. Step 1 keeps
+            // Radix's own link to the Description.
+            {...(body ? {} : { "aria-describedby": undefined })}
             data-slot="dialog-content"
             data-intent-prompt="true"
             ref={contentRef}

@@ -125,3 +125,27 @@ test("backdrop_click_never_dismisses", () => {
   fireEvent.click(overlay);
   expect(onReturn).not.toHaveBeenCalled();
 });
+
+function stubMotion(reduce: boolean) {
+  const animate = vi.fn(() => ({ cancel: vi.fn() }));
+  Element.prototype.animate = animate as unknown as typeof Element.prototype.animate;
+  window.matchMedia = ((query: string) => ({
+    matches: reduce && query.includes("reduce"),
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia;
+  return animate;
+}
+
+test("breath_runs_a_loop_without_reduced_motion", () => {
+  const animate = stubMotion(false);
+  render(<IntentPrompt open app="Safari" onReturn={() => {}} />);
+  expect(animate).toHaveBeenCalledTimes(1);
+});
+
+test("breath_does_not_run_under_reduced_motion", () => {
+  const animate = stubMotion(true);
+  render(<IntentPrompt open app="Safari" onReturn={() => {}} />);
+  expect(animate).not.toHaveBeenCalled();
+});
