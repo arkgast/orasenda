@@ -40,7 +40,7 @@ test("small_controls_fit_and_ring_visible", async ({ page }, info) => {
 
 test("small_controls_aria_snapshot", async ({ page }) => {
   await openSpecimen(page, "IconButton");
-  await expect(page.locator("body")).toMatchAriaSnapshot(`
+  const iconButtons = `
     - paragraph: icon-button-md
     - button "Pause session"
     - paragraph: icon-button-md-shortcut
@@ -49,12 +49,31 @@ test("small_controls_aria_snapshot", async ({ page }) => {
     - button "Resume session"
     - paragraph: icon-button-menu-trigger
     - button "Pages"
+    - paragraph: icon-button-pages-keys
+    - button "Pages"
     - paragraph: icon-button-leave-full-screen
     - button "Leave full screen"
     - paragraph: icon-button-disabled
     - button "Jump to section" [disabled]
     - text: Nothing to jump to yet.
-  `);
+  `;
+  await expect(page.locator("body")).toMatchAriaSnapshot(iconButtons);
+  // With a tooltip showing, its text (label and Kbd) is still absent from the accessibility tree.
+  const pages = page.locator('[data-state="icon-button-pages-keys"] button');
+  await pages.hover();
+  await expect(page.locator(".os-tooltip-panel")).toContainText("⌘1–6");
+  await expect(page.locator(".os-tooltip-panel")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("body")).toMatchAriaSnapshot(iconButtons);
+  await expect(pages).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6",
+  );
+  await expect(
+    page.locator('[data-state="icon-button-round"] button'),
+  ).not.toHaveAttribute("aria-keyshortcuts");
+  await expect(
+    page.locator('[data-state="icon-button-disabled"] button'),
+  ).toHaveAttribute("aria-describedby", "jump-why");
   await openSpecimen(page, "Tooltip");
   await expect(page.locator("body")).toMatchAriaSnapshot(`
     - paragraph: tooltip-preset-summary

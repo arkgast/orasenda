@@ -26,7 +26,7 @@ export function TooltipSpecimen(): ReactElement {
         />
       </Frame>
       <Frame state="tooltip-dialog" width={360} height={80}>
-        <Button onClick={() => setOpen(true)}>Open dialog</Button>
+        <IconButton label="Open dialog" icon={<Stop />} onClick={() => setOpen(true)} />
       </Frame>
       {open ? (
         <Dialog

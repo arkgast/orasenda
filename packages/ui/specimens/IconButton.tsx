@@ -13,7 +13,13 @@ export function IconButtonSpecimen(): ReactElement {
         <IconButton label="End session" icon={<Stop />} shortcut="⌘." />
       </Frame>
       <Frame state="icon-button-round" width={140} height={100}>
-        <IconButton label="Resume session" icon={<Play />} shortcut="Space" size="round" />
+        <IconButton
+          label="Resume session"
+          icon={<Play />}
+          shortcut="Space"
+          keyshortcuts={false}
+          size="round"
+        />
       </Frame>
       <Frame state="icon-button-menu-trigger" width={120} height={80}>
         <IconButton
@@ -24,12 +30,30 @@ export function IconButtonSpecimen(): ReactElement {
           aria-expanded={false}
         />
       </Frame>
+      <Frame state="icon-button-pages-keys" width={140} height={80}>
+        <IconButton
+          label="Pages"
+          icon={<Menu />}
+          shortcut={["⌘1", "⌘2", "⌘3", "⌘4", "⌘5", "⌘6"]}
+          shortcutLabel="⌘1–6"
+          aria-haspopup="menu"
+          aria-expanded={false}
+        />
+      </Frame>
       <Frame state="icon-button-leave-full-screen" width={120} height={80}>
         <IconButton label="Leave full screen" icon={<Shrink />} shortcut="Esc" />
       </Frame>
       <Frame state="icon-button-disabled" width={360} height={80}>
-        <IconButton label="Jump to section" icon={<Menu />} disabled />
-        <span className="specimen-label"> Nothing to jump to yet.</span>
+        <IconButton
+          label="Jump to section"
+          icon={<Menu />}
+          disabled
+          aria-describedby="jump-why"
+        />
+        <span className="specimen-label" id="jump-why">
+          {" "}
+          Nothing to jump to yet.
+        </span>
       </Frame>
     </>
   );

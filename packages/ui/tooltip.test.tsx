@@ -46,6 +46,15 @@ test("tooltip_shows_on_focus_only_after_keyboard_event", () => {
   expect(panel()?.textContent).toContain("Change preset");
 });
 
+test("tooltip_panel_and_kbd_are_aria_hidden", () => {
+  render(<Preset />);
+  fireEvent.pointerEnter(screen.getByRole("button"));
+  advance(1000);
+  expect(panel()?.getAttribute("aria-hidden")).toBe("true");
+  expect(panel()?.querySelector(".os-kbd")).not.toBeNull();
+  expect(screen.queryByRole("tooltip")).toBeNull();
+});
+
 test("tooltip_esc_hides", () => {
   render(<Preset />);
   const trigger = screen.getByRole("button");

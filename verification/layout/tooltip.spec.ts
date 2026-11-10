@@ -77,13 +77,39 @@ test("tooltip_not_shown_on_programmatic_focus", async ({ page }) => {
   });
   await page.waitForTimeout(400);
   await expect(page.locator(PANEL)).toHaveCount(0);
+});
 
-  // Focus restored by script when a dialog closes shows nothing either.
-  await page.getByRole("button", { name: "Open dialog" }).click();
+test("tooltip_trigger_focus_restored_after_dialog_shows_nothing", async ({ page }) => {
+  await openSpecimen(page, "Tooltip");
+  const opener = page.getByRole("button", { name: "Open dialog", exact: true });
+  // Reach the opener by keyboard (its tooltip may show), open the dialog; focus leaves the opener.
+  await page.mouse.click(2, 2);
+  await pressTab(page);
+  await pressTab(page);
+  await pressTab(page);
+  await expect(opener).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("dialog[open]")).toHaveCount(1);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => {
-    document.querySelector<HTMLButtonElement>("button[aria-keyshortcuts]")?.focus();
-  });
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
+  await expect(opener).toBeFocused();
   await page.waitForTimeout(400);
   await expect(page.locator(PANEL)).toHaveCount(0);
+});
+
+test("tooltip_esc_inside_dialog_hides_tip_and_keeps_dialog", async ({ page }) => {
+  await openSpecimen(page, "Tooltip");
+  await page.getByRole("button", { name: "Open dialog", exact: true }).click();
+  const dialog = page.locator("dialog[open]");
+  await expect(dialog).toBeVisible();
+  const inner = dialog.getByRole("button", { name: "End session" });
+  await inner.focus();
+  await pressTab(page);
+  await page.keyboard.press("Shift+Alt+Tab");
+  await expect(inner).toBeFocused();
+  await expect(page.locator(PANEL)).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(PANEL)).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await expect(inner).toBeFocused();
 });
