@@ -254,7 +254,7 @@ function Field(p) {
     p.helper ? h("p", { id: id + "-helper", className: "os-field-help" }, p.helper) : null,
     p.error ? h("p", { id: id + "-error", className: "os-field-help" }, h(AlertGlyph), p.error) : null);
 }
-// Input
+// Input (private: CommandPalette still renders it; the public Input lives in components/ui/input.tsx)
 function Input(p) { return h(Field, p); }
 // end Input
 // TextArea
@@ -721,7 +721,6 @@ export {
   IntentPrompt,
   Dialog,
   FullScreenFocus,
-  Input,
   TextArea,
   CapturePad,
   InlineNotice,

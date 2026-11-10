@@ -288,19 +288,6 @@ test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
   expect(live.contains(screen.getByRole("button"))).toBe(false);
 });
 
-test("input_unit_renders_suffix_after_number_field", () => {
-  const { container, rerender } = render(
-    <ui.Input label="Focus minutes" type="number" unit="min" />,
-  );
-  const input = screen.getByRole("spinbutton", { name: "Focus minutes" });
-  expect(input.hasAttribute("unit")).toBe(false);
-  const suffix = screen.getByText("min");
-  expect(input.compareDocumentPosition(suffix) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(container.querySelector(".os-unit")).not.toBeNull();
-  rerender(<ui.Input label="Focus minutes" type="number" />);
-  expect(container.querySelector(".os-unit")).toBeNull();
-});
-
 test("empty_state_inline_has_one_line_and_no_action", () => {
   const text =
     "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
@@ -336,20 +323,8 @@ function errorParagraph(control: HTMLElement): HTMLElement {
   return err;
 }
 
-test("input_error_uses_alert_glyph_not_mode_shape", () => {
-  render(<ui.Input label="Focus minutes" error={FIELD_ERROR} />);
-  const err = errorParagraph(screen.getByLabelText("Focus minutes"));
-  expect(err.querySelector("svg.os-glyph")).not.toBeNull();
-  expect(err.querySelector(".os-shape")).toBeNull();
-});
-
 test("field_error_is_described_not_live", () => {
   const cases = [
-    {
-      name: "Input",
-      node: <ui.Input label="Focus minutes" error={FIELD_ERROR} />,
-      label: "Focus minutes",
-    },
     { name: "TextArea", node: <ui.TextArea label="Notes" error={FIELD_ERROR} />, label: "Notes" },
   ];
   for (const c of cases) {
