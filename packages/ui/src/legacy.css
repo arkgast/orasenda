@@ -96,9 +96,9 @@ button.os-card:enabled:active { background: var(--selection); }
 /* end TaskCard */
 
 
-/* Shared: disabled cards and blocks */
-button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
-/* end Shared: disabled cards and blocks */
+/* Shared: disabled cards */
+button.os-card:disabled { border-style: dashed; cursor: default; }
+/* end Shared: disabled cards */
 
 /* Dialog */
 /* Dialog shell shared by Dialog, IntentPrompt, CapturePad and CommandPalette. Backdrops never dismiss. */

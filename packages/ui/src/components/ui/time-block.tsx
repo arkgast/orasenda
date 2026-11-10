@@ -82,7 +82,7 @@ export function TimeBlock({
       : "min-h-hit-min flex-col justify-center gap-1",
     TONE[type],
     selected && "border-dashed",
-    onSelect && "cursor-pointer",
+    onSelect && "enabled:cursor-pointer disabled:cursor-default disabled:border-dashed",
   );
   const content = (
     <>
@@ -96,11 +96,7 @@ export function TimeBlock({
         )}
       >
         <ModeShape mode={SHAPE[type]} />
-        <span
-          className={cn(
-            "truncate group-enabled/block:group-hover/block:underline group-enabled/block:group-active/block:underline",
-          )}
-        >
+        <span className="truncate group-enabled/block:group-hover/block:underline group-enabled/block:group-active/block:underline">
           {now ? "Now · " : ""}
           {name}
         </span>

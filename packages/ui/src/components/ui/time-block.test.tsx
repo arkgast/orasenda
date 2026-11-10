@@ -54,3 +54,25 @@ test("static_block_is_not_a_button", () => {
   render(<TimeBlock />);
   expect(screen.queryByRole("button")).toBeNull();
 });
+
+test("compact_omits_type_word", () => {
+  render(<TimeBlock type="break" compact start="09:00" end="09:15" />);
+  expect(screen.queryByText(/Break ·/)).toBeNull();
+  expect(screen.getByText("09:00")).toBeTruthy();
+});
+
+test("overflow_strip_is_hidden_and_word_present", () => {
+  const { container } = render(<TimeBlock type="overflow" start="09:00" end="10:00" />);
+  expect(container.querySelector("span[aria-hidden=true].border-dashed")).not.toBeNull();
+  expect(screen.getByText("Overflow · 09:00–10:00")).toBeTruthy();
+});
+
+test("disabled_button_does_not_fire", () => {
+  const onSelect = vi.fn();
+  render(<TimeBlock title="Write" disabled onSelect={onSelect} />);
+  const b = screen.getByRole("button") as HTMLButtonElement;
+  expect(b.disabled).toBe(true);
+  expect(b.className).toContain("disabled:border-dashed");
+  b.click();
+  expect(onSelect).not.toHaveBeenCalled();
+});
