@@ -9,20 +9,22 @@ import { frames, openSpecimen, pressTab } from "./support/specimen.ts";
 
 const frame = (page: Page, state: string) => page.locator(`[data-frame][data-state="${state}"]`);
 
-/** In the compact form the full label is visually hidden in a 1x1 clip box, like .os-sr-only. */
+/** In the compact form the full label is visually hidden in a 1x1 clip box, like sr-only. */
 async function expectFitsWithHiddenFull(f: Locator) {
   const reported = await overflows(f);
-  expect(
-    reported.filter((l) => !l.includes(".os-sr-only") && !l.includes("span.os-start-full")),
-  ).toEqual([]);
+  // overflows() names an element by its first class: the hidden full-label span is excluded
+  // because that class is the sr-only utility.
+  expect(reported.filter((l) => !l.includes("sr-only"))).toEqual([]);
 }
 
 /** The label span a sighted user can read: wider than the 1px sr-only box and not display:none. */
 const shown = (page: Page, state: string) =>
   frame(page, state)
-    .locator(".os-start-btn")
+    .locator("[data-slot=button][data-variant=primary]")
     .evaluate((btn) =>
-      Array.from(btn.querySelectorAll(".os-start-full, .os-start-compact"))
+      Array.from(
+        btn.querySelectorAll("[data-slot=start-button-full], [data-slot=start-button-compact]"),
+      )
         .filter((s) => s.getBoundingClientRect().width > 1)
         .map((s) => s.textContent),
     );
@@ -138,3 +140,22 @@ test("timer_faces_no_motion_when_reduced (StartButton)", async ({ page }, info) 
   await openSpecimen(page, "StartButton");
   expect(await animatedElements(page)).toEqual([]);
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`start_button_keeps_its_shape_at_${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "StartButton");
+    const all = frames(page);
+    for (let i = 0; i < (await all.count()); i++) {
+      const f = all.nth(i);
+      expect(await smallTargets(f)).toEqual([]);
+      if ((await f.getAttribute("data-state")) === "start-button-compact-399") continue;
+      await expectVisibleFits(f);
+    }
+    expect(await shown(page, "start-button-compact-399")).toEqual(["Start"]);
+    expect(await shown(page, "start-button-compact-400")).toEqual(["Start focus"]);
+  });
+}

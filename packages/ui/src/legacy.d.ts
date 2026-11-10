@@ -63,11 +63,6 @@ export declare function CommandPalette(props: CommandPaletteProps): React.ReactE
 export type EmptyStateProps = { title?: string; message?: string; actionLabel?: string; onAction?: () => void; variant?: 'default' } | { title?: never; message?: string; variant: 'inline'; actionLabel?: never; onAction?: never }
 export declare function EmptyState(props: EmptyStateProps): React.ReactElement;
 // end EmptyState
-// StartButton
-/** Start carries the play glyph (aria-hidden); its accessible name is "Start focus" in every form ("Starting…" while loading). */
-export interface StartButtonProps { onStart: () => void; onQuickStart: () => void; /** @deprecated The finish time moves to the preset summary ("Classic · ends 15:20"). Still renders "Realistic finish · <time>" under the buttons. */ finishTime?: string; /** @deprecated Use unavailable with a status-row line. Still disables both buttons. */ disabled?: boolean; loading?: boolean; /** Guards Start and Just 2 minutes with aria-disabled: both stay focusable, and the host's status-row line says why. */ unavailable?: boolean; /** The visible label below 400px of content (e.g. "Start"); the StartButton then fills its host's width, and the full label stays in the DOM and the name. */ compactLabel?: string; /** true: aria-keyshortcuts="Space Meta+Enter"; false: "Meta+Enter"; omitted: no aria-keyshortcuts. Pass it only while the keys are live. */ singleKeys?: boolean }
-export declare function StartButton(props: StartButtonProps): React.ReactElement;
-// end StartButton
 // IconButton
 /** label is the accessible name and the built-in Tooltip's text; the icon is aria-hidden. shortcut is one canonical glyph string, shown as a Kbd in the tooltip and set as aria-keyshortcuts (describeShortcut(shortcut).aria); pass it only while that shortcut is live. Several chords: an array (aria-keyshortcuts joins them with spaces); shortcutLabel is the text the Kbd shows when it differs (a range such as '⌘1–6'); keyshortcuts={false} shows the Kbd but sets no aria-keyshortcuts (Pause/Resume, whose key belongs to the page). aria-describedby points a disabled button at the line that says why. id, aria-haspopup, aria-expanded and aria-controls land on the button; the host sets aria-expanded and aria-controls from its menu's open state and id. */
 export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string | string[]; shortcutLabel?: string; keyshortcuts?: boolean; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string; 'aria-expanded'?: boolean; 'aria-controls'?: string; 'aria-describedby'?: string }
@@ -115,7 +110,7 @@ declare global {
       IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
-      StartButton: typeof StartButton; NowLine: (props: { time: string }) => React.ReactElement;
+      StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
       ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */

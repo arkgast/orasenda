@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { describeShortcut, StartButton } from "./src/index.ts";
+import { describeShortcut } from "../../lib/shortcuts";
+import { StartButton } from "./start-button";
 
 const noop = () => {};
 const props = { onStart: noop, onQuickStart: noop };
@@ -8,8 +9,10 @@ const props = { onStart: noop, onQuickStart: noop };
 test("start_button_name_stays_start_focus_with_compact_label", () => {
   const { container } = render(<StartButton {...props} compactLabel="Start" />);
   expect(screen.getByRole("button", { name: "Start focus" })).toBeTruthy();
-  expect(container.querySelector(".os-start-compact")?.getAttribute("aria-hidden")).toBe("true");
-  expect(container.querySelector(".os-start-full")?.textContent).toBe("Start focus");
+  expect(
+    container.querySelector("[data-slot=start-button-compact]")?.getAttribute("aria-hidden"),
+  ).toBe("true");
+  expect(container.querySelector("[data-slot=start-button-full]")?.textContent).toBe("Start focus");
 });
 
 test("start_button_keyshortcuts_follow_single_keys", () => {
@@ -68,10 +71,29 @@ test("start_button_disabled_still_disables", () => {
 test("start_button_play_glyph_hidden", () => {
   render(<StartButton {...props} />);
   const start = screen.getByRole("button", { name: "Start focus" });
-  expect(start.querySelector("svg.os-start-glyph")?.getAttribute("aria-hidden")).toBe("true");
+  expect(start.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
 });
 
 test("start_button_loading_reads_starting", () => {
   render(<StartButton {...props} loading />);
   expect(screen.getByRole("button", { name: "Starting…" })).toBeTruthy();
+});
+
+test("exposes_two_buttons_with_names", () => {
+  render(<StartButton {...props} />);
+  expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([
+    "Start focus",
+    "Just 2 minutes",
+  ]);
+});
+
+test("loading_guards_both_buttons_and_marks_busy", () => {
+  const onQuickStart = vi.fn();
+  const onStart = vi.fn();
+  render(<StartButton onStart={onStart} onQuickStart={onQuickStart} loading />);
+  expect(screen.getByRole("button", { name: "Starting…" }).getAttribute("aria-busy")).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Just 2 minutes" }));
+  fireEvent.click(screen.getByRole("button", { name: "Starting…" }));
+  expect(onQuickStart).not.toHaveBeenCalled();
+  expect(onStart).not.toHaveBeenCalled();
 });
