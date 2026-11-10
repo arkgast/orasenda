@@ -114,9 +114,11 @@ export function noOpClasses(
   own: ReadonlySet<string> = new Set(),
 ): string[] {
   // build() is cumulative: a class adds CSS only if it is a real utility, so compare with the last output.
-  let state = verdicts.get(compiler);
-  if (!state) verdicts.set(compiler, (state = { last: compiler.build([]), seen: new Map() }));
-  const memo = state;
+  const memo = verdicts.get(compiler) ?? {
+    last: compiler.build([]),
+    seen: new Map<string, boolean>(),
+  };
+  verdicts.set(compiler, memo);
   const noop = (word: string) => {
     if (MARKERS.has(word) || own.has(word) || MARKER_NAMED.test(word)) return false;
     let verdict = memo.seen.get(word);
