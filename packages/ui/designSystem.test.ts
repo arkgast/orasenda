@@ -178,7 +178,7 @@ function loadWindow() {
     this.removeAttribute("open");
   };
   w.Element.prototype.scrollIntoView = () => {};
-  // Radix Popper (PopoverMenu) measures with ResizeObserver, which jsdom lacks.
+  // jsdom has no ResizeObserver; Radix Popper (PopoverMenu) and cmdk (CommandPalette) use it.
   w.ResizeObserver = class {
     observe() {}
     unobserve() {}
