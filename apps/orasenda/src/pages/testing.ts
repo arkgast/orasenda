@@ -4,6 +4,7 @@ import type {
   AppInfo,
   ClockTick_Serialize,
   MilestoneEvent_Serialize,
+  NavigatePage,
   Settings,
   TimerState_Serialize,
   TimerView_Serialize,
@@ -84,6 +85,9 @@ const DEFAULTS: Replies = {
   timer_pause: () => PAUSED,
   timer_resume: () => RUNNING,
   timer_stop: () => IDLE,
+  navigate_take: () => null,
+  notifications_request: () => "granted",
+  notifications_open_settings: () => null,
 };
 
 /**
@@ -180,5 +184,17 @@ export async function emitMilestone(event: Partial<MilestoneEvent_Serialize>): P
       sessionId: null,
       ...event,
     });
+  });
+}
+
+export async function emitSettingsChanged(settings: Settings): Promise<void> {
+  await act(async () => {
+    await events.settingsChanged.emit(settings);
+  });
+}
+
+export async function emitNavigate(page: NavigatePage): Promise<void> {
+  await act(async () => {
+    await events.navigate.emit({ page });
   });
 }

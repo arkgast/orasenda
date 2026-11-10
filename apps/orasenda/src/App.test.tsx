@@ -4,6 +4,7 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./App";
 import { emitTimer, IDLE, mockBackend, RUNNING, settle } from "./pages/testing";
+import { resetSettingsQueueForTests } from "./settingsQueue";
 import { resetTimerQueueForTests } from "./timerQueue";
 
 const PAGES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
@@ -20,12 +21,14 @@ function strictApp(commits: string[]) {
 
 beforeEach(() => {
   resetTimerQueueForTests();
+  resetSettingsQueueForTests();
 });
 
 afterEach(async () => {
   // Unmount (and unlisten) while the IPC mock is still installed.
   cleanup();
   await settle();
+  resetSettingsQueueForTests();
   clearMocks();
   vi.restoreAllMocks();
 });
@@ -129,7 +132,13 @@ test("strict_mode_one_listener_per_event", async () => {
   await settle();
   await screen.findByText("0.1.0 · macOS aarch64");
 
-  for (const event of ["clock-tick", "timer-tick", "timer-milestone"]) {
+  for (const event of [
+    "clock-tick",
+    "timer-tick",
+    "timer-milestone",
+    "navigate",
+    "settings-changed",
+  ]) {
     expect(backend.live(event), event).toBe(1);
   }
 
@@ -168,7 +177,8 @@ test("emit_after_unmount_is_ignored", async () => {
   await settle();
 
   await expect(emitTimer(RUNNING)).resolves.toBeUndefined();
-  for (const event of ["clock-tick", "timer-tick", "timer-milestone"]) {
+  // `settings-changed` is the save queue's, which outlives every page.
+  for (const event of ["clock-tick", "timer-tick", "timer-milestone", "navigate"]) {
     expect(backend.live(event), event).toBe(0);
   }
 });

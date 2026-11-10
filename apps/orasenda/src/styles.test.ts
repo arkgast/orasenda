@@ -122,7 +122,7 @@ test("info_line_uses_body_sm_in_ink_muted", () => {
   expect(info.get("color")).toBe("var(--ink-muted)");
 });
 
-// The finish line, the notifications explanation and "Timer unavailable.".
+// The finish line and "Timer unavailable.".
 test("muted_line_uses_body_sm_in_ink_muted", () => {
   const muted = rule(".app-muted");
   expect(muted.get("margin")).toBe("0");
@@ -142,4 +142,10 @@ test("ring_slot_reserves_the_ring_space", () => {
 
 test("today_keeps_the_content_width", () => {
   expect(rule(".today").get("max-inline-size")).toBe("var(--content-width)");
+});
+
+test("data_theme_sets_color_scheme", () => {
+  expect(rule(":root").get("color-scheme")).toBe("light dark");
+  expect(rule(':root[data-theme="light"]').get("color-scheme")).toBe("light");
+  expect(rule(':root[data-theme="dark"]').get("color-scheme")).toBe("dark");
 });

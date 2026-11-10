@@ -5,6 +5,15 @@
   color-scheme: light dark;
 }
 
+/* The theme chosen in Settings (useTheme): native controls and scrollbars follow it. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   background: var(--surface);
@@ -64,7 +73,7 @@ body {
   font-weight: var(--type-title-font-weight);
 }
 
-/* Secondary lines: the finish time, the notifications explanation, "Timer unavailable.". */
+/* Secondary lines: the finish time, "Timer unavailable.". */
 .app-muted {
   margin: 0;
   color: var(--ink-muted);
@@ -115,6 +124,69 @@ body {
 }
 
 .today-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+/* Settings: the window is bounded so only the ScrollRegion scrolls. */
+.app-bound {
+  position: fixed;
+  inset: 0;
+}
+
+.app-bound .app-column {
+  min-block-size: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.app-bound .app-header {
+  padding-block-start: var(--space-6);
+  padding-inline: var(--space-6);
+}
+
+.app-bound .app-main {
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.settings-page {
+  flex: auto;
+  display: grid;
+  min-block-size: 0;
+}
+
+.settings-page .os-page-body {
+  display: grid;
+}
+
+.settings-body {
+  display: grid;
+  grid-template-columns: var(--index-width) auto;
+  gap: var(--space-4);
+  min-block-size: 0;
+}
+
+.settings-content {
+  max-inline-size: var(--content-width);
+}
+
+.settings-heading {
+  margin: 0;
+  padding-block-start: var(--space-4);
+  font-size: var(--type-heading-font-size);
+  line-height: var(--type-heading-line-height);
+  font-weight: var(--type-heading-font-weight);
+}
+
+.settings-text {
+  margin: 0;
+}
+
+.settings-fields {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
