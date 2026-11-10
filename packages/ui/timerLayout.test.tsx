@@ -8,7 +8,7 @@ const readme = readFileSync(
   "utf8",
 );
 const tokens = JSON.parse(
-  readFileSync(resolve(import.meta.dirname, "../../design/system/tokens.json"), "utf8"),
+  readFileSync(resolve(import.meta.dirname, "../tokens/tokens.json"), "utf8"),
 );
 
 // Rows come from the README table. Two Today rows differ from the spec table (README wins):

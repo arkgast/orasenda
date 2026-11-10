@@ -1,0 +1,46 @@
+<!-- @dsCard group="Overlays" height=640 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Tooltip</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  function glyph(d) { return h('svg', { viewBox: '0 0 20 20', 'aria-hidden': 'true', focusable: 'false' }, h('path', { d: d })); }
+  // A static copy of the shown panel, for the states a pointer would otherwise have to hold open.
+  function Shown(props) {
+    return h('span', { className: 'os-tooltip', 'aria-hidden': 'true' },
+      h('span', { className: 'os-tooltip-label' }, props.label),
+      props.keys ? h(O.Kbd, { keys: props.keys, inTooltip: true }) : null);
+  }
+  function Panel(props) {
+    var theme = props.theme;
+    var d = React.useState(false), open = d[0], setOpen = d[1];
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h('div', { className: 'os-actions' },
+        h(O.IconButton, { size: 'round', label: 'Pause session', icon: glyph('M7.5 4.5v11M12.5 4.5v11'), shortcut: 'Space', keyshortcuts: false }),
+        h(O.Tooltip, { label: 'Change preset', shortcut: 'P' },
+          h(O.Button, { variant: 'ghost', 'aria-label': 'Classic, ends 15:20, Change preset', 'aria-keyshortcuts': O.describeShortcut('P').aria }, 'Classic · ends 15:20')),
+        h(O.Tooltip, { label: 'Change preset' },
+          h(O.Button, { variant: 'ghost', 'aria-label': 'Classic, ends 15:20, Change preset' }, 'Classic · ends 15:20')),
+        h(O.Button, { onClick: function () { setOpen(true); } }, 'Open a dialog')),
+      h('div', { className: 'os-actions', style: { alignItems: 'flex-start' } },
+        h(Shown, { label: 'Pause session', keys: 'Space' }),
+        h(Shown, { label: 'End session', keys: '⌘.' }),
+        h(Shown, { label: 'Change preset' })),
+      h(Shown, { label: 'Jump to section, the list of settings sections on this page', keys: '⌘J' }),
+      h('p', { className: 'os-muted', style: { margin: 0 } }, 'Shown: a label alone, a label with its key, and a long label wrapping to two lines at 40ch with its key kept whole. The preset summary drops its P key when Single-key shortcuts is off.'),
+      open ? h(O.Dialog, { title: 'Leave full screen?', description: 'Your focus session will keep running. Hover or Tab to End session: its tooltip shows above this dialog.', confirmLabel: 'Leave full screen', cancelLabel: 'Stay in full screen', onCancel: function () { setOpen(false); }, onConfirm: function () { setOpen(false); } },
+        h('div', { className: 'os-actions' }, h(O.IconButton, { label: 'End session', icon: glyph('M5 5h10v10H5z'), shortcut: '⌘.' }))) : null);
+  }
+  function Demo() {
+    return h('div', null,
+      h(Panel, { theme: 'light' }),
+      h(Panel, { theme: 'dark' }),
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Hover a trigger: the tooltip opens after duration-quick and stays while the pointer is on it. Tab to a trigger: it opens; a click or focus moved by script does not open it. Esc hides it without moving focus.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

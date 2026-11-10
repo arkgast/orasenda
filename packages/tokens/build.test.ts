@@ -7,7 +7,7 @@ import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const realTokens = join(here, "..", "..", "design", "system", "tokens.json");
+const realTokens = join(here, "tokens.json");
 // biome-ignore lint/suspicious/noExplicitAny: test fixtures are mutated freely
 type Loose = Record<string, any>;
 const tokens: Loose = JSON.parse(readFileSync(realTokens, "utf8"));

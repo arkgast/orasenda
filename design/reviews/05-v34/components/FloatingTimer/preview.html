@@ -1,0 +1,68 @@
+<!-- @dsCard group="Timer" height=3200 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>FloatingTimer</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var O = window.Orasenda, h = React.createElement;
+  var STATES = [
+    { name: 'running', p: { mode: 'focus', remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25 } },
+    { name: 'paused', p: { mode: 'paused', remaining: '18:42', remainingLabel: '18 minutes 42 seconds', progress: 0.25 } },
+    { name: 'warning', p: { mode: 'warning', remaining: '01:48', remainingLabel: '1 minute 48 seconds', progress: 0.93 } },
+    { name: 'idle', p: { mode: 'idle' } },
+    { name: 'ended', p: { mode: 'idle', ended: true } },
+    { name: 'deep', p: { mode: 'focus', remaining: '1:30:00', remainingLabel: '1 hour 30 minutes', progress: 0 } },
+    { name: 'break', p: { mode: 'break', remaining: '04:10', remainingLabel: '4 minutes 10 seconds', progress: 0.17 } }
+  ];
+  // Desktop stand-ins, as the contrast check's wallpaper fixtures (FloatingTimer README, The edge against the desktop).
+  var ROWS = [
+    { w: 280, h: 56, wall: '#EDEDED', label: '280 × 56, the minimum, over the light wallpaper' },
+    { w: 280, h: 64, wall: '#808080', label: '280 × 64, the default, over the mid-grey wallpaper' },
+    { w: 360, h: 96, wall: '#1C1C1E', label: '360 × 96, the maximum, over the dark wallpaper: the state word on its own line' }
+  ];
+  function noop() {}
+  function Inert(props) { return h('div', { ref: function (n) { if (n) n.setAttribute('inert', ''); } }, props.children); }
+  function Frame(props) {
+    return h('div', { className: 'os-stack', style: { gap: 'var(--space-1)' } },
+      h('span', { className: 'os-caption' }, props.label),
+      h('div', { style: { padding: 'var(--space-3)', background: props.wall } },
+        h('div', { style: { width: props.w, height: props.h } }, props.children)));
+  }
+  function Live(props) {
+    var m = React.useState('focus'), mode = m[0], setMode = m[1];
+    var e = React.useState(false), ended = e[0], setEnded = e[1];
+    var n = React.useState(''), notice = n[0], setNotice = n[1];
+    var t = { focus: ['18:42', '18 minutes 42 seconds', 0.25], paused: ['18:42', '18 minutes 42 seconds', 0.25] }[mode] || [];
+    return h('div', { className: 'os-stack' },
+      h('span', { className: 'os-caption' }, 'Live, 280 × 64: Pause, Resume, Open and Start. data-tauri-drag-region passes through to the body.'),
+      h('div', { className: 'os-actions', style: { alignItems: 'center' } },
+        h('div', { style: { padding: 'var(--space-3)', background: '#808080' } },
+          h('div', { style: { width: 280, height: 64 } },
+            h(O.FloatingTimer, { mode: ended ? 'idle' : mode, ended: ended, remaining: t[0], remainingLabel: t[1], progress: t[2], 'data-tauri-drag-region': '',
+              onPause: function () { setMode('paused'); }, onResume: function () { setMode('focus'); },
+              onStart: function () { setEnded(false); setMode('focus'); setNotice(''); }, onOpen: function () { setNotice('Open Orasenda: the host shows the main window.'); } }))),
+        h(O.Button, { onClick: function () { setMode('idle'); setEnded(true); } }, 'End the session')),
+      notice ? h('p', { className: 'os-muted', style: { margin: 0 } }, notice) : null);
+  }
+  function Panel(props) {
+    var theme = props.theme;
+    return h('section', { 'data-theme': theme, 'aria-label': theme === 'light' ? 'Light theme' : 'Dark theme', className: 'os-col', style: { background: 'var(--surface)', color: 'var(--ink)' } },
+      h('p', { className: 'os-caption', style: { margin: 0 } }, theme === 'light' ? 'Light' : 'Dark'),
+      h(Live),
+      h(Inert, null, ROWS.map(function (r) {
+        return h('div', { key: r.label, className: 'os-stack', style: { gap: 'var(--space-2)', marginTop: 'var(--space-4)' } },
+          h('p', { className: 'os-muted', style: { margin: 0 } }, r.label),
+          h('div', { className: 'os-actions', style: { alignItems: 'flex-start' } }, STATES.map(function (st) {
+            return h(Frame, { key: st.name, w: r.w, h: r.h, wall: r.wall, label: st.name }, h(O.FloatingTimer, Object.assign({ onPause: noop, onResume: noop, onStart: noop, onOpen: noop }, st.p)));
+          })));
+      })));
+  }
+  function Demo() {
+    return h('div', null, h(Panel, { theme: 'light' }), h(Panel, { theme: 'dark' }),
+      h('p', { className: 'os-muted', style: { padding: '0 var(--space-4)' } }, 'Fill surface-raised, opaque; a 1px line-strong edge. In each theme and over each wallpaper the fill or the edge holds 3:1. No close button: closing lives in the context menu and the menu bar.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

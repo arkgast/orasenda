@@ -45,7 +45,7 @@ contrast:
     {{ python }} -m unittest discover -s verification -p "contrast_test.py"
     {{ python }} verification/contrast.py
 
-# Regenerate packages/tokens/tokens.css from design/system/tokens.json.
+# Regenerate packages/tokens/tokens.css and theme.css from packages/tokens/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
 
@@ -72,9 +72,9 @@ ci:
     "{{ just_executable() }}" core-purity
     @echo "==> contrast (self test, then the declared pairs)"
     "{{ just_executable() }}" contrast
-    @echo "==> tokens (tokens.css is up to date)"
+    @echo "==> tokens (tokens.css and theme.css are up to date)"
     "{{ just_executable() }}" tokens
-    git diff --exit-code -- packages/tokens/tokens.css
+    git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
     @echo "==> ui (components.css and components.d.ts are up to date)"

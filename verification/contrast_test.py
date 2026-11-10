@@ -100,7 +100,7 @@ class ContrastTest(unittest.TestCase):
         light, dark = contrast.resolve(TOKENS, "ink-alias")
         self.assertEqual(light, "#111111")
         self.assertEqual(dark, "#eeeeee")
-        real = json.loads((HERE.parent / "design" / "system" / "tokens.json").read_text())
+        real = json.loads((HERE.parent / "packages" / "tokens" / "tokens.json").read_text())
         self.assertEqual(contrast.resolve(real, "focus-ring"), contrast.resolve(real, "focus"))
         self.assertEqual(contrast.resolve(real, "selection"), contrast.resolve(real, "focus-soft"))
 
