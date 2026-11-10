@@ -7,6 +7,7 @@ import {
   type RefObject,
   useId,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import { layerContainer } from "../../lib/layer";
@@ -206,11 +207,16 @@ export function PopoverMenu({
     const t = focusTarget(anchor.current);
     if (t?.isConnected) t.focus();
   };
+  // Focus goes back to the trigger when the host closes the menu while focus is still inside it; every path
+  // that places focus itself (close, choose, Tab, a press elsewhere) turns this off.
+  const restore = useRef(true);
   const close = () => {
+    restore.current = false;
     back();
     onClose();
   };
   const choose = (item: PopoverMenuItem) => {
+    restore.current = false;
     back();
     onSelect(item.id);
     onClose();
@@ -224,6 +230,7 @@ export function PopoverMenu({
     if (k === "Tab") {
       event.preventDefault();
       event.stopPropagation();
+      restore.current = false;
       const next = event.shiftKey
         ? null
         : nextTabbable(focusTarget(anchor.current), event.currentTarget);
@@ -286,7 +293,11 @@ export function PopoverMenu({
           className="z-popover flex max-h-screen w-popover-width max-w-screen flex-col overflow-y-auto rounded-md border border-line-strong bg-surface-overlay py-2 text-body text-ink shadow-overlay"
           onKeyDown={onKeyDown}
           {...openFocus}
-          onCloseAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const a = document.activeElement;
+            if (restore.current && (!a || a === document.body)) back();
+          }}
           onEscapeKeyDown={(event) => {
             // One Esc press closes the menu and goes no further (no dialog, no page key).
             event.preventDefault();
@@ -297,6 +308,7 @@ export function PopoverMenu({
             // A press on the trigger is the host's: its click toggles the menu. Any other press outside closes
             // it and leaves focus where the press put it.
             if (anchor.current?.contains(event.target as Node)) event.preventDefault();
+            else restore.current = false;
           }}
           onFocusOutside={(event) => event.preventDefault()}
         >

@@ -402,3 +402,33 @@ test("popover_menu_adds_no_live_region", () => {
     unmount();
   }
 });
+
+test("popover_menu_host_close_without_focusing_trigger_returns_focus_to_trigger", async () => {
+  const log: string[] = [];
+  render(<Host log={log} />);
+  await settle();
+  expect(document.activeElement).not.toBe(trigger());
+  fireEvent.click(trigger());
+  await settle();
+  expect(document.querySelector(PANEL)).toBeNull();
+  expect(document.activeElement).toBe(trigger());
+});
+
+test("popover_menu_click_row_selects_and_closes", async () => {
+  const log: string[] = [];
+  render(<Host log={log} />);
+  await settle();
+  fireEvent.click(rowName("Deep Block"));
+  await settle();
+  expect(log).toEqual(["deep", "close"]);
+  expect(document.activeElement).toBe(trigger());
+});
+
+test("popover_menu_click_read_only_row_does_nothing", async () => {
+  const log: string[] = [];
+  render(<Host log={log} readOnly />);
+  await settle();
+  fireEvent.click(rowName("Deep Block"));
+  await settle();
+  expect(log).toEqual([]);
+});

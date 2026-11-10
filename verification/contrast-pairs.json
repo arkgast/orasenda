@@ -365,18 +365,18 @@
     "fg": "focus-ring",
     "bg": "surface-overlay",
     "kind": "mark",
-    "where": "T4: PopoverMenu inset row focus ring"
+    "where": "T4: PopoverMenu row focus ring (2px offset)"
   },
   {
     "fg": "focus-ring",
     "bg": "selection",
     "kind": "mark",
-    "where": "T4: PopoverMenu inset ring on the checked row"
+    "where": "T4: PopoverMenu focus ring on the checked row"
   },
   {
     "fg": "focus-ring",
     "bg": "surface-sunken",
     "kind": "mark",
-    "where": "T4: PopoverMenu inset ring on a hovered row"
+    "where": "T4: PopoverMenu focus ring on a hovered row"
   }
 ]
