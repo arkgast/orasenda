@@ -194,7 +194,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-014: Settings — one object, one save chain, applied in Rust
 - **Date:** 2026-11-09
-- **Status:** proposed (by the Settings spec; accepted by its last task)
+- **Status:** accepted (2026-11-09, #163)
 - **Context:** P1-A stored three timer settings and saved them from Today through one chained `settings_set` (`apps/orasenda/src/settingsQueue.ts`, conventions "Newest wins"). The Settings page (P1-B) adds a theme and a notification toggle. Sub-projects E, F and G and phases P5/P6 add many more (break lengths, shortcuts, single-key shortcuts, backups, roles). Some settings act outside the webview (the app appearance, later a global shortcut registration), and some can change without the page asking (a one-time migration, a recovered launch read, later sync). Every later spec needs one way to store, send, save and apply a setting.
 - **Options considered:**
   1. **One `Settings` IPC object with every user setting. `settings_get` / `settings_set` send the whole object. The webview saves through the one chain. Rust validates, writes in one transaction, then applies side effects after unlock and emits `settings-changed`. Pages reload through the chain when it arrives:** reuses the proven chain, one place to validate, side effects can't diverge from what was stored. The object grows; a save writes (and logs to `change_log`) only the keys that changed.
