@@ -7,12 +7,22 @@ import { Button } from "./button";
 
 // WebKit does not focus a button on click, so remember the last pressed control as the opener fallback. The
 // Dialog is often mounted after the press, so this listens from module load.
-let lastPress: HTMLElement | null = null;
+// A press only counts while fresh: a dialog opened by a timer must not send focus to an old click.
+const PRESS_TTL_MS = 1000;
+let lastPress: { el: HTMLElement; at: number } | null = null;
 if (typeof document !== "undefined") {
   document.addEventListener(
     "pointerdown",
     (event) => {
-      lastPress = (event.target as HTMLElement | null)?.closest<HTMLElement>("button") ?? null;
+      const el = (event.target as HTMLElement | null)?.closest<HTMLElement>("button");
+      lastPress = el ? { el, at: Date.now() } : null;
+    },
+    true,
+  );
+  document.addEventListener(
+    "keydown",
+    () => {
+      lastPress = null;
     },
     true,
   );
@@ -32,10 +42,10 @@ export interface DialogProps {
   loading?: boolean;
 }
 
-// The panel is centred with auto margins inside a gutter (inset-3), capped at the panel width token; padding
+// The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
 const content =
-  "fixed inset-3 z-overlay m-auto flex h-fit max-h-full w-auto max-w-panel-width flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+  "flex max-h-full w-full max-w-panel-width flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
 
 /**
  * A confirmation. Escape and the cancel button call `onCancel`; backdrop clicks never dismiss. `destructive`
@@ -65,60 +75,67 @@ export function Dialog({
         <Prim.Overlay
           data-slot="dialog-overlay"
           data-scrim={showScrim ? "true" : "false"}
-          className={cn("fixed inset-0 z-overlay", showScrim ? "bg-scrim" : "bg-clear")}
-        />
-        <Prim.Content
-          data-slot="dialog-content"
-          ref={contentRef}
-          className={content}
-          onOpenAutoFocus={(event) => {
-            // There is no Trigger part (the host owns the trigger), so remember what had focus.
-            const active = document.activeElement as HTMLElement | null;
-            opener.current = active && active !== document.body ? active : lastPress;
-            event.preventDefault();
-            // The cancel action is the first button of the actions row.
-            actionsRef.current?.querySelector<HTMLElement>("button")?.focus();
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            if (opener.current?.isConnected) opener.current.focus();
-          }}
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => event.preventDefault()}
-          onEscapeKeyDown={(event) => {
-            // Esc belongs to the topmost layer only.
-            if (contentRef.current && !isTopmostLayer(contentRef.current)) event.preventDefault();
-          }}
+          className={cn(
+            "fixed inset-0 z-overlay grid place-items-center p-3",
+            showScrim ? "bg-scrim" : "bg-clear",
+          )}
         >
-          <Prim.Title data-slot="dialog-title" className="m-0 text-title text-ink">
-            {title}
-          </Prim.Title>
-          {description ? (
-            <Prim.Description
-              data-slot="dialog-description"
-              className="m-0 text-body text-ink-muted"
-            >
-              {description}
-            </Prim.Description>
-          ) : null}
-          {children}
-          <div
-            data-slot="dialog-actions"
-            ref={actionsRef}
-            className="flex flex-wrap justify-end gap-2"
+          <Prim.Content
+            aria-modal="true"
+            data-slot="dialog-content"
+            ref={contentRef}
+            className={content}
+            onOpenAutoFocus={(event) => {
+              // There is no Trigger part (the host owns the trigger), so remember what had focus.
+              const active = document.activeElement as HTMLElement | null;
+              const press =
+                lastPress && Date.now() - lastPress.at <= PRESS_TTL_MS ? lastPress.el : null;
+              opener.current = active && active !== document.body ? active : press;
+              event.preventDefault();
+              // The cancel action is the first button of the actions row.
+              actionsRef.current?.querySelector<HTMLElement>("button")?.focus();
+            }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              if (opener.current?.isConnected) opener.current.focus();
+            }}
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
+            onEscapeKeyDown={(event) => {
+              // Esc belongs to the topmost layer only.
+              if (contentRef.current && !isTopmostLayer(contentRef.current)) event.preventDefault();
+            }}
           >
-            <Button variant="ghost" onClick={onCancel}>
-              {cancelLabel}
-            </Button>
-            <Button
-              variant={destructive ? "critical" : "primary"}
-              onClick={onConfirm}
-              loading={loading}
+            <Prim.Title data-slot="dialog-title" className="m-0 text-title text-ink">
+              {title}
+            </Prim.Title>
+            {description ? (
+              <Prim.Description
+                data-slot="dialog-description"
+                className="m-0 text-body text-ink-muted"
+              >
+                {description}
+              </Prim.Description>
+            ) : null}
+            {children}
+            <div
+              data-slot="dialog-actions"
+              ref={actionsRef}
+              className="flex flex-wrap justify-end gap-2"
             >
-              {confirmLabel}
-            </Button>
-          </div>
-        </Prim.Content>
+              <Button variant="ghost" onClick={onCancel}>
+                {cancelLabel}
+              </Button>
+              <Button
+                variant={destructive ? "critical" : "primary"}
+                onClick={onConfirm}
+                loading={loading}
+              >
+                {confirmLabel}
+              </Button>
+            </div>
+          </Prim.Content>
+        </Prim.Overlay>
       </Prim.Portal>
     </Prim.Root>
   );

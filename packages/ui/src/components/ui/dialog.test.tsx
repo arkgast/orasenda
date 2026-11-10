@@ -52,6 +52,43 @@ test("dialog_backdrop_click_never_dismisses", () => {
   expect(screen.getByRole("alertdialog")).toBeTruthy();
 });
 
+test("dialog_plain_and_scrim_backdrop_clicks_never_dismiss", () => {
+  for (const scrim of [false, true]) {
+    const onCancel = vi.fn();
+    const { unmount } = render(<Dialog {...base} scrim={scrim} onCancel={onCancel} />);
+    const overlay = document.querySelector("[data-slot=dialog-overlay]") as HTMLElement;
+    fireEvent.pointerDown(overlay);
+    fireEvent.click(overlay);
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    unmount();
+  }
+});
+
+test("dialog_has_aria_modal", () => {
+  render(<Dialog {...base} onCancel={() => {}} />);
+  expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+});
+
+test("dialog_ignores_a_stale_press_when_returning_focus", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    document.body.insertAdjacentHTML("beforeend", '<button id="old-press">Old</button>');
+    const old = document.getElementById("old-press") as HTMLElement;
+    fireEvent.pointerDown(old);
+    vi.setSystemTime(Date.now() + 5000);
+    const { rerender } = render(<Dialog {...base} open={false} onCancel={() => {}} />);
+    rerender(<Dialog {...base} open onCancel={() => {}} />);
+    await vi.waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+    rerender(<Dialog {...base} open={false} onCancel={() => {}} />);
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).not.toBe(old);
+    old.remove();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("dialog_confirm_and_cancel_buttons_call_their_handlers", () => {
   const onCancel = vi.fn();
   const onConfirm = vi.fn();

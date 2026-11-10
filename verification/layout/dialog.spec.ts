@@ -29,6 +29,29 @@ test("dialog_backdrop_click_never_dismisses", async ({ page }, info) => {
   await shoot(page, info, "dialog-destructive");
 });
 
+test("dialog_plain_backdrop_click_never_dismisses", async ({ page }) => {
+  await openSpecimen(page, "Dialog");
+  await page.getByRole("button", { name: OPEN }).click();
+  const dialog = page.getByRole("dialog", { name: "Save this preset?" });
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(2, 2);
+  await expect(dialog).toBeVisible();
+});
+
+test("dialog_keeps_a_gutter_in_a_short_viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 300 });
+  await openSpecimen(page, "Dialog");
+  await page.getByRole("button", { name: OPEN }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const r = await dialog.evaluate((el) => {
+    const b = el.getBoundingClientRect();
+    return { top: b.top, bottom: b.bottom, vh: document.documentElement.clientHeight };
+  });
+  expect(r.top).toBeGreaterThanOrEqual(11);
+  expect(r.bottom).toBeLessThanOrEqual(r.vh - 11);
+});
+
 test("dialog_keeps_focus_inside_while_open", async ({ page }) => {
   await openSpecimen(page, "Dialog");
   await page.getByRole("button", { name: OPEN }).click();
