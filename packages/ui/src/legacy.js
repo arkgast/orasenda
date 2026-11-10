@@ -277,26 +277,6 @@ function EmptyState(p) {
   return h("div", { className: "os-empty" }, h("h2", null, p.title || "Nothing here yet"), h("p", null, p.message || "That's fine. Start when you're ready."), p.actionLabel && p.onAction ? h(Button, { onClick: p.onAction }, p.actionLabel) : null);
 }
 // end EmptyState
-// The play glyph, drawn inline as the mode shapes are (it moves to Icon in T7).
-function PlayGlyph() {
-  return h("svg", { className: "os-start-glyph", viewBox: "0 0 20 20", "aria-hidden": "true", focusable: "false" }, h("path", { d: "M6.5 4.6v10.8a.9.9 0 0 0 1.37.77l8.6-5.4a.9.9 0 0 0 0-1.54l-8.6-5.4A.9.9 0 0 0 6.5 4.6z" }));
-}
-// The name is "Start focus" in every form ("Starting…" while loading). compactLabel shows below 400px of content
-// (a container query on .os-start-fit) while the full label stays in the DOM and the name. unavailable uses
-// aria-disabled, so both buttons stay focusable. singleKeys omitted: no aria-keyshortcuts (planner decision 11).
-// finishTime and disabled are deprecated and render as before.
-// StartButton
-function StartButton(p) {
-  var guard = p.unavailable ? { "aria-disabled": true } : null;
-  var keys = p.singleKeys == null ? undefined : (p.singleKeys ? ["Space", "\u2318\u21a9"] : ["\u2318\u21a9"]).map(function (k) { return describeShortcut(k).aria; }).join(" ");
-  var label = p.loading ? "Starting…" : p.compactLabel ? [h("span", { key: "full", className: "os-start-full" }, "Start focus"), h("span", { key: "compact", className: "os-start-compact", "aria-hidden": "true" }, p.compactLabel)] : "Start focus";
-  return h("div", { className: cx("os-start", p.compactLabel && "os-start-fit") },
-    h("div", { className: "os-actions" },
-      h(Button, Object.assign({ variant: "primary", size: "lg", className: "os-start-btn", onClick: p.onStart, disabled: p.disabled, loading: p.loading, "aria-keyshortcuts": keys }, guard), h(PlayGlyph), label),
-      h(Button, Object.assign({ onClick: p.onQuickStart, disabled: p.disabled || p.loading }, guard), "Just 2 minutes")),
-    p.finishTime ? h("p", { className: "os-muted" }, "Realistic finish · ", h("span", { className: "os-num" }, p.finishTime)) : null);
-}
-// end StartButton
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
 // SettingsRow
 function SettingsRow(p) {
@@ -592,7 +572,6 @@ export {
   KanbanColumn,
   CommandPalette,
   EmptyState,
-  StartButton,
   SettingsRow,
   IconButton,
   Tooltip,

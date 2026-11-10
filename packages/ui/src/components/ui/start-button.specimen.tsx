@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import { StartButton } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { StartButton } from "./start-button";
 
 const noop = () => {};
 const handlers = { onStart: noop, onQuickStart: noop };

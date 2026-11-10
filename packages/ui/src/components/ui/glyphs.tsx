@@ -46,7 +46,12 @@ export function AlertGlyph(): ReactElement {
 
 export function PlayGlyph(): ReactElement {
   return (
-    <svg className="os-start-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+    <svg
+      className="size-icon-lg flex-none fill-current"
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path d="M6.5 4.6v10.8a.9.9 0 0 0 1.37.77l8.6-5.4a.9.9 0 0 0 0-1.54l-8.6-5.4A.9.9 0 0 0 6.5 4.6z" />
     </svg>
   );

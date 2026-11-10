@@ -9,7 +9,9 @@ const props = { onStart: noop, onQuickStart: noop };
 test("start_button_name_stays_start_focus_with_compact_label", () => {
   const { container } = render(<StartButton {...props} compactLabel="Start" />);
   expect(screen.getByRole("button", { name: "Start focus" })).toBeTruthy();
-  expect(container.querySelector("[data-slot=start-button-compact]")?.getAttribute("aria-hidden")).toBe("true");
+  expect(
+    container.querySelector("[data-slot=start-button-compact]")?.getAttribute("aria-hidden"),
+  ).toBe("true");
   expect(container.querySelector("[data-slot=start-button-full]")?.textContent).toBe("Start focus");
 });
 
