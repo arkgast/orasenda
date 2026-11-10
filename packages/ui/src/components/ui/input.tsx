@@ -39,12 +39,12 @@ export function Input({
       aria-invalid={error ? true : ariaInvalid}
       aria-describedby={describedBy}
       className={cn(
-        "block min-h-hit-min w-full min-w-0 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
+        "block min-h-hit-min min-w-0 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
         "placeholder:text-ink-muted hover:border-focus",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
         "aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-line-strong",
         "disabled:cursor-default disabled:border-dashed disabled:text-ink-muted",
-        unit && "w-number-width max-w-full",
+        unit ? "w-number-width max-w-full" : "w-full",
       )}
     />
   );

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { Input } from "./input.tsx";
+import { Input } from "./input";
 
 const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";
 
@@ -71,4 +71,17 @@ test("input_unit_renders_suffix_after_number_field", () => {
 test("renders_disabled_state_natively", () => {
   render(<Input label="Name" disabled />);
   expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
+});
+
+test("the unit control is number-width, not full width", () => {
+  render(<Input label="Minutes" unit="min" type="number" />);
+  const cls = screen.getByLabelText("Minutes").className.split(" ");
+  expect(cls).toContain("w-number-width");
+  expect(cls).not.toContain("w-full");
+});
+
+test("the field keeps its font sizes next to colours", () => {
+  render(<Input label="Name" helper="Hi" />);
+  expect(screen.getByLabelText("Name").className).toContain("text-body");
+  expect(screen.getByText("Name").className).toContain("text-body-sm");
 });
