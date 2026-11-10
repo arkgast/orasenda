@@ -114,3 +114,12 @@ test("responsive_tokens_match_tailwind_sizes", () => {
   assert.match(theme, /--container-3xs: 256px;/);
   assert.match(theme, /--container-7xl: 1280px;/);
 });
+
+test("theme_has_a_zero_spacing_step", async () => {
+  const theme = buildTheme();
+  assert.match(theme, /--spacing-0: 0px;/);
+  const css = await utilities(theme, ["m-0", "min-w-0", "inset-0", "p-0", "top-0"]);
+  for (const name of ["m-0", "min-w-0", "inset-0", "p-0", "top-0"]) {
+    assert.ok(css.includes(`.${name} {`), `${name} emits CSS`);
+  }
+});

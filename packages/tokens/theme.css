@@ -71,6 +71,7 @@
 }
 
 @theme inline {
+  --spacing-0: 0px;
   --spacing-1: var(--space-1);
   --spacing-1-5: var(--space-1-5);
   --spacing-2: var(--space-2);

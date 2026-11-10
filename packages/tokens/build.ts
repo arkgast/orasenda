@@ -291,6 +291,8 @@ function generateTheme(t: Json): string {
     for (const n of names(group))
       inline += line(`${prefix}-${n.replace(strip, "")}`, `var(--${n})`);
   };
+  // Zero is not a design value, so it has no tokens.json entry: `m-0`, `min-w-0`, `inset-0` need it.
+  inline += line("spacing-0", "0px");
   own("spacing", "spacing", "space-");
   own("ease", "easing", "easing-");
   for (const n of names("size")) inline += line(`spacing-${n}`, `var(--${n})`);
