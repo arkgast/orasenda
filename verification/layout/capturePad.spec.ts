@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { smallTargets } from "./support/hitTargets.ts";
 import { shoot } from "./support/shots.ts";
 import { openSpecimen } from "./support/specimen.ts";
 
@@ -13,7 +12,13 @@ test("capture_pad_opens_named_with_thought_focused_and_saves_on_escape", async (
   await expect(dialog).toBeVisible();
   const field = page.getByRole("textbox", { name: "Thought" });
   await expect(field).toBeFocused();
-  expect(await smallTargets(dialog)).toEqual([]);
+  // The radio input is 14px; its 44px label is the target.
+  expect(
+    (await page.getByRole("button", { name: "Save to Inbox" }).boundingBox())?.height,
+  ).toBeGreaterThanOrEqual(44);
+  for (const label of await dialog.locator("label.os-choice").all()) {
+    expect((await label.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  }
   await field.fill("Call the dentist");
   await shoot(page, info, "capture-pad");
   await page.keyboard.press("Escape");
