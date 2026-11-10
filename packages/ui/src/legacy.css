@@ -95,30 +95,10 @@ button.os-card:enabled:active { background: var(--selection); }
 .os-frog { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--break); }
 /* end TaskCard */
 
-/* TimeBlock */
-/* TimeBlock: 2px per minute; blocks under 60px become one line with a 24px floor. */
-.os-block { position: relative; width: 100%; max-width: 100%; min-height: var(--hit-min); display: flex; flex-direction: column; justify-content: center; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--line-strong); text-align: start; font: inherit; }
-button.os-block { cursor: pointer; }
-.os-block-title { min-width: 0; font-size: 13px; line-height: 18px; font-weight: 600; display: flex; align-items: center; gap: var(--space-1-5); }
-.os-block-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.os-block-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; line-height: 16px; color: var(--ink-muted); }
-.os-block-deep { background: var(--focus-soft); color: var(--focus); }
-.os-block-break { background: var(--break-soft); color: var(--break); }
-.os-block-routine, .os-block-personal { background: var(--routine-soft); color: var(--routine); }
-.os-block-shallow, .os-block-overflow { background: var(--surface-raised); color: var(--ink); }
-.os-block-overflow { padding-inline-end: var(--space-6); }
-.os-block-overflow::after { content: ""; position: absolute; inset-block: var(--space-1); inset-inline-end: var(--space-1); width: var(--space-3); border-radius: var(--radius-sm); background-image: repeating-linear-gradient(135deg, var(--line-strong) 0 2px, var(--clear) 2px 10px); }
-.os-block-now { box-shadow: inset 3px 0 0 var(--focus); }
-.os-block-selected { border-style: dashed; }
-.os-block-compact { min-height: var(--hit-floor); flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-2); }
-.os-block-compact .os-block-title { flex: 1; }
-.os-block-compact .os-block-time { flex: none; }
-button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .os-block-title { text-decoration: underline; }
-/* end TimeBlock */
 
-/* Shared: disabled cards and blocks */
-button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
-/* end Shared: disabled cards and blocks */
+/* Shared: disabled cards */
+button.os-card:disabled { border-style: dashed; cursor: default; }
+/* end Shared: disabled cards */
 
 /* Dialog */
 /* Dialog shell shared by Dialog, IntentPrompt, CapturePad and CommandPalette. Backdrops never dismiss. */
