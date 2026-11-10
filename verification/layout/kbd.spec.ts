@@ -46,7 +46,7 @@ for (const viewport of [
         height: el.getBoundingClientRect().height,
         width: el.getBoundingClientRect().width,
         wrap: getComputedStyle(el).whiteSpace,
-        aboveFold: el.getBoundingClientRect().left >= 0,
+        insideLeft: el.getBoundingClientRect().left >= 0,
         inside: el.getBoundingClientRect().right <= document.documentElement.clientWidth,
       })),
     );
@@ -58,7 +58,7 @@ for (const viewport of [
       expect(box.width).toBeGreaterThan(box.height / 2);
       expect(box.lines).toBe(1);
       expect(box.wrap).toBe("nowrap");
-      expect(box.aboveFold && box.inside).toBe(true);
+      expect(box.insideLeft && box.inside).toBe(true);
     }
   });
 }

@@ -1,6 +1,5 @@
 import type { ReactElement } from "react";
 import { describeShortcut } from "../../lib/shortcuts";
-import { cn } from "../../lib/utils";
 
 /** In running text, spoken is required because the glyph is aria-hidden; inside a Tooltip the tooltip label speaks. */
 export type KbdProps = { keys: string } & (
@@ -14,9 +13,7 @@ export function Kbd(props: KbdProps): ReactElement {
     <span
       data-slot="kbd"
       aria-hidden="true"
-      className={cn(
-        "inline-block whitespace-nowrap rounded-sm border border-line-strong bg-surface-raised px-1 font-mono text-kbd text-ink tabular-nums",
-      )}
+      className="inline-block whitespace-nowrap rounded-sm border border-line-strong bg-surface-raised px-1 font-mono text-kbd text-ink tabular-nums"
     >
       {props.keys}
     </span>
