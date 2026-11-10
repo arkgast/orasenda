@@ -393,6 +393,8 @@ test("exactly_one_status_node_at_every_step", async () => {
     .map((id) => document.getElementById(id))
     .find((n) => n?.textContent?.includes("Between 5 and 180 minutes. Still using 50."));
   expect(errorNode, "aria-describedby names the error paragraph").toBeTruthy();
+  expect(errorNode?.tagName, "error element is a paragraph").toBe("P");
+  expect(errorNode).toHaveTextContent("Between 5 and 180 minutes. Still using 50.");
   fireEvent.keyDown(focusInput(), { key: "Escape" });
   fail.on = true;
   fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
