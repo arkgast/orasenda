@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectFits } from "./support/fits.ts";
+import { overflows } from "./support/fits.ts";
 import { smallTargets } from "./support/hitTargets.ts";
 import { shoot } from "./support/shots.ts";
 import { frames, openSpecimen } from "./support/specimen.ts";
@@ -18,7 +18,9 @@ test("full_screen_focus_fits_and_keeps_ring_round_at_390x844_and_1440x900", asyn
   await expect(frames(page)).toHaveCount(STATES.length);
   for (const state of STATES) {
     const frame = page.locator(`[data-frame][data-state="${state}"]`);
-    await expectFits(frame);
+    // The visually hidden wall-clock span is clipped on purpose.
+    const over = (await overflows(frame)).filter((line) => !line.includes("span.sr-only"));
+    expect(over, state).toEqual([]);
     const ring = await frame.locator("[data-slot=timer-ring]").boundingBox();
     const box = await frame.boundingBox();
     expect(ring, state).not.toBeNull();
