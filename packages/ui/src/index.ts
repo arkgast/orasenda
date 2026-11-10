@@ -39,5 +39,6 @@ export { Tooltip } from "./legacy.js";
 export { WellnessNote } from "./legacy.js";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";
 export type { KbdProps } from "./components/ui/kbd";
+export type { RoutineItemProps } from "./components/ui/routine-item";
 export type * from "./legacy.d.ts";
 export type * from "./types.ts";
