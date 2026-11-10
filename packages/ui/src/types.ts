@@ -1,6 +1,7 @@
 // Type-only exports: the *NextProps contracts and the contract-only components (README and static
 // preview, no implementation yet). Each one is exported as a type; none has a runtime export.
 import type * as React from "react";
+import type { CommandPaletteProps } from "./components/ui/command-palette";
 import type { DialogProps } from "./components/ui/dialog";
 import type { IntentPromptProps } from "./components/ui/intent-prompt";
 import type { KanbanColumnProps } from "./components/ui/kanban-column";
@@ -8,7 +9,7 @@ import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
 import type { TaskCardProps } from "./components/ui/task-card";
-import type { Command, CommandPaletteProps, FullScreenFocusProps } from "./legacy.d.ts";
+import type { Command, FullScreenFocusProps } from "./legacy.d.ts";
 
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. */

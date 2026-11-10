@@ -28,14 +28,16 @@ function setup(over: Partial<Parameters<typeof CommandPalette>[0]> = {}) {
 test("exposes_dialog_combobox_and_listbox_with_name", () => {
   const { box } = setup();
   const dialog = screen.getByRole("dialog", { name: "Commands" });
-  expect(dialog).toHaveAttribute("data-slot", "command-palette");
+  expect(dialog).toHaveAttribute("data-slot", "dialog-content");
   expect(box).toHaveAttribute("aria-expanded", "true");
   const list = within(dialog).getByRole("listbox", { name: "Commands" });
   expect(within(list).getAllByRole("option")).toHaveLength(3);
 });
 
 test("renders_nothing_when_closed", () => {
-  setup({ open: false });
+  render(
+    <CommandPalette open={false} commands={commands} onSelect={() => {}} onClose={() => {}} />,
+  );
   expect(screen.queryByRole("dialog")).toBeNull();
 });
 
@@ -51,9 +53,9 @@ test("renders_selected_row_with_word_and_aria_selected", () => {
 test("search_field_takes_focus_and_points_at_active_option", async () => {
   const { box } = setup();
   await vi.waitFor(() => expect(document.activeElement).toBe(box));
-  const active = box.getAttribute("aria-activedescendant");
-  expect(active).toBeTruthy();
-  expect(document.getElementById(active as string)).toBe(screen.getAllByRole("option")[0]);
+  await vi.waitFor(() => expect(box.getAttribute("aria-activedescendant")).toBeTruthy());
+  const active = box.getAttribute("aria-activedescendant") as string;
+  expect(document.getElementById(active)).toBe(screen.getAllByRole("option")[0]);
 });
 
 test("arrows_wrap_through_results", () => {
@@ -70,7 +72,10 @@ test("arrows_wrap_through_results", () => {
 
 test("enter_runs_highlighted_command_then_closes", () => {
   const order: string[] = [];
-  const { box } = setup({ onSelect: (id) => order.push(`select:${id}`), onClose: () => order.push("close") });
+  const { box } = setup({
+    onSelect: (id) => order.push(`select:${id}`),
+    onClose: () => order.push("close"),
+  });
   fireEvent.keyDown(box, { key: "ArrowDown" });
   fireEvent.keyDown(box, { key: "Enter" });
   expect(order).toEqual(["select:pause", "close"]);
@@ -96,7 +101,9 @@ test("no_match_shows_status_and_no_active_descendant", () => {
   const { box, onSelect } = setup();
   fireEvent.change(box, { target: { value: "zzz" } });
   expect(screen.queryAllByRole("option")).toHaveLength(0);
-  expect(screen.getByRole("status")).toHaveTextContent("No matching commands. Try a different word.");
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "No matching commands. Try a different word.",
+  );
   expect(box).not.toHaveAttribute("aria-activedescendant");
   fireEvent.keyDown(box, { key: "Enter" });
   expect(onSelect).not.toHaveBeenCalled();

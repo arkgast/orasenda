@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
+import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
@@ -16,6 +17,7 @@ export const specimens: Record<string, () => ReactElement> = {
   IconButton: IconButtonSpecimen,
   Tooltip: TooltipSpecimen,
   Kbd: KbdSpecimen,
+  CommandPalette: CommandPaletteSpecimen,
   Dialog: DialogSpecimen,
   CapturePad: CapturePadSpecimen,
   NavRail: NavRailSpecimen,

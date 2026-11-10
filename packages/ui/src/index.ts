@@ -3,7 +3,7 @@
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
 export { CapturePad } from "./components/ui/capture-pad";
-export { CommandPalette } from "./legacy.js";
+export { CommandPalette } from "./components/ui/command-palette";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
@@ -52,6 +52,7 @@ export type { WellnessNoteProps } from "./components/ui/wellness-note";
 export type { NavRailProps } from "./components/ui/nav-rail";
 export type { NowLineProps } from "./components/ui/now-line";
 export type { TimerRingProps } from "./components/ui/timer-ring";
+export type { CommandPaletteProps } from "./components/ui/command-palette";
 export type { PageFrameProps } from "./components/ui/page-frame";
 export type { PopoverMenuItem, PopoverMenuProps } from "./components/ui/popover-menu";
 export type { ScrollRegionProps } from "./components/ui/scroll-region";

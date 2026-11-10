@@ -6,3 +6,5 @@ The ⌘K palette: a search field over a list of commands.
 - Compact variant below `layout-compact-height`: the title and label are visually hidden and a Close `IconButton` sits beside the field.
 
 Do: open it only when no other modal is open. Don't: list commands that are unavailable right now.
+
+Implementation: a Radix Dialog (role `dialog`, not a native `dialog`) holding a `cmdk` list with `shouldFilter` off, so the filter stays the substring match on label and hint. The panel carries `data-slot="dialog-content"` so layers and Escape treat it like a Dialog. The highlighted row also shows the word "Selected". `shortcut`, `hint` rendering with a `Kbd` and the compact Close `IconButton` are the redesign (`CommandPaletteNextProps`) and are not built yet.
