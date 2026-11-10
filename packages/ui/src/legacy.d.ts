@@ -112,10 +112,6 @@ export declare function StartButton(props: StartButtonProps): React.ReactElement
 export interface NowLineProps { time: string }
 export declare function NowLine(props: NowLineProps): React.ReactElement;
 // end NowLine
-// describeShortcut
-/** The ARIA and spoken forms of one canonical glyph string (Kbd README, "Shortcut glyphs"): modifiers in the order ⌃⌥⇧⌘, then one key from A-Z, 0-9, '.', ',', '↩', 'Space', 'Esc', '⌫', '←', '↑', '→', '↓', 'Tab'. '⌃⌥F' gives { aria: 'Control+Alt+F', spoken: 'Control-Option-F' }; '⌘.' gives { aria: 'Meta+Period', spoken: 'Command-Period' }. An unknown string throws when window.Orasenda.strictShortcuts is true; otherwise it returns { aria: glyphs, spoken: glyphs } and logs one console.warn. */
-export declare function describeShortcut(glyphs: string): { aria: string; spoken: string };
-// end describeShortcut
 // IconButton
 /** label is the accessible name and the built-in Tooltip's text; the icon is aria-hidden. shortcut is one canonical glyph string, shown as a Kbd in the tooltip and set as aria-keyshortcuts (describeShortcut(shortcut).aria); pass it only while that shortcut is live. Several chords: an array (aria-keyshortcuts joins them with spaces); shortcutLabel is the text the Kbd shows when it differs (a range such as '⌘1–6'); keyshortcuts={false} shows the Kbd but sets no aria-keyshortcuts (Pause/Resume, whose key belongs to the page). aria-describedby points a disabled button at the line that says why. id, aria-haspopup, aria-expanded and aria-controls land on the button; the host sets aria-expanded and aria-controls from its menu's open state and id. */
 export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string | string[]; shortcutLabel?: string; keyshortcuts?: boolean; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string; 'aria-expanded'?: boolean; 'aria-controls'?: string; 'aria-describedby'?: string }
@@ -126,11 +122,6 @@ export declare function IconButton(props: IconButtonProps): React.ReactElement;
 export interface TooltipProps { label: string; shortcut?: string; placement?: 'auto'; children: React.ReactElement }
 export declare function Tooltip(props: TooltipProps): React.ReactElement;
 // end Tooltip
-// Kbd
-/** In running text, spoken is required because the glyph is aria-hidden; inside a Tooltip the tooltip label speaks. */
-export type KbdProps = { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })
-export declare function Kbd(props: KbdProps): React.ReactElement;
-// end Kbd
 // TimerStrip
 /** The time when the window is a strip (TimerStrip README). Its own ModeChip is the state word, as in the ring. progress is the elapsed fraction [0,1]; the bar shows what is left. idleLength ("25 min") shows when idle, never fake digits. task is E's intent line: clamped to two lines, whole in the accessible name. stacked is the narrow form (stackedStrip). role="timer", aria-live="off": no live region. */
 export interface TimerStripProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; idleLength?: string; task?: string; stacked?: boolean }
@@ -184,7 +175,7 @@ declare global {
       NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
       PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
-      IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: typeof Kbd; describeShortcut: typeof describeShortcut; PopoverMenu: typeof PopoverMenu;
+      IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;
     };

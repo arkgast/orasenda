@@ -17,7 +17,10 @@ export async function expectClampedFits(
   }, clampSelector);
   expect(
     reported.filter(
-      (l) => !l.includes(".os-sr-only") && !(clampClass && l.includes(`.${clampClass} (`)),
+      (l) =>
+        !l.includes(".os-sr-only") &&
+        !l.includes(".sr-only") &&
+        !(clampClass && l.includes(`.${clampClass} (`)),
     ),
   ).toEqual([]);
   const box = frame.locator(clampSelector);

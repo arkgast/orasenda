@@ -339,7 +339,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 /* end Shared: redesign pass glyphs */
 
 /* Kbd */
-/* Kbd: a key name, never a control. */
+/* Kbd: internal to the legacy Tooltip and PopoverMenu until they migrate; the public Kbd is kbd.tsx. */
 .os-kbd { display: inline-block; padding: 0 var(--space-1); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--ink); font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* end Kbd */
 

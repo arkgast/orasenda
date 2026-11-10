@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { describeShortcut } from "./src/index.ts";
+import { describeShortcut } from "./shortcuts.ts";
 
 const MODS: Array<[string, string, string]> = [
   ["⌃", "Control", "Control"],
@@ -100,6 +100,7 @@ test("describe_shortcut_unknown_key_returns_glyphs_when_not_strict", () => {
     window.Orasenda.strictShortcuts = false;
     expect(describeShortcut("Cmd+.")).toEqual({ aria: "Cmd+.", spoken: "Cmd+." });
     expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("Cmd+.");
   } finally {
     window.Orasenda.strictShortcuts = true;
     warn.mockRestore();

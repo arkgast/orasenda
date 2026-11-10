@@ -462,7 +462,7 @@ function describeShortcut(glyphs) {
   return { aria: aria.join("+"), spoken: spoken.join("-") };
 }
 // end describeShortcut
-// Kbd
+// Kbd (internal: legacy Tooltip, PopoverMenu and IconButton still call it; TSX Kbd is the public one)
 function Kbd(p) {
   var glyph = h("span", { className: "os-kbd", "aria-hidden": "true" }, p.keys);
   if (p.inTooltip && p.spoken == null) return glyph;
@@ -739,8 +739,6 @@ export {
   SettingsRow,
   IconButton,
   Tooltip,
-  Kbd,
   PopoverMenu,
-  describeShortcut,
   timerLayout,
 };

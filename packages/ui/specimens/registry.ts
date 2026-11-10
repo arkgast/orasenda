@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
+import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { IconButtonSpecimen } from "./IconButton.tsx";
-import { KbdSpecimen } from "./Kbd.tsx";
 import { PopoverMenuSpecimen } from "./PopoverMenu.tsx";
 import { Seed } from "./Seed.tsx";
 import { StartButtonSpecimen } from "./StartButton.tsx";

@@ -12,16 +12,27 @@ const seedDir = resolve(import.meta.dirname, ".build", "seed");
 const scratch = mkdtempSync(join(tmpdir(), "ui-lib-test-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
+/** The seeded name: the first export still on legacy.js, so the test survives each component's migration. */
+const SEEDED =
+  /^export \{ (\w+) \} from "\.\/legacy\.js";/m.exec(
+    readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8"),
+  )?.[1] ?? "";
+
 function seed(): string {
   mkdirSync(seedDir, { recursive: true });
   writeFileSync(
-    join(seedDir, "Kbd.tsx"),
-    'import type { ReactElement } from "react";\n\nexport function Kbd(props: { keys: string }): ReactElement {\n  return <kbd>{props.keys}</kbd>;\n}\n',
+    join(seedDir, `${SEEDED}.tsx`),
+    `import type { ReactElement } from "react";\n\nexport function ${SEEDED}(props: { keys: string }): ReactElement {\n  return <kbd>{props.keys}</kbd>;\n}\n`,
   );
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8")
     .replaceAll('"./legacy.', '"../../src/legacy.')
+    .replaceAll('"./components/', '"../../src/components/')
+    .replaceAll('"./lib/', '"../../src/lib/')
     .replaceAll('"./types.ts"', '"../../src/types.ts"')
-    .replace('export { Kbd } from "../../src/legacy.js";', 'export { Kbd } from "./Kbd.tsx";');
+    .replace(
+      `export { ${SEEDED} } from "../../src/legacy.js";`,
+      `export { ${SEEDED} } from "./${SEEDED}.tsx";`,
+    );
   const file = join(seedDir, "index.ts");
   writeFileSync(file, index);
   return file;
@@ -33,8 +44,9 @@ test("library_build_with_one_migrated_export_composes_declarations", async () =>
   const outDir = join(scratch, "lib");
   await build({ ...libraryConfig(entry, outDir), configFile: false, logLevel: "silent" });
   const dts = composeDeclarations(outDir);
+  expect(dts).toMatch(new RegExp(`export declare function ${SEEDED}\\(`));
   expect(dts).toMatch(/export declare function Kbd\(/);
-  expect(dts).toMatch(/export declare function Button\(/);
+  expect(SEEDED).not.toBe("");
   expect(dts).not.toMatch(/from ["']\.\.?\/.*legacy\.js["']/);
 }, 120_000);
 
