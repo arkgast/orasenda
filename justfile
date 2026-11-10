@@ -102,6 +102,10 @@ ci:
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
+# Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=Seed&theme=dark
+specimens:
+    pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
+
 # Real-engine layout checks with Playwright WebKit. Temporary: runs only the smoke case until the
 # harness lands. Runs only on macOS; other hosts skip.
 [private]
@@ -112,10 +116,11 @@ layout:
         echo "layout: skipped on $host; the required macOS ci job runs the WebKit checks"
         exit 0
     fi
-    pnpm exec playwright test --config verification/layout/playwright.config.ts smoke.spec.ts || {
-        echo "if the browser is missing, run: pnpm exec playwright install webkit" >&2
+    if ! node -e "const {webkit}=require('@playwright/test'); process.exit(require('fs').existsSync(webkit.executablePath()) ? 0 : 1)"; then
+        echo "layout: Playwright's WebKit is not installed. Run: pnpm exec playwright install webkit" >&2
         exit 1
-    }
+    fi
+    pnpm exec playwright test --config verification/layout/playwright.config.ts
 
 # Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]
