@@ -122,7 +122,7 @@ test("info_line_uses_body_sm_in_ink_muted", () => {
   expect(info.get("color")).toBe("var(--ink-muted)");
 });
 
-// The finish line, the notifications explanation and "Timer unavailable.".
+// The finish line and "Timer unavailable.".
 test("muted_line_uses_body_sm_in_ink_muted", () => {
   const muted = rule(".app-muted");
   expect(muted.get("margin")).toBe("0");
