@@ -63,11 +63,10 @@ test("popover_menu_fits_at_360", async ({ page }, info) => {
     expect(r.wide).toBe(false);
     const sep = await panel.evaluate((p) => {
       const hr = p.querySelector("[role=separator]");
-      const list = p;
       return {
         has: !!hr,
         hr: hr ? hr.getBoundingClientRect().width : 0,
-        list: list ? list.getBoundingClientRect().width : 0,
+        list: p.clientWidth,
       };
     });
     if (sep.has) {
