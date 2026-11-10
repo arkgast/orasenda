@@ -281,7 +281,10 @@ mod tests {
         for theme in [Theme::Dark, Theme::System] {
             let shell = Recorder::new(theme);
             finish_launch_on(&shell);
-            assert_eq!(*shell.calls.borrow(), vec![Call::ApplyTheme(theme), Call::ShowMain]);
+            assert_eq!(
+                *shell.calls.borrow(),
+                vec![Call::ApplyTheme(theme), Call::ShowMain]
+            );
         }
     }
 }

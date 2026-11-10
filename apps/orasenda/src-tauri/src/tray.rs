@@ -521,8 +521,14 @@ mod tests {
     #[test]
     fn menu_items_per_state() {
         assert_eq!(menu_items(&idle()), [SHOW, SETTINGS, QUIT]);
-        assert_eq!(menu_items(&running(S59)), [PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]);
-        assert_eq!(menu_items(&paused(S59)), [RESUME, END_SESSION, SHOW, SETTINGS, QUIT]);
+        assert_eq!(
+            menu_items(&running(S59)),
+            [PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]
+        );
+        assert_eq!(
+            menu_items(&paused(S59)),
+            [RESUME, END_SESSION, SHOW, SETTINGS, QUIT]
+        );
         assert_eq!(
             [PAUSE, RESUME, END_SESSION, SHOW, SETTINGS, QUIT],
             [
@@ -557,7 +563,10 @@ mod tests {
 
     #[test]
     fn menu_command_settings() {
-        assert!(matches!(menu_command(SETTINGS), Some(MenuCommand::Settings)));
+        assert!(matches!(
+            menu_command(SETTINGS),
+            Some(MenuCommand::Settings)
+        ));
         assert!(menu_command("settings").is_none());
     }
 
