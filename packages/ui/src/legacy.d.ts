@@ -8,11 +8,6 @@ export type TimerMode = Exclude<Mode, 'shallow'>;
 export interface TimerRingProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; /** A number renders that diameter in px, as before. 'fluid' fills the host's slot: the diameter is the slot's shorter side clamped to [timer-min-size, timer-full-size] (container query), digits never below timer-md. */ size?: number | 'fluid'; /** px for a numeric size; with 'fluid', units of the 400-unit drawing (default 10), so it scales with the diameter. */ stroke?: number; clock?: string }
 export declare function TimerRing(props: TimerRingProps): React.ReactElement;
 // end TimerRing
-// MenuBarTimer
-/** compact defaults to true. Use false only for the floating mini timer. */
-export interface MenuBarTimerProps { remaining?: string; remainingLabel?: string; progress?: number; mode?: TimerMode; task?: string; compact?: boolean }
-export declare function MenuBarTimer(props: MenuBarTimerProps): React.ReactElement;
-// end MenuBarTimer
 // TaskCard
 export interface TaskCardProps { title: string; type?: 'deep' | 'shallow'; estimate?: number; done?: number; tracked?: string; project?: string; frog?: boolean; active?: boolean; selected?: boolean; disabled?: boolean; onOpen?: () => void }
 export declare function TaskCard(props: TaskCardProps): React.ReactElement;
@@ -119,7 +114,7 @@ export declare function SettingsRow(props: SettingsRowProps): React.ReactElement
 declare global {
   interface Window {
     Orasenda: {
-      ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout; MenuBarTimer: typeof MenuBarTimer;
+      ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout;
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
