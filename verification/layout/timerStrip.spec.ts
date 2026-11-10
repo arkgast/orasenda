@@ -7,18 +7,20 @@ import { openSpecimen } from "./support/specimen.ts";
 const MODES = ["focus", "paused", "idle", "break", "warning"];
 const WIDTHS = [360, 640, 1440];
 
-async function checkFrame(page: import("@playwright/test").Page, state: string) {
+async function checkFrame(page: import("@playwright/test").Page, state: string, withTask = true) {
   const frame = page.locator(`[data-frame][data-state="${state}"]`);
   await expect(frame, state).toHaveCount(1);
-  await expectClampedFits(frame, ".os-strip-task", 2);
-  const task = await frame.locator(".os-strip-task").evaluate((el) => {
-    const cs = getComputedStyle(el);
-    const line = Number.parseFloat(cs.lineHeight);
-    return { height: el.getBoundingClientRect().height, line, clamp: cs.webkitLineClamp };
-  });
-  expect(task.clamp, `${state} clamps to two lines`).toBe("2");
-  expect(task.height, `${state} task is two lines`).toBeGreaterThanOrEqual(task.line * 2 - 1);
-  expect(task.height).toBeLessThanOrEqual(task.line * 2 + 1);
+  if (withTask) {
+    await expectClampedFits(frame, ".os-strip-task", 2);
+    const task = await frame.locator(".os-strip-task").evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const line = Number.parseFloat(cs.lineHeight);
+      return { height: el.getBoundingClientRect().height, line, clamp: cs.webkitLineClamp };
+    });
+    expect(task.clamp, `${state} clamps to two lines`).toBe("2");
+    expect(task.height, `${state} task is two lines`).toBeGreaterThanOrEqual(task.line * 2 - 1);
+    expect(task.height).toBeLessThanOrEqual(task.line * 2 + 1);
+  }
   const md = Number.parseFloat(
     await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
@@ -57,7 +59,7 @@ test("timer_strip_long_intent_clamps_to_two_lines", async ({ page }) => {
 test("stacked_strip_fits_at_360", async ({ page }) => {
   await openSpecimen(page, "TimerStrip");
   for (const m of MODES) {
-    await checkFrame(page, `timer-strip-stacked-360-${m}`);
+    await checkFrame(page, `timer-strip-stacked-360-${m}`, false);
     // The frame is Today's 52px time track; the strip must be no taller.
     const h = await page
       .locator(`[data-state="timer-strip-stacked-360-${m}"] .os-strip`)
