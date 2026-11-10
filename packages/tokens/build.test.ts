@@ -188,7 +188,7 @@ test("type_style_missing_a_shorthand_key_fails", () => {
 
 test("dark_block_guarded_and_repeated_under_data_theme_dark", () => {
   const { css } = build();
-  const media = '@media (prefers-color-scheme: dark) {';
+  const media = "@media (prefers-color-scheme: dark) {";
   const start = css.indexOf(media);
   assert.notEqual(start, -1);
   const guardSel = ':root:not([data-theme="light"]) {';
