@@ -110,10 +110,6 @@ export interface PopoverMenuItem { id: string; label: string; meta?: string; kin
 export interface PopoverMenuProps { heading: string; description?: string; items: PopoverMenuItem[]; readOnly?: boolean; /** Called with the chosen row's id, then onClose. */ onSelect: (id: string) => void; /** Esc, Tab, a press outside, or after onSelect. The host sets open to false. */ onClose: () => void; /** The id of the role="menu" element, for the trigger's aria-controls; otherwise useId(). The heading and description use <id>-heading and <id>-desc. */ id?: string; /** The trigger, or an element that holds it (an IconButton takes no ref: wrap it in a span with the ref). */ anchor: React.RefObject<HTMLElement | null>; /** true: the heading row shows P as an aria-hidden Kbd, and the host adds P to the trigger's aria-keyshortcuts. Omitted or false: neither. Pass it only while single-key shortcuts are on; the menu never listens for P. */ singleKeys?: boolean }
 export declare function PopoverMenu(props: PopoverMenuProps): React.ReactElement;
 // end PopoverMenu
-// ScrollRegion
-export interface ScrollRegionProps { label: string; children?: React.ReactNode }
-export declare function ScrollRegion(props: ScrollRegionProps): React.ReactElement;
-// end ScrollRegion
 // SettingsIndex
 /** A problem always carries words; alert adds the glyph to those words, never on its own. */
 export interface SettingsIndexSection { id: string; name: string; value: string; problem?: { text: string; alert?: boolean } }
@@ -135,7 +131,7 @@ declare global {
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: (props: { time: string }) => React.ReactElement;
-      ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
+      ScrollRegion: (props: { label: string; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;

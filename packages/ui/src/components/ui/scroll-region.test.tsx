@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { ScrollRegion } from "./scroll-region";
 
 function stubLayout(scrollHeight: number, clientHeight: number): () => void {
@@ -49,4 +49,34 @@ test("scroll_region_with_focusable_child_is_not_a_tab_stop", () => {
   );
   expect(screen.getByRole("region", { name: "Settings" }).hasAttribute("tabindex")).toBe(false);
   expect(container.querySelector("[data-slot=scroll-region-more]")).toBeNull();
+});
+
+test("scroll_region_remeasures_when_content_grows", async () => {
+  let h = 50;
+  const sh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
+  const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get: () => h,
+  });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get: () => 100,
+  });
+  try {
+    const { container } = render(
+      <ScrollRegion label="Settings">
+        <div id="grow">short</div>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).toBeNull();
+    h = 500;
+    (container.querySelector("#grow") as HTMLElement).append("more");
+    await vi.waitFor(() =>
+      expect(container.querySelector("[data-slot=scroll-region-more]")).not.toBeNull(),
+    );
+  } finally {
+    if (sh) Object.defineProperty(HTMLElement.prototype, "scrollHeight", sh);
+    if (ch) Object.defineProperty(HTMLElement.prototype, "clientHeight", ch);
+  }
 });
