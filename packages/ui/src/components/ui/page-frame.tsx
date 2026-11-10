@@ -19,7 +19,7 @@ export interface PageFrameProps {
 export function PageFrame(props: PageFrameProps): ReactElement {
   const flow = props.variant === "flow";
   const title = props.compactPicker ? (
-    <div data-slot="page-frame-title" className="flex min-w-0 items-center">
+    <div data-slot="page-frame-picker" className="flex items-center">
       {props.compactPicker}
       <h1 tabIndex={-1} className="sr-only">
         {props.title}
@@ -27,8 +27,9 @@ export function PageFrame(props: PageFrameProps): ReactElement {
     </div>
   ) : (
     <h1
+      data-slot="page-frame-title"
       tabIndex={-1}
-      className="m-0 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-title"
+      className="overflow-hidden text-ellipsis whitespace-nowrap text-title"
     >
       {props.title}
     </h1>
@@ -37,13 +38,11 @@ export function PageFrame(props: PageFrameProps): ReactElement {
     <div
       data-slot="page-frame"
       data-variant={flow ? "flow" : "list"}
-      className={cn(
-        "flex h-full min-h-0 flex-col gap-2 bg-surface p-4 text-ink sm:px-6 sm:pt-5 sm:pb-6",
-      )}
+      className={cn("flex h-full flex-col gap-2 bg-surface p-4 text-ink sm:px-6 sm:pt-5 sm:pb-6")}
     >
       <header
         data-slot="page-frame-header"
-        className="flex h-hit-min min-w-0 shrink-0 items-center justify-between gap-3"
+        className="flex h-hit-min shrink-0 items-center justify-between gap-3"
       >
         {title}
         {props.primary ||
@@ -51,10 +50,13 @@ export function PageFrame(props: PageFrameProps): ReactElement {
             <span className="whitespace-nowrap text-body-sm text-ink-muted">{props.step}</span>
           ) : null)}
       </header>
-      <div data-slot="page-frame-status" className="h-hit-min min-h-0 min-w-0 shrink-0">
+      <div data-slot="page-frame-status" className="h-hit-min shrink-0">
         {props.status}
       </div>
-      <div data-slot="page-frame-body" className="min-h-0 min-w-0 flex-1 *:h-full">
+      <div
+        data-slot="page-frame-body"
+        className="flex flex-1 flex-col overflow-hidden p-1 *:flex-1"
+      >
         {props.children}
       </div>
       {flow ? (
