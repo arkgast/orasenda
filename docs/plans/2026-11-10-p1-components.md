@@ -58,6 +58,7 @@ is copied here before `baton:backlog`.
    Implementation status line; T7 ticks the last one. The VoiceOver boxes are ticked as the owner
    records each pass, and the sub-project is closed by a docs-only PR (precedent: #163, "docs:
    close P1-B") once every box is ticked. That PR sets the spec and plan status to implemented.
+   Close-out task: #175.
 8. **`FloatingTimer`'s "Session ended."** The spec lets T5 choose between a live region in the
    component and an announcement by the host. Recommended for the T5 artifact round: the README
    names one always-mounted `role="status"` paragraph in `FloatingTimer`, because the floater is
@@ -116,13 +117,13 @@ steps the spec makes explicit ("How each task runs"):
 
 | Plan task | Spec task | Builds | First consumers |
 |---|---|---|---|
-| **T1** | T1 | Playwright WebKit harness, specimen server and seed specimen; bundled fonts and `type.fonts`; `verification/contrast.py`; the copy and colour guard; `ci` and `ci.yml` | every later task; C's Today cases |
-| **T2** | T2 | `IconButton`, `Tooltip`, `Kbd`, `describeShortcut` | C, D, F |
-| **T3** | T3 | `TimerRing` fluid and the warning fade, `TimerStrip`, `timerLayout`, `StartButton` redesign | C, D, E |
-| **T4** | T4 | `PopoverMenu` | C, D |
-| **T5** | T5 | `FullScreenFocus` redesign, `FloatingTimer` | D, E |
-| **T6** | T6 | `CommandPalette` redesign, `CapturePad` copy, `ShortcutRecorder` | D, F |
-| **T7** | T7 | `Icon` and `IconName`, final glyphs, `NavRail` roving focus and rail icons, `StartButton` and specimens on `Icon` | C, D |
+| **T1** (#168) | T1 | Playwright WebKit harness, specimen server and seed specimen; bundled fonts and `type.fonts`; `verification/contrast.py`; the copy and colour guard; `ci` and `ci.yml` | every later task; C's Today cases |
+| **T2** (#169) | T2 | `IconButton`, `Tooltip`, `Kbd`, `describeShortcut` | C, D, F |
+| **T3** (#170) | T3 | `TimerRing` fluid and the warning fade, `TimerStrip`, `timerLayout`, `StartButton` redesign | C, D, E |
+| **T4** (#171) | T4 | `PopoverMenu` | C, D |
+| **T5** (#172) | T5 | `FullScreenFocus` redesign, `FloatingTimer` | D, E |
+| **T6** (#173) | T6 | `CommandPalette` redesign, `CapturePad` copy, `ShortcutRecorder` | D, F |
+| **T7** (#174) | T7 | `Icon` and `IconName`, final glyphs, `NavRail` roving focus and rail icons, `StartButton` and specimens on `Icon` | C, D |
 
 **Conventions for every task** (from `docs/conventions.md`, `CLAUDE.md` and the spec):
 - Under design-first, nothing in `design/system/` is edited by hand. Every PR links the artifact
@@ -257,7 +258,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 
 ## Tasks
 
-### T1: Real-engine harness, bundled fonts and the contrast check
+### T1: Real-engine harness, bundled fonts and the contrast check (#168)
 - Priority: 0
 - Kind: cross-file/debugging (new tooling across CI, tokens and the design system; one small
   artifact round for `type.fonts` and two README lines)
@@ -438,7 +439,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   downloaded files' SHA-256 against that record. Lexend
   has no P1 consumer but ships because `--font-alt` names it.
 
-### T2: The small controls and the key table
+### T2: The small controls and the key table (#169)
 - Priority: 0
 - Kind: design-system (orchestrator-first)
 - Depends on: T1
@@ -534,7 +535,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   baseline). Watch out for `:focus-visible` after programmatic focus: WebKit and jsdom differ,
   which is why `tooltip_not_shown_on_programmatic_focus` is a harness case.
 
-### T3: Timer faces and Start
+### T3: Timer faces and Start (#170)
 - Priority: 0
 - Kind: design-system (orchestrator-first)
 - Depends on: T2
@@ -633,7 +634,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   `toHaveTextContent("Start focus")`, a substring match, so a hidden compact label in the DOM
   doesn't break it; keep the full label in the DOM. Time strings arrive formatted (ADR-011).
 
-### T4: The preset popover
+### T4: The preset popover (#171)
 - Priority: 1
 - Kind: design-system (orchestrator-first)
 - Depends on: T2 (runs after T3 merges: planner decision 1)
@@ -698,7 +699,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 - Notes: the P key that opens the menu on Today is the host's (C) when `singleKeys` is on; the
   component never listens for it. Don't hold the roving index anywhere but component state.
 
-### T5: Focus window and floater
+### T5: Focus window and floater (#172)
 - Priority: 1
 - Kind: design-system (orchestrator-first)
 - Depends on: T3, T4
@@ -774,7 +775,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   layout by shape (`layout-strip-height` usage). Re-running `timerLayout` on every `remaining`
   change would make the layout flip on a tick; the `ResizeObserver` callback is the only caller.
 
-### T6: Commands, capture and the shortcut recorder
+### T6: Commands, capture and the shortcut recorder (#173)
 - Priority: 1
 - Kind: design-system (orchestrator-first)
 - Depends on: T2 (runs after T5 merges: planner decision 1)
@@ -845,7 +846,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   it doesn't decide whether a binding is allowed or in conflict (F's Rust does); the host passes
   `conflict`. Which shortcut is live is F's.
 
-### T7: The icon set and the rail
+### T7: The icon set and the rail (#174)
 - Priority: 1
 - Kind: design-system (orchestrator-first; the owner approves the glyph sheet)
 - Depends on: T6 (for the series; its real dependencies are T2 and the owner's glyph approval)
