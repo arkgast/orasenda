@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { TimerStrip } from "./src/index.ts";
+import { TimerStrip } from "./timer-strip";
 
 const TASK =
   "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";
@@ -17,19 +17,19 @@ test("timer_strip_name_has_remaining_label_and_mode", () => {
 
 test("timer_strip_stacked_form", () => {
   const { container, rerender } = render(<TimerStrip mode="focus" {...run} stacked />);
-  const root = container.querySelector(".os-strip") as HTMLElement;
-  expect(root.classList.contains("os-strip-stacked")).toBe(true);
+  const root = container.querySelector("[data-slot=timer-strip]") as HTMLElement;
+  expect(root.getAttribute("data-stacked")).toBe("true");
   const name = root.getAttribute("aria-label");
   rerender(<TimerStrip mode="focus" {...run} />);
-  expect(container.querySelector(".os-strip-stacked")).toBeNull();
-  expect(container.querySelector(".os-strip")?.getAttribute("aria-label")).toBe(name);
+  expect(container.querySelector("[data-stacked=true]")).toBeNull();
+  expect(container.querySelector("[data-slot=timer-strip]")?.getAttribute("aria-label")).toBe(name);
 });
 
 test("timer_strip_idle_shows_idle_length", () => {
   const { container, rerender } = render(<TimerStrip mode="idle" idleLength="25 min" />);
-  expect(container.querySelector("span.os-strip-length")?.textContent).toBe("25 min");
-  expect(container.querySelector(".os-strip-digits")).toBeNull();
-  expect(container.querySelector(".os-strip-bar")).toBeNull();
+  expect(container.querySelector("[data-slot=timer-strip-length]")?.textContent).toBe("25 min");
+  expect(container.querySelector("[data-slot=timer-strip-digits]")).toBeNull();
+  expect(container.querySelector("[data-slot=timer-strip-bar]")).toBeNull();
   expect(screen.getByRole("timer").getAttribute("aria-label")).toBe("No session, 25 min");
   rerender(<TimerStrip mode="idle" idleLength="25 min" task="Outline" />);
   expect(screen.getByRole("timer").getAttribute("aria-label")).toBe("No session, 25 min, Outline");
@@ -43,10 +43,10 @@ test.each([
   ["idle", "No session"],
 ] as const)("timer_strip_every_mode_has_word_or_shape (%s)", (mode, word) => {
   const { container } = render(<TimerStrip mode={mode} {...run} idleLength="25 min" />);
-  const chip = container.querySelector(".os-chip") as HTMLElement;
+  const chip = container.querySelector("[data-slot=mode-chip]") as HTMLElement;
   expect(chip.textContent).toBe(word);
-  expect(chip.querySelector("svg.os-shape")).not.toBeNull();
-  expect(container.querySelector(".os-strip-tri") !== null).toBe(mode === "warning");
+  expect(chip.querySelector("svg[aria-hidden=true]")).not.toBeNull();
+  expect(container.querySelector("[data-slot=timer-strip-triangle]") !== null).toBe(mode === "warning");
 });
 
 test("timer_strip_adds_no_live_region", () => {
@@ -61,5 +61,5 @@ test("timer_strip_adds_no_live_region", () => {
 test("timer_strip_task_whole_in_accessible_name", () => {
   const { container } = render(<TimerStrip mode="focus" {...run} task={TASK} />);
   expect((screen.getByRole("timer").getAttribute("aria-label") ?? "").endsWith(TASK)).toBe(true);
-  expect(container.querySelector(".os-strip-task")?.textContent).toBe(TASK);
+  expect(container.querySelector("[data-slot=timer-strip-task]")?.textContent).toBe(TASK);
 });
