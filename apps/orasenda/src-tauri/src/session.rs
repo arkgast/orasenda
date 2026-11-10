@@ -293,7 +293,6 @@ impl SessionService {
             return false;
         };
         let mut wrote = false;
-        let settings_read = settings.is_some();
         if let Some((settings, pending)) = settings {
             self.settings = settings;
             self.review_pending = pending;
@@ -306,8 +305,10 @@ impl SessionService {
         }
         // After the snapshot is settled: a write while it is still owed would treat the
         // running session as unread. One event, carrying the value after the review.
-        if settings_read {
-            wrote |= self.run_notify_review(now_ms);
+        if self.review_pending {
+            let reviewed = self.run_notify_review(now_ms);
+            self.settings_event_owed |= reviewed;
+            wrote |= reviewed;
         }
         self.refresh_status();
         wrote
@@ -459,7 +460,8 @@ impl SessionService {
     /// `settings-changed` can carry the pre-review `notifySessionEnd` and undo the review. The
     /// window is milliseconds and the outcome is visible on the page.
     pub fn run_notify_review(&mut self, now_ms: u64) -> bool {
-        if !self.review_pending {
+        // A write while the snapshot is still owed would treat the running session as unread.
+        if !self.review_pending || self.recover_owed.snapshot {
             return false;
         }
         let Some(
@@ -3165,6 +3167,49 @@ mod tests {
         assert!(presented.notify_session_end);
         assert_eq!(marker(&s), None);
         assert_eq!(stored_notify(&s), Some(true));
+    }
+
+    #[test]
+    fn review_waits_for_an_owed_snapshot_then_runs_in_the_recovering_tick() {
+        let store = pending_store(Some(true));
+        let mut first = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0,
+        );
+        first.apply(start(Preset::Classic), T0, id("a"));
+        let store = first.store.take().expect("store");
+        store.fail_reads(true);
+        let mut s = SessionService::new(
+            Ok(store),
+            fakes(NotificationStatus::Granted, false).platform,
+            T0 + 1,
+        );
+        // Only the snapshot read failed at launch.
+        s.recover_owed.settings = false;
+        s.review_pending = true;
+        s.set_notifications(NotificationStatus::Granted);
+        db(&s).fail_reads(false);
+        assert!(!s.run_notify_review(T0 + 1));
+        assert_eq!(marker(&s).as_deref(), Some("pending"));
+        assert!(
+            db(&s)
+                .read(active_session::get::<Session>)
+                .expect("reads")
+                .is_some(),
+            "the row is untouched"
+        );
+        let e = s.tick(T0 + 2);
+        assert!(!s.engine.is_idle(), "the session resumes running");
+        assert_eq!(marker(&s), None);
+        assert!(e.settings_changed.is_some());
+        assert_eq!(
+            e.milestones
+                .iter()
+                .filter(|m| m.kind == MilestoneKind::Recovered)
+                .count(),
+            0
+        );
     }
 
     #[test]
