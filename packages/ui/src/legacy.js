@@ -198,6 +198,7 @@ function CapturePad(p) {
       h(Button, { variant: "primary", type: "submit", loading: busy[0], disabled: !p.value.trim() }, busy[0] ? "Saving…" : "Save to Inbox")));
 }
 // end CapturePad
+// Toast-only: the live InlineNotice is components/ui/inline-notice.tsx. Remove with the Toast task.
 function StatusRow(p) {
   var tone = p.tone === "attention" || p.tone === "warning" || p.tone === "rest" ? p.tone : "neutral";
   var glyph = tone === "attention" ? h(AlertGlyph) : tone === "warning" ? h(Shape, { mode: "warning" }) : null;
@@ -206,6 +207,7 @@ function StatusRow(p) {
     h("p", { className: cx("os-statusrow-msg", tone === "rest" && "os-statusrow-rest"), role: "status", "aria-live": "polite" }, glyph, p.children), action);
 }
 // InlineNotice
+// Toast-only legacy copy; the live component is inline-notice.tsx. Remove in the Toast task.
 function InlineNotice(p) {
   if (p.variant === "row") return h(StatusRow, p);
   return h("div", { className: cx("os-notice", p.tone === "warning" && "os-notice-warning") },
@@ -543,7 +545,6 @@ export {
   FullScreenFocus,
   TextArea,
   CapturePad,
-  InlineNotice,
   Toast,
   KanbanColumn,
   CommandPalette,

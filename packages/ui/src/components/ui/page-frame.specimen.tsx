@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { Frame } from "../../../specimens/Frame";
-import { InlineNotice } from "../../legacy.js";
 import { Button } from "./button";
+import { InlineNotice } from "./inline-notice";
 import { PageFrame } from "./page-frame";
 import { ScrollRegion } from "./scroll-region";
 

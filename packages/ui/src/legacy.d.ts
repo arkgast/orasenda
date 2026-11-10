@@ -1,5 +1,6 @@
 // Shared: React import and modes
 import type * as React from 'react';
+import type { InlineNoticeProps } from "./components/ui/inline-notice";
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
@@ -30,11 +31,6 @@ export type InterruptionKind = 'internal' | 'external';
 export interface CapturePadProps { open?: boolean; value: string; kind: InterruptionKind; onChange: (value: string) => void; onKindChange: (kind: InterruptionKind) => void; onSave: (note: { text: string; kind: InterruptionKind }) => void | Promise<void>; onClose: () => void }
 export declare function CapturePad(props: CapturePadProps): React.ReactElement;
 // end CapturePad
-// InlineNotice
-/** variant 'row' is the reserved 44px status row; tone 'attention' (alert glyph) and 'rest' (ink-muted, no glyph) are for that row only. actionName is the accessible name when it differs from the visible actionLabel (e.g. "Try again saving break minutes"). */
-export type InlineNoticeProps = { children: React.ReactNode; actionLabel?: string; actionName?: string; onAction?: () => void } & ({ variant?: 'default'; tone?: 'neutral' | 'warning' } | { variant: 'row'; tone?: 'neutral' | 'attention' | 'rest' | 'warning'; /** Defaults to 'ghost'. */ actionVariant?: 'quiet' | 'ghost' })
-export declare function InlineNotice(props: InlineNoticeProps): React.ReactElement;
-// end InlineNotice
 // Toast
 export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
 export declare function Toast(props: ToastProps): React.ReactElement;
@@ -98,7 +94,7 @@ declare global {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof TimerStrip; timerLayout: typeof timerLayout;
       TaskCard: typeof TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
-      TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
+      TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
       ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof SettingsRow;

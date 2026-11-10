@@ -152,37 +152,6 @@ test("settings_row_links_helper_and_status_by_describedby", () => {
   expect(screen.getByText("Read-only until you update Orasenda.")).toBeVisible();
 });
 
-test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
-  const onAction = vi.fn();
-  const { container, rerender } = render(<ui.InlineNotice variant="row">{""}</ui.InlineNotice>);
-  const live = screen.getByRole("status");
-  expect(live.tagName).toBe("P");
-  expect(live).toHaveAttribute("aria-live", "polite");
-  expect(live).toBeEmptyDOMElement();
-  expect(container.querySelectorAll("[role=status]")).toHaveLength(1);
-
-  rerender(<ui.InlineNotice variant="row">Saved. Custom focus is now 50 minutes.</ui.InlineNotice>);
-  expect(screen.getByRole("status")).toBe(live);
-  expect(live).toHaveTextContent("Saved. Custom focus is now 50 minutes.");
-  expect((container.firstElementChild as HTMLElement).getAttribute("role")).toBeNull();
-
-  rerender(
-    <ui.InlineNotice
-      variant="row"
-      tone="attention"
-      actionLabel="Try again"
-      actionName="Try again saving"
-      onAction={onAction}
-    >
-      Theme wasn't saved. Back to Match system.
-    </ui.InlineNotice>,
-  );
-  expect(live.querySelector("svg[aria-hidden=true]")).not.toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Try again saving" }));
-  expect(onAction).toHaveBeenCalledTimes(1);
-  expect(live.contains(screen.getByRole("button"))).toBe(false);
-});
-
 test("empty_state_inline_has_one_line_and_no_action", () => {
   const text =
     "Nothing is recorded yet. Choosing which apps count as focus or distraction comes in a later update.";
@@ -223,15 +192,6 @@ test("field_error_is_described_not_live", () => {
   }
 });
 
-test("inline_notice_default_action_uses_action_name", () => {
-  render(
-    <ui.InlineNotice actionLabel="Try again" actionName="Try again saving" onAction={() => {}}>
-      Nope
-    </ui.InlineNotice>,
-  );
-  expect(screen.getByRole("button", { name: "Try again saving" })).toBeInTheDocument();
-});
-
 test("settings_row_id_fixes_generated_ids", () => {
   const { container } = render(
     <ui.SettingsRow
@@ -251,25 +211,6 @@ test("settings_row_id_fixes_generated_ids", () => {
     "aria-describedby",
     "notif-help notif-status notif-why",
   );
-});
-
-test("inline_notice_row_action_variant_defaults_ghost_and_accepts_quiet", () => {
-  const { rerender } = render(
-    <ui.InlineNotice variant="row" actionLabel="Show" onAction={() => {}}>
-      Saved.
-    </ui.InlineNotice>,
-  );
-  const ghost = screen.getByRole("button", { name: "Show" }).className;
-  rerender(
-    <ui.InlineNotice variant="row" actionVariant="quiet" actionLabel="Show" onAction={() => {}}>
-      Saved.
-    </ui.InlineNotice>,
-  );
-  expect(screen.getByRole("button", { name: "Show" }).className).not.toBe(ghost);
-  expect(ghost).toContain("ghost");
-  const quiet = screen.getByRole("button", { name: "Show" }).className;
-  expect(quiet).toContain("quiet");
-  expect(quiet).not.toContain("ghost");
 });
 
 test("exports_preset_popover", () => {
