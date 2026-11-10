@@ -58,11 +58,6 @@ export declare function InlineNotice(props: InlineNoticeProps): React.ReactEleme
 export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
 export declare function Toast(props: ToastProps): React.ReactElement;
 // end Toast
-// NavRail
-export type NavPage = 'today' | 'board' | 'calendar' | 'routines' | 'review' | 'settings';
-export interface NavRailProps { current: NavPage; onNavigate: (page: NavPage) => void }
-export declare function NavRail(props: NavRailProps): React.ReactElement;
-// end NavRail
 // KanbanColumn
 export interface KanbanColumnProps { title: string; count: number; limit?: number; children?: React.ReactNode; emptyMessage?: string }
 export declare function KanbanColumn(props: KanbanColumnProps): React.ReactElement;
@@ -146,7 +141,7 @@ declare global {
       TaskCard: typeof TaskCard; TimeBlock: typeof TimeBlock; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof InlineNotice; Toast: typeof Toast;
-      NavRail: typeof NavRail; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
+      NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette; EmptyState: typeof EmptyState;
       StartButton: typeof StartButton; NowLine: typeof NowLine;
       PageFrame: typeof PageFrame; ScrollRegion: typeof ScrollRegion; SettingsIndex: typeof SettingsIndex; SettingsRow: typeof SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;

@@ -202,14 +202,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-toast > .os-btn { margin-top: var(--space-2); }
 /* end Toast */
 
-/* NavRail */
-.os-nav { display: flex; flex-direction: column; gap: var(--space-2); width: var(--rail-width); padding-block: var(--space-3); background: var(--surface-raised); z-index: var(--z-rail); flex: none; }
-.os-nav button { width: 100%; min-height: var(--control-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-1); border: 0; border-inline-start: 3px solid var(--clear); background: var(--clear); color: var(--ink-muted); font-size: 11px; line-height: 14px; font-weight: 500; cursor: pointer; }
-.os-nav button:hover { background: var(--surface-sunken); }
-.os-nav button[aria-current="page"] { background: var(--selection); color: var(--focus); border-inline-start-color: var(--focus); font-weight: 600; }
-.os-nav svg { width: var(--icon-lg); height: var(--icon-lg); stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-/* end NavRail */
-
 /* KanbanColumn */
 .os-kanban { width: var(--column-width); max-width: 100%; flex: none; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); background: var(--surface-sunken); border-radius: var(--radius-lg); }
 .os-kanban header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }

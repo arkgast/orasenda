@@ -267,17 +267,6 @@ function Toast(p) {
   return h("div", { className: "os-toast" }, h(InlineNotice, p), p.onDismiss ? h(Button, { variant: "ghost", onClick: p.onDismiss }, "Dismiss") : null);
 }
 // end Toast
-var NAV = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
-var NAV_PATHS = ["M3 4h14v13H3zM3 8h14M7 2v4M13 2v4", "M2 3h6v14H2zM12 3h6v14h-6z", "M3 4h14v13H3zM3 8h14M7 11h2M12 11h2M7 14h2", "M3 5l2 2 3-4M10 5h7M3 13l2 2 3-4M10 13h7", "M3 17V9M9 17V3M15 17V6M2 18h16", "M3 5h14M3 10h14M3 15h14M7 3v4M13 8v4M8 13v4"];
-// NavRail
-function NavRail(p) {
-  return h("nav", { className: "os-nav", "aria-label": "Main navigation" }, NAV.map(function (label, i) {
-    var id = label.toLowerCase();
-    return h("button", { key: id, type: "button", "aria-current": p.current === id ? "page" : undefined, onClick: function () { p.onNavigate(id); } },
-      h("svg", { viewBox: "0 0 20 20", "aria-hidden": "true" }, h("path", { d: NAV_PATHS[i] })), h("span", null, label));
-  }));
-}
-// end NavRail
 // KanbanColumn
 function KanbanColumn(p) {
   var id = R.useId(), n = count(p.count), limit = p.limit == null ? null : count(p.limit), atLimit = limit != null && n >= limit;
@@ -689,7 +678,6 @@ export {
   CapturePad,
   InlineNotice,
   Toast,
-  NavRail,
   KanbanColumn,
   CommandPalette,
   EmptyState,
