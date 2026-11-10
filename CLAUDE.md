@@ -6,8 +6,9 @@ Orasenda is a calm, local-first focus and time-management app: macOS first, Wind
 - What we build and why: `docs/SPEC.md`. Phases: `docs/ROADMAP.md`. Decisions: `docs/DECISIONS.md`.
 - How it looks and behaves: the **Orasenda design system**.
   - Live version: https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73
-  - Repo copy: `design/system/`
-  - Start with `design/system/README.md`, then `tokens.json` and `components/<Name>/README.md`.
+  - Source in the repo: `packages/ui` (components) and `packages/tokens` (tokens). Until the code-first foundation PR merges, the files are still at `design/system/`.
+  - Start with `packages/ui/design-system/README.md`, then `packages/tokens/tokens.json` and `packages/ui/src/components/ui/<kebab>.md`.
+  - While the migration runs, components not yet moved live in `packages/ui/src/legacy.js`, and their READMEs are already at `<kebab>.md`.
 - Design review history: `design/reviews/`.
 
 ## UI rules (every change that touches UI)
@@ -29,13 +30,13 @@ Orasenda is a calm, local-first focus and time-management app: macOS first, Wind
 4. **Both themes, every time.** Check light and dark before calling UI work done.
 
 ## Keeping the design system in sync
-Current mode: **design-first** (until the end of P1). The artifact is the source of truth.
+Current mode: **code-first** (ADR-015, from 2026-11-10). The code is the source of truth; the artifact is a published build.
 - **To add or change a component or token:**
-  1. Update the design system artifact first: ask Claude to "update the Orasenda design system", which reads the live version, changes only what's needed and republishes it.
-  2. Refresh `design/system/` from it in the same change.
-  3. Then implement in code.
-- **Don't edit `design/system/` by hand** without also updating the artifact; the two must match.
-- **After P1:** switch to **code-first**. App tokens and components become the source, and `/design-sync` in Claude Code pushes them to the design system, which then becomes read-only. Update this section when that switch happens.
+  1. Change it in code: the component's `.tsx` and its `<kebab>.md` README in `packages/ui/src/components/ui/`, or the token in `packages/tokens/tokens.json`. Only tokens, through the generated closed Tailwind theme; no arbitrary values, no `createElement`.
+  2. Test it, review it and merge it in a PR like any other change.
+  3. After the merge, the controller or an opus agent (never sonnet) runs `just design-system` from `main` and publishes the result to the live artifact with `"editing": "code"`.
+- **Never edit the artifact by hand,** and never edit or review `design/system/`: it is a git-ignored build output.
+- Spec: `docs/specs/2026-11-10-code-first-components.md`.
 
 ## Workflow
 - This repo uses baton (`.baton/config.json`):
