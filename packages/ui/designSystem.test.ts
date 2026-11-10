@@ -178,6 +178,12 @@ function loadWindow() {
     this.removeAttribute("open");
   };
   w.Element.prototype.scrollIntoView = () => {};
+  // Radix Popper (PopoverMenu) measures with ResizeObserver, which jsdom lacks.
+  w.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
   w.Orasenda = { strictShortcuts: true };
   for (const name of ["lib/react.js", "lib/react-dom.js", "bundle.js"]) {
     w.eval(file("components", name));
@@ -185,10 +191,10 @@ function loadWindow() {
   return { dom, w, errors };
 }
 
-/** Portalled components (Dialog) render outside their host; count them as rendered. */
+/** Portalled components (Dialog, PopoverMenu) render outside their host; count them as rendered. */
 // biome-ignore lint/suspicious/noExplicitAny: loose jsdom window
 function portalled(w: Record<string, any>): boolean {
-  return w.document.querySelector("[data-slot=dialog-content]") !== null;
+  return w.document.querySelector("[data-slot=dialog-content], [data-slot=popover-menu]") !== null;
 }
 
 /** Renders each named export with its minimal props; returns the names that threw or logged an error. */
