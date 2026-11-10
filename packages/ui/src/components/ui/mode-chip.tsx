@@ -1,5 +1,4 @@
 import type { ReactElement, ReactNode } from "react";
-import { cn } from "../../lib/utils";
 import { ModeShape } from "./glyphs";
 
 export interface ModeChipProps {
@@ -17,6 +16,11 @@ const WORD = {
   idle: "No session",
 } as const;
 
+// Joined with a plain template, not cn: text-label (a size) and text-<tint> (a
+// colour) share the text- prefix, and cn would drop one until theme-aware twMerge lands.
+const BASE =
+  "inline-flex min-h-control-sm items-center gap-2 rounded-pill px-3 py-1 text-label uppercase transition-colors duration-calm ease-calm forced-colors:border";
+
 const TINT = {
   focus: "bg-focus-soft text-focus",
   break: "bg-break-soft text-break",
@@ -33,10 +37,7 @@ export function ModeChip({ mode = "focus", children }: ModeChipProps): ReactElem
     <span
       data-slot="mode-chip"
       data-mode={mode}
-      className={cn(
-        "inline-flex min-h-control-sm items-center gap-2 rounded-pill px-3 py-1 text-label uppercase transition-colors duration-calm ease-calm forced-colors:border",
-        TINT[mode],
-      )}
+      className={`${BASE} ${TINT[mode]}`}
     >
       <ModeShape mode={mode} />
       {children || WORD[mode]}
