@@ -240,9 +240,7 @@ pub(crate) fn store_status<H: Host>(host: &H, status: NotificationStatus) {
     let (view, reviewed) = {
         let mut service = lock(service);
         let now_ms = host.now_ms();
-        let view = service
-            .set_notifications(status)
-            .then(|| service.snapshot(now_ms));
+        let view = apply_status(&mut service, status, now_ms);
         let reviewed = service
             .run_notify_review(now_ms)
             .then(|| service.settings());
@@ -256,17 +254,15 @@ pub(crate) fn store_status<H: Host>(host: &H, status: NotificationStatus) {
     }
 }
 
-/// Stores `status` under the service lock; the numbered view to publish when it changed.
-#[cfg(test)]
-pub(crate) fn status_snapshot<H: Host>(
-    host: &H,
+/// Stores `status` in the locked service; the numbered view to publish when it changed.
+fn apply_status(
+    service: &mut crate::session::SessionService,
     status: NotificationStatus,
+    now_ms: u64,
 ) -> Option<(u64, TimerView)> {
-    let service = host.service()?;
-    let mut service = lock(service);
     service
         .set_notifications(status)
-        .then(|| service.snapshot(host.now_ms()))
+        .then(|| service.snapshot(now_ms))
 }
 
 /// Emits `timer-tick` and renders the surfaces for `view`, unless a newer view (by `seq`)
@@ -789,8 +785,15 @@ mod tests {
         let answer = {
             let host = host.clone();
             thread::spawn(move || {
-                let (seq, view) =
-                    status_snapshot(&host, NotificationStatus::Granted).expect("changed");
+                let (seq, view) = {
+                    let service = host.service().expect("service");
+                    apply_status(
+                        &mut lock(service),
+                        NotificationStatus::Granted,
+                        host.now_ms(),
+                    )
+                    .expect("changed")
+                };
                 assert_eq!(view.state, EngineState::Running);
                 taken.send(()).unwrap();
                 may_publish.recv_timeout(WAIT).expect("released");

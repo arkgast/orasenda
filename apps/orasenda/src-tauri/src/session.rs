@@ -1137,7 +1137,10 @@ pub(crate) mod test_support {
         }
 
         /// What `open_settings` answers next.
-        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        #[allow(
+            dead_code,
+            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
+        )]
         pub(crate) fn set_open_result(&self, result: Result<(), PlatformError>) {
             *self
                 .open_result
@@ -1146,7 +1149,10 @@ pub(crate) mod test_support {
         }
 
         /// Holds every `status` read until the returned sender sends or drops.
-        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        #[allow(
+            dead_code,
+            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
+        )]
         pub(crate) fn gate_status(&self) -> std::sync::mpsc::Sender<()> {
             let (tx, rx) = std::sync::mpsc::channel();
             *self.gate.lock().unwrap_or_else(PoisonError::into_inner) = Some(rx);
@@ -1154,13 +1160,19 @@ pub(crate) mod test_support {
         }
 
         /// Makes `status` panic (after logging the read) while `on`.
-        #[allow(dead_code, reason = "used once Notifications has state (T4, #145)")]
+        #[allow(
+            dead_code,
+            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
+        )]
         pub(crate) fn panic_on_status(&self, on: bool) {
             self.panic_on_status.store(on, Ordering::SeqCst);
         }
 
         /// Answers the oldest open request, as the OS would on a Foundation thread.
-        #[allow(dead_code, reason = "T4 (#145) answers requests")]
+        #[allow(
+            dead_code,
+            reason = "blocked: request_on/reread_on need Notifications state (lib.rs:90 ruling)"
+        )]
         pub(crate) fn answer(&self, status: NotificationStatus) {
             self.set_status(status);
             let answer = self

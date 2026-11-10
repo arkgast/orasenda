@@ -109,11 +109,11 @@ impl Notifier for MacNotifier {
     }
 
     /// Opens this app's pane in System Settings. The caller runs it on the main thread.
-    /// `Refused` when `openURL` answers NO; never `Unsupported`.
+    /// `Unsupported` when there is no bundle; `Refused` when `openURL` answers NO.
     fn open_settings(&self) -> Result<(), PlatformError> {
         let bundle_id = NSBundle::mainBundle()
             .bundleIdentifier()
-            .ok_or_else(|| PlatformError::Other("the app has no bundle identifier".into()))?;
+            .ok_or(PlatformError::Unsupported)?;
         let url = NSURL::URLWithString(&NSString::from_str(&notification_settings_url(
             &bundle_id.to_string(),
         )))

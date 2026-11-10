@@ -1,7 +1,7 @@
 //! Notification permission and settings for the Settings page (spec B). Interim bodies
 //! until T4 (#145).
 
-use orasenda_core::NotificationStatus;
+use orasenda_core::{NotificationStatus, PlatformError};
 use tauri::AppHandle;
 
 use crate::ipc::{NotificationsError, NotificationsErrorKind};
@@ -36,12 +36,40 @@ pub(crate) async fn request(app: AppHandle) -> NotificationStatus {
         .unwrap_or(NotificationStatus::Unavailable)
 }
 
-// Interim: T4 (#145) replaces this.
-pub(crate) async fn open_settings(_app: AppHandle) -> Result<(), NotificationsError> {
-    Err(NotificationsError {
-        kind: NotificationsErrorKind::Unavailable,
-        message: "notification settings can't be opened yet".into(),
+/// Maps a platform failure to the IPC error: `Unsupported` is `unavailable`, anything
+/// else (the OS said NO, a bad address) is `failed`.
+fn open_settings_error(error: PlatformError) -> NotificationsError {
+    match error {
+        PlatformError::Unsupported => NotificationsError {
+            kind: NotificationsErrorKind::Unavailable,
+            message: "notification settings aren't available in this build".into(),
+        },
+        other => {
+            eprintln!("notifications: could not open System Settings: {other}");
+            failed()
+        }
+    }
+}
+
+fn failed() -> NotificationsError {
+    NotificationsError {
+        kind: NotificationsErrorKind::Failed,
+        message: "System Settings couldn't be opened".into(),
+    }
+}
+
+/// Opens the Notifications pane on the main thread, holding no lock.
+pub(crate) async fn open_settings(app: AppHandle) -> Result<(), NotificationsError> {
+    let notifier = scheduler::Host::notifier(&app);
+    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    app.run_on_main_thread(move || {
+        let _ = tx.try_send(notifier.open_settings());
     })
+    .map_err(|_| failed())?;
+    match rx.recv().await {
+        Some(result) => result.map_err(open_settings_error),
+        None => Err(failed()),
+    }
 }
 
 // Interim: T4 (#145) replaces this.
@@ -51,6 +79,23 @@ pub(crate) fn on_main_focused(_app: &AppHandle) {}
 mod tests {
     use super::*;
     use crate::session::test_support::{Event, TestHost};
+
+    #[test]
+    fn open_settings_maps_unsupported_to_unavailable() {
+        let kind = |e: PlatformError| open_settings_error(e).kind;
+        assert!(matches!(
+            kind(PlatformError::Unsupported),
+            NotificationsErrorKind::Unavailable
+        ));
+        assert!(matches!(
+            kind(PlatformError::Refused),
+            NotificationsErrorKind::Failed
+        ));
+        assert!(matches!(
+            kind(PlatformError::Other("x".into())),
+            NotificationsErrorKind::Failed
+        ));
+    }
 
     #[test]
     fn stored_status_is_returned_without_reading_or_asking() {
