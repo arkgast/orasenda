@@ -6,6 +6,28 @@ import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
+// WebKit does not focus a button on click, so remember the last pressed button as the opener fallback (same
+// approach as Dialog). A press only counts while fresh, and any key press clears it.
+const PRESS_TTL_MS = 1000;
+let lastPress: { el: HTMLElement; at: number } | null = null;
+if (typeof document !== "undefined") {
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      const el = (event.target as HTMLElement | null)?.closest<HTMLElement>("button");
+      lastPress = el ? { el, at: Date.now() } : null;
+    },
+    true,
+  );
+  document.addEventListener(
+    "keydown",
+    () => {
+      lastPress = null;
+    },
+    true,
+  );
+}
+
 export interface CommandPaletteProps {
   open?: boolean;
   commands: { id: string; label: string; hint?: string }[];
@@ -72,7 +94,9 @@ export function CommandPalette({
             className={panel}
             onOpenAutoFocus={(event) => {
               const active = document.activeElement as HTMLElement | null;
-              opener.current = active && active !== document.body ? active : null;
+              const press =
+                lastPress && Date.now() - lastPress.at <= PRESS_TTL_MS ? lastPress.el : null;
+              opener.current = active && active !== document.body ? active : press;
               event.preventDefault();
               inputRef.current?.focus();
             }}
