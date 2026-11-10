@@ -17,3 +17,10 @@ test("renders_line_and_dot_hidden_from_assistive_tech", () => {
   const line = container.querySelector("[data-slot=now-line-rule]");
   expect(line?.getAttribute("aria-hidden")).toBe("true");
 });
+
+test("dot_is_hidden_from_assistive_tech", () => {
+  const { container } = render(<NowLine time="09:41" />);
+  const dot = container.querySelector("[data-slot=now-line-dot]");
+  expect(dot).toBeTruthy();
+  expect(dot?.closest("[aria-hidden=true]")).toBeTruthy();
+});
