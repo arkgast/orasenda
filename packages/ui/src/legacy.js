@@ -134,8 +134,6 @@ function TimeBlock(p) {
     h("span", { className: "os-block-time" }, (compact ? "" : BLOCK_LABEL[type] + " · ") + (p.start || "") + (compact ? "" : "–" + (p.end || "")) + (p.selected ? " · Selected" : "")));
 }
 // end TimeBlock
-    else st[1](!done); } },
-}
 // WellnessNote
 function WellnessNote(p) {
   return h(p.as || "span", { className: "os-note", role: "note" }, h("svg", { viewBox: "0 0 14 14", "aria-hidden": "true" }, h("circle", { cx: 7, cy: 7, r: 6 }), h("path", { d: "M7 6v4M7 4.2v.1" })), p.children || "Wellness suggestion, not medical advice.");

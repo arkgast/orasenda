@@ -134,6 +134,7 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 /* end TimeBlock */
 
 /* Shared: disabled cards and blocks; WellnessNote */
+button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
 .os-note { display: inline-flex; gap: var(--space-2); align-items: center; font-size: 13px; line-height: 18px; color: var(--ink-muted); margin: 0; }
 .os-note svg { width: var(--icon-md); height: var(--icon-md); fill: none; stroke: currentColor; stroke-width: 1.5; flex: none; }
 /* end Shared: disabled cards and blocks; WellnessNote */
@@ -255,8 +256,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 }
 /* end Shared: reduced motion */
 
-/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
-/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, HabitDots) */
+/* Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
 @media (forced-colors: active) {
   .os-timer .track { stroke-dasharray: 2 4; }
   .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
@@ -265,8 +265,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-strip-tri { color: CanvasText; }
   .os-chip, .os-pomo { border: 1px solid; }
 }
-/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
-/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, HabitDots) */
+/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
 
 /* Shared: redesign pass glyphs */
 /* ---------------------------------------------------------------------------
