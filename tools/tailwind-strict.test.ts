@@ -16,9 +16,9 @@ test("lint_rejects_no_op_tailwind_class", async () => {
   const ok = `const a = <p className="m-0 min-w-0 inset-0 group peer group/row text-body p-4" />;`;
   assert.deepEqual(noOpClasses(ok, compiler), []);
   // cva and cx literals are read; comparisons and non-class strings are not.
-  const mixed = `const v = cva("font-semibold", { variants: { size: { lg: "m-9" } } });
+  const mixed = `const v = cva("font-bold", { variants: { size: { lg: "m-9" } } });
     const c = cx(size === "lg" && "p-4", "top-0");`;
-  assert.deepEqual(noOpClasses(mixed, compiler), ["font-semibold", "m-9"]);
+  assert.deepEqual(noOpClasses(mixed, compiler), ["font-bold", "m-9"]);
   assert.deepEqual(classWords(`const x = "font-bold"; const y = 1;`), []);
   assert.deepEqual(scanNoOp(folders, compiler), []);
   // A real utility repeated in the same file is not a false positive (build() is cumulative).
@@ -39,4 +39,13 @@ test("own_classes_exempt_only_legacy_prefixes", () => {
     "spike-a",
     "today-ring",
   ]);
+});
+
+test("own_classes_include_legacy_families_in_styles_css", () => {
+  const dir = mkdtempSync(join(tmpdir(), "own-"));
+  writeFileSync(
+    join(dir, "styles.css"),
+    '@import "tailwindcss/utilities.css"; .os-choice{} .font-bold{}',
+  );
+  assert.deepEqual([...ownClasses([dir])], ["os-choice"]);
 });

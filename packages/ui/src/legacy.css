@@ -133,22 +133,11 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 .os-nowline i::before { content: ""; position: absolute; inset-inline-start: 0; top: -2px; width: var(--space-1-5); height: var(--space-1-5); border-radius: var(--radius-pill); background: var(--focus); }
 /* end TimeBlock */
 
-/* RoutineItem */
-/* RoutineItem: the whole row is the checkbox. */
-.os-ritem { display: flex; gap: var(--space-3); align-items: flex-start; min-height: var(--hit-min); width: 100%; max-width: var(--panel-width); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line-strong); text-align: start; font: inherit; cursor: pointer; }
-.os-ritem:enabled:hover { background: var(--surface-sunken); }
-.os-ritem:enabled:active { background: var(--selection); }
-.os-check { flex: none; width: 20px; height: 20px; border-radius: var(--radius-sm); border: 1.5px solid var(--line-strong); display: grid; place-items: center; }
-.os-check svg { width: var(--icon-md); height: var(--icon-md); stroke: var(--on-break); fill: none; stroke-width: 2.5; }
-.os-ritem-done .os-check { background: var(--break); border-color: var(--break); }
-.os-ritem-done .os-ritem-label { color: var(--ink-muted); }
-.os-ritem-label { display: block; font-size: 15px; line-height: 22px; }
-.os-ritem-detail { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-.os-optional { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--routine); margin-inline-start: var(--space-2); }
-.os-ritem:disabled, button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
+/* Shared: disabled cards and blocks; WellnessNote */
+button.os-card:disabled, button.os-block:disabled { border-style: dashed; cursor: default; }
 .os-note { display: inline-flex; gap: var(--space-2); align-items: center; font-size: 13px; line-height: 18px; color: var(--ink-muted); margin: 0; }
 .os-note svg { width: var(--icon-md); height: var(--icon-md); fill: none; stroke: currentColor; stroke-width: 1.5; flex: none; }
-/* end RoutineItem */
+/* end Shared: disabled cards and blocks; WellnessNote */
 
 /* Dialog */
 /* Dialog shell shared by Dialog, IntentPrompt, CapturePad and CommandPalette. Backdrops never dismiss. */
@@ -196,33 +185,6 @@ button.os-block:enabled:hover .os-block-title, button.os-block:enabled:active .o
 textarea.os-input { resize: vertical; min-height: 96px; }
 /* end TextArea */
 
-/* Choice (CSS only: radio and checkbox choices, segmented and long variants) */
-.os-choice-group { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; border: 0; }
-.os-choice-group legend { margin-bottom: var(--space-2); }
-.os-choice { display: inline-flex; gap: var(--space-2); align-items: center; min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--ink); background: var(--surface-raised); cursor: pointer; }
-.os-choice:has(:checked) { background: var(--selection); }
-.os-choice input { appearance: none; width: var(--icon-md); height: var(--icon-md); margin: 0; border: 1.5px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface-raised); }
-.os-choice input:checked { background: var(--focus); border-color: var(--focus); box-shadow: inset 0 0 0 2px var(--surface-raised); }
-.os-choice:has(:disabled) { border-style: dashed; cursor: default; }
-.os-choice input[type="checkbox"] { display: inline-grid; place-content: center; border-radius: calc(var(--radius-sm) / 2); }
-.os-choice input[type="checkbox"]:checked { box-shadow: none; }
-.os-choice input[type="checkbox"]:checked::before { content: ""; width: calc(var(--icon-md) * 0.3); height: calc(var(--icon-md) * 0.55); margin-top: -2px; border: solid var(--on-focus); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-/* Choice variants: segmented (joined radios) and long (title plus one sentence). */
-.os-segmented { margin: 0; padding: 0; border: 0; }
-.os-segmented legend { margin-bottom: var(--space-2); font-size: 13px; line-height: 18px; color: var(--ink); }
-.os-segmented-track { display: inline-flex; }
-.os-segmented label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: var(--hit-min); padding: 0 var(--space-4); margin-inline-start: -1px; border: 1px solid var(--line-strong); background: var(--surface-raised); color: var(--ink); cursor: pointer; }
-.os-segmented label:first-child { margin-inline-start: 0; border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md); }
-.os-segmented label:last-child { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
-.os-segmented label:hover { background: var(--surface-sunken); }
-.os-segmented label:has(:checked) { background: var(--selection); font-weight: 600; box-shadow: inset 0 -2px 0 var(--focus); }
-.os-segmented label:has(input:focus-visible) { z-index: 1; outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.os-segmented input { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); }
-.os-choice-long { display: flex; align-items: flex-start; width: 100%; padding: var(--space-3); }
-.os-choice-long input { margin-top: var(--space-1); flex: none; }
-.os-choice-long b { display: block; font-weight: 600; }
-.os-choice-sub { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-/* end Choice (CSS only: radio and checkbox choices, segmented and long variants) */
 
 /* InlineNotice */
 /* InlineNotice and Toast */
@@ -294,7 +256,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 }
 /* end Shared: reduced motion */
 
-/* Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
+/* Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
 @media (forced-colors: active) {
   .os-timer .track { stroke-dasharray: 2 4; }
   .os-strip-bar::before, .os-strip-fill { forced-color-adjust: none; }
@@ -302,14 +264,8 @@ textarea.os-input { resize: vertical; min-height: 96px; }
   .os-strip-fill { background: CanvasText; }
   .os-strip-tri { color: CanvasText; }
   .os-chip, .os-pomo { border: 1px solid; }
-  /* Keep the checked radio dot and the checkbox fill: forced colors would repaint them as Canvas (#45). */
-  .os-choice input:checked { forced-color-adjust: none; background: Highlight; border-color: Highlight; box-shadow: inset 0 0 0 2px Canvas; }
-  .os-choice input[type="checkbox"]:checked { box-shadow: none; }
-  .os-choice input[type="checkbox"]:checked::before { border-color: HighlightText; }
-  .os-choice input:checked:focus-visible { outline-color: Highlight; }
-  .os-choice input:checked:disabled { background: GrayText; border-color: GrayText; }
 }
-/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip, RoutineItem, Choice) */
+/* end Shared: forced colors (TimerRing, TimerStrip, ModeChip) */
 
 /* Shared: redesign pass glyphs */
 /* ---------------------------------------------------------------------------
