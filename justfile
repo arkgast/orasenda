@@ -81,12 +81,16 @@ ci:
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
     @echo "==> docs-only classifier (tests)"
     ./scripts/docs-only.test.sh
+    @echo "==> file size guard (tests)"
+    ./scripts/file-size.test.sh
     @echo "==> install (pnpm, frozen lockfile)"
     pnpm install --frozen-lockfile --prefer-offline
     @echo "==> format (rustfmt)"
     cargo fmt --all --check
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
+    @echo "==> file size (500-line ceiling)"
+    "{{ just_executable() }}" file-size
     @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
     "{{ just_executable() }}" core-boundary
     @echo "==> core purity (no target_os in core)"
@@ -146,6 +150,10 @@ layout:
         exit 1
     fi
     pnpm exec playwright test --config verification/layout/playwright.config.ts
+
+# Fail on a tracked source file over 500 lines that is not on the allowlist.
+file-size:
+    ./scripts/file-size.sh
 
 # Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]
