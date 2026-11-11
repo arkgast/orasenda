@@ -122,8 +122,8 @@ fn delayed_retry_for_an_older_view_is_dropped() {
 /// tray idle with no title.
 #[test]
 fn stale_view_through_the_gate_leaves_the_tray_idle() {
-    use crate::scheduler::publish_view;
-    use crate::session::test_support::TestHost;
+    use crate::runtime::ticker::publish_view;
+    use crate::runtime::session::test_support::TestHost;
 
     let host = TestHost::new(NotificationStatus::Granted);
     let (tray, calls) = tray_with(Recorder::default());

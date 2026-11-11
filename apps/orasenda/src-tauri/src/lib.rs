@@ -3,14 +3,13 @@
 
 // The app menu: the pure parts build on every desktop target, the menu itself on macOS.
 #[cfg(desktop)]
-mod app_menu;
+mod menu;
 mod commands;
 mod ipc;
 mod lifecycle;
 mod notifications;
 mod platform;
-mod scheduler;
-mod session;
+mod runtime;
 pub(crate) mod spike;
 // The menu-bar item: Tauri's tray exists on desktop only.
 #[cfg(desktop)]
@@ -88,29 +87,29 @@ pub fn run() {
 
     let app = tauri::Builder::default()
         .manage(spike)
-        .manage(session::Surfaces::default())
+        .manage(runtime::session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
         .manage(notifications::Notifications::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
-            session::setup(app)?;
+            runtime::session::setup(app)?;
             #[cfg(desktop)]
             tray::setup(app)?;
-            scheduler::spawn(scheduler::AppHost::new(app.handle()))?;
+            runtime::ticker::spawn(runtime::ticker::AppHost::new(app.handle()))?;
             spike::setup(app)?;
             lifecycle::finish_launch(app.handle());
             Ok(())
         });
     #[cfg(target_os = "macos")]
     let app = app
-        .menu(app_menu::build)
-        .on_menu_event(|app, event| app_menu::on_menu_event(app, event.id().as_ref()));
+        .menu(menu::app_menu::build)
+        .on_menu_event(|app, event| menu::app_menu::on_menu_event(app, event.id().as_ref()));
     lifecycle::install(app)
         .build(context)
         .expect("error while building Orasenda")
         .run(|app, event| match event {
-            tauri::RunEvent::Exit => session::flush_on_exit(app),
+            tauri::RunEvent::Exit => runtime::session::flush_on_exit(app),
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { .. } => lifecycle::on_reopen(app),
             _ => {}

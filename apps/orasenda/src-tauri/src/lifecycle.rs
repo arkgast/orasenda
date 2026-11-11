@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager, Wry};
 use tauri_specta::Event as _;
 
 use crate::ipc::{Navigate, NavigatePage, Theme};
-use crate::scheduler;
+use crate::runtime::ticker as scheduler;
 
 /// The label of the app's main window (`tauri.conf.json`).
 pub(crate) const MAIN: &str = "main";
@@ -113,7 +113,7 @@ pub(crate) trait Shell {
 
 impl Shell for AppHandle {
     fn theme(&self) -> Theme {
-        crate::session::current_settings(self).theme
+        crate::runtime::session::current_settings(self).theme
     }
 
     fn apply_theme(&self, theme: Theme) {

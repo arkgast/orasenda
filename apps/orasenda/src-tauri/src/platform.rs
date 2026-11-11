@@ -7,7 +7,7 @@ use std::sync::Arc;
 #[cfg(target_os = "macos")]
 use orasenda_core::Notifier;
 
-use crate::session::Platform;
+use crate::runtime::session::Platform;
 
 /// The production platform: on macOS the AppKit and Foundation services from
 /// `orasenda-platform-macos` (the notifier only inside an `.app` bundle); elsewhere the core

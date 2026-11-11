@@ -7,8 +7,8 @@ use orasenda_core::{NotificationStatus, PlatformError};
 use tauri::AppHandle;
 
 use crate::ipc::{NotificationsError, NotificationsErrorKind};
-use crate::scheduler::{self, AppHost, Host};
-use crate::session;
+use crate::runtime::ticker::{self as scheduler, AppHost, Host};
+use crate::runtime::session;
 
 type Waiter = tauri::async_runtime::Sender<NotificationStatus>;
 
@@ -176,8 +176,8 @@ pub(crate) fn on_main_focused(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::session::lock;
-    use crate::session::test_support::{Event, TestHost};
+    use crate::runtime::session::lock;
+    use crate::runtime::session::test_support::{Event, TestHost};
 
     fn state() -> Notifications {
         Notifications::default()
@@ -228,13 +228,13 @@ mod tests {
     #[test]
     fn notifications_request_never_writes_settings() {
         let host = TestHost::new(NotificationStatus::NotDetermined);
-        let before = crate::session::test_support::db(&lock(&host.0.service))
+        let before = crate::runtime::session::test_support::db(&lock(&host.0.service))
             .change_log_ids()
             .len();
         let mut rx = request_on(&host, &state());
         host.0.notifier.answer(NotificationStatus::Denied);
         assert_eq!(drain(&mut rx), Some(NotificationStatus::Denied));
-        let after = crate::session::test_support::db(&lock(&host.0.service))
+        let after = crate::runtime::session::test_support::db(&lock(&host.0.service))
             .change_log_ids()
             .len();
         assert_eq!(before, after);
@@ -282,15 +282,15 @@ mod tests {
 
     #[test]
     fn review_runs_once_from_any_trigger() {
-        let store = crate::session::test_support::memory_store();
+        let store = crate::runtime::session::test_support::memory_store();
         store.put_meta_for_tests("notify_review", "pending");
         store
             .write(0, |txn| {
                 orasenda_store::settings::set(txn, "notify.session_end", &true)
             })
             .expect("seeds");
-        let f = crate::session::test_support::fakes(NotificationStatus::NotDetermined, false);
-        let service = crate::session::SessionService::new(Ok(store), f.platform, 0);
+        let f = crate::runtime::session::test_support::fakes(NotificationStatus::NotDetermined, false);
+        let service = crate::runtime::session::SessionService::new(Ok(store), f.platform, 0);
         let host = TestHost::with(service, f.log, f.notifier);
         host.log().take();
         let s = state();
@@ -342,7 +342,7 @@ mod tests {
         );
         assert!(!events.contains(&Event::Requested), "{events:?}");
         assert_eq!(
-            crate::session::lock(host.service().unwrap()).notifications(),
+            crate::runtime::session::lock(host.service().unwrap()).notifications(),
             Some(NotificationStatus::NotDetermined)
         );
     }

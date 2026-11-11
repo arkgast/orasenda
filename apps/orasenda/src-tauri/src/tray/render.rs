@@ -6,7 +6,7 @@ use tauri::image::Image;
 
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
 use crate::ipc::{Mode, TimerView};
-use crate::session::NativeSurface;
+use crate::runtime::session::NativeSurface;
 
 const FOCUS_ICON: Image<'static> = tauri::include_image!("src/tray/icons/focus.png");
 const PAUSED_ICON: Image<'static> = tauri::include_image!("src/tray/icons/paused.png");

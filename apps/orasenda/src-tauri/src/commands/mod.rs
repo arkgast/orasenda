@@ -7,7 +7,7 @@ use crate::ipc::{
     NavigatePage, NotificationsError, Settings, SettingsError, SettingsErrorKind, StartRequest,
     StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerState, TimerView,
 };
-use crate::session::{self, Action};
+use crate::runtime::session::{self, Action};
 use crate::{lifecycle, notifications};
 
 /// Name, version and platform of the running app.
