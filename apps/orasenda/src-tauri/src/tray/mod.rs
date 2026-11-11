@@ -30,9 +30,10 @@ mod state;
 #[cfg(test)]
 mod tests;
 
-use std::sync::{Arc, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::thread;
 
+use tauri::menu::MenuItem;
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use tauri::{AppHandle, Manager, Wry};
 
@@ -41,11 +42,14 @@ use crate::runtime::session::{NativeSurface, Surfaces};
 
 #[cfg(test)]
 pub(crate) use menu::{
-    END_SESSION, MenuCommand, PAUSE, QUIT, RESUME, SETTINGS, SHOW, menu_command,
+    EDIT_TIMES, END_SESSION, JUST_TWO, MenuCommand, PAUSE, QUIT, RESUME, SETTINGS, SHOW, START,
+    menu_command, start_action,
 };
+#[cfg(test)]
+pub(crate) use render::header_text;
 pub(crate) use render::{Glyph, Tray, TrayHandle, tray_label, tray_title_and_icon};
 
-use menu::{build_menu, menu_items, on_menu_event};
+use menu::{MenuEntry, NextSession, build_menu, menu_items, on_menu_event};
 use render::report;
 use state::{RETRY_DELAY, lock_state};
 
@@ -56,6 +60,9 @@ pub(crate) const TRAY_ID: &str = "orasenda";
 struct TauriTray {
     app: AppHandle,
     icon: TrayIcon<Wry>,
+    /// The menu's header item. The mutex is held only to copy the handle out, never across a
+    /// call into AppKit.
+    header: Mutex<Option<MenuItem<Wry>>>,
 }
 
 impl TrayHandle for TauriTray {
@@ -116,11 +123,25 @@ impl TrayHandle for TauriTray {
             .map_err(|error| error.to_string())
     }
 
-    fn set_menu(&self, items: &[&'static str]) -> Result<(), String> {
-        let menu = build_menu(&self.app, items).map_err(|error| error.to_string())?;
+    fn set_menu(&self, items: &[MenuEntry], header: Option<&str>) -> Result<(), String> {
+        let (menu, header_item) =
+            build_menu(&self.app, items, header).map_err(|error| error.to_string())?;
+        *self.header.lock().unwrap_or_else(PoisonError::into_inner) = header_item;
         self.icon
             .set_menu(Some(menu))
             .map_err(|error| error.to_string())
+    }
+
+    fn set_header(&self, text: &str) -> Result<(), String> {
+        let item = self
+            .header
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        match item {
+            Some(item) => item.set_text(text).map_err(|error| error.to_string()),
+            None => Err("the menu has no header item".to_string()),
+        }
     }
 }
 
@@ -132,7 +153,8 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         orasenda_core::NotificationStatus::Unavailable,
     );
     let (_, glyph) = tray_title_and_icon(&idle);
-    let menu = build_menu(handle, &menu_items(&idle))?;
+    let next = NextSession::from_settings(&crate::runtime::session::current_settings(handle));
+    let (menu, header) = build_menu(handle, &menu_items(&idle, &next, false), None)?;
     let icon = TrayIconBuilder::with_id(TRAY_ID)
         .icon(glyph.image())
         .icon_as_template(true)
@@ -144,6 +166,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let tauri_tray = Arc::new(TauriTray {
         app: handle.clone(),
         icon,
+        header: Mutex::new(header),
     });
     // The builder takes no accessibility label, so the idle item gets it here, on the main
     // thread like every tray call.
@@ -151,7 +174,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         "set_accessibility_label",
         tauri_tray.set_accessibility_label(&tray_label(&idle)),
     );
-    let tray = Tray::new(tauri_tray, &idle);
+    let tray = Tray::new(tauri_tray, &idle, next);
     if !labelled {
         // The first render then redoes every call, the label included.
         lock_state(&tray.state).drawn = None;

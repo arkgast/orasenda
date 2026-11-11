@@ -8,8 +8,9 @@ use orasenda_core::{EngineState, NotificationStatus, format_remaining, spoken_re
 use super::state::{DRAW_RETRIES, Drawn, TrayState};
 use super::*;
 use crate::ipc::{Mode, StoreStatus};
-use crate::runtime::session::Action;
 
+mod header;
+mod menu_items;
 mod retry;
 
 /// 24:59, 24:58 and 24:57 left.
@@ -66,65 +67,14 @@ fn tray_label_per_view() {
     );
 }
 
-#[test]
-fn menu_items_per_state() {
-    assert_eq!(menu_items(&idle()), [SHOW, SETTINGS, QUIT]);
-    assert_eq!(
-        menu_items(&running(S59)),
-        [PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]
-    );
-    assert_eq!(
-        menu_items(&paused(S59)),
-        [RESUME, END_SESSION, SHOW, SETTINGS, QUIT]
-    );
-    assert_eq!(
-        [PAUSE, RESUME, END_SESSION, SHOW, SETTINGS, QUIT],
-        [
-            "Pause",
-            "Resume",
-            "End session",
-            "Show Orasenda",
-            "Settings…",
-            "Quit Orasenda"
-        ]
-    );
-}
-
-#[test]
-fn menu_command_maps_every_tray_item() {
-    assert!(matches!(
-        menu_command(PAUSE),
-        Some(MenuCommand::Session(Action::Pause))
-    ));
-    assert!(matches!(
-        menu_command(RESUME),
-        Some(MenuCommand::Session(Action::Resume))
-    ));
-    assert!(matches!(
-        menu_command(END_SESSION),
-        Some(MenuCommand::Session(Action::Stop))
-    ));
-    assert!(matches!(menu_command(SHOW), Some(MenuCommand::Show)));
-    assert!(matches!(menu_command(QUIT), Some(MenuCommand::Quit)));
-    assert!(menu_command("about").is_none());
-}
-
-#[test]
-fn menu_command_settings() {
-    assert!(matches!(
-        menu_command(SETTINGS),
-        Some(MenuCommand::Settings)
-    ));
-    assert!(menu_command("settings").is_none());
-}
-
 #[derive(Debug, Clone, PartialEq)]
 enum Call {
     Title(Option<String>),
     Tooltip(String),
     AccessibilityLabel(String),
     Glyph(Glyph),
-    Menu(Vec<&'static str>),
+    Menu(Vec<MenuEntry>, Option<String>),
+    Header(String),
 }
 
 fn title(text: &str) -> Call {
@@ -235,28 +185,33 @@ impl TrayHandle for Recorder {
         Ok(())
     }
 
-    fn set_menu(&self, items: &[&'static str]) -> Result<(), String> {
-        self.record(Call::Menu(items.to_vec()));
+    fn set_menu(&self, items: &[MenuEntry], header: Option<&str>) -> Result<(), String> {
+        self.record(Call::Menu(items.to_vec(), header.map(str::to_string)));
+        Ok(())
+    }
+
+    fn set_header(&self, text: &str) -> Result<(), String> {
+        self.record(Call::Header(text.into()));
         Ok(())
     }
 }
 
 fn tray_with(recorder: Recorder) -> (Arc<Tray>, Arc<Recorder>) {
     let recorder = Arc::new(recorder);
-    let tray = Arc::new(Tray::new(recorder.clone(), &idle()));
+    let tray = Arc::new(Tray::new(recorder.clone(), &idle(), NextSession::default()));
     recorder.state.set(Arc::clone(&tray.state)).ok().unwrap();
     (tray, recorder)
 }
 
 /// Everything a draw from the idle item to `view` calls.
 fn full_draw(view: &TimerView) -> Vec<Call> {
-    let drawn = Drawn::of(view);
+    let drawn = Drawn::of(view, &NextSession::default());
     vec![
         Call::Title(drawn.title),
         Call::Tooltip(drawn.label.clone()),
         Call::AccessibilityLabel(drawn.label),
         Call::Glyph(drawn.glyph),
-        Call::Menu(drawn.items),
+        Call::Menu(drawn.items, drawn.header),
     ]
 }
 
@@ -289,7 +244,10 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             tooltip(&paused(S58)),
             accessibility_label(&paused(S58)),
             Call::Glyph(Glyph::Paused),
-            Call::Menu(vec![RESUME, END_SESSION, SHOW, SETTINGS, QUIT]),
+            Call::Menu(
+                menu_items(&paused(S58), &NextSession::default(), false),
+                header_text(&paused(S58)),
+            ),
         ]
     );
 
@@ -300,7 +258,10 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             tooltip(&running(S58)),
             accessibility_label(&running(S58)),
             Call::Glyph(Glyph::Focus),
-            Call::Menu(vec![PAUSE, END_SESSION, SHOW, SETTINGS, QUIT]),
+            Call::Menu(
+                menu_items(&running(S58), &NextSession::default(), false),
+                header_text(&running(S58)),
+            ),
         ]
     );
 
@@ -312,7 +273,7 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             Call::Tooltip("No session".into()),
             Call::AccessibilityLabel("No session".into()),
             Call::Glyph(Glyph::Idle),
-            Call::Menu(vec![SHOW, SETTINGS, QUIT]),
+            Call::Menu(menu_items(&idle(), &NextSession::default(), false), None),
         ]
     );
 }

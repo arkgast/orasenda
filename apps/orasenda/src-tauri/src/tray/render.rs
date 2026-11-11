@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use tauri::image::Image;
 
+use super::menu::{MenuEntry, NextSession};
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
+use crate::ipc::Settings;
 use crate::ipc::{Mode, TimerView};
 use crate::runtime::session::NativeSurface;
 
@@ -51,6 +53,27 @@ pub(crate) fn tray_label(view: &TimerView) -> String {
     format!("{mode}, {} remaining", view.remaining_label)
 }
 
+/// The disabled status header at the top of the running and paused menus, or `None` when
+/// idle: "Focus · 18 minutes left · ends 15:20", "Paused · 18 minutes left". The minutes
+/// round up, and one reads "1 minute left". It changes at most once a minute.
+pub(crate) fn header_text(view: &TimerView) -> Option<String> {
+    let mode = match view.mode {
+        Mode::Focus => "Focus",
+        Mode::Paused => "Paused",
+        Mode::Idle => return None,
+    };
+    let minutes = view.remaining_ms.div_ceil(60_000).max(1);
+    let left = if minutes == 1 {
+        "1 minute left".to_string()
+    } else {
+        format!("{minutes} minutes left")
+    };
+    Some(match (&view.mode, &view.finish) {
+        (Mode::Focus, Some(finish)) => format!("{mode} · {left} · ends {finish}"),
+        _ => format!("{mode} · {left}"),
+    })
+}
+
 /// The tray calls [`Tray`] makes, behind a small trait so the render logic is tested with a
 /// recording fake.
 pub(crate) trait TrayHandle: Send + Sync + 'static {
@@ -65,7 +88,10 @@ pub(crate) trait TrayHandle: Send + Sync + 'static {
     fn set_accessibility_label(&self, label: &str) -> Result<(), String>;
     /// Swaps the glyph, keeping it a template image.
     fn set_glyph(&self, glyph: Glyph) -> Result<(), String>;
-    fn set_menu(&self, items: &[&'static str]) -> Result<(), String>;
+    /// Replaces the menu; `header` is the text of the [`MenuEntry::Header`] item, if any.
+    fn set_menu(&self, items: &[MenuEntry], header: Option<&str>) -> Result<(), String>;
+    /// Changes the status header's text in place, without rebuilding the menu.
+    fn set_header(&self, text: &str) -> Result<(), String>;
 }
 
 /// The menu-bar item as a [`NativeSurface`].
@@ -76,12 +102,14 @@ pub struct Tray {
 
 impl Tray {
     /// A tray whose item already shows `shown` (the idle item `setup` builds).
-    pub(super) fn new(handle: Arc<dyn TrayHandle>, shown: &TimerView) -> Tray {
+    pub(super) fn new(handle: Arc<dyn TrayHandle>, shown: &TimerView, next: NextSession) -> Tray {
         Tray {
             handle,
             state: Arc::new(Mutex::new(TrayState {
                 wanted: None,
-                drawn: Some(Drawn::of(shown)),
+                drawn: Some(Drawn::of(shown, &next)),
+                view: shown.clone(),
+                next,
                 retries: 0,
                 render_seq: 0,
             })),
@@ -93,7 +121,20 @@ impl NativeSurface for Tray {
     fn render(&self, view: &TimerView) {
         {
             let mut state = lock_state(&self.state);
-            state.wanted = Some(Drawn::of(view));
+            state.view = view.clone();
+            state.wanted = Some(Drawn::of(view, &state.next));
+            state.retries = 0;
+            state.render_seq += 1;
+        }
+        post_draw(&self.handle, &self.state);
+    }
+
+    /// The idle menu follows the saved preset: the Start minutes and the checked item.
+    fn settings_changed(&self, settings: &Settings) {
+        {
+            let mut state = lock_state(&self.state);
+            state.next = NextSession::from_settings(settings);
+            state.wanted = Some(Drawn::of(&state.view, &state.next));
             state.retries = 0;
             state.render_seq += 1;
         }
@@ -136,9 +177,16 @@ fn draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
     if drawn.as_ref().map(|d| d.glyph) != Some(wanted.glyph) {
         ok &= report("set_icon", handle.set_glyph(wanted.glyph));
     }
-    // The menu is rebuilt only when the state class changes (idle, running, paused).
+    // The menu is rebuilt only when its item list changes; a new header text is set in place.
     if drawn.as_ref().map(|d| &d.items) != Some(&wanted.items) {
-        ok &= report("set_menu", handle.set_menu(&wanted.items));
+        ok &= report(
+            "set_menu",
+            handle.set_menu(&wanted.items, wanted.header.as_deref()),
+        );
+    } else if drawn.as_ref().map(|d| &d.header) != Some(&wanted.header)
+        && let Some(text) = &wanted.header
+    {
+        ok &= report("set_header", handle.set_header(text));
     }
     if ok {
         let mut state = lock_state(state);
