@@ -7,8 +7,8 @@ use orasenda_core::{NotificationStatus, PlatformError};
 use tauri::AppHandle;
 
 use crate::ipc::{NotificationsError, NotificationsErrorKind};
-use crate::runtime::ticker::{self as scheduler, AppHost, Host};
 use crate::runtime::session;
+use crate::runtime::ticker::{self as scheduler, AppHost, Host};
 
 type Waiter = tauri::async_runtime::Sender<NotificationStatus>;
 
@@ -289,7 +289,8 @@ mod tests {
                 orasenda_store::settings::set(txn, "notify.session_end", &true)
             })
             .expect("seeds");
-        let f = crate::runtime::session::test_support::fakes(NotificationStatus::NotDetermined, false);
+        let f =
+            crate::runtime::session::test_support::fakes(NotificationStatus::NotDetermined, false);
         let service = crate::runtime::session::SessionService::new(Ok(store), f.platform, 0);
         let host = TestHost::with(service, f.log, f.notifier);
         host.log().take();

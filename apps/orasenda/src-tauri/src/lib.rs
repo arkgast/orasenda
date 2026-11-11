@@ -2,11 +2,11 @@
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
 // The app menu: the pure parts build on every desktop target, the menu itself on macOS.
-#[cfg(desktop)]
-mod menu;
 mod commands;
 mod ipc;
 mod lifecycle;
+#[cfg(desktop)]
+mod menu;
 mod notifications;
 mod platform;
 mod runtime;
