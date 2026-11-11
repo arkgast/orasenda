@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-10-structure-refactor.md](../specs/2026-11-10-structure-refactor.md) (approved 2026-11-10)
 - Date: 2026-11-10
-- Status: in backlog (2026-11-10; R0 #268, R1 #269, R2 #270, R3 #271, R4 #272, R5 #278, R6 #273, R7 #274, R8 #275, R9 #276, R10 #277)
+- Status: implemented (2026-11-11; backlog 2026-11-10; R0 #268, R1 #269, R2 #270, R3 #271, R4 #272, R5 #278, R6 #273, R7 #274, R8 #275, R9 #276, R10 #277)
 
 ## Overview
 Eleven tasks in two lanes that share no files until the end. **Frontend lane:** R1 Choice → R2 legacy removal → R3 Preflight. **Rust lane:** R0 guard → R4–R7 splits in place → R8 service crate → R9 adapter folders. **Last:** R10 frontend folders (it moves `bindings.ts`, whose path R8/R9's `lib.rs` sets). One PR per task, one Workflow pipeline per task, at most three at once.

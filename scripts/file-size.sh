@@ -37,7 +37,7 @@ listed_count_of() { # path -> count, or empty
 
 exempt() {
   case "$1" in
-    apps/orasenda/src/bindings.ts | packages/tokens/tokens.css | packages/tokens/theme.css) return 0 ;;
+    apps/orasenda/src/ipc/bindings.ts | packages/tokens/tokens.css | packages/tokens/theme.css) return 0 ;;
     dist/* | */dist/* | gen/* | */gen/* | design/reviews/*) return 0 ;;
   esac
   return 1

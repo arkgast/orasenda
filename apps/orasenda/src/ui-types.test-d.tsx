@@ -66,8 +66,8 @@ import type {
   WellnessNoteProps,
 } from "@orasenda/ui";
 import { Button, type ButtonProps } from "@orasenda/ui";
-import type { CustomSpec, Settings } from "./bindings";
-import type { CoversEveryKey, CUSTOM_KEYS, SETTINGS_KEYS } from "./settingsQueue";
+import type { CustomSpec, Settings } from "./ipc/bindings";
+import type { CoversEveryKey, CUSTOM_KEYS, SETTINGS_KEYS } from "./ipc/settingsQueue";
 
 export const valid = (
   <Button onClick={() => {}} type="button" disabled aria-label="Start" variant="primary">

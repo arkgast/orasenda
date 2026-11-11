@@ -8,5 +8,5 @@ afterEach(() => {
 
 // The app loads its pages as chunks; tests start once they are in, as they are a moment after launch.
 beforeAll(async () => {
-  await (await import("../App")).pagesReady;
+  await (await import("../app/App")).pagesReady;
 });

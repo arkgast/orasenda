@@ -13,7 +13,7 @@
       "!design/system",
       "!design/reviews/05-v34",
       "!.baton",
-      "!apps/orasenda/src/bindings.ts",
+      "!apps/orasenda/src/ipc/bindings.ts",
       "!packages/tokens/tokens.css",
       "!packages/tokens/tokens.json",
       "!packages/tokens/theme.css",

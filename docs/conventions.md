@@ -38,7 +38,7 @@ File size and module layout rules are in [Code structure and size](#code-structu
   `cfg(target_os)`, and never calls `SystemTime::now()`: time is passed in.
 - Every new Rust dependency of core must `cargo check` for `aarch64-apple-ios` and
   `aarch64-linux-android`. `scripts/ci.sh` enforces it on macOS only.
-- `apps/orasenda/src/bindings.ts` and `packages/tokens/tokens.css` are generated. Never
+- `apps/orasenda/src/ipc/bindings.ts` and `packages/tokens/tokens.css` are generated. Never
   edit them by hand; regenerate and commit.
 - Every new Tauri command is added to the `AppManifest` list in `build.rs` and granted in a
   capability. Commands not listed there are open to every window.
@@ -58,7 +58,7 @@ File size and module layout rules are in [Code structure and size](#code-structu
 ## Code structure and size
 Rules from the [structure refactor spec](specs/2026-11-10-structure-refactor.md).
 1. **Size.** A tracked source file (`.rs`, `.ts`, `.tsx`, `.js`, `.css`) is at most 500 lines,
-   tests included. Generated files are exempt (`apps/orasenda/src/bindings.ts`,
+   tests included. Generated files are exempt (`apps/orasenda/src/ipc/bindings.ts`,
    `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`) and the archived `design/reviews/`. `just file-size` runs in `ci`.
    Files that predate the rule sit in `scripts/file-size-allowlist.txt` with their line count.
    The guard fails when a listed file grows, when a listed file is back under 500 (remove its

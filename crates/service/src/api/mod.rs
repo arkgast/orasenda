@@ -1,5 +1,5 @@
 //! The API contract for the focus session loop: every type the webview sees. The app crate
-//! types them for the webview with tauri-specta (ADR-007); `src/bindings.ts` is generated
+//! types them for the webview with tauri-specta (ADR-007); `src/ipc/bindings.ts` is generated
 //! from these.
 
 mod errors;

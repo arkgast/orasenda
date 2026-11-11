@@ -56,7 +56,7 @@ fresh; printf '600 src/gone.rs\n' >> scripts/file-size-allowlist.txt; run
 expect "listed path that no longer exists fails" 1 "$rc" "$out" "src/gone.rs"
 
 fresh
-lines apps/orasenda/src/bindings.ts 900
+lines apps/orasenda/src/ipc/bindings.ts 900
 lines packages/tokens/tokens.css 900
 lines packages/tokens/theme.css 900
 lines pkg/dist/a.js 900

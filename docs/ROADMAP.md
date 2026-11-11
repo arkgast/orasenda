@@ -52,7 +52,7 @@ P1 is built as eight sub-projects (seven lettered, plus Components), each with i
 
 **Build order: A → B → Components → C → (D ∥ E) → F → G.**
 
-**Note (2026-11-10).** The [structure refactor](specs/2026-11-10-structure-refactor.md) (500-line ceiling, a UI-free service crate, feature folders, no legacy code) runs before sub-project C.
+**Note (2026-11-10).** The [structure refactor](specs/2026-11-10-structure-refactor.md) (500-line ceiling, a UI-free service crate, feature folders, no legacy code) is done (2026-11-11) and ran before sub-project C.
 
 Tracking and blocking stay in P5 and P6. No P1 change there.
 
