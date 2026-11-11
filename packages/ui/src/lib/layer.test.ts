@@ -38,7 +38,9 @@ test("is_topmost_layer_only_for_the_last_open_layer", () => {
 test("is_topmost_layer_false_while_a_popup_is_open_inside", () => {
   document.body.innerHTML = radix("open", "a");
   const layer = byId("a");
-  layer.innerHTML = '<div class="os-popover os-popover-panel"></div>';
+  layer.innerHTML = '<div data-slot="popover-menu"></div>';
+  expect(isTopmostLayer(layer)).toBe(false);
+  layer.innerHTML = '<div data-slot="tooltip"></div>';
   expect(isTopmostLayer(layer)).toBe(false);
   layer.innerHTML = "";
   expect(isTopmostLayer(layer)).toBe(true);

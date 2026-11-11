@@ -5,7 +5,7 @@ import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
 import { frames, openSpecimen, pressTab } from "./support/specimen.ts";
 
-const PANEL = ".os-popover-panel";
+const PANEL = '[data-slot="popover-menu"]';
 
 const FORMS = [
   { shot: "popover-menu-today", trigger: "Classic · ends 15:20, Change preset", menu: "Preset" },
@@ -63,11 +63,10 @@ test("popover_menu_fits_at_360", async ({ page }, info) => {
     expect(r.wide).toBe(false);
     const sep = await panel.evaluate((p) => {
       const hr = p.querySelector("[role=separator]");
-      const list = p.querySelector(".os-popover-list");
       return {
         has: !!hr,
         hr: hr ? hr.getBoundingClientRect().width : 0,
-        list: list ? list.getBoundingClientRect().width : 0,
+        list: p.clientWidth,
       };
     });
     if (sep.has) {
@@ -184,7 +183,7 @@ test("popover_menu_placed_against_trigger_inside_open_dialog", async ({ page }, 
   await expect(panel).toBeVisible();
   const space1 = await token(page, "--space-1");
   const r = await page.evaluate(() => {
-    const p = document.querySelector(".os-popover-panel") as HTMLElement;
+    const p = document.querySelector('[data-slot="popover-menu"]') as HTMLElement;
     const t = document.querySelector(
       '[data-slot="dialog-content"] button[aria-haspopup="menu"]',
     ) as HTMLElement;
@@ -194,7 +193,7 @@ test("popover_menu_placed_against_trigger_inside_open_dialog", async ({ page }, 
     return {
       inDialog: !!p.closest('[data-slot="dialog-content"]'),
       inside: !!hit && p.contains(hit),
-      side: p.getAttribute("data-side"),
+      side: p.getAttribute("data-side") === "top" ? "above" : "below",
       b: { l: b.left, t: b.top, r: b.right, bt: b.bottom },
       tb: { l: tb.left, t: tb.top, r: tb.right, bt: tb.bottom },
     };
@@ -225,9 +224,11 @@ test("popover_menu_flips_inside_viewport", async ({ page }) => {
   await trigger.click();
   const panel = page.locator(PANEL);
   await expect(panel).toBeVisible();
-  await expect(panel).toHaveAttribute("data-side", "above");
+  await expect(panel).toHaveAttribute("data-side", "top");
   const r = await page.evaluate(() => {
-    const b = (document.querySelector(".os-popover-panel") as HTMLElement).getBoundingClientRect();
+    const b = (
+      document.querySelector('[data-slot="popover-menu"]') as HTMLElement
+    ).getBoundingClientRect();
     const t = (
       document.querySelector('[aria-haspopup="menu"][aria-expanded="true"]') as HTMLElement
     ).getBoundingClientRect();
@@ -302,3 +303,39 @@ test("popover_menu_no_motion_when_reduced", async ({ page }, info) => {
     await page.keyboard.press("Escape");
   }
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`popover_menu_fits_and_places_at_${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "PopoverMenu");
+    const space2 = await token(page, "--space-2");
+    const popoverWidth = await token(page, "--popover-width");
+    for (const form of FORMS) {
+      await openMenu(page, form.trigger);
+      const panel = page.locator(PANEL);
+      await expectVisibleFits(panel);
+      const r = await panel.evaluate((p) => {
+        const b = p.getBoundingClientRect();
+        return {
+          left: b.left,
+          right: b.right,
+          top: b.top,
+          bottom: b.bottom,
+          width: b.width,
+          vw: document.documentElement.clientWidth,
+          vh: document.documentElement.clientHeight,
+        };
+      });
+      expect(r.left).toBeGreaterThanOrEqual(space2 - 1);
+      expect(r.right).toBeLessThanOrEqual(r.vw - space2 + 1);
+      expect(r.top).toBeGreaterThanOrEqual(space2 - 1);
+      expect(r.bottom).toBeLessThanOrEqual(r.vh - space2 + 1);
+      expect(Math.abs(r.width - popoverWidth)).toBeLessThanOrEqual(1);
+      await page.keyboard.press("Escape");
+      await expect(panel).toHaveCount(0);
+    }
+  });
+}

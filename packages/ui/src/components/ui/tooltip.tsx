@@ -98,7 +98,7 @@ export function Tooltip({
     if (!shown) return;
     const key = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      const inMenu = (event.target as Element | null)?.closest?.(".os-popover-panel");
+      const inMenu = (event.target as Element | null)?.closest?.("[data-slot='popover-menu']");
       cancel();
       setDismissed(true);
       if (!inMenu) {
