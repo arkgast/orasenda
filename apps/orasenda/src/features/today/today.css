@@ -1,0 +1,116 @@
+/* Today: one grid that fills the window and never scrolls (spec C, "Today's grid"). Every length is
+   a token. The shell's column already pads the page (space-6, space-4 when compact). */
+
+/* The page box is the grid's one cell, so Today can take its height. It does not scroll, and it
+   does not clip either: the focus ring of the controls at its edge must show. */
+.app-main:has(.today) {
+  display: grid;
+  overflow: visible;
+}
+
+/* The stacked strip trades the column's padding for space-3 above and below. */
+.app-column:has(.today[data-layout="stackedStrip"]) {
+  padding-block: var(--space-3);
+}
+
+.today {
+  display: grid;
+  min-block-size: 0;
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, var(--content-width));
+  grid-template-rows: var(--hit-min) var(--hit-min) minmax(0, 1fr) var(--control-lg);
+  grid-template-areas: "top" "status" "time" "controls";
+  justify-content: center;
+}
+
+.today[data-layout="stackedStrip"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--space-2);
+}
+
+/* The controls column is as narrow as its widest button, so Start and Just 2 minutes stack and the
+   time keeps its room at 640 wide (max-content would put them side by side and starve it). */
+.today[data-layout="strip"] {
+  grid-template-columns:
+    minmax(var(--layout-strip-status-min), 1fr)
+    minmax(0, 1.6fr)
+    min-content;
+  grid-template-rows: var(--hit-min) minmax(0, 1fr);
+  grid-template-areas:
+    "top top top"
+    "status time controls";
+  column-gap: var(--space-8);
+  justify-content: stretch;
+}
+
+/* A narrow strip needs the room back: a compact one closes the gap to space-4. */
+.today[data-layout="strip"][data-compact] {
+  column-gap: var(--space-4);
+}
+
+.today-top {
+  grid-area: top;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-inline-size: 0;
+}
+
+.today-top-start {
+  display: flex;
+  align-items: center;
+}
+
+/* C5's preset summary; until then an empty cell as tall as a target. */
+.today-summary {
+  min-block-size: var(--hit-min);
+  min-inline-size: 0;
+}
+
+.today-top-end {
+  min-block-size: var(--hit-min);
+}
+
+.today-status {
+  grid-area: status;
+  min-inline-size: 0;
+}
+
+/* A centred column centres its line; the strip's status column reads from the start. */
+.today:not([data-layout="strip"]) .today-status [data-slot="inline-notice-message"] {
+  justify-content: center;
+  text-align: center;
+}
+
+/* In the strip the status is a column: a long line beside Try again may take more than 44px. */
+.today[data-layout="strip"] .today-status [data-slot="inline-notice"] {
+  block-size: auto;
+  min-block-size: var(--hit-min);
+}
+
+.today-time {
+  grid-area: time;
+  display: grid;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.today-controls {
+  grid-area: controls;
+  min-inline-size: 0;
+}
+
+/* A button's label never wraps; the strip's narrow column stacks the buttons instead. */
+.today-controls button {
+  white-space: nowrap;
+}
+
+.today[data-layout="strip"] .today-time,
+.today[data-layout="stackedStrip"] .today-time {
+  align-content: center;
+}
+
+.today[data-layout="strip"] .today-status,
+.today[data-layout="strip"] .today-controls {
+  align-self: center;
+}

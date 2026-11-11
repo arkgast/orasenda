@@ -70,7 +70,8 @@ test("status_line_joins_at_exactly_65_and_not_at_66", () => {
     `${exact} ${store}`,
   );
   const over = `${exact}x`;
-  expect(statusLine({ ...NONE, notice: over, store: "unavailable" })?.text).toBe(store);
+  // Over the limit the higher line (the milestone) shows alone.
+  expect(statusLine({ ...NONE, notice: over, store: "unavailable" })?.text).toBe(over);
 });
 
 test("status_line_store_alone_when_joined_too_long", () => {

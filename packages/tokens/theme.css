@@ -93,6 +93,7 @@
   --spacing-layout-compact-height: var(--layout-compact-height);
   --spacing-layout-strip-height: var(--layout-strip-height);
   --spacing-layout-ring-min-height: var(--layout-ring-min-height);
+  --spacing-layout-strip-status-min: var(--layout-strip-status-min);
   --spacing-layout-short-height: var(--layout-short-height);
   --spacing-layout-tight-height: var(--layout-tight-height);
   --spacing-content-width: var(--content-width);

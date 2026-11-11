@@ -1,49 +1,30 @@
-import {
-  Button,
-  Choice,
-  ChoiceGroup,
-  InlineNotice,
-  Input,
-  ModeChip,
-  StartButton,
-  TimerRing,
-} from "@orasenda/ui";
-import { useEffect, useId, useState } from "react";
-import { DevPanel } from "../../dev/DevPanel";
+import { InlineNotice, type NavPage } from "@orasenda/ui";
+import { useEffect, useState } from "react";
+import { PagesButton } from "../../app/PagesButton";
+import { useShortcuts } from "../../app/useShortcuts";
+import { useWindowLayout } from "../../app/useWindowLayout";
 import type {
-  CustomSpec,
   MilestoneEvent_Serialize,
   MilestoneKind,
   Preset,
   Settings,
   StartRequest_Deserialize,
-  StoreStatus,
   TimerCommandError,
   TimerView_Serialize,
 } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
-import { latest, load, register, sameCustom, save } from "../../ipc/settingsQueue";
-import {
-  BREAK_RANGE,
-  BREAK_RANGE_HELP,
-  FOCUS_RANGE,
-  FOCUS_RANGE_HELP,
-} from "../settings/customRange";
+import { load, register } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useTimer } from "../timer/useTimer";
-
-const PRESETS: ReadonlyArray<{ preset: Preset; label: string }> = [
-  { preset: "classic", label: "Classic 25/5" },
-  { preset: "fifty_ten", label: "50/10" },
-  { preset: "deep_block", label: "Deep Block 90" },
-  { preset: "custom", label: "Custom" },
-];
+import { Controls } from "./Controls";
+import { commandFailure, statusLine } from "./statusLine";
+import { TimeView } from "./TimeView";
+import { useControlFocus } from "./useControlFocus";
+import { useNextMinutes } from "./useNextMinutes";
+import "./today.css";
 
 // The preset Rust uses when nothing is saved; Start uses it until `settings_get` answers.
 const DEFAULT_PRESET: Preset = "classic";
-
-type RangeHelp = { focus: boolean; break: boolean };
-const NO_RANGE_HELP: RangeHelp = { focus: false, break: false };
 
 /** One-shot notices; the other milestones (`started`, `paused`, `resumed`) dismiss them. */
 const MILESTONE_NOTICES: Partial<Record<MilestoneKind, string>> = {
@@ -51,49 +32,30 @@ const MILESTONE_NOTICES: Partial<Record<MilestoneKind, string>> = {
   recovered: "Your last session ended while Orasenda was closed.",
 };
 
-const STORE_LINES: Readonly<Record<Exclude<StoreStatus, "ok">, string>> = {
-  unavailable: "Orasenda can't save sessions right now.",
-  newer: "This data was saved by a newer Orasenda.",
-};
-
 /** A one-shot notice and the session it is about (`null` when the event named none). */
 type Notice = { text: string; sessionId: string | null };
 
-/** The Custom fields as typed: committed on blur or Enter, never per keystroke. */
-type Draft = { focus: string; break: string };
-
-function draftOf(custom: CustomSpec): Draft {
-  return { focus: String(custom.focusMin), break: String(custom.breakMin) };
-}
-
-/** The draft as minutes when both fields are whole numbers; the range is Rust's to check. */
-function parseDraft(draft: Draft): CustomSpec | null {
-  if (!/^\d+$/.test(draft.focus) || !/^\d+$/.test(draft.break)) return null;
-  return { focusMin: Number(draft.focus), breakMin: Number(draft.break) };
-}
-
-/**
- * The helpers to show for a refused spec. When neither field is out of range locally (no spec
- * was sent, or the bounds drifted from core's), both show so the refusal is never silent.
- */
-function rangeHelpFor(custom: CustomSpec | null | undefined): RangeHelp {
-  if (!custom) return { focus: true, break: true };
-  const focus = custom.focusMin < FOCUS_RANGE.min || custom.focusMin > FOCUS_RANGE.max;
-  const brk = custom.breakMin < BREAK_RANGE.min || custom.breakMin > BREAK_RANGE.max;
-  return focus || brk ? { focus, break: brk } : { focus: true, break: true };
-}
+type CommandResult =
+  | { status: "ok"; data: TimerView_Serialize }
+  | { status: "error"; error: TimerCommandError };
 
 function logFailure(name: string) {
   return (error: unknown) => console.error(`${name} failed`, error);
 }
 
+type Props = {
+  onNavigate(page: NavPage): void;
+};
+
 /**
- * Today: the ring, the mode, the preset choice and the one primary action. Every time string on
- * it comes formatted from Rust (the view or the clock tick); the only local state is the
- * one-shot notice, the saved settings, the Custom drafts and which range helpers show.
+ * Today: a grid that fills the window (top, status, time, controls), never scrolling. Every time
+ * string comes formatted from Rust. Local state is the one-shot notice, the saved settings, the
+ * answers to the last start and the last control, and whether a start is in flight. It always
+ * starts with `custom: null`: Rust uses the saved spec.
  */
-export function Today() {
+export function Today({ onNavigate }: Props) {
   const clock = useClock();
+  const layout = useWindowLayout();
   const [notice, setNotice] = useState<Notice | null>(null);
   const timer = useTimer({
     onMilestone: (event: MilestoneEvent_Serialize) => {
@@ -101,24 +63,20 @@ export function Today() {
       setNotice(text ? { text, sessionId: event.sessionId } : null);
     },
   });
-  // `settings` is what the page shows; the save chain lives in ../settingsQueue.
+  // `settings` is only the saved preset here; the save chain lives in ../settingsQueue.
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [settingsFailed, setSettingsFailed] = useState(false);
-  const [draft, setDraft] = useState<Draft>({ focus: "", break: "" });
-  const [rangeHelp, setRangeHelp] = useState<RangeHelp>(NO_RANGE_HELP);
   const [starting, setStarting] = useState(false);
-  const presetName = useId();
+  // The start that failed, so Try again repeats it.
+  const [failedStart, setFailedStart] = useState<StartRequest_Deserialize | null>(null);
+  const [controlError, setControlError] = useState(false);
 
   useEffect(() => {
     const unregister = register({
-      shown: (shown, resetDraft) => {
-        setSettings(shown);
-        if (resetDraft) setDraft(draftOf(shown.custom));
-      },
-      accepted: () => setRangeHelp(NO_RANGE_HELP),
-      refused: (custom) => setRangeHelp(rangeHelpFor(custom)),
-      loadFailed: () => setSettingsFailed(true),
-      // Today rolls back silently; the write is already logged (spec A).
+      shown: (shown) => setSettings(shown),
+      accepted: () => {},
+      refused: () => {},
+      loadFailed: () => console.error("settings_get failed: Today starts with Classic"),
+      // The write is already logged and the store line explains it (spec C).
       saveFailed: () => {},
     });
     load();
@@ -126,6 +84,7 @@ export function Today() {
   }, []);
 
   const view = timer.status === "ok" ? timer.view : null;
+  const state = view?.state;
 
   // A view of another session is a transition this page may not have seen as a milestone (it
   // started elsewhere): it ends the one-shot notice for good. The idle view after an end
@@ -134,179 +93,142 @@ export function Today() {
     setNotice(null);
   }
 
-  const choosePreset = (preset: Preset) => {
-    const current = latest();
-    if (!current) return;
-    save({ ...current, preset });
-  };
+  // The answer to the last action clears on the next view change (spec C, status row).
+  const [seenState, setSeenState] = useState(state);
+  if (seenState !== state) {
+    setSeenState(state);
+    setFailedStart(null);
+    setControlError(false);
+  }
 
-  const commitCustom = () => {
-    const custom = parseDraft(draft);
-    const current = latest();
-    if (!current || !custom) return;
-    if (sameCustom(custom, current.custom)) {
-      // Back to a spec Rust has (or is saving): an earlier range helper no longer applies.
-      setRangeHelp(NO_RANGE_HELP);
-      return;
-    }
-    save({ ...current, custom });
-  };
+  const line = statusLine({
+    startError: failedStart !== null,
+    controlError,
+    timerUnavailable: timer.status === "error",
+    notice: notice?.text ?? null,
+    store: view?.store ?? "ok",
+  });
+  const focus = useControlFocus(state, line !== null);
+  const nextMinutes = useNextMinutes(settings);
 
   const start = (request: StartRequest_Deserialize) => {
     setStarting(true);
+    focus.startRequested();
     commands
       .timerStart(request)
-      .then((result) => {
-        if (result.status === "ok") {
-          setRangeHelp(NO_RANGE_HELP);
-        } else if (result.error.kind === "invalidSpec") {
-          setRangeHelp(rangeHelpFor(request.custom));
-        } else {
+      .then(
+        (result) => {
+          if (result.status === "ok") {
+            setFailedStart(null);
+            return;
+          }
+          focus.cancel();
           console.error("timer_start failed", result.error);
-        }
-      }, logFailure("timer_start"))
+          if (commandFailure(result.error) === "failure") setFailedStart(request);
+        },
+        (error: unknown) => {
+          focus.cancel();
+          logFailure("timer_start")(error);
+          setFailedStart(request);
+        },
+      )
       .finally(() => setStarting(false));
   };
 
-  const startChecked = () => {
-    const preset = settings?.preset ?? DEFAULT_PRESET;
-    // The draft, not the saved spec: a Start right after an edit uses the edit even while the
-    // blur's settings_set is in flight. Rust uses the saved spec when `custom` is null.
-    start({ preset, custom: preset === "custom" ? parseDraft(draft) : null });
+  const startSaved = () => start({ preset: settings?.preset ?? DEFAULT_PRESET, custom: null });
+  const startQuick = () => start({ preset: "quick", custom: null });
+
+  const control = (name: string, command: () => Promise<CommandResult>) => {
+    command().then(
+      (result) => {
+        if (result.status === "ok") {
+          setControlError(false);
+          return;
+        }
+        focus.cancel();
+        console.error(`${name} failed`, result.error);
+        if (commandFailure(result.error) === "failure") setControlError(true);
+      },
+      (error: unknown) => {
+        focus.cancel();
+        logFailure(name)(error);
+        setControlError(true);
+      },
+    );
   };
 
-  const control = (
-    name: string,
-    command: () => Promise<
-      { status: "ok"; data: TimerView_Serialize } | { status: "error"; error: TimerCommandError }
-    >,
-  ) => {
-    command().then((result) => {
-      if (result.status === "error") console.error(`${name} failed`, result.error);
-    }, logFailure(name));
+  const end = () => {
+    focus.endRequested();
+    control("timer_stop", commands.timerStop);
   };
+  const pauseResume = () =>
+    state === "paused"
+      ? control("timer_resume", commands.timerResume)
+      : control("timer_pause", commands.timerPause);
 
-  const shownNotice =
-    notice?.text ?? (view && view.store !== "ok" ? STORE_LINES[view.store] : null);
+  const canStart = state === "idle" && !starting;
+  const active = state === "running" || state === "paused";
+  useShortcuts([
+    { key: "Enter", meta: true, when: () => canStart, run: startSaved },
+    { key: "Enter", meta: true, shift: true, when: () => canStart, run: startQuick },
+    { key: ".", meta: true, when: () => active, run: end },
+  ]);
 
   return (
-    <div className="today">
-      <h1 className="app-page-title" tabIndex={-1}>
+    <div className="today" data-layout={layout.timer} data-compact={layout.compact || undefined}>
+      <h1 className="sr-only" tabIndex={-1}>
         Today
       </h1>
 
-      <div className="today-timer">
-        <div className="today-ring">
-          {view ? (
-            <TimerRing
-              size={280}
-              remaining={view.remaining}
-              remainingLabel={view.remainingLabel}
-              progress={view.progress}
-              mode={view.mode}
-              clock={clock.status === "ok" ? clock.clock : undefined}
-            />
-          ) : null}
-          {timer.status === "error" ? <p className="app-muted">Timer unavailable.</p> : null}
+      <div className="today-top">
+        <div className="today-top-start">
+          {layout.compact ? <PagesButton current="today" onNavigate={onNavigate} /> : null}
         </div>
-        {view ? (
-          <div className="today-status">
-            <ModeChip mode={view.mode} />
-            {view.state === "running" && view.finish ? (
-              <p className="app-muted">
-                Realistic finish · <span className="font-mono tabular-nums">{view.finish}</span>
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        {/* C5 fills the preset summary here. */}
+        <div data-slot="today-summary" className="today-summary" />
+        {/* Reserved for the Focus view button (D). */}
+        <div className="today-top-end" />
       </div>
 
-      {/* One slot; a new text is a new node, so each notice is announced once. */}
-      {shownNotice ? <InlineNotice key={shownNotice}>{shownNotice}</InlineNotice> : null}
+      {/* One live region, always mounted; a new text is a new node, so each line is announced once. */}
+      <div className="today-status">
+        <InlineNotice
+          key={line?.text ?? ""}
+          variant="row"
+          tone={line?.tone ?? "neutral"}
+          actionVariant="quiet"
+          actionLabel={line?.action ? "Try again" : undefined}
+          actionName="Try again starting focus"
+          onAction={line?.action && failedStart ? () => start(failedStart) : undefined}
+        >
+          {line?.text}
+        </InlineNotice>
+      </div>
 
-      {view && settingsFailed ? <p className="app-muted">Presets unavailable.</p> : null}
-      {view && settings ? (
-        <div className="today-presets">
-          <ChoiceGroup legend="Preset">
-            {PRESETS.map(({ preset, label }) => (
-              <Choice
-                key={preset}
-                name={presetName}
-                value={preset}
-                checked={settings.preset === preset}
-                onChange={() => choosePreset(preset)}
-              >
-                {label}
-              </Choice>
-            ))}
-          </ChoiceGroup>
-          {settings.preset === "custom" ? (
-            <div className="today-custom">
-              <Input
-                label="Focus minutes"
-                type="number"
-                inputMode="numeric"
-                min={FOCUS_RANGE.min}
-                max={FOCUS_RANGE.max}
-                value={draft.focus}
-                helper={rangeHelp.focus ? FOCUS_RANGE_HELP : undefined}
-                onChange={(event) => setDraft({ ...draft, focus: event.target.value })}
-                onBlur={commitCustom}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") commitCustom();
-                }}
-              />
-              <Input
-                label="Break minutes"
-                type="number"
-                inputMode="numeric"
-                min={BREAK_RANGE.min}
-                max={BREAK_RANGE.max}
-                value={draft.break}
-                helper={rangeHelp.break ? BREAK_RANGE_HELP : undefined}
-                onChange={(event) => setDraft({ ...draft, break: event.target.value })}
-                onBlur={commitCustom}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") commitCustom();
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="today-time">
+        <TimeView
+          view={view}
+          layout={layout.timer}
+          clock={clock.status === "ok" ? clock.clock : undefined}
+          idleLength={nextMinutes}
+        />
+      </div>
 
-      {view ? (
-        <div className="today-actions">
-          {view.state === "idle" ? (
-            <StartButton
-              onStart={startChecked}
-              onQuickStart={() => start({ preset: "quick", custom: null })}
-              finishTime={clock.status === "ok" ? (clock.idleFinish ?? undefined) : undefined}
-              loading={starting}
-            />
-          ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              {view.state === "running" ? (
-                <Button variant="quiet" onClick={() => control("timer_pause", commands.timerPause)}>
-                  Pause
-                </Button>
-              ) : (
-                <Button
-                  variant="quiet"
-                  onClick={() => control("timer_resume", commands.timerResume)}
-                >
-                  Resume
-                </Button>
-              )}
-              <Button variant="ghost" onClick={() => control("timer_stop", commands.timerStop)}>
-                End session
-              </Button>
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      <DevPanel />
+      <div className="today-controls">
+        {view || timer.status === "error" ? (
+          <Controls
+            state={state ?? "idle"}
+            compactStart={layout.timer !== "strip"}
+            starting={starting}
+            unavailable={timer.status === "error"}
+            onStart={startSaved}
+            onQuickStart={startQuick}
+            onPauseResume={pauseResume}
+            onEnd={end}
+            boxProps={focus.boxProps}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
