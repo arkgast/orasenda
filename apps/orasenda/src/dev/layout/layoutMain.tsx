@@ -20,14 +20,23 @@ if (!handler) {
 mockIPC(handler, { shouldMockEvents: true });
 createRoot(root).render(<App />);
 
-if (query.get("page") === "settings") {
+const page = query.get("page");
+if (page !== null && page !== "settings") {
+  throw new Error(`unknown page "${page}"; use "settings" or leave it out`);
+}
+if (page === "settings") {
   // The rail is the way to Settings; wait for it to render, then press it as a person would.
+  const started = Date.now();
   const timer = setInterval(() => {
     const button = Array.from(document.querySelectorAll("button")).find(
       (el) => el.getAttribute("aria-label") === "Settings" || el.textContent?.trim() === "Settings",
     );
-    if (!button) return;
-    clearInterval(timer);
-    button.click();
+    if (button) {
+      clearInterval(timer);
+      button.click();
+    } else if (Date.now() - started > 5000) {
+      clearInterval(timer);
+      throw new Error("Settings rail button not found");
+    }
   }, 50);
 }

@@ -23,22 +23,35 @@ async function expectStartVisible(page: Page): Promise<void> {
 
 test("today_start_visible_900x600_idle", async ({ page }) => {
   // Found by this harness: even idle, Start's bottom is 606 and the document is 638 tall at 900x600
-  // (the plan expected it to pass). Part of #119; expected to fail until C3 removes test.fail().
+  // (the plan expected it to pass). Part of #119; expected to fail until C4 removes test.fail().
   test.fail();
   await openApp(page, "idle", SIZE);
   await expectStartVisible(page);
 });
 
 test("today_start_visible_900x600_after_end", async ({ page }) => {
-  // #119: the "Session ended." notice pushes Start below the window. Expected to fail until C3.
+  // #119: the "Session ended." notice pushes Start below the window. Expected to fail until C4.
   test.fail();
   await openApp(page, "ended", SIZE);
   await expectStartVisible(page);
 });
 
 test("today_start_visible_900x600_custom_checked", async ({ page }) => {
-  // #119: the two Custom minute inputs push Start below the window. Expected to fail until C3.
+  // #119: the two Custom minute inputs push Start below the window. Expected to fail until C4.
   test.fail();
   await openApp(page, "customChecked", SIZE);
   await expectStartVisible(page);
+});
+
+// The expected-fail cases above pass on any failure, so these check their preconditions for real.
+test("today_900x600_ended_scenario_renders", async ({ page }) => {
+  await openApp(page, "ended", SIZE);
+  await expect(page.getByText("Session ended.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Start focus/ })).toBeVisible();
+});
+
+test("today_900x600_custom_checked_scenario_renders", async ({ page }) => {
+  await openApp(page, "customChecked", SIZE);
+  await expect(page.getByLabel(/minutes/i).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Start focus/ })).toBeVisible();
 });

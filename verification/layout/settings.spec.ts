@@ -11,7 +11,7 @@ const SIZES = [
  * so that label's box counts; every other control counts by its own box.
  */
 async function smallControls(page: Page): Promise<string[]> {
-  return page.locator("main").evaluate((root) => {
+  return page.locator("body").evaluate((root) => {
     const out: string[] = [];
     const sel =
       "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])";
