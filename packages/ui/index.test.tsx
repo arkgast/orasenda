@@ -37,14 +37,6 @@ test("exports_timer_faces", () => {
   expect(ui.timerLayout.tokens).toBeDefined();
 });
 
-test("index_d_ts_has_no_timer_or_start_next_props", () => {
-  const dts = readFileSync(resolve(import.meta.dirname, "src/legacy.d.ts"), "utf8");
-  expect(dts).not.toContain("TimerRingNextProps");
-  expect(dts).not.toContain("StartButtonNextProps");
-  expect(dts).not.toContain("declare function TimerStrip");
-  expect(dts).not.toContain("declare function timerLayout");
-});
-
 const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";
 
 function errorParagraph(control: HTMLElement): HTMLElement {
@@ -68,8 +60,8 @@ test("field_error_is_described_not_live", () => {
     expect(err.textContent).toBe(FIELD_ERROR);
     expect(err.hasAttribute("role"), c.name).toBe(false);
     expect(err.hasAttribute("aria-live"), c.name).toBe(false);
-    expect(err.querySelector("svg.os-glyph")).not.toBeNull();
-    expect(err.querySelector(".os-shape")).toBeNull();
+    expect(err.querySelector("svg[fill=none]")).not.toBeNull();
+    expect(err.querySelector("svg[fill=currentColor]")).toBeNull();
     unmount();
   }
 });

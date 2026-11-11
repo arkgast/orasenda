@@ -209,7 +209,7 @@ export function Today() {
             <ModeChip mode={view.mode} />
             {view.state === "running" && view.finish ? (
               <p className="app-muted">
-                Realistic finish · <span className="os-num">{view.finish}</span>
+                Realistic finish · <span className="font-mono tabular-nums">{view.finish}</span>
               </p>
             ) : null}
           </div>
@@ -280,7 +280,7 @@ export function Today() {
               loading={starting}
             />
           ) : (
-            <div className="os-actions">
+            <div className="flex flex-wrap items-center gap-3">
               {view.state === "running" ? (
                 <Button variant="quiet" onClick={() => control("timer_pause", commands.timerPause)}>
                   Pause

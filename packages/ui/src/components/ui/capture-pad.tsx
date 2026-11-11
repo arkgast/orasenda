@@ -2,6 +2,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { type JSX, useEffect, useId, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { Button } from "./button";
+import { Choice, ChoiceGroup } from "./choice";
 import { TextArea } from "./text-area";
 
 export type InterruptionKind = "internal" | "external";
@@ -143,21 +144,19 @@ export function CapturePad({
                   helper="Esc saves to Inbox and closes. ⌘Return saves too."
                   error={error}
                 />
-                <fieldset className="os-choice-group" disabled={busy}>
-                  <legend>Interruption source</legend>
+                <ChoiceGroup legend="Interruption source" disabled={busy}>
                   {KINDS.map((k) => (
-                    <label key={k.kind} className="os-choice">
-                      <input
-                        type="radio"
-                        name={group}
-                        value={k.kind}
-                        checked={kind === k.kind}
-                        onChange={() => onKindChange(k.kind)}
-                      />
+                    <Choice
+                      key={k.kind}
+                      name={group}
+                      value={k.kind}
+                      checked={kind === k.kind}
+                      onChange={() => onKindChange(k.kind)}
+                    >
                       {k.label}
-                    </label>
+                    </Choice>
                   ))}
-                </fieldset>
+                </ChoiceGroup>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p
                     data-slot="capture-pad-kind"

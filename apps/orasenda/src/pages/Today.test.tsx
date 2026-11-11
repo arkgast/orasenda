@@ -206,7 +206,7 @@ test("running_finish_line_reads_realistic_finish", async () => {
   await emitTimer(RUNNING);
 
   const time = screen.getByText("15:20");
-  expect(time).toHaveClass("os-num");
+  expect(time).toHaveClass("font-mono", "tabular-nums");
   const line = time.closest("p");
   expect(line).toHaveTextContent(/^Realistic finish · 15:20$/);
   expect(line).toHaveClass("app-muted");

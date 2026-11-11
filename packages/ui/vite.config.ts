@@ -16,17 +16,6 @@ export function runtimeExports(): string[] {
   return [...text.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1] as string);
 }
 
-/**
- * True when index.ts exports a name from a TSX component file. rolldown-plugin-dts cannot bundle a
- * value re-exported from a hand-written .d.ts (it reads the file as types only), so while every name
- * is legacy the declarations are composed from legacy.d.ts and types.ts (design-system/build.ts)
- * and the plugin joins the build with the first migrated component.
- */
-export function hasMigratedExports(entry: string = resolve(src, "index.ts")): boolean {
-  const text = readFileSync(entry, "utf8");
-  return /^export \{ \w+ \} from "(?!\.\/legacy\.js)/m.test(text);
-}
-
 /** Line 1 of bundle.js: format 4, the namespace and the component (capitalised) exports. */
 export function bundleHeader(names: readonly string[]): string {
   const components = names.filter((n) => /^[A-Z]/.test(n)).map((name) => ({ name }));
@@ -79,21 +68,6 @@ const safe: Plugin = {
 
 const productionReact = { "process.env.NODE_ENV": JSON.stringify("production") };
 
-/**
- * While names are still legacy, the declaration pass must not read legacy.js as types: it marks
- * legacy.js, legacy.d.ts and types.ts external, and composeDeclarations (design-system/build.ts)
- * drops those lines and appends legacy.d.ts and types.ts instead.
- */
-const legacyExternalForDts: Plugin = {
-  name: "legacy-external-for-dts",
-  enforce: "pre",
-  resolveId(source) {
-    return /(^|\/)(legacy\.js|legacy\.d\.ts|types\.ts)$/.test(source)
-      ? { id: source, external: true }
-      : undefined;
-  },
-};
-
 /** rolldown-plugin-dts, run before Vite's own TypeScript transform, which would strip the .d.ts it generates. */
 function declarations(): Plugin[] {
   const plugins = [dts({ tsconfig: resolve(root, "tsconfig.json") })].flat() as unknown as Plugin[];
@@ -109,7 +83,7 @@ export function libraryConfig(
 ): UserConfig {
   return defineConfig({
     resolve: { alias },
-    plugins: hasMigratedExports(entry) ? [legacyExternalForDts, ...declarations()] : [],
+    plugins: declarations(),
     build: {
       lib: { entry, formats: ["es"], fileName: "index" },
       outDir,

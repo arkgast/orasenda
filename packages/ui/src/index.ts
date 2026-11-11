@@ -1,5 +1,4 @@
-// The public surface. Each name is exported once, from a component file or from legacy.js, never both.
-// A migrated component's line moves from legacy.js to its own file in the same change.
+// The public surface. Each name is exported once, from a component file, a lib file or types.ts.
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
 export { CapturePad } from "./components/ui/capture-pad";
@@ -70,5 +69,4 @@ export type { TimeBlockProps } from "./components/ui/time-block";
 export type { TimerLayout, TimerLayoutBox, TimerLayoutFn } from "./lib/timer-layout";
 export type { TimerStripProps } from "./components/ui/timer-strip";
 export type { ToastProps } from "./components/ui/toast";
-export type * from "./legacy.d.ts";
 export type * from "./types.ts";

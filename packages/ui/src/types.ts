@@ -10,7 +10,67 @@ import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
 import type { TaskCardProps } from "./components/ui/task-card";
-import type { Command } from "./legacy.d.ts";
+
+/** The timer modes a chip or ring can show. */
+export type Mode = "focus" | "break" | "routine" | "warning" | "shallow" | "paused" | "idle";
+export type TimerMode = Exclude<Mode, "shallow">;
+/** The label, helper and error text of a form field. */
+export interface FieldProps {
+  label: string;
+  helper?: string;
+  error?: string;
+}
+/** One entry in a CommandPalette. */
+export interface Command {
+  id: string;
+  label: string;
+  hint?: string;
+}
+
+declare global {
+  interface Window {
+    /** Set by the host, before or after bundle.js runs. strictShortcuts true: describeShortcut throws on an unknown glyph string (tests, specimens). */
+    Orasenda: {
+      ModeChip: typeof import("./components/ui/mode-chip").ModeChip;
+      TimerRing: typeof import("./components/ui/timer-ring").TimerRing;
+      TimerStrip: typeof import("./components/ui/timer-strip").TimerStrip;
+      timerLayout: typeof import("./lib/timer-layout").timerLayout;
+      TaskCard: typeof import("./components/ui/task-card").TaskCard;
+      HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
+      IntentPrompt: typeof import("./components/ui/intent-prompt").IntentPrompt;
+      Dialog: typeof import("./components/ui/dialog").Dialog;
+      FullScreenFocus: typeof import("./components/ui/full-screen-focus").FullScreenFocus;
+      TextArea: typeof import("./components/ui/text-area").TextArea;
+      CapturePad: typeof import("./components/ui/capture-pad").CapturePad;
+      InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice;
+      Toast: typeof import("./components/ui/toast").Toast;
+      NavRail: (props: {
+        current: "today" | "board" | "calendar" | "routines" | "review" | "settings";
+        onNavigate: (
+          page: "today" | "board" | "calendar" | "routines" | "review" | "settings",
+        ) => void;
+      }) => React.ReactElement;
+      KanbanColumn: typeof import("./components/ui/kanban-column").KanbanColumn;
+      CommandPalette: typeof import("./components/ui/command-palette").CommandPalette;
+      StartButton: typeof import("./components/ui/start-button").StartButton;
+      NowLine: (props: { time: string }) => React.ReactElement;
+      ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement;
+      SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
+      IconButton: typeof import("./components/ui/icon-button").IconButton;
+      Tooltip: typeof import("./components/ui/tooltip").Tooltip;
+      Kbd: (
+        props: { keys: string } & (
+          | { inTooltip: true; spoken?: string }
+          | { inTooltip?: false; spoken: string }
+        ),
+      ) => React.ReactElement;
+      describeShortcut: (glyphs: string) => { aria: string; spoken: string };
+      PopoverMenu: typeof import("./components/ui/popover-menu").PopoverMenu;
+      /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
+      strictShortcuts?: boolean;
+    };
+  }
+}
 
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. */

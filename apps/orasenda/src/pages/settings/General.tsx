@@ -1,4 +1,4 @@
-import { SettingsRow } from "@orasenda/ui";
+import { Choice, ChoiceGroup, SettingsRow } from "@orasenda/ui";
 import { useId } from "react";
 import type { Theme } from "../../bindings";
 
@@ -36,21 +36,20 @@ export function General({ theme, disabled, disabledReason, status, onChange }: P
         status={status}
         disabledReason={disabledReason}
       >
-        <div className="os-choice-group" role="radiogroup" aria-labelledby="theme-label">
+        <ChoiceGroup labelledBy="theme-label">
           {THEMES.map((entry) => (
-            <label key={entry.theme} className="os-choice">
-              <input
-                type="radio"
-                name={name}
-                value={entry.theme}
-                checked={theme === entry.theme}
-                disabled={disabled}
-                onChange={() => onChange(entry.theme)}
-              />
+            <Choice
+              key={entry.theme}
+              name={name}
+              value={entry.theme}
+              checked={theme === entry.theme}
+              disabled={disabled}
+              onChange={() => onChange(entry.theme)}
+            >
               {entry.label}
-            </label>
+            </Choice>
           ))}
-        </div>
+        </ChoiceGroup>
       </SettingsRow>
     </section>
   );

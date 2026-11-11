@@ -84,50 +84,9 @@ export function propsTable(dts: string, name: string): Array<[string, string, bo
   return rows;
 }
 
-/**
- * One index.d.ts. The library build's own file (migrated components) comes first when it exists;
- * then legacy.d.ts and types.ts, which rolldown-plugin-dts cannot bundle (see hasMigratedExports).
- */
+/** One index.d.ts: the library build's own file, which already bundles types.ts. */
 export function composeDeclarations(libDir: string): string {
-  const built = join(libDir, "index.d.ts");
-  const legacy = readFileSync(join(pkg, "src", "legacy.d.ts"), "utf8");
-  const types = readFileSync(join(pkg, "src", "types.ts"), "utf8").replace(
-    /^import type[\s\S]*?;\n/gm,
-    "",
-  );
-  const first = existsSync(built) ? `${withoutLegacyLines(readFileSync(built, "utf8"))}\n` : "";
-  return `${first}${legacy.trimEnd()}\n${types}`;
-}
-
-/**
- * The library build leaves legacy.js, legacy.d.ts and types.ts external (vite.config.ts), so its
- * index.d.ts imports and re-exports them by name. Those lines are dropped here: legacy.d.ts and
- * types.ts are appended whole instead.
- */
-export function withoutLegacyLines(dts: string): string {
-  const legacyNames = new Set<string>();
-  const kept: string[] = [];
-  for (const line of dts.split("\n")) {
-    const fromLegacy = /^import \{([^}]*)\} from ["'][^"']*\/legacy\.js["'];?$/.exec(line);
-    if (fromLegacy) {
-      for (const n of (fromLegacy[1] ?? "").split(",")) legacyNames.add(n.trim());
-      continue;
-    }
-    if (/^export type \* from ["'][^"']*\/(legacy\.(js|d\.ts)|types\.ts)["'];?$/.test(line))
-      continue;
-    kept.push(line);
-  }
-  return kept
-    .map((line) => {
-      const list = /^export \{([^}]*)\};?$/.exec(line);
-      if (!list) return line;
-      const names = (list[1] ?? "")
-        .split(",")
-        .map((n) => n.trim())
-        .filter((n) => n && !legacyNames.has(n));
-      return names.length ? `export { ${names.join(", ")} };` : "";
-    })
-    .join("\n");
+  return readFileSync(join(libDir, "index.d.ts"), "utf8");
 }
 
 const CARD_STYLE = `body{margin:0;font-family:var(--font-sans);background:var(--surface);color:var(--ink)}

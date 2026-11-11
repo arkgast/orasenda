@@ -1,5 +1,5 @@
-// Layers that sit above the page: an open Radix Dialog's content, or a legacy native modal dialog (still in
-// the top layer until the legacy modal shell is gone). Portals and Esc handling use these helpers so that a
+// Layers that sit above the page: an open Radix Dialog's content, or a native modal dialog (in the
+// top layer). Portals and Esc handling use these helpers so that a
 // Tooltip or PopoverMenu opens inside the layer that holds its anchor, and Esc closes only the topmost one.
 const RADIX_LAYER = '[data-slot="dialog-content"][data-state="open"]';
 const NATIVE_LAYER = "dialog[open]";
