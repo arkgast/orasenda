@@ -20,7 +20,7 @@ use crate::ipc::{
 };
 use crate::scheduler::{self, Host};
 
-pub(super) const DB_FILE: &str = "orasenda.db";
+const DB_FILE: &str = "orasenda.db";
 
 /// Locks the service. A poisoned lock is recovered: every write is one transaction, so the
 /// service is consistent even after a panic in another holder.
@@ -33,7 +33,7 @@ pub(crate) fn now_ms() -> u64 {
     epoch_ms(SystemTime::now())
 }
 
-pub(super) fn new_session_id() -> SessionId {
+fn new_session_id() -> SessionId {
     SessionId(Uuid::now_v7().to_string())
 }
 

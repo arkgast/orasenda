@@ -64,7 +64,7 @@ impl SessionService {
         }
     }
 
-    pub(super) fn clock_text(&self, epoch_ms: u64) -> String {
+    fn clock_text(&self, epoch_ms: u64) -> String {
         let local = &self.platform.local_time;
         format_clock(epoch_ms, local.utc_offset_min(epoch_ms), local.hour_cycle())
     }

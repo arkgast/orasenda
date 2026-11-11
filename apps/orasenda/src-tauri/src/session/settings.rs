@@ -214,7 +214,7 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
     Ok((settings, pending))
 }
 
-pub(super) fn read_setting<T: DeserializeOwned>(
+fn read_setting<T: DeserializeOwned>(
     txn: &Txn,
     key: &str,
     default: T,

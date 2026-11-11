@@ -1,7 +1,7 @@
 //! The session service: the engine, the store and the platform behind one lock (ADR-013).
 //!
 //! Every surface (the webview, the menu bar) acts through [`run_action`] and sees the same
-//! [`TimerView`]. The service never emits, renders, notifies or drops a keep-awake guard
+//! [`TimerView`](crate::ipc::TimerView). The service never emits, renders, notifies or drops a keep-awake guard
 //! itself: [`SessionService::apply`], [`SessionService::tick`] and [`SessionService::state`]
 //! fill [`Effects`], which [`crate::scheduler::publish`] carries out after the lock is released.
 
