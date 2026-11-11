@@ -220,52 +220,6 @@ function describeShortcut(glyphs) {
   return { aria: aria.join("+"), spoken: spoken.join("-") };
 }
 // end describeShortcut
-// Kbd (internal: PopoverMenu and IconButton still call it; TSX Kbd is the public one)
-function Kbd(p) {
-  var glyph = h("span", { className: "os-kbd", "aria-hidden": "true" }, p.keys);
-  if (p.inTooltip && p.spoken == null) return glyph;
-  return h(R.Fragment, null, glyph, h("span", { className: "os-sr-only" }, p.spoken != null ? p.spoken : describeShortcut(p.keys).spoken));
-}
-// end Kbd
-// A token read as a number: "160ms" and "0.16s" give 160, "4px" gives 4, a missing token gives 0.
-function tokenNumber(el, name) {
-  var v = el && el.ownerDocument.defaultView ? el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(name).trim() : "", n = parseFloat(v);
-  return !Number.isFinite(n) ? 0 : /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
-}
-// Positioned panel, used by PopoverMenu (internal, not exported). No popover API, no anchor
-// positioning: the macOS 13 WebKit has neither. The panel lives in the nearest open dialog (already in the top
-// layer) or the page body, is placed from the trigger rect below it, flipped above when it does not fit,
-// kept inside the viewport, and re-placed on resize and on any scroll.
-// opts (PopoverMenu): align "start" lines the panel's start edge up with the trigger's instead of centring it;
-// clamp keeps a panel taller than the room on its side inside the viewport (it may then cover the trigger).
-function panelHost(trigger) {
-  // An open Radix Dialog's content counts as a layer too (same selectors as src/lib/layer.ts).
-  var dialog = trigger.closest ? trigger.closest("[data-slot='dialog-content'][data-state='open'], dialog[open]") : null;
-  return dialog || trigger.ownerDocument.body;
-}
-function placePanel(trigger, panel, opts) {
-  var doc = trigger.ownerDocument, root = doc.documentElement, view = doc.defaultView;
-  var t = trigger.getBoundingClientRect(), w = panel.offsetWidth, ht = panel.offsetHeight;
-  var gap = tokenNumber(root, "--space-1"), edge = tokenNumber(root, "--space-2");
-  var vw = root.clientWidth || view.innerWidth, vh = root.clientHeight || view.innerHeight;
-  var below = t.bottom + gap, above = t.top - gap - ht;
-  var side = below + ht <= vh - edge || (above < edge && vh - t.bottom >= t.top) ? "below" : "above";
-  var start = opts && opts.align === "start" ? t.left : t.left + t.width / 2 - w / 2;
-  var left = Math.min(Math.max(edge, start), Math.max(edge, vw - edge - w));
-  var top = side === "below" ? below : above;
-  if (opts && opts.clamp) top = Math.min(Math.max(edge, top), Math.max(edge, vh - edge - ht));
-  panel.style.left = Math.round(left) + "px";
-  panel.style.top = Math.round(top) + "px";
-  panel.setAttribute("data-side", side);
-}
-function followTrigger(trigger, panel, opts) {
-  var view = trigger.ownerDocument.defaultView;
-  function place() { if (trigger.isConnected && panel.isConnected) placePanel(trigger, panel, opts); }
-  place();
-  view.addEventListener("resize", place);
-  view.addEventListener("scroll", place, true);
-  return function () { view.removeEventListener("resize", place); view.removeEventListener("scroll", place, true); };
-}
 // shortcut: one glyph string, or an array of chords (aria-keyshortcuts joins them with spaces).
 // shortcutLabel: the text the tooltip Kbd shows when it differs from the chords (a range such as "\u23181\u20136").
 // keyshortcuts={false}: the Kbd shows but the button sets no aria-keyshortcuts (the page, not this button, owns the key).

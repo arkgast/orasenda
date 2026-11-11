@@ -238,6 +238,13 @@ export function PopoverMenu({
         next.focus();
         onClose();
       } else close();
+    } else if (k === "Escape") {
+      // Radix gives Esc only to the topmost layer, so a tooltip showing elsewhere would take it. The press
+      // comes from inside the menu, so it closes the menu here (when the menu is topmost, onEscapeKeyDown has
+      // already closed it and stopped the event before it gets here).
+      event.preventDefault();
+      event.stopPropagation();
+      close();
     } else if (/^(ArrowUp|ArrowDown|Home|End|Enter| |Spacebar)$/.test(k)) event.stopPropagation();
   };
 

@@ -146,11 +146,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-glyph-fill { fill: currentColor; stroke: none; }
 /* end Shared: redesign pass glyphs */
 
-/* Kbd */
-/* Kbd: internal to the legacy PopoverMenu and IconButton until they migrate; the public Kbd is kbd.tsx. */
-.os-kbd { display: inline-block; padding: 0 var(--space-1); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--ink); font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* end Kbd */
-
 /* IconButton */
 /* IconButton: md 44 × 44, round 52 × 52 on surface-raised with a line-strong edge. */
 .os-iconbtn { display: inline-grid; place-items: center; width: var(--hit-min); height: var(--hit-min); flex: none; padding: 0; border: 1px solid var(--clear); border-radius: var(--radius-md); background: var(--clear); color: var(--ink); cursor: pointer; transition: background-color var(--duration-quick) var(--easing-calm); }
