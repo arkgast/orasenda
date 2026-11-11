@@ -214,11 +214,7 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
     Ok((settings, pending))
 }
 
-fn read_setting<T: DeserializeOwned>(
-    txn: &Txn,
-    key: &str,
-    default: T,
-) -> Result<T, StoreError> {
+fn read_setting<T: DeserializeOwned>(txn: &Txn, key: &str, default: T) -> Result<T, StoreError> {
     match settings::get::<T>(txn, key) {
         Ok(Some(value)) => Ok(value),
         Ok(None) => Ok(default),
