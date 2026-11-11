@@ -34,6 +34,8 @@ Phases are grouped into releases. Each release goes to real users before the nex
 
 **Note:** P1–P4 make a complete, useful product with no system permissions at all, so they are a safe base before the risky macOS work in P5–P7.
 
+**Note (2026-11-10).** The [structure refactor](specs/2026-11-10-structure-refactor.md) (500-line ceiling, a UI-free service crate, feature folders, no legacy code) runs before sub-project C.
+
 ## P1 sub-projects
 P1 is built as eight sub-projects (seven lettered, plus Components), each with its own spec, plan and implementation cycle. The redesign (Settings, Today, Focus views) comes before session cadence. The re-cut is the architect ruling in [#134](https://github.com/arkgast/orasenda/issues/134), dated 2026-11-09. Spec A keeps its original letters as history; its legend is in [the focus session loop spec](specs/2026-11-08-focus-session-loop.md#context-p1-sub-projects).
 

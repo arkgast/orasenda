@@ -33,6 +33,7 @@ Project rules for every contributor and agent. They override baton's general gui
   reshapes a managed or registered type lists the file with the registration line in Touches.
 
 ## Code structure (ADR-001, ADR-007)
+File size and module layout rules are in [Code structure and size](#code-structure-and-size).
 - `crates/core` holds product logic. It never depends on `tauri`, `tao` or `wry`, never uses
   `cfg(target_os)`, and never calls `SystemTime::now()`: time is passed in.
 - Every new Rust dependency of core must `cargo check` for `aarch64-apple-ios` and
@@ -53,6 +54,29 @@ Project rules for every contributor and agent. They override baton's general gui
   in core.
 - Device-only tables never write `change_log`; a repository says which it is in its module doc
   (ADR-012).
+
+## Code structure and size
+Rules from the [structure refactor spec](specs/2026-11-10-structure-refactor.md).
+1. **Size.** A tracked source file (`.rs`, `.ts`, `.tsx`, `.js`, `.css`) is at most 500 lines,
+   tests included. Generated files are exempt (`apps/orasenda/src/bindings.ts`,
+   `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`). `just file-size` runs in `ci`.
+   Files that predate the rule sit in `scripts/file-size-allowlist.txt` with their line count.
+   The guard fails when a listed file grows, when a listed file is back under 500 (remove its
+   entry), or when an unlisted file passes 500. The list only shrinks.
+2. **Layering.** `core` has no I/O. `store` is the only crate with SQLite. `service` never
+   depends on `tauri`, `tao` or `wry`. Adapters hold no business rules: a command parses, calls
+   the service, and maps the result.
+3. **Folders.** A Rust module becomes a folder (`foo/mod.rs`) once it has more than one part.
+   Rust tests live in `tests.rs` or `tests/` beside their module, with shared fixtures in one
+   `support` module. Frontend code lives by feature; tests sit beside their file and split by
+   behaviour.
+4. **The store hides its driver.** No `rusqlite` type appears in the store's public API or in
+   `service`. Repositories take the store's own `Txn`. Write new store code so another backend
+   could sit behind the same API; don't build that backend.
+5. **A refactor PR moves code or changes it, never both.** A move keeps public paths working
+   with re-exports until every caller is updated in the same PR.
+6. **Plans split before they grow.** A task that would push a file past 500 lines includes the
+   split, and its Owns lists the new sibling files.
 
 ## Failures are never silent success
 Seen three times in the P1-A wave 2 reviews: `PRAGMA journal_mode = wal` answered and ignored
