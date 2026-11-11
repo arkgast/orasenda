@@ -6,9 +6,8 @@ Orasenda is a calm, local-first focus and time-management app: macOS first, Wind
 - What we build and why: `docs/SPEC.md`. Phases: `docs/ROADMAP.md`. Decisions: `docs/DECISIONS.md`.
 - How it looks and behaves: the **Orasenda design system**.
   - Live version: https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73
-  - Source in the repo: `packages/ui` (components) and `packages/tokens` (tokens). Until the code-first foundation PR merges, the files are still at `design/system/`.
+  - Source in the repo: `packages/ui` (components) and `packages/tokens` (tokens).
   - Start with `packages/ui/design-system/README.md`, then `packages/tokens/tokens.json` and `packages/ui/src/components/ui/<kebab>.md`.
-  - While the migration runs, components not yet moved live in `packages/ui/src/legacy.js`, and their READMEs are already at `<kebab>.md`.
 - Design review history: `design/reviews/`.
 
 ## UI rules (every change that touches UI)

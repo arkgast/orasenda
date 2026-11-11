@@ -3,6 +3,7 @@ import { type JSX, useEffect, useId, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
+import { Choice, ChoiceGroup } from "./choice";
 
 /** The reasons offered on step 2, in order. */
 export type IntentReason = "Work" | "Quick check" | "Other";
@@ -93,7 +94,7 @@ export function IntentPrompt({
   const name = useId();
   const hintId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
-  const group = useRef<HTMLFieldSetElement>(null);
+  const group = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   // Reopening or a new app starts again at step 1. Reset during render (previous-value pattern), not in an
   // effect, so no stale step is ever shown.
@@ -187,28 +188,25 @@ export function IntentPrompt({
               </div>
             ) : (
               <>
-                <div key="step2" className="flex w-full flex-col gap-3">
-                  <fieldset
-                    ref={group}
-                    className="os-choice-group justify-center"
-                    aria-describedby={hintId}
+                <div key="step2" ref={group} className="flex w-full flex-col gap-3">
+                  <ChoiceGroup
+                    legend={`What do you need ${app} for?`}
+                    legendClassName="mb-3 w-full p-0 text-heading"
+                    className="justify-center"
+                    describedBy={hintId}
                   >
-                    <legend className="mb-3 w-full p-0 text-heading text-ink">
-                      {`What do you need ${app} for?`}
-                    </legend>
                     {REASONS.map((value) => (
-                      <label className="os-choice" key={value}>
-                        <input
-                          type="radio"
-                          name={name}
-                          value={value}
-                          checked={reason === value}
-                          onChange={() => setReason(value)}
-                        />
+                      <Choice
+                        key={value}
+                        name={name}
+                        value={value}
+                        checked={reason === value}
+                        onChange={() => setReason(value)}
+                      >
                         {value}
-                      </label>
+                      </Choice>
                     ))}
-                  </fieldset>
+                  </ChoiceGroup>
                   <p id={hintId} className={cn("m-0 text-body-sm text-ink-muted")}>
                     Pick one to continue. Your reason stays on this device.
                   </p>

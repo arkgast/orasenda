@@ -3,69 +3,9 @@ import { resolve } from "node:path";
 import { expect, test } from "vitest";
 
 const dir = resolve(import.meta.dirname, "src");
-const js = readFileSync(resolve(dir, "legacy.js"), "utf8");
-const css = readFileSync(resolve(dir, "legacy.css"), "utf8");
 
 const LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g;
 const literals = (source: string) => source.match(LITERAL) ?? [];
-
-// Operators such as !== and !p.x are code, so only string literals are scanned.
-function withExclamation(source: string) {
-  return literals(source).filter((s) => s.includes("!"));
-}
-function withEmoji(source: string) {
-  return literals(source).filter((s) => /\p{Extended_Pictographic}/u.test(s));
-}
-// Lines of bundle.js that mention critical outside function Dialog, or inside it without p.destructive.
-function criticalOutsideDialog(source: string) {
-  const start = source.indexOf("function Dialog(");
-  const end = source.indexOf("\nfunction ", start + 1);
-  return source
-    .split("\n")
-    .map((line, i) => ({ line, at: source.split("\n").slice(0, i).join("\n").length }))
-    .filter(({ line }) => /critical/i.test(line))
-    .filter(({ line, at }) => !(at >= start && at < end && line.includes("p.destructive")))
-    .map(({ line }) => line.trim());
-}
-// Selectors of every css rule that mentions critical but is not an .os-btn-critical rule.
-function criticalRulesOutsideButton(source: string) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("}")
-    .filter((rule) => /critical/.test(rule))
-    .flatMap((rule) => {
-      const selector = rule.slice(0, rule.indexOf("{")).trim();
-      const selectors = selector.split(",").map((s) => s.trim());
-      return selectors.every((s) => /\.os-btn-critical\b/.test(s)) ? [] : [selector];
-    });
-}
-
-test("bundle_copy_has_no_exclamation_mark", () => {
-  // The legacy bundle shrinks with each migrated component, so this only checks that the scan found literals.
-  expect(literals(js).length).toBeGreaterThan(0);
-  expect(withExclamation(js)).toEqual([]);
-  expect(withExclamation(`var a = !x; var b = "Done!";`)).toEqual(['"Done!"']);
-});
-
-test("bundle_copy_has_no_emoji", () => {
-  expect(withEmoji(js)).toEqual([]);
-  expect(withEmoji(`var a = "Saving…", b = "–", c = "⌘";`)).toEqual([]);
-  expect(withEmoji(`var a = "Nice 🎉";`)).toEqual(['"Nice 🎉"']);
-});
-
-test("critical_used_only_by_destructive_dialog_and_critical_button", () => {
-  expect(criticalOutsideDialog(js)).toEqual([]);
-  expect(criticalRulesOutsideButton(css)).toEqual([]);
-  expect(readFileSync("src/components/ui/dialog.tsx", "utf8")).toContain(
-    'destructive ? "critical" : "primary"',
-  );
-  expect(css).toMatch(/\.os-btn-critical/);
-  // The checks bite: a chip that borrows the colour, or a stray use in a component, is found.
-  expect(criticalRulesOutsideButton(`${css}\n.os-chip { color: var(--critical); }`)).toEqual([
-    ".os-chip",
-  ]);
-  expect(criticalOutsideDialog(`${js}\n  var x = "critical";`)).toHaveLength(1);
-});
 
 // ---- code-first guards (#187) ----
 import { readdirSync, statSync } from "node:fs";
@@ -81,7 +21,6 @@ function tsFiles(folder: string): string[] {
   });
 }
 const here = (name: string) => resolve(import.meta.dirname, name);
-// legacy.js is the hand-written bundle; the guards above read it. The rest of src is typed source.
 const typed = tsFiles(dir).filter((f) => !/\.(test|test-d|d)\.tsx?$/.test(f));
 
 /** Names of the sources (path to text) that call or import createElement. */
@@ -164,17 +103,14 @@ test("no_legacy_files_and_no_os_classes", () => {
   expect(readdirSync(dir).filter((n) => /^legacy\./.test(n))).toEqual([]);
   expect(existsSync(resolve(dir, "legacy.js"))).toBe(false);
   const roots = [dir, here("../../apps/orasenda/src")];
-  const all = roots.flatMap((root) =>
-    walk(root).map((f) => [f, readFileSync(f, "utf8")] as const),
-  );
+  const all = roots.flatMap((root) => walk(root).map((f) => [f, readFileSync(f, "utf8")] as const));
   expect(osClassHits(Object.fromEntries(all.filter(([f]) => !/\.test\.tsx?$/.test(f))))).toEqual(
     [],
   );
   // The scan bites on seeded text.
-  expect(osClassHits({ "a.tsx": '<p className="os-num">1</p>', "b.css": ".os-actions {}" })).toEqual([
-    "a.tsx",
-    "b.css",
-  ]);
+  expect(
+    osClassHits({ "a.tsx": '<p className="os-num">1</p>', "b.css": ".os-actions {}" }),
+  ).toEqual(["a.tsx", "b.css"]);
   expect(osClassHits({ "c.tsx": '<p className="font-mono">/* os-num */</p>' })).toEqual([]);
 });
 

@@ -10,7 +10,29 @@ import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
 import type { TaskCardProps } from "./components/ui/task-card";
-import type { Command } from "./legacy.d.ts";
+
+/** The timer modes a chip or ring can show. */
+export type Mode = "focus" | "break" | "routine" | "warning" | "shallow" | "paused" | "idle";
+export type TimerMode = Exclude<Mode, "shallow">;
+/** The label, helper and error text of a form field. */
+export interface FieldProps {
+  label: string;
+  helper?: string;
+  error?: string;
+}
+/** One entry in a CommandPalette. */
+export interface Command {
+  id: string;
+  label: string;
+  hint?: string;
+}
+
+declare global {
+  interface Window {
+    /** Set by the host, before or after bundle.js runs. strictShortcuts true: describeShortcut throws on an unknown glyph string (tests, specimens). */
+    Orasenda: { strictShortcuts?: boolean } & Record<string, unknown>;
+  }
+}
 
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. */

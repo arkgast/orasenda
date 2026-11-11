@@ -134,7 +134,7 @@ Write like a calm, knowledgeable friend: plain words, short sentences, second pe
 - **Mode shapes are reserved for modes.** Circle, half circle, rounded square, triangle, hollow circle and pause bars mean modes only. App roles use the role glyph family (`RoleTag`; Neutral is an outlined circle with a horizontal bar, never the hollow circle; the Focus role's filled circle is the one deliberate reuse, because it means the Focus mode); errors and "needs you" use the alert glyph (an outlined circle with a short vertical bar and a dot, 14px, 1.5 stroke, `ink`); info uses the info glyph. All in `ink` or `ink-muted`, always with a word.
 - **The play glyph means a focus session starts.** Only Start focus (and the floater's Start pill) carries it. Start routine, Start shutdown and Start weekly review are words only.
 - **Icon set.** Add play, pause, stop-square, expand, collapse, window, menu, chevron, close, back, the final rail icons, the role glyphs and the alert and info glyphs. Placeholders on the canvases must not ship.
-- CSS classes are prefixed `os-`: `os-mode-*`, `os-timer-*`, `os-block-*` for kinds and one class per state (`os-card-active`, `os-ritem-done`).
+- Components set `data-slot`; no `os-` classes.
 
 ## Accessibility
 

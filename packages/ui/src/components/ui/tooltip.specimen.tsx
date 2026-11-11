@@ -42,7 +42,7 @@ export function TooltipSpecimen(): ReactElement {
         >
           Open native dialog
         </Button>
-        {/* A legacy native modal shell (top layer): the tooltip must join it. */}
+        {/* A native modal shell (top layer): the tooltip must join it. */}
         <dialog
           ref={native}
           aria-label="Native layer"

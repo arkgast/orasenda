@@ -18,7 +18,7 @@ test("capture_pad_opens_named_with_thought_focused_and_saves_on_escape", async (
   expect(
     (await page.getByRole("button", { name: "Save to Inbox" }).boundingBox())?.height,
   ).toBeGreaterThanOrEqual(44);
-  for (const label of await dialog.locator("label.os-choice").all()) {
+  for (const label of await dialog.locator('label[data-slot="choice"]').all()) {
     expect((await label.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   }
   await field.fill("Call the dentist");

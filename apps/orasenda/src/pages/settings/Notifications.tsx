@@ -1,4 +1,4 @@
-import { SettingsRow } from "@orasenda/ui";
+import { Choice, SettingsRow } from "@orasenda/ui";
 import type { NotificationStatus } from "../../bindings";
 
 export type NotificationsRow = {
@@ -106,17 +106,16 @@ export function Notifications({
         onAction={action === "ask" ? onAsk : action === "open" ? onOpen : undefined}
         disabledReason={disabledReason}
       >
-        <label className="os-choice">
-          <input
-            type="checkbox"
-            checked={checked}
-            disabled={disabled}
-            aria-describedby={describedBy}
-            aria-busy={asking ? "true" : undefined}
-            onChange={(event) => onToggle(event.target.checked)}
-          />
+        <Choice
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          aria-describedby={describedBy}
+          aria-busy={asking ? "true" : undefined}
+          onChange={(event) => onToggle(event.target.checked)}
+        >
           Tell me when a session ends
-        </label>
+        </Choice>
       </SettingsRow>
     </section>
   );

@@ -16,7 +16,13 @@ export type ModeShapeMode =
 
 export function ModeShape({ mode }: { mode?: ModeShapeMode }): ReactElement {
   return (
-    <svg className="os-shape" viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+    <svg
+      className="size-icon-sm flex-none"
+      fill="currentColor"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+      focusable="false"
+    >
       {mode === "break" ? (
         <path d="M5 0a5 5 0 0 1 0 10z" />
       ) : mode === "routine" || mode === "personal" ? (
@@ -36,10 +42,20 @@ export function ModeShape({ mode }: { mode?: ModeShapeMode }): ReactElement {
 
 export function AlertGlyph(): ReactElement {
   return (
-    <svg className="os-glyph" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+    <svg
+      className="size-icon-md flex-none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 14 14"
+      aria-hidden="true"
+      focusable="false"
+    >
       <circle cx={7} cy={7} r={5.75} />
       <path d="M7 4v3.5" />
-      <circle className="os-glyph-fill" cx={7} cy={9.9} r={0.5} />
+      <circle fill="currentColor" stroke="none" cx={7} cy={9.9} r={0.5} />
     </svg>
   );
 }

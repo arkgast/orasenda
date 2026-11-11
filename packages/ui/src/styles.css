@@ -1,5 +1,4 @@
-/* Tailwind's theme and utilities layers only: no Preflight while the legacy bundle exists, because its
-   reset would restyle the legacy os-* components and app.css. Imported once by the app, the specimens
+/* Tailwind's theme and utilities layers only, no Preflight. Imported once by the app, the specimens
    and the design-system build. tokens.css (the variables) is imported by the host. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
@@ -19,173 +18,51 @@
   }
 }
 
-/* Today's hand-written rules; each component's block leaves with it. */
-@import "./legacy.css";
-
-/* Choice, legacy classes: IntentPrompt, CapturePad and Settings General and Notifications still put .os-choice on native markup, so this block stays until they move to Choice. The forced-colors rule at its end also serves the Choice component (data-slot="choice"), which cannot name system colours in the closed theme. */
-@layer components {
-  .os-choice-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    border: 0;
+/* Page-wide rules every host gets: box model, native button font, the keyboard focus ring, reduced motion. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+button {
+  font-family: inherit;
+}
+:where(a[href], button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
-  .os-choice-group legend {
-    margin-bottom: var(--space-2);
-  }
-  .os-choice {
-    display: inline-flex;
-    gap: var(--space-2);
-    align-items: center;
-    min-height: var(--hit-min);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-sm);
-    color: var(--ink);
-    background: var(--surface-raised);
-    cursor: pointer;
-  }
-  .os-choice:has(:checked) {
-    background: var(--selection);
-  }
-  .os-choice input {
-    appearance: none;
-    width: var(--icon-md);
-    height: var(--icon-md);
-    margin: 0;
-    border: 1.5px solid var(--line-strong);
-    border-radius: var(--radius-pill);
-    background: var(--surface-raised);
-  }
-  .os-choice input:checked {
-    background: var(--focus);
-    border-color: var(--focus);
-    box-shadow: inset 0 0 0 2px var(--surface-raised);
-  }
-  .os-choice:has(:disabled) {
-    border-style: dashed;
-    cursor: default;
-  }
-  .os-choice input[type="checkbox"] {
-    display: inline-grid;
-    place-content: center;
-    border-radius: calc(var(--radius-sm) / 2);
-  }
-  .os-choice input[type="checkbox"]:checked {
-    box-shadow: none;
-  }
-  .os-choice input[type="checkbox"]:checked::before {
-    content: "";
-    width: calc(var(--icon-md) * 0.3);
-    height: calc(var(--icon-md) * 0.55);
-    margin-top: -2px;
-    border: solid var(--on-focus);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-  }
-  .os-segmented {
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  .os-segmented legend {
-    margin-bottom: var(--space-2);
-    font-size: 13px;
-    line-height: 18px;
-    color: var(--ink);
-  }
-  .os-segmented-track {
-    display: inline-flex;
-  }
-  .os-segmented label {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: var(--hit-min);
-    padding: 0 var(--space-4);
-    margin-inline-start: -1px;
-    border: 1px solid var(--line-strong);
-    background: var(--surface-raised);
-    color: var(--ink);
-    cursor: pointer;
-  }
-  .os-segmented label:first-child {
-    margin-inline-start: 0;
-    border-start-start-radius: var(--radius-md);
-    border-end-start-radius: var(--radius-md);
-  }
-  .os-segmented label:last-child {
-    border-start-end-radius: var(--radius-md);
-    border-end-end-radius: var(--radius-md);
-  }
-  .os-segmented label:hover {
-    background: var(--surface-sunken);
-  }
-  .os-segmented label:has(:checked) {
-    background: var(--selection);
-    font-weight: 600;
-    box-shadow: inset 0 -2px 0 var(--focus);
-  }
-  .os-segmented label:has(input:focus-visible) {
-    z-index: 1;
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-  .os-segmented input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .os-choice-long {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-    padding: var(--space-3);
-  }
-  .os-choice-long input {
-    margin-top: var(--space-1);
-    flex: none;
-  }
-  .os-choice-long b {
-    display: block;
-    font-weight: 600;
-  }
-  .os-choice-sub {
-    display: block;
-    font-size: 13px;
-    line-height: 18px;
-    color: var(--ink-muted);
+}
+@media (forced-colors: active) {
+  [data-slot="timer-ring-track"] {
+    stroke-dasharray: 2 4;
   }
 }
 
 /* Unlayered on purpose: the Choice component's utilities sit in @layer utilities and would otherwise beat these system-colour rules. */
 @media (forced-colors: active) {
-  .os-choice input:checked,
   [data-slot="choice"] input:checked {
     forced-color-adjust: none;
     background: Highlight;
     border-color: Highlight;
     box-shadow: inset 0 0 0 2px Canvas;
   }
-  .os-choice input[type="checkbox"]:checked,
   [data-slot="choice"] input[type="checkbox"]:checked {
     box-shadow: none;
   }
-  .os-choice input[type="checkbox"]:checked::before,
   [data-slot="choice"] input[type="checkbox"]:checked::before {
     border-color: HighlightText;
   }
-  .os-choice input:checked:focus-visible,
   [data-slot="choice"] input:checked:focus-visible {
     outline-color: Highlight;
   }
-  .os-choice input:checked:disabled,
   [data-slot="choice"] input:checked:disabled {
     background: GrayText;
     border-color: GrayText;

@@ -15,6 +15,10 @@ interface ChoiceGroupBaseProps {
   /** Joined radios for switching parallel lists; defaults to separate chips. */
   variant?: GroupVariant;
   className?: string;
+  /** Extra classes for the legend, for a legend that is the screen's question. */
+  legendClassName?: string;
+  /** The id of a hint that describes the whole group. */
+  describedBy?: string;
   children: ReactNode;
 }
 
@@ -44,6 +48,8 @@ export function ChoiceGroup({
   variant = "default",
   disabled,
   className,
+  legendClassName,
+  describedBy,
   children,
 }: ChoiceGroupProps): ReactElement {
   const segmented = variant === "segmented";
@@ -63,6 +69,7 @@ export function ChoiceGroup({
           data-variant={variant}
           role="radiogroup"
           aria-labelledby={labelledBy}
+          aria-describedby={describedBy}
           className={cn(base, className)}
         >
           {body}
@@ -72,9 +79,10 @@ export function ChoiceGroup({
           data-slot="choice-group"
           data-variant={variant}
           disabled={disabled}
+          aria-describedby={describedBy}
           className={cn(base, className)}
         >
-          {legend ? <legend className={LEGEND}>{legend}</legend> : null}
+          {legend ? <legend className={cn(LEGEND, legendClassName)}>{legend}</legend> : null}
           {body}
         </fieldset>
       )}

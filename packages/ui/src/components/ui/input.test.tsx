@@ -31,7 +31,7 @@ test("renders_error_with_word_and_shape", () => {
   const err = describedBy(box, "-error");
   expect(err).toHaveTextContent(FIELD_ERROR);
   expect(err.querySelector("svg[aria-hidden=true]")).not.toBeNull();
-  expect(err.querySelector("[class*=os-shape]")).toBeNull();
+  expect(err.querySelector("svg[fill=currentColor]")).toBeNull();
 });
 
 test("field_error_is_described_not_live", () => {
