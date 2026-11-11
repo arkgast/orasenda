@@ -150,28 +150,6 @@ function CapturePad(p) {
       h(Button, { variant: "primary", type: "submit", loading: busy[0], disabled: !p.value.trim() }, busy[0] ? "Saving…" : "Save to Inbox")));
 }
 // end CapturePad
-// Toast-only: the live InlineNotice is components/ui/inline-notice.tsx. Remove with the Toast task.
-function StatusRow(p) {
-  var tone = p.tone === "attention" || p.tone === "warning" || p.tone === "rest" ? p.tone : "neutral";
-  var glyph = tone === "attention" ? h(AlertGlyph) : tone === "warning" ? h(Shape, { mode: "warning" }) : null;
-  var action = p.actionLabel && p.onAction ? h(Button, { variant: p.actionVariant === "quiet" ? "quiet" : "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null;
-  return h("div", { className: cx("os-statusrow", tone === "warning" && "os-statusrow-warning") },
-    h("p", { className: cx("os-statusrow-msg", tone === "rest" && "os-statusrow-rest"), role: "status", "aria-live": "polite" }, glyph, p.children), action);
-}
-// InlineNotice
-// Toast-only legacy copy; the live component is inline-notice.tsx. Remove in the Toast task.
-function InlineNotice(p) {
-  if (p.variant === "row") return h(StatusRow, p);
-  return h("div", { className: cx("os-notice", p.tone === "warning" && "os-notice-warning") },
-    h("div", { className: "os-notice-message", role: "status", "aria-atomic": "true" }, h(Shape, { mode: p.tone === "warning" ? "warning" : "shallow" }), h("span", null, p.children)),
-    p.actionLabel && p.onAction ? h(Button, { variant: "ghost", "aria-label": p.actionName || undefined, onClick: p.onAction }, p.actionLabel) : null);
-}
-// end InlineNotice
-// Toast
-function Toast(p) {
-  return h("div", { className: "os-toast" }, h(InlineNotice, p), p.onDismiss ? h(Button, { variant: "ghost", onClick: p.onDismiss }, "Dismiss") : null);
-}
-// end Toast
 // CommandPalette
 function CommandPalette(p) {
   var query = R.useState(""), active = R.useState(0), listId = R.useId();
@@ -239,7 +217,6 @@ export {
   IntentPrompt,
   FullScreenFocus,
   CapturePad,
-  Toast,
   CommandPalette,
   IconButton,
 };

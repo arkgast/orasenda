@@ -1,6 +1,5 @@
 // Shared: React import and modes
 import type * as React from 'react';
-import type { InlineNoticeProps } from "./components/ui/inline-notice";
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
@@ -23,10 +22,6 @@ export type InterruptionKind = 'internal' | 'external';
 export interface CapturePadProps { open?: boolean; value: string; kind: InterruptionKind; onChange: (value: string) => void; onKindChange: (kind: InterruptionKind) => void; onSave: (note: { text: string; kind: InterruptionKind }) => void | Promise<void>; onClose: () => void }
 export declare function CapturePad(props: CapturePadProps): React.ReactElement;
 // end CapturePad
-// Toast
-export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
-export declare function Toast(props: ToastProps): React.ReactElement;
-// end Toast
 // CommandPalette
 export interface Command { id: string; label: string; hint?: string }
 export interface CommandPaletteProps { open?: boolean; commands: Command[]; onSelect: (id: string) => void; onClose: () => void }
@@ -44,8 +39,8 @@ declare global {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof import("./components/ui/timer-strip").TimerStrip; timerLayout: typeof import("./lib/timer-layout").timerLayout;
       TaskCard: typeof import("./components/ui/task-card").TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
       IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
-      TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof Toast;
-      NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette;
+      TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof import("./components/ui/toast").Toast;
+      NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof import("./components/ui/kanban-column").KanbanColumn; CommandPalette: typeof CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
       ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
       IconButton: typeof IconButton; Tooltip: typeof import("./components/ui/tooltip").Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof import("./components/ui/popover-menu").PopoverMenu;

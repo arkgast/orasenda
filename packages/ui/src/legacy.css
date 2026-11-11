@@ -96,23 +96,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 /* end TextArea */
 
 
-/* InlineNotice */
-/* InlineNotice and Toast */
-.os-notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); }
-.os-notice-message { display: flex; align-items: baseline; gap: var(--space-2); flex: 1; }
-.os-notice-warning { background: var(--amber-soft); color: var(--amber); }
-/* InlineNotice variant="row": the reserved 44px status row. */
-.os-statusrow { display: flex; align-items: center; gap: var(--space-3); height: var(--hit-min); min-width: 0; }
-.os-statusrow-msg { display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 18px; color: var(--ink); }
-.os-statusrow-rest { color: var(--ink-muted); }
-.os-statusrow .os-btn-ghost { color: var(--focus); padding-inline: var(--space-3); flex: none; }
-.os-statusrow-warning .os-glyph { color: var(--amber); }
-/* end InlineNotice */
-
-/* Toast */
-.os-toast { position: fixed; bottom: var(--space-5); left: 50%; transform: translateX(-50%); width: var(--panel-width); max-width: calc(100% - var(--space-6)); z-index: var(--z-popover); padding: var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--surface-overlay); box-shadow: var(--shadow-raised); }
-.os-toast > .os-btn { margin-top: var(--space-2); }
-/* end Toast */
 
 
 /* CommandPalette */
