@@ -1,6 +1,6 @@
 # Today redesign (P1 sub-project C) — Spec
 
-- Status: draft
+- Status: approved (owner, 2026-11-11)
 - Date: 2026-11-11
 - Owner: Arnold Gandarillas Castillo
 - Related: [#134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut; comment 6780298891 is the Today canvas inventory this spec builds from), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window), [#120](https://github.com/arkgast/orasenda/issues/120) (refused start, Today half), [spec A](2026-11-08-focus-session-loop.md) (amended here, see [Amends spec A](#amends-spec-a)), [Settings spec](2026-11-09-settings.md) (B; its compact layout and its harness handover are C's), [structure refactor spec](2026-11-10-structure-refactor.md) (the file layout C keeps), [SPEC §1](../SPEC.md), [ADR-011](../DECISIONS.md) (time is formatted in Rust), [ADR-013](../DECISIONS.md) (one Rust state, many surfaces), [ADR-014](../DECISIONS.md) (settings: one object, one save chain), [ADR-015](../DECISIONS.md) (code-first design system). Design source: the timer-surfaces canvas https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX (`Today.dc.html`, verdict "approve"). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,start-button,popover-menu,inline-notice,icon-button,tooltip,mode-chip,kbd,nav-rail,page-frame,settings-index}.md`.
