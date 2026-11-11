@@ -114,7 +114,7 @@ fn delayed_retry_for_an_older_view_is_dropped() {
     assert_eq!(calls.take(), full_draw(&running(S58)));
     assert_eq!(
         lock_state(&tray.state).drawn,
-        Some(Drawn::of(&running(S58)))
+        Some(Drawn::of(&running(S58), &NextSession::default()))
     );
 }
 
@@ -141,7 +141,7 @@ fn stale_view_through_the_gate_leaves_the_tray_idle() {
     assert_eq!(calls.take(), []);
     assert_eq!(
         lock_state(&tray.state).drawn,
-        Some(Drawn::of(&idle())),
+        Some(Drawn::of(&idle(), &NextSession::default())),
         "the tray stays idle"
     );
 }
@@ -179,8 +179,11 @@ fn render_from_inside_a_tray_call_does_not_deadlock() {
         fn set_glyph(&self, glyph: Glyph) -> Result<(), String> {
             self.inner.set_glyph(glyph)
         }
-        fn set_menu(&self, items: &[&'static str]) -> Result<(), String> {
-            self.inner.set_menu(items)
+        fn set_menu(&self, items: &[MenuEntry], header: Option<&str>) -> Result<(), String> {
+            self.inner.set_menu(items, header)
+        }
+        fn set_header(&self, text: &str) -> Result<(), String> {
+            self.inner.set_header(text)
         }
     }
 
@@ -188,7 +191,7 @@ fn render_from_inside_a_tray_call_does_not_deadlock() {
         inner: Recorder::default(),
         tray: OnceLock::new(),
     });
-    let tray = Arc::new(Tray::new(handle.clone(), &idle()));
+    let tray = Arc::new(Tray::new(handle.clone(), &idle(), NextSession::default()));
     handle
         .inner
         .state

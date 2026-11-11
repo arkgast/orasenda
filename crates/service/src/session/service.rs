@@ -18,6 +18,7 @@ pub struct Platform {
 }
 
 /// What a surface asks the session to do.
+#[derive(Debug, PartialEq)]
 pub enum Action {
     Start(StartRequest),
     Pause,
@@ -28,6 +29,8 @@ pub enum Action {
 /// A native view of the timer (T9's menu-bar item).
 pub trait NativeSurface: Send + Sync {
     fn render(&self, view: &TimerView);
+    /// The saved settings changed (saved from any surface, or restored). Most surfaces ignore it.
+    fn settings_changed(&self, _settings: &Settings) {}
 }
 
 /// Every native surface, in managed state. `publish` clones the list under the lock and
