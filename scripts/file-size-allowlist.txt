@@ -1,7 +1,6 @@
 # Files that predate the 500-line ceiling: "<lines> <path>". The list only shrinks.
 # The guard (scripts/file-size.sh) fails when a listed file grows, when it is back
 # at 500 lines or fewer (remove its entry), or when its path no longer exists.
-3789 apps/orasenda/src-tauri/src/session.rs
 1039 apps/orasenda/src/pages/Today.test.tsx
 998 apps/orasenda/src-tauri/src/tray.rs
 963 apps/orasenda/src-tauri/src/spike/commands.rs
