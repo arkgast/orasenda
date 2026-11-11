@@ -216,13 +216,24 @@ pub(crate) fn start_action(saved: Preset, quick: bool) -> Action {
     })
 }
 
+/// Where in Settings a menu item opens, when not at the top.
+fn settings_target(command: &MenuCommand) -> Option<crate::ipc::SettingsTarget> {
+    match command {
+        MenuCommand::EditTimes => Some(crate::ipc::SettingsTarget::Timer),
+        _ => None,
+    }
+}
+
 /// Runs on the main thread. Anything that reads or writes the session or the settings goes
 /// to a blocking thread, so the main thread never waits on the service lock or the scheduler.
 pub(super) fn on_menu_event(app: &AppHandle, id: &str) {
     match menu_command(id) {
         Some(MenuCommand::Show) => lifecycle::show_main(app),
-        // The page has no Timer anchor yet, so this opens Settings.
-        Some(MenuCommand::Settings | MenuCommand::EditTimes) => lifecycle::show_settings(app),
+        Some(MenuCommand::Settings) => lifecycle::show_settings(app),
+        Some(command @ MenuCommand::EditTimes) => match settings_target(&command) {
+            Some(target) => lifecycle::show_settings_at(app, target),
+            None => lifecycle::show_settings(app),
+        },
         Some(MenuCommand::Quit) => app.exit(0),
         // Creating a window waits on the main thread, so it runs on a blocking thread.
         Some(MenuCommand::DevPanel) => {

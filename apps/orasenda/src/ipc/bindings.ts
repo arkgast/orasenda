@@ -25,8 +25,8 @@ export const commands = {
 	notificationsRequest: () => __TAURI_INVOKE<NotificationStatus>("notifications_request"),
 	/**  Opens the system notification settings for the app. */
 	notificationsOpenSettings: () => typedError<null, NotificationsError>(__TAURI_INVOKE("notifications_open_settings")),
-	/**  The page the app was asked to show before the webview listened, once. */
-	navigateTake: () => __TAURI_INVOKE<NavigatePage | null>("navigate_take"),
+	/**  The page (and Settings target) the app was asked to show before the webview listened, once. */
+	navigateTake: () => __TAURI_INVOKE<Navigate_Serialize | null>("navigate_take"),
 	/**  The three fixed presets' lengths, in display order. */
 	presetsGet: () => __TAURI_INVOKE<PresetLength[]>("presets_get"),
 	/**
@@ -53,7 +53,7 @@ export const commands = {
 /** Events */
 export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
-	navigate: makeEvent<Navigate, Navigate>("navigate"),
+	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
 	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
@@ -198,12 +198,24 @@ export type NativeMenuRequest_Serialize = {
 };
 
 /**  Asks the webview to show a page. */
-export type Navigate = {
-	page: NavigatePage,
-};
+export type Navigate = Navigate_Serialize | Navigate_Deserialize;
 
 /**  A page of the app shell. */
 export type NavigatePage = "today" | "board" | "calendar" | "routines" | "review" | "settings";
+
+/**  Asks the webview to show a page. */
+export type Navigate_Deserialize = {
+	page: NavigatePage,
+	/**  Where on the Settings page to land; `None` is the top. Ignored for other pages. */
+	target?: SettingsTarget | null,
+};
+
+/**  Asks the webview to show a page. */
+export type Navigate_Serialize = {
+	page: NavigatePage,
+	/**  Where on the Settings page to land; `None` is the top. Ignored for other pages. */
+	target: SettingsTarget | null,
+};
 
 /**  Whether the app may post notifications, serialized camelCase. */
 export type NotificationStatus = "notDetermined" | "denied" | "granted" | "unavailable";
@@ -275,6 +287,9 @@ export type SettingsError = {
 
 /**  Why saving settings failed. */
 export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
+
+/**  A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`. */
+export type SettingsTarget = "general" | "timer" | "notifications" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes";
 
 /**  Why a spike command failed, with a message for the log. */
 export type SpikeError = {

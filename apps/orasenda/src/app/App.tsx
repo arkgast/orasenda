@@ -117,8 +117,8 @@ export function App() {
     let cancelled = false;
     const take = () => {
       commands.navigateTake().then(
-        (page) => {
-          if (page && !cancelled) navigate(page, undefined, true);
+        (pending) => {
+          if (pending && !cancelled) navigate(pending.page, pending.target ?? undefined, true);
         },
         (error: unknown) => console.error("navigate_take failed", error),
       );

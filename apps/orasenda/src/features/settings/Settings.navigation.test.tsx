@@ -2,7 +2,6 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "../../app/App";
-import type { NavigatePage } from "../../ipc/bindings";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
 import { argsOf, deferred, emitNavigate, mockBackend, SETTINGS, settle } from "../../test/fixtures";
@@ -47,7 +46,7 @@ test("rail_cmd_comma_and_tray_land_on_settings_with_h1_focus", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Today" }));
   await settle();
-  for (const taken of ["settings", null] as Array<NavigatePage | null>) {
+  for (const taken of [{ page: "settings", target: null }, null] as const) {
     cleanup();
     await settle();
     clearMocks();
@@ -82,7 +81,7 @@ test("field_target_focuses_field", async () => {
 });
 
 test("pending_navigation_taken_at_mount", async () => {
-  mockBackend({ navigate_take: () => "settings" });
+  mockBackend({ navigate_take: () => ({ page: "settings", target: null }) });
   render(<App />);
   await settle();
   expect(h1()).toHaveFocus();
@@ -90,7 +89,7 @@ test("pending_navigation_taken_at_mount", async () => {
 
 test("navigate_event_and_take_land_once", async () => {
   const focused = vi.spyOn(HTMLElement.prototype, "focus");
-  const backend = mockBackend({ navigate_take: () => "settings" });
+  const backend = mockBackend({ navigate_take: () => ({ page: "settings", target: null }) });
   render(<App />);
   await settle();
   expect(argsOf(backend.calls, "navigate_take")).toHaveLength(1);
