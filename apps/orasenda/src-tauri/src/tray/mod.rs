@@ -126,10 +126,16 @@ impl TrayHandle for TauriTray {
     fn set_menu(&self, items: &[MenuEntry], header: Option<&str>) -> Result<(), String> {
         let (menu, header_item) =
             build_menu(&self.app, items, header).map_err(|error| error.to_string())?;
-        *self.header.lock().unwrap_or_else(PoisonError::into_inner) = header_item;
         self.icon
             .set_menu(Some(menu))
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        // Swap under the lock, drop the old item after it: dropping releases an AppKit object.
+        let old = std::mem::replace(
+            &mut *self.header.lock().unwrap_or_else(PoisonError::into_inner),
+            header_item,
+        );
+        drop(old);
+        Ok(())
     }
 
     fn set_header(&self, text: &str) -> Result<(), String> {

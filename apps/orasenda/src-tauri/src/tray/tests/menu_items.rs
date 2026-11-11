@@ -132,19 +132,66 @@ fn preset_submenu_checks_saved() {
         let checked: Vec<_> = preset_submenu(&entries)
             .iter()
             .filter_map(|entry| match entry {
-                MenuEntry::Item {
-                    id,
-                    checked: Some(true),
-                    ..
-                } => Some(*id),
+                MenuEntry::Item { id, checked, .. } if id.starts_with("preset:") => {
+                    Some((*id, *checked))
+                }
                 _ => None,
             })
             .collect();
-        assert_eq!(checked.len(), 1, "one item is checked for {saved:?}");
+        let want: Vec<_> = [
+            Preset::Classic,
+            Preset::FiftyTen,
+            Preset::DeepBlock,
+            Preset::Custom,
+        ]
+        .iter()
+        .map(|&preset| Some(preset == saved))
+        .collect();
+        assert_eq!(
+            checked.iter().map(|(_, c)| *c).collect::<Vec<_>>(),
+            want,
+            "all four are check items; only {saved:?} is checked"
+        );
+        let on = checked.iter().find(|(_, c)| *c == Some(true)).unwrap().0;
         assert!(matches!(
-            menu_command(checked[0]),
+            menu_command(on),
             Some(MenuCommand::SetPreset(chosen)) if chosen == saved
         ));
+    }
+}
+
+#[test]
+fn preset_choice_changes_only_the_preset() {
+    let current = Settings::default();
+    let chosen = crate::tray::menu::preset_choice(current.clone(), Preset::DeepBlock);
+    assert_eq!(
+        chosen,
+        Settings {
+            preset: Preset::DeepBlock,
+            ..current
+        }
+    );
+}
+
+#[test]
+fn tray_ids_never_collide_with_the_app_menu() {
+    let spec_next = NextSession::default();
+    for view in [idle(), running(S59), paused(S59)] {
+        for entry in menu_items(&view, &spec_next, false) {
+            let mut stack = vec![entry];
+            while let Some(entry) = stack.pop() {
+                match entry {
+                    MenuEntry::Item { id, .. } => {
+                        assert!(
+                            !crate::menu::app_menu::is_app_menu_command(id),
+                            "{id} collides"
+                        )
+                    }
+                    MenuEntry::Submenu { entries, .. } => stack.extend(entries),
+                    _ => {}
+                }
+            }
+        }
     }
 }
 
@@ -208,12 +255,16 @@ fn settings_change_rerenders_menu() {
         "Start focus · 50 min"
     );
 
-    // The same settings again cost nothing.
+    // The same settings again rebuild the menu once (a click toggled its check item, and a
+    // failed save sends the unchanged settings to undo that): the menu only, nothing else.
     tray.settings_changed(&Settings {
         preset: Preset::FiftyTen,
         ..Settings::default()
     });
-    assert_eq!(calls.take(), []);
+    assert_eq!(
+        calls.take(),
+        [Call::Menu(menu_items(&idle(), &next, false), None)]
+    );
 }
 
 #[test]

@@ -227,6 +227,11 @@ pub(super) fn on_menu_event(app: &AppHandle, id: &str) {
     }
 }
 
+/// `current` with the chosen preset and nothing else changed.
+pub(crate) fn preset_choice(current: Settings, preset: Preset) -> Settings {
+    Settings { preset, ..current }
+}
+
 /// On a blocking thread. `run_action` has already published the true view, so the tray shows it.
 fn run_command(app: &AppHandle, command: MenuCommand) {
     let action = match command {
@@ -235,12 +240,16 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
         MenuCommand::JustTwo => start_action(Preset::Quick, true),
         MenuCommand::SetPreset(preset) => {
             // The same chain `settings_set` uses: it saves, then emits `settings-changed`.
-            let settings = Settings {
-                preset,
-                ..session::current_settings(app)
-            };
-            if let Err(error) = session::run_set_settings(app, settings) {
+            let settings = preset_choice(session::current_settings(app), preset);
+            let saved = session::run_set_settings(app, settings);
+            if let Err(error) = &saved {
                 eprintln!("tray: could not save the preset: {}", error.message);
+            }
+            // The menu already toggled the clicked check item. A failed save emits nothing, so
+            // tell the tray the saved settings again: it rebuilds the menu and the true preset
+            // shows. (A save emits `settings-changed`, which does the same.)
+            if saved.is_err() {
+                crate::runtime::events::resync_surfaces(app, &session::current_settings(app));
             }
             return;
         }

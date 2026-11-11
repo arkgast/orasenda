@@ -134,6 +134,11 @@ impl NativeSurface for Tray {
         {
             let mut state = lock_state(&self.state);
             state.next = NextSession::from_settings(settings);
+            // The menu toggles a check item itself when clicked, so what it shows may differ
+            // from `drawn` even when the settings did not: always rebuild it.
+            if let Some(drawn) = state.drawn.as_mut() {
+                drawn.items.clear();
+            }
             state.wanted = Some(Drawn::of(&state.view, &state.next));
             state.retries = 0;
             state.render_seq += 1;
