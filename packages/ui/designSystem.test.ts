@@ -7,7 +7,7 @@ import { JSDOM } from "jsdom";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import * as ui from "./src/index.ts";
 
-// The runtime surface before the code-first move (window.Orasenda of the hand-written bundle.js).
+// The runtime surface: the hand-written bundle.js before the code-first move, plus each component added since.
 const PREVIOUS_SURFACE = [
   "Button",
   "ModeChip",
@@ -43,6 +43,8 @@ const PREVIOUS_SURFACE = [
   "Kbd",
   "describeShortcut",
   "PopoverMenu",
+  "Choice",
+  "ChoiceGroup",
 ];
 
 // `just design-system-check` builds once and passes the folder in DS_OUT; alone, the test builds its own.
@@ -69,7 +71,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(32);
+  expect(components).toHaveLength(34);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
