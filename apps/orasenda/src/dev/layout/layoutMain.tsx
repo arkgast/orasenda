@@ -25,9 +25,14 @@ if (page !== null && page !== "settings") {
   throw new Error(`unknown page "${page}"; use "settings" or leave it out`);
 }
 if (page === "settings") {
-  // The rail is the way to Settings; wait for it to render, then press it as a person would.
+  // Press the rail's Settings button as a person would; a compact window has no rail, so use the
+  // page chord (Cmd+6) there, until the page is up (the shortcut listener mounts a tick later).
   const started = Date.now();
   const timer = setInterval(() => {
+    if (document.getElementById("focusMinutes")) {
+      clearInterval(timer);
+      return;
+    }
     const button = Array.from(document.querySelectorAll("button")).find(
       (el) => el.getAttribute("aria-label") === "Settings" || el.textContent?.trim() === "Settings",
     );
@@ -37,6 +42,8 @@ if (page === "settings") {
     } else if (Date.now() - started > 5000) {
       clearInterval(timer);
       throw new Error("Settings rail button not found");
+    } else {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "6", metaKey: true }));
     }
   }, 50);
 }

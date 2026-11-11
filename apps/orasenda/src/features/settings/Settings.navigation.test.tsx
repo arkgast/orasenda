@@ -69,14 +69,30 @@ test("field_target_focuses_field", async () => {
   const { Settings: Page } = await import("./Settings");
   mockBackend();
   const { rerender } = render(
-    <Page info={{ status: "loading" }} arrival={{ seq: 1, target: "focusMinutes" }} />,
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 1, target: "focusMinutes" }}
+      onNavigate={() => {}}
+    />,
   );
   await settle();
   expect(focusInput()).toHaveFocus();
-  rerender(<Page info={{ status: "loading" }} arrival={{ seq: 2, target: "breakMinutes" }} />);
+  rerender(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 2, target: "breakMinutes" }}
+      onNavigate={() => {}}
+    />,
+  );
   await settle();
   expect(breakInput()).toHaveFocus();
-  rerender(<Page info={{ status: "loading" }} arrival={{ seq: 3, target: "timer" }} />);
+  rerender(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 3, target: "timer" }}
+      onNavigate={() => {}}
+    />,
+  );
   await settle();
   expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
 });

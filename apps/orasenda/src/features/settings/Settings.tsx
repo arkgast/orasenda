@@ -1,30 +1,35 @@
-import { InlineNotice, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/ui";
+import { InlineNotice, type NavPage, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/ui";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useWindowLayout } from "../../app/useWindowLayout";
 import type { Preset, Settings as SettingsValue, Theme } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
 import { latest, load, register, sameCustom, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
 import { BREAK_RANGE_HELP, FOCUS_RANGE_HELP, outOfRange, parseMinutes } from "./customRange";
 import { askMacOS, isAsking, subscribeAsking, tick, untick } from "./notificationsToggle";
+import {
+  type Arrival,
+  SECTIONS,
+  type SectionId,
+  SettingsPicker,
+  type SettingsTarget,
+} from "./SettingsHeader";
 import { About, type AboutInfo } from "./sections/About";
 import { AppsAndSites } from "./sections/AppsAndSites";
 import { General, themeLabel } from "./sections/General";
 import { Notifications, notificationsRow } from "./sections/Notifications";
 import { type Draft, type FieldKey, presetLabel, Timer } from "./sections/Timer";
+import {
+  backTo,
+  changedKeys,
+  draftOf,
+  FAILURE_NAME,
+  KEY_SECTION,
+  type Key,
+  withKeys,
+} from "./settingsKeys";
 
-export type SectionId = "general" | "timer" | "notifications" | "appsAndSites" | "about";
-export type SettingsTarget = SectionId | "focusMinutes" | "breakMinutes";
-
-/** A visit to the page: a new `seq` is a new arrival (focus moves); `target` says where. */
-export type Arrival = { seq: number; target?: SettingsTarget };
-
-const SECTIONS: ReadonlyArray<{ id: SectionId; name: string }> = [
-  { id: "general", name: "General" },
-  { id: "timer", name: "Timer" },
-  { id: "notifications", name: "Notifications" },
-  { id: "appsAndSites", name: "Apps and sites" },
-  { id: "about", name: "About and data" },
-];
+export type { Arrival, SectionId, SettingsTarget };
 
 // What the page shows until the first settings_get answers (or when the store is unavailable).
 const DEFAULT_SETTINGS: SettingsValue = {
@@ -38,8 +43,6 @@ const REST = "Changes save as you make them.";
 const WRITE_REASON = "Orasenda can't write its data file.";
 const READ_ONLY = "Read-only until you update Orasenda.";
 
-type Key = "theme" | "preset" | "focus" | "break" | "notify";
-
 type Line =
   | { kind: "rest" }
   | { kind: "saved"; text: string }
@@ -52,60 +55,18 @@ type Line =
       keys: Key[];
     };
 
-const KEY_SECTION: Record<Key, SectionId> = {
-  theme: "general",
-  preset: "timer",
-  focus: "timer",
-  break: "timer",
-  notify: "notifications",
-};
-
-function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
-  const keys: Key[] = [];
-  if (sent.theme !== restored.theme) keys.push("theme");
-  if (sent.preset !== restored.preset) keys.push("preset");
-  if (sent.custom.focusMin !== restored.custom.focusMin) keys.push("focus");
-  if (sent.custom.breakMin !== restored.custom.breakMin) keys.push("break");
-  if (sent.notifySessionEnd !== restored.notifySessionEnd) keys.push("notify");
-  return keys;
-}
-
-/** `base` with the `keys` taken from `from`. */
-function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]): SettingsValue {
-  const next = { ...base, custom: { ...base.custom } };
-  for (const key of keys) {
-    if (key === "theme") next.theme = from.theme;
-    else if (key === "preset") next.preset = from.preset;
-    else if (key === "focus") next.custom.focusMin = from.custom.focusMin;
-    else if (key === "break") next.custom.breakMin = from.custom.breakMin;
-    else next.notifySessionEnd = from.notifySessionEnd;
-  }
-  return next;
-}
-
-const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: string }> = {
-  theme: { subject: "Theme", verb: "wasn't", again: "theme" },
-  preset: { subject: "Preset", verb: "wasn't", again: "preset" },
-  focus: { subject: "Focus minutes", verb: "weren't", again: "focus minutes" },
-  break: { subject: "Break minutes", verb: "weren't", again: "break minutes" },
-  notify: { subject: "Notifications", verb: "weren't", again: "notifications" },
-};
-
-function backTo(key: Key, restored: SettingsValue): string {
-  if (key === "theme") return themeLabel(restored.theme);
-  if (key === "preset") return presetLabel(restored);
-  if (key === "focus") return String(restored.custom.focusMin);
-  if (key === "break") return String(restored.custom.breakMin);
-  return restored.notifySessionEnd ? "on" : "off";
-}
-
-function draftOf(custom: SettingsValue["custom"]): Draft {
-  return { focus: String(custom.focusMin), break: String(custom.breakMin) };
-}
-
 const noop = () => {};
 
-export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival }) {
+export function Settings({
+  info,
+  arrival,
+  onNavigate,
+}: {
+  info: AboutInfo;
+  arrival: Arrival;
+  onNavigate(page: NavPage): void;
+}) {
+  const { compact } = useWindowLayout();
   const root = useRef<HTMLDivElement>(null);
   const timer = useTimer({ onMilestone: noop });
   const view = timer.status === "ok" ? timer.view : null;
@@ -427,6 +388,16 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
     <div ref={root} className="settings-page">
       <PageFrame
         title="Settings"
+        compactPicker={
+          compact ? (
+            <SettingsPicker
+              page="settings"
+              onNavigate={onNavigate}
+              current={current}
+              onJump={jump}
+            />
+          ) : undefined
+        }
         status={
           <InlineNotice
             variant="row"
@@ -439,12 +410,14 @@ export function Settings({ info, arrival }: { info: AboutInfo; arrival: Arrival 
           </InlineNotice>
         }
       >
-        <div className="settings-body">
-          <SettingsIndex
-            sections={sections}
-            current={current}
-            onJump={(id) => jump(id as SectionId)}
-          />
+        <div className={compact ? "settings-body settings-body-compact" : "settings-body"}>
+          {compact ? null : (
+            <SettingsIndex
+              sections={sections}
+              current={current}
+              onJump={(id) => jump(id as SectionId)}
+            />
+          )}
           <ScrollRegion label="Settings">
             <div className="settings-content">
               <General
