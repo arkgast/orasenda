@@ -18,6 +18,7 @@ pub(crate) const RESUME: &str = "Resume session";
 pub(crate) const END_SESSION: &str = "End session";
 pub(crate) const SHOW: &str = "Show Orasenda";
 pub(crate) const SETTINGS: &str = "Settings…";
+pub(crate) const DEV_PANEL: &str = "developer-panel";
 pub(crate) const QUIT: &str = "Quit Orasenda";
 
 /// The four presets the submenu lists, in order.
@@ -119,10 +120,9 @@ fn preset_label(preset: Preset, custom: &CustomSpec) -> String {
     }
 }
 
-/// The menu for `view`, top to bottom. `spike` is for the Developer panel item (C8 adds it);
-/// C7 always passes `false`.
+/// The menu for `view`, top to bottom. `spike` adds the Developer panel item, in its own
+/// group above Quit.
 pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> Vec<MenuEntry> {
-    let _ = spike;
     let mut entries = match view.mode {
         Mode::Idle => {
             let mut presets: Vec<MenuEntry> = PRESETS
@@ -163,8 +163,11 @@ pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> V
         item(SHOW, SHOW),
         with_accelerator(SETTINGS, SETTINGS, "CmdOrCtrl+,"),
         MenuEntry::Separator,
-        with_accelerator(QUIT, QUIT, "CmdOrCtrl+Q"),
     ]);
+    if spike {
+        entries.extend([item(DEV_PANEL, "Developer panel"), MenuEntry::Separator]);
+    }
+    entries.extend([with_accelerator(QUIT, QUIT, "CmdOrCtrl+Q")]);
     entries
 }
 
@@ -180,6 +183,7 @@ pub(crate) enum MenuCommand {
     EditTimes,
     Show,
     Settings,
+    DevPanel,
     Quit,
 }
 
@@ -197,6 +201,7 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
         END_SESSION => Some(MenuCommand::Session(Action::Stop)),
         SHOW => Some(MenuCommand::Show),
         SETTINGS => Some(MenuCommand::Settings),
+        DEV_PANEL => Some(MenuCommand::DevPanel),
         QUIT => Some(MenuCommand::Quit),
         _ => None,
     }
@@ -219,6 +224,15 @@ pub(super) fn on_menu_event(app: &AppHandle, id: &str) {
         // The page has no Timer anchor yet, so this opens Settings.
         Some(MenuCommand::Settings | MenuCommand::EditTimes) => lifecycle::show_settings(app),
         Some(MenuCommand::Quit) => app.exit(0),
+        // Creating a window waits on the main thread, so it runs on a blocking thread.
+        Some(MenuCommand::DevPanel) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(error) = crate::spike::window::open_dev_panel(&app) {
+                    eprintln!("tray: could not open the Developer panel: {error}");
+                }
+            });
+        }
         Some(command) => {
             let app = app.clone();
             tauri::async_runtime::spawn_blocking(move || run_command(&app, command));
@@ -253,7 +267,11 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
             }
             return;
         }
-        MenuCommand::Show | MenuCommand::Settings | MenuCommand::EditTimes | MenuCommand::Quit => {
+        MenuCommand::Show
+        | MenuCommand::Settings
+        | MenuCommand::EditTimes
+        | MenuCommand::DevPanel
+        | MenuCommand::Quit => {
             return;
         }
     };

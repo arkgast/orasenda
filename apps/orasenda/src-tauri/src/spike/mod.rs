@@ -9,6 +9,7 @@ pub(crate) mod commands;
 #[cfg(target_os = "macos")]
 mod macos;
 pub(crate) mod state;
+pub(crate) mod window;
 
 use orasenda_core::{AppRef, BlockAction, PlatformError};
 use serde::{Deserialize, Serialize};

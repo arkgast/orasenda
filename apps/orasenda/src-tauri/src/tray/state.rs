@@ -25,7 +25,7 @@ impl Drawn {
             title,
             label: tray_label(view),
             glyph,
-            items: menu_items(view, next, false),
+            items: menu_items(view, next, crate::spike::enabled()),
             header: header_text(view),
         }
     }

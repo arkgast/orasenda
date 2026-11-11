@@ -22,7 +22,8 @@
 //! post inline when already on the main thread, so an immediate retry would run back to back),
 //! at most [`DRAW_RETRIES`](state::DRAW_RETRIES) times for one view; a newer render drops an older pending retry.
 //! Which view is newest is decided before `render` by `scheduler::publish_view`. Menu actions
-//! run `run_action` on a `spawn_blocking` thread.
+//! run `run_action` on a `spawn_blocking` thread. The Developer panel item opens its window from
+//! a `spawn_blocking` thread too, because creating a window waits on the main thread.
 
 mod menu;
 mod render;
@@ -160,7 +161,11 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     );
     let (_, glyph) = tray_title_and_icon(&idle);
     let next = NextSession::from_settings(&crate::runtime::session::current_settings(handle));
-    let (menu, header) = build_menu(handle, &menu_items(&idle, &next, false), None)?;
+    let (menu, header) = build_menu(
+        handle,
+        &menu_items(&idle, &next, crate::spike::enabled()),
+        None,
+    )?;
     let icon = TrayIconBuilder::with_id(TRAY_ID)
         .icon(glyph.image())
         .icon_as_template(true)
