@@ -3,13 +3,17 @@
 use orasenda_core::AppInfo;
 use tauri::PackageInfo;
 
+mod menu_popup;
 mod navigation;
 mod notifications;
+mod presets;
 mod settings;
 mod timer;
 
+pub use menu_popup::*;
 pub use navigation::*;
 pub use notifications::*;
+pub use presets::*;
 pub use settings::*;
 pub use timer::*;
 

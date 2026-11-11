@@ -243,6 +243,7 @@ impl Session {
                     remaining_ms: 0,
                     progress: 0.0,
                     planned_end_ms: None,
+                    planned_ms: None,
                 };
             }
             Session::Running {
@@ -273,6 +274,7 @@ impl Session {
             remaining_ms: planned_ms.saturating_sub(elapsed_ms),
             progress,
             planned_end_ms: self.planned_end_ms(),
+            planned_ms: Some(planned_ms),
         }
     }
 

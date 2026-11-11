@@ -14,7 +14,7 @@ pub struct ClockTick {
     pub epoch_ms: u64,
     /// The wall clock as text, formatted by Rust in the user's locale.
     pub clock: String,
-    /// When the running session would finish if left idle, as text, if one is running.
+    /// When the chosen preset would finish if started now, as text. Set only while idle.
     pub idle_finish: Option<String>,
 }
 
@@ -52,6 +52,9 @@ pub struct TimerView {
     pub session_id: Option<SessionId>,
     pub preset: Option<Preset>,
     pub finish: Option<String>,
+    /// The session's planned focus length in whole minutes, fixed at start (a Custom change
+    /// in Settings mid-session does not move it); `None` while idle.
+    pub planned_min: Option<u32>,
     pub store: StoreStatus,
     pub notifications: NotificationStatus,
 }
@@ -70,6 +73,7 @@ impl TimerView {
             session_id: None,
             preset: None,
             finish: None,
+            planned_min: None,
             store,
             notifications,
         }

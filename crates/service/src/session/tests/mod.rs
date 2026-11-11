@@ -7,3 +7,4 @@ mod recovery;
 mod run;
 mod settings;
 mod theme;
+mod view_planned;

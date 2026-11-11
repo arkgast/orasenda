@@ -156,6 +156,8 @@ pub struct EngineView {
     pub remaining_ms: u64,
     pub progress: f64,
     pub planned_end_ms: Option<u64>,
+    /// The session's planned focus length, fixed at start; `None` while idle.
+    pub planned_ms: Option<u64>,
 }
 
 /// Something worth recording or announcing that the engine did.

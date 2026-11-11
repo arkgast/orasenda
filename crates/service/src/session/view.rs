@@ -38,6 +38,9 @@ impl SessionService {
             session_id: engine.session_id,
             preset: engine.preset,
             finish: engine.planned_end_ms.map(|end| self.clock_text(end)),
+            planned_min: engine
+                .planned_ms
+                .map(|ms| u32::try_from(ms.div_ceil(60_000)).unwrap_or(u32::MAX)),
             store: self.store_status,
             notifications: self
                 .notifications
