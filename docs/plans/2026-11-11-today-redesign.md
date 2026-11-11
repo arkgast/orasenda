@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-11-today-redesign.md](../specs/2026-11-11-today-redesign.md)
 - Date: 2026-11-11
-- Status: approved (owner, 2026-11-11: "go autonomous")
+- Status: in backlog (#296–#304; owner approved 2026-11-11: "go autonomous")
 
 ## Overview
 The plan has nine tasks, one PR each.
@@ -56,7 +56,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
 
 ## Tasks
 
-### C1: App layout harness and #119's failing case
+### C1: App layout harness and #119's failing case (#296)
 - Priority: 1
 - Depends on: none
 - Owns:
@@ -83,7 +83,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - The app dev server must not need Tauri: everything goes through `mockIPC`.
   - Playwright is already a dependency, so no `baton:deps` step is needed.
 
-### C2: IPC: `plannedMin`, `presets_get`, `native_menu_popup`
+### C2: IPC: `plannedMin`, `presets_get`, `native_menu_popup` (#297)
 - Priority: 1
 - Depends on: none
 - Owns:
@@ -112,7 +112,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - On macOS, `Window::popup_menu_at` blocks until the menu closes. Record the chosen id through the menu-event handler into a one-shot slot keyed by a popup id, then answer it.
   - The "already open" guard is a small mutex flag.
 
-### C3: Shell: 360×240 minimum, compact rule, Pages button, glyphs, ⌘1–6
+### C3: Shell: 360×240 minimum, compact rule, Pages button, glyphs, ⌘1–6 (#300)
 - Priority: 1
 - Depends on: C1, C2
 - Owns:
@@ -144,7 +144,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - Removing the header changes `App.test.tsx`'s `infoLine` assertions. Settings › About still shows the version.
   - A refactor PR moves code or changes it, never both; this task changes code only.
 
-### C4: Today: grid, time, controls, status row, ⌘↩ ⌘⇧↩ ⌘.
+### C4: Today: grid, time, controls, status row, ⌘↩ ⌘⇧↩ ⌘. (#301)
 - Priority: 1
 - Depends on: C3
 - Owns:
@@ -179,7 +179,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - The `h1` stays: visually hidden, `tabIndex={-1}`.
   - In the stacked strip, the status row carries the `ModeChip`.
 
-### C5: Today: preset summary and popover
+### C5: Today: preset summary and popover (#302)
 - Priority: 1
 - Depends on: C4
 - Owns:
@@ -201,7 +201,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - [ ] `today.popover.spec.ts`: with the popover open at 360×240, 900×600 and 1440×900, the panel stays inside the viewport and the document does not scroll.
 - Tests first: `summary_idle_text_name_tooltip`, `summary_running_ends_from_view_finish`, `summary_paused_uses_planned_min`, `summary_short_form_under_400`, `popover_idle_four_radios_metas`, `popover_choose_saves_and_closes`, `popover_running_read_only_heading`, `popover_quick_no_checked_radio`, `popover_settings_link_opens_timer`, `summary_settings_unavailable_disabled`.
 
-### C6: Settings in compact windows
+### C6: Settings in compact windows (#303)
 - Priority: 2
 - Depends on: C3
 - Owns:
@@ -221,7 +221,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
 - Tests first: `compact_settings_shows_pages_and_jump`, `jump_menu_lists_sections_current_checked`, `jump_choice_focuses_section_heading`, `settings_fits_360x240`.
 - Notes: the split moves code and changes it in the same task. Here that is allowed, because the split exists to make room for the change (conventions, "Plans split before they grow"). The PR names which lines moved unchanged.
 
-### C7: Menu bar: Start, Just 2 minutes, Preset, status header
+### C7: Menu bar: Start, Just 2 minutes, Preset, status header (#298)
 - Priority: 1
 - Depends on: none
 - Owns:
@@ -245,7 +245,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - [ ] `spike: bool` is in the signature, but C7 always passes `false`. C8 adds the item.
 - Tests first: `menu_items_idle`, `menu_items_running`, `menu_items_paused`, `header_minutes_ceil_and_singular`, `preset_submenu_checks_saved`, `start_item_uses_saved_preset_and_no_custom`, `settings_change_rerenders_menu`, `header_set_text_once_a_minute`.
 
-### C8: DevPanel in its own window
+### C8: DevPanel in its own window (#304)
 - Priority: 2
 - Depends on: C2, C7
 - Owns:
@@ -265,7 +265,7 @@ Can start immediately in parallel: C1, C2, C7, C9.
   - [ ] Today no longer renders `DevPanel`. That removal is C4's; if C8 merges first, it leaves Today alone.
 - Tests first: `dev_window_only_when_enabled`, `menu_items_spike`, `dev_entry_renders_panel`.
 
-### C9: InlineNotice README, Today slots
+### C9: InlineNotice README, Today slots (#299)
 - Priority: 2
 - Depends on: none
 - Owns: `packages/ui/src/components/ui/inline-notice.md`
