@@ -10,6 +10,7 @@ const tokensCss = readFileSync(
   "utf8",
 );
 const sheets = {
+  "dev.css": readFileSync(join(import.meta.dirname, "dev.css"), "utf8"),
   "overlay.css": readFileSync(join(import.meta.dirname, "overlay.css"), "utf8"),
   "spike.css": readFileSync(join(import.meta.dirname, "spike.css"), "utf8"),
 };
@@ -98,4 +99,11 @@ test("usage_list_uses_tabular_digits", () => {
   expect(rule(sheets["spike.css"], ".spike-usage").get("font-variant-numeric")).toBe(
     "tabular-nums",
   );
+});
+
+test("dev_page_is_opaque_surface_with_ink", () => {
+  const body = rule(sheets["dev.css"], "body");
+  expect(body.get("background")).toBe("var(--surface)");
+  expect(body.get("color")).toBe("var(--ink)");
+  expect(body.get("margin")).toBe("0");
 });

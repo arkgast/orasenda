@@ -40,12 +40,19 @@ pub(crate) fn open_dev_panel(app: &AppHandle) -> tauri::Result<()> {
         window.unminimize()?;
         return window.set_focus();
     }
-    WebviewWindowBuilder::new(app, spec.label, WebviewUrl::App(spec.page.into()))
+    let built = WebviewWindowBuilder::new(app, spec.label, WebviewUrl::App(spec.page.into()))
         .title(spec.title)
         .inner_size(spec.width, spec.height)
         .resizable(spec.resizable)
-        .build()?;
-    Ok(())
+        .build();
+    match built {
+        Ok(_) => Ok(()),
+        // A second click raced the first and the window now exists: focus it.
+        Err(error) => match app.get_webview_window(spec.label) {
+            Some(window) => window.set_focus(),
+            None => Err(error),
+        },
+    }
 }
 
 #[cfg(test)]
@@ -60,11 +67,12 @@ mod tests {
             (
                 spec.label,
                 spec.title,
+                spec.page,
                 spec.width,
                 spec.height,
                 spec.resizable
             ),
-            ("dev", "Developer panel", 480.0, 640.0, true)
+            ("dev", "Developer panel", "dev.html", 480.0, 640.0, true)
         );
     }
 }
