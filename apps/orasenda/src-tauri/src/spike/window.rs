@@ -1,8 +1,6 @@
 //! The Developer panel window: label `dev`, created at runtime and only when the spike runs.
 //! It loads `dev.html`, and `capabilities/dev.json` grants it the spike's panel commands.
 
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
-
 /// The window's label (granted by `capabilities/dev.json`).
 pub(crate) const DEV: &str = "dev";
 
@@ -30,8 +28,11 @@ pub(crate) fn dev_window_spec(enabled: bool) -> Option<DevWindowSpec> {
 }
 
 /// Opens the Developer panel, or focuses it when it is already open. Does nothing when
-/// the spike is off.
-pub(crate) fn open_dev_panel(app: &AppHandle) -> tauri::Result<()> {
+/// the spike is off. Desktop only: the tray that calls it is desktop only, and window
+/// sizing, titles and `unminimize` don't exist on mobile.
+#[cfg(desktop)]
+pub(crate) fn open_dev_panel(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
     let Some(spec) = dev_window_spec(super::enabled()) else {
         return Ok(());
     };
