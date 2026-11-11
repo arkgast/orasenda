@@ -182,12 +182,6 @@ pub fn show_settings(app: &AppHandle) {
     show_settings_on(app, None);
 }
 
-/// Shows `main` on the Settings page at `target` (the menu bar's *Edit times in Settings…*).
-#[cfg(desktop)]
-pub fn show_settings_at(app: &AppHandle, target: SettingsTarget) {
-    show_settings_on(app, Some(target));
-}
-
 /// `RunEvent::Reopen` (a Dock click): bring `main` back. The event exists on macOS only.
 #[cfg(target_os = "macos")]
 pub fn on_reopen(app: &AppHandle) {
