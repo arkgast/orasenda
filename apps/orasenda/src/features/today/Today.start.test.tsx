@@ -1,5 +1,5 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { act, cleanup, fireEvent, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
@@ -12,14 +12,7 @@ import {
   RUNNING,
   settle,
 } from "../../test/fixtures";
-import {
-  INVALID_SPEC,
-  outsideRing,
-  RANGE_HELP,
-  renderToday,
-  savedSettings,
-  statusNodes,
-} from "./Today.support";
+import { renderToday, savedSettings, statusNodes } from "./Today.support";
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -34,17 +27,43 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-// Starting
+function press(init: KeyboardEventInit) {
+  const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+  window.dispatchEvent(event);
+  return event;
+}
 
-test("start_focus_calls_timer_start_with_checked_preset", async () => {
+test("start_focus_calls_timer_start_with_saved_preset", async () => {
   const { backend } = await renderToday(savedSettings({ preset: "fifty_ten" }));
-  expect(screen.getByRole("radio", { name: "50/10" })).toBeChecked();
 
   fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
   await settle();
 
   expect(argsOf(backend.calls, "timer_start")).toEqual([
     { request: { preset: "fifty_ten", custom: null } },
+  ]);
+});
+
+test("start_sends_custom_null", async () => {
+  // Even with Custom saved: Rust uses the saved spec when `custom` is null.
+  const { backend } = await renderToday(savedSettings({ preset: "custom" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+
+  expect(argsOf(backend.calls, "timer_start")).toEqual([
+    { request: { preset: "custom", custom: null } },
+  ]);
+});
+
+test("start_before_settings_load_uses_classic", async () => {
+  const { backend } = await renderToday({ settings_get: () => new Promise(() => {}) });
+
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+
+  expect(argsOf(backend.calls, "timer_start")).toEqual([
+    { request: { preset: "classic", custom: null } },
   ]);
 });
 
@@ -59,88 +78,167 @@ test("just_two_minutes_calls_timer_start_with_quick", async () => {
   ]);
 });
 
-test("custom_start_sends_the_current_draft", async () => {
-  const { backend } = await renderToday(savedSettings({ preset: "custom" }));
+test("today_has_no_radios_fields_or_dev_panel", async () => {
+  await renderToday(savedSettings({ preset: "custom" }));
 
-  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  expect(screen.queryByRole("radio")).toBeNull();
+  expect(screen.queryByRole("spinbutton")).toBeNull();
+  expect(screen.queryByText(/Developer|spike/i)).toBeNull();
+});
+
+test("start_has_no_finish_time_line_and_advertises_cmd_enter", async () => {
+  const { container } = await renderToday();
+  await emitClock({ epochMs: 1, clock: "14:32", idleFinish: "14:57" });
+
+  expect(container).not.toHaveTextContent("Realistic finish");
+  const start = screen.getByRole("button", { name: "Start focus" });
+  expect(start).toHaveAttribute("aria-keyshortcuts", "Meta+Enter");
+});
+
+test("cmd_enter_starts_only_idle", async () => {
+  const { backend } = await renderToday(savedSettings({ preset: "deep_block" }));
+
+  const event = press({ key: "Enter", metaKey: true });
   await settle();
 
+  expect(event.defaultPrevented).toBe(true);
   expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "custom", custom: { focusMin: 45, breakMin: 10 } } },
+    { request: { preset: "deep_block", custom: null } },
+  ]);
+
+  await emitTimer(RUNNING);
+  const again = press({ key: "Enter", metaKey: true });
+  await settle();
+  expect(again.defaultPrevented).toBe(false);
+  expect(argsOf(backend.calls, "timer_start")).toHaveLength(1);
+
+  await emitTimer(PAUSED);
+  press({ key: "Enter", metaKey: true });
+  await settle();
+  expect(argsOf(backend.calls, "timer_start")).toHaveLength(1);
+});
+
+test("cmd_enter_does_nothing_while_starting", async () => {
+  const pending = deferred<unknown>();
+  const { backend } = await renderToday({ timer_start: () => pending.promise });
+
+  press({ key: "Enter", metaKey: true });
+  await settle();
+  press({ key: "Enter", metaKey: true });
+  press({ key: "Enter", metaKey: true, shiftKey: true });
+  await settle();
+
+  expect(argsOf(backend.calls, "timer_start")).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "Starting…" })).toBeInTheDocument();
+  pending.resolve(RUNNING);
+});
+
+test("cmd_shift_enter_quick", async () => {
+  const { backend } = await renderToday();
+
+  const event = press({ key: "Enter", metaKey: true, shiftKey: true });
+  await settle();
+
+  expect(event.defaultPrevented).toBe(true);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([
+    { request: { preset: "quick", custom: null } },
   ]);
 });
 
-test("start_right_after_custom_edit_uses_the_edit", async () => {
-  // The blur's settings_set is still in flight when Start is pressed.
-  const saving = deferred<null>();
+test("start_moves_focus_to_pause_session", async () => {
+  await renderToday();
+
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+  await emitTimer(RUNNING);
+
+  expect(screen.getByRole("button", { name: "Pause session" })).toHaveFocus();
+});
+
+test("a_start_from_another_surface_moves_no_focus", async () => {
+  await renderToday();
+  const start = screen.getByRole("button", { name: "Start focus" });
+  start.focus();
+
+  await emitTimer(RUNNING);
+
+  expect(screen.getByRole("button", { name: "Pause session" })).not.toHaveFocus();
+});
+
+test("start_error_shows_line_and_try_again_repeats_the_request", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let answer: "fail" | "ok" = "fail";
   const { backend } = await renderToday({
-    ...savedSettings({ preset: "custom" }),
-    settings_set: () => saving.promise,
+    ...savedSettings({ preset: "fifty_ten" }),
+    timer_start: () =>
+      answer === "fail" ? Promise.reject({ kind: "store", message: "x" }) : RUNNING,
   });
-  const focus = screen.getByLabelText("Focus minutes");
 
-  fireEvent.change(focus, { target: { value: "60" } });
-  fireEvent.blur(focus);
-  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  fireEvent.click(screen.getByRole("button", { name: "Just 2 minutes" }));
+  await settle();
+
+  expect(statusNodes()).toHaveLength(1);
+  expect(statusNodes()[0]).toHaveTextContent(
+    "Focus didn't start. Orasenda's timer isn't responding.",
+  );
+
+  answer = "ok";
+  fireEvent.click(screen.getByRole("button", { name: "Try again starting focus" }));
   await settle();
 
   expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "custom", custom: { focusMin: 60, breakMin: 10 } } },
+    { request: { preset: "quick", custom: null } },
+    { request: { preset: "quick", custom: null } },
   ]);
-  await act(async () => saving.resolve(null));
-});
-
-test("start_with_unparsable_draft_sends_no_custom", async () => {
-  const { backend } = await renderToday(savedSettings({ preset: "custom" }));
-
-  fireEvent.change(screen.getByLabelText("Break minutes"), { target: { value: "" } });
-  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
-  await settle();
-
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "custom", custom: null } },
-  ]);
-});
-
-test("start_with_out_of_range_draft_shows_helper", async () => {
-  const { backend } = await renderToday({
-    ...savedSettings({ preset: "custom" }),
-    timer_start: () => Promise.reject(INVALID_SPEC),
-  });
-  expect(screen.queryByText(RANGE_HELP)).toBeNull();
-
-  fireEvent.change(screen.getByLabelText("Focus minutes"), { target: { value: "2" } });
-  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
-  await settle();
-
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "custom", custom: { focusMin: 2, breakMin: 10 } } },
-  ]);
-  expect(screen.getByText(RANGE_HELP)).toBeInTheDocument();
-  expect(screen.getByLabelText("Focus minutes")).not.toHaveAttribute("aria-invalid");
-  expect(screen.queryByRole("alert")).toBeNull();
+  // A successful start clears the line.
   expect(statusNodes()).toHaveLength(0);
-  // Nothing started: the Start button is still there.
-  expect(screen.getByRole("button", { name: "Start focus" })).toBeInTheDocument();
+});
+
+test("try_again_repeats_start", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { backend } = await renderToday({
+    ...savedSettings({ preset: "deep_block" }),
+    timer_start: () => Promise.reject({ kind: "invalidSpec", message: "out of range" }),
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "Try again starting focus" }));
+  await settle();
+
+  expect(argsOf(backend.calls, "timer_start")).toEqual([
+    { request: { preset: "deep_block", custom: null } },
+    { request: { preset: "deep_block", custom: null } },
+  ]);
+});
+
+test("start_race_is_logged_and_shows_no_line", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({
+    timer_start: () => Promise.reject({ kind: "alreadyRunning", message: "running" }),
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+
+  expect(statusNodes()).toHaveLength(0);
+  expect(error).toHaveBeenCalled();
 });
 
 // Rendering the clock and the view
 
-test("clock_tick_renders_wall_clock_and_idle_finish", async () => {
-  const { container } = await renderToday();
+test("clock_tick_renders_wall_clock_in_the_ring", async () => {
+  await renderToday();
 
   await emitClock({ epochMs: 1, clock: "14:32", idleFinish: "14:57" });
 
   expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
-  const ring = screen.getByRole("timer", { name: "No session" });
-  expect(ring).toHaveTextContent("Clock · 14:32");
-  expect(outsideRing("No session")).toHaveLength(1);
-  expect(container).toHaveTextContent("Realistic finish · 14:57");
+  expect(screen.getByRole("timer", { name: "No session" })).toHaveTextContent("Clock · 14:32");
   expect(screen.getByRole("button", { name: "Start focus" })).toBeInTheDocument();
 });
 
-test("timer_tick_renders_digits_chip_word_and_planned_finish", async () => {
-  const { container } = await renderToday();
+test("timer_tick_renders_digits_and_the_round_pause_button", async () => {
+  await renderToday();
 
   await emitClock({ epochMs: 1, clock: "14:55", idleFinish: null });
   await emitTimer(RUNNING);
@@ -150,54 +248,17 @@ test("timer_tick_renders_digits_chip_word_and_planned_finish", async () => {
       name: "Focus, 24 minutes 59 seconds remaining, Wall clock, 14:55",
     }),
   ).toHaveTextContent("24:59");
-  expect(outsideRing("Focus")).toHaveLength(1);
-  expect(container).toHaveTextContent("Realistic finish · 15:20");
-  expect(screen.getByRole("button", { name: "Pause" })).toHaveAttribute("data-variant", "quiet");
-  expect(screen.getByRole("button", { name: "End session" })).toHaveAttribute(
-    "data-variant",
-    "ghost",
-  );
+  expect(screen.getByRole("button", { name: "Pause session" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "End session" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Start focus" })).toBeNull();
 });
 
-test("paused_view_renders_paused_once_and_no_finish_line", async () => {
-  const { container } = await renderToday();
+test("paused_view_renders_resume_session", async () => {
+  await renderToday();
 
   await emitTimer(PAUSED);
 
   expect(screen.getByRole("timer", { name: /^Paused, 24 minutes 59 seconds remaining/ }));
-  expect(outsideRing("Paused")).toHaveLength(1);
-  expect(container).not.toHaveTextContent("Realistic finish");
-  expect(screen.getByRole("button", { name: "Resume" })).toHaveAttribute("data-variant", "quiet");
-  expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
-  expect(screen.getByRole("button", { name: "End session" })).toHaveAttribute(
-    "data-variant",
-    "ghost",
-  );
-});
-
-test("running_finish_line_reads_realistic_finish", async () => {
-  await renderToday();
-
-  await emitTimer(RUNNING);
-
-  const time = screen.getByText("15:20");
-  expect(time).toHaveClass("font-mono", "tabular-nums");
-  const line = time.closest("p");
-  expect(line).toHaveTextContent(/^Realistic finish · 15:20$/);
-  expect(line).toHaveClass("app-muted");
-});
-
-test("pause_resume_and_end_call_their_commands", async () => {
-  const { backend } = await renderToday();
-  await emitTimer(RUNNING);
-  fireEvent.click(screen.getByRole("button", { name: "Pause" }));
-  await emitTimer(PAUSED);
-  fireEvent.click(screen.getByRole("button", { name: "Resume" }));
-  fireEvent.click(screen.getByRole("button", { name: "End session" }));
-  await settle();
-
-  expect(backend.calls.map((call) => call.cmd)).toEqual(
-    expect.arrayContaining(["timer_pause", "timer_resume", "timer_stop"]),
-  );
+  expect(screen.getByRole("button", { name: "Resume session" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Pause session" })).toBeNull();
 });

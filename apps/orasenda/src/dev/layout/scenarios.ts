@@ -77,6 +77,11 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     timer_pause: () => PAUSED,
     timer_resume: () => RUNNING,
     timer_stop: () => IDLE,
+    presets_get: () => [
+      { preset: "classic", focusMin: 25, breakMin: 5 },
+      { preset: "fifty_ten", focusMin: 50, breakMin: 10 },
+      { preset: "deep_block", focusMin: 90, breakMin: 15 },
+    ],
     navigate_take: () => null,
     notifications_request: () => view.notifications,
     notifications_open_settings: () => null,
@@ -103,6 +108,8 @@ const SCENARIOS: Record<string, Handler> = {
   // The start command never answers, so Start stays in its loading state.
   starting: backend({ replies: { timer_start: () => new Promise(() => {}) } }),
   settingsUnavailable: backend({ replies: { settings_get: rejects("unavailable", "no store") } }),
+  // Pause answers an error, so the status row shows its line while the session still runs.
+  pauseError: backend({ view: RUNNING, replies: { timer_pause: rejects("store", "no timer") } }),
   customChecked: backend({ settings: { ...SETTINGS, preset: "custom" } }),
   // Settings: a refused custom spec gives the longest save line once both fields are out of range.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),

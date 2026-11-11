@@ -5,6 +5,7 @@ import type {
   ClockTick_Serialize,
   MilestoneEvent_Serialize,
   NavigatePage,
+  PresetLength,
   Settings,
   SettingsTarget,
   TimerState_Serialize,
@@ -78,6 +79,12 @@ export const SETTINGS: Settings = {
   notifySessionEnd: true,
 };
 
+export const PRESET_LENGTHS: PresetLength[] = [
+  { preset: "classic", focusMin: 25, breakMin: 5 },
+  { preset: "fifty_ten", focusMin: 50, breakMin: 10 },
+  { preset: "deep_block", focusMin: 90, breakMin: 15 },
+];
+
 const DEFAULTS: Replies = {
   app_info: () => INFO,
   spike_status: () => ({ enabled: false, platformSupported: true }),
@@ -89,6 +96,7 @@ const DEFAULTS: Replies = {
   timer_resume: () => RUNNING,
   timer_stop: () => IDLE,
   navigate_take: () => null,
+  presets_get: () => PRESET_LENGTHS,
   notifications_request: () => "granted",
   notifications_open_settings: () => null,
 };
