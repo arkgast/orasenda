@@ -63,45 +63,6 @@ function Dialog(p) {
       h(Button, { variant: p.destructive ? "critical" : "primary", onClick: p.onConfirm, loading: p.loading }, p.confirmLabel)));
 }
 // end Dialog
-// Two steps in one native modal. Step 1: Back to focus (the one primary), Wait, "I need <app> now".
-// Step 2: the reason group, Continue (aria-disabled until a reason is picked) and Back to focus.
-// Back to focus stays the primary in both steps so the loud button never changes meaning; Escape calls it in both.
-var INTENT_REASONS = ["Work", "Quick check", "Other"];
-// IntentPrompt
-function IntentPrompt(p) {
-  var app = p.app || "this app", open = p.open !== false;
-  var stepState = R.useState(1), step = p.onContinue ? stepState[0] : 1, setStep = stepState[1];
-  var reasonState = R.useState(""), reason = reasonState[0], setReason = reasonState[1];
-  var name = R.useId(), hintId = R.useId(), group = R.useRef(null);
-  // Reopening or a new app starts again at step 1. Reset during render (previous-value pattern), not in an effect, so no stale step is ever shown.
-  var shownState = R.useState({ open: open, app: app }), shown = shownState[0];
-  if (shown.open !== open || shown.app !== app) {
-    shownState[1]({ open: open, app: app });
-    if ((open && !shown.open) || app !== shown.app) { setStep(1); setReason(""); }
-  }
-  // Entering step 2 the "I need" button unmounts, so focus moves to the first reason; VoiceOver reads it with the group's question.
-  R.useEffect(function () {
-    var first = step === 2 && group.current ? group.current.querySelector("input") : null;
-    if (first) first.focus();
-  }, [step]);
-  var back = h(Button, { key: "back", variant: "primary", size: "lg", onClick: p.onReturn, "data-initial-focus": step === 1 ? true : undefined }, "Back to focus");
-  return h(Modal, { open: p.open, title: p.title || "Is this what you intended?", description: step === 1 ? (p.message || ("You opened " + app + " during a focus session. Take one breath, then choose.")) : undefined, onSafe: p.onReturn, scrim: true, className: "os-intent" },
-    h("div", { className: "os-breath", "aria-hidden": "true" }, h("i")),
-    step === 1 ? h("div", { key: "step1", className: "os-intent-actions" },
-      back,
-      p.onWait ? h(Button, { key: "wait", variant: "quiet", onClick: p.onWait }, p.waitLabel || "Wait 10 minutes, then decide") : null,
-      p.onContinue ? h(Button, { key: "need", variant: "ghost", onClick: function () { setStep(2); } }, "I need " + app + " now") : null) : null,
-    step === 2 ? h("div", { key: "step2", className: "os-intent-reasons" },
-      h("fieldset", { ref: group, className: "os-choice-group", "aria-describedby": hintId },
-        h("legend", null, "What do you need " + app + " for?"),
-        INTENT_REASONS.map(function (v) { return h("label", { className: "os-choice", key: v }, h("input", { type: "radio", name: name, value: v, checked: reason === v, onChange: function () { setReason(v); } }), v); })),
-      h("p", { id: hintId, className: "os-intent-hint" }, "Pick one to continue. Your reason stays on this device.")) : null,
-    step === 2 ? h("div", { key: "step2-actions", className: "os-intent-actions" },
-      h(Button, { key: "continue", variant: "quiet", "aria-disabled": reason ? undefined : "true", "aria-describedby": reason ? undefined : hintId,
-        onClick: function () { if (reason) p.onContinue(reason); } }, "Continue to " + app),
-      back) : null);
-}
-// end IntentPrompt
 // FullScreenFocus
 function FullScreenFocus(p) {
   var leaving = R.useState(false), root = R.useRef(null);
@@ -199,7 +160,6 @@ function describeShortcut(glyphs) {
 // end describeShortcut
 
 export {
-  IntentPrompt,
   FullScreenFocus,
   CapturePad,
   CommandPalette,

@@ -75,7 +75,7 @@ test("overlay_return_and_escape_send_return", async () => {
   // One choice per show: Escape is checked on the next one.
   await show("Safari");
   await act(async () => {
-    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   });
 
   expect(argsOf(calls, "spike_overlay_choice")).toEqual([
@@ -100,8 +100,8 @@ test("overlay_step_one_has_back_to_focus_as_only_primary", async () => {
   const back = screen.getByRole("button", { name: "Back to focus" });
   const need = screen.getByRole("button", { name: "I need Safari now" });
   expect(screen.getAllByRole("button")).toEqual([back, need]);
-  expect(back).toHaveClass("os-btn-primary");
-  expect(need).not.toHaveClass("os-btn-primary");
+  expect(back).toHaveAttribute("data-variant", "primary");
+  expect(need).not.toHaveAttribute("data-variant", "primary");
   expect(back).toHaveFocus();
   expect(need).not.toHaveAttribute("aria-expanded");
   expect(screen.queryByRole("radio")).toBeNull();
@@ -115,8 +115,8 @@ test("overlay_step_two_shows_only_reasons_continue_and_back", async () => {
   const continueButton = screen.getByRole("button", { name: "Continue to Safari" });
   const back = screen.getByRole("button", { name: "Back to focus" });
   expect(screen.getAllByRole("button")).toEqual([continueButton, back]);
-  expect(back).toHaveClass("os-btn-primary");
-  expect(continueButton).not.toHaveClass("os-btn-primary");
+  expect(back).toHaveAttribute("data-variant", "primary");
+  expect(continueButton).not.toHaveAttribute("data-variant", "primary");
   expect(screen.getByRole("group", { name: "What do you need Safari for?" })).toBeInTheDocument();
   const radios = screen.getAllByRole("radio");
   expect(radios.map((radio) => radio.getAttribute("value"))).toEqual([
@@ -174,7 +174,7 @@ test("overlay_escape_on_step_two_sends_return", async () => {
   fireEvent.click(screen.getByRole("radio", { name: "Work" }));
 
   await act(async () => {
-    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   });
 
   expect(argsOf(calls, "spike_overlay_choice")).toEqual([{ choice: { kind: "return" } }]);
@@ -235,7 +235,7 @@ test("overlay_choice_resent_after_error_result", async () => {
   await clickBack();
   // The window may still cover the screen: Escape must be able to try again.
   await act(async () => {
-    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   });
 
   expect(argsOf(calls, "spike_overlay_choice")).toHaveLength(2);

@@ -3,13 +3,6 @@ import type * as React from 'react';
 export type Mode = 'focus' | 'break' | 'routine' | 'warning' | 'shallow' | 'paused' | 'idle';
 export type TimerMode = Exclude<Mode, 'shallow'>;
 // end Shared: React import and modes
-// IntentPrompt
-/** The reasons offered on step 2, in order. */
-export type IntentReason = 'Work' | 'Quick check' | 'Other';
-/** Two steps. Wait renders on step 1 only when onWait is passed; "I need <app> now" and step 2 only when onContinue is passed. onContinue always receives the picked reason. */
-export interface IntentPromptProps { open?: boolean; app?: string; title?: string; message?: string; waitLabel?: string; onReturn?: () => void; onWait?: () => void; onContinue?: (reason: IntentReason) => void }
-export declare function IntentPrompt(props: IntentPromptProps): React.ReactElement;
-// end IntentPrompt
 // FullScreenFocus
 export interface FullScreenFocusProps extends Omit<import('./components/ui/timer-ring').TimerRingProps, 'size' | 'stroke'> { onExit: () => void }
 export declare function FullScreenFocus(props: FullScreenFocusProps): React.ReactElement;
@@ -33,7 +26,7 @@ declare global {
     Orasenda: {
       ModeChip: typeof import("./components/ui/mode-chip").ModeChip; TimerRing: typeof import("./components/ui/timer-ring").TimerRing; TimerStrip: typeof import("./components/ui/timer-strip").TimerStrip; timerLayout: typeof import("./lib/timer-layout").timerLayout;
       TaskCard: typeof import("./components/ui/task-card").TaskCard; HabitDots: typeof import("./components/ui/habit-dots").HabitDots;
-      IntentPrompt: typeof IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
+      IntentPrompt: typeof import("./components/ui/intent-prompt").IntentPrompt; Dialog: typeof import("./components/ui/dialog").Dialog; FullScreenFocus: typeof FullScreenFocus;
       TextArea: typeof import("./components/ui/text-area").TextArea; CapturePad: typeof CapturePad; InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice; Toast: typeof import("./components/ui/toast").Toast;
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof import("./components/ui/kanban-column").KanbanColumn; CommandPalette: typeof CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
