@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-11-today-redesign.md](../specs/2026-11-11-today-redesign.md)
 - Date: 2026-11-11
-- Status: in backlog (#296–#304; owner approved 2026-11-11: "go autonomous")
+- Status: done (2026-11-11). C1–C9 merged, plus follow-ups C10 #309, #315 and #318.
 
 ## Overview
 The plan has nine tasks, one PR each.
