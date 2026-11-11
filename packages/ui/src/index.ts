@@ -39,6 +39,7 @@ export { Tooltip } from "./components/ui/tooltip";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";
+export type { IconButtonProps } from "./components/ui/icon-button";
 export type { InlineNoticeProps } from "./components/ui/inline-notice";
 export { WellnessNote } from "./components/ui/wellness-note";
 export type { KanbanColumnProps } from "./components/ui/kanban-column";
