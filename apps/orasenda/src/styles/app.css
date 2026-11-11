@@ -34,10 +34,10 @@ body {
   overflow: hidden;
 }
 
-/* The rail's focus ring reaches space-1 past its items (2px ring, 2px offset); inset the rail so
+/* The rail's focus ring reaches space-1 past its items (2px ring, 2px offset); pad the rail so
    .app's overflow does not clip it at the window's left edge. */
 .app > nav {
-  margin-inline-start: var(--space-1);
+  padding-inline-start: var(--space-1);
 }
 
 .app-column {

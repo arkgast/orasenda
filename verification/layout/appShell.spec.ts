@@ -77,6 +77,7 @@ for (const size of [
     await openApp(page, "idle", size);
     await page.mouse.click(1, 1);
     const rail = page.getByRole("navigation", { name: "Main navigation" });
+    // One Tab stop per item (nav-rail.md describes roving focus; the implementation predates that).
     const items = await rail.getByRole("button").count();
     expect(items).toBeGreaterThanOrEqual(3);
     for (let i = 0; i < items; i++) {
