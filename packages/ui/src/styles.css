@@ -1,32 +1,15 @@
-/* Tailwind's theme and utilities layers only, no Preflight. Imported once by the app, the specimens
+/* Tailwind's theme, Preflight and utilities layers. Imported once by the app, the specimens
    and the design-system build. tokens.css (the variables) is imported by the host. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 /* source("./"): scan this folder's TSX components, not just the host's root, so their utilities exist in the app,
    the specimens and the library build alike. */
 @import "tailwindcss/utilities.css" layer(utilities) source("./");
 @import "tw-animate-css";
 @import "@orasenda/tokens/theme.css";
 
-/* The resets shadcn's classes assume, on elements that opt in with data-slot only. */
-@layer base {
-  [data-slot] {
-    box-sizing: border-box;
-    margin: 0;
-    border-width: 0;
-    border-style: solid;
-  }
-}
-
-/* Page-wide rules every host gets: box model, native button font, the keyboard focus ring, reduced motion. */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-button {
-  font-family: inherit;
-}
+/* Page-wide rules Preflight does not cover: the keyboard focus ring, reduced motion, forced colors. */
 :where(a[href], button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

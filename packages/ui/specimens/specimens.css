@@ -30,3 +30,22 @@ body {
 .specimen-overflow {
   background: var(--surface-sunken);
 }
+/* Bare paragraphs in specimen bodies keep the browser's default block margin that Preflight removes.
+   1em reproduces the browser margin exactly (15px), which no spacing token does.
+   In the base layer, so a component's own m-0 utility still wins. */
+@layer base {
+  /* The harness's raw native modal shell (not a component) keeps the browser's own dialog box
+     that Preflight zeroes: centred, a medium border, 1em padding, system colours. */
+  dialog:not([data-slot]) {
+    margin: auto;
+    padding: 1em;
+    border: medium solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .specimen-case p:not(.specimen-label),
+  #root > p:not(.specimen-label) {
+    margin-block: 1em;
+  }
+}
