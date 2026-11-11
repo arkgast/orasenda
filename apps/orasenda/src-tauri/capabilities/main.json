@@ -17,6 +17,8 @@
     "allow-notifications-request",
     "allow-notifications-open-settings",
     "allow-navigate-take",
+    "allow-presets-get",
+    "allow-native-menu-popup",
     "allow-spike-status",
     "allow-spike-running-apps",
     "allow-spike-rule",

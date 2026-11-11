@@ -88,6 +88,7 @@ mod tests {
                 "sessionId": null,
                 "preset": null,
                 "finish": null,
+                "plannedMin": null,
                 "store": "ok",
                 "notifications": "unavailable",
             })

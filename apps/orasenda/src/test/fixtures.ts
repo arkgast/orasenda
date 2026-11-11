@@ -44,6 +44,7 @@ export const IDLE: TimerView_Serialize = {
   sessionId: null,
   preset: null,
   finish: null,
+  plannedMin: null,
   store: "ok",
   notifications: "granted",
 };
@@ -59,6 +60,7 @@ export const RUNNING: TimerView_Serialize = {
   sessionId: "s1",
   preset: "classic",
   finish: "15:20",
+  plannedMin: 25,
 };
 
 export const PAUSED: TimerView_Serialize = {

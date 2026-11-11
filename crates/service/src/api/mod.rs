@@ -14,5 +14,5 @@ pub use errors::{
     TimerCommandError, TimerCommandErrorKind,
 };
 pub use events::{MilestoneEvent, MilestoneKind, NavigatePage};
-pub use settings::{Settings, Theme};
+pub use settings::{PresetLength, Settings, Theme, preset_lengths};
 pub use timer::{ClockTick, Mode, StartRequest, StoreStatus, TimerState, TimerView};

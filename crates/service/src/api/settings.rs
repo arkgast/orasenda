@@ -36,3 +36,30 @@ impl Default for Settings {
         }
     }
 }
+
+/// One fixed preset's lengths in whole minutes, for the preset picker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetLength {
+    pub preset: Preset,
+    pub focus_min: u32,
+    pub break_min: u32,
+}
+
+/// The three fixed presets, in display order, read from core's table.
+pub fn preset_lengths() -> Vec<PresetLength> {
+    let custom = CustomSpec::default();
+    [Preset::Classic, Preset::FiftyTen, Preset::DeepBlock]
+        .into_iter()
+        .map(|preset| {
+            let spec = preset
+                .spec(&custom)
+                .expect("the fixed preset table is valid");
+            PresetLength {
+                preset,
+                focus_min: u32::try_from(spec.focus_ms / 60_000).expect("minutes fit u32"),
+                break_min: u32::try_from(spec.short_break_ms / 60_000).expect("minutes fit u32"),
+            }
+        })
+        .collect()
+}

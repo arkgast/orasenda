@@ -27,6 +27,13 @@ export const commands = {
 	notificationsOpenSettings: () => typedError<null, NotificationsError>(__TAURI_INVOKE("notifications_open_settings")),
 	/**  The page the app was asked to show before the webview listened, once. */
 	navigateTake: () => __TAURI_INVOKE<NavigatePage | null>("navigate_take"),
+	/**  The three fixed presets' lengths, in display order. */
+	presetsGet: () => __TAURI_INVOKE<PresetLength[]>("presets_get"),
+	/**
+	 *  Shows the menu and answers the chosen item's id; `None` when dismissed, when a menu is
+	 *  already open, or when it could not be shown (logged).
+	 */
+	nativeMenuPopup: (request: NativeMenuRequest_Deserialize) => __TAURI_INVOKE<string | null>("native_menu_popup", { request }),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -101,7 +108,7 @@ export type ClockTick_Deserialize = {
 	epochMs: number,
 	/**  The wall clock as text, formatted by Rust in the user's locale. */
 	clock: string,
-	/**  When the running session would finish if left idle, as text, if one is running. */
+	/**  When the chosen preset would finish if started now, as text. Set only while idle. */
 	idleFinish?: string | null,
 };
 
@@ -111,7 +118,7 @@ export type ClockTick_Serialize = {
 	epochMs: number,
 	/**  The wall clock as text, formatted by Rust in the user's locale. */
 	clock: string,
-	/**  When the running session would finish if left idle, as text, if one is running. */
+	/**  When the chosen preset would finish if started now, as text. Set only while idle. */
 	idleFinish: string | null,
 };
 
@@ -149,6 +156,46 @@ export type MilestoneKind = "started" | "paused" | "resumed" | "ended" | "recove
 
 /**  What the timer is doing, for the webview to name in words. */
 export type Mode = "focus" | "paused" | "idle";
+
+/**  One entry of the menu. */
+export type NativeMenuItem = NativeMenuItem_Serialize | NativeMenuItem_Deserialize;
+
+/**  One entry of the menu. */
+export type NativeMenuItem_Deserialize = {
+	id: string,
+	label: string,
+	/**  A Tauri accelerator such as `CmdOrCtrl+K`, shown beside the label. */
+	accelerator?: string | null,
+	/**  `Some` makes a check item with that mark; `None` a plain item. */
+	checked?: boolean | null,
+};
+
+/**  One entry of the menu. */
+export type NativeMenuItem_Serialize = {
+	id: string,
+	label: string,
+	/**  A Tauri accelerator such as `CmdOrCtrl+K`, shown beside the label. */
+	accelerator: string | null,
+	/**  `Some` makes a check item with that mark; `None` a plain item. */
+	checked: boolean | null,
+};
+
+/**  Where to show the menu, in the window's logical points, and what to show. */
+export type NativeMenuRequest = NativeMenuRequest_Serialize | NativeMenuRequest_Deserialize;
+
+/**  Where to show the menu, in the window's logical points, and what to show. */
+export type NativeMenuRequest_Deserialize = {
+	items: NativeMenuItem_Deserialize[],
+	x: number,
+	y: number,
+};
+
+/**  Where to show the menu, in the window's logical points, and what to show. */
+export type NativeMenuRequest_Serialize = {
+	items: NativeMenuItem_Serialize[],
+	x: number,
+	y: number,
+};
 
 /**  Asks the webview to show a page. */
 export type Navigate = {
@@ -199,6 +246,13 @@ export type Phase = "focus";
 
 /**  A named timing preset, serialized snake_case (`"fifty_ten"`). */
 export type Preset = "classic" | "fifty_ten" | "deep_block" | "custom" | "quick";
+
+/**  One fixed preset's lengths in whole minutes, for the preset picker. */
+export type PresetLength = {
+	preset: Preset,
+	focusMin: number,
+	breakMin: number,
+};
 
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;
@@ -305,6 +359,11 @@ export type TimerView_Deserialize = {
 	sessionId?: SessionId | null,
 	preset?: Preset | null,
 	finish?: string | null,
+	/**
+	 *  The session's planned focus length in whole minutes, fixed at start (a Custom change
+	 *  in Settings mid-session does not move it); `None` while idle.
+	 */
+	plannedMin?: number | null,
 	store: StoreStatus,
 	notifications: NotificationStatus,
 };
@@ -321,6 +380,11 @@ export type TimerView_Serialize = {
 	sessionId: SessionId | null,
 	preset: Preset | null,
 	finish: string | null,
+	/**
+	 *  The session's planned focus length in whole minutes, fixed at start (a Custom change
+	 *  in Settings mid-session does not move it); `None` while idle.
+	 */
+	plannedMin: number | null,
 	store: StoreStatus,
 	notifications: NotificationStatus,
 };

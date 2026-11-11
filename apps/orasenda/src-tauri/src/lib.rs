@@ -34,6 +34,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::notifications_request,
             commands::notifications_open_settings,
             commands::navigate_take,
+            commands::presets_get,
+            commands::native_menu_popup,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -89,6 +91,7 @@ pub fn run() {
         .manage(spike)
         .manage(runtime::session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
+        .manage(commands::PopupSlot::default())
         .manage(notifications::Notifications::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
@@ -102,9 +105,17 @@ pub fn run() {
             Ok(())
         });
     #[cfg(target_os = "macos")]
-    let app = app
-        .menu(menu::app_menu::build)
-        .on_menu_event(|app, event| menu::app_menu::on_menu_event(app, event.id().as_ref()));
+    let app = app.menu(menu::app_menu::build);
+    #[cfg(desktop)]
+    let app = app.on_menu_event(|app, event| {
+        use tauri::Manager;
+        let id = event.id().as_ref();
+        if app.state::<commands::PopupSlot>().record(id) {
+            return;
+        }
+        #[cfg(target_os = "macos")]
+        menu::app_menu::on_menu_event(app, id);
+    });
     lifecycle::install(app)
         .build(context)
         .expect("error while building Orasenda")
@@ -299,6 +310,9 @@ mod tests {
             "timerMilestone",
             "idleFinish: string | null",
             "remainingMs: number",
+            "plannedMin: number | null",
+            "presetsGet: () => __TAURI_INVOKE<PresetLength[]>(\"presets_get\")",
+            "nativeMenuPopup",
             "progress: number",
             "timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>",
             "timerStop: () => typedError<TimerView_Serialize, TimerCommandError>",
