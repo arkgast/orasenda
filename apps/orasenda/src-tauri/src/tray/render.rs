@@ -56,7 +56,7 @@ pub(crate) fn tray_label(view: &TimerView) -> String {
 pub(crate) trait TrayHandle: Send + Sync + 'static {
     /// Runs `task` on the main thread: inline when called there, else posted without waiting.
     fn on_main_thread(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
-    /// Runs `task` on a background thread after [`RETRY_DELAY`], so a failed draw is not
+    /// Runs `task` on a background thread after [`RETRY_DELAY`](super::state::RETRY_DELAY), so a failed draw is not
     /// retried back to back on the main thread. Tests hold the task instead of sleeping.
     fn after_delay(&self, task: Box<dyn FnOnce() + Send>) -> Result<(), String>;
     fn set_title(&self, title: Option<&str>) -> Result<(), String>;
@@ -164,7 +164,7 @@ fn draw(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>) {
     }
 }
 
-/// Posts the draw again after [`RETRY_DELAY`], unless a newer render has come since `seq`
+/// Posts the draw again after [`RETRY_DELAY`](super::state::RETRY_DELAY), unless a newer render has come since `seq`
 /// (its own draw, and its own retries, redo everything).
 fn schedule_retry(handle: &Arc<dyn TrayHandle>, state: &Arc<Mutex<TrayState>>, seq: u64) {
     let task_handle = Arc::clone(handle);

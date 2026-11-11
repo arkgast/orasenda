@@ -1,11 +1,9 @@
 //! Tests for the menu-bar item: view mapping, menu commands and the draw with its retries.
 
 use std::collections::VecDeque;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 use orasenda_core::{EngineState, NotificationStatus, format_remaining, spoken_remaining};
-
-use std::sync::Mutex;
 
 use super::state::{DRAW_RETRIES, Drawn, TrayState};
 use super::*;
