@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
-import { IconButton } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
-import { Menu, Pause, Play, Shrink, Stop } from "./icons.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { Menu, Pause, Play, Shrink, Stop } from "../../../specimens/icons.tsx";
+import { IconButton } from "../../index";
 
 export function IconButtonSpecimen(): ReactElement {
   return (
@@ -45,7 +45,7 @@ export function IconButtonSpecimen(): ReactElement {
       </Frame>
       <Frame state="icon-button-disabled" width={360} height={80}>
         <IconButton label="Jump to section" icon={<Menu />} disabled aria-describedby="jump-why" />
-        <span className="specimen-label" id="jump-why">
+        <span className="text-caption text-ink-muted" id="jump-why">
           {" "}
           Nothing to jump to yet.
         </span>

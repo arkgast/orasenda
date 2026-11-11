@@ -107,3 +107,54 @@ test("small_controls_no_motion_when_reduced", async ({ page }, info) => {
   await page.getByRole("button", { name: "Pause session" }).hover();
   expect(await animatedElements(page)).toEqual([]);
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`icon_button_keeps_its_hit_boxes_at_${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "IconButton");
+    const buttons = page.locator("[data-slot=icon-button]");
+    expect(await buttons.count()).toBeGreaterThan(0);
+    const boxes = await buttons.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          w: r.width,
+          h: r.height,
+          inside: r.left >= 0 && r.right <= document.documentElement.clientWidth,
+        };
+      }),
+    );
+    for (const box of boxes) {
+      // md is 44, round is 52: a range, never below the hit target.
+      expect(box.w).toBeGreaterThanOrEqual(44);
+      expect(box.w).toBeLessThanOrEqual(52);
+      expect(box.h).toBeGreaterThanOrEqual(44);
+      expect(box.h).toBeLessThanOrEqual(52);
+      expect(box.inside).toBe(true);
+    }
+  });
+}
+
+test("icon_button_icon_is_20px_line_icon", async ({ page }) => {
+  await openSpecimen(page, "IconButton");
+  const icons = page.locator("[data-slot=icon-button] svg");
+  expect(await icons.count()).toBeGreaterThan(0);
+  const styles = await icons.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return { w: r.width, h: r.height, fill: cs.fill, stroke: cs.stroke };
+    }),
+  );
+  for (const s of styles) {
+    expect(s.w).toBe(20);
+    expect(s.h).toBe(20);
+    expect(s.fill).toBe("none");
+    expect(s.stroke).not.toBe("none");
+  }
+});

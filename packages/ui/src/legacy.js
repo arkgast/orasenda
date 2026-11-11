@@ -1,6 +1,5 @@
 import * as R from "react";
 import { TimerRing } from "./components/ui/timer-ring";
-import { Tooltip } from "./components/ui/tooltip";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
@@ -198,25 +197,10 @@ function describeShortcut(glyphs) {
   return { aria: aria.join("+"), spoken: spoken.join("-") };
 }
 // end describeShortcut
-// shortcut: one glyph string, or an array of chords (aria-keyshortcuts joins them with spaces).
-// shortcutLabel: the text the tooltip Kbd shows when it differs from the chords (a range such as "\u23181\u20136").
-// keyshortcuts={false}: the Kbd shows but the button sets no aria-keyshortcuts (the page, not this button, owns the key).
-// IconButton
-function IconButton(p) {
-  var chords = p.shortcut == null ? [] : [].concat(p.shortcut), shown = p.shortcutLabel != null ? p.shortcutLabel : chords.join(" ");
-  return h(Tooltip, { label: p.label, shortcut: shown || undefined },
-    h("button", { type: "button", id: p.id, className: cx("os-iconbtn", p.size === "round" && "os-iconbtn-round"), "aria-label": p.label,
-      "aria-keyshortcuts": chords.length && p.keyshortcuts !== false ? chords.map(function (c) { return describeShortcut(c).aria; }).join(" ") : undefined,
-      "aria-describedby": p["aria-describedby"], "aria-haspopup": p["aria-haspopup"], "aria-expanded": p["aria-expanded"], "aria-controls": p["aria-controls"],
-      disabled: p.disabled, onClick: p.onClick },
-      h("span", { className: "os-iconbtn-icon", "aria-hidden": "true" }, p.icon)));
-}
-// end IconButton
 
 export {
   IntentPrompt,
   FullScreenFocus,
   CapturePad,
   CommandPalette,
-  IconButton,
 };

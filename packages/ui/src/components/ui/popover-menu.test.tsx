@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { IconButton } from "../../legacy.js";
 import { describeShortcut } from "../../lib/shortcuts";
+import { IconButton } from "./icon-button";
 import { PopoverMenu } from "./popover-menu";
 
 // Radix Popper measures with ResizeObserver, which jsdom lacks.

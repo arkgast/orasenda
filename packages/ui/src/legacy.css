@@ -129,18 +129,6 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 .os-glyph-fill { fill: currentColor; stroke: none; }
 /* end Shared: redesign pass glyphs */
 
-/* IconButton */
-/* IconButton: md 44 × 44, round 52 × 52 on surface-raised with a line-strong edge. */
-.os-iconbtn { display: inline-grid; place-items: center; width: var(--hit-min); height: var(--hit-min); flex: none; padding: 0; border: 1px solid var(--clear); border-radius: var(--radius-md); background: var(--clear); color: var(--ink); cursor: pointer; transition: background-color var(--duration-quick) var(--easing-calm); }
-.os-iconbtn svg { width: var(--icon-lg); height: var(--icon-lg); fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.os-iconbtn:hover { background: var(--surface-sunken); }
-.os-iconbtn:active { background: var(--selection); }
-.os-iconbtn-round { width: var(--control-lg); height: var(--control-lg); border-color: var(--line-strong); border-radius: var(--radius-pill); background: var(--surface-raised); }
-.os-iconbtn:disabled, .os-iconbtn[aria-disabled="true"] { border: 1px dashed var(--line-strong); background: var(--clear); color: var(--ink-muted); cursor: default; }
-/* end IconButton */
-
-/* IconButton icon wrapper (was in the Tooltip block). */
-.os-iconbtn-icon { display: inline-flex; }
 
 /* FloatingTimer (CSS only: TimerStrip README) */
 /* FloatingTimer: its own composition, sized by the floater-* tokens. */
@@ -167,7 +155,7 @@ textarea.os-input { resize: vertical; min-height: 96px; }
 /* SessionSlot: a running session in place of a planning page's primary. */
 .os-sessionslot { display: inline-flex; align-items: center; gap: var(--space-1); padding-inline-start: var(--space-3); border-radius: var(--radius-pill); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .os-sessionslot .os-menubar { padding: 0; }
-.os-sessionslot .os-iconbtn { border-radius: var(--radius-pill); }
+.os-sessionslot [data-slot="icon-button"] { border-radius: var(--radius-pill); }
 /* end SessionSlot (CSS only) */
 
 /* Settings helpers: os-unit (still used by Settings) */

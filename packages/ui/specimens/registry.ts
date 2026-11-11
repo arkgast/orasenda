@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
+import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
@@ -9,7 +10,6 @@ import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen"
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
-import { IconButtonSpecimen } from "./IconButton.tsx";
 
 export const specimens: Record<string, () => ReactElement> = {
   IconButton: IconButtonSpecimen,

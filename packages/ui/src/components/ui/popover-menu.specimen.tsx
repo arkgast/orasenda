@@ -1,10 +1,10 @@
 import { type ReactElement, type RefObject, useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { Menu } from "../../../specimens/icons.tsx";
-import { IconButton } from "../../legacy.js";
 import { describeShortcut } from "../../lib/shortcuts";
 import { Button } from "./button";
 import { Dialog } from "./dialog";
+import { IconButton } from "./icon-button";
 import { PopoverMenu, type PopoverMenuItem } from "./popover-menu";
 import { Tooltip } from "./tooltip";
 
