@@ -10,11 +10,22 @@ export type Binding = {
   run(): void;
 };
 
+const NON_TEXT_INPUTS = new Set([
+  "radio",
+  "checkbox",
+  "button",
+  "submit",
+  "reset",
+  "range",
+  "color",
+  "file",
+]);
+
 function isEditable(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
+  if (target instanceof HTMLInputElement) return !NON_TEXT_INPUTS.has(target.type);
   return (
     target.isContentEditable ||
-    target instanceof HTMLInputElement ||
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement
   );
@@ -39,7 +50,7 @@ export function useShortcuts(bindings: ReadonlyArray<Binding>): void {
       event.preventDefault();
       hit.run();
     };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 }

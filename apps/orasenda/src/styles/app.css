@@ -44,6 +44,13 @@ body {
   gap: var(--space-6);
 }
 
+/* Until a page lays itself out to fit, the page scrolls inside the window. */
+.app-main {
+  flex: auto;
+  min-block-size: 0;
+  overflow: auto;
+}
+
 .app-compact .app-column {
   padding: var(--space-4);
   gap: var(--space-4);
@@ -123,7 +130,6 @@ body {
 
 /* Settings: the window is bounded so only the ScrollRegion scrolls. */
 .app-bound .app-column {
-  min-block-size: 0;
   padding: 0;
   gap: 0;
 }

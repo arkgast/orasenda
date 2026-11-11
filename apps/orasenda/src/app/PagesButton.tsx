@@ -1,5 +1,5 @@
 import { IconButton, type NavPage } from "@orasenda/ui";
-import { type ReactElement, useRef } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { commands } from "../ipc/bindings";
 import { PagesGlyph } from "./glyphs";
 
@@ -22,9 +22,11 @@ type Props = {
 /** The way to the other pages when the window is compact: a native menu of the six pages. */
 export function PagesButton({ current, onNavigate }: Props): ReactElement {
   const box = useRef<HTMLSpanElement>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const open = () => {
     const rect = box.current?.querySelector("button")?.getBoundingClientRect();
+    setExpanded(true);
     commands
       .nativeMenuPopup({
         items: PAGE_ORDER.map(({ id, label }, index) => ({
@@ -38,11 +40,15 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
       })
       .then(
         (chosen) => {
+          setExpanded(false);
           // null: dismissed, or the menu could not be shown (logged in Rust). Nothing to do.
           const page = PAGE_ORDER.find(({ id }) => id === chosen);
           if (page) onNavigate(page.id);
         },
-        (error: unknown) => console.error("native_menu_popup failed", error),
+        (error: unknown) => {
+          setExpanded(false);
+          console.error("native_menu_popup failed", error);
+        },
       );
   };
 
@@ -54,6 +60,7 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
         shortcut={CHORDS}
         shortcutLabel="⌘1–6"
         aria-haspopup="menu"
+        aria-expanded={expanded}
         onClick={open}
       />
     </span>

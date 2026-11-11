@@ -25,6 +25,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  Object.assign(window, { innerWidth: 1024, innerHeight: 768 });
   // Unmount (and unlisten) while the IPC mock is still installed.
   cleanup();
   await settle();
@@ -58,9 +59,9 @@ test("rejected_app_info_is_logged", async () => {
   expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
 });
 
-test("compact_has_no_rail_and_pages_choice_navigates_and_focuses_h1", async () => {
+test("pages_choice_navigates_and_focuses_h1", async () => {
   Object.assign(window, { innerWidth: 360, innerHeight: 240 });
-  mockBackend({ native_menu_popup: () => "board" });
+  mockBackend({ native_menu_popup: () => "calendar" });
   render(<App />);
   await settle();
   expect(screen.queryByRole("navigation", { name: "Main navigation" })).toBeNull();
@@ -68,13 +69,24 @@ test("compact_has_no_rail_and_pages_choice_navigates_and_focuses_h1", async () =
   // Today's own top row comes with C4; the Pages button on a placeholder is the way on from there.
   fireEvent.keyDown(document.body, { key: "2", metaKey: true });
   await settle();
-  const heading = screen.getByRole("heading", { level: 1, name: "Board" });
-  expect(heading).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toHaveFocus();
   fireEvent.click(screen.getByRole("button", { name: "Pages" }));
   await settle();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 1, name: "Calendar" })).toHaveFocus();
+});
 
-  Object.assign(window, { innerWidth: 1024, innerHeight: 768 });
+test("cmd_digit_works_on_a_radio", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  document.body.append(radio);
+  radio.focus();
+  fireEvent.keyDown(radio, { key: "2", metaKey: true });
+  await settle();
+  radio.remove();
+  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
 });
 
 test("cmd_digits_navigate_from_any_page", async () => {
