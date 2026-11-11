@@ -2,7 +2,7 @@
 // A migrated component's line moves from legacy.js to its own file in the same change.
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
-export { CapturePad } from "./legacy.js";
+export { CapturePad } from "./components/ui/capture-pad";
 export { CommandPalette } from "./legacy.js";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
@@ -36,6 +36,7 @@ export { TimerRing } from "./components/ui/timer-ring";
 export { TimerStrip } from "./components/ui/timer-strip";
 export { Toast } from "./components/ui/toast";
 export { Tooltip } from "./components/ui/tooltip";
+export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-pad";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";
