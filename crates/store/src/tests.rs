@@ -1,4 +1,4 @@
-use crate::db::{Backing, check_journal_mode, get_meta};
+use crate::db::{Backing, check_journal_mode};
 use crate::test_support::{TempDir, count};
 use crate::*;
 use orasenda_core::HlcStamp;
