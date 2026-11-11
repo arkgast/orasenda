@@ -17,7 +17,7 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 
 The row holds at most two sentences, in this order:
 
-1. The answer to the person's last action (a refused start, a failed save).
+1. The answer to the person's last action (a start that failed, a failed save).
 2. A one-shot milestone ("Session ended.", "Your last session ended while Orasenda was closed.", "Two minutes left. Finish the thought.").
 3. The standing store line, joined after a short milestone in the same row ("Session ended. Orasenda can't save sessions right now."). If the two together exceed 65 characters, the higher one shows and the store line returns when it clears. A joined row takes the tone and glyph of its first sentence.
 4. The welcome line (first run only).
