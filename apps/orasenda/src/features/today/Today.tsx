@@ -108,7 +108,7 @@ export function Today({ onNavigate }: Props) {
     notice: notice?.text ?? null,
     store: view?.store ?? "ok",
   });
-  const focus = useControlFocus(state, line !== null);
+  const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
 
   const start = (request: StartRequest_Deserialize) => {

@@ -41,7 +41,7 @@ export function Controls({
           onStart={onStart}
           onQuickStart={onQuickStart}
           compactLabel={compactStart ? "Start" : undefined}
-          singleKeys={false}
+          singleKeys={starting || unavailable ? undefined : false}
           loading={starting}
           unavailable={unavailable}
         />

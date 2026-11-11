@@ -189,6 +189,19 @@ test("strict_mode_one_listener_per_event", async () => {
   expect(screen.getByRole("timer")).toHaveTextContent("No session");
 });
 
+test("strict_mode_running_tick_commits_one_update", async () => {
+  mockBackend();
+  const commits: string[] = [];
+  render(strictApp(commits));
+  await settle();
+  await emitTimer(RUNNING);
+  commits.length = 0;
+  await emitTimer({ ...RUNNING, progress: 0.5 });
+
+  // Radix tooltips add nested commits; only the page's own updates are counted.
+  expect(commits.filter((phase) => phase === "update")).toHaveLength(1);
+});
+
 test("tick_to_cleaned_up_subscription_is_ignored", async () => {
   const backend = mockBackend();
   const commits: string[] = [];

@@ -8,19 +8,24 @@ const WISH_MS = 2000;
 /**
  * Where focus goes when the controls change (spec C, "Focus and tab order"). A start made here
  * moves focus to Pause session once the view runs. An end made here, or a natural end while focus
- * was in the controls, moves it to Start focus once the status line has mounted, so the line is
- * announced first. Nothing else moves focus: not a tick, not a transition from another surface.
+ * was in the controls, moves it to Start focus once the ended line has mounted (a line different from the one showing at the end, so a standing
+ * line does not count), so the line is announced first. Nothing else moves focus: not a tick, not a transition from another surface.
  */
-export function useControlFocus(state: string | undefined, lineShown: boolean) {
+export function useControlFocus(state: string | undefined, lineText: string | undefined) {
   const box = useRef<HTMLDivElement>(null);
   const want = useRef<Want>(null);
   const inside = useRef(false);
   const previous = useRef(state);
   const timer = useRef<number | undefined>(undefined);
+  // The line as it was when the wish was made: Start waits for a different one (the ended line).
+  const baseline = useRef<string | undefined>(undefined);
+  const line = useRef(lineText);
+  line.current = lineText;
 
   // A wish nobody fulfils (an end that shows no line) must not wait for a later session.
   const wish = useCallback((next: Want) => {
     want.current = next;
+    baseline.current = line.current;
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       want.current = null;
@@ -57,11 +62,16 @@ export function useControlFocus(state: string | undefined, lineShown: boolean) {
     if (want.current === "pause" && state === "running") {
       box.current?.querySelector<HTMLElement>("#today-pause")?.focus();
       want.current = null;
-    } else if (want.current === "start" && state === "idle" && lineShown) {
+    } else if (
+      want.current === "start" &&
+      state === "idle" &&
+      lineText !== undefined &&
+      lineText !== baseline.current
+    ) {
       box.current?.querySelector<HTMLElement>("[data-slot='start-button'] button")?.focus();
       want.current = null;
     }
-  }, [state, lineShown]);
+  }, [state, lineText]);
 
   return {
     boxProps: {

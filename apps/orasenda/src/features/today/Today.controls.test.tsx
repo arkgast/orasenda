@@ -97,11 +97,42 @@ test("end_moves_focus_to_start_after_line", async () => {
   fireEvent.click(screen.getByRole("button", { name: "End session" }));
   await settle();
 
-  await emitMilestone({ kind: "ended", endReason: "stopped", sessionId: "s1" });
+  // Rust publishes the view before the milestone: Start waits for the line.
   await emitTimer(IDLE);
+  expect(screen.getByRole("button", { name: "Start focus" })).not.toHaveFocus();
+  await emitMilestone({ kind: "ended", endReason: "stopped", sessionId: "s1" });
 
   expect(statusNodes()[0]).toHaveTextContent("Session ended.");
   expect(screen.getByRole("button", { name: "Start focus" })).toHaveFocus();
+});
+
+test("end_with_a_standing_store_line_waits_for_the_ended_line", async () => {
+  await renderToday();
+  await emitTimer({ ...RUNNING, store: "unavailable" });
+  fireEvent.click(screen.getByRole("button", { name: "End session" }));
+  await settle();
+
+  await emitTimer({ ...IDLE, store: "unavailable" });
+  expect(statusNodes()[0]).toBeDefined();
+  expect(screen.getByRole("button", { name: "Start focus" })).not.toHaveFocus();
+  await emitMilestone({ kind: "ended", endReason: "stopped", sessionId: "s1" });
+
+  expect(screen.getByRole("button", { name: "Start focus" })).toHaveFocus();
+});
+
+test("start_advertises_no_keys_while_unavailable", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({ timer_state: () => Promise.reject({ kind: "store", message: "x" }) });
+  expect(screen.getByRole("button", { name: "Start focus" })).not.toHaveAttribute(
+    "aria-keyshortcuts",
+  );
+});
+
+test("start_advertises_no_keys_while_starting", async () => {
+  await renderToday({ timer_start: () => new Promise(() => {}) });
+  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
+  await settle();
+  expect(screen.getByRole("button", { name: /Starting/ })).not.toHaveAttribute("aria-keyshortcuts");
 });
 
 test("natural_end_moves_focus_only_when_it_was_in_the_controls", async () => {
@@ -109,8 +140,8 @@ test("natural_end_moves_focus_only_when_it_was_in_the_controls", async () => {
   await emitTimer(RUNNING);
   screen.getByRole("button", { name: "Pause session" }).focus();
 
-  await emitMilestone({ kind: "ended", endReason: "completed", sessionId: "s1" });
   await emitTimer(IDLE);
+  await emitMilestone({ kind: "ended", endReason: "completed", sessionId: "s1" });
   expect(screen.getByRole("button", { name: "Start focus" })).toHaveFocus();
 });
 
