@@ -1,10 +1,10 @@
 //! Orasenda app shell: Tauri glue around `orasenda-core`. Logic and time live in Rust; the
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
-// The app menu: the pure parts build on every desktop target, the menu itself on macOS.
 mod commands;
 mod ipc;
 mod lifecycle;
+// The app menu: the pure parts build on every desktop target, the menu itself on macOS.
 #[cfg(desktop)]
 mod menu;
 mod notifications;
