@@ -5,7 +5,7 @@ use std::sync::{Mutex, PoisonError};
 use tauri::{AppHandle, Manager, Wry};
 use tauri_specta::Event as _;
 
-use crate::ipc::{Navigate, NavigatePage, Theme};
+use crate::ipc::{Navigate, NavigatePage, SettingsTarget, Theme};
 use crate::runtime::ticker as scheduler;
 
 /// The label of the app's main window (`tauri.conf.json`).
@@ -14,7 +14,7 @@ pub(crate) const MAIN: &str = "main";
 /// A page the webview has been asked to show but has not taken yet, so a request made before
 /// it listens is not lost. The mutex is held only for the swap, never across a window call.
 #[derive(Default)]
-pub(crate) struct PendingNavigate(Mutex<Option<NavigatePage>>);
+pub(crate) struct PendingNavigate(Mutex<Option<Navigate>>);
 
 impl PendingNavigate {
     /// Stores the page; the last one wins.
@@ -22,12 +22,12 @@ impl PendingNavigate {
         not(any(desktop, test)),
         expect(dead_code, reason = "called by show_settings, which is desktop only")
     )]
-    pub(crate) fn set(&self, page: NavigatePage) {
-        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(page);
+    pub(crate) fn set(&self, navigate: Navigate) {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(navigate);
     }
 
     /// Returns the stored page and clears it.
-    pub(crate) fn take(&self) -> Option<NavigatePage> {
+    pub(crate) fn take(&self) -> Option<Navigate> {
         self.0.lock().unwrap_or_else(PoisonError::into_inner).take()
     }
 }
@@ -106,9 +106,9 @@ pub(crate) trait Shell {
     /// The saved theme; the session lock is released before this returns.
     fn theme(&self) -> Theme;
     fn apply_theme(&self, theme: Theme);
-    fn store_pending(&self, page: NavigatePage);
+    fn store_pending(&self, navigate: Navigate);
     fn show_main(&self);
-    fn emit_navigate(&self, page: NavigatePage);
+    fn emit_navigate(&self, navigate: Navigate);
 }
 
 impl Shell for AppHandle {
@@ -120,9 +120,9 @@ impl Shell for AppHandle {
         scheduler::Host::apply_theme(&scheduler::AppHost::new(self), theme);
     }
 
-    fn store_pending(&self, page: NavigatePage) {
+    fn store_pending(&self, navigate: Navigate) {
         match self.try_state::<PendingNavigate>() {
-            Some(pending) => pending.set(page),
+            Some(pending) => pending.set(navigate),
             None => eprintln!("lifecycle: no pending navigation state"),
         }
     }
@@ -141,8 +141,8 @@ impl Shell for AppHandle {
         }
     }
 
-    fn emit_navigate(&self, page: NavigatePage) {
-        if let Err(error) = (Navigate { page }).emit_to(self, MAIN) {
+    fn emit_navigate(&self, navigate: Navigate) {
+        if let Err(error) = navigate.emit_to(self, MAIN) {
             eprintln!("lifecycle: could not emit navigate: {error}");
         }
     }
@@ -166,16 +166,20 @@ pub(crate) fn finish_launch(app: &AppHandle) {
     not(any(desktop, test)),
     expect(dead_code, reason = "the menus that call it are desktop only")
 )]
-pub(crate) fn show_settings_on<S: Shell>(shell: &S) {
-    shell.store_pending(NavigatePage::Settings);
+pub(crate) fn show_settings_on<S: Shell>(shell: &S, target: Option<SettingsTarget>) {
+    let navigate = Navigate {
+        page: NavigatePage::Settings,
+        target,
+    };
+    shell.store_pending(navigate.clone());
     shell.show_main();
-    shell.emit_navigate(NavigatePage::Settings);
+    shell.emit_navigate(navigate);
 }
 
-/// *Settings…* (⌘, or the menu-bar menu): show `main` on the Settings page.
+/// *Settings…* (⌘, or the menu-bar menu): show `main` on the Settings page, at its top.
 #[cfg(desktop)]
 pub fn show_settings(app: &AppHandle) {
-    show_settings_on(app);
+    show_settings_on(app, None);
 }
 
 /// `RunEvent::Reopen` (a Dock click): bring `main` back. The event exists on macOS only.
@@ -200,12 +204,27 @@ mod tests {
     fn navigate_take_returns_once() {
         let pending = PendingNavigate::default();
         assert_eq!(pending.take(), None);
-        pending.set(NavigatePage::Settings);
-        assert_eq!(pending.take(), Some(NavigatePage::Settings));
+        pending.set(nav(NavigatePage::Settings, None));
+        assert_eq!(pending.take(), Some(nav(NavigatePage::Settings, None)));
         assert_eq!(pending.take(), None);
-        pending.set(NavigatePage::Today);
-        pending.set(NavigatePage::Review);
-        assert_eq!(pending.take(), Some(NavigatePage::Review));
+        pending.set(nav(NavigatePage::Today, None));
+        pending.set(nav(NavigatePage::Review, None));
+        assert_eq!(pending.take(), Some(nav(NavigatePage::Review, None)));
+    }
+
+    fn nav(page: NavigatePage, target: Option<SettingsTarget>) -> Navigate {
+        Navigate { page, target }
+    }
+
+    #[test]
+    fn navigate_take_carries_settings_target() {
+        let pending = PendingNavigate::default();
+        pending.set(nav(NavigatePage::Settings, Some(SettingsTarget::Timer)));
+        assert_eq!(
+            pending.take(),
+            Some(nav(NavigatePage::Settings, Some(SettingsTarget::Timer)))
+        );
+        assert_eq!(pending.take(), None);
     }
 
     use std::cell::RefCell;
@@ -215,15 +234,15 @@ mod tests {
     #[derive(Debug, PartialEq)]
     enum Call {
         ApplyTheme(Theme),
-        StorePending(NavigatePage),
+        StorePending(Navigate),
         ShowMain,
-        EmitNavigate(NavigatePage),
+        EmitNavigate(Navigate),
     }
 
     struct Recorder {
         theme: Theme,
         pending: PendingNavigate,
-        seen_at_show: RefCell<Option<NavigatePage>>,
+        seen_at_show: RefCell<Option<Navigate>>,
         calls: RefCell<Vec<Call>>,
     }
 
@@ -245,35 +264,38 @@ mod tests {
         fn apply_theme(&self, theme: Theme) {
             self.calls.borrow_mut().push(Call::ApplyTheme(theme));
         }
-        fn store_pending(&self, page: NavigatePage) {
-            self.pending.set(page);
-            self.calls.borrow_mut().push(Call::StorePending(page));
+        fn store_pending(&self, navigate: Navigate) {
+            self.pending.set(navigate.clone());
+            self.calls.borrow_mut().push(Call::StorePending(navigate));
         }
         fn show_main(&self) {
-            let held = *self.pending.0.lock().unwrap();
+            let held = self.pending.0.lock().unwrap().clone();
             *self.seen_at_show.borrow_mut() = held;
             self.calls.borrow_mut().push(Call::ShowMain);
         }
-        fn emit_navigate(&self, page: NavigatePage) {
-            self.calls.borrow_mut().push(Call::EmitNavigate(page));
+        fn emit_navigate(&self, navigate: Navigate) {
+            self.calls.borrow_mut().push(Call::EmitNavigate(navigate));
         }
     }
 
     #[test]
     fn show_settings_stores_pending_navigation() {
-        let shell = Recorder::new(Theme::System);
-        show_settings_on(&shell);
-        assert_eq!(
-            *shell.calls.borrow(),
-            vec![
-                Call::StorePending(NavigatePage::Settings),
-                Call::ShowMain,
-                Call::EmitNavigate(NavigatePage::Settings)
-            ]
-        );
-        assert_eq!(*shell.seen_at_show.borrow(), Some(NavigatePage::Settings));
-        assert_eq!(shell.pending.take(), Some(NavigatePage::Settings));
-        assert_eq!(shell.pending.take(), None);
+        for target in [None, Some(SettingsTarget::Timer)] {
+            let shell = Recorder::new(Theme::System);
+            show_settings_on(&shell, target);
+            let navigate = nav(NavigatePage::Settings, target);
+            assert_eq!(
+                *shell.calls.borrow(),
+                vec![
+                    Call::StorePending(navigate.clone()),
+                    Call::ShowMain,
+                    Call::EmitNavigate(navigate.clone())
+                ]
+            );
+            assert_eq!(*shell.seen_at_show.borrow(), Some(navigate.clone()));
+            assert_eq!(shell.pending.take(), Some(navigate));
+            assert_eq!(shell.pending.take(), None);
+        }
     }
 
     #[test]

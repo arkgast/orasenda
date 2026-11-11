@@ -313,3 +313,12 @@ fn menu_items_spike() {
 fn developer_panel_item_has_a_command() {
     assert_eq!(menu_command("developer-panel"), Some(MenuCommand::DevPanel));
 }
+
+#[test]
+fn edit_times_item_opens_settings_timer() {
+    assert_eq!(
+        settings_target(&menu_command(EDIT_TIMES).unwrap()),
+        Some(crate::ipc::SettingsTarget::Timer)
+    );
+    assert_eq!(settings_target(&menu_command(SETTINGS).unwrap()), None);
+}

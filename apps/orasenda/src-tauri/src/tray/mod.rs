@@ -44,7 +44,7 @@ use crate::runtime::session::{NativeSurface, Surfaces};
 #[cfg(test)]
 pub(crate) use menu::{
     EDIT_TIMES, END_SESSION, JUST_TWO, MenuCommand, PAUSE, QUIT, RESUME, SETTINGS, SHOW, START,
-    menu_command, start_action,
+    menu_command, settings_target, start_action,
 };
 #[cfg(test)]
 pub(crate) use render::header_text;

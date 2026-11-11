@@ -6,6 +6,7 @@ import type {
   MilestoneEvent_Serialize,
   NavigatePage,
   Settings,
+  SettingsTarget,
   TimerState_Serialize,
   TimerView_Serialize,
 } from "../ipc/bindings";
@@ -195,8 +196,11 @@ export async function emitSettingsChanged(settings: Settings): Promise<void> {
   });
 }
 
-export async function emitNavigate(page: NavigatePage): Promise<void> {
+export async function emitNavigate(
+  page: NavigatePage,
+  target: SettingsTarget | null = null,
+): Promise<void> {
   await act(async () => {
-    await events.navigate.emit({ page });
+    await events.navigate.emit({ page, target });
   });
 }

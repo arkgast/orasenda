@@ -57,6 +57,21 @@ impl Type for TimerMilestoneEvent {
 #[tauri_specta(event_name = "navigate")]
 pub struct Navigate {
     pub page: NavigatePage,
+    /// Where on the Settings page to land; `None` is the top. Ignored for other pages.
+    pub target: Option<SettingsTarget>,
+}
+
+/// A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SettingsTarget {
+    General,
+    Timer,
+    Notifications,
+    AppsAndSites,
+    About,
+    FocusMinutes,
+    BreakMinutes,
 }
 
 /// The settings changed.
@@ -121,10 +136,19 @@ mod tests {
     fn navigate_event_serializes_lowercase_page() {
         assert_eq!(
             serde_json::to_value(Navigate {
-                page: NavigatePage::Settings
+                page: NavigatePage::Settings,
+                target: None
             })
             .unwrap(),
-            json!({ "page": "settings" })
+            json!({ "page": "settings", "target": null })
+        );
+        assert_eq!(
+            serde_json::to_value(Navigate {
+                page: NavigatePage::Settings,
+                target: Some(SettingsTarget::AppsAndSites)
+            })
+            .unwrap(),
+            json!({ "page": "settings", "target": "appsAndSites" })
         );
         assert_eq!(Navigate::NAME, "navigate");
         for (page, name) in [
