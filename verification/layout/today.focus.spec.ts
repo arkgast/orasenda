@@ -18,13 +18,9 @@ async function focusedName(page: Page): Promise<string | null> {
   });
 }
 
-/**
- * Every stop inside Today shows its ring. The rail's own stops are the shell's: at the window edge
- * its ring is clipped by `.app`, which is raised as a shell issue (see the PR body), not Today's to fix.
- */
+/** Every stop, the rail's included, shows its whole ring. */
 async function checkRing(page: Page): Promise<void> {
-  const inToday = await page.evaluate(() => document.activeElement?.closest(".today") != null);
-  if (inToday) await expectFocusRingVisible(page.locator(":focus"));
+  await expectFocusRingVisible(page.locator(":focus"));
 }
 
 // Tab order (spec C): Pages (compact) or the rail, the summary (C5), the status action, then the controls.

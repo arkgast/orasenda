@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
+import { expectFocusRingVisible } from "./support/focusRing.ts";
+import { pressTab } from "./support/specimen.ts";
 
 const SIZES = [
   { width: 360, height: 240 },
@@ -63,5 +65,26 @@ for (const size of SIZES) {
       await expect(rail).toBeVisible();
       await expect(pages).toHaveCount(0);
     }
+  });
+}
+
+// Each rail item's whole focus ring shows at the window's left edge (the projects cover both themes).
+for (const size of [
+  { width: 900, height: 600 },
+  { width: 1440, height: 900 },
+]) {
+  test(`rail_focus_ring_visible_${size.width}x${size.height}`, async ({ page }) => {
+    await openApp(page, "idle", size);
+    await page.mouse.click(1, 1);
+    const rail = page.getByRole("navigation", { name: "Main navigation" });
+    // One Tab stop per item (nav-rail.md describes roving focus; the implementation predates that).
+    const items = await rail.getByRole("button").count();
+    expect(items).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < items; i++) {
+      await pressTab(page);
+      await expect(rail.locator(":focus")).toHaveCount(1);
+      await expectFocusRingVisible(page.locator(":focus"));
+    }
+    await expectNoDocumentScroll(page);
   });
 }

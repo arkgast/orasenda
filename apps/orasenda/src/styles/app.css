@@ -34,6 +34,12 @@ body {
   overflow: hidden;
 }
 
+/* The rail's focus ring reaches space-1 past its items (2px ring, 2px offset); pad the rail so
+   .app's overflow does not clip it at the window's left edge. */
+.app > nav {
+  padding-inline-start: var(--space-1);
+}
+
 .app-column {
   flex: auto;
   min-inline-size: 0;
