@@ -44,7 +44,8 @@ for (const size of SIZES) {
     }
     const at = (needle: RegExp) => stops.findIndex((s) => needle.test(s));
     if (size.width < 640 || size.height < 480) expect(stops[0]).toMatch(/Pages/);
-    expect(at(/Try again/), `${stops}`).toBeGreaterThanOrEqual(0);
+    expect(at(/^Preset /), `${stops}`).toBeGreaterThanOrEqual(0);
+    expect(at(/^Preset /)).toBeLessThan(at(/Try again/));
     expect(at(/Try again/)).toBeLessThan(at(/Start focus|Start/));
     expect(at(/Start/)).toBeLessThan(at(/Just 2 minutes/));
   });
@@ -60,8 +61,11 @@ for (const size of SIZES) {
       stops.push(name);
       await checkRing(page);
     }
+    const summary = stops.findIndex((s) => /^Preset /.test(s));
     const pause = stops.findIndex((s) => /Pause session/.test(s));
     const end = stops.findIndex((s) => /End session/.test(s));
+    expect(summary, `${stops}`).toBeGreaterThanOrEqual(0);
+    expect(summary).toBeLessThan(pause);
     expect(pause, `${stops}`).toBeGreaterThanOrEqual(0);
     expect(pause).toBeLessThan(end);
   });

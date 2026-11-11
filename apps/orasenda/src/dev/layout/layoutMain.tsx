@@ -47,3 +47,20 @@ if (page === "settings") {
     }
   }, 50);
 }
+
+if (query.get("popover") === "1") {
+  // Open the preset popover as a person would: press the summary once it is up.
+  const started = Date.now();
+  const timer = setInterval(() => {
+    const summary = document.querySelector<HTMLButtonElement>(
+      '[data-slot="preset-summary"] button:not([aria-disabled="true"])',
+    );
+    if (summary) {
+      clearInterval(timer);
+      summary.click();
+    } else if (Date.now() - started > 5000) {
+      clearInterval(timer);
+      throw new Error("popover=1: the preset summary never appeared");
+    }
+  }, 50);
+}

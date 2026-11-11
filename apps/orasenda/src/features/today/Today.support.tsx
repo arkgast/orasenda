@@ -1,9 +1,11 @@
 import { render } from "@testing-library/react";
 import type { Settings } from "../../ipc/bindings";
 import { mockBackend, type Replies, SETTINGS, settle } from "../../test/fixtures";
+import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
 
 export async function renderToday(replies: Replies = {}) {
+  resetPresetsForTests();
   const backend = mockBackend(replies);
   const view = render(<Today onNavigate={() => {}} />);
   await settle();
