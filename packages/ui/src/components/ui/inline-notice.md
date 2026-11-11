@@ -27,10 +27,9 @@ The row holds at most two sentences, in this order:
 
 | Event | Tone | Message | Action | Clears |
 | --- | --- | --- | --- | --- |
-| Start refused, Custom focus out of range | attention | "Focus didn't start. Custom focus needs 5 to 180 minutes." | ghost "Open Settings" (name "Open Settings to change custom minutes"): opens Settings › Timer and focuses Focus minutes | next Start, a preset change, or a valid save |
-| Start refused, Custom break out of range | attention | "Focus didn't start. Custom break needs 1 to 60 minutes." | "Open Settings" (focuses Break minutes) | same |
-| Start refused, both out of range | attention | "Focus didn't start. Custom minutes are out of range." | "Open Settings" (focuses the first invalid field) | same |
-| Any other start error, or the timer unavailable | attention | "Focus didn't start. Orasenda's timer isn't responding." | quiet "Try again" (name "Try again starting focus") | a successful start |
+| Start error (`timer_start` answered an error other than `alreadyRunning`) | attention | "Focus didn't start. Orasenda's timer isn't responding." | quiet "Try again" (name "Try again starting focus"): repeats the same request | a successful start, or the next view change to running |
+| Pause, resume or end failed (`timer_pause`, `timer_resume` or `timer_stop` answered an error other than a race) | attention | "Orasenda's timer isn't responding." | none | the next successful command or view change |
+| Timer unavailable (`timer_state` failed at launch) | attention | "Timer unavailable. Restart Orasenda to try again." | none | never this launch |
 | Natural end, ⌘. or End | neutral | "Session ended." | none (a tip's "Got it" when joined) | next transition |
 | Recovered on launch | neutral | "Your last session ended while Orasenda was closed." | none | next transition |
 | Two minutes left | warning | "Two minutes left. Finish the thought." | none | the end |
@@ -39,7 +38,7 @@ The row holds at most two sentences, in this order:
 | First run | neutral | "Welcome. Nothing to set up." | none | first Start |
 | Tip | neutral | "Tip: ⌃⌥F starts or pauses focus from anywhere." (spoken "Control-Option-F …") | ghost "Got it" | Got it, use, or second showing |
 
-A refused start shows here, on the same screen as Start. Focus stays on Start; the line is announced through the live message; "Open Settings" is one Shift-Tab away. No red, no amber, no exclamation, no dialog. Every message fits two lines of `body-sm` at 360 wide beside the widest action, "Open Settings".
+A start error shows here, on the same screen as Start. Focus stays on Start; the line is announced through the live message; "Try again" is one Shift-Tab away. No red, no amber, no exclamation, no dialog. Every message fits two lines of `body-sm` at 360 wide beside the widest action on Today. The three refused-start rows were removed by the owner's ruling on [#120](https://github.com/arkgast/orasenda/issues/120): Today always starts with `custom: null`, so Settings and Rust refuse out-of-range minutes before they are saved.
 
 ### Settings slots (the save line)
 
