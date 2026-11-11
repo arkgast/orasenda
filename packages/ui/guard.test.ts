@@ -149,3 +149,40 @@ test("lint_rejects_arbitrary_tailwind_value", () => {
   expect(arbitraryValues("const c = `size-[2px]`;")).toEqual(["size-[2px]"]);
   expect(scan([here("src"), here("../../apps/orasenda/src")])).toEqual([]);
 });
+
+// ---- legacy removal guards (#270) ----
+import { existsSync } from "node:fs";
+
+/** Files whose text holds a class string starting with os- (a legacy hand-written class). */
+function osClassHits(sources: Record<string, string>): string[] {
+  return Object.keys(sources).filter((name) =>
+    /["'`\s.]os-[a-z]/.test((sources[name] as string).replace(/\/\*[\s\S]*?\*\//g, "")),
+  );
+}
+
+test("no_legacy_files_and_no_os_classes", () => {
+  expect(readdirSync(dir).filter((n) => /^legacy\./.test(n))).toEqual([]);
+  expect(existsSync(resolve(dir, "legacy.js"))).toBe(false);
+  const roots = [dir, here("../../apps/orasenda/src")];
+  const all = roots.flatMap((root) =>
+    walk(root).map((f) => [f, readFileSync(f, "utf8")] as const),
+  );
+  expect(osClassHits(Object.fromEntries(all.filter(([f]) => !/\.test\.tsx?$/.test(f))))).toEqual(
+    [],
+  );
+  // The scan bites on seeded text.
+  expect(osClassHits({ "a.tsx": '<p className="os-num">1</p>', "b.css": ".os-actions {}" })).toEqual([
+    "a.tsx",
+    "b.css",
+  ]);
+  expect(osClassHits({ "c.tsx": '<p className="font-mono">/* os-num */</p>' })).toEqual([]);
+});
+
+function walk(folder: string): string[] {
+  return readdirSync(folder).flatMap((name) => {
+    const path = join(folder, name);
+    if (name === "node_modules" || name === "dist") return [];
+    if (statSync(path).isDirectory()) return walk(path);
+    return /\.(ts|tsx|css|js)$/.test(name) ? [path] : [];
+  });
+}
