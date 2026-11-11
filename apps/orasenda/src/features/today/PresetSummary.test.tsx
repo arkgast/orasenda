@@ -147,3 +147,16 @@ test("popover_settings_link_opens_timer", async () => {
   expect(onNavigate).toHaveBeenCalledWith("settings", "timer");
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 });
+
+test("popover_failed_save_rolls_summary_back", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({
+    settings_set: () => {
+      throw new Error("disk full");
+    },
+  });
+  fireEvent.click(summary());
+  fireEvent.click(screen.getByRole("menuitemradio", { name: /50\/10/ }));
+  await settle();
+  expect(summary()).toHaveAccessibleName(/^Preset Classic, 25 minutes/);
+});

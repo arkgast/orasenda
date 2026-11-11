@@ -18,12 +18,18 @@ export function presetName(preset: Preset): string {
 // presets_get is read once per launch: the three fixed presets never change. A failure is logged
 // once and leaves the list empty (the summary then shows no minutes).
 let cached: Promise<PresetLength[]> | null = null;
+// The value once it arrived, so a later mount starts with it instead of one empty frame.
+let resolved: PresetLength[] | null = null;
 
 export function presetLengths(): Promise<PresetLength[]> {
   cached ??= commands.presetsGet().then(
-    (list) => list,
+    (list) => {
+      resolved = list;
+      return list;
+    },
     (error: unknown) => {
       console.error("presets_get failed", error);
+      resolved = [];
       return [] as PresetLength[];
     },
   );
@@ -33,11 +39,12 @@ export function presetLengths(): Promise<PresetLength[]> {
 /** Empties the cache (Vitest shares this module within a file). */
 export function resetPresetsForTests(): void {
   cached = null;
+  resolved = null;
 }
 
 /** The fixed presets' lengths, `[]` until they arrive. */
 export function usePresetLengths(): PresetLength[] {
-  const [lengths, setLengths] = useState<PresetLength[]>([]);
+  const [lengths, setLengths] = useState<PresetLength[]>(() => resolved ?? []);
   useEffect(() => {
     let cancelled = false;
     presetLengths().then((list) => {

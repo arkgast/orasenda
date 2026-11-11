@@ -8,6 +8,8 @@ type Props = {
   state: "idle" | "running" | "paused";
   /** The saved settings; `null` until they load (or when they failed to). */
   settings: Settings | null;
+  /** The settings failed to load: the summary says so instead of waiting. */
+  settingsFailed: boolean;
   /** The running session's preset and planned length, from the view. */
   session: { preset: Preset | null; plannedMin: number | null; finish: string | null } | null;
   /** The next session's finish from the clock tick, while idle. */
@@ -24,6 +26,7 @@ const SETTINGS_ID = "settings";
 export function PresetSummary({
   state,
   settings,
+  settingsFailed,
   session,
   idleFinish,
   strip,
@@ -36,11 +39,15 @@ export function PresetSummary({
   const [open, setOpen] = useState(false);
   const idle = state === "idle";
 
+  if (idle && !settings && !settingsFailed) {
+    // Still loading: the cell keeps its place and says nothing.
+    return <div data-slot="preset-summary" className="today-preset-anchor" />;
+  }
   if (idle && !settings) {
     return (
       <div data-slot="preset-summary" className="@container w-full">
         <span className="today-preset-anchor">
-          <Button variant="ghost" aria-disabled="true">
+          <Button variant="ghost" className="max-w-full whitespace-nowrap" aria-disabled="true">
             Presets unavailable
           </Button>
         </span>
@@ -80,7 +87,9 @@ export function PresetSummary({
     ? "Preset for the next session"
     : preset === "quick"
       ? presetName("quick")
-      : `${presetName(preset)} · ${minutes ?? ""} min`;
+      : minutes === undefined
+        ? presetName(preset)
+        : `${presetName(preset)} · ${minutes} min`;
 
   return (
     <div data-slot="preset-summary" className="@container w-full">
@@ -88,6 +97,7 @@ export function PresetSummary({
         <Tooltip label={text.tooltip}>
           <Button
             variant="ghost"
+            className="max-w-full whitespace-nowrap"
             aria-label={text.name}
             aria-haspopup="menu"
             aria-expanded={open}

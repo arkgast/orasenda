@@ -67,6 +67,7 @@ export function Today({ onNavigate }: Props) {
   });
   // `settings` is only the saved preset here; the save chain lives in ../settingsQueue.
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
   const [starting, setStarting] = useState(false);
   // The start that failed, so Try again repeats it.
   const [failedStart, setFailedStart] = useState<StartRequest_Deserialize | null>(null);
@@ -74,10 +75,16 @@ export function Today({ onNavigate }: Props) {
 
   useEffect(() => {
     const unregister = register({
-      shown: (shown) => setSettings(shown),
+      shown: (shown) => {
+        setSettings(shown);
+        setSettingsFailed(false);
+      },
       accepted: () => {},
       refused: () => {},
-      loadFailed: () => console.error("settings_get failed: Today starts with Classic"),
+      loadFailed: () => {
+        console.error("settings_get failed: Today starts with Classic");
+        setSettingsFailed(true);
+      },
       // The write is already logged and the store line explains it (spec C).
       saveFailed: () => {},
     });
@@ -195,6 +202,7 @@ export function Today({ onNavigate }: Props) {
           <PresetSummary
             state={state ?? "idle"}
             settings={settings}
+            settingsFailed={settingsFailed}
             session={
               view
                 ? { preset: view.preset, plannedMin: view.plannedMin, finish: view.finish }

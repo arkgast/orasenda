@@ -74,11 +74,6 @@
   min-inline-size: 0;
 }
 
-.today-preset-anchor button {
-  white-space: nowrap;
-  max-inline-size: 100%;
-}
-
 .today-preset-chevron {
   flex-shrink: 0;
   inline-size: var(--icon-md);
