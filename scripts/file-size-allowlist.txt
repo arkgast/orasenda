@@ -4,8 +4,5 @@
 1039 apps/orasenda/src/pages/Today.test.tsx
 963 apps/orasenda/src-tauri/src/spike/commands.rs
 839 apps/orasenda/src-tauri/src/scheduler.rs
-781 crates/store/src/lib.rs
-750 crates/core/src/timer/engine.rs
 629 apps/orasenda/src/pages/Settings.test.tsx
-511 crates/core/src/blocking.rs
 511 apps/orasenda/src-tauri/src/spike/state.rs
