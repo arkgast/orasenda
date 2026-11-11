@@ -8,15 +8,17 @@ import type {
   MilestoneKind,
   Preset,
   Settings,
+  SettingsTarget,
   StartRequest_Deserialize,
   TimerCommandError,
   TimerView_Serialize,
 } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
-import { load, register } from "../../ipc/settingsQueue";
+import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useTimer } from "../timer/useTimer";
 import { Controls } from "./Controls";
+import { PresetSummary } from "./PresetSummary";
 import { commandFailure, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
 import { useControlFocus } from "./useControlFocus";
@@ -44,7 +46,7 @@ function logFailure(name: string) {
 }
 
 type Props = {
-  onNavigate(page: NavPage): void;
+  onNavigate(page: NavPage, target?: SettingsTarget): void;
 };
 
 /**
@@ -135,6 +137,11 @@ export function Today({ onNavigate }: Props) {
       .finally(() => setStarting(false));
   };
 
+  const choosePreset = (preset: Preset) => {
+    const current = latest();
+    if (current) save({ ...current, preset });
+  };
+
   const startSaved = () => start({ preset: settings?.preset ?? DEFAULT_PRESET, custom: null });
   const startQuick = () => start({ preset: "quick", custom: null });
 
@@ -184,8 +191,21 @@ export function Today({ onNavigate }: Props) {
         <div className="today-top-start">
           {layout.compact ? <PagesButton current="today" onNavigate={onNavigate} /> : null}
         </div>
-        {/* C5 fills the preset summary here. */}
-        <div data-slot="today-summary" className="today-summary" />
+        <div data-slot="today-summary" className="today-summary">
+          <PresetSummary
+            state={state ?? "idle"}
+            settings={settings}
+            session={
+              view
+                ? { preset: view.preset, plannedMin: view.plannedMin, finish: view.finish }
+                : null
+            }
+            idleFinish={clock.status === "ok" ? clock.idleFinish : null}
+            strip={layout.timer !== "ring"}
+            onChoose={choosePreset}
+            onOpenSettings={() => onNavigate("settings", "timer")}
+          />
+        </div>
         {/* Reserved for the Focus view button (D). */}
         <div className="today-top-end" />
       </div>

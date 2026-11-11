@@ -122,9 +122,9 @@ test("popover_running_read_only_heading", async () => {
     "aria-checked",
     "true",
   );
-  expect(within(menu).getByRole("menuitem", { name: /Edit times in Settings/ })).not.toHaveAttribute(
-    "aria-disabled",
-  );
+  expect(
+    within(menu).getByRole("menuitem", { name: /Edit times in Settings/ }),
+  ).not.toHaveAttribute("aria-disabled");
 });
 
 test("popover_quick_no_checked_radio", async () => {

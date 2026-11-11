@@ -150,7 +150,9 @@ export function App() {
         <main ref={main} className="app-main">
           <PageBoundary>
             <Suspense fallback={null}>
-              {current === "today" ? <Today onNavigate={(page) => navigate(page)} /> : null}
+              {current === "today" ? (
+                <Today onNavigate={(page, target) => navigate(page, target)} />
+              ) : null}
               {current === "settings" ? (
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}

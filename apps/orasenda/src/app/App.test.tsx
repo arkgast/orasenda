@@ -180,12 +180,12 @@ test("strict_mode_one_listener_per_event", async () => {
     expect(backend.live(event), event).toBe(1);
   }
 
-  // Idle shows Start, not IconButtons: their Radix tooltips commit a second, nested time on every
-  // render, which is the design system's, not a second subscription's.
+  // The preset summary's Radix tooltip commits a nested time on every render: the design
+  // system's, not a second subscription's. Only the page's own updates are counted.
   commits.length = 0;
   await emitTimer({ ...IDLE, progress: 0.5 });
 
-  expect(commits).toEqual(["update"]);
+  expect(commits.filter((phase) => phase === "update")).toEqual(["update"]);
   expect(screen.getByRole("timer")).toHaveTextContent("No session");
 });
 

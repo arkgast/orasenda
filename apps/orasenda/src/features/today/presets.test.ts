@@ -6,7 +6,13 @@ import { presetLengths, presetName, resetPresetsForTests, summaryText } from "./
 beforeEach(() => resetPresetsForTests());
 afterEach(() => clearMocks());
 
-const idle = { state: "idle", name: "Classic", minutes: 25, finish: "15:20", strip: false } as const;
+const idle = {
+  state: "idle",
+  name: "Classic",
+  minutes: 25,
+  finish: "15:20",
+  strip: false,
+} as const;
 
 test("summary_idle_text_name_tooltip", () => {
   expect(summaryText(idle)).toEqual({
