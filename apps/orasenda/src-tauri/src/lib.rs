@@ -14,6 +14,8 @@ pub(crate) mod spike;
 // The menu-bar item: Tauri's tray exists on desktop only.
 #[cfg(desktop)]
 mod tray;
+#[cfg(test)]
+mod window_min_tests;
 
 include!("../commands.list.rs");
 

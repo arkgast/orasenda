@@ -25,6 +25,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  Object.assign(window, { innerWidth: 1024, innerHeight: 768 });
   // Unmount (and unlisten) while the IPC mock is still installed.
   cleanup();
   await settle();
@@ -33,23 +34,18 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-test("renders_brand_and_info_line", async () => {
+test("shell_has_no_brand_header", async () => {
   mockBackend();
   const { container } = render(<App />);
   await settle();
 
-  const brand = screen.getByText("Orasenda");
-  expect(brand.tagName).toBe("P");
-  expect(brand).toHaveClass("app-brand");
-  expect(brand.closest("header")).not.toBeNull();
-  const info = screen.getByText("0.1.0 · macOS aarch64");
-  expect(info).toHaveClass("app-info");
-  expect(info.closest("header")).toBe(brand.closest("header"));
-  expect(screen.queryByRole("heading", { name: "Orasenda" })).toBeNull();
+  expect(container.querySelector("header")).toBeNull();
+  expect(screen.queryByText("Orasenda")).toBeNull();
+  expect(screen.queryByText("0.1.0 · macOS aarch64")).toBeNull();
   expect(container.querySelectorAll("main")).toHaveLength(1);
 });
 
-test("rejected_app_info_shows_version_unavailable", async () => {
+test("rejected_app_info_is_logged", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   mockBackend({
     app_info: () => {
@@ -57,12 +53,53 @@ test("rejected_app_info_shows_version_unavailable", async () => {
     },
   });
   render(<App />);
+  await settle();
 
-  const line = await screen.findByText("version unavailable");
-  expect(line).toHaveClass("app-info");
-  expect(line).not.toHaveAttribute("role");
-  expect(screen.getByText("Orasenda")).toHaveClass("app-brand");
   expect(error).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
+});
+
+test("pages_choice_navigates_and_focuses_h1", async () => {
+  Object.assign(window, { innerWidth: 360, innerHeight: 240 });
+  mockBackend({ native_menu_popup: () => "calendar" });
+  render(<App />);
+  await settle();
+  expect(screen.queryByRole("navigation", { name: "Main navigation" })).toBeNull();
+
+  // Today's own top row comes with C4; the Pages button on a placeholder is the way on from there.
+  fireEvent.keyDown(document.body, { key: "2", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Calendar" })).toHaveFocus();
+});
+
+test("cmd_digit_works_on_a_radio", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  document.body.append(radio);
+  radio.focus();
+  fireEvent.keyDown(radio, { key: "2", metaKey: true });
+  await settle();
+  radio.remove();
+  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+});
+
+test("cmd_digits_navigate_from_any_page", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+
+  fireEvent.keyDown(document.body, { key: "3", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Calendar" })).toHaveFocus();
+  fireEvent.keyDown(document.body, { key: "1", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Today" })).toHaveFocus();
 });
 
 test("rail_switches_pages_and_other_pages_render_empty_state", async () => {
@@ -132,7 +169,6 @@ test("strict_mode_one_listener_per_event", async () => {
   const commits: string[] = [];
   render(strictApp(commits));
   await settle();
-  await screen.findByText("0.1.0 · macOS aarch64");
 
   for (const event of [
     "clock-tick",

@@ -22,9 +22,6 @@ async function expectStartVisible(page: Page): Promise<void> {
 }
 
 test("today_start_visible_900x600_idle", async ({ page }) => {
-  // Found by this harness: even idle, Start's bottom is 606 and the document is 638 tall at 900x600
-  // (the plan expected it to pass). Part of #119; expected to fail until C4 removes test.fail().
-  test.fail();
   await openApp(page, "idle", SIZE);
   await expectStartVisible(page);
 });

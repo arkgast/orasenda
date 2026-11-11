@@ -12,11 +12,13 @@ import {
 import { flushSync } from "react-dom";
 import type { Arrival, SettingsTarget } from "../features/settings/Settings";
 import type { AboutInfo } from "../features/settings/sections/About";
-import { infoLine } from "../features/timer/format";
 import { commands, events } from "../ipc/bindings";
 import { subscribe } from "../ipc/subscribe";
 import { PageBoundary } from "./PageBoundary";
+import { PAGE_ORDER } from "./PagesButton";
+import { useShortcuts } from "./useShortcuts";
 import { useTheme } from "./useTheme";
+import { useWindowLayout } from "./useWindowLayout";
 
 export type { SettingsTarget };
 
@@ -57,7 +59,7 @@ function Settings(props: ComponentProps<typeof import("../features/settings/Sett
   const Page = settingsPage.use();
   return <Page {...props} />;
 }
-function Placeholder(props: { title: string }) {
+function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeholder>) {
   const Page = placeholderPage.use();
   return <Page {...props} />;
 }
@@ -78,6 +80,7 @@ export function App() {
   const currentRef = useRef<NavPage>("today");
   const main = useRef<HTMLElement>(null);
 
+  const { compact } = useWindowLayout();
   useTheme();
 
   useEffect(() => {
@@ -127,31 +130,35 @@ export function App() {
     };
   }, [navigate]);
 
-  const infoText =
-    info.status === "ok"
-      ? infoLine(info.info)
-      : info.status === "error"
-        ? "version unavailable"
-        : null;
+  useShortcuts(
+    PAGE_ORDER.map(({ id }, index) => ({
+      key: String(index + 1),
+      meta: true as const,
+      when: () => true,
+      run: () => navigate(id),
+    })),
+  );
 
   return (
-    <div className={current === "settings" ? "app app-bound" : "app"}>
-      <NavRail current={current} onNavigate={(page) => navigate(page)} />
+    <div
+      className={["app", current === "settings" ? "app-bound" : "", compact ? "app-compact" : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {compact ? null : <NavRail current={current} onNavigate={(page) => navigate(page)} />}
       <div className="app-column">
-        <header className="app-header">
-          <p className="app-brand">Orasenda</p>
-          <span className="app-separator" aria-hidden="true">
-            ·
-          </span>
-          <p className="app-info">{infoText}</p>
-        </header>
         <main ref={main} className="app-main">
           <PageBoundary>
             <Suspense fallback={null}>
               {current === "today" ? <Today /> : null}
               {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
               {current !== "today" && current !== "settings" ? (
-                <Placeholder title={TITLES[current]} />
+                <Placeholder
+                  title={TITLES[current]}
+                  compact={compact}
+                  current={current}
+                  onNavigate={(page) => navigate(page)}
+                />
               ) : null}
             </Suspense>
           </PageBoundary>
