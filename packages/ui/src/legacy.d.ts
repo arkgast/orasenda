@@ -27,10 +27,6 @@ export declare function CapturePad(props: CapturePadProps): React.ReactElement;
 export interface ToastProps extends Omit<InlineNoticeProps, 'variant' | 'tone'> { tone?: 'neutral' | 'warning'; onDismiss?: () => void }
 export declare function Toast(props: ToastProps): React.ReactElement;
 // end Toast
-// KanbanColumn
-export interface KanbanColumnProps { title: string; count: number; limit?: number; children?: React.ReactNode; emptyMessage?: string }
-export declare function KanbanColumn(props: KanbanColumnProps): React.ReactElement;
-// end KanbanColumn
 // CommandPalette
 export interface Command { id: string; label: string; hint?: string }
 export interface CommandPaletteProps { open?: boolean; commands: Command[]; onSelect: (id: string) => void; onClose: () => void }
