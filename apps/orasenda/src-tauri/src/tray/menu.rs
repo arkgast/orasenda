@@ -341,3 +341,18 @@ pub(super) fn build_menu(
     })?;
     Ok((menu, header))
 }
+
+#[cfg(test)]
+mod edit_times_tests {
+    use super::*;
+    use crate::ipc::SettingsTarget;
+
+    #[test]
+    fn edit_times_item_navigates_to_timer() {
+        assert_eq!(
+            settings_target(&MenuCommand::EditTimes),
+            Some(SettingsTarget::Timer)
+        );
+        assert_eq!(settings_target(&MenuCommand::Settings), None);
+    }
+}

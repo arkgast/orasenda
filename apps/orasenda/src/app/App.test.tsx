@@ -234,3 +234,19 @@ test("enabled_spike_shows_dev_panel", async () => {
   expect(screen.getAllByRole("main")).toHaveLength(1);
   expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
 });
+
+test("app_navigate_with_target_focuses_timer_heading", async () => {
+  mockBackend({ navigate_take: () => ({ page: "settings", target: "timer" }) });
+  render(<App />);
+  await settle();
+
+  expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
+});
+
+test("app_navigate_without_target_focuses_settings_h1", async () => {
+  mockBackend({ navigate_take: () => ({ page: "settings", target: null }) });
+  render(<App />);
+  await settle();
+
+  expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
+});

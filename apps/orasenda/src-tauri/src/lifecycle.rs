@@ -200,12 +200,27 @@ mod tests {
     fn navigate_take_returns_once() {
         let pending = PendingNavigate::default();
         assert_eq!(pending.take(), None);
-        pending.set(NavigatePage::Settings);
-        assert_eq!(pending.take(), Some(NavigatePage::Settings));
+        pending.set(nav(NavigatePage::Settings, None));
+        assert_eq!(pending.take(), Some(nav(NavigatePage::Settings, None)));
         assert_eq!(pending.take(), None);
-        pending.set(NavigatePage::Today);
-        pending.set(NavigatePage::Review);
-        assert_eq!(pending.take(), Some(NavigatePage::Review));
+        pending.set(nav(NavigatePage::Today, None));
+        pending.set(nav(NavigatePage::Review, None));
+        assert_eq!(pending.take(), Some(nav(NavigatePage::Review, None)));
+    }
+
+    fn nav(page: NavigatePage, target: Option<SettingsTarget>) -> Navigate {
+        Navigate { page, target }
+    }
+
+    #[test]
+    fn navigate_take_carries_settings_target() {
+        let pending = PendingNavigate::default();
+        pending.set(nav(NavigatePage::Settings, Some(SettingsTarget::Timer)));
+        assert_eq!(
+            pending.take(),
+            Some(nav(NavigatePage::Settings, Some(SettingsTarget::Timer)))
+        );
+        assert_eq!(pending.take(), None);
     }
 
     use std::cell::RefCell;
