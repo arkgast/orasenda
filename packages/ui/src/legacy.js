@@ -1,5 +1,4 @@
 import * as R from "react";
-import { TimerRing } from "./components/ui/timer-ring";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
@@ -36,43 +35,6 @@ function ModeChip(p) {
   return h("span", { className: "os-chip os-mode-" + mode }, h(Shape, { mode: mode }), p.children || MODE_LABEL[mode]);
 }
 // end ModeChip
-// Native modal dialogs supply inert background and focus containment. Keep one open at a time.
-function Modal(p) {
-  var ref = R.useRef(null), titleId = R.useId(), bodyId = R.useId(), open = p.open !== false;
-  R.useEffect(function () {
-    var el = ref.current;
-    if (!open || !el) return;
-    var previous = el.ownerDocument.activeElement;
-    if (!el.open) el.showModal();
-    var initial = el.querySelector("[data-initial-focus]");
-    if (initial) initial.focus();
-    return function () { if (el.open) el.close(); if (previous && previous.isConnected && previous.focus) previous.focus(); };
-  }, [open]);
-  return h("dialog", { ref: ref, className: cx("os-dialog", p.scrim && "os-dialog-scrim", p.className), "aria-modal": "true", "aria-labelledby": titleId,
-    "aria-describedby": p.description ? bodyId : undefined,
-    onCancel: function (e) { e.preventDefault(); if (p.onSafe) p.onSafe(); } },
-    h("h2", { id: titleId }, p.title),
-    p.description ? h("p", { id: bodyId, className: "os-dialog-description" }, p.description) : null, p.children);
-}
-// Dialog
-function Dialog(p) {
-  return h(Modal, { open: p.open, title: p.title, description: p.description, onSafe: p.onCancel, scrim: p.scrim || p.destructive },
-    p.children,
-    h("div", { className: "os-dialog-actions" },
-      h(Button, { variant: "ghost", onClick: p.onCancel, "data-initial-focus": true }, p.cancelLabel || "Cancel"),
-      h(Button, { variant: p.destructive ? "critical" : "primary", onClick: p.onConfirm, loading: p.loading }, p.confirmLabel)));
-}
-// end Dialog
-// FullScreenFocus
-function FullScreenFocus(p) {
-  var leaving = R.useState(false), root = R.useRef(null);
-  R.useEffect(function () { if (root.current) root.current.focus(); }, []);
-  return h("section", { ref: root, className: "os-fullscreen", tabIndex: -1, "aria-label": "Full-screen focus", onKeyDown: function (e) { if (e.key === "Escape" && !leaving[0]) { e.preventDefault(); e.stopPropagation(); leaving[1](true); } } },
-    h(TimerRing, { remaining: p.remaining, remainingLabel: p.remainingLabel, progress: p.progress, mode: p.mode, task: p.task, clock: p.clock, size: 560 }),
-    h(Button, { variant: "ghost", onClick: function () { leaving[1](true); } }, "Leave full screen"),
-    leaving[0] ? h(Dialog, { title: "Leave full screen?", description: "Your focus session will keep running.", confirmLabel: "Leave full screen", cancelLabel: "Stay focused", scrim: true, onCancel: function () { leaving[1](false); }, onConfirm: function () { leaving[1](false); p.onExit(); } }) : null);
-}
-// end FullScreenFocus
 function Field(p) {
   var generated = R.useId(), id = p.id || generated, described = [p["aria-describedby"], p.helper ? id + "-helper" : "", p.error ? id + "-error" : ""].filter(Boolean).join(" ");
   var rest = Object.assign({}, p);
@@ -113,5 +75,4 @@ function describeShortcut(glyphs) {
 // end describeShortcut
 
 export {
-  FullScreenFocus,
 };

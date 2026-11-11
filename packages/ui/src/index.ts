@@ -7,7 +7,7 @@ export { CommandPalette } from "./components/ui/command-palette";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
-export { FullScreenFocus } from "./legacy.js";
+export { FullScreenFocus } from "./components/ui/full-screen-focus";
 export { HabitDots } from "./components/ui/habit-dots";
 export { IconButton } from "./components/ui/icon-button";
 export { InlineNotice } from "./components/ui/inline-notice";
@@ -40,6 +40,7 @@ export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-
 export type { CommandPaletteProps } from "./components/ui/command-palette";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";
+export type { FullScreenFocusProps } from "./components/ui/full-screen-focus";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";
 export type { IconButtonProps } from "./components/ui/icon-button";
 export type { InlineNoticeProps } from "./components/ui/inline-notice";
