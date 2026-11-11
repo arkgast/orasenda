@@ -55,6 +55,25 @@ fn view_planned_min_custom_ignores_later_settings() {
 }
 
 #[test]
+fn view_planned_min_restored() {
+    let mut s = service();
+    let saved = |focus_min| Settings {
+        theme: Theme::System,
+        preset: Preset::Custom,
+        custom: CustomSpec {
+            focus_min,
+            break_min: 5,
+        },
+        notify_session_end: false,
+    };
+    s.set_settings(saved(30), T0).expect("settings save");
+    s.apply(start(Preset::Custom), T0, id("c"));
+    s.set_settings(saved(45), T0 + 1).expect("settings save");
+    let back = relaunch(&mut s, T0 + MINUTE);
+    assert_eq!(back.view(T0 + MINUTE).planned_min, Some(30));
+}
+
+#[test]
 fn presets_get_lists_three_fixed_presets() {
     let lengths = preset_lengths();
     let want = [

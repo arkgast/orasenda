@@ -43,6 +43,8 @@ pub struct PopupSlot(Mutex<SlotState>);
 #[derive(Debug, Default)]
 struct SlotState {
     open: bool,
+    /// Counts popups; item ids carry it so a late event of an earlier popup is dropped.
+    generation: u64,
     chosen: Option<String>,
 }
 
@@ -53,25 +55,32 @@ impl PopupSlot {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Marks a popup open; `false` when one already is.
-    pub(crate) fn begin(&self) -> bool {
+    /// Marks a popup open and answers its generation; `None` when one already is.
+    pub(crate) fn begin(&self) -> Option<u64> {
         let mut state = self.state();
         if state.open {
-            return false;
+            return None;
         }
         state.open = true;
+        state.generation += 1;
         state.chosen = None;
-        true
+        Some(state.generation)
     }
 
     /// Records a menu event's id when it is a popup item and a popup is open. Returns
     /// whether the event was the popup's, so the caller can skip other handlers.
     pub(crate) fn record(&self, event_id: &str) -> bool {
-        let Some(id) = event_id.strip_prefix(ID_PREFIX) else {
+        let Some(rest) = event_id.strip_prefix(ID_PREFIX) else {
             return false;
         };
         let mut state = self.state();
-        if state.open {
+        let parsed = rest
+            .split_once(':')
+            .and_then(|(generation, id)| Some((generation.parse::<u64>().ok()?, id)));
+        if let Some((generation, id)) = parsed
+            && state.open
+            && generation == state.generation
+        {
             state.chosen = Some(id.to_owned());
         }
         true
@@ -94,11 +103,11 @@ pub(crate) struct ItemSpec {
     pub checked: Option<bool>,
 }
 
-pub(crate) fn item_specs(items: &[NativeMenuItem]) -> Vec<ItemSpec> {
+pub(crate) fn item_specs(items: &[NativeMenuItem], generation: u64) -> Vec<ItemSpec> {
     items
         .iter()
         .map(|item| ItemSpec {
-            id: format!("{ID_PREFIX}{}", item.id),
+            id: format!("{ID_PREFIX}{generation}:{}", item.id),
             label: item.label.clone(),
             accelerator: item.accelerator.clone().filter(|a| !a.is_empty()),
             checked: item.checked,
@@ -130,13 +139,11 @@ async fn popup(app: tauri::AppHandle, request: NativeMenuRequest) -> Option<Stri
     use tauri::Manager;
 
     let slot = app.state::<PopupSlot>();
-    if !slot.begin() {
-        return None;
-    }
+    let generation = slot.begin()?;
     let (done, finished) = std::sync::mpsc::channel::<()>();
     let shown = app.clone();
     let queued = app.run_on_main_thread(move || {
-        if let Err(error) = show(&shown, &request) {
+        if let Err(error) = show(&shown, &request, generation) {
             eprintln!("native_menu_popup: {error}");
         }
         let _ = done.send(());
@@ -166,7 +173,7 @@ async fn settle(app: &tauri::AppHandle) {
 }
 
 #[cfg(desktop)]
-fn show(app: &tauri::AppHandle, request: &NativeMenuRequest) -> tauri::Result<()> {
+fn show(app: &tauri::AppHandle, request: &NativeMenuRequest, generation: u64) -> tauri::Result<()> {
     use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem};
     use tauri::{LogicalPosition, Manager};
 
@@ -174,7 +181,7 @@ fn show(app: &tauri::AppHandle, request: &NativeMenuRequest) -> tauri::Result<()
         .get_webview_window("main")
         .ok_or(tauri::Error::WindowNotFound)?;
     let menu = Menu::new(app)?;
-    for spec in item_specs(&request.items) {
+    for spec in item_specs(&request.items, generation) {
         let accelerator = spec.accelerator.as_deref();
         let item: Box<dyn IsMenuItem<tauri::Wry>> = match spec.checked {
             Some(checked) => Box::new(CheckMenuItem::with_id(
@@ -213,13 +220,16 @@ mod tests {
 
     #[test]
     fn menu_popup_items_carry_accelerator_and_check() {
-        let specs = item_specs(&[
-            item("a", Some("CmdOrCtrl+K"), Some(true)),
-            item("b", None, None),
-            item("c", Some(""), Some(false)),
-        ]);
+        let specs = item_specs(
+            &[
+                item("a", Some("CmdOrCtrl+K"), Some(true)),
+                item("b", None, None),
+                item("c", Some(""), Some(false)),
+            ],
+            7,
+        );
         assert_eq!(specs.len(), 3);
-        assert_eq!(specs[0].id, "popup:a");
+        assert_eq!(specs[0].id, "popup:7:a");
         assert_eq!(specs[0].label, "A");
         assert_eq!(specs[0].accelerator.as_deref(), Some("CmdOrCtrl+K"));
         assert_eq!(specs[0].checked, Some(true));
@@ -232,11 +242,11 @@ mod tests {
     #[test]
     fn menu_popup_second_call_while_open_is_none() {
         let slot = PopupSlot::default();
-        assert!(slot.begin());
-        assert!(!slot.begin(), "a second popup must not open");
-        assert!(slot.record("popup:a"));
+        let first = slot.begin().expect("opens");
+        assert_eq!(slot.begin(), None, "a second popup must not open");
+        assert!(slot.record(&format!("popup:{first}:a")));
         assert_eq!(slot.end().as_deref(), Some("a"));
-        assert!(slot.begin(), "closed, so a new one may open");
+        assert!(slot.begin().is_some(), "closed, so a new one may open");
         assert_eq!(slot.end(), None, "dismissed answers None");
     }
 
@@ -244,7 +254,12 @@ mod tests {
     fn menu_popup_ignores_foreign_ids_and_late_events() {
         let slot = PopupSlot::default();
         assert!(!slot.record("settings"));
-        assert!(slot.record("popup:late"));
+        assert!(slot.record("popup:1:late"));
         assert_eq!(slot.end(), None, "nothing open: nothing recorded");
+        let old = slot.begin().expect("opens");
+        slot.end();
+        let _new = slot.begin().expect("opens");
+        assert!(slot.record(&format!("popup:{old}:stale")));
+        assert_eq!(slot.end(), None, "a stale generation is dropped");
     }
 }

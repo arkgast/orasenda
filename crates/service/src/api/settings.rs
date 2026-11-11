@@ -51,13 +51,15 @@ pub fn preset_lengths() -> Vec<PresetLength> {
     let custom = CustomSpec::default();
     [Preset::Classic, Preset::FiftyTen, Preset::DeepBlock]
         .into_iter()
-        .filter_map(|preset| {
-            let spec = preset.spec(&custom).ok()?;
-            Some(PresetLength {
+        .map(|preset| {
+            let spec = preset
+                .spec(&custom)
+                .expect("the fixed preset table is valid");
+            PresetLength {
                 preset,
-                focus_min: u32::try_from(spec.focus_ms / 60_000).ok()?,
-                break_min: u32::try_from(spec.short_break_ms / 60_000).ok()?,
-            })
+                focus_min: u32::try_from(spec.focus_ms / 60_000).expect("minutes fit u32"),
+                break_min: u32::try_from(spec.short_break_ms / 60_000).expect("minutes fit u32"),
+            }
         })
         .collect()
 }
