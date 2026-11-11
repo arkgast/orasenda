@@ -179,3 +179,8 @@ body {
   flex-wrap: wrap;
   gap: var(--space-4);
 }
+
+/* Compact: the section index is gone, so the content takes the whole width. */
+.settings-body-compact {
+  grid-template-columns: auto;
+}

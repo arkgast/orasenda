@@ -151,7 +151,9 @@ export function App() {
           <PageBoundary>
             <Suspense fallback={null}>
               {current === "today" ? <Today /> : null}
-              {current === "settings" ? <Settings info={info} arrival={arrival} /> : null}
+              {current === "settings" ? (
+                <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
+              ) : null}
               {current !== "today" && current !== "settings" ? (
                 <Placeholder
                   title={TITLES[current]}

@@ -32,6 +32,7 @@ afterEach(async () => {
   clearMocks();
   vi.restoreAllMocks();
   delete document.documentElement.dataset.theme;
+  Object.assign(window, { innerWidth: 1024, innerHeight: 768 });
 });
 
 // ---- Navigation and arrival ----
@@ -68,14 +69,30 @@ test("field_target_focuses_field", async () => {
   const { Settings: Page } = await import("./Settings");
   mockBackend();
   const { rerender } = render(
-    <Page info={{ status: "loading" }} arrival={{ seq: 1, target: "focusMinutes" }} />,
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 1, target: "focusMinutes" }}
+      onNavigate={() => {}}
+    />,
   );
   await settle();
   expect(focusInput()).toHaveFocus();
-  rerender(<Page info={{ status: "loading" }} arrival={{ seq: 2, target: "breakMinutes" }} />);
+  rerender(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 2, target: "breakMinutes" }}
+      onNavigate={() => {}}
+    />,
+  );
   await settle();
   expect(breakInput()).toHaveFocus();
-  rerender(<Page info={{ status: "loading" }} arrival={{ seq: 3, target: "timer" }} />);
+  rerender(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 3, target: "timer" }}
+      onNavigate={() => {}}
+    />,
+  );
   await settle();
   expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
 });
@@ -218,4 +235,80 @@ test("load_failure_says_so", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   await openSettings({ settings_get: () => Promise.reject(new Error("nope")) });
   expect(saveLine()).toHaveTextContent("Orasenda can't read settings right now.");
+});
+
+// ---- Compact windows ----
+
+const SECTION_NAMES = ["General", "Timer", "Notifications", "Apps and sites", "About and data"];
+
+type MenuRequest = {
+  items: Array<{ id: string; label: string; checked?: boolean }>;
+  x: number;
+  y: number;
+};
+
+async function openCompactSettings(answer: string | null) {
+  Object.assign(window, { innerWidth: 360, innerHeight: 240 });
+  const backend = mockBackend({ native_menu_popup: () => answer });
+  render(<App />);
+  await settle();
+  fireEvent.keyDown(document.body, { key: "6", metaKey: true });
+  await settle();
+  return backend;
+}
+
+function menuRequests(backend: { calls: { cmd: string; args: unknown }[] }): MenuRequest[] {
+  return (argsOf(backend.calls, "native_menu_popup") as { request: MenuRequest }[]).map(
+    (call) => call.request,
+  );
+}
+
+test("compact_settings_shows_pages_and_jump", async () => {
+  await openCompactSettings(null);
+  expect(screen.getByRole("button", { name: "Pages" })).toBeInTheDocument();
+  const jump = screen.getByRole("button", { name: "Jump to section" });
+  expect(
+    screen.getByRole("button", { name: "Pages" }).compareDocumentPosition(jump) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(jump).toHaveAttribute("aria-haspopup", "menu");
+  expect(jump).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("navigation", { name: "Settings sections" })).toBeNull();
+  expect(h1()).toHaveFocus();
+  expect(h1()).toHaveClass("sr-only");
+});
+
+test("wide_settings_keeps_the_index_and_has_no_jump_button", async () => {
+  await openSettings();
+  expect(screen.getByRole("navigation", { name: "Settings sections" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Jump to section" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Pages" })).toBeNull();
+});
+
+test("jump_menu_lists_sections_current_checked", async () => {
+  const backend = await openCompactSettings(null);
+  fireEvent.click(screen.getByRole("button", { name: "Jump to section" }));
+  await settle();
+  const [request] = menuRequests(backend);
+  expect(request?.items.map((item) => item.label)).toEqual(SECTION_NAMES);
+  expect(request?.items.map((item) => item.checked)).toEqual([true, false, false, false, false]);
+});
+
+test("jump_choice_focuses_section_heading", async () => {
+  await openCompactSettings("notifications");
+  fireEvent.click(screen.getByRole("button", { name: "Jump to section" }));
+  await settle();
+  expect(screen.getByRole("heading", { level: 2, name: "Notifications" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Jump to section" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+});
+
+test("jump_dismissed_does_nothing", async () => {
+  await openCompactSettings(null);
+  const before = document.activeElement;
+  fireEvent.click(screen.getByRole("button", { name: "Jump to section" }));
+  await settle();
+  expect(document.activeElement).toBe(before);
 });
