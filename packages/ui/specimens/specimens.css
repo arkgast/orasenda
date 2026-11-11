@@ -30,3 +30,11 @@ body {
 .specimen-overflow {
   background: var(--surface-sunken);
 }
+/* Bare paragraphs in specimen bodies keep the browser's default block margin that Preflight removes.
+   In the base layer, so a component's own m-0 utility still wins. */
+@layer base {
+  .specimen-case p:not(.specimen-label),
+  #root > p:not(.specimen-label) {
+    margin-block: 1em;
+  }
+}
