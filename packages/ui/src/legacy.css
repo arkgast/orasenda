@@ -81,12 +81,6 @@ button { font-family: inherit; }
 
 
 
-/* CommandPalette */
-.os-command-list { display: flex; flex-direction: column; gap: var(--space-1); max-height: min(320px, 50vh); overflow: auto; padding: var(--space-1); }
-.os-command { display: flex; flex-direction: column; gap: var(--space-1); min-height: var(--hit-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border-inline-start: 3px solid var(--clear); cursor: pointer; }
-.os-command[aria-selected="true"] { background: var(--selection); border-inline-start-color: var(--focus); }
-.os-command-selected { color: var(--focus); font-size: 13px; line-height: 18px; }
-/* end CommandPalette */
 
 /* Shared: reduced motion */
 @media (prefers-reduced-motion: reduce) {

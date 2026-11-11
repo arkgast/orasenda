@@ -85,31 +85,6 @@ function Field(p) {
     p.helper ? h("p", { id: id + "-helper", className: "os-field-help" }, p.helper) : null,
     p.error ? h("p", { id: id + "-error", className: "os-field-help" }, h(AlertGlyph), p.error) : null);
 }
-// Input (private: CommandPalette still renders it; the public Input lives in components/ui/input.tsx)
-function Input(p) { return h(Field, p); }
-// end Input
-// CommandPalette
-function CommandPalette(p) {
-  var query = R.useState(""), active = R.useState(0), listId = R.useId();
-  var results = p.commands.filter(function (c) { return (c.label + " " + (c.hint || "")).toLowerCase().indexOf(query[0].toLowerCase().trim()) !== -1; });
-  var index = Math.min(active[0], Math.max(0, results.length - 1));
-  function choose(c) { if (c) { p.onSelect(c.id); p.onClose(); } }
-  function key(e) {
-    if ((e.nativeEvent && e.nativeEvent.isComposing) || e.keyCode === 229) return;
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); active[1](results.length ? (index + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length : 0); }
-    if (e.key === "Enter") { e.preventDefault(); choose(results[index]); }
-  }
-  R.useEffect(function () { var row = document.getElementById(listId + "-" + index); if (row) row.scrollIntoView({ block: "nearest" }); }, [index, query[0], listId]);
-  return h(Modal, { open: p.open, title: "Commands", onSafe: p.onClose },
-    h(Input, { label: "Search commands", value: query[0], onChange: function (e) { query[1](e.target.value); active[1](0); }, onKeyDown: key, role: "combobox", "aria-autocomplete": "list", "aria-expanded": true, "aria-controls": listId, "aria-activedescendant": results.length ? listId + "-" + index : undefined, "data-initial-focus": true }),
-    h("div", { id: listId, className: "os-command-list", role: "listbox", "aria-label": "Commands" }, results.map(function (c, i) {
-      return h("div", { key: c.id, id: listId + "-" + i, role: "option", "aria-selected": i === index, className: "os-command", onMouseDown: function (e) { e.preventDefault(); }, onClick: function () { choose(c); } },
-        h("span", null, c.label), c.hint ? h("span", { className: "os-muted" }, c.hint) : null, i === index ? h("span", { className: "os-command-selected", "aria-hidden": "true" }, "Selected") : null);
-    })),
-    !results.length ? h("p", { role: "status", className: "os-muted" }, "No matching commands. Try a different word.") : null,
-    h(Button, { variant: "ghost", onClick: p.onClose }, "Close"));
-}
-// end CommandPalette
 var FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
 // Key table (Kbd README, Shortcut glyphs). Canonical glyph strings only: modifiers in macOS order
 // (Control, Option, Shift, Command), then exactly one key. Glyphs are written as escapes here.
@@ -139,5 +114,4 @@ function describeShortcut(glyphs) {
 
 export {
   FullScreenFocus,
-  CommandPalette,
 };
