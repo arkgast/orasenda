@@ -139,3 +139,22 @@ for (const viewport of [
     }
   });
 }
+
+test("icon_button_icon_is_20px_line_icon", async ({ page }) => {
+  await openSpecimen(page, "IconButton");
+  const icons = page.locator("[data-slot=icon-button] svg");
+  expect(await icons.count()).toBeGreaterThan(0);
+  const styles = await icons.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return { w: r.width, h: r.height, fill: cs.fill, stroke: cs.stroke };
+    }),
+  );
+  for (const s of styles) {
+    expect(s.w).toBe(20);
+    expect(s.h).toBe(20);
+    expect(s.fill).toBe("none");
+    expect(s.stroke).not.toBe("none");
+  }
+});

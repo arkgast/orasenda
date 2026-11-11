@@ -1,9 +1,9 @@
-import type { JSX, ReactElement, ReactNode } from "react";
-import { cloneElement, isValidElement } from "react";
+import type { JSX, ReactNode } from "react";
 import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
 import { Tooltip } from "./tooltip";
 
+/** label is the accessible name and the built-in Tooltip's text; the icon is aria-hidden. shortcut is one canonical glyph string, shown as a Kbd in the tooltip and set as aria-keyshortcuts (describeShortcut(shortcut).aria); pass it only while that shortcut is live. Several chords: an array (aria-keyshortcuts joins them with spaces); shortcutLabel is the text the Kbd shows when it differs (a range such as '⌘1–6'); keyshortcuts={false} shows the Kbd but sets no aria-keyshortcuts (Pause/Resume, whose key belongs to the page). aria-describedby points a disabled button at the line that says why. id, aria-haspopup, aria-expanded and aria-controls land on the button; the host sets aria-expanded and aria-controls from its menu's open state and id. */
 export interface IconButtonProps {
   label: string;
   icon: ReactNode;
@@ -21,26 +21,14 @@ export interface IconButtonProps {
 }
 
 // Hit targets (hit-min, control-lg) and the 1px border are the fixed sizes. The icon is a line icon at
-// icon-lg with a 1.5 stroke; the host's glyph is an inline svg that carries no styling of its own.
+// icon-lg (sized and unfilled here, through the wrapper, for any svg or component icon). Stroke width and
+// caps are SVG attributes with no theme utility, so the glyph carries strokeWidth 1.5 and round caps itself.
 const base =
   "inline-grid shrink-0 cursor-pointer place-items-center rounded-md border border-clear bg-clear p-0 text-ink transition-colors duration-quick ease-calm outline-focus-ring outline-offset-2 hover:bg-surface-sunken active:bg-selection focus-visible:outline-2 motion-reduce:transition-none";
 const medium = "size-hit-min";
 const round = "size-control-lg rounded-pill border-line-strong bg-surface-raised";
 const unavailable =
   "disabled:cursor-default disabled:border-dashed disabled:border-line-strong disabled:bg-clear disabled:text-ink-muted";
-
-function line(icon: ReactNode): ReactNode {
-  if (!isValidElement(icon) || icon.type !== "svg") return icon;
-  const svg = icon as ReactElement<Record<string, unknown>>;
-  return cloneElement(svg, {
-    className: cn("size-icon-lg", svg.props.className as string | undefined),
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.5,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  });
-}
 
 export function IconButton({
   label,
@@ -77,8 +65,8 @@ export function IconButton({
         onClick={onClick}
         className={cn(base, size === "round" ? round : medium, unavailable)}
       >
-        <span aria-hidden="true" className="inline-flex">
-          {line(icon)}
+        <span aria-hidden="true" className="inline-flex fill-none stroke-current *:size-icon-lg">
+          {icon}
         </span>
       </button>
     </Tooltip>

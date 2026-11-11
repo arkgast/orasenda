@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { JSX } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { describeShortcut, IconButton } from "../../index";
 
@@ -130,4 +131,28 @@ test("icon_button_describedby_passes_through", () => {
   const button = screen.getByRole("button", { name: "Jump to section" });
   expect(button.getAttribute("aria-describedby")).toBe("why");
   expect(button.hasAttribute("disabled")).toBe(true);
+});
+
+function Bars(): JSX.Element {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path d="M4 6h12" />
+    </svg>
+  );
+}
+
+test("icon_button_component_icon_is_sized_and_line_styled_through_the_wrapper", () => {
+  const { container } = render(<IconButton label="Menu" icon={<Bars />} />);
+  const wrap = container.querySelector("[data-slot=icon-button] > [aria-hidden=true]");
+  expect(wrap?.className).toContain("fill-none");
+  expect(wrap?.className).toContain("stroke-current");
+  expect(wrap?.className).toContain("*:size-icon-lg");
+  expect(wrap?.firstElementChild?.tagName.toLowerCase()).toBe("svg");
+});
+
+test("icon_button_inline_svg_gets_the_same_wrapper_styling", () => {
+  const { container } = render(<IconButton label="Pause" icon={icon} />);
+  const wrap = container.querySelector("[data-slot=icon-button] > [aria-hidden=true]");
+  expect(wrap?.className).toContain("*:size-icon-lg");
+  expect(wrap?.querySelector("svg")).not.toBeNull();
 });

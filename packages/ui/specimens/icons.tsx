@@ -3,7 +3,14 @@ import type { ReactElement } from "react";
 // Placeholder glyphs until the icon set lands (T7). Paths are the design system's own.
 function glyph(d: ReactElement): ReactElement {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      focusable="false"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {d}
     </svg>
   );

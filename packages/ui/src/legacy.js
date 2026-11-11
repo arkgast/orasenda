@@ -1,6 +1,5 @@
 import * as R from "react";
 import { TimerRing } from "./components/ui/timer-ring";
-import { Tooltip } from "./components/ui/tooltip";
 const h = R.createElement;
 function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
 function clamp(n) { return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0; }
