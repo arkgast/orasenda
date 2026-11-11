@@ -2,7 +2,6 @@
 # The guard (scripts/file-size.sh) fails when a listed file grows, when it is back
 # at 500 lines or fewer (remove its entry), or when its path no longer exists.
 1039 apps/orasenda/src/pages/Today.test.tsx
-998 apps/orasenda/src-tauri/src/tray.rs
 963 apps/orasenda/src-tauri/src/spike/commands.rs
 839 apps/orasenda/src-tauri/src/scheduler.rs
 781 crates/store/src/lib.rs
