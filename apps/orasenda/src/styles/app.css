@@ -182,5 +182,5 @@ body {
 
 /* Compact: the section index is gone, so the content takes the whole width. */
 .settings-body-compact {
-  grid-template-columns: auto;
+  grid-template-columns: minmax(0, 1fr);
 }

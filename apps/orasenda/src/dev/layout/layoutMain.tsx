@@ -41,7 +41,7 @@ if (page === "settings") {
       button.click();
     } else if (Date.now() - started > 5000) {
       clearInterval(timer);
-      throw new Error("Settings rail button not found");
+      throw new Error("Settings did not open (no rail button, and Cmd+6 did not open it)");
     } else {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "6", metaKey: true }));
     }

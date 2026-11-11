@@ -67,3 +67,19 @@ test("jump_button_logs_a_failed_popup_and_closes", async () => {
   expect(error).toHaveBeenCalled();
   expect(button).toHaveAttribute("aria-expanded", "false");
 });
+
+test("jump_button_is_expanded_while_the_menu_is_open", async () => {
+  let release: (id: string | null) => void = () => {};
+  const pending = new Promise<string | null>((resolve) => {
+    release = resolve;
+  });
+  mockBackend({ native_menu_popup: () => pending });
+  render(<JumpButton current="general" onJump={() => {}} />);
+  const button = screen.getByRole("button", { name: "Jump to section" });
+  fireEvent.click(button);
+  await settle();
+  expect(button).toHaveAttribute("aria-expanded", "true");
+  release(null);
+  await settle();
+  expect(button).toHaveAttribute("aria-expanded", "false");
+});

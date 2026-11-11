@@ -267,6 +267,10 @@ test("compact_settings_shows_pages_and_jump", async () => {
   await openCompactSettings(null);
   expect(screen.getByRole("button", { name: "Pages" })).toBeInTheDocument();
   const jump = screen.getByRole("button", { name: "Jump to section" });
+  expect(
+    screen.getByRole("button", { name: "Pages" }).compareDocumentPosition(jump) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(jump).toHaveAttribute("aria-haspopup", "menu");
   expect(jump).toHaveAttribute("aria-expanded", "false");
   expect(screen.queryByRole("navigation", { name: "Settings sections" })).toBeNull();

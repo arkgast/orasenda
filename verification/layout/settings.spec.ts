@@ -160,6 +160,15 @@ for (const size of COMPACT) {
     await expect(
       page.getByText("Focus and break minutes weren't saved. Still using 45 and 10."),
     ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Show focus minutes" })).toBeVisible();
+    await expectSettingsFit(page);
+  });
+
+  test(`settings_fits_${at}_notifications_denied_line`, async ({ page }) => {
+    await openApp(page, "notificationsDenied", size, { page: "settings" });
+    await expect(
+      page.getByText(/On here, but macOS has notifications off for Orasenda/),
+    ).toBeVisible();
     await expectSettingsFit(page);
   });
 }
