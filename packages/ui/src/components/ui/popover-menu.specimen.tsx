@@ -1,11 +1,12 @@
 import { type ReactElement, type RefObject, useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { Menu } from "../../../specimens/icons.tsx";
-import { IconButton, Tooltip } from "../../legacy.js";
+import { IconButton } from "../../legacy.js";
 import { describeShortcut } from "../../lib/shortcuts";
 import { Button } from "./button";
 import { Dialog } from "./dialog";
 import { PopoverMenu, type PopoverMenuItem } from "./popover-menu";
+import { Tooltip } from "./tooltip";
 
 const PRESETS: [string, string, string][] = [
   ["classic", "Classic", "25 / 5"],
