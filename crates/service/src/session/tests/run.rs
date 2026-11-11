@@ -5,10 +5,9 @@ use std::thread;
 
 use orasenda_core::{EndReason, EngineState, NotificationStatus, Preset, format_clock};
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{
+use crate::api::{
     MilestoneKind, Settings, SettingsErrorKind, StoreStatus, Theme, TimerCommandErrorKind,
     TimerView,
 };

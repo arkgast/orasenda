@@ -4,7 +4,7 @@ use orasenda_core::{Milestone, Session, SessionRecord};
 use orasenda_store::{StoreError, Txn, active_session};
 
 use super::*;
-use crate::ipc::{MilestoneEvent, MilestoneKind, StoreStatus};
+use crate::api::{MilestoneEvent, MilestoneKind, StoreStatus};
 
 /// Launch reads that failed at the database level and are still owed (architect ruling on
 /// #91). `tick` retries them, at most one read attempt a tick.

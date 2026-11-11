@@ -1,7 +1,7 @@
 //! The session service: the engine, the store and the platform behind one lock (ADR-013).
 //!
-//! Every surface (the webview, the menu bar) acts through [`run_action`] and sees the same
-//! [`TimerView`](crate::ipc::TimerView). The service never emits, renders, notifies or drops a keep-awake guard
+//! Every surface (the webview, the menu bar) acts through [`run_action_on`] and sees the same
+//! [`TimerView`](crate::api::TimerView). The service never emits, renders, notifies or drops a keep-awake guard
 //! itself: [`SessionService::apply`], [`SessionService::tick`] and [`SessionService::state`]
 //! fill [`Effects`], which [`crate::scheduler::publish`] carries out after the lock is released.
 
@@ -9,22 +9,23 @@ mod actions;
 mod effects;
 mod persist;
 mod recovery;
+mod run;
 mod service;
 mod settings;
-mod setup;
 #[cfg(test)]
 mod tests;
 mod view;
 
 pub use effects::Effects;
+pub use run::{
+    current_settings, flush_on_exit, lock, now_ms, open_store_at, run_action_on, run_set_settings,
+    run_state,
+};
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
-pub(crate) use setup::{current_settings, flush_on_exit, now_ms, run_set_settings, run_state};
-pub use setup::{lock, run_action, setup};
-#[cfg(test)]
-pub(crate) use setup::{open_store_at, run_action_on};
-/// Fakes shared by the session and scheduler tests.
-#[cfg(test)]
-pub(crate) use tests::support as test_support;
+/// Fakes shared by the session, scheduler and app tests.
+#[cfg(any(test, feature = "test-support"))]
+#[path = "tests/support/mod.rs"]
+pub mod test_support;
 
 use effects::Outcome;
 use recovery::{RecoverOwed, RowFound, recovered, unread_row};

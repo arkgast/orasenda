@@ -3,7 +3,7 @@
 use orasenda_core::{Milestone, Preset, SessionId, SessionRecord, TimerError};
 
 use super::*;
-use crate::ipc::{MilestoneEvent, MilestoneKind, StartRequest, TimerCommandError};
+use crate::api::{MilestoneEvent, MilestoneKind, StartRequest, TimerCommandError};
 
 impl SessionService {
     /// Advances first (a command after the planned end completes the session), then acts

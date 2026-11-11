@@ -5,7 +5,7 @@ use std::any::Any;
 use orasenda_core::SessionRecord;
 
 use super::*;
-use crate::ipc::{MilestoneEvent, Settings, Theme, TimerCommandError, TimerView};
+use crate::api::{MilestoneEvent, Settings, Theme, TimerCommandError, TimerView};
 
 /// Everything the caller does after unlocking, in the order [`crate::scheduler::publish`]
 /// does it.

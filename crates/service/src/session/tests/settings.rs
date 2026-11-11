@@ -3,10 +3,9 @@
 use orasenda_core::{CustomSpec, NotificationStatus, Preset};
 use orasenda_store::{OpenError, settings};
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{Settings, SettingsErrorKind, StoreStatus, Theme};
+use crate::api::{Settings, SettingsErrorKind, StoreStatus, Theme};
 
 #[test]
 fn undecodable_setting_falls_back_to_default_without_rewrite() {

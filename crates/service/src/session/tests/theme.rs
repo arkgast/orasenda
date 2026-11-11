@@ -5,10 +5,9 @@ use std::sync::atomic::Ordering;
 use orasenda_core::{NotificationStatus, Preset};
 use orasenda_store::settings;
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{Settings, SettingsErrorKind, Theme};
+use crate::api::{Settings, SettingsErrorKind, Theme};
 use crate::scheduler;
 
 #[test]
@@ -197,43 +196,6 @@ fn settings_set_adopting_stored_values_applies_the_stored_theme() {
         .expect("changed");
     assert!(theme < changed, "{events:?}");
     assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
-}
-
-#[test]
-fn system_theme_clears_override() {
-    let host = TestHost::fresh(NotificationStatus::Granted);
-    for theme in [Theme::Dark, Theme::System] {
-        run_set_settings(
-            &host,
-            Settings {
-                theme,
-                ..Settings::default()
-            },
-        )
-        .expect("saves");
-    }
-    let applied: Vec<_> = host
-        .log()
-        .take()
-        .into_iter()
-        .filter(|e| matches!(e, Event::ApplyTheme(_)))
-        .collect();
-    assert_eq!(
-        applied,
-        [
-            Event::ApplyTheme(Theme::Dark),
-            Event::ApplyTheme(Theme::System)
-        ]
-    );
-    assert_eq!(scheduler::tauri_theme(Theme::System), None);
-    assert_eq!(
-        scheduler::tauri_theme(Theme::Light),
-        Some(tauri::Theme::Light)
-    );
-    assert_eq!(
-        scheduler::tauri_theme(Theme::Dark),
-        Some(tauri::Theme::Dark)
-    );
 }
 
 #[test]

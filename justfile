@@ -93,6 +93,8 @@ ci:
     "{{ just_executable() }}" file-size
     @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
     "{{ just_executable() }}" core-boundary
+    @echo "==> service boundary (no tauri, tao, wry, objc2, block2, windows)"
+    "{{ just_executable() }}" service-boundary
     @echo "==> core purity (no target_os in core)"
     "{{ just_executable() }}" core-purity
     @echo "==> contrast (self test, then the declared pairs)"
@@ -197,7 +199,22 @@ core-boundary:
         exit "$status"
     fi
 
-# Checks core, store and app for iOS and Android. The store builds SQLite from C, so the Android
+[private]
+[script]
+service-boundary:
+    tree="$(cargo tree -p orasenda-service --locked --target all -e normal --prefix none --format '{p}')"
+    status=0
+    offenders="$(grep -E '^(tauri|tao|wry|objc2|block2)|^windows(-core)? v' <<<"$tree")" || status=$?
+    if [ "$status" -eq 0 ]; then
+        echo "orasenda-service must not depend on tauri, tao, wry, objc2, block2 or windows (ADR-001):" >&2
+        echo "$offenders" >&2
+        exit 1
+    elif [ "$status" -ne 1 ]; then
+        echo "service boundary check failed: grep exited $status" >&2
+        exit "$status"
+    fi
+
+# Checks core, store, service and app for iOS and Android. The store builds SQLite from C, so the Android
 # target needs the NDK's clang and llvm-ar. NDK lookup, first match wins: ANDROID_NDK_HOME,
 # NDK_HOME, ANDROID_NDK_LATEST_HOME, then the newest folder under
 # ${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/.
@@ -233,4 +250,4 @@ mobile:
     fi
     export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
     export AR_aarch64_linux_android="$bin/llvm-ar"
-    cargo check -p orasenda-core -p orasenda-store -p orasenda --locked {{ mobile_targets }}
+    cargo check -p orasenda-core -p orasenda-store -p orasenda-service -p orasenda --locked {{ mobile_targets }}

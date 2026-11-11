@@ -6,10 +6,9 @@ use std::thread;
 use orasenda_core::{EndReason, EngineState, NotificationStatus, Preset, SessionId, SessionRecord};
 use orasenda_store::{WriteGate, active_session};
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{MilestoneKind, StoreStatus, TimerCommandErrorKind};
+use crate::api::{MilestoneKind, StoreStatus, TimerCommandErrorKind};
 
 #[test]
 fn recovers_running_snapshot_in_time() {

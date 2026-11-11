@@ -4,7 +4,7 @@ use orasenda_core::SessionRecord;
 use orasenda_store::{StoreError, Txn, active_session, focus_sessions};
 
 use super::*;
-use crate::ipc::{StoreStatus, TimerView};
+use crate::api::{StoreStatus, TimerView};
 
 impl SessionService {
     /// Records what the engine change owes the store, then tries to write it at once.

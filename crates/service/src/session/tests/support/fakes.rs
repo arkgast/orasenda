@@ -9,21 +9,21 @@ use orasenda_core::{
 };
 use orasenda_store::Store;
 
-use super::super::{Action, Platform, SessionService, Surfaces, ViewGate};
-use crate::ClockTick;
-use crate::ipc::{MilestoneEvent, Settings, StartRequest, Theme, TimerView};
+use crate::api::ClockTick;
+use crate::api::{MilestoneEvent, Settings, StartRequest, Theme, TimerView};
 use crate::scheduler::Host;
+use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
 
 /// 2026-11-07 00:00:00 UTC.
-pub(crate) const T0: u64 = 1_794_009_600_000;
-pub(crate) const MINUTE: u64 = 60_000;
-pub(crate) const CLASSIC_MS: u64 = 25 * MINUTE;
+pub const T0: u64 = 1_794_009_600_000;
+pub const MINUTE: u64 = 60_000;
+pub const CLASSIC_MS: u64 = 25 * MINUTE;
 /// The fake local time: one hour east of UTC, 12-hour clock.
-pub(crate) const OFFSET_MIN: i32 = 60;
-pub(crate) const CYCLE: HourCycle = HourCycle::H12;
+pub const OFFSET_MIN: i32 = 60;
+pub const CYCLE: HourCycle = HourCycle::H12;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Event {
+pub enum Event {
     Tick(TimerView),
     Milestone(MilestoneEvent),
     Clock(ClockTick),
@@ -39,21 +39,21 @@ pub(crate) enum Event {
 }
 
 #[derive(Clone, Default)]
-pub(crate) struct Log(Arc<Mutex<Vec<Event>>>);
+pub struct Log(Arc<Mutex<Vec<Event>>>);
 
 impl Log {
-    pub(crate) fn push(&self, event: Event) {
+    pub fn push(&self, event: Event) {
         self.0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(event);
     }
 
-    pub(crate) fn take(&self) -> Vec<Event> {
+    pub fn take(&self) -> Vec<Event> {
         std::mem::take(&mut *self.0.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
-    pub(crate) fn count(&self, matches: impl Fn(&Event) -> bool) -> usize {
+    pub fn count(&self, matches: impl Fn(&Event) -> bool) -> usize {
         self.0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -63,9 +63,9 @@ impl Log {
     }
 }
 
-pub(crate) struct FakeKeepAwake {
-    pub(crate) log: Log,
-    pub(crate) fail: bool,
+pub struct FakeKeepAwake {
+    pub log: Log,
+    pub fail: bool,
 }
 
 struct Guard(Log);
@@ -86,7 +86,7 @@ impl KeepAwake for FakeKeepAwake {
     }
 }
 
-pub(crate) struct FakeLocalTime;
+pub struct FakeLocalTime;
 
 impl LocalTime for FakeLocalTime {
     fn utc_offset_min(&self, _at_epoch_ms: u64) -> i32 {
@@ -100,7 +100,7 @@ impl LocalTime for FakeLocalTime {
 
 type Answer = Box<dyn FnOnce(NotificationStatus) + Send>;
 
-pub(crate) struct FakeNotifier {
+pub struct FakeNotifier {
     log: Log,
     status: Mutex<NotificationStatus>,
     answers: Mutex<Vec<Answer>>,
@@ -110,24 +110,24 @@ pub(crate) struct FakeNotifier {
 }
 
 impl FakeNotifier {
-    pub(crate) fn set_status(&self, status: NotificationStatus) {
+    pub fn set_status(&self, status: NotificationStatus) {
         *self.status.lock().unwrap_or_else(PoisonError::into_inner) = status;
     }
 
     /// Holds every `status` read until the returned sender sends or drops.
-    pub(crate) fn gate_status(&self) -> std::sync::mpsc::Sender<()> {
+    pub fn gate_status(&self) -> std::sync::mpsc::Sender<()> {
         let (tx, rx) = std::sync::mpsc::channel();
         *self.gate.lock().unwrap_or_else(PoisonError::into_inner) = Some(rx);
         tx
     }
 
     /// Makes `status` panic (after logging the read) while `on`.
-    pub(crate) fn panic_on_status(&self, on: bool) {
+    pub fn panic_on_status(&self, on: bool) {
         self.panic_on_status.store(on, Ordering::SeqCst);
     }
 
     /// Answers the oldest open request, as the OS would on a Foundation thread.
-    pub(crate) fn answer(&self, status: NotificationStatus) {
+    pub fn answer(&self, status: NotificationStatus) {
         self.set_status(status);
         let answer = self
             .answers
@@ -175,13 +175,13 @@ impl Notifier for FakeNotifier {
     }
 }
 
-pub(crate) struct Fakes {
-    pub(crate) platform: Platform,
-    pub(crate) log: Log,
-    pub(crate) notifier: Arc<FakeNotifier>,
+pub struct Fakes {
+    pub platform: Platform,
+    pub log: Log,
+    pub notifier: Arc<FakeNotifier>,
 }
 
-pub(crate) fn fakes(status: NotificationStatus, keep_awake_fails: bool) -> Fakes {
+pub fn fakes(status: NotificationStatus, keep_awake_fails: bool) -> Fakes {
     let log = Log::default();
     let notifier = Arc::new(FakeNotifier {
         log: log.clone(),
@@ -205,16 +205,16 @@ pub(crate) fn fakes(status: NotificationStatus, keep_awake_fails: bool) -> Fakes
 }
 
 /// The service's store, for the store's test hooks.
-pub(crate) fn db(service: &SessionService) -> &Store {
+pub fn db(service: &SessionService) -> &Store {
     service.store.as_ref().expect("the service has a store")
 }
 
-pub(crate) fn memory_store() -> Store {
+pub fn memory_store() -> Store {
     Store::open_in_memory("device-test").expect("in-memory store opens")
 }
 
 /// A service on a fresh in-memory store, notification status not determined.
-pub(crate) fn service() -> SessionService {
+pub fn service() -> SessionService {
     SessionService::new(
         Ok(memory_store()),
         fakes(NotificationStatus::NotDetermined, false).platform,
@@ -222,37 +222,37 @@ pub(crate) fn service() -> SessionService {
     )
 }
 
-pub(crate) fn start(preset: Preset) -> Action {
+pub fn start(preset: Preset) -> Action {
     Action::Start(StartRequest {
         preset,
         custom: None,
     })
 }
 
-pub(crate) fn id(text: &str) -> impl FnOnce() -> SessionId + use<> {
+pub fn id(text: &str) -> impl FnOnce() -> SessionId + use<> {
     let text = text.to_owned();
     move || SessionId(text)
 }
 
-pub(crate) struct HostInner {
-    pub(crate) service: Mutex<SessionService>,
-    pub(crate) surfaces: Surfaces,
-    pub(crate) gate: ViewGate,
-    pub(crate) notifier: Arc<FakeNotifier>,
-    pub(crate) now: AtomicU64,
-    pub(crate) log: Log,
+pub struct HostInner {
+    pub service: Mutex<SessionService>,
+    pub surfaces: Surfaces,
+    pub gate: ViewGate,
+    pub notifier: Arc<FakeNotifier>,
+    pub now: AtomicU64,
+    pub log: Log,
     /// How many host hooks that must run unlocked found the service locked.
-    pub(crate) under_lock: std::sync::atomic::AtomicUsize,
+    pub under_lock: std::sync::atomic::AtomicUsize,
 }
 
 /// A recording [`Host`]: emits and renders go to the log.
 #[derive(Clone)]
-pub(crate) struct TestHost(pub(crate) Arc<HostInner>);
+pub struct TestHost(pub Arc<HostInner>);
 
 impl TestHost {
     /// A host for a user who turned notifications on (`notify.session_end` is stored as
     /// `true`). Use [`TestHost::fresh`] for fresh-install semantics.
-    pub(crate) fn new(status: NotificationStatus) -> TestHost {
+    pub fn new(status: NotificationStatus) -> TestHost {
         let store = memory_store();
         store
             .write(0, |txn| {
@@ -263,7 +263,7 @@ impl TestHost {
     }
 
     /// A host on a fresh install: the defaults, notifications off.
-    pub(crate) fn fresh(status: NotificationStatus) -> TestHost {
+    pub fn fresh(status: NotificationStatus) -> TestHost {
         TestHost::on_store(memory_store(), status)
     }
 
@@ -276,7 +276,7 @@ impl TestHost {
         TestHost::with(SessionService::new(Ok(store), platform, T0), log, notifier)
     }
 
-    pub(crate) fn with(service: SessionService, log: Log, notifier: Arc<FakeNotifier>) -> TestHost {
+    pub fn with(service: SessionService, log: Log, notifier: Arc<FakeNotifier>) -> TestHost {
         TestHost(Arc::new(HostInner {
             service: Mutex::new(service),
             surfaces: Surfaces::default(),
@@ -296,11 +296,11 @@ impl TestHost {
         }
     }
 
-    pub(crate) fn set_now(&self, now_ms: u64) {
+    pub fn set_now(&self, now_ms: u64) {
         self.0.now.store(now_ms, Ordering::SeqCst);
     }
 
-    pub(crate) fn log(&self) -> &Log {
+    pub fn log(&self) -> &Log {
         &self.0.log
     }
 }

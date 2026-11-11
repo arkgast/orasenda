@@ -44,9 +44,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spike::commands::spike_overlay_choice,
         ])
         .events(tauri_specta::collect_events![
-            ClockTick,
-            ipc::TimerView,
-            ipc::MilestoneEvent,
+            ipc::ClockTickEvent,
+            ipc::TimerTickEvent,
+            ipc::TimerMilestoneEvent,
             ipc::SettingsChanged,
             ipc::Navigate,
             spike::OverlayShow,
@@ -97,7 +97,7 @@ pub fn run() {
             session::setup(app)?;
             #[cfg(desktop)]
             tray::setup(app)?;
-            scheduler::spawn(app.handle().clone())?;
+            scheduler::spawn(scheduler::AppHost::new(app.handle()))?;
             spike::setup(app)?;
             lifecycle::finish_launch(app.handle());
             Ok(())
@@ -165,7 +165,7 @@ mod tests {
             serde_json::to_value(&tick).unwrap(),
             serde_json::json!({ "epochMs": 1_794_009_600_123_u64, "clock": "09:30", "idleFinish": null })
         );
-        assert_eq!(ClockTick::NAME, "clock-tick");
+        assert_eq!(ipc::ClockTickEvent::NAME, "clock-tick");
     }
 
     /// The permission identifiers a capability file grants, and the windows it applies to.
