@@ -120,6 +120,8 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   Dialog: { open: true, title: "Title", children: "Body" },
   FullScreenFocus: { remaining: "25:00", onExit: noop },
   Input: { label: "Name" },
+  Choice: { children: "Classic" },
+  ChoiceGroup: { legend: "Preset", children: "Body" },
   TextArea: { label: "Note" },
   CapturePad: {
     open: true,
