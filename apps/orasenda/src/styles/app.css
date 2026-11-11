@@ -24,45 +24,29 @@ body {
   font-weight: var(--type-body-font-weight);
 }
 
-/* The rail on the left, the header and the page beside it. */
+/* The rail on the left (not when compact) and the page beside it. The box is the window, so the
+   document never scrolls; a page that needs more scrolls inside itself. */
 .app {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .app-column {
   flex: auto;
   min-inline-size: 0;
+  min-block-size: 0;
   padding: var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.app-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.app-brand {
-  margin: 0;
-  font-size: var(--type-heading-font-size);
-  line-height: var(--type-heading-line-height);
-  font-weight: var(--type-heading-font-weight);
-}
-
-.app-separator {
-  color: var(--ink-muted);
-}
-
-.app-info {
-  margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--type-body-sm-font-size);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-font-weight);
+.app-compact .app-column {
+  padding: var(--space-4);
+  gap: var(--space-4);
 }
 
 /* Each page's one h1; it takes focus after navigation. */
@@ -88,6 +72,14 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-6);
+}
+
+/* The top row of a placeholder page: the Pages button (compact) beside the title. */
+.placeholder-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--hit-min);
 }
 
 .today {
@@ -130,20 +122,10 @@ body {
 }
 
 /* Settings: the window is bounded so only the ScrollRegion scrolls. */
-.app-bound {
-  position: fixed;
-  inset: 0;
-}
-
 .app-bound .app-column {
   min-block-size: 0;
   padding: 0;
   gap: 0;
-}
-
-.app-bound .app-header {
-  padding-block-start: var(--space-6);
-  padding-inline: var(--space-6);
 }
 
 .app-bound .app-main {

@@ -99,27 +99,11 @@ test("styles_css_values_are_tokens_or_keywords", () => {
   }
 });
 
-test("brand_uses_heading_type_style", () => {
-  const brand = rule(".app-brand");
-  expect(brand.get("margin")).toBe("0");
-  expect(brand.get("font-size")).toBe("var(--type-heading-font-size)");
-  expect(brand.get("line-height")).toBe("var(--type-heading-line-height)");
-  expect(brand.get("font-weight")).toBe("var(--type-heading-font-weight)");
-});
-
 test("page_title_uses_title_type_style", () => {
   const title = rule(".app-page-title");
   expect(title.get("font-size")).toBe("var(--type-title-font-size)");
   expect(title.get("line-height")).toBe("var(--type-title-line-height)");
   expect(title.get("font-weight")).toBe("var(--type-title-font-weight)");
-});
-
-test("info_line_uses_body_sm_in_ink_muted", () => {
-  const info = rule(".app-info");
-  expect(info.get("font-size")).toBe("var(--type-body-sm-font-size)");
-  expect(info.get("line-height")).toBe("var(--type-body-sm-line-height)");
-  expect(info.get("font-weight")).toBe("var(--type-body-sm-font-weight)");
-  expect(info.get("color")).toBe("var(--ink-muted)");
 });
 
 // The finish line and "Timer unavailable.".

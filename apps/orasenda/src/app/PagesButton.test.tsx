@@ -38,7 +38,9 @@ test("pages_button_sends_six_items_current_checked", async () => {
   await settle();
   const call = backend.calls.find((c) => c.cmd === "native_menu_popup");
   const request = (
-    call?.args as { request: { items: Array<Record<string, unknown>>; x: number; y: number } }
+    (call as { args: unknown }).args as {
+      request: { items: Array<Record<string, unknown>>; x: number; y: number };
+    }
   ).request;
   expect(request.items.map((i) => i.label)).toEqual(NAMES);
   expect(request.items.map((i) => i.accelerator)).toEqual(
