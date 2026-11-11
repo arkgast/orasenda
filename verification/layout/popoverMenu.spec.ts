@@ -339,3 +339,40 @@ for (const viewport of [
     }
   });
 }
+
+test("popover_menu_stays_inside_a_short_window", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 240 });
+  await openSpecimen(page, "PopoverMenu");
+  const space2 = await token(page, "--space-2");
+  let anyScrolls = false;
+  for (const form of FORMS) {
+    await openMenu(page, form.trigger);
+    const panel = page.locator(PANEL);
+    const r = await panel.evaluate((p) => {
+      const b = p.getBoundingClientRect();
+      return {
+        top: b.top,
+        bottom: b.bottom,
+        vh: document.documentElement.clientHeight,
+        scrolls: p.scrollHeight > p.clientHeight,
+      };
+    });
+    expect(r.top).toBeGreaterThanOrEqual(space2 - 1);
+    expect(r.bottom).toBeLessThanOrEqual(r.vh - space2 + 1);
+    if (r.scrolls) {
+      anyScrolls = true;
+      await page.keyboard.press("End");
+      const last = panel.locator('[role^="menuitem"]').last();
+      await expect(last).toBeFocused();
+      const lb = await last.evaluate((e) => {
+        const b = e.getBoundingClientRect();
+        return { top: b.top, bottom: b.bottom, vh: document.documentElement.clientHeight };
+      });
+      expect(lb.top).toBeGreaterThanOrEqual(0);
+      expect(lb.bottom).toBeLessThanOrEqual(lb.vh);
+    }
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0);
+  }
+  expect(anyScrolls).toBe(true);
+});
