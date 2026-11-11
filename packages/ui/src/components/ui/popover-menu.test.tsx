@@ -432,3 +432,10 @@ test("popover_menu_click_read_only_row_does_nothing", async () => {
   await settle();
   expect(log).toEqual([]);
 });
+
+test("popover_menu_caps_height_at_radix_available_height", () => {
+  render(<Host log={[]} />);
+  const panel = document.querySelector(PANEL) as HTMLElement;
+  expect(panel.style.maxBlockSize).toBe("var(--radix-dropdown-menu-content-available-height)");
+  expect(panel.className).not.toContain("max-h-screen");
+});
