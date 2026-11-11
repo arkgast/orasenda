@@ -5,7 +5,7 @@ use tauri::{AppHandle, Wry};
 
 use crate::ipc::{Mode, TimerView};
 use crate::lifecycle;
-use crate::session::{self, Action};
+use crate::runtime::session::{self, Action};
 
 /// Menu labels, also used as the items' ids. Plain and kind, no exclamation marks.
 pub(crate) const PAUSE: &str = "Pause";

@@ -37,7 +37,7 @@ use tauri::tray::{TrayIcon, TrayIconBuilder};
 use tauri::{AppHandle, Manager, Wry};
 
 use crate::ipc::TimerView;
-use crate::session::{NativeSurface, Surfaces};
+use crate::runtime::session::{NativeSurface, Surfaces};
 
 #[cfg(test)]
 pub(crate) use menu::{

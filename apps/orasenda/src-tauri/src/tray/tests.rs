@@ -8,7 +8,7 @@ use orasenda_core::{EngineState, NotificationStatus, format_remaining, spoken_re
 use super::state::{DRAW_RETRIES, Drawn, TrayState};
 use super::*;
 use crate::ipc::{Mode, StoreStatus};
-use crate::session::Action;
+use crate::runtime::session::Action;
 
 mod retry;
 

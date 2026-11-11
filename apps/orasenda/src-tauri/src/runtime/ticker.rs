@@ -11,20 +11,10 @@ use orasenda_core::clock::delay_to_next_second;
 use orasenda_service::api::{MilestoneEvent, Settings, Theme, TimerView};
 use orasenda_service::session::{SessionService, Surfaces, ViewGate};
 use tauri::{AppHandle, Manager};
-use tauri_specta::Event;
 
 pub use orasenda_service::scheduler::*;
 
-use crate::ipc::{ClockTick, ClockTickEvent, SettingsChanged, TimerMilestoneEvent, TimerTickEvent};
-
-/// The Tauri theme for a saved one: `System` clears the override.
-pub(crate) fn tauri_theme(theme: Theme) -> Option<tauri::Theme> {
-    match theme {
-        Theme::System => None,
-        Theme::Light => Some(tauri::Theme::Light),
-        Theme::Dark => Some(tauri::Theme::Dark),
-    }
-}
+use crate::ipc::ClockTick;
 
 /// The running app as the service's [`Host`]. A newtype: the trait lives in
 /// `orasenda-service`, `AppHandle` in Tauri, so the app can't implement one for the other.
@@ -60,35 +50,27 @@ impl Host for AppHost {
     }
 
     fn now_ms(&self) -> u64 {
-        crate::session::now_ms()
+        super::session::now_ms()
     }
 
     fn emit_timer_tick(&self, view: &TimerView) {
-        if let Err(error) = TimerTickEvent(view.clone()).emit(&self.0) {
-            eprintln!("session-scheduler: could not emit timer-tick: {error}");
-        }
+        super::events::emit_timer_tick(&self.0, view);
     }
 
     fn emit_milestone(&self, event: &MilestoneEvent) {
-        if let Err(error) = TimerMilestoneEvent(event.clone()).emit(&self.0) {
-            eprintln!("session-scheduler: could not emit timer-milestone: {error}");
-        }
+        super::events::emit_milestone(&self.0, event);
     }
 
     fn emit_clock_tick(&self, tick: &ClockTick) {
-        if let Err(error) = ClockTickEvent(tick.clone()).emit(&self.0) {
-            eprintln!("session-scheduler: could not emit clock-tick: {error}");
-        }
+        super::events::emit_clock_tick(&self.0, tick);
     }
 
     fn emit_settings_changed(&self, settings: &Settings) {
-        if let Err(error) = SettingsChanged(settings.clone()).emit(&self.0) {
-            eprintln!("session-scheduler: could not emit settings-changed: {error}");
-        }
+        super::events::emit_settings_changed(&self.0, settings);
     }
 
     fn apply_theme(&self, theme: Theme) {
-        self.0.set_theme(tauri_theme(theme));
+        self.0.set_theme(super::events::tauri_theme(theme));
     }
 }
 
@@ -119,6 +101,7 @@ mod tests {
     use orasenda_service::session::run_set_settings;
     use orasenda_service::session::test_support::{Event, TestHost};
 
+    use super::super::events::tauri_theme;
     use super::*;
 
     #[test]

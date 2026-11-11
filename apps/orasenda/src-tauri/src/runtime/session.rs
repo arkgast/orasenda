@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 pub use orasenda_service::session::*;
 
-use crate::scheduler::{self, AppHost};
+use crate::runtime::ticker::{self as scheduler, AppHost};
 
 /// The wall clock in epoch milliseconds: the only place the app reads it.
 pub fn now_ms() -> u64 {
