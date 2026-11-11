@@ -134,7 +134,7 @@ test("popover_menu_keyboard_path", async ({ page }) => {
   const quickMs = await token(page, "--duration-quick");
   expect(quickMs).toBeGreaterThan(0);
   await page.waitForTimeout(quickMs + 250);
-  await expect(page.locator(".os-tooltip-panel")).toHaveCount(0);
+  await expect(page.locator("[data-slot=tooltip]")).toHaveCount(0);
   await page.keyboard.press("Space");
   await expect(panel).toBeVisible();
   await page.keyboard.press("Escape");
@@ -162,7 +162,7 @@ test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", async (
   await page.mouse.click(2, 2);
   const other = page.getByRole("button", { name: "Checkbox rows", exact: true });
   await other.hover();
-  await expect(page.locator(".os-tooltip-panel")).toHaveCount(1);
+  await expect(page.locator("[data-slot=tooltip]")).toHaveCount(1);
   const name = "Preset for the next session";
   const trigger = page.getByRole("button", { name, exact: true });
   await trigger.focus();

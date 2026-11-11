@@ -7,9 +7,9 @@ import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen";
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
+import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
 import { IconButtonSpecimen } from "./IconButton.tsx";
 import { PopoverMenuSpecimen } from "./PopoverMenu.tsx";
-import { TooltipSpecimen } from "./Tooltip.tsx";
 
 export const specimens: Record<string, () => ReactElement> = {
   IconButton: IconButtonSpecimen,

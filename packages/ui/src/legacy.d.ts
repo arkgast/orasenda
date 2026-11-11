@@ -37,11 +37,6 @@ export declare function CommandPalette(props: CommandPaletteProps): React.ReactE
 export interface IconButtonProps { label: string; icon: React.ReactNode; shortcut?: string | string[]; shortcutLabel?: string; keyshortcuts?: boolean; size?: 'md' | 'round'; onClick?: () => void; disabled?: boolean; 'aria-haspopup'?: 'menu'; id?: string; 'aria-expanded'?: boolean; 'aria-controls'?: string; 'aria-describedby'?: string }
 export declare function IconButton(props: IconButtonProps): React.ReactElement;
 // end IconButton
-// Tooltip
-/** Wraps one focusable trigger whose accessible name holds label (an IconButton's is exactly label); the host sets that trigger's aria-keyshortcuts from describeShortcut(shortcut).aria (IconButton does this itself). The panel is aria-hidden, placed by script in the nearest open dialog or the page body. It never shows while its child has aria-expanded true (a menu trigger with its menu open), so Esc reaches the menu. */
-export interface TooltipProps { label: string; shortcut?: string; placement?: 'auto'; children: React.ReactElement }
-export declare function Tooltip(props: TooltipProps): React.ReactElement;
-// end Tooltip
 // PopoverMenu
 /** One row. kind 'radio' is a menuitemradio, 'checkbox' a menuitemcheckbox (choosing it toggles: the host flips checked), 'link' a menuitem (the Settings row; a separator comes before the first link row that follows another kind). meta is the right-aligned detail ("25 / 5"). disabled gives aria-disabled: the row stays focusable and is never chosen. */
 export interface PopoverMenuItem { id: string; label: string; meta?: string; kind: 'radio' | 'checkbox' | 'link'; checked?: boolean; disabled?: boolean }
@@ -60,7 +55,7 @@ declare global {
       NavRail: (props: { current: "today" | "board" | "calendar" | "routines" | "review" | "settings"; onNavigate: (page: "today" | "board" | "calendar" | "routines" | "review" | "settings") => void }) => React.ReactElement; KanbanColumn: typeof KanbanColumn; CommandPalette: typeof CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton; NowLine: (props: { time: string }) => React.ReactElement;
       ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement; SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
-      IconButton: typeof IconButton; Tooltip: typeof Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
+      IconButton: typeof IconButton; Tooltip: typeof import("./components/ui/tooltip").Tooltip; Kbd: (props: { keys: string } & ({ inTooltip: true; spoken?: string } | { inTooltip?: false; spoken: string })) => React.ReactElement; describeShortcut: (glyphs: string) => { aria: string; spoken: string }; PopoverMenu: typeof PopoverMenu;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;
     };

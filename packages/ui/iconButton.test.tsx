@@ -95,7 +95,7 @@ test("icon_button_shortcut_array_joins_aria_and_label_overrides_kbd", () => {
   act(() => {
     vi.advanceTimersByTime(1000);
   });
-  expect(document.querySelector(".os-tooltip-panel .os-kbd")?.textContent).toBe("⌘1–6");
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⌘1–6");
 });
 
 test("icon_button_shortcut_array_without_label_shows_chords_joined", () => {
@@ -105,7 +105,7 @@ test("icon_button_shortcut_array_without_label_shows_chords_joined", () => {
   act(() => {
     vi.advanceTimersByTime(1000);
   });
-  expect(document.querySelector(".os-tooltip-panel .os-kbd")?.textContent).toBe("⌘1 ⌘2");
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⌘1 ⌘2");
 });
 
 test("icon_button_keyshortcuts_false_shows_kbd_without_aria", () => {
@@ -116,7 +116,7 @@ test("icon_button_keyshortcuts_false_shows_kbd_without_aria", () => {
   act(() => {
     vi.advanceTimersByTime(1000);
   });
-  expect(document.querySelector(".os-tooltip-panel .os-kbd")?.textContent).toBe("Space");
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("Space");
 });
 
 test("icon_button_describedby_passes_through", () => {

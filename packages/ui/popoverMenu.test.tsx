@@ -280,11 +280,11 @@ test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", () => {
   act(() => {
     vi.advanceTimersByTime(200);
   });
-  expect(document.querySelector(".os-tooltip-panel")).not.toBeNull();
+  expect(document.querySelector("[data-slot=tooltip]")).not.toBeNull();
   key("Escape");
   expect(log).toEqual(["close"]);
   expect(screen.queryByRole("menu")).toBeNull();
-  expect(document.querySelector(".os-tooltip-panel")).toBeNull();
+  expect(document.querySelector("[data-slot=tooltip]")).toBeNull();
   expect(document.activeElement).toBe(trigger());
 });
 

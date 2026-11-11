@@ -190,6 +190,7 @@
   --container-7xl: 1280px;
   --container-start-compact: 400px;
   --container-ring-clock: 480px;
+  --container-tooltip: 40ch;
 }
 
 @utility duration-quick {

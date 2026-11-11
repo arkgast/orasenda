@@ -1,10 +1,14 @@
-import { type ReactElement, useState } from "react";
-import { Button, Dialog, describeShortcut, IconButton, Tooltip } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
-import { Stop } from "./icons.tsx";
+import { type ReactElement, useRef, useState } from "react";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { Stop } from "../../../specimens/icons.tsx";
+import { Button, Dialog, describeShortcut, IconButton } from "../../index";
+import { Tooltip } from "./tooltip";
 
 export function TooltipSpecimen(): ReactElement {
   const [open, setOpen] = useState(false);
+  const [cancels, setCancels] = useState(0);
+  const [nativeOpen, setNativeOpen] = useState(false);
+  const native = useRef<HTMLDialogElement>(null);
   return (
     <>
       <Frame state="tooltip-preset-summary" width={360} height={140}>
@@ -27,6 +31,27 @@ export function TooltipSpecimen(): ReactElement {
       </Frame>
       <Frame state="tooltip-dialog" width={360} height={80}>
         <IconButton label="Open dialog" icon={<Stop />} onClick={() => setOpen(true)} />
+      </Frame>
+      <Frame state="tooltip-native-dialog" width={360} height={80}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setNativeOpen(true);
+            native.current?.showModal();
+          }}
+        >
+          Open native dialog
+        </Button>
+        {/* A legacy native modal shell (top layer): the tooltip must join it. */}
+        <dialog
+          ref={native}
+          aria-label="Native layer"
+          data-cancels={cancels}
+          onCancel={() => setCancels((n) => n + 1)}
+          onClose={() => setNativeOpen(false)}
+        >
+          {nativeOpen ? <IconButton label="Native tip" icon={<Stop />} /> : null}
+        </dialog>
       </Frame>
       {open ? (
         <Dialog

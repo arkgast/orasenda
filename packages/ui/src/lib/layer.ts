@@ -3,8 +3,8 @@
 // Tooltip or PopoverMenu opens inside the layer that holds its anchor, and Esc closes only the topmost one.
 const RADIX_LAYER = '[data-slot="dialog-content"][data-state="open"]';
 const NATIVE_LAYER = "dialog[open]";
-// Legacy Tooltip and PopoverMenu panels live inside the layer that holds their anchor and sit above it.
-const POPUP = ".os-tooltip, .os-popover-panel";
+// Tooltip and legacy PopoverMenu panels live inside the layer that holds their anchor and sit above it.
+const POPUP = "[data-slot=tooltip], .os-popover-panel";
 
 /** Every open layer, in document order (the last one is on top). */
 function openLayers(doc: Document): HTMLElement[] {
