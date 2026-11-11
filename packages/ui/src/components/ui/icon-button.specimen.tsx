@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
-import { IconButton } from "../src/index.ts";
-import { Frame } from "./Frame.tsx";
-import { Menu, Pause, Play, Shrink, Stop } from "./icons.tsx";
+import { Frame } from "../../../specimens/Frame.tsx";
+import { Menu, Pause, Play, Shrink, Stop } from "../../../specimens/icons.tsx";
+import { IconButton } from "../../index";
 
 export function IconButtonSpecimen(): ReactElement {
   return (

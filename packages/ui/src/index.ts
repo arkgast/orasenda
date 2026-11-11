@@ -9,7 +9,7 @@ export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
 export { FullScreenFocus } from "./legacy.js";
 export { HabitDots } from "./components/ui/habit-dots";
-export { IconButton } from "./legacy.js";
+export { IconButton } from "./components/ui/icon-button";
 export { InlineNotice } from "./components/ui/inline-notice";
 export { Input } from "./components/ui/input";
 export type { InputProps } from "./components/ui/input";
