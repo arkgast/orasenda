@@ -23,6 +23,7 @@ const IDLE: TimerView_Serialize = {
   progress: 0,
   sessionId: null,
   preset: null,
+  plannedMin: null,
   finish: null,
   store: "ok",
   notifications: "granted",
@@ -38,6 +39,7 @@ const RUNNING: TimerView_Serialize = {
   progress: 0.001,
   sessionId: "s1",
   preset: "classic",
+  plannedMin: 25,
   finish: "15:20",
 };
 
