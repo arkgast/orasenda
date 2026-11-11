@@ -59,7 +59,7 @@ File size and module layout rules are in [Code structure and size](#code-structu
 Rules from the [structure refactor spec](specs/2026-11-10-structure-refactor.md).
 1. **Size.** A tracked source file (`.rs`, `.ts`, `.tsx`, `.js`, `.css`) is at most 500 lines,
    tests included. Generated files are exempt (`apps/orasenda/src/bindings.ts`,
-   `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`). `just file-size` runs in `ci`.
+   `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`) and the archived `design/reviews/`. `just file-size` runs in `ci`.
    Files that predate the rule sit in `scripts/file-size-allowlist.txt` with their line count.
    The guard fails when a listed file grows, when a listed file is back under 500 (remove its
    entry), or when an unlisted file passes 500. The list only shrinks.

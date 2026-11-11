@@ -9,6 +9,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 allowlist="${FILE_SIZE_ALLOWLIST:-scripts/file-size-allowlist.txt}"
 
+bad_lines=()
 listed_paths=()
 listed_counts=()
 if [ -f "$allowlist" ]; then
@@ -16,6 +17,11 @@ if [ -f "$allowlist" ]; then
     case "$line" in ''|'#'*) continue ;; esac
     count="${line%% *}"
     path="${line#* }"
+    case "$count" in ''|*[!0-9]*) bad_lines+=("allowlist line is not '<lines> <path>': $line"); continue ;; esac
+    if [ "$path" = "$line" ] || [ -z "$path" ]; then bad_lines+=("allowlist line is not '<lines> <path>': $line"); continue; fi
+    dup=0
+    for q in ${listed_paths[@]+"${listed_paths[@]}"}; do [ "$q" = "$path" ] && dup=1; done
+    if [ "$dup" = 1 ]; then bad_lines+=("allowlist lists $path twice; keep one entry"); continue; fi
     listed_counts+=("$count")
     listed_paths+=("$path")
   done < "$allowlist"
@@ -39,6 +45,8 @@ exempt() {
 
 failures=0
 fail() { echo "file-size: $1"; failures=$((failures + 1)); }
+
+for b in ${bad_lines[@]+"${bad_lines[@]}"}; do fail "$b"; done
 
 while IFS= read -r -d '' path; do
   exempt "$path" && continue

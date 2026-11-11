@@ -71,5 +71,14 @@ expect "other file types are ignored" 0 "$rc" "$out"
 fresh; lines "src/with space.tsx" 501; run
 expect "paths with spaces are checked" 1 "$rc" "$out" "with space.tsx"
 
+fresh; lines src/big.rs 600; printf 'abc src/big.rs\n' >> scripts/file-size-allowlist.txt; run
+expect "non-numeric count fails" 1 "$rc" "$out" "not '<lines> <path>'"
+
+fresh; lines src/big.rs 600; printf 'src/big.rs\n' >> scripts/file-size-allowlist.txt; run
+expect "line without a count fails" 1 "$rc" "$out" "not '<lines> <path>'"
+
+fresh; lines src/big.rs 600; printf '600 src/big.rs\n600 src/big.rs\n' >> scripts/file-size-allowlist.txt; run
+expect "duplicate entry fails" 1 "$rc" "$out" "twice"
+
 [ "$failures" = 0 ] || { echo "$failures failure(s)"; exit 1; }
 echo "all file-size tests passed"
