@@ -80,12 +80,6 @@
   block-size: var(--icon-md);
 }
 
-/* The panel never outgrows the room Radix leaves it: a tall one scrolls inside (PopoverMenu README).
-   The component caps at the screen height only, which overflows a window as short as 240. */
-[data-slot="popover-menu"] {
-  max-block-size: var(--radix-dropdown-menu-content-available-height);
-}
-
 .today-top-end {
   min-block-size: var(--hit-min);
 }

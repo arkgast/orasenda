@@ -53,6 +53,10 @@ function tokenPx(name: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// The panel never outgrows the room Radix leaves it. Tailwind's arbitrary-value syntax is not allowed here, so
+// the cap is an inline style on the Radix variable (as timer-ring does with its CSS functions).
+const CAP = { maxBlockSize: "var(--radix-dropdown-menu-content-available-height)" } as const;
+
 const focusTarget = (a: HTMLElement | null | undefined): HTMLElement | null =>
   !a ? null : a.matches(FOCUSABLE) ? a : a.querySelector<HTMLElement>(FOCUSABLE);
 
@@ -297,7 +301,8 @@ export function PopoverMenu({
           sideOffset={tokenPx("--space-1")}
           collisionPadding={tokenPx("--space-2")}
           loop
-          className="z-popover flex max-h-screen w-popover-width max-w-screen flex-col overflow-y-auto rounded-md border border-line-strong bg-surface-overlay py-2 text-body text-ink shadow-overlay"
+          className="z-popover flex w-popover-width max-w-screen flex-col overflow-y-auto rounded-md border border-line-strong bg-surface-overlay py-2 text-body text-ink shadow-overlay"
+          style={CAP}
           onKeyDown={onKeyDown}
           {...openFocus}
           onCloseAutoFocus={(event) => {
