@@ -5,8 +5,7 @@ use orasenda_core::{
 };
 
 use super::*;
-use crate::ClockTick;
-use crate::ipc::{Mode, TimerState, TimerView};
+use crate::api::{ClockTick, Mode, TimerState, TimerView};
 
 impl SessionService {
     /// `timer_state`: a [`SessionService::tick`], plus the drained `pending`.

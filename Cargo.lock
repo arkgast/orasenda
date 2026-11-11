@@ -2089,6 +2089,7 @@ version = "0.1.0"
 dependencies = [
  "orasenda-core",
  "orasenda-platform-macos",
+ "orasenda-service",
  "orasenda-store",
  "serde",
  "serde_json",
@@ -2121,6 +2122,19 @@ dependencies = [
  "objc2-foundation",
  "objc2-user-notifications",
  "orasenda-core",
+]
+
+[[package]]
+name = "orasenda-service"
+version = "0.1.0"
+dependencies = [
+ "orasenda-core",
+ "orasenda-store",
+ "serde",
+ "serde_json",
+ "specta",
+ "specta-typescript",
+ "uuid",
 ]
 
 [[package]]

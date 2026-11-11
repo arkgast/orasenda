@@ -7,7 +7,7 @@ use orasenda_core::{KeepAwake, LocalTime, NotificationStatus, Notifier, Session,
 use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
-use crate::ipc::{MilestoneEvent, Settings, StartRequest, StoreStatus, Theme, TimerView};
+use crate::api::{MilestoneEvent, Settings, StartRequest, StoreStatus, Theme, TimerView};
 
 /// The OS services the session uses. The notifier is also managed on its own
 /// (`tauri::State<Arc<dyn Notifier>>`), so `publish` reaches it without the service lock.

@@ -5,10 +5,9 @@ use std::sync::atomic::Ordering;
 use orasenda_core::{NotificationStatus, Preset, Session};
 use orasenda_store::active_session;
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{MilestoneKind, Settings, SettingsErrorKind, Theme};
+use crate::api::{MilestoneKind, Settings, SettingsErrorKind, Theme};
 use crate::scheduler;
 
 #[test]

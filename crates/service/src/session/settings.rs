@@ -5,7 +5,7 @@ use orasenda_store::{StoreError, Txn, meta, settings};
 use serde::de::DeserializeOwned;
 
 use super::*;
-use crate::ipc::{Settings, SettingsError, SettingsErrorKind, StoreStatus, Theme};
+use crate::api::{Settings, SettingsError, SettingsErrorKind, StoreStatus, Theme};
 
 /// What a successful settings save tells the caller, for the side effects after unlock.
 #[derive(Debug, Clone, PartialEq)]

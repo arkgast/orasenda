@@ -5,10 +5,9 @@ use orasenda_core::{
 };
 use orasenda_store::active_session;
 
+use super::super::test_support::*;
 use super::super::*;
-use super::helpers::*;
-use super::support::*;
-use crate::ipc::{MilestoneKind, Settings, StoreStatus, Theme};
+use crate::api::{MilestoneKind, Settings, StoreStatus, Theme};
 
 fn row_a() -> SessionRecord {
     // `has_row` probes by id only.

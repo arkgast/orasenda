@@ -7,17 +7,17 @@ use orasenda_core::{
 };
 use orasenda_store::{Store, StoreError, Txn, active_session, focus_sessions, meta, settings};
 
-use super::super::*;
-use super::support::*;
-use crate::ipc::{
+use super::fakes::*;
+use crate::api::{
     MilestoneEvent, MilestoneKind, Settings, Theme, TimerCommandErrorKind, TimerView,
 };
+use crate::session::*;
 
-pub(super) const WAIT: Duration = Duration::from_secs(10);
+pub(crate) const WAIT: Duration = Duration::from_secs(10);
 /// How long a blocked thread is watched to show it has not moved on.
-pub(super) const STILL_BLOCKED: Duration = Duration::from_millis(300);
+pub(crate) const STILL_BLOCKED: Duration = Duration::from_millis(300);
 
-pub(super) fn milestone(
+pub(crate) fn milestone(
     kind: MilestoneKind,
     reason: Option<EndReason>,
     id: &str,
@@ -29,11 +29,11 @@ pub(super) fn milestone(
     }
 }
 
-pub(super) fn kind(effects: &Effects) -> Option<TimerCommandErrorKind> {
+pub(crate) fn kind(effects: &Effects) -> Option<TimerCommandErrorKind> {
     effects.result.as_ref().err().map(|error| error.kind)
 }
 
-pub(super) fn snapshot(store: &Store) -> Option<Session> {
+pub(crate) fn snapshot(store: &Store) -> Option<Session> {
     store
         .read(active_session::get::<Session>)
         .expect("snapshot reads")
@@ -41,7 +41,7 @@ pub(super) fn snapshot(store: &Store) -> Option<Session> {
 
 /// Whether `record`'s row exists: inserting it again fails only when it does. The probe
 /// always rolls back.
-pub(super) fn has_row(store: &Store, record: &SessionRecord) -> bool {
+pub(crate) fn has_row(store: &Store, record: &SessionRecord) -> bool {
     let probe: Result<(), StoreError> =
         store.write(T0, |txn| match focus_sessions::insert(txn, record) {
             Ok(()) => Err(StoreError::Json("absent".into())),
@@ -60,7 +60,7 @@ pub(super) fn has_row(store: &Store, record: &SessionRecord) -> bool {
     }
 }
 
-pub(super) fn relaunch(service: &mut SessionService, now_ms: u64) -> SessionService {
+pub(crate) fn relaunch(service: &mut SessionService, now_ms: u64) -> SessionService {
     let store = service.store.take().expect("the service has a store");
     SessionService::new(
         Ok(store),
@@ -69,18 +69,18 @@ pub(super) fn relaunch(service: &mut SessionService, now_ms: u64) -> SessionServ
     )
 }
 
-pub(super) fn ended_record(effects: &Effects) -> SessionRecord {
+pub(crate) fn ended_record(effects: &Effects) -> SessionRecord {
     effects.ended.clone().expect("a session ended")
 }
 
-pub(super) fn marker(s: &SessionService) -> Option<String> {
+pub(crate) fn marker(s: &SessionService) -> Option<String> {
     db(s)
         .read(|txn| meta::get(txn, META_NOTIFY_REVIEW))
         .expect("reads")
 }
 
 /// One launch read with the store failing reads; the next read succeeds.
-pub(super) fn failing_read<T>(
+pub(crate) fn failing_read<T>(
     s: &SessionService,
     read: impl FnOnce(&Txn) -> Result<T, StoreError>,
 ) -> Result<T, StoreError> {
@@ -91,7 +91,7 @@ pub(super) fn failing_read<T>(
     result
 }
 
-pub(super) fn fifty_ten() -> Settings {
+pub(crate) fn fifty_ten() -> Settings {
     Settings {
         theme: Theme::System,
         preset: Preset::FiftyTen,
@@ -100,7 +100,7 @@ pub(super) fn fifty_ten() -> Settings {
 }
 
 /// A pre-B store: the review marker pending and `notify.session_end` as given.
-pub(super) fn pending_store(stored: Option<bool>) -> Store {
+pub(crate) fn pending_store(stored: Option<bool>) -> Store {
     let store = memory_store();
     store.put_meta_for_tests(META_NOTIFY_REVIEW, "pending");
     if let Some(value) = stored {
@@ -112,7 +112,7 @@ pub(super) fn pending_store(stored: Option<bool>) -> Store {
 }
 
 /// [`read_owed_service`] with `theme` stored as `ui.theme`.
-pub(super) fn read_owed_service_with_theme(theme: Theme) -> (SessionService, usize) {
+pub(crate) fn read_owed_service_with_theme(theme: Theme) -> (SessionService, usize) {
     let store = pending_store(Some(true));
     store
         .write(0, |txn| {
@@ -142,7 +142,7 @@ pub(super) fn read_owed_service_with_theme(theme: Theme) -> (SessionService, usi
 
 /// A store holding FiftyTen settings and a running session `a` started at `T0`, opened
 /// again with reads failing.
-pub(super) fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
+pub(crate) fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
     let mut s = service();
     let saved = Settings {
         theme: Theme::System,
@@ -160,7 +160,7 @@ pub(super) fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
     )
 }
 
-pub(super) fn settings_events(host: &TestHost) -> Vec<Settings> {
+pub(crate) fn settings_events(host: &TestHost) -> Vec<Settings> {
     host.log()
         .take()
         .into_iter()
@@ -171,13 +171,13 @@ pub(super) fn settings_events(host: &TestHost) -> Vec<Settings> {
         .collect()
 }
 
-pub(super) fn stored_notify(s: &SessionService) -> Option<bool> {
+pub(crate) fn stored_notify(s: &SessionService) -> Option<bool> {
     db(s)
         .read(|txn| settings::get(txn, KEY_NOTIFY))
         .expect("reads")
 }
 
-pub(super) fn tick_views(events: &[Event]) -> Vec<TimerView> {
+pub(crate) fn tick_views(events: &[Event]) -> Vec<TimerView> {
     events
         .iter()
         .filter_map(|e| match e {

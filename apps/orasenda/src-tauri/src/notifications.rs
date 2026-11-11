@@ -7,7 +7,7 @@ use orasenda_core::{NotificationStatus, PlatformError};
 use tauri::AppHandle;
 
 use crate::ipc::{NotificationsError, NotificationsErrorKind};
-use crate::scheduler::{self, Host};
+use crate::scheduler::{self, AppHost, Host};
 use crate::session;
 
 type Waiter = tauri::async_runtime::Sender<NotificationStatus>;
@@ -87,7 +87,7 @@ fn request_on<H: Host>(
 
 pub(crate) async fn request(app: AppHandle) -> NotificationStatus {
     let state = tauri::Manager::state::<Notifications>(&app).inner().clone();
-    let rx = crate::commands::on_blocking(move || request_on(&app, &state)).await;
+    let rx = crate::commands::on_blocking(move || request_on(&AppHost::new(&app), &state)).await;
     match rx {
         Some(mut rx) => rx.recv().await.unwrap_or(NotificationStatus::Unavailable),
         None => NotificationStatus::Unavailable,
@@ -118,7 +118,7 @@ fn failed() -> NotificationsError {
 
 /// Opens the Notifications pane on the main thread, holding no lock.
 pub(crate) async fn open_settings(app: AppHandle) -> Result<(), NotificationsError> {
-    let notifier = scheduler::Host::notifier(&app);
+    let notifier = AppHost::new(&app).notifier();
     let (tx, mut rx) = tauri::async_runtime::channel(1);
     app.run_on_main_thread(move || {
         let _ = tx.try_send(notifier.open_settings());
@@ -169,7 +169,7 @@ fn reread_on<H: Host>(host: &H, state: &Notifications) -> Option<std::thread::Jo
 
 pub(crate) fn on_main_focused(app: &AppHandle) {
     if let Some(state) = tauri::Manager::try_state::<Notifications>(app) {
-        reread_on(app, state.inner());
+        reread_on(&AppHost::new(app), state.inner());
     }
 }
 

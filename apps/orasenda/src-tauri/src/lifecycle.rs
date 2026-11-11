@@ -117,7 +117,7 @@ impl Shell for AppHandle {
     }
 
     fn apply_theme(&self, theme: Theme) {
-        scheduler::Host::apply_theme(self, theme);
+        scheduler::Host::apply_theme(&scheduler::AppHost::new(self), theme);
     }
 
     fn store_pending(&self, page: NavigatePage) {
