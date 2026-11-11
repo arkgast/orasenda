@@ -106,7 +106,6 @@ test("page_title_uses_title_type_style", () => {
   expect(title.get("font-weight")).toBe("var(--type-title-font-weight)");
 });
 
-// The finish line and "Timer unavailable.".
 test("muted_line_uses_body_sm_in_ink_muted", () => {
   const muted = rule(".app-muted");
   expect(muted.get("margin")).toBe("0");
@@ -114,18 +113,6 @@ test("muted_line_uses_body_sm_in_ink_muted", () => {
   expect(muted.get("line-height")).toBe("var(--type-body-sm-line-height)");
   expect(muted.get("font-weight")).toBe("var(--type-body-sm-font-weight)");
   expect(muted.get("color")).toBe("var(--ink-muted)");
-});
-
-// The ring and "Timer unavailable." share this box, so neither the first view nor a failure
-// shifts the page.
-test("ring_slot_reserves_the_ring_space", () => {
-  const slot = rule(".today-ring");
-  expect(slot.get("inline-size")).toBe("var(--timer-size)");
-  expect(slot.get("min-block-size")).toBe("var(--timer-size)");
-});
-
-test("today_keeps_the_content_width", () => {
-  expect(rule(".today").get("max-inline-size")).toBe("var(--content-width)");
 });
 
 test("data_theme_sets_color_scheme", () => {

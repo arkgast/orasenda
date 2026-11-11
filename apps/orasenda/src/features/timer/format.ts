@@ -1,4 +1,4 @@
-import type { AppInfo, Os } from "../../ipc/bindings";
+import type { Os } from "../../ipc/bindings";
 
 const OS_LABELS: Readonly<Record<Exclude<Os, "other">, string>> = {
   macos: "macOS",
@@ -11,11 +11,6 @@ const OS_LABELS: Readonly<Record<Exclude<Os, "other">, string>> = {
 /** Display name for an OS family; `other` and values this UI doesn't know show as sent. */
 export function osLabel(os: Os): string {
   return Object.hasOwn(OS_LABELS, os) ? OS_LABELS[os as keyof typeof OS_LABELS] : os;
-}
-
-/** The version line beside the heading, e.g. `"0.1.0 · macOS aarch64"`. */
-export function infoLine(info: AppInfo): string {
-  return `${info.version} · ${osLabel(info.os)} ${info.arch}`;
 }
 
 /**

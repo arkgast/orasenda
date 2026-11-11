@@ -111,7 +111,7 @@ test("no_notification_line_on_today", async () => {
   }
 });
 
-test("rejected_timer_state_shows_timer_unavailable", async () => {
+test("rejected_timer_state_shows_timer_unavailable_in_the_status_row", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   await renderToday({
     timer_state: () => {
@@ -119,13 +119,33 @@ test("rejected_timer_state_shows_timer_unavailable", async () => {
     },
   });
 
-  const line = screen.getByText("Timer unavailable.");
-  expect(line.tagName).toBe("P");
-  expect(line).toHaveClass("app-muted");
-  expect(line).not.toHaveAttribute("role");
-  expect(screen.queryByRole("timer")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Start focus" })).toBeNull();
-  expect(screen.queryByRole("alert")).toBeNull();
-  expect(statusNodes()).toHaveLength(0);
+  expect(statusNodes()).toHaveLength(1);
+  expect(statusNodes()[0]).toHaveTextContent("Timer unavailable. Restart Orasenda to try again.");
+  expect(screen.queryByRole("button", { name: /Try again/ })).toBeNull();
+  // Start stays on screen, guarded: it keeps its name and says why through the line.
+  expect(screen.getByRole("button", { name: "Start focus" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
   expect(error).toHaveBeenCalled();
+});
+
+test("the_status_row_is_one_live_region_mounted_empty_at_rest", async () => {
+  await renderToday();
+
+  const regions = screen.getAllByRole("status");
+  expect(regions).toHaveLength(1);
+  expect(regions[0]).toBeEmptyDOMElement();
+});
+
+test("ended_and_store_unavailable_join_in_one_line", async () => {
+  await renderToday({
+    timer_state: () => ({ view: { ...IDLE, store: "unavailable" }, pending: [] }),
+  });
+  await emitMilestone({ kind: "ended", endReason: "completed", sessionId: "s1" });
+
+  expect(statusNodes()).toHaveLength(1);
+  expect(statusNodes()[0]).toHaveTextContent(
+    "Session ended. Orasenda can't save sessions right now.",
+  );
 });

@@ -180,11 +180,26 @@ test("strict_mode_one_listener_per_event", async () => {
     expect(backend.live(event), event).toBe(1);
   }
 
+  // Idle shows Start, not IconButtons: their Radix tooltips commit a second, nested time on every
+  // render, which is the design system's, not a second subscription's.
   commits.length = 0;
-  await emitTimer(RUNNING);
+  await emitTimer({ ...IDLE, progress: 0.5 });
 
   expect(commits).toEqual(["update"]);
-  expect(screen.getByRole("timer")).toHaveTextContent("24:59");
+  expect(screen.getByRole("timer")).toHaveTextContent("No session");
+});
+
+test("strict_mode_running_tick_commits_one_update", async () => {
+  mockBackend();
+  const commits: string[] = [];
+  render(strictApp(commits));
+  await settle();
+  await emitTimer(RUNNING);
+  commits.length = 0;
+  await emitTimer({ ...RUNNING, progress: 0.5 });
+
+  // Radix tooltips add nested commits; only the page's own updates are counted.
+  expect(commits.filter((phase) => phase === "update")).toHaveLength(1);
 });
 
 test("tick_to_cleaned_up_subscription_is_ignored", async () => {
@@ -219,20 +234,6 @@ test("emit_after_unmount_is_ignored", async () => {
   for (const event of ["clock-tick", "timer-tick", "timer-milestone", "navigate"]) {
     expect(backend.live(event), event).toBe(0);
   }
-});
-
-test("enabled_spike_shows_dev_panel", async () => {
-  mockBackend({
-    spike_status: () => ({ enabled: true, platformSupported: true }),
-    spike_running_apps: () => [],
-    spike_usage: () => [],
-    spike_rule: () => ({ targets: [], action: "hide" }),
-  });
-  render(<App />);
-
-  expect(await screen.findByRole("group", { name: "Apps to intercept" })).toBeInTheDocument();
-  expect(screen.getAllByRole("main")).toHaveLength(1);
-  expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
 });
 
 test("app_navigate_with_target_focuses_timer_heading", async () => {

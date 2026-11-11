@@ -73,7 +73,6 @@ body {
   font-weight: var(--type-body-sm-font-weight);
 }
 
-.today,
 .placeholder {
   display: flex;
   flex-direction: column;
@@ -87,45 +86,6 @@ body {
   align-items: center;
   gap: var(--space-3);
   min-block-size: var(--hit-min);
-}
-
-.today {
-  max-inline-size: var(--content-width);
-}
-
-.today-timer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-/* The ring's box, shared by the ring and "Timer unavailable." so nothing shifts. */
-.today-ring {
-  display: grid;
-  place-items: center;
-  inline-size: var(--timer-size);
-  min-block-size: var(--timer-size);
-}
-
-.today-status,
-.today-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.today-presets {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.today-custom {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
 }
 
 /* Settings: the window is bounded so only the ScrollRegion scrolls. */

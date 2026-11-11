@@ -51,9 +51,9 @@ export const pagesReady = Promise.allSettled([
   placeholderPage.ready,
 ]);
 
-function Today() {
+function Today(props: ComponentProps<typeof import("../features/today/Today").Today>) {
   const Page = todayPage.use();
-  return <Page />;
+  return <Page {...props} />;
 }
 function Settings(props: ComponentProps<typeof import("../features/settings/Settings").Settings>) {
   const Page = settingsPage.use();
@@ -150,7 +150,7 @@ export function App() {
         <main ref={main} className="app-main">
           <PageBoundary>
             <Suspense fallback={null}>
-              {current === "today" ? <Today /> : null}
+              {current === "today" ? <Today onNavigate={(page) => navigate(page)} /> : null}
               {current === "settings" ? (
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}
