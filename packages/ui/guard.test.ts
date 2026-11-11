@@ -41,7 +41,8 @@ function criticalRulesOutsideButton(source: string) {
 }
 
 test("bundle_copy_has_no_exclamation_mark", () => {
-  expect(literals(js).length).toBeGreaterThan(500);
+  // The legacy bundle shrinks with each migrated component, so this only checks that the scan found literals.
+  expect(literals(js).length).toBeGreaterThan(0);
   expect(withExclamation(js)).toEqual([]);
   expect(withExclamation(`var a = !x; var b = "Done!";`)).toEqual(['"Done!"']);
 });
