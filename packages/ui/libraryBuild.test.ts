@@ -39,14 +39,14 @@ function seed(): string {
 }
 
 test("library_build_with_one_migrated_export_composes_declarations", async () => {
-  const entry = seed();
+  // Once every component is migrated (wave 3), no export is left on legacy.js to seed: build the real index.
+  const entry = SEEDED ? seed() : resolve(import.meta.dirname, "src/index.ts");
   expect(hasMigratedExports(entry)).toBe(true);
   const outDir = join(scratch, "lib");
   await build({ ...libraryConfig(entry, outDir), configFile: false, logLevel: "silent" });
   const dts = composeDeclarations(outDir);
-  expect(dts).toMatch(new RegExp(`export declare function ${SEEDED}\\(`));
+  if (SEEDED) expect(dts).toMatch(new RegExp(`export declare function ${SEEDED}\\(`));
   expect(dts).toMatch(/export declare function Kbd\(/);
-  expect(SEEDED).not.toBe("");
   expect(dts).not.toMatch(/from ["']\.\.?\/.*legacy\.js["']/);
 }, 120_000);
 

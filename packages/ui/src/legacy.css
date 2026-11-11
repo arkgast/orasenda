@@ -49,16 +49,6 @@ button { font-family: inherit; }
 /* end ModeChip */
 
 
-/* Dialog */
-/* Dialog shell shared by IntentPrompt, CapturePad and CommandPalette. Backdrops never dismiss. */
-.os-dialog { width: var(--panel-width); max-width: calc(100% - var(--space-6)); max-height: calc(100% - var(--space-6)); overflow: auto; padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--line-strong); background: var(--surface-overlay); color: var(--ink); box-shadow: var(--shadow-overlay); font: inherit; z-index: var(--z-overlay); }
-.os-dialog[open] { display: flex; flex-direction: column; gap: var(--space-5); }
-.os-dialog::backdrop { background: var(--clear); }
-.os-dialog-scrim::backdrop { background: var(--scrim); }
-.os-dialog h2 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; }
-.os-dialog-description { margin: 0; font-size: 15px; line-height: 22px; color: var(--ink-muted); }
-/* end Dialog */
-
 
 /* Input */
 /* Input, TextArea and radio choices keep native keyboard behaviour. */

@@ -35,24 +35,6 @@ function ModeChip(p) {
   return h("span", { className: "os-chip os-mode-" + mode }, h(Shape, { mode: mode }), p.children || MODE_LABEL[mode]);
 }
 // end ModeChip
-// Native modal dialogs supply inert background and focus containment. Keep one open at a time.
-function Modal(p) {
-  var ref = R.useRef(null), titleId = R.useId(), bodyId = R.useId(), open = p.open !== false;
-  R.useEffect(function () {
-    var el = ref.current;
-    if (!open || !el) return;
-    var previous = el.ownerDocument.activeElement;
-    if (!el.open) el.showModal();
-    var initial = el.querySelector("[data-initial-focus]");
-    if (initial) initial.focus();
-    return function () { if (el.open) el.close(); if (previous && previous.isConnected && previous.focus) previous.focus(); };
-  }, [open]);
-  return h("dialog", { ref: ref, className: cx("os-dialog", p.scrim && "os-dialog-scrim", p.className), "aria-modal": "true", "aria-labelledby": titleId,
-    "aria-describedby": p.description ? bodyId : undefined,
-    onCancel: function (e) { e.preventDefault(); if (p.onSafe) p.onSafe(); } },
-    h("h2", { id: titleId }, p.title),
-    p.description ? h("p", { id: bodyId, className: "os-dialog-description" }, p.description) : null, p.children);
-}
 function Field(p) {
   var generated = R.useId(), id = p.id || generated, described = [p["aria-describedby"], p.helper ? id + "-helper" : "", p.error ? id + "-error" : ""].filter(Boolean).join(" ");
   var rest = Object.assign({}, p);
