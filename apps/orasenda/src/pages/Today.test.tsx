@@ -344,7 +344,7 @@ test("preset_radio_reflects_saved_settings", async () => {
 
   const group = screen.getByRole("group", { name: "Preset" });
   expect(group.tagName).toBe("FIELDSET");
-  expect(group).toHaveClass("os-choice-group");
+  expect(group).toHaveAttribute("data-slot", "choice-group");
   const radios = screen.getAllByRole("radio");
   expect(radios.map((radio) => radio.closest("label")?.textContent)).toEqual([
     "Classic 25/5",
@@ -352,7 +352,7 @@ test("preset_radio_reflects_saved_settings", async () => {
     "Deep Block 90",
     "Custom",
   ]);
-  for (const radio of radios) expect(radio.closest("label")).toHaveClass("os-choice");
+  for (const radio of radios) expect(radio.closest("label")).toHaveAttribute("data-slot", "choice");
   expect(screen.getByRole("radio", { name: "Deep Block 90" })).toBeChecked();
   expect(container.querySelectorAll("input:not([type=radio])")).toHaveLength(0);
 });

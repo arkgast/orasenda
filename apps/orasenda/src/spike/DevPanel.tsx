@@ -1,4 +1,4 @@
-import { Button } from "@orasenda/ui";
+import { Button, Choice, ChoiceGroup } from "@orasenda/ui";
 import { useId, useState } from "react";
 import type { BlockAction, UsageSegment } from "../bindings";
 import { formatClock } from "../format";
@@ -103,44 +103,41 @@ export function DevPanel({ locale, timeZone }: DevPanelProps) {
       )}
       {errors.ruleRead ? <p className="spike-note">Rule unavailable.</p> : null}
 
-      <fieldset className="os-choice-group">
-        <legend>Apps to intercept</legend>
+      <ChoiceGroup legend="Apps to intercept">
         {errors.apps ? <p className="spike-note">Apps unavailable.</p> : null}
         {!errors.apps && apps.length === 0 ? <p className="spike-note">No apps to show.</p> : null}
         {apps.map((app) => (
-          <label key={app.pid} className="os-choice">
-            <input
-              type="checkbox"
-              checked={app.bundleId != null && rule.targets.includes(app.bundleId)}
-              disabled={app.bundleId == null}
-              onChange={(event) => {
-                if (app.bundleId != null) toggle(app.bundleId, event.target.checked);
-              }}
-            />
+          <Choice
+            key={app.pid}
+            type="checkbox"
+            checked={app.bundleId != null && rule.targets.includes(app.bundleId)}
+            disabled={app.bundleId == null}
+            onChange={(event) => {
+              if (app.bundleId != null) toggle(app.bundleId, event.target.checked);
+            }}
+          >
             {app.name}
-          </label>
+          </Choice>
         ))}
-      </fieldset>
+      </ChoiceGroup>
       {notSaved("apps")}
       <div>
         <Button onClick={() => void refreshApps()}>Refresh apps</Button>
       </div>
 
-      <fieldset className="os-choice-group">
-        <legend>When I go back to focus</legend>
+      <ChoiceGroup legend="When I go back to focus">
         {ACTIONS.map(({ action, label }) => (
-          <label key={action} className="os-choice">
-            <input
-              type="radio"
-              name={actionName}
-              value={action}
-              checked={rule.action === action}
-              onChange={() => change("action", (latest) => ({ ...latest, action }))}
-            />
+          <Choice
+            key={action}
+            name={actionName}
+            value={action}
+            checked={rule.action === action}
+            onChange={() => change("action", (latest) => ({ ...latest, action }))}
+          >
             {label}
-          </label>
+          </Choice>
         ))}
-      </fieldset>
+      </ChoiceGroup>
       {notSaved("action")}
 
       <h3 id={usageId} className="spike-subheading">

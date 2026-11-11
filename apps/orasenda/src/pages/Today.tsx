@@ -1,4 +1,13 @@
-import { Button, InlineNotice, Input, ModeChip, StartButton, TimerRing } from "@orasenda/ui";
+import {
+  Button,
+  Choice,
+  ChoiceGroup,
+  InlineNotice,
+  Input,
+  ModeChip,
+  StartButton,
+  TimerRing,
+} from "@orasenda/ui";
 import { useEffect, useId, useState } from "react";
 import type {
   CustomSpec,
@@ -213,21 +222,19 @@ export function Today() {
       {view && settingsFailed ? <p className="app-muted">Presets unavailable.</p> : null}
       {view && settings ? (
         <div className="today-presets">
-          <fieldset className="os-choice-group">
-            <legend>Preset</legend>
+          <ChoiceGroup legend="Preset">
             {PRESETS.map(({ preset, label }) => (
-              <label key={preset} className="os-choice">
-                <input
-                  type="radio"
-                  name={presetName}
-                  value={preset}
-                  checked={settings.preset === preset}
-                  onChange={() => choosePreset(preset)}
-                />
+              <Choice
+                key={preset}
+                name={presetName}
+                value={preset}
+                checked={settings.preset === preset}
+                onChange={() => choosePreset(preset)}
+              >
                 {label}
-              </label>
+              </Choice>
             ))}
-          </fieldset>
+          </ChoiceGroup>
           {settings.preset === "custom" ? (
             <div className="today-custom">
               <Input

@@ -3,6 +3,8 @@
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
 export { CapturePad } from "./components/ui/capture-pad";
+export { Choice } from "./components/ui/choice";
+export { ChoiceGroup } from "./components/ui/choice";
 export { CommandPalette } from "./components/ui/command-palette";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
@@ -37,6 +39,7 @@ export { TimerStrip } from "./components/ui/timer-strip";
 export { Toast } from "./components/ui/toast";
 export { Tooltip } from "./components/ui/tooltip";
 export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-pad";
+export type { ChoiceGroupProps, ChoiceProps } from "./components/ui/choice";
 export type { CommandPaletteProps } from "./components/ui/command-palette";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";

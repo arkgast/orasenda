@@ -71,9 +71,9 @@ test("dev_panel_check_sets_rule", async () => {
   await renderPanel();
 
   const group = screen.getByRole("group", { name: "Apps to intercept" });
-  expect(group).toHaveClass("os-choice-group");
+  expect(group).toHaveAttribute("data-slot", "choice-group");
   const safari = within(group).getByRole("checkbox", { name: "Safari" });
-  expect(safari.closest("label")).toHaveClass("os-choice");
+  expect(safari.closest("label")).toHaveAttribute("data-slot", "choice");
   expect(safari).not.toBeChecked();
 
   await act(async () => {
@@ -91,10 +91,10 @@ test("dev_panel_action_radio_sets_rule", async () => {
   await renderPanel();
 
   const group = screen.getByRole("group", { name: "When I go back to focus" });
-  expect(group).toHaveClass("os-choice-group");
+  expect(group).toHaveAttribute("data-slot", "choice-group");
   expect(within(group).getByRole("radio", { name: "Hide the app" })).toBeChecked();
   const quit = within(group).getByRole("radio", { name: "Quit the app" });
-  expect(quit.closest("label")).toHaveClass("os-choice");
+  expect(quit.closest("label")).toHaveAttribute("data-slot", "choice");
 
   await act(async () => {
     fireEvent.click(quit);

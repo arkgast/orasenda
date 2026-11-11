@@ -7,7 +7,13 @@ import * as ui from "./src/index.ts";
 test("exports_intent_prompt_and_button", () => {
   expect(typeof ui.IntentPrompt).toBe("function");
   expect(typeof ui.Button).toBe("function");
-  for (const name of ["ScrollRegion", "SettingsIndex", "SettingsRow"] as const) {
+  for (const name of [
+    "Choice",
+    "ChoiceGroup",
+    "ScrollRegion",
+    "SettingsIndex",
+    "SettingsRow",
+  ] as const) {
     expect(typeof ui[name]).toBe("function");
   }
 });

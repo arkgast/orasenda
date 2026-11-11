@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
+import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
@@ -29,4 +30,5 @@ export const specimens: Record<string, () => ReactElement> = {
   TimerStrip: TimerStripSpecimen,
   StartButton: StartButtonSpecimen,
   PopoverMenu: PopoverMenuSpecimen,
+  Choice: ChoiceSpecimen,
 };
