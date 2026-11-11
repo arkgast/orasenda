@@ -293,3 +293,23 @@ fn menu_command_maps_every_tray_item() {
     assert!(menu_command("about").is_none());
     assert!(menu_command("settings").is_none());
 }
+
+#[test]
+fn menu_items_spike() {
+    for view in [idle(), running(S59), paused(S59)] {
+        let without = labels(&menu_items(&view, &next(), false));
+        assert!(!without.contains(&"Developer panel".to_string()));
+        let with = labels(&menu_items(&view, &next(), true));
+        let mut expected = without.clone();
+        expected.splice(
+            expected.len() - 1..expected.len() - 1,
+            ["Developer panel".to_string(), "—".to_string()],
+        );
+        assert_eq!(with, expected);
+    }
+}
+
+#[test]
+fn developer_panel_item_has_a_command() {
+    assert_eq!(menu_command("developer-panel"), Some(MenuCommand::DevPanel));
+}

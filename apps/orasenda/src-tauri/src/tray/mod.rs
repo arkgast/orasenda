@@ -160,7 +160,11 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     );
     let (_, glyph) = tray_title_and_icon(&idle);
     let next = NextSession::from_settings(&crate::runtime::session::current_settings(handle));
-    let (menu, header) = build_menu(handle, &menu_items(&idle, &next, false), None)?;
+    let (menu, header) = build_menu(
+        handle,
+        &menu_items(&idle, &next, crate::spike::enabled()),
+        None,
+    )?;
     let icon = TrayIconBuilder::with_id(TRAY_ID)
         .icon(glyph.image())
         .icon_as_template(true)

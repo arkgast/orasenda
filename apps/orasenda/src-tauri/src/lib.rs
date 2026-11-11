@@ -248,9 +248,14 @@ mod tests {
     }
 
     #[test]
-    fn main_capability_includes_spike_commands() {
-        let (windows, permissions) = capability("main.json");
-        assert_eq!(windows, ["main"]);
+    fn dev_capability_includes_spike_commands_and_main_has_none() {
+        let (windows, permissions) = capability("dev.json");
+        assert_eq!(windows, ["dev"]);
+        let (_, main) = capability("main.json");
+        assert!(
+            !main.iter().any(|p| p.starts_with("allow-spike")),
+            "main still has a spike permission"
+        );
         for granted in [
             "allow-spike-status",
             "allow-spike-running-apps",
@@ -260,13 +265,13 @@ mod tests {
         ] {
             assert!(
                 permissions.iter().any(|p| p == granted),
-                "main lacks {granted}"
+                "dev lacks {granted}"
             );
         }
         for withheld in ["allow-spike-overlay-choice", "allow-spike-overlay-ready"] {
             assert!(
                 !permissions.iter().any(|p| p == withheld),
-                "main has {withheld}"
+                "dev has {withheld}"
             );
         }
     }
