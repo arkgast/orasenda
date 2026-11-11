@@ -23,6 +23,8 @@ test("library_build_composes_declarations_with_components_and_types", async () =
     expect(dts).toMatch(new RegExp(`(interface|type) ${name}\\b`));
   }
   expect(dts).not.toMatch(/legacy/);
+  expect(dts).not.toContain("TimerRingNextProps");
+  expect(dts).not.toContain("StartButtonNextProps");
 }, 120_000);
 
 test("design_system_build_refuses_a_folder_it_did_not_make", async () => {

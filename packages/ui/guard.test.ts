@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "vitest";
 
@@ -8,16 +7,16 @@ const LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g;
 const literals = (source: string) => source.match(LITERAL) ?? [];
 
 // ---- code-first guards (#187) ----
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { arbitraryValues, scan } from "../../tools/tailwind-strict.ts";
 
-function tsFiles(folder: string): string[] {
+function tsFiles(folder: string, ext = /\.(ts|tsx)$/): string[] {
   return readdirSync(folder).flatMap((name) => {
     const path = join(folder, name);
     if (name === "node_modules" || name === "dist") return [];
-    if (statSync(path).isDirectory()) return tsFiles(path);
-    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+    if (statSync(path).isDirectory()) return tsFiles(path, ext);
+    return ext.test(name) ? [path] : [];
   });
 }
 const here = (name: string) => resolve(import.meta.dirname, name);
@@ -90,7 +89,6 @@ test("lint_rejects_arbitrary_tailwind_value", () => {
 });
 
 // ---- legacy removal guards (#270) ----
-import { existsSync } from "node:fs";
 
 /** Files whose text holds a class string starting with os- (a legacy hand-written class). */
 function osClassHits(sources: Record<string, string>): string[] {
@@ -101,9 +99,15 @@ function osClassHits(sources: Record<string, string>): string[] {
 
 test("no_legacy_files_and_no_os_classes", () => {
   expect(readdirSync(dir).filter((n) => /^legacy\./.test(n))).toEqual([]);
-  expect(existsSync(resolve(dir, "legacy.js"))).toBe(false);
-  const roots = [dir, here("../../apps/orasenda/src")];
-  const all = roots.flatMap((root) => walk(root).map((f) => [f, readFileSync(f, "utf8")] as const));
+  const roots = [
+    dir,
+    here("../../apps/orasenda/src"),
+    here("specimens"),
+    here("../../verification"),
+  ].filter(existsSync);
+  const all = roots.flatMap((root) =>
+    tsFiles(root, /\.(ts|tsx|css|js)$/).map((f) => [f, readFileSync(f, "utf8")] as const),
+  );
   expect(osClassHits(Object.fromEntries(all.filter(([f]) => !/\.test\.tsx?$/.test(f))))).toEqual(
     [],
   );
@@ -113,12 +117,3 @@ test("no_legacy_files_and_no_os_classes", () => {
   ).toEqual(["a.tsx", "b.css"]);
   expect(osClassHits({ "c.tsx": '<p className="font-mono">/* os-num */</p>' })).toEqual([]);
 });
-
-function walk(folder: string): string[] {
-  return readdirSync(folder).flatMap((name) => {
-    const path = join(folder, name);
-    if (name === "node_modules" || name === "dist") return [];
-    if (statSync(path).isDirectory()) return walk(path);
-    return /\.(ts|tsx|css|js)$/.test(name) ? [path] : [];
-  });
-}

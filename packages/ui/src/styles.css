@@ -35,8 +35,11 @@ button {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat every utility */
     animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat every utility */
     transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat every utility */
     scroll-behavior: auto !important;
   }
 }

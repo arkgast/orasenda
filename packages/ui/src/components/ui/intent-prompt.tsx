@@ -191,7 +191,7 @@ export function IntentPrompt({
                 <div key="step2" ref={group} className="flex w-full flex-col gap-3">
                   <ChoiceGroup
                     legend={`What do you need ${app} for?`}
-                    legendClassName="mb-3 w-full p-0 text-heading"
+                    legendClassName="mb-3 w-full p-0"
                     className="justify-center"
                     describedBy={hintId}
                   >

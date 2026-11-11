@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import * as ui from "./src/index.ts";
@@ -35,14 +33,6 @@ test("exports_small_controls_and_key_table", () => {
 test("exports_timer_faces", () => {
   for (const member of [ui.TimerStrip, ui.timerLayout]) expect(typeof member).toBe("function");
   expect(ui.timerLayout.tokens).toBeDefined();
-});
-
-test("index_d_ts_has_no_timer_or_start_next_props", () => {
-  const dts = readFileSync(resolve(import.meta.dirname, "src/types.ts"), "utf8");
-  expect(dts).not.toContain("TimerRingNextProps");
-  expect(dts).not.toContain("StartButtonNextProps");
-  expect(dts).not.toContain("declare function TimerStrip");
-  expect(dts).not.toContain("declare function timerLayout");
 });
 
 const FIELD_ERROR = "Between 5 and 180 minutes. Still using 45.";

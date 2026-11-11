@@ -18,9 +18,6 @@
       "!packages/tokens/tokens.json",
       "!packages/tokens/theme.css",
       "!packages/ui/design-system/Cover",
-      "!packages/ui/src/legacy.js",
-      "!packages/ui/src/legacy.css",
-      "!packages/ui/src/legacy.d.ts",
       "!**/src-tauri/gen",
       "!**/dist",
       "!**/target"

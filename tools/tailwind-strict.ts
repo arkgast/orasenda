@@ -133,7 +133,7 @@ export function noOpClasses(
   return classWords(source).filter(noop);
 }
 
-/** Class names the project's own stylesheets define, styles.css included (Choice's os-choice rules live there since #193) (legacy os, app, settings, spike, today, placeholder and overlay families only): not Tailwind, so not judged. */
+/** Class names the project's own stylesheets define, styles.css included (legacy os, app, settings, spike, today, placeholder and overlay families only): not Tailwind, so not judged. */
 export function ownClasses(folders: readonly string[]): Set<string> {
   const names = new Set<string>();
   const walk = (dir: string) => {
