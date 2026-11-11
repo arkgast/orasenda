@@ -18,10 +18,11 @@ mod view;
 
 pub use effects::Effects;
 pub use run::{
-    current_settings, flush_on_exit, lock, now_ms, open_store_at, run_action_on, run_set_settings,
+    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_set_settings,
     run_state,
 };
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
+pub use settings::SettingsSaved;
 /// Fakes shared by the session, scheduler and app tests.
 #[cfg(any(test, feature = "test-support"))]
 #[path = "tests/support/mod.rs"]

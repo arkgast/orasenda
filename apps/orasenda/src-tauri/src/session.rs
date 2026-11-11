@@ -5,7 +5,9 @@
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::SystemTime;
 
+use orasenda_core::clock::epoch_ms;
 use orasenda_service::api::{Settings, SettingsError, TimerCommandError, TimerState, TimerView};
 use orasenda_store::OpenError;
 use tauri::Manager;
@@ -14,6 +16,11 @@ use uuid::Uuid;
 pub use orasenda_service::session::*;
 
 use crate::scheduler::{self, AppHost};
+
+/// The wall clock in epoch milliseconds: the only place the app reads it.
+pub fn now_ms() -> u64 {
+    epoch_ms(SystemTime::now())
+}
 
 /// Opens the store, builds the service and starts the launch read of the notification
 /// status on its own thread, so `Notifier::status` never blocks the main thread.

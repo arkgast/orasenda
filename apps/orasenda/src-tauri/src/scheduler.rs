@@ -60,7 +60,7 @@ impl Host for AppHost {
     }
 
     fn now_ms(&self) -> u64 {
-        orasenda_service::session::now_ms()
+        crate::session::now_ms()
     }
 
     fn emit_timer_tick(&self, view: &TimerView) {

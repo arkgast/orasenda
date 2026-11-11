@@ -3,9 +3,7 @@
 use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::time::SystemTime;
 
-use orasenda_core::clock::epoch_ms;
 use orasenda_core::{NotificationStatus, SessionId};
 use orasenda_store::{OpenError, Store};
 use uuid::Uuid;
@@ -23,11 +21,6 @@ const DB_FILE: &str = "orasenda.db";
 /// service is consistent even after a panic in another holder.
 pub fn lock(service: &Mutex<SessionService>) -> MutexGuard<'_, SessionService> {
     service.lock().unwrap_or_else(PoisonError::into_inner)
-}
-
-/// The wall clock in epoch milliseconds: the only place the session reads it.
-pub fn now_ms() -> u64 {
-    epoch_ms(SystemTime::now())
 }
 
 fn new_session_id() -> SessionId {
