@@ -23,7 +23,8 @@ export interface IconButtonProps {
 // Hit targets (hit-min, control-lg) and the 1px border are the fixed sizes. The icon is a line icon at
 // icon-lg with a 1.5 stroke; the host's glyph is an inline svg that carries no styling of its own.
 const base =
-  "inline-grid shrink-0 cursor-pointer place-items-center rounded-md border border-clear bg-clear p-0 text-ink transition-colors duration-quick ease-calm size-hit-min outline-focus-ring outline-offset-2 hover:bg-surface-sunken active:bg-selection focus-visible:outline-2 motion-reduce:transition-none";
+  "inline-grid shrink-0 cursor-pointer place-items-center rounded-md border border-clear bg-clear p-0 text-ink transition-colors duration-quick ease-calm outline-focus-ring outline-offset-2 hover:bg-surface-sunken active:bg-selection focus-visible:outline-2 motion-reduce:transition-none";
+const medium = "size-hit-min";
 const round = "size-control-lg rounded-pill border-line-strong bg-surface-raised";
 const unavailable =
   "disabled:cursor-default disabled:border-dashed disabled:border-line-strong disabled:bg-clear disabled:text-ink-muted";
@@ -74,7 +75,7 @@ export function IconButton({
         aria-controls={aria["aria-controls"]}
         disabled={disabled}
         onClick={onClick}
-        className={cn(base, size === "round" && round, unavailable)}
+        className={cn(base, size === "round" ? round : medium, unavailable)}
       >
         <span aria-hidden="true" className="inline-flex">
           {line(icon)}
