@@ -1,6 +1,6 @@
 # Today redesign (P1 sub-project C) — Spec
 
-- Status: approved (owner, 2026-11-11)
+- Status: approved (owner, 2026-11-11); implemented 2026-11-11
 - Date: 2026-11-11
 - Owner: Arnold Gandarillas Castillo
 - Related: [#134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut; comment 6780298891 is the Today canvas inventory this spec builds from), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window), [#120](https://github.com/arkgast/orasenda/issues/120) (refused start, Today half), [spec A](2026-11-08-focus-session-loop.md) (amended here, see [Amends spec A](#amends-spec-a)), [Settings spec](2026-11-09-settings.md) (B; its compact layout and its harness handover are C's), [structure refactor spec](2026-11-10-structure-refactor.md) (the file layout C keeps), [SPEC §1](../SPEC.md), [ADR-011](../DECISIONS.md) (time is formatted in Rust), [ADR-013](../DECISIONS.md) (one Rust state, many surfaces), [ADR-014](../DECISIONS.md) (settings: one object, one save chain), [ADR-015](../DECISIONS.md) (code-first design system). Design source: the timer-surfaces canvas https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX (`Today.dc.html`, verdict "approve"). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,start-button,popover-menu,inline-notice,icon-button,tooltip,mode-chip,kbd,nav-rail,page-frame,settings-index}.md`.
@@ -312,13 +312,14 @@ Custom minutes can change in Settings while a session runs. The paused summary a
 None.
 
 ## Implementation status
-The plan (`docs/plans/2026-11-11-today-redesign.md`) cuts these tasks. The order is only a sketch; the plan decides.
-- [ ] Harness: `layout.html`, scenarios, the second web server, #119's case as `test.fail()`, Settings at 900×600 and 1440×900.
-- [ ] IPC: `plannedMin`, `presets_get`, `native_menu_popup`.
-- [ ] Shell: the 360×240 minimum, header removed, `useWindowLayout`, rail or Pages, `app/glyphs.tsx`, ⌘1–6, placeholders compact.
-- [ ] Today: the grid, time view, controls, status row, ⌘↩/⌘⇧↩/⌘., removing the radios and fields (#119 mark removed).
-- [ ] Today: preset summary and popover.
-- [ ] Settings compact: Pages and Jump to section in `compactPicker`.
-- [ ] Menu bar: items, header, Preset submenu.
-- [ ] DevPanel window.
-- [ ] Docs: the InlineNotice README Today slots rewritten to this spec's status-row table, then the design-system republish.
+Plan: [docs/plans/2026-11-11-today-redesign.md](../plans/2026-11-11-today-redesign.md). All merged 2026-11-11.
+- [x] Harness, #119's case first (C1 #296, PR #305)
+- [x] IPC: `plannedMin`, `presets_get`, `native_menu_popup` (C2 #297, PR #306)
+- [x] Shell: 360×240 minimum, compact rule, Pages, glyphs, ⌘1–6 (C3 #300, PR #311)
+- [x] Today: grid, time view, controls, status row, ⌘↩/⌘⇧↩/⌘. (C4 #301, PR #314; closes #119 and #120; rulings on #301)
+- [x] Today: preset summary and popover (C5 #302, PR #317; rulings on #302)
+- [x] Settings compact (C6 #303, PR #313)
+- [x] Menu bar (C7 #298, PR #307)
+- [x] DevPanel window (C8 #304, PR #310)
+- [x] InlineNotice README Today slots (C9 #299, PR #308; design system v41)
+- [x] Follow-ups: "Edit times in Settings…" opens Settings › Timer (C10 #309, PR #312); rail focus ring (#315, PR #316); PopoverMenu height cap (#318, PR #319; design system v43). The `layout-strip-status-min` token came with C4 (design system v42).
