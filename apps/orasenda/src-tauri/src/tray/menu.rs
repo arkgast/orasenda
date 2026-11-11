@@ -217,7 +217,7 @@ pub(crate) fn start_action(saved: Preset, quick: bool) -> Action {
 }
 
 /// Where in Settings a menu item opens, when not at the top.
-fn settings_target(command: &MenuCommand) -> Option<crate::ipc::SettingsTarget> {
+pub(crate) fn settings_target(command: &MenuCommand) -> Option<crate::ipc::SettingsTarget> {
     match command {
         MenuCommand::EditTimes => Some(crate::ipc::SettingsTarget::Timer),
         _ => None,
@@ -229,11 +229,9 @@ fn settings_target(command: &MenuCommand) -> Option<crate::ipc::SettingsTarget> 
 pub(super) fn on_menu_event(app: &AppHandle, id: &str) {
     match menu_command(id) {
         Some(MenuCommand::Show) => lifecycle::show_main(app),
-        Some(MenuCommand::Settings) => lifecycle::show_settings(app),
-        Some(command @ MenuCommand::EditTimes) => match settings_target(&command) {
-            Some(target) => lifecycle::show_settings_at(app, target),
-            None => lifecycle::show_settings(app),
-        },
+        Some(command @ (MenuCommand::Settings | MenuCommand::EditTimes)) => {
+            lifecycle::show_settings_on(app, settings_target(&command));
+        }
         Some(MenuCommand::Quit) => app.exit(0),
         // Creating a window waits on the main thread, so it runs on a blocking thread.
         Some(MenuCommand::DevPanel) => {
@@ -351,19 +349,4 @@ pub(super) fn build_menu(
         menu.append(child)
     })?;
     Ok((menu, header))
-}
-
-#[cfg(test)]
-mod edit_times_tests {
-    use super::*;
-    use crate::ipc::SettingsTarget;
-
-    #[test]
-    fn edit_times_item_navigates_to_timer() {
-        assert_eq!(
-            settings_target(&MenuCommand::EditTimes),
-            Some(SettingsTarget::Timer)
-        );
-        assert_eq!(settings_target(&MenuCommand::Settings), None);
-    }
 }
