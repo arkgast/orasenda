@@ -1,4 +1,4 @@
-import { Input, SettingsRow } from "@orasenda/ui";
+import { Choice, ChoiceGroup, Input, SettingsRow } from "@orasenda/ui";
 import { useId } from "react";
 import type { CustomSpec, Preset, Settings } from "../../bindings";
 import { BREAK_RANGE, BREAK_RANGE_HELP, FOCUS_RANGE, FOCUS_RANGE_HELP } from "../../customRange";
@@ -109,21 +109,20 @@ export function Timer({
         status={presetStatus}
         disabledReason={disabledReason}
       >
-        <div className="os-choice-group" role="radiogroup" aria-labelledby="preset-label">
+        <ChoiceGroup labelledBy="preset-label">
           {PRESET_ORDER.map((preset) => (
-            <label key={preset} className="os-choice">
-              <input
-                type="radio"
-                name={name}
-                value={preset}
-                checked={settings.preset === preset}
-                disabled={disabled}
-                onChange={() => onPreset(preset)}
-              />
+            <Choice
+              key={preset}
+              name={name}
+              value={preset}
+              checked={settings.preset === preset}
+              disabled={disabled}
+              onChange={() => onPreset(preset)}
+            >
               {preset === "custom" ? customLabel(settings.custom) : PRESET_LABELS[preset]}
-            </label>
+            </Choice>
           ))}
-        </div>
+        </ChoiceGroup>
       </SettingsRow>
       <SettingsRow
         id="custom"

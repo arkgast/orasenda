@@ -22,7 +22,7 @@
 /* Today's hand-written rules; each component's block leaves with it. */
 @import "./legacy.css";
 
-/* Choice (CSS only): radio and checkbox choices, segmented and long variants (choice.md). The class names stay because apps put them on native markup. */
+/* Choice, legacy classes: IntentPrompt, CapturePad and Settings General and Notifications still put .os-choice on native markup, so this block stays until they move to Choice. The forced-colors rule at its end also serves the Choice component (data-slot="choice"), which cannot name system colours in the closed theme. */
 @layer components {
   .os-choice-group {
     display: flex;
@@ -162,26 +162,32 @@
     line-height: 18px;
     color: var(--ink-muted);
   }
-  /* Keep the checked radio dot and the checkbox fill: forced colors would repaint them as Canvas (#45). */
-  @media (forced-colors: active) {
-    .os-choice input:checked {
-      forced-color-adjust: none;
-      background: Highlight;
-      border-color: Highlight;
-      box-shadow: inset 0 0 0 2px Canvas;
-    }
-    .os-choice input[type="checkbox"]:checked {
-      box-shadow: none;
-    }
-    .os-choice input[type="checkbox"]:checked::before {
-      border-color: HighlightText;
-    }
-    .os-choice input:checked:focus-visible {
-      outline-color: Highlight;
-    }
-    .os-choice input:checked:disabled {
-      background: GrayText;
-      border-color: GrayText;
-    }
+}
+
+/* Unlayered on purpose: the Choice component's utilities sit in @layer utilities and would otherwise beat these system-colour rules. */
+@media (forced-colors: active) {
+  .os-choice input:checked,
+  [data-slot="choice"] input:checked {
+    forced-color-adjust: none;
+    background: Highlight;
+    border-color: Highlight;
+    box-shadow: inset 0 0 0 2px Canvas;
+  }
+  .os-choice input[type="checkbox"]:checked,
+  [data-slot="choice"] input[type="checkbox"]:checked {
+    box-shadow: none;
+  }
+  .os-choice input[type="checkbox"]:checked::before,
+  [data-slot="choice"] input[type="checkbox"]:checked::before {
+    border-color: HighlightText;
+  }
+  .os-choice input:checked:focus-visible,
+  [data-slot="choice"] input:checked:focus-visible {
+    outline-color: Highlight;
+  }
+  .os-choice input:checked:disabled,
+  [data-slot="choice"] input:checked:disabled {
+    background: GrayText;
+    border-color: GrayText;
   }
 }
