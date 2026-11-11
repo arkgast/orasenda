@@ -11,17 +11,29 @@ type GroupVariant = "default" | "segmented";
 
 const GroupVariantContext = createContext<GroupVariant>("default");
 
-export interface ChoiceGroupProps {
-  /** The group's name, shown as a legend. Omit it only with labelledBy. */
-  legend?: ReactNode;
-  /** The id of an element that already names the group: renders a radiogroup div instead of a fieldset. */
-  labelledBy?: string;
+interface ChoiceGroupBaseProps {
   /** Joined radios for switching parallel lists; defaults to separate chips. */
   variant?: GroupVariant;
-  disabled?: boolean;
   className?: string;
   children: ReactNode;
 }
+
+export type ChoiceGroupProps = ChoiceGroupBaseProps &
+  (
+    | {
+        /** The group's name, shown as a legend (fieldset form). */
+        legend?: ReactNode;
+        /** Disables every choice in the group (fieldset form only). */
+        disabled?: boolean;
+        labelledBy?: undefined;
+      }
+    | {
+        /** The id of an element that already names the group: renders a radiogroup div. Disable each Choice instead. */
+        labelledBy: string;
+        legend?: undefined;
+        disabled?: undefined;
+      }
+  );
 
 const LEGEND = "mb-2 text-body-sm text-ink";
 
@@ -115,11 +127,13 @@ export function Choice({
         type={type}
         data-slot="choice-input"
         className={cn(
-          type === "checkbox" ? SQUARE : DOT,
           segmented
             ? "sr-only"
-            : "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
-          long && "mt-1",
+            : cn(
+                type === "checkbox" ? SQUARE : DOT,
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+                long && "mt-1",
+              ),
         )}
       />
       {long ? (
