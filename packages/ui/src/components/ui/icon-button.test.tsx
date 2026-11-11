@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { describeShortcut, IconButton } from "./src/index.ts";
+import { describeShortcut, IconButton } from "../../index";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -19,8 +19,9 @@ const icon = (
 test("icon_button_name_is_label_and_icon_hidden", () => {
   const { container } = render(<IconButton label="Pause session" icon={icon} />);
   const button = screen.getByRole("button", { name: "Pause session" });
+  expect(button.getAttribute("data-slot")).toBe("icon-button");
   expect(button.hasAttribute("title")).toBe(false);
-  const wrap = container.querySelector(".os-iconbtn-icon");
+  const wrap = container.querySelector("[data-slot=icon-button] > [aria-hidden=true]");
   expect(wrap?.getAttribute("aria-hidden")).toBe("true");
 });
 
@@ -71,11 +72,11 @@ test("icon_button_expanded_and_controls_pass_through", () => {
   expect(screen.getByRole("button").getAttribute("aria-expanded")).toBe("false");
 });
 
-test("icon_button_round_size_class", () => {
+test("icon_button_round_size_is_exposed_by_data_size", () => {
   const { rerender } = render(<IconButton label="Resume session" icon={icon} size="round" />);
-  expect(screen.getByRole("button").classList.contains("os-iconbtn-round")).toBe(true);
+  expect(screen.getByRole("button").getAttribute("data-size")).toBe("round");
   rerender(<IconButton label="Resume session" icon={icon} />);
-  expect(screen.getByRole("button").classList.contains("os-iconbtn-round")).toBe(false);
+  expect(screen.getByRole("button").getAttribute("data-size")).toBe("md");
 });
 
 test("icon_button_shortcut_array_joins_aria_and_label_overrides_kbd", () => {
