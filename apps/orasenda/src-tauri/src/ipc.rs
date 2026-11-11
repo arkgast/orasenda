@@ -1,6 +1,6 @@
 //! The IPC contract for the focus session loop: every type and event the webview sees.
 //! The types live in `orasenda-service` (`api`); this module re-exports them and adds what
-//! needs Tauri: the events. Typed by tauri-specta (ADR-007); `src/bindings.ts` is generated
+//! needs Tauri: the events. Typed by tauri-specta (ADR-007); `src/ipc/bindings.ts` is generated
 //! from these.
 //!
 //! `tauri_specta::Event` can't be derived in the service crate (it depends on Tauri), and

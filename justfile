@@ -19,7 +19,7 @@ dev:
 build:
     pnpm --filter orasenda tauri build
 
-# Regenerate apps/orasenda/src/bindings.ts from the Rust commands and events.
+# Regenerate apps/orasenda/src/ipc/bindings.ts from the Rust commands and events.
 bindings:
     cargo test -p orasenda --locked export_bindings
 
@@ -127,8 +127,8 @@ ci:
     @echo "==> layout (real-engine WebKit checks, macOS only)"
     "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
-    git ls-files --error-unmatch apps/orasenda/src/bindings.ts
-    git diff --exit-code -- apps/orasenda/src/bindings.ts
+    git ls-files --error-unmatch apps/orasenda/src/ipc/bindings.ts
+    git diff --exit-code -- apps/orasenda/src/ipc/bindings.ts
     @echo "==> mobile (cargo check core, store and app for iOS and Android)"
     "{{ just_executable() }}" mobile
     @echo "==> app build (debug, no bundle)"

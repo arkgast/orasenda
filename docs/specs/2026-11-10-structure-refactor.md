@@ -1,7 +1,7 @@
 # Structure refactor and legacy removal
 
 - Date: 2026-11-10
-- Status: approved (owner, 2026-11-10: the folder structure shown in the session, the 500-line ceiling, "use workflow to execute this")
+- Status: implemented (2026-11-11; approved by the owner 2026-11-10: the folder structure shown in the session, the 500-line ceiling, "use workflow to execute this")
 - Plan: [docs/plans/2026-11-10-structure-refactor.md](../plans/2026-11-10-structure-refactor.md)
 - Runs before sub-project C (Today redesign). C's decisions so far (design-match check: WebKit layout cases plus a review checklist; DevPanel: its own debug-only window) stand.
 
@@ -89,9 +89,9 @@ packages/ui/src/components/ui/choice.tsx             NEW (migrated); legacy.* de
 - `./scripts/ci.sh` in full for every task, under the shared lock.
 
 ## Acceptance
-- [ ] `just file-size` is in `ci`; the allowlist holds only `Today.test.tsx` (C rewrites it) or is empty.
-- [ ] `crates/service` exists, the Tauri crate has no `SessionService`, `just service-boundary` passes.
-- [ ] The tree matches "Target structure" (folders that would hold nothing yet are not created).
-- [ ] No `legacy.*` file, no `os-` class in `packages/ui/src` or the app, Preflight on, `Choice` is TSX.
-- [ ] `bindings.ts` unchanged; test totals unchanged except the added tests.
-- [ ] `docs/conventions.md` has the rules above; ROADMAP notes this refactor before C.
+- [x] `just file-size` is in `ci`; the allowlist holds only `Today.test.tsx` (C rewrites it) or is empty.
+- [x] `crates/service` exists, the Tauri crate has no `SessionService`, `just service-boundary` passes.
+- [x] The tree matches "Target structure" (folders that would hold nothing yet are not created).
+- [x] No `legacy.*` file, no `os-` class in `packages/ui/src` or the app, Preflight on, `Choice` is TSX.
+- [x] `bindings.ts` unchanged; test totals unchanged except the added tests.
+- [x] `docs/conventions.md` has the rules above; ROADMAP notes this refactor before C.
