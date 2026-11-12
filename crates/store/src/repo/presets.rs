@@ -57,7 +57,7 @@ pub fn insert(txn: &mut Txn, preset: &StoredPreset) -> Result<(), StoreError> {
             default_key,
         ],
     )?;
-    let mut fields = fields_of(preset);
+    let mut fields = fields_of(preset)?;
     if let Some(deleted_at) = preset.deleted_at {
         fields.push(("deleted_at", Value::from(deleted_at)));
     }
@@ -69,9 +69,9 @@ pub fn insert(txn: &mut Txn, preset: &StoredPreset) -> Result<(), StoreError> {
 /// `deleted_at` is not touched here: use [`remove`] and [`undelete`].
 pub fn update(txn: &mut Txn, preset: &StoredPreset) -> Result<(), StoreError> {
     let stored = require(txn, &preset.def.id)?;
-    let changed: Vec<_> = fields_of(preset)
+    let changed: Vec<_> = fields_of(preset)?
         .into_iter()
-        .zip(fields_of(&stored))
+        .zip(fields_of(&stored)?)
         .filter(|(new, old)| new.1 != old.1)
         .map(|(new, _)| new)
         .collect();
@@ -138,9 +138,9 @@ fn require(txn: &Txn, id: &PresetId) -> Result<StoredPreset, StoreError> {
 }
 
 /// The synced fields, always in the same order, so two lists can be zipped.
-fn fields_of(preset: &StoredPreset) -> Vec<(&'static str, Value)> {
+fn fields_of(preset: &StoredPreset) -> Result<Vec<(&'static str, Value)>, StoreError> {
     let def = &preset.def;
-    vec![
+    Ok(vec![
         ("name", Value::from(def.name.clone())),
         ("focus_min", Value::from(def.focus_min)),
         ("break_min", Value::from(def.break_min)),
@@ -149,9 +149,9 @@ fn fields_of(preset: &StoredPreset) -> Vec<(&'static str, Value)> {
         ("position", Value::from(preset.position)),
         (
             "default_key",
-            serde_json::to_value(def.default_key).unwrap_or(Value::Null),
+            default_key_text(def.default_key)?.map_or(Value::Null, Value::from),
         ),
-    ]
+    ])
 }
 
 fn default_key_text(key: Option<DefaultPreset>) -> Result<Option<String>, StoreError> {
@@ -195,7 +195,10 @@ fn read_row(row: &Row) -> rusqlite::Result<StoredPreset> {
         position: row.get(6)?,
         deleted_at: row
             .get::<_, Option<i64>>(8)?
-            .map(|ms| u64::try_from(ms).unwrap_or(0)),
+            .map(|ms| {
+                u64::try_from(ms).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(8, ms))
+            })
+            .transpose()?,
     })
 }
 

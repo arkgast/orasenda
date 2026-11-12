@@ -54,7 +54,7 @@ fn store_is_send_and_sync() {
 }
 
 #[test]
-fn fresh_file_reaches_v2_without_review_marker() {
+fn fresh_file_reaches_current_schema_without_review_marker() {
     let dir = TempDir::new("fresh");
     let store = Store::open(&dir.db(), DEVICE).expect("opens");
     assert_eq!(store.device_id(), DEVICE);
@@ -64,7 +64,6 @@ fn fresh_file_reaches_v2_without_review_marker() {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
-    assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(meta(&conn, "notify_review"), None);
     let mode: String = conn

@@ -2,11 +2,14 @@
 
 use rusqlite::Connection;
 
+/// The preset library migration. Named once so a renumbering at landing touches only this file.
+pub(crate) const PRESET_LIBRARY_SQL: &str = include_str!("../migrations/0003_preset_library.sql");
+
 /// Every migration, in order. Each later sub-project appends `(N, include_str!(…000N_….sql))`.
 pub(crate) const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("../migrations/0001_init.sql")),
     (2, include_str!("../migrations/0002_notify_review.sql")),
-    (3, include_str!("../migrations/0003_preset_library.sql")),
+    (3, PRESET_LIBRARY_SQL),
 ];
 
 const _: () = assert!(

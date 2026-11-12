@@ -82,8 +82,9 @@ pub fn started_between(txn: &Txn, from_ms: u64, to_ms: u64) -> Result<Vec<Sessio
     )?;
     let rows = stmt.query_map((sql_int(from_ms)?, sql_int(to_ms)?), |row| {
         let ms = |index| {
-            row.get::<_, i64>(index)
-                .map(|v| u64::try_from(v).unwrap_or(0))
+            row.get::<_, i64>(index).and_then(|v| {
+                u64::try_from(v).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(index, v))
+            })
         };
         Ok(SessionRow {
             id: row.get(0)?,

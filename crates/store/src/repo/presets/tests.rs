@@ -1,6 +1,6 @@
 use super::*;
 use crate::Store;
-use crate::migrate::MIGRATIONS;
+use crate::migrate::{MIGRATIONS, PRESET_LIBRARY_SQL};
 use crate::test_support::count;
 use orasenda_core::default_presets;
 
@@ -111,6 +111,29 @@ fn preset_update_missing_is_an_error() {
     let store = Store::open_in_memory("device-a").expect("opens");
     let result = store.write(1, |txn| update(txn, &stored(0)));
     assert!(matches!(result, Err(StoreError::Sqlite(_))), "{result:?}");
+    let id = stored(0).def.id;
+    let removed = store.write(1, |txn| remove(txn, &id));
+    assert!(matches!(removed, Err(StoreError::Sqlite(_))), "{removed:?}");
+    let restored = store.write(1, |txn| undelete(txn, &id));
+    assert!(
+        matches!(restored, Err(StoreError::Sqlite(_))),
+        "{restored:?}"
+    );
+}
+
+#[test]
+fn preset_negative_deleted_at_is_an_error() {
+    let store = seeded();
+    let id = stored(1).def.id;
+    store
+        .write(1, |txn| {
+            txn.conn()
+                .execute("UPDATE preset SET deleted_at = -5 WHERE id = ?1", [&id.0])?;
+            Ok(())
+        })
+        .expect("sets");
+    let result = store.read(list_with_removed);
+    assert!(matches!(result, Err(StoreError::Sqlite(_))), "{result:?}");
 }
 
 #[test]
@@ -169,7 +192,7 @@ fn preset_remove_is_tombstone() {
 
 #[test]
 fn preset_library_migrates_from_previous_schema() {
-    let mine = include_str!("../../../migrations/0003_preset_library.sql");
+    let mine = PRESET_LIBRARY_SQL;
     let index = MIGRATIONS
         .iter()
         .position(|(_, sql)| *sql == mine)
