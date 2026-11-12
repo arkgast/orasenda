@@ -26,7 +26,7 @@ The Focus window (`full-screen-focus.tsx`): the time and the intent, one quiet w
 ## States and announcements
 
 - **`ended`:** the status line says "Session ended.", the timer shows idle (and the intent), Start and the summary return, and the window stays open.
-- **Live region:** one, the status line: an always-mounted `role="status"` paragraph that holds "Session ended." while `ended` and otherwise only an `aria-hidden` non-breaking space (it keeps the line's height), so the end is announced once. The host may pass `status` (a failed command, an unreadable timer): that one line takes the place of "Session ended." in the same region, and nothing else changes. The Focus window is its own window and has no page status to announce through. The timer stays `role="timer"`, `aria-live="off"`.
+- **Live region:** one, the status line: an always-mounted `role="status"` paragraph that holds "Session ended." while `ended` and otherwise only an `aria-hidden` non-breaking space (it keeps the line's height), so the end is announced once. The host may pass `status` (a failed command, an unreadable timer): that one line takes the place of "Session ended." in the same region, and nothing else changes. The status stays on one line (it truncates with an ellipsis rather than wrapping, so the time track never loses height); the live region still reads the full text. The Focus window is its own window and has no page status to announce through. The timer stays `role="timer"`, `aria-live="off"`.
 - It is a borderless window per display, not macOS native full screen.
 
 Do: keep the menu-bar timer running underneath. Don't: add anything else to this screen, or call `timerLayout` on a tick.

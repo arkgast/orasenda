@@ -12,11 +12,12 @@ import { commandFailure } from "../today/statusLine";
 import { useInsets } from "./useInsets";
 import "./focus.css";
 
+const isRace = (error: TimerCommandError) => commandFailure(error) === "race";
 const UNREADABLE = "Orasenda can't reach the timer. Close this window and try again.";
 
-type Result =
+type Result<E extends { kind: string }> =
   | { status: "ok"; data: unknown }
-  | { status: "error"; error: TimerCommandError | { kind: string; message: string } };
+  | { status: "error"; error: E };
 
 /** The saved settings: one `settings_get`, then every `settings-changed`. */
 function useSavedSettings(): { settings: Settings | null; failed: boolean } {
@@ -71,7 +72,12 @@ export function FocusPage() {
     setProblem(null);
   }
 
-  const run = (name: string, message: string, command: () => Promise<Result>) =>
+  const run = <E extends { kind: string }>(
+    name: string,
+    message: string,
+    command: () => Promise<Result<E>>,
+    isRace: (error: E) => boolean = () => false,
+  ) =>
     command().then(
       (result) => {
         if (result.status === "ok") {
@@ -80,12 +86,7 @@ export function FocusPage() {
         }
         console.error(`${name} failed`, result.error);
         // Another surface got there first: the next view is the truth, so say nothing.
-        if (
-          "kind" in result.error &&
-          commandFailure(result.error as TimerCommandError) === "race"
-        ) {
-          return false;
-        }
+        if (isRace(result.error)) return false;
         setProblem(message);
         return false;
       },
@@ -101,14 +102,17 @@ export function FocusPage() {
   const start = () => {
     if (starting.current) return;
     starting.current = true;
-    run("timer_start", "Focus didn't start. Orasenda's timer isn't responding.", () =>
-      commands.timerStart({ quick: false }),
+    run(
+      "timer_start",
+      "Focus didn't start. Orasenda's timer isn't responding.",
+      () => commands.timerStart({ quick: false }),
+      isRace,
     ).finally(() => {
       starting.current = false;
     });
   };
-  const timerCommand = (name: string, command: () => Promise<Result>) => () =>
-    void run(name, "Orasenda's timer isn't responding.", command);
+  const timerCommand = (name: string, command: () => Promise<Result<TimerCommandError>>) => () =>
+    void run(name, "Orasenda's timer isn't responding.", command, isRace);
   const end = timerCommand("timer_stop", commands.timerStop);
   const pause = timerCommand("timer_pause", commands.timerPause);
   const resume = timerCommand("timer_resume", commands.timerResume);
@@ -119,7 +123,12 @@ export function FocusPage() {
   ]);
 
   const choosePreset = (presetId: string) =>
-    void run("preset_select", "That preset didn't save.", () => commands.presetSelect(presetId));
+    void run(
+      "preset_select",
+      "That preset didn't save.",
+      () => commands.presetSelect(presetId),
+      isRace,
+    );
   const leave = () =>
     void run("focus_view_close", "This window didn't close.", commands.focusViewClose);
 
@@ -132,7 +141,12 @@ export function FocusPage() {
   } as CSSProperties;
 
   return (
-    <div data-slot="focus-page" className="app-focus-page" style={style}>
+    <main
+      data-slot="focus-page"
+      aria-label="Focus session"
+      className="app-focus-page"
+      style={style}
+    >
       <FullScreenFocus
         remaining={shown?.remaining ?? ""}
         remainingLabel={shown?.remainingLabel ?? ""}
@@ -161,6 +175,6 @@ export function FocusPage() {
         onEnd={end}
         onExit={leave}
       />
-    </div>
+    </main>
   );
 }

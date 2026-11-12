@@ -36,6 +36,7 @@ test("focus_page_follows_the_saved_theme", async () => {
   render(<FocusPage />);
   await settle();
   expect(screen.getByRole("region", { name: "Full-screen focus" })).toBeInTheDocument();
+  expect(screen.getByRole("main", { name: "Focus session" })).toBeInTheDocument();
   expect(document.documentElement.dataset.theme).toBe("dark");
 });
 

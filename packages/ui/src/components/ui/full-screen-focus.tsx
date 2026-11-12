@@ -214,7 +214,7 @@ export function FullScreenFocus({
         <p
           role="status"
           data-slot="full-screen-focus-status"
-          className="m-0 shrink-0 text-body-sm text-ink"
+          className="m-0 shrink-0 truncate text-body-sm text-ink"
         >
           {status ?? (ended ? "Session ended." : <span aria-hidden="true">{" "}</span>)}
         </p>

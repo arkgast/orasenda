@@ -240,3 +240,18 @@ test("full_screen_focus_break_actions_tab_after_end", async ({ page }) => {
     "primary",
   );
 });
+
+test("full_screen_focus_status_line_stays_one_row", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES) {
+    const f = frame(page, "status", w, h);
+    const line = f.locator("[data-slot=full-screen-focus-status]");
+    await expect(line, `${w}x${h}`).toContainText("can't reach the timer");
+    const box = await line.boundingBox();
+    expect(box?.height, `${w}x${h} one line`).toBeLessThanOrEqual(18.5);
+    const over = (await overflows(f)).filter(
+      (l) => !l.includes("sr-only") && !l.includes("status"),
+    );
+    expect(over, `${w}x${h}`).toEqual([]);
+  }
+});

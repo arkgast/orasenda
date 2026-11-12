@@ -22,7 +22,7 @@ const STATES = [
   { name: "ended", scenario: "ended", primary: /Start focus/ },
 ] as const;
 // The menu bar above and the Dock below, as a real display reports them. A 360x240 window is
-// smaller than any display's visible frame, so it has no inset case.
+// smaller than any display's visible frame, so it has no inset case (recorded in the PR body).
 const INSETS = { top: 24, right: 0, bottom: 64, left: 0 };
 
 async function openFocus(
@@ -108,7 +108,8 @@ for (const size of SIZES) {
       test(`focus_window_focus_ring_${label}`, async ({ page }) => {
         await openFocus(page, state.scenario, size, withInsets);
         await expect(page.locator("[data-slot=full-screen-focus]")).toBeFocused();
-        const stops = state.name === "idle" || state.name === "ended" ? 3 : 3;
+        // The README tab order: Leave full screen, the primary button, End (or the preset summary).
+        const stops = 3;
         for (let stop = 0; stop < stops; stop++) {
           await pressTab(page);
           const focused = page.locator(":focus");

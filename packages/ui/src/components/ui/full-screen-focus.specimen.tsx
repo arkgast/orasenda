@@ -26,6 +26,10 @@ const STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
     { mode: "warning", remaining: "01:48", remainingLabel: "1 minute 48 seconds", progress: 0.92 },
   ],
   [
+    "status",
+    { mode: "idle", status: "Orasenda can't reach the timer. Close this window and try again." },
+  ],
+  [
     "ended",
     {
       mode: "idle",
