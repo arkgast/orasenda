@@ -1,11 +1,15 @@
 //! What the surfaces see: the view, the clock text and the state read.
 
 use orasenda_core::{
-    EngineState, NotificationStatus, format_clock, format_remaining, spoken_remaining,
+    EngineState, NotificationStatus, SessionPreset, format_clock, format_remaining,
+    spoken_remaining,
 };
 
 use super::*;
 use crate::api::{ClockTick, Mode, TimerState, TimerView};
+
+/// What a `quick` session is called.
+const QUICK_NAME: &str = "Just 2 minutes";
 
 impl SessionService {
     /// `timer_state`: a [`SessionService::tick`], plus the drained `pending`.
@@ -27,6 +31,21 @@ impl SessionService {
             EngineState::Paused => Mode::Paused,
             EngineState::Running => Mode::Focus,
         };
+        let (preset_id, preset_name, quick, break_min) = match &engine.preset {
+            None => (None, None, false, None),
+            Some(SessionPreset::Quick) => (None, Some(QUICK_NAME.to_string()), true, None),
+            Some(SessionPreset::Library {
+                id,
+                name,
+                break_min,
+                ..
+            }) => (
+                Some(id.clone()),
+                Some(name.clone()),
+                false,
+                Some(u32::from(*break_min)),
+            ),
+        };
         TimerView {
             state: engine.state,
             phase: engine.phase,
@@ -36,7 +55,10 @@ impl SessionService {
             remaining_label: spoken_remaining(engine.remaining_ms),
             progress: engine.progress,
             session_id: engine.session_id,
-            preset: engine.preset,
+            preset_id,
+            preset_name,
+            quick,
+            break_min,
             finish: engine.planned_end_ms.map(|end| self.clock_text(end)),
             planned_min: engine
                 .planned_ms
@@ -51,11 +73,8 @@ impl SessionService {
     /// The wall clock, and while idle the finish the chosen preset would have if started now.
     pub fn clock_tick(&self, now_ms: u64) -> ClockTick {
         let idle_finish = if self.engine.is_idle() {
-            self.settings
-                .preset
-                .spec(&self.settings.custom)
-                .ok()
-                .map(|spec| self.clock_text(now_ms.saturating_add(spec.focus_ms)))
+            let focus_ms = u64::from(self.selected().focus_min) * 60_000;
+            Some(self.clock_text(now_ms.saturating_add(focus_ms)))
         } else {
             None
         };

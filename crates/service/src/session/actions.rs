@@ -1,6 +1,6 @@
 //! The transitions: apply, tick, start, change and end.
 
-use orasenda_core::{Milestone, Preset, SessionId, SessionRecord, TimerError};
+use orasenda_core::{Milestone, SessionId, SessionPreset, SessionRecord, TimerError};
 
 use super::*;
 use crate::api::{MilestoneEvent, MilestoneKind, StartRequest, TimerCommandError};
@@ -77,13 +77,13 @@ impl SessionService {
         if !self.engine.is_idle() {
             return Err(TimerError::AlreadyRunning);
         }
-        // Only Custom reads a spec: the given one, else the saved one.
-        let custom = match (request.preset, request.custom) {
-            (Preset::Custom, Some(custom)) => custom,
-            _ => self.settings.custom,
+        // The selected preset as the library has it now; the session keeps this snapshot.
+        let preset = if request.quick {
+            SessionPreset::Quick
+        } else {
+            snapshot_of(self.selected())
         };
-        let spec = request.preset.spec(&custom)?;
-        self.engine.start(new_id(), request.preset, spec, now_ms)?;
+        self.engine.start(new_id(), preset, now_ms)?;
         self.keep_awake = self.begin_keep_awake();
         self.changed(now_ms, MilestoneKind::Started, outcome);
         Ok(())

@@ -14,11 +14,13 @@ pub(super) struct RecoverOwed {
     pub(super) settings: bool,
     /// The `active_session` row was not read; a write records any session it finds there.
     pub(super) snapshot: bool,
+    /// The preset library was not loaded (or not seeded); core's defaults show meanwhile.
+    pub(super) presets: bool,
 }
 
 impl RecoverOwed {
     pub(super) fn any(self) -> bool {
-        self.settings || self.snapshot
+        self.settings || self.snapshot || self.presets
     }
 }
 
@@ -61,16 +63,18 @@ impl SessionService {
     /// while nothing has happened since launch (engine idle, nothing owed to the store);
     /// otherwise the next write records it. True when recovery wrote.
     pub(super) fn retry_recovery(&mut self, now_ms: u64) -> bool {
+        // First: a seed rewrites `timer.preset`, so the settings read below must follow it.
+        let seeded = self.recover_owed.presets && self.retry_presets(now_ms);
         let owed = self.recover_owed;
         let want_snapshot = owed.snapshot
             && self.engine.is_idle()
             && !self.snapshot_dirty
             && self.unsaved.is_empty();
         if !owed.settings && !want_snapshot {
-            return false;
+            return seeded;
         }
         let Some(store) = &self.store else {
-            return false;
+            return seeded;
         };
         let read = store.read(|txn| {
             let settings = if owed.settings {
@@ -89,9 +93,9 @@ impl SessionService {
         });
         // Still failing: already logged when the debt began.
         let Ok((settings, snapshot)) = read else {
-            return false;
+            return seeded;
         };
-        let mut wrote = false;
+        let mut wrote = seeded;
         if let Some((settings, pending)) = settings {
             let before = self.settings.theme;
             self.settings = settings;

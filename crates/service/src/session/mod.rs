@@ -9,6 +9,7 @@ mod actions;
 mod effects;
 mod frames;
 mod persist;
+mod presets;
 mod recovery;
 mod run;
 mod service;
@@ -20,8 +21,8 @@ mod view;
 pub use effects::Effects;
 pub use frames::{run_frame_get, run_frame_load, run_frame_save};
 pub use run::{
-    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_select_preset,
-    run_set_settings, run_state, run_view,
+    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_presets_list,
+    run_select_preset, run_set_settings, run_state, run_view,
 };
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
 pub use settings::SettingsSaved;
@@ -31,7 +32,8 @@ pub use settings::SettingsSaved;
 pub mod test_support;
 
 use effects::Outcome;
+use presets::snapshot_of;
 use recovery::{RecoverOwed, RowFound, recovered, unread_row};
 use settings::read_settings;
 #[cfg(test)]
-use settings::{KEY_CUSTOM, KEY_NOTIFY, KEY_PRESET, KEY_THEME, META_NOTIFY_REVIEW};
+use settings::{KEY_NOTIFY, KEY_PRESET, KEY_THEME, META_NOTIFY_REVIEW};

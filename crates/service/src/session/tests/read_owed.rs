@@ -1,7 +1,7 @@
 //! Launch reads that failed and are still owed.
 
 use orasenda_core::{
-    EndReason, EngineState, NotificationStatus, Preset, Session, SessionId, SessionRecord,
+    EndReason, EngineState, NotificationStatus, Session, SessionId, SessionRecord,
 };
 use orasenda_store::active_session;
 
@@ -13,7 +13,7 @@ fn row_a() -> SessionRecord {
     // `has_row` probes by id only.
     SessionRecord {
         id: SessionId("a".into()),
-        preset: Preset::Classic,
+        preset: library_preset(1),
         phase: orasenda_core::Phase::Focus,
         planned_ms: CLASSIC_MS,
         started_ms: T0,
@@ -87,7 +87,7 @@ fn reads_recover_and_the_next_tick_runs_recovery() {
     assert_eq!(effects.view.session_id, Some(SessionId("a".into())));
     assert_eq!(effects.view.remaining_ms, CLASSIC_MS - 2 * MINUTE);
     assert!(s.keep_awake.is_some());
-    assert_eq!(s.settings().preset, Preset::FiftyTen);
+    assert_eq!(s.settings().preset_id, default_id(2));
 
     let mut late = relaunch_with_reads_failing(T0 + MINUTE);
     db(&late).fail_reads(false);
@@ -110,15 +110,7 @@ fn reads_recover_and_the_next_tick_runs_recovery() {
 /// idle and unavailable.
 fn relaunch_idle_with_reads_failing() -> SessionService {
     let mut s = service();
-    s.set_settings(
-        Settings {
-            theme: Theme::System,
-            preset: Preset::FiftyTen,
-            ..Settings::default()
-        },
-        T0,
-    )
-    .expect("settings save");
+    s.set_settings(deep_work(), T0).expect("settings save");
     let store = s.store.take().expect("store");
     store.fail_reads(true);
     SessionService::new(
@@ -150,7 +142,7 @@ fn idle_read_retry_back_to_ok_flags_the_store_change() {
 #[test]
 fn idle_flush_back_to_ok_flags_the_store_change() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
     assert_eq!(stopped.view.store, StoreStatus::Unavailable);
@@ -194,7 +186,7 @@ fn row_recorded_by_a_start_after_the_webview_listens_is_not_announced() {
     let mut s = relaunch_with_reads_failing(T0 + MINUTE);
     let (state, _) = s.state(T0 + MINUTE);
     assert!(state.pending.is_empty());
-    let started = s.apply(start(Preset::Classic), T0 + 3 * MINUTE, id("b"));
+    let started = s.apply(start(), T0 + 3 * MINUTE, id("b"));
     assert_eq!(
         started.milestones,
         [milestone(MilestoneKind::Started, None, "b")]
@@ -208,7 +200,7 @@ fn row_recorded_by_a_start_after_the_webview_listens_is_not_announced() {
 fn start_while_row_unread_then_flush_records_the_pre_quit_session() {
     let mut s = relaunch_with_reads_failing(T0 + MINUTE);
     db(&s).fail_writes(true);
-    let started = s.apply(start(Preset::Classic), T0 + 3 * MINUTE, id("b"));
+    let started = s.apply(start(), T0 + 3 * MINUTE, id("b"));
     assert_eq!(started.result, Ok(started.view.clone()));
     assert_eq!(started.view.store, StoreStatus::Unavailable);
     db(&s).fail_reads(false);
@@ -239,7 +231,7 @@ fn start_while_row_unread_then_flush_records_the_pre_quit_session() {
 #[test]
 fn start_while_row_unread_records_a_finished_pre_quit_session_as_completed() {
     let mut s = relaunch_with_reads_failing(T0 + 60 * MINUTE);
-    let started = s.apply(start(Preset::Classic), T0 + 60 * MINUTE, id("b"));
+    let started = s.apply(start(), T0 + 60 * MINUTE, id("b"));
     assert_eq!(started.view.state, EngineState::Running);
     assert_eq!(
         s.pending,
@@ -258,21 +250,27 @@ fn start_while_row_unread_records_a_finished_pre_quit_session_as_completed() {
     // Settings are still owed; the next tick reads them and the status returns to ok.
     let next = s.tick(T0 + 61 * MINUTE);
     assert_eq!(next.view.store, StoreStatus::Ok);
-    assert_eq!(s.settings().preset, Preset::FiftyTen);
+    assert_eq!(s.settings().preset_id, default_id(2));
 }
 
 #[test]
 fn settings_saved_while_unread_win_over_stored_ones() {
     let mut s = relaunch_with_reads_failing(T0 + 60 * MINUTE);
     let chosen = Settings {
-        theme: Theme::System,
-        preset: Preset::DeepBlock,
+        theme: Theme::Dark,
         ..Settings::default()
     };
     s.set_settings(chosen.clone(), T0 + 60 * MINUTE)
         .expect("writes still work");
     db(&s).fail_reads(false);
     s.tick(T0 + 61 * MINUTE);
-    assert_eq!(s.settings(), chosen);
+    // Only the key that was saved wins; the stored selection is read on top of it.
+    assert_eq!(
+        s.settings(),
+        Settings {
+            preset_id: default_id(2),
+            ..chosen
+        }
+    );
     assert_eq!(s.view(T0 + 61 * MINUTE).store, StoreStatus::Ok);
 }

@@ -3,7 +3,7 @@
 use std::sync::mpsc::{RecvTimeoutError, channel};
 use std::thread;
 
-use orasenda_core::{EndReason, EngineState, NotificationStatus, Preset, SessionId, SessionRecord};
+use orasenda_core::{EndReason, EngineState, NotificationStatus, SessionId, SessionRecord};
 use orasenda_store::{WriteGate, active_session};
 
 use super::super::test_support::*;
@@ -14,7 +14,7 @@ use crate::api::{MilestoneKind, StoreStatus, TimerCommandErrorKind};
 fn recovers_running_snapshot_in_time() {
     // Wall-clock continuation by design (case a of #121): a relaunch before the planned end keeps running.
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let Fakes { platform, log, .. } = fakes(NotificationStatus::NotDetermined, false);
     let store = s.store.take().expect("store");
     let mut back = SessionService::new(Ok(store), platform, T0 + MINUTE);
@@ -30,7 +30,7 @@ fn recovers_running_snapshot_in_time() {
 #[test]
 fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let mut back = relaunch(&mut s, T0 + 60 * MINUTE);
     assert_eq!(back.view(T0 + 60 * MINUTE).state, EngineState::Idle);
     assert_eq!(back.store_status, StoreStatus::Ok);
@@ -46,7 +46,7 @@ fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
     assert!(back.keep_awake.is_none());
     let record = SessionRecord {
         id: SessionId("a".into()),
-        preset: Preset::Classic,
+        preset: library_preset(1),
         phase: orasenda_core::Phase::Focus,
         planned_ms: CLASSIC_MS,
         started_ms: T0,
@@ -66,7 +66,7 @@ fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
 #[test]
 fn recovery_with_failing_write_keeps_record_unsaved() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let store = s.store.take().expect("store");
     store.fail_writes(true);
     let mut back = SessionService::new(
@@ -91,7 +91,7 @@ fn recovery_with_failing_write_keeps_record_unsaved() {
 #[test]
 fn recovers_paused_session_as_paused() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     s.apply(Action::Pause, T0 + 10 * MINUTE, id("x"));
     let Fakes { platform, log, .. } = fakes(NotificationStatus::NotDetermined, false);
     let store = s.store.take().expect("store");
@@ -111,7 +111,7 @@ fn recovers_paused_session_as_paused() {
 #[test]
 fn clock_set_back_after_end_does_not_reopen() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let end = s.tick(T0 + CLASSIC_MS);
     let record = ended_record(&end);
     assert_eq!(record.end_reason, EndReason::Completed);
@@ -140,7 +140,7 @@ fn clock_set_back_after_end_does_not_reopen() {
 #[test]
 fn clock_set_back_after_stop_does_not_reopen_on_relaunch() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let stopped = s.apply(Action::Stop, T0 + 5 * MINUTE, id("x"));
     let record = ended_record(&stopped);
     assert_eq!(record.end_reason, EndReason::Stopped);
@@ -176,7 +176,7 @@ fn undecodable_snapshot_is_logged_and_left_in_place() {
 #[test]
 fn stop_with_failing_write_does_not_resurrect_on_relaunch() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     let stopped = s.apply(Action::Stop, T0 + 10 * MINUTE, id("x"));
     assert_eq!(stopped.result, Ok(stopped.view.clone()));
@@ -207,7 +207,7 @@ fn stop_with_failing_write_does_not_resurrect_on_relaunch() {
 #[test]
 fn end_and_exit_flush_both_failing_leaves_start_snapshot_and_relaunch_resumes() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     assert!(snapshot(db(&s)).is_some());
 
     db(&s).fail_writes(true);
@@ -258,7 +258,7 @@ fn end_and_exit_flush_both_failing_leaves_start_snapshot_and_relaunch_resumes() 
 #[test]
 fn flush_on_exit_with_failing_store_leaves_owed_state() {
     let host = TestHost::new(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     db(&lock(&host.0.service)).fail_writes(true);
     host.set_now(T0 + MINUTE);
     run_action_on(&host, Action::Stop).expect("stops");
@@ -281,11 +281,11 @@ fn flush_on_exit_with_failing_store_leaves_owed_state() {
 #[test]
 fn failed_put_then_recover_keeps_live_snapshot() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
     let record_a = ended_record(&stopped);
-    let started = s.apply(start(Preset::Classic), T0 + 2 * MINUTE, id("b"));
+    let started = s.apply(start(), T0 + 2 * MINUTE, id("b"));
     assert_eq!(started.view.state, EngineState::Running);
     assert_eq!(started.view.store, StoreStatus::Unavailable);
 
@@ -313,7 +313,7 @@ fn retry_flush_holds_lock_against_concurrent_start() {
         notifier,
     } = fakes(NotificationStatus::Denied, false);
     let mut s = SessionService::new(Ok(memory_store()), platform, T0);
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     s.apply(Action::Stop, T0 + MINUTE, id("x"));
     assert!(s.snapshot_dirty);
@@ -343,7 +343,7 @@ fn retry_flush_holds_lock_against_concurrent_start() {
     let starter = {
         let host = host.clone();
         thread::spawn(move || {
-            let result = run_action_on(&host, start(Preset::Classic));
+            let result = run_action_on(&host, start());
             started_tx.send(()).expect("test is listening");
             result
         })
@@ -381,7 +381,7 @@ fn retry_flush_holds_lock_against_concurrent_start() {
 #[test]
 fn store_status_across_failing_write_and_next_success() {
     let mut s = service();
-    let started = s.apply(start(Preset::Classic), T0, id("a"));
+    let started = s.apply(start(), T0, id("a"));
     assert_eq!(started.view.store, StoreStatus::Ok);
     db(&s).fail_writes(true);
     let paused = s.apply(Action::Pause, T0 + MINUTE, id("x"));
@@ -397,7 +397,7 @@ fn store_status_across_failing_write_and_next_success() {
 #[test]
 fn end_write_failure_keeps_record_unsaved_and_next_tick_flushes_it() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     let ended = s.tick(T0 + CLASSIC_MS);
     let record = ended_record(&ended);
@@ -415,7 +415,7 @@ fn end_write_failure_keeps_record_unsaved_and_next_tick_flushes_it() {
 #[test]
 fn flush_writes_what_is_owed() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
     let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
     db(&s).fail_writes(false);

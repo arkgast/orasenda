@@ -2,7 +2,7 @@
 
 use std::sync::atomic::Ordering;
 
-use orasenda_core::{NotificationStatus, Preset, Session};
+use orasenda_core::{NotificationStatus, Session};
 use orasenda_store::active_session;
 
 use super::super::test_support::*;
@@ -135,7 +135,7 @@ fn review_waits_for_an_owed_snapshot_then_runs_in_the_recovering_tick() {
         fakes(NotificationStatus::Granted, false).platform,
         T0,
     );
-    first.apply(start(Preset::Classic), T0, id("a"));
+    first.apply(start(), T0, id("a"));
     let store = first.store.take().expect("store");
     store.fail_reads(true);
     let mut s = SessionService::new(
@@ -178,7 +178,7 @@ fn review_with_snapshot_recovery_in_one_retry_keeps_the_running_session() {
         fakes(NotificationStatus::Granted, false).platform,
         T0,
     );
-    first.apply(start(Preset::Classic), T0, id("a"));
+    first.apply(start(), T0, id("a"));
     let store = first.store.take().expect("store");
     store.fail_reads(true);
     let mut s = SessionService::new(

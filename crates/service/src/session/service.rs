@@ -4,11 +4,16 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use orasenda_core::{KeepAwake, LocalTime, NotificationStatus, Notifier, Session, SessionRecord};
+use orasenda_core::{
+    KeepAwake, LocalTime, NotificationStatus, Notifier, PresetDef, Session, SessionRecord,
+    default_presets,
+};
 use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
-use crate::api::{MilestoneEvent, Settings, StartRequest, StoreStatus, Theme, TimerView};
+use crate::api::{
+    MilestoneEvent, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
+};
 use crate::windows::Frame;
 
 /// The OS services the session uses. The notifier is also managed on its own
@@ -33,6 +38,8 @@ pub trait NativeSurface: Send + Sync {
     fn render(&self, view: &TimerView);
     /// The saved settings changed (saved from any surface, or restored). Most surfaces ignore it.
     fn settings_changed(&self, _settings: &Settings) {}
+    /// The preset library changed (seeded, or written from any surface).
+    fn presets_changed(&self, _presets: &[PresetEntry]) {}
 }
 
 /// Every native surface, in managed state. `publish` clones the list under the lock and
@@ -56,6 +63,8 @@ pub struct SessionService {
     pub(super) store: Option<Store>,
     pub(super) store_status: StoreStatus,
     pub(super) settings: Settings,
+    /// The live presets in order: core's defaults while the library is not loaded.
+    pub(super) presets: Vec<PresetDef>,
     pub(super) unsaved: Vec<SessionRecord>,
     pub(super) snapshot_dirty: bool,
     pub(super) keep_awake: Option<Box<dyn Any + Send>>,
@@ -73,6 +82,8 @@ pub struct SessionService {
     pub(super) review_pending: bool,
     /// A recovered launch read of the settings is owed a `settings-changed`.
     pub(super) settings_event_owed: bool,
+    /// A recovered load of the preset library is owed a `presets-changed`.
+    pub(super) presets_event_owed: bool,
     /// The cached theme a recovered launch read changed, until `effects()` hands it out.
     pub(super) theme_owed: Option<Theme>,
     /// The number given to the last view handed out (see [`ViewGate`]).
@@ -101,6 +112,7 @@ impl SessionService {
             store,
             store_status,
             settings: Settings::default(),
+            presets: default_presets().to_vec(),
             unsaved: Vec::new(),
             snapshot_dirty: false,
             keep_awake: None,
@@ -111,10 +123,13 @@ impl SessionService {
             recover_owed: RecoverOwed::default(),
             review_pending: false,
             settings_event_owed: false,
+            presets_event_owed: false,
             theme_owed: None,
             view_seq: 0,
             frames: HashMap::new(),
         };
+        // The seed runs before the settings are read: it rewrites `timer.preset`.
+        service.load_presets(now_ms);
         if let Some(read) = service
             .store
             .as_ref()
@@ -122,6 +137,7 @@ impl SessionService {
         {
             service.load_settings(read);
         }
+        service.log_unknown_selection();
         if let Some(read) = service
             .store
             .as_ref()
@@ -132,11 +148,13 @@ impl SessionService {
         service
     }
 
-    /// The presented settings: the cache (defaults while degraded, never `Quick`), except that
-    /// while a notify review is pending `notify_session_end` is the review's outcome under the
-    /// status known now, and `false` while it is not known.
+    /// The presented settings: the cache (defaults while degraded), except that an unknown
+    /// `preset_id` is presented as the first live preset, and while a notify review is pending
+    /// `notify_session_end` is the review's outcome under the status known now, and `false`
+    /// while it is not known.
     pub fn settings(&self) -> Settings {
         let mut presented = self.settings.clone();
+        presented.preset_id = self.selected().id.clone();
         if self.review_pending {
             presented.notify_session_end &= self.notifications == Some(NotificationStatus::Granted);
         }

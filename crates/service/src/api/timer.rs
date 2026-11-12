@@ -1,6 +1,6 @@
 //! The timer's types: the view, the clock and the requests that start a session.
 
-use orasenda_core::{CustomSpec, EngineState, NotificationStatus, Phase, Preset, SessionId};
+use orasenda_core::{EngineState, NotificationStatus, Phase, PresetId, SessionId};
 use serde::{Deserialize, Serialize};
 
 use super::events::MilestoneEvent;
@@ -50,10 +50,17 @@ pub struct TimerView {
     #[specta(type = specta_typescript::Number)]
     pub progress: f64,
     pub session_id: Option<SessionId>,
-    pub preset: Option<Preset>,
+    /// The library preset the running session started with; `None` while idle and for `quick`.
+    pub preset_id: Option<PresetId>,
+    /// The snapshot's name, or "Just 2 minutes" for `quick`; `None` while idle.
+    pub preset_name: Option<String>,
+    /// The running session is the built-in two-minute start.
+    pub quick: bool,
+    /// The snapshot's break length in minutes; `None` while idle and for `quick`.
+    pub break_min: Option<u32>,
     pub finish: Option<String>,
-    /// The session's planned focus length in whole minutes, fixed at start (a Custom change
-    /// in Settings mid-session does not move it); `None` while idle.
+    /// The session's planned focus length in whole minutes, fixed at start (an edit to the preset
+    /// mid-session does not move it); `None` while idle.
     pub planned_min: Option<u32>,
     pub store: StoreStatus,
     pub notifications: NotificationStatus,
@@ -71,7 +78,10 @@ impl TimerView {
             remaining_label: "0 seconds".into(),
             progress: 0.0,
             session_id: None,
-            preset: None,
+            preset_id: None,
+            preset_name: None,
+            quick: false,
+            break_min: None,
             finish: None,
             planned_min: None,
             store,
@@ -92,6 +102,6 @@ pub struct TimerState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StartRequest {
-    pub preset: Preset,
-    pub custom: Option<CustomSpec>,
+    /// Start the built-in two-minute focus; otherwise the selected preset.
+    pub quick: bool,
 }

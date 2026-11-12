@@ -21,8 +21,7 @@ pub use platform::{
 };
 pub use timer::{
     DefaultPreset, EndReason, EngineState, EngineView, Milestone, Phase, PresetDef, PresetField,
-    PresetId, PresetInvalid, QUICK_START_MS, Session,
-    SessionId, SessionPreset, SessionRecord, TimerError, default_presets, format_clock,
-    format_remaining, normalize_name, spoken_remaining,
+    PresetId, PresetInvalid, QUICK_START_MS, Session, SessionId, SessionPreset, SessionRecord,
+    TimerError, default_presets, format_clock, format_remaining, normalize_name, spoken_remaining,
 };
 pub use usage::{IDLE_THRESHOLD_MS, UsageSegment, UsageTracker};

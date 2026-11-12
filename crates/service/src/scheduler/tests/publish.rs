@@ -36,7 +36,7 @@ fn surfaces_are_rendered_after_the_lock_is_released() {
     let worker = {
         let host = host.clone();
         thread::spawn(move || {
-            run_action_on(&host, start(Preset::Classic)).expect("starts");
+            run_action_on(&host, start()).expect("starts");
             publish_focus(&host);
             host.set_now(T0 + CLASSIC_MS);
             iterate(&host);
@@ -66,7 +66,7 @@ impl NativeSurface for PanicOnce {
 #[test]
 fn a_panicking_iteration_is_logged_and_the_next_one_runs() {
     let host = launched(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.0
         .surfaces
         .0
@@ -109,7 +109,7 @@ fn publish_clock_emits_the_service_clock() {
 fn stale_tick_view_is_not_published_after_a_newer_command() {
     let host = launched(NotificationStatus::Denied);
     with_recorder(&host);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.set_now(T0 + 1_000);
     host.log().take();
 
@@ -150,7 +150,7 @@ fn stale_tick_view_is_not_published_after_a_newer_command() {
 fn status_publish_is_ordered_with_a_concurrent_command() {
     let host = launched(NotificationStatus::NotDetermined);
     with_recorder(&host);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.log().take();
 
     let (taken, has_taken) = channel();

@@ -2,9 +2,7 @@
 
 use std::time::Duration;
 
-use orasenda_core::{
-    CustomSpec, EndReason, NotificationStatus, Preset, Session, SessionId, SessionRecord,
-};
+use orasenda_core::{EndReason, NotificationStatus, Session, SessionId, SessionRecord};
 use orasenda_store::{Store, StoreError, Txn, active_session, focus_sessions, meta, settings};
 
 use super::fakes::*;
@@ -91,12 +89,18 @@ pub(crate) fn failing_read<T>(
     result
 }
 
-pub(crate) fn fifty_ten() -> Settings {
+/// Settings that select Deep Work.
+pub(crate) fn deep_work() -> Settings {
     Settings {
-        theme: Theme::System,
-        preset: Preset::FiftyTen,
+        preset_id: default_id(2),
         ..Settings::default()
     }
+}
+
+/// A seeded store: a service has opened it once, so the preset library is in place and the
+/// seed marker is gone.
+pub(crate) fn seeded_store() -> Store {
+    service().store.take().expect("the service has a store")
 }
 
 /// A pre-B store: the review marker pending and `notify.session_end` as given.
@@ -113,44 +117,36 @@ pub(crate) fn pending_store(stored: Option<bool>) -> Store {
 
 /// [`read_owed_service`] with `theme` stored as `ui.theme`.
 pub(crate) fn read_owed_service_with_theme(theme: Theme) -> (SessionService, usize) {
-    let store = pending_store(Some(true));
+    let store = seeded_store();
+    store.put_meta_for_tests(META_NOTIFY_REVIEW, "pending");
     store
         .write(0, |txn| {
+            settings::set(txn, KEY_NOTIFY, &true)?;
             if theme != Theme::System {
                 settings::set(txn, KEY_THEME, &theme)?;
             }
-            settings::set(txn, KEY_PRESET, &Preset::Custom)?;
-            settings::set(
-                txn,
-                KEY_CUSTOM,
-                &CustomSpec {
-                    focus_min: 50,
-                    break_min: 10,
-                },
-            )
+            settings::set(txn, KEY_PRESET, &default_id(2))
         })
         .expect("seeds");
     let before = store.change_log_ids().len();
     store.fail_reads(true);
-    let s = SessionService::new(
+    let mut s = SessionService::new(
         Ok(store),
         fakes(NotificationStatus::Granted, false).platform,
         T0,
     );
+    // Only the settings read is under test: the library is taken as loaded (core's defaults
+    // are the stored ones).
+    s.recover_owed.presets = false;
     (s, before)
 }
 
-/// A store holding FiftyTen settings and a running session `a` started at `T0`, opened
+/// A store holding Deep Work settings and a running session `a` started at `T0`, opened
 /// again with reads failing.
 pub(crate) fn relaunch_with_reads_failing(now_ms: u64) -> SessionService {
     let mut s = service();
-    let saved = Settings {
-        theme: Theme::System,
-        preset: Preset::FiftyTen,
-        ..Settings::default()
-    };
-    s.set_settings(saved, T0).expect("settings save");
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
+    s.set_settings(deep_work(), T0).expect("settings save");
     let store = s.store.take().expect("store");
     store.fail_reads(true);
     SessionService::new(

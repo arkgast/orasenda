@@ -19,7 +19,10 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
             break_min,
             long_break_min,
             rounds,
-        } => ("library", Some((id, name, focus_min, break_min, long_break_min, rounds))),
+        } => (
+            "library",
+            Some((id, name, focus_min, break_min, long_break_min, rounds)),
+        ),
     };
     let phase = text(&record.phase)?;
     let end_reason = text(&record.end_reason)?;

@@ -5,12 +5,13 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use orasenda_core::{
-    HourCycle, KeepAwake, LocalTime, NotificationStatus, Notifier, PlatformError, Preset, SessionId,
+    HourCycle, KeepAwake, LocalTime, NotificationStatus, Notifier, PlatformError, PresetId,
+    SessionId,
 };
 use orasenda_store::Store;
 
 use crate::api::ClockTick;
-use crate::api::{MilestoneEvent, Settings, StartRequest, Theme, TimerView};
+use crate::api::{MilestoneEvent, PresetEntry, Settings, StartRequest, Theme, TimerView};
 use crate::scheduler::Host;
 use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
 
@@ -34,6 +35,7 @@ pub enum Event {
     Begun,
     Released,
     SettingsChanged(Settings),
+    PresetsChanged(Vec<PresetEntry>),
     ApplyTheme(Theme),
     OpenedSettings,
 }
@@ -222,11 +224,32 @@ pub fn service() -> SessionService {
     )
 }
 
-pub fn start(preset: Preset) -> Action {
-    Action::Start(StartRequest {
-        preset,
-        custom: None,
-    })
+/// Starts the selected preset.
+pub fn start() -> Action {
+    Action::Start(StartRequest { quick: false })
+}
+
+/// Starts the built-in two-minute focus.
+pub fn start_quick() -> Action {
+    Action::Start(StartRequest { quick: true })
+}
+
+/// The id of default `index`: 0 Gentle Start, 1 Steady Focus, 2 Deep Work.
+pub fn default_id(index: usize) -> PresetId {
+    orasenda_core::default_presets()[index].id.clone()
+}
+
+/// The snapshot a session keeps of default `index`.
+pub fn library_preset(index: usize) -> orasenda_core::SessionPreset {
+    let d = &orasenda_core::default_presets()[index];
+    orasenda_core::SessionPreset::Library {
+        id: d.id.clone(),
+        name: d.name.clone(),
+        focus_min: d.focus_min,
+        break_min: d.break_min,
+        long_break_min: d.long_break_min,
+        rounds: d.rounds,
+    }
 }
 
 pub fn id(text: &str) -> impl FnOnce() -> SessionId + use<> {
@@ -341,6 +364,11 @@ impl Host for TestHost {
     fn emit_settings_changed(&self, settings: &Settings) {
         self.note_unlocked();
         self.0.log.push(Event::SettingsChanged(settings.clone()));
+    }
+
+    fn emit_presets_changed(&self, presets: &[PresetEntry]) {
+        self.note_unlocked();
+        self.0.log.push(Event::PresetsChanged(presets.to_vec()));
     }
 
     fn apply_theme(&self, theme: Theme) {
