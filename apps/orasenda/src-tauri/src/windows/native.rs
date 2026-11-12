@@ -257,6 +257,17 @@ mod mac {
         }
 
         fn window_display(&self, label: &str) -> Option<String> {
+            // After a display change AppKit has already moved the floater onto a connected
+            // display, so its frame can't say its display went away: the last placed or saved
+            // display can.
+            if label == FLOATER
+                && let Some(display) = self
+                    .app
+                    .try_state::<Frames>()
+                    .and_then(|frames| frames.floater_display())
+            {
+                return Some(display);
+            }
             read_frame_on_main(&self.app, label).map(|(display, _)| display)
         }
 
@@ -302,9 +313,16 @@ mod mac {
         fn place(&self, label: &str, display_id: &str, frame: Frame) -> Result<(), FocusViewError> {
             let display = display_id.to_owned();
             // SAFETY: as above.
+            let placed = display.clone();
             self.with_window(label, move |pointer| unsafe {
                 appkit::set_frame(pointer, &display, to_rect(frame))
-            })
+            })?;
+            if label == FLOATER
+                && let Some(frames) = self.app.try_state::<Frames>()
+            {
+                frames.set_floater_display(placed);
+            }
+            Ok(())
         }
 
         fn show(&self, label: &str) -> Result<(), FocusViewError> {

@@ -93,13 +93,16 @@ fn tray_focus_items_idle() {
 
 #[test]
 fn tray_focus_items_running() {
-    for view in [running(S59), paused(S59)] {
+    for (view, pause) in [
+        (running(S59), "Pause session"),
+        (paused(S59), "Resume session"),
+    ] {
         let got = labels(&menu_items(&view, &NextSession::default(), &one(), false));
         assert_eq!(
             got[1..],
             [
                 "—",
-                got[2].as_str(),
+                pause,
                 "End session",
                 "—",
                 "Full screen",

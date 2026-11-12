@@ -49,11 +49,11 @@ fn move_floater<O: Ops>(ops: &O, screens: &[Screen]) {
     if !ops.exists(FLOATER) {
         return;
     }
-    let Some(current) = ops.window_display(FLOATER) else {
-        return;
-    };
-    if screens.iter().any(|screen| screen.id == current) {
-        return;
+    // A display that can't be read counts as gone: the floater is placed, not left stranded.
+    match ops.window_display(FLOATER) {
+        Some(current) if screens.iter().any(|screen| screen.id == current) => return,
+        Some(_) => {}
+        None => eprintln!("displays: the floater's display is unknown; moving it"),
     }
     let Some(target) = ops
         .main_display()
@@ -80,42 +80,78 @@ fn move_floater<O: Ops>(ops: &O, screens: &[Screen]) {
 pub(crate) fn on_screens_changed(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        reframe_on(&AppOps::new(&app));
+        serialized(&REFRESH, || reframe_on(&AppOps::new(&app)));
         refresh_surfaces(&app);
     });
 }
 
+/// One refresh at a time: the reads and the apply happen under this lock, so the newest
+/// refresh is always the last one applied.
+#[cfg(desktop)]
+static REFRESH: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// The displays the Focus menu was last built for (never held across a main-thread wait).
+#[cfg(all(desktop, target_os = "macos"))]
+static MENU_DISPLAYS: std::sync::Mutex<Option<Vec<crate::ipc::DisplayInfo>>> =
+    std::sync::Mutex::new(None);
+
+/// Runs `step` while holding `lock`; a poisoned lock still serializes.
+pub(crate) fn serialized<R>(lock: &std::sync::Mutex<()>, step: impl FnOnce() -> R) -> R {
+    let _guard = lock
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    step()
+}
+
 /// Tells the Focus menu and the menu-bar item the displays and whether the floater is
 /// shown. Reading the displays waits on the main thread, so this runs on a blocking one.
+/// The Focus menu is rebuilt only when the displays changed.
 #[cfg(desktop)]
 pub(crate) fn refresh_surfaces(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let displays = crate::commands::display_infos(&AppOps::new(&app));
-        let floater_shown = super::floater_shown(&app);
-        #[cfg(target_os = "macos")]
-        {
-            let on_main = app.clone();
-            let displays = displays.clone();
-            let queued = app.run_on_main_thread(move || {
-                if let Err(error) =
-                    crate::menu::focus_menu::rebuild(&on_main, &displays, floater_shown)
-                {
-                    eprintln!("displays: the Focus menu didn't follow: {error}");
-                }
-            });
-            if let Err(error) = queued {
-                eprintln!("displays: could not reach the main thread: {error}");
-            }
-        }
-        crate::tray::focus_changed(
-            &app,
-            crate::tray::FocusItems {
-                displays,
-                floater_shown,
-            },
-        );
+        serialized(&REFRESH, || {
+            let displays = crate::commands::display_infos(&AppOps::new(&app));
+            let floater_shown = super::floater_shown(&app);
+            #[cfg(target_os = "macos")]
+            rebuild_focus_menu(&app, &displays, floater_shown);
+            crate::tray::focus_changed(
+                &app,
+                crate::tray::FocusItems {
+                    displays,
+                    floater_shown,
+                },
+            );
+        });
     });
+}
+
+#[cfg(all(desktop, target_os = "macos"))]
+fn rebuild_focus_menu(app: &AppHandle, displays: &[crate::ipc::DisplayInfo], floater_shown: bool) {
+    fn last() -> std::sync::MutexGuard<'static, Option<Vec<crate::ipc::DisplayInfo>>> {
+        MENU_DISPLAYS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    {
+        let mut known = last();
+        if known.as_deref() == Some(displays) {
+            return;
+        }
+        *known = Some(displays.to_vec());
+    }
+    let on_main = app.clone();
+    let owned = displays.to_vec();
+    let queued = app.run_on_main_thread(move || {
+        if let Err(error) = crate::menu::focus_menu::rebuild(&on_main, &owned, floater_shown) {
+            eprintln!("displays: the Focus menu didn't follow: {error}");
+            *last() = None;
+        }
+    });
+    if let Err(error) = queued {
+        eprintln!("displays: could not reach the main thread: {error}");
+        *last() = None;
+    }
 }
 
 /// Fills the Focus menu and the tray once at launch, and (macOS) starts watching the

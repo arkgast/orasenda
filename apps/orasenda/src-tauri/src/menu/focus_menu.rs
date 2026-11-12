@@ -401,6 +401,7 @@ mod tests {
             assert_eq!(registered[0].0, COMMANDS_ID);
         }
         assert_eq!(focus_command(COMMANDS_ID), Some(FocusCommand::Commands));
+        assert_eq!(super::super::route(COMMANDS_ID), super::super::Route::Focus);
         assert!(!is_app_menu_command(COMMANDS_ID));
         assert!(menu_command(COMMANDS_ID).is_none());
     }

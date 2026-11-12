@@ -93,3 +93,65 @@ fn screens_changed_leaves_a_floater_on_a_connected_display() {
     reframe_on(&fake);
     assert_eq!(fake.count("place"), 0);
 }
+
+#[test]
+fn a_floater_whose_display_cannot_be_read_is_placed() {
+    let mut fake = Fake::new(vec![screen("A", 1440, 900)]);
+    fake.windows.borrow_mut().push(FLOATER.into());
+    fake.on = None;
+    fake.main = Some("A".into());
+    reframe_on(&fake);
+    assert_eq!(fake.count("place floater A"), 1, "{:?}", fake.calls());
+}
+
+#[test]
+fn refreshes_do_not_interleave() {
+    use std::sync::{Arc, Mutex};
+    let lock = Arc::new(Mutex::new(()));
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let threads: Vec<_> = (0..4)
+        .map(|n| {
+            let (lock, log) = (lock.clone(), log.clone());
+            std::thread::spawn(move || {
+                crate::windows::displays::serialized(&lock, || {
+                    log.lock().unwrap().push(format!("start {n}"));
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                    log.lock().unwrap().push(format!("end {n}"));
+                });
+            })
+        })
+        .collect();
+    for t in threads {
+        t.join().unwrap();
+    }
+    let log = log.lock().unwrap();
+    for pair in log.chunks(2) {
+        assert_eq!(pair[0].replace("start", "end"), pair[1], "{log:?}");
+    }
+}
+
+#[test]
+fn display_infos_flag_the_main_display_first_fallback() {
+    use crate::commands::display_infos;
+    let mut ops = Fake::new(vec![screen("1", 1440, 900), screen("2", 1920, 1080)]);
+    ops.main = Some("2".into());
+    let infos = display_infos(&ops);
+    assert_eq!(
+        infos.iter().map(|d| d.has_main_window).collect::<Vec<_>>(),
+        vec![true, false]
+    );
+    assert_eq!(
+        infos.iter().map(|d| d.id.as_str()).collect::<Vec<_>>(),
+        vec!["2", "1"],
+        "the main window's display first, the rest in screen order"
+    );
+    ops.main = Some("gone".into());
+    assert_eq!(
+        display_infos(&ops)
+            .iter()
+            .map(|d| d.has_main_window)
+            .collect::<Vec<_>>(),
+        vec![true, false]
+    );
+    assert_eq!(focus::focus_label("1"), "focus-1");
+}
