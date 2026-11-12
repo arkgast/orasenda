@@ -35,6 +35,71 @@ const STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
   ],
 ];
 
+const noop = () => {};
+// The host's break actions (E11): each state the issue names, at every frame.
+const ACTION_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
+  [
+    "plus-ten",
+    {
+      mode: "warning",
+      remaining: "01:48",
+      remainingLabel: "1 minute 48 seconds",
+      progress: 0.92,
+      secondaryActions: [
+        { id: "more", label: "+10 min", name: "Add 10 minutes of focus", onSelect: noop },
+      ],
+    },
+  ],
+  [
+    "skip-break",
+    {
+      mode: "break",
+      remaining: "05:00",
+      remainingLabel: "5 minutes",
+      progress: 0.1,
+      secondaryActions: [{ id: "skip", label: "Skip break", onSelect: noop }],
+    },
+  ],
+  [
+    "break-warning",
+    {
+      mode: "warning",
+      phase: "break",
+      remaining: "01:48",
+      remainingLabel: "1 minute 48 seconds",
+      progress: 0.9,
+      secondaryActions: [{ id: "skip", label: "Skip break", onSelect: noop }],
+    },
+  ],
+  [
+    "break-paused",
+    {
+      mode: "paused",
+      phase: "break",
+      remaining: "03:10",
+      remainingLabel: "3 minutes 10 seconds",
+      progress: 0.4,
+      secondaryActions: [{ id: "skip", label: "Skip break", onSelect: noop }],
+    },
+  ],
+  [
+    "take-break",
+    { mode: "focus", secondaryActions: [{ id: "break", label: "Take a break", onSelect: noop }] },
+  ],
+  [
+    "keep-going",
+    {
+      mode: "idle",
+      offer: true,
+      summary: <p className="m-0 text-body-sm">Steady Focus · ends 15:20</p>,
+      secondaryActions: [
+        { id: "keep", label: "Keep going", name: "Keep going with Steady Focus", onSelect: noop },
+        { id: "stop", label: "Stop here", onSelect: noop },
+      ],
+    },
+  ],
+];
+
 // The frames the README names: the two big displays, the strip frame, the window minimum, a phone and an xl desktop.
 const SIZES = [
   [1280, 720],
@@ -49,7 +114,7 @@ export function FullScreenFocusSpecimen(): ReactElement {
   return (
     <>
       {SIZES.flatMap(([w, h]) =>
-        STATES.map(([name, props]) => (
+        [...STATES, ...ACTION_STATES].map(([name, props]) => (
           <Frame
             key={`${name}-${w}x${h}`}
             state={`full-screen-focus-${name}-${w}x${h}`}

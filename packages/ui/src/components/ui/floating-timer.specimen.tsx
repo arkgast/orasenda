@@ -17,6 +17,39 @@ const STATES: Array<[string, FloatingTimerProps]> = [
     { remaining: "1:30:00", remainingLabel: "1 hour 30 minutes", progress: 0.02, mode: "focus" },
   ],
   ["break", { remaining: "05:00", remainingLabel: "5 minutes", progress: 0.1, mode: "break" }],
+  [
+    "skip-break",
+    {
+      remaining: "05:00",
+      remainingLabel: "5 minutes",
+      progress: 0.1,
+      mode: "break",
+      onSkipBreak: noop,
+    },
+  ],
+  [
+    "break-warning",
+    {
+      remaining: "01:48",
+      remainingLabel: "1 minute 48 seconds",
+      progress: 0.9,
+      mode: "warning",
+      phase: "break",
+      onSkipBreak: noop,
+    },
+  ],
+  [
+    "break-paused",
+    {
+      remaining: "03:10",
+      remainingLabel: "3 minutes 10 seconds",
+      progress: 0.4,
+      mode: "paused",
+      phase: "break",
+      onSkipBreak: noop,
+    },
+  ],
+  ["keep-going", { mode: "idle", onKeepGoing: noop, keepGoingName: "Steady Focus" }],
 ];
 
 // The window sizes the README names: the minimum, the default and the maximum.

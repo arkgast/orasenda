@@ -7,7 +7,19 @@ import { shoot } from "./support/shots.ts";
 import { openSpecimen, pressTab } from "./support/specimen.ts";
 
 const WALLPAPERS = ["light", "mid", "dark"] as const;
-const STATES = ["running", "paused", "warning", "idle", "ended", "deep", "break"] as const;
+const STATES = [
+  "running",
+  "paused",
+  "warning",
+  "idle",
+  "ended",
+  "deep",
+  "break",
+  "skip-break",
+  "break-warning",
+  "break-paused",
+  "keep-going",
+] as const;
 const SIZES = [
   [280, 56],
   [280, 64],
@@ -119,4 +131,55 @@ test("floating_timer_no_motion_when_reduced", async ({ page }, info) => {
   test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
   await openSpecimen(page, "FloatingTimer");
   expect(await animatedElements(page)).toEqual([]);
+});
+
+test("floating_timer_actions_fit_280x56", async ({ page }) => {
+  await openSpecimen(page, "FloatingTimer");
+  for (const wall of WALLPAPERS)
+    for (const state of ["skip-break", "break-warning", "break-paused", "keep-going"]) {
+      const f = frame(page, wall, state, 280, 56);
+      const body = f.locator("[data-slot=floating-timer]");
+      const box = await body.boundingBox();
+      expect(box, `${wall} ${state}`).not.toBeNull();
+      // The widest button must end inside the panel, with the hit-min target kept.
+      const buttons = await body.getByRole("button").evaluateAll((els) =>
+        els.map((el) => {
+          const b = el.getBoundingClientRect();
+          return { left: b.left, right: b.right, width: b.width, height: b.height };
+        }),
+      );
+      for (const b of buttons) {
+        expect(b.height, `${wall} ${state} height`).toBeGreaterThanOrEqual(44);
+        expect(b.width, `${wall} ${state} width`).toBeGreaterThanOrEqual(44);
+        expect(b.right, `${wall} ${state} right`).toBeLessThanOrEqual(
+          (box?.x ?? 0) + (box?.width ?? 0),
+        );
+      }
+    }
+  const brk = frame(page, "light", "skip-break", 280, 56);
+  await expect(brk.getByRole("button", { name: "Skip break" })).toBeVisible();
+  await expect(brk.getByRole("button", { name: "Pause session" })).toHaveCount(0);
+  const warn = frame(page, "light", "break-warning", 280, 56);
+  await expect(warn.getByRole("button", { name: "Skip break" })).toBeVisible();
+  const paused = frame(page, "light", "break-paused", 280, 56);
+  await expect(paused.getByRole("button", { name: "Resume break" })).toBeVisible();
+  await expect(paused.getByRole("button", { name: "Skip break" })).toHaveCount(0);
+  const keep = frame(page, "light", "keep-going", 280, 56);
+  await expect(keep.getByRole("button", { name: "Keep going with Steady Focus" })).toBeVisible();
+  await expect(keep.getByRole("button", { name: "Start focus" })).toHaveCount(0);
+});
+
+test("floating_timer_action_keyboard_path", async ({ page }) => {
+  await openSpecimen(page, "FloatingTimer");
+  for (const [state, name] of [
+    ["skip-break", "Skip break"],
+    ["keep-going", "Keep going with Steady Focus"],
+  ] as const) {
+    const f = frame(page, "light", state, 280, 56);
+    const button = f.getByRole("button", { name });
+    await button.focus();
+    await expectFocusRingVisible(button);
+    await pressTab(page);
+    await expect(f.getByRole("button", { name: "Open Orasenda" })).toBeFocused();
+  }
 });
