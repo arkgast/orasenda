@@ -1,6 +1,7 @@
 //! The service struct, its constructor and its small accessors.
 
 use std::any::Any;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use orasenda_core::{KeepAwake, LocalTime, NotificationStatus, Notifier, Session, SessionRecord};
@@ -8,6 +9,7 @@ use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
 use crate::api::{MilestoneEvent, Settings, StartRequest, StoreStatus, Theme, TimerView};
+use crate::windows::Frame;
 
 /// The OS services the session uses. The notifier is also managed on its own
 /// (`tauri::State<Arc<dyn Notifier>>`), so `publish` reaches it without the service lock.
@@ -75,6 +77,8 @@ pub struct SessionService {
     pub(super) theme_owed: Option<Theme>,
     /// The number given to the last view handed out (see [`ViewGate`]).
     pub(super) view_seq: u64,
+    /// Window frames whose store write failed or had no store, kept for this run only.
+    pub(super) frames: HashMap<(String, String), Frame>,
 }
 
 impl SessionService {
@@ -109,6 +113,7 @@ impl SessionService {
             settings_event_owed: false,
             theme_owed: None,
             view_seq: 0,
+            frames: HashMap::new(),
         };
         if let Some(read) = service
             .store

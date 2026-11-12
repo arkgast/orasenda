@@ -28,7 +28,7 @@ pub(crate) use db::sql_int;
 pub use error::{OpenError, StoreError};
 #[cfg(any(test, feature = "test-hooks"))]
 pub use hooks::WriteGate;
-pub use repo::{active_session, focus_sessions, meta, presets, settings};
+pub use repo::{active_session, focus_sessions, meta, presets, settings, window_frames};
 pub use txn::{Entity, Txn};
 
 /// The schema version this build writes, kept only in `PRAGMA user_version` (ADR-012).

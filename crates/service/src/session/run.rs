@@ -120,3 +120,20 @@ pub fn flush_on_exit<H: Host>(host: &H) {
         lock(service).flush(host.now_ms());
     }
 }
+
+/// `timer_view`: the current view under a brief lock. No tick, no publish, and it neither
+/// drains `pending` nor sets `listening`, so a Focus window or floater can read it without
+/// taking what only `timer_state` (Today) hands out. Idle before setup.
+pub fn run_view<H: Host>(_host: &H) -> TimerView {
+    todo!()
+}
+
+/// `preset_select`: saves `preset` as the chosen preset while idle. Checks idle and saves under
+/// one lock, so a start can't slip between them; then does what `settings_set` does after
+/// unlock. `WrongState` while a session runs or is paused, `Store` when the save fails.
+pub fn run_select_preset<H: Host>(
+    _host: &H,
+    _preset: orasenda_core::Preset,
+) -> Result<(), TimerCommandError> {
+    todo!()
+}

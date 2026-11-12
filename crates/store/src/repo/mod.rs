@@ -5,3 +5,4 @@ pub mod focus_sessions;
 pub mod meta;
 pub mod presets;
 pub mod settings;
+pub mod window_frames;
