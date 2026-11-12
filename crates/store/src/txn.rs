@@ -9,6 +9,7 @@ use rusqlite::Connection;
 pub enum Entity {
     Setting,
     FocusSession,
+    Preset,
 }
 
 impl Entity {
@@ -17,6 +18,7 @@ impl Entity {
         match self {
             Entity::Setting => "setting",
             Entity::FocusSession => "focus_session",
+            Entity::Preset => "preset",
         }
     }
 }
