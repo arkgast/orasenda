@@ -1,6 +1,6 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
-import { AlertGlyph } from "./glyphs";
+import { Icon } from "./icon";
 
 export interface SettingsIndexSection {
   id: string;
@@ -73,7 +73,7 @@ export function SettingsIndex({ sections, current, onJump }: SettingsIndexProps)
               >
                 {s.problem ? (
                   <>
-                    {s.problem.alert ? <AlertGlyph /> : null}
+                    {s.problem.alert ? <Icon name="alert" size="md" /> : null}
                     {s.problem.text}
                   </>
                 ) : (

@@ -69,3 +69,9 @@ test("field_error_is_described_not_live", () => {
 test("exports_preset_popover", () => {
   expect(typeof ui.PopoverMenu).toBe("function");
 });
+
+test("exports_icon_set", () => {
+  expect(typeof ui.Icon).toBe("function");
+  const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
+  expect(index).toMatch(/export type \{[^}]*\bIconName\b[^}]*\bIconProps\b[^}]*\} from/);
+});

@@ -378,5 +378,29 @@
     "bg": "surface-sunken",
     "kind": "mark",
     "where": "T4: PopoverMenu focus ring on a hovered row"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T7: Icon glyph on the page"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T7: Icon glyph on a raised surface"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T7: rail icon at rest"
+  },
+  {
+    "fg": "focus",
+    "bg": "selection",
+    "kind": "mark",
+    "where": "T7: rail icon on the current page"
   }
 ]

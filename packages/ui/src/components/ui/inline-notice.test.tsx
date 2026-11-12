@@ -57,7 +57,7 @@ test("renders_row_attention_with_word_or_shape", () => {
       Focus didn't start.
     </InlineNotice>,
   );
-  expect(screen.getByRole("status").querySelector("svg circle[r='5.75']")).not.toBeNull();
+  expect(screen.getByRole("status").querySelector("svg circle[r='7.5']")).not.toBeNull();
 });
 
 test("renders_row_warning_with_word_or_shape", () => {

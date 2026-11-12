@@ -1,6 +1,5 @@
-import { IconButton, StartButton } from "@orasenda/ui";
+import { Icon, IconButton, StartButton } from "@orasenda/ui";
 import type { ComponentProps, ReactElement } from "react";
-import { EndGlyph, PauseGlyph, PlayGlyph } from "../../app/glyphs";
 
 type Props = {
   state: "idle" | "running" | "paused";
@@ -51,13 +50,13 @@ export function Controls({
             id="today-pause"
             size="round"
             label={paused ? "Resume session" : "Pause session"}
-            icon={paused ? <PlayGlyph /> : <PauseGlyph />}
+            icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
             onClick={onPauseResume}
           />
           <IconButton
             size="md"
             label="End session"
-            icon={<EndGlyph />}
+            icon={<Icon name="stop" />}
             shortcut="⌘."
             onClick={onEnd}
           />

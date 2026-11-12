@@ -38,6 +38,7 @@ const PREVIOUS_SURFACE = [
   "ScrollRegion",
   "SettingsIndex",
   "SettingsRow",
+  "Icon",
   "IconButton",
   "Tooltip",
   "Kbd",
@@ -71,7 +72,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(34);
+  expect(components).toHaveLength(35);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -152,6 +153,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     onJump: noop,
   },
   SettingsRow: { id: "r", label: "Row", helper: "Help" },
+  Icon: { name: "play" },
   IconButton: { label: "Close", icon: null },
   Tooltip: { label: "Hint", children: "Anchor" },
   Kbd: { keys: "⌘." },

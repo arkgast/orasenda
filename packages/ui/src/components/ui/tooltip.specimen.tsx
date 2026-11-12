@@ -1,7 +1,7 @@
 import { type ReactElement, useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
-import { Stop } from "../../../specimens/icons.tsx";
 import { Button, Dialog, describeShortcut, IconButton } from "../../index";
+import { Icon } from "./icon.tsx";
 import { Tooltip } from "./tooltip";
 
 export function TooltipSpecimen(): ReactElement {
@@ -25,12 +25,12 @@ export function TooltipSpecimen(): ReactElement {
       <Frame state="tooltip-long-label" width={480} height={160}>
         <IconButton
           label="Jump to section, the list of settings sections on this page, in order"
-          icon={<Stop />}
+          icon={<Icon name="stop" />}
           shortcut="⌘J"
         />
       </Frame>
       <Frame state="tooltip-dialog" width={360} height={80}>
-        <IconButton label="Open dialog" icon={<Stop />} onClick={() => setOpen(true)} />
+        <IconButton label="Open dialog" icon={<Icon name="stop" />} onClick={() => setOpen(true)} />
       </Frame>
       <Frame state="tooltip-native-dialog" width={360} height={80}>
         <Button
@@ -50,7 +50,7 @@ export function TooltipSpecimen(): ReactElement {
           onCancel={() => setCancels((n) => n + 1)}
           onClose={() => setNativeOpen(false)}
         >
-          {nativeOpen ? <IconButton label="Native tip" icon={<Stop />} /> : null}
+          {nativeOpen ? <IconButton label="Native tip" icon={<Icon name="stop" />} /> : null}
         </dialog>
       </Frame>
       {open ? (
@@ -62,7 +62,7 @@ export function TooltipSpecimen(): ReactElement {
           onCancel={() => setOpen(false)}
           onConfirm={() => setOpen(false)}
         >
-          <IconButton label="End session" icon={<Stop />} shortcut="⌘." />
+          <IconButton label="End session" icon={<Icon name="stop" />} shortcut="⌘." />
         </Dialog>
       ) : null}
     </>

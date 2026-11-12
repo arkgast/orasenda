@@ -1,6 +1,6 @@
 import { type ReactElement, type TextareaHTMLAttributes, useId } from "react";
 import { cn } from "../../lib/utils";
-import { AlertGlyph } from "./glyphs";
+import { Icon } from "./icon";
 
 export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
@@ -64,7 +64,7 @@ export function TextArea({
           data-slot="field-error"
           className="m-0 flex items-baseline gap-2 text-body-sm text-ink-muted"
         >
-          <AlertGlyph />
+          <Icon name="alert" size="md" />
           {error}
         </p>
       ) : null}

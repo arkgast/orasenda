@@ -133,7 +133,7 @@ Write like a calm, knowledgeable friend: plain words, short sentences, second pe
 - Mode shapes are built in: circle, half circle, rounded square, triangle, hollow circle, pause bars. The rail uses thin rounded line icons at 1.5px stroke, always with a label. No emoji in the interface.
 - **Mode shapes are reserved for modes.** Circle, half circle, rounded square, triangle, hollow circle and pause bars mean modes only. App roles use the role glyph family (`RoleTag`; Neutral is an outlined circle with a horizontal bar, never the hollow circle; the Focus role's filled circle is the one deliberate reuse, because it means the Focus mode); errors and "needs you" use the alert glyph (an outlined circle with a short vertical bar and a dot, 14px, 1.5 stroke, `ink`); info uses the info glyph. All in `ink` or `ink-muted`, always with a word.
 - **The play glyph means a focus session starts.** Only Start focus (and the floater's Start pill) carries it. Start routine, Start shutdown and Start weekly review are words only.
-- **Icon set.** Add play, pause, stop-square, expand, collapse, window, menu, chevron, close, back, the final rail icons, the role glyphs and the alert and info glyphs. Placeholders on the canvases must not ship.
+- **Icon set.** `Icon` draws 20 line icons from one table (play, pause, stop, expand, collapse, window, menu, chevron, close, back, alert, info, pages, jump and the six rail icons) on a 20-unit grid at a 1.5 stroke, `aria-hidden`, in `currentColor`. The role glyphs arrive with P5. No placeholder glyph ships.
 - Components set `data-slot`; no `os-` classes.
 
 ## Accessibility

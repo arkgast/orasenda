@@ -97,3 +97,11 @@ test("loading_guards_both_buttons_and_marks_busy", () => {
   expect(onQuickStart).not.toHaveBeenCalled();
   expect(onStart).not.toHaveBeenCalled();
 });
+
+test("start_button_play_glyph_from_icon", () => {
+  render(<StartButton onStart={() => {}} onQuickStart={() => {}} />);
+  const svg = screen.getByRole("button", { name: /start/i }).querySelector("svg");
+  expect(svg?.getAttribute("stroke-width")).toBe("1.5");
+  expect(svg?.getAttribute("fill")).toBe("none");
+  expect(svg?.classList.contains("size-icon-lg")).toBe(true);
+});

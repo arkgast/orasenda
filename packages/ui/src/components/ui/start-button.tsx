@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
-import { PlayGlyph } from "./glyphs";
+import { Icon } from "./icon";
 
 export interface StartButtonProps {
   onStart: () => void;
@@ -64,7 +64,7 @@ export function StartButton(props: StartButtonProps): JSX.Element {
           aria-keyshortcuts={keys}
           {...guard}
         >
-          <PlayGlyph />
+          <Icon name="play" />
           {label}
         </Button>
         <Button onClick={props.onQuickStart} disabled={props.disabled || props.loading} {...guard}>

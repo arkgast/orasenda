@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
-import { ModeShape } from "./glyphs";
+import { ModeShape } from "./mode-shape";
 
 export interface ModeChipProps {
   mode?: "focus" | "break" | "routine" | "warning" | "shallow" | "paused" | "idle";

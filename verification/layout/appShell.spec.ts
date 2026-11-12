@@ -77,11 +77,12 @@ for (const size of [
     await openApp(page, "idle", size);
     await page.mouse.click(1, 1);
     const rail = page.getByRole("navigation", { name: "Main navigation" });
-    // One Tab stop per item (nav-rail.md describes roving focus; the implementation predates that).
+    // The rail is one Tab stop (roving focus): Tab enters it, the arrows visit every item.
     const items = await rail.getByRole("button").count();
     expect(items).toBeGreaterThanOrEqual(3);
+    await pressTab(page);
     for (let i = 0; i < items; i++) {
-      await pressTab(page);
+      if (i > 0) await page.keyboard.press("ArrowDown");
       await expect(rail.locator(":focus")).toHaveCount(1);
       await expectFocusRingVisible(page.locator(":focus"));
     }

@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { cn } from "../../lib/utils";
-import { ModeShape, type ModeShapeMode } from "./glyphs";
+import { ModeShape, type ModeShapeMode } from "./mode-shape";
 
 type BlockType = "deep" | "shallow" | "break" | "routine" | "personal" | "overflow";
 
