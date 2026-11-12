@@ -190,8 +190,8 @@ pub(crate) fn show_settings_on<S: Shell>(shell: &S, target: Option<SettingsTarge
     shell.emit_navigate(navigate);
 }
 
-/// *Settings…* (⌘, or the menu-bar menu): show `main` on the Settings page, at its top.
-#[cfg(desktop)]
+/// *Settings…* (⌘, in the macOS app menu): show `main` on the Settings page, at its top.
+#[cfg(target_os = "macos")]
 pub fn show_settings(app: &AppHandle) {
     show_settings_on(app, None);
 }
