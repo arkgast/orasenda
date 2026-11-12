@@ -1,16 +1,12 @@
-import { Choice, ChoiceGroup, SettingsRow } from "@orasenda/ui";
-import { useId } from "react";
+import { SettingsRow } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "../../../ipc/bindings";
 import { selectedPreset } from "../../today/presets";
+import type { PresetEditing } from "../usePresets";
+import { PresetList } from "./PresetList";
 
 /** The selected preset's name: the Settings index value and the failure line's "Back to". */
 export function presetLabel(presets: PresetEntry[], settings: Pick<Settings, "presetId">): string {
   return selectedPreset(presets, settings)?.name ?? "";
-}
-
-/** "25 / 5 · long 15 after 4": a preset's lengths in one line. */
-export function presetDetail(preset: PresetEntry): string {
-  return `${preset.focusMin} / ${preset.breakMin} · long ${preset.longBreakMin} after ${preset.rounds}`;
 }
 
 type Props = {
@@ -21,8 +17,11 @@ type Props = {
   presetsFailed?: boolean;
   running: boolean;
   disabled: boolean;
+  /** Editing is off: the store is read-only or can't be written. */
+  editLocked: boolean;
   disabledReason?: string;
   presetStatus?: string;
+  editor: PresetEditing;
   onPreset: (presetId: string) => void;
 };
 
@@ -32,11 +31,12 @@ export function Timer({
   presetsFailed = false,
   running,
   disabled,
+  editLocked,
   disabledReason,
   presetStatus,
+  editor,
   onPreset,
 }: Props) {
-  const name = useId();
   const selected = selectedPreset(presets, settings);
   return (
     <section id="settings-timer" aria-labelledby="settings-timer-heading">
@@ -58,22 +58,14 @@ export function Timer({
             Can't read your presets right now.
           </p>
         ) : null}
-        <ChoiceGroup labelledBy="preset-label">
-          {presets.map((preset) => (
-            <Choice
-              key={preset.id}
-              long
-              name={name}
-              value={preset.id}
-              description={presetDetail(preset)}
-              checked={selected?.id === preset.id}
-              disabled={disabled}
-              onChange={() => onPreset(preset.id)}
-            >
-              {preset.name}
-            </Choice>
-          ))}
-        </ChoiceGroup>
+        <PresetList
+          presets={presets}
+          selectedId={selected?.id}
+          editor={editor}
+          disabled={disabled}
+          locked={editLocked}
+          onPreset={onPreset}
+        />
       </SettingsRow>
     </section>
   );

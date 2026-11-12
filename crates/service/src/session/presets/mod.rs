@@ -5,6 +5,8 @@ use orasenda_core::{PresetDef, PresetId, SessionPreset, default_presets};
 use orasenda_store::presets::{self, StoredPreset};
 use orasenda_store::{Store, StoreError, Txn, meta, settings};
 use serde::Deserialize;
+
+pub(super) mod edit;
 use uuid::Uuid;
 
 use super::settings::KEY_PRESET;

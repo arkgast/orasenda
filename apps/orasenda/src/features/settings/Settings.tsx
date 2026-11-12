@@ -5,7 +5,7 @@ import type { Settings as SettingsValue, Theme } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
 import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
-import { usePresets, usePresetsFailed } from "../today/presets";
+import { selectedPreset, usePresets, usePresetsFailed } from "../today/presets";
 import { askMacOS, isAsking, subscribeAsking, tick, untick } from "./notificationsToggle";
 import {
   type Arrival,
@@ -20,6 +20,7 @@ import { General, themeLabel } from "./sections/General";
 import { Notifications, notificationsRow } from "./sections/Notifications";
 import { presetLabel, Timer } from "./sections/Timer";
 import { backTo, changedKeys, FAILURE_NAME, KEY_SECTION, type Key, withKeys } from "./settingsKeys";
+import { usePresetEditing } from "./usePresets";
 
 export type { Arrival, SectionId, SettingsTarget };
 
@@ -69,6 +70,9 @@ export function Settings({
   const presets = usePresets();
   const presetsFailed = usePresetsFailed();
   const [line, setLine] = useState<Line>({ kind: "rest" });
+  const editor = usePresetEditing(presets, selectedPreset(presets, settings)?.id, () =>
+    setLine({ kind: "rest" }),
+  );
   const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
@@ -145,6 +149,7 @@ export function Settings({
   // A change clears the answer to the last action, so the line returns to rest.
   const change = (next: SettingsValue) => {
     setLine({ kind: "rest" });
+    editor.clearLine();
     save(next);
   };
   const withLatest = (patch: Partial<SettingsValue>) => {
@@ -203,6 +208,19 @@ export function Settings({
         tone: "attention",
         action: { label: "Try again", name: "Try again saving your changes", run: resend },
       };
+    }
+    if (editor.line) {
+      const { text, undo, retry } = editor.line;
+      const action = undo
+        ? {
+            label: "Undo",
+            name: `Undo removing ${undo.name}`,
+            run: () => editor.undo(undo.id, undo.name),
+          }
+        : retry
+          ? { label: "Try again", name: "Try again", run: retry }
+          : undefined;
+      return { text, tone: retry ? "attention" : "neutral", action };
     }
     if (loadError && !settings) {
       return { text: "Orasenda can't read settings right now.", tone: "attention" };
@@ -304,8 +322,10 @@ export function Settings({
                 presetsFailed={presetsFailed}
                 running={running}
                 disabled={readOnly}
+                editLocked={readOnly || store === "unavailable"}
                 disabledReason={reason}
                 presetStatus={reasonIf("preset")}
+                editor={editor}
                 onPreset={(presetId: string) => withLatest({ presetId })}
               />
               <Notifications

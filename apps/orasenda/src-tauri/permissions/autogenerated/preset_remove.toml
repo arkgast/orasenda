@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preset-remove"
+description = "Enables the preset_remove command without any pre-configured scope."
+commands.allow = ["preset_remove"]
+
+[[permission]]
+identifier = "deny-preset-remove"
+description = "Denies the preset_remove command without any pre-configured scope."
+commands.deny = ["preset_remove"]

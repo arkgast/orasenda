@@ -108,6 +108,12 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-timer-stop",
         "allow-settings-get",
         "allow-settings-set",
+        "allow-presets-list",
+        "allow-preset-add",
+        "allow-preset-update",
+        "allow-preset-remove",
+        "allow-preset-undo-remove",
+        "allow-presets-restore-defaults",
     ] {
         assert!(
             permissions.iter().any(|p| p == granted),
@@ -196,6 +202,11 @@ fn main_capability_exact() {
             "allow-native-menu-popup",
             "allow-displays-list",
             "allow-focus-view-open",
+            "allow-preset-add",
+            "allow-preset-update",
+            "allow-preset-remove",
+            "allow-preset-undo-remove",
+            "allow-presets-restore-defaults",
         ],
     );
     let (_, main) = capability("main.json");

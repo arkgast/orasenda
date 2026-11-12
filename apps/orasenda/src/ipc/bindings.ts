@@ -46,6 +46,16 @@ export const commands = {
 	timerView: () => __TAURI_INVOKE<TimerView_Serialize>("timer_view"),
 	/**  Saves a library preset as the next session's, while idle. */
 	presetSelect: (presetId: string) => typedError<null, TimerCommandError>(__TAURI_INVOKE("preset_select", { presetId })),
+	/**  Adds "New preset" at the end of the list. */
+	presetAdd: () => typedError<PresetEntry, PresetError_Serialize>(__TAURI_INVOKE("preset_add")),
+	/**  Changes the given fields of a preset. */
+	presetUpdate: (id: PresetId, patch: PresetPatch_Deserialize) => typedError<PresetEntry, PresetError_Serialize>(__TAURI_INVOKE("preset_update", { id, patch })),
+	/**  Removes a preset (it can be brought back); answers the live list. */
+	presetRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_remove", { id })),
+	/**  Brings a removed preset back; answers the live list. */
+	presetUndoRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_undo_remove", { id })),
+	/**  Restores the default presets; answers the live list. */
+	presetsRestoreDefaults: () => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("presets_restore_defaults")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -321,8 +331,51 @@ export type PresetEntry = {
 	isChanged: boolean,
 };
 
+export type PresetError = PresetError_Serialize | PresetError_Deserialize;
+
+/**  Why a preset call failed. */
+export type PresetErrorKind = "invalid" | "duplicateName" | "limit" | "lastPreset" | "notFound" | "unavailable" | "write";
+
+export type PresetError_Deserialize = {
+	kind: PresetErrorKind,
+	/**  The field that is out of range, for `invalid`. */
+	field?: PresetField | null,
+	message: string,
+};
+
+export type PresetError_Serialize = {
+	kind: PresetErrorKind,
+	/**  The field that is out of range, for `invalid`. */
+	field: PresetField | null,
+	message: string,
+};
+
+/**  The field of a [`PresetDef`] that is out of range. */
+export type PresetField = "name" | "focus_min" | "break_min" | "long_break_min" | "rounds";
+
 /**  Opaque preset identifier (a UUIDv7, or a default's fixed id), serialized as a bare string. */
 export type PresetId = string;
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch = PresetPatch_Serialize | PresetPatch_Deserialize;
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch_Deserialize = {
+	name?: string | null,
+	focusMin?: number | null,
+	breakMin?: number | null,
+	longBreakMin?: number | null,
+	rounds?: number | null,
+};
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch_Serialize = {
+	name: string | null,
+	focusMin: number | null,
+	breakMin: number | null,
+	longBreakMin: number | null,
+	rounds: number | null,
+};
 
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;
