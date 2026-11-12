@@ -21,7 +21,10 @@ fn late_advance_ends_at_planned_end_not_now() {
     let mut s = classic_at(T0);
     let first = s.advance(T0 + 25 * MIN, None);
     assert!(matches!(first.as_slice(), [Milestone::BreakStarted]));
-    assert_eq!(ended(s.advance(T0 + 30 * MIN, None)).ended_ms, T0 + 25 * MIN);
+    assert_eq!(
+        ended(s.advance(T0 + 30 * MIN, None)).ended_ms,
+        T0 + 25 * MIN
+    );
 }
 
 #[test]
@@ -50,7 +53,11 @@ fn advance_after_end_with_earlier_now_stays_idle() {
     assert_eq!(record.end_reason, EndReason::Completed);
     assert_eq!(record.ended_ms, T0 + 25 * MIN);
     for earlier in [T0 + MIN, T0, 0] {
-        assert_eq!(s.advance(earlier, None), Vec::<Milestone>::new(), "at {earlier}");
+        assert_eq!(
+            s.advance(earlier, None),
+            Vec::<Milestone>::new(),
+            "at {earlier}"
+        );
         assert!(s.is_idle());
         let v = s.view(earlier);
         assert_eq!(v.state, EngineState::Idle);
@@ -81,7 +88,7 @@ fn record_carries_the_preset_given_to_start() {
     let mut s = Session::Idle;
     s.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
     assert_eq!(s.view(T0).remaining_ms, QUICK_START_MS);
-    assert_eq!(s.stop(T0 + MIN).unwrap().preset, SessionPreset::Quick);
+    assert_eq!(s.stop(T0 + MIN).unwrap()[0].preset, SessionPreset::Quick);
 }
 
 #[test]
@@ -96,19 +103,20 @@ fn one_milestone_per_transition_none_per_tick() {
         assert_eq!(s.advance(t, None), Vec::<Milestone>::new());
     }
     assert_eq!(s.resume(T0 + 12 * MIN), Ok(()));
-    // The pause moved the end to 27:00; the warning comes at 25:00, the break at 27:00 and
-    // the break's end at 32:00. One milestone each, none on any other tick.
+    // The pause moved the end to 27:00; the warning comes at 25:00, the break at 27:00, its
+    // warning at 30:00 and its end at 32:00. One milestone each, none on any other tick.
     let mut seen = Vec::new();
     for t in (0..60 * 60).map(|k| T0 + 12 * MIN + k * S) {
         for m in s.advance(t, None) {
             seen.push((t, m));
         }
     }
-    assert_eq!(seen.len(), 3, "{seen:?}");
+    assert_eq!(seen.len(), 4, "{seen:?}");
     assert_eq!(seen[0], (T0 + 25 * MIN, Milestone::Warned));
     assert_eq!(seen[1], (T0 + 27 * MIN, Milestone::BreakStarted));
-    assert_eq!(seen[2].0, T0 + 32 * MIN);
-    assert!(matches!(seen[2].1, Milestone::Ended(_)));
+    assert_eq!(seen[2], (T0 + 30 * MIN, Milestone::Warned));
+    assert_eq!(seen[3].0, T0 + 32 * MIN);
+    assert!(matches!(seen[3].1, Milestone::Ended(_)));
 }
 
 #[test]

@@ -12,10 +12,16 @@ fn auto_steps_to_limit_then_break() {
     assert_eq!(v.planned_end_ms, Some(T0 + 35 * MIN));
     assert_eq!(s.advance(T0 + 35 * MIN, LIMIT), vec![Milestone::Extended]);
     assert_eq!(s.advance(T0 + 45 * MIN, LIMIT), vec![Milestone::Extended]);
-    assert_eq!(s.advance(T0 + 55 * MIN, LIMIT), vec![Milestone::BreakStarted]);
+    assert_eq!(
+        s.advance(T0 + 55 * MIN, LIMIT),
+        vec![Milestone::BreakStarted]
+    );
     let rs = records(s.advance(T0 + 60 * MIN, LIMIT));
     assert_eq!((rs[0].planned_ms, rs[0].extensions), (55 * MIN, 3));
-    assert_eq!((rs[0].end_reason, rs[0].focused_ms), (EndReason::Completed, 55 * MIN));
+    assert_eq!(
+        (rs[0].end_reason, rs[0].focused_ms),
+        (EndReason::Completed, 55 * MIN)
+    );
     assert_span(&rs[0], 0);
 }
 
@@ -32,10 +38,16 @@ fn auto_steps_warn_before_each_end() {
 fn auto_none_when_focus_at_limit() {
     // Deep Work is 90 minutes: with the default limit of 90 nothing is added.
     let mut s = at(2, 1, T0);
-    assert_eq!(s.advance(T0 + 90 * MIN, Some(90 * MIN)), vec![Milestone::BreakStarted]);
+    assert_eq!(
+        s.advance(T0 + 90 * MIN, Some(90 * MIN)),
+        vec![Milestone::BreakStarted]
+    );
     // Off: the same, for any preset.
     let mut s = classic_at(T0);
-    assert_eq!(s.advance(T0 + 25 * MIN, None), vec![Milestone::BreakStarted]);
+    assert_eq!(
+        s.advance(T0 + 25 * MIN, None),
+        vec![Milestone::BreakStarted]
+    );
 }
 
 #[test]
@@ -44,14 +56,23 @@ fn take_break_completes_the_focus_and_starts_the_break() {
     s.advance(T0 + 25 * MIN, LIMIT);
     assert_eq!(s.take_break(T0 + 30 * MIN), Ok(Milestone::BreakStarted));
     let v = s.view(T0 + 30 * MIN);
-    assert_eq!((v.phase, v.break_kind, v.open_focus), (Phase::Break, Some(BreakKind::Short), true));
+    assert_eq!(
+        (v.phase, v.break_kind, v.open_focus),
+        (Phase::Break, Some(BreakKind::Short), true)
+    );
     assert_eq!(v.remaining_ms, 5 * MIN);
     assert_eq!(v.planned_end_ms, Some(T0 + 35 * MIN));
     let rs = records(s.advance(T0 + 35 * MIN, LIMIT));
-    assert_eq!((rs[0].end_reason, rs[0].ended_ms, rs[0].focused_ms), (EndReason::Completed, T0 + 30 * MIN, 30 * MIN));
+    assert_eq!(
+        (rs[0].end_reason, rs[0].ended_ms, rs[0].focused_ms),
+        (EndReason::Completed, T0 + 30 * MIN, 30 * MIN)
+    );
     assert_eq!(rs[0].extensions, 1);
     assert_span(&rs[0], 0);
-    assert_eq!((rs[1].started_ms, rs[1].ended_ms), (T0 + 30 * MIN, T0 + 35 * MIN));
+    assert_eq!(
+        (rs[1].started_ms, rs[1].ended_ms),
+        (T0 + 30 * MIN, T0 + 35 * MIN)
+    );
 }
 
 #[test]
@@ -60,7 +81,10 @@ fn take_break_while_paused_counts_the_pause() {
     s.pause(T0 + 8 * MIN).unwrap();
     assert_eq!(s.take_break(T0 + 12 * MIN), Ok(Milestone::BreakStarted));
     let rs = s.stop(T0 + 13 * MIN).unwrap();
-    assert_eq!((rs[0].focused_ms, rs[0].paused_total_ms, rs[0].ended_ms), (8 * MIN, 4 * MIN, T0 + 12 * MIN));
+    assert_eq!(
+        (rs[0].focused_ms, rs[0].paused_total_ms, rs[0].ended_ms),
+        (8 * MIN, 4 * MIN, T0 + 12 * MIN)
+    );
     assert_span(&rs[0], 0);
     assert_eq!(rs[1].end_reason, EndReason::Stopped);
 }
@@ -70,7 +94,10 @@ fn take_break_is_refused_in_a_break_idle_or_quick() {
     let mut s = classic_at(T0);
     s.advance(T0 + 25 * MIN, None);
     assert_eq!(s.take_break(T0 + 26 * MIN), Err(TimerError::WrongState));
-    assert_eq!(Session::Idle.take_break(T0), Err(TimerError::NothingRunning));
+    assert_eq!(
+        Session::Idle.take_break(T0),
+        Err(TimerError::NothingRunning)
+    );
     let mut q = Session::Idle;
     q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
     assert_eq!(q.take_break(T0 + S), Err(TimerError::WrongState));
@@ -89,7 +116,10 @@ fn end_in_a_step_is_stopped() {
     s.advance(T0 + 25 * MIN, LIMIT);
     let rs = s.stop(T0 + 30 * MIN).unwrap();
     assert_eq!(rs.len(), 1);
-    assert_eq!((rs[0].end_reason, rs[0].extensions), (EndReason::Stopped, 1));
+    assert_eq!(
+        (rs[0].end_reason, rs[0].extensions),
+        (EndReason::Stopped, 1)
+    );
 }
 
 #[test]
@@ -118,10 +148,16 @@ fn sleep_across_several_steps_stops_at_the_limit() {
             _ => "other",
         })
         .collect();
-    assert_eq!(names, ["extended", "extended", "extended", "break", "ended"]);
+    assert_eq!(
+        names,
+        ["extended", "extended", "extended", "break", "ended"]
+    );
     let rs = records(ms);
     assert_eq!((rs[0].ended_ms, rs[0].extensions), (T0 + 55 * MIN, 3));
-    assert_eq!((rs[1].started_ms, rs[1].ended_ms), (T0 + 55 * MIN, T0 + 60 * MIN));
+    assert_eq!(
+        (rs[1].started_ms, rs[1].ended_ms),
+        (T0 + 55 * MIN, T0 + 60 * MIN)
+    );
     assert!(s.is_idle());
 }
 

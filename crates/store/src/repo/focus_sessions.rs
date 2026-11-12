@@ -26,13 +26,14 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
     };
     let phase = text(&record.phase)?;
     let end_reason = text(&record.end_reason)?;
+    let break_kind = record.break_kind.as_ref().map(text).transpose()?;
     txn.conn().execute(
         "INSERT INTO focus_session (id, created_at, updated_at, deleted_at, preset, phase,
              planned_ms, started_at, ended_at, paused_total_ms, focused_ms, end_reason,
              extensions, intent, preset_id, preset_name, focus_min, break_min, long_break_min,
-             rounds)
-         VALUES (?1, ?2, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL,
-             ?12, ?13, ?14, ?15, ?16, ?17)",
+             rounds, break_kind)
+         VALUES (?1, ?2, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?18,
+             ?12, ?13, ?14, ?15, ?16, ?17, ?19)",
         rusqlite::params![
             record.id.0,
             sql_int(record.ended_ms)?,
@@ -51,6 +52,8 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
             snapshot.map(|s| *s.3),
             snapshot.map(|s| *s.4),
             snapshot.map(|s| *s.5),
+            record.intent,
+            break_kind,
         ],
     )?;
     let mut fields = vec![
@@ -73,6 +76,12 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
             ("long_break_min", Value::from(*long_break_min)),
             ("rounds", Value::from(*rounds)),
         ]);
+    }
+    if let Some(intent) = &record.intent {
+        fields.push(("intent", Value::from(intent.clone())));
+    }
+    if let Some(kind) = &break_kind {
+        fields.push(("break_kind", Value::from(kind.clone())));
     }
     txn.log_fields(Entity::FocusSession, &record.id.0, &fields)
 }
@@ -133,7 +142,7 @@ mod tests {
     use super::*;
     use crate::Store;
     use crate::test_support::count;
-    use orasenda_core::{EndReason, Phase, PresetId, SessionId};
+    use orasenda_core::{BreakKind, EndReason, Phase, PresetId, SessionId};
 
     fn record(id: &str) -> SessionRecord {
         SessionRecord {
@@ -154,6 +163,8 @@ mod tests {
             focused_ms: 3_000_000,
             end_reason: EndReason::Completed,
             extensions: 2,
+            break_kind: None,
+            intent: None,
         }
     }
 
@@ -258,6 +269,49 @@ mod tests {
                     count(txn.conn(), "SELECT count(*) FROM change_log WHERE field = 'intent'"),
                     0
                 );
+                Ok(())
+            })
+            .expect("reads");
+    }
+
+    #[test]
+    fn insert_writes_the_intent_and_the_break_kind_and_logs_them() {
+        let store = Store::open_in_memory("device-a").expect("opens");
+        let focus = SessionRecord {
+            intent: Some("Outline chapter 3".into()),
+            ..record("focus")
+        };
+        let brk = SessionRecord {
+            phase: Phase::Break,
+            break_kind: Some(BreakKind::Long),
+            ..record("break")
+        };
+        store
+            .write(1, |txn| {
+                insert(txn, &focus)?;
+                insert(txn, &brk)
+            })
+            .expect("writes");
+        store
+            .read(|txn| {
+                let text = |sql: &str, id: &str| {
+                    txn.conn()
+                        .query_row(sql, [id], |row| row.get::<_, Option<String>>(0))
+                        .expect("row")
+                };
+                let intent = "SELECT intent FROM focus_session WHERE id = ?1";
+                let kind = "SELECT break_kind FROM focus_session WHERE id = ?1";
+                assert_eq!(text(intent, "focus").as_deref(), Some("Outline chapter 3"));
+                assert_eq!(text(kind, "focus"), None);
+                assert_eq!(text(intent, "break"), None);
+                assert_eq!(text(kind, "break").as_deref(), Some("long"));
+                let logged = |field: &str| {
+                    count(
+                        txn.conn(),
+                        &format!("SELECT count(*) FROM change_log WHERE field = '{field}'"),
+                    )
+                };
+                assert_eq!((logged("intent"), logged("break_kind")), (1, 1));
                 Ok(())
             })
             .expect("reads");

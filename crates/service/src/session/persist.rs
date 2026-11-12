@@ -8,7 +8,7 @@ use crate::api::{StoreStatus, TimerView};
 
 impl SessionService {
     /// Records what the engine change owes the store, then tries to write it at once.
-    pub(super) fn persist(&mut self, now_ms: u64, finished: Option<SessionRecord>) {
+    pub(super) fn persist(&mut self, now_ms: u64, finished: Vec<SessionRecord>) {
         if self.store.is_none() {
             return;
         }
@@ -38,8 +38,10 @@ impl SessionService {
             } else {
                 RowFound::Nothing
             };
-            if let RowFound::Ended(record) = &found {
-                focus_sessions::insert(txn, record)?;
+            if let RowFound::Ended(records) = &found {
+                for record in records {
+                    focus_sessions::insert(txn, record)?;
+                }
             }
             for record in unsaved {
                 focus_sessions::insert(txn, record)?;
@@ -57,8 +59,10 @@ impl SessionService {
         });
         let written = written.map(|found| {
             self.recover_owed.snapshot = false;
-            if let RowFound::Ended(record) = found {
-                self.pending.push(recovered(&record));
+            if let RowFound::Ended(records) = found
+                && let Some(focus) = records.first()
+            {
+                self.pending.push(recovered(focus));
             }
         });
         match &written {

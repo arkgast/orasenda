@@ -3,11 +3,13 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+pub mod cadence;
 pub mod engine;
 pub mod format;
 pub mod preset;
 pub mod suggestions;
 
+pub use cadence::{DaySession, focused_today, local_day, next_round, session_name};
 pub use engine::Session;
 pub use format::{format_clock, format_remaining, spoken_remaining};
 pub use preset::{
@@ -23,6 +25,15 @@ pub const QUICK_START_MS: u64 = 120_000;
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
     Focus,
+    Break,
+}
+
+/// Which break a [`Phase::Break`] is: the long one comes every `rounds` completed focus sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum BreakKind {
+    Short,
+    Long,
 }
 
 /// How a session ended.
@@ -51,6 +62,10 @@ pub struct SessionRecord {
     pub focused_ms: u64,
     pub end_reason: EndReason,
     pub extensions: u8,
+    /// Set on a break row only.
+    pub break_kind: Option<BreakKind>,
+    /// What the focus session was for; `None` when not given, and always on a break row.
+    pub intent: Option<String>,
 }
 
 /// Whether the timer is idle, counting or paused.
@@ -72,8 +87,19 @@ pub struct EngineView {
     pub remaining_ms: u64,
     pub progress: f64,
     pub planned_end_ms: Option<u64>,
-    /// The session's planned focus length, fixed at start; `None` while idle.
+    /// The live phase's planned length, with every extension; `None` while idle.
     pub planned_ms: Option<u64>,
+    /// Which break it is, during a break.
+    pub break_kind: Option<BreakKind>,
+    /// Extensions taken so far, manual and automatic.
+    pub extensions: u8,
+    pub intent: Option<String>,
+    /// The two-minute warning has fired for the current end.
+    pub warned: bool,
+    /// The focus is running in an automatic 10-minute step.
+    pub auto_step: bool,
+    /// A break is running and its finished focus can still be extended.
+    pub open_focus: bool,
 }
 
 /// Something worth recording or announcing that the engine did.
@@ -82,7 +108,17 @@ pub enum Milestone {
     Started,
     Paused,
     Resumed,
-    Ended(SessionRecord),
+    /// Two minutes are left, once per end.
+    Warned,
+    /// A focus completed and its break began (at the planned end, or on `take_break`).
+    BreakStarted,
+    /// 10 more minutes: a manual `+10 min`, from the focus or from the break, or an automatic step.
+    Extended,
+    /// The session is over: the focus record first, then its cut breaks and the final break,
+    /// in time order. The engine is idle.
+    Ended(Vec<SessionRecord>),
+    /// A `quick` session ended while auto-continue is on: the caller starts the saved preset.
+    RollOn,
 }
 
 /// Why a timer command was refused.

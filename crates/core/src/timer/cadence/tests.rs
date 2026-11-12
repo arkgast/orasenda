@@ -58,7 +58,10 @@ fn completed_focus_adds_a_round() {
 #[test]
 fn next_round_ignores_quick_and_stopped() {
     let mut day = rounds(1);
-    day.push(DaySession { quick: true, ..focus(T0 + 30 * MIN, T0 + 32 * MIN, true) });
+    day.push(DaySession {
+        quick: true,
+        ..focus(T0 + 30 * MIN, T0 + 32 * MIN, true)
+    });
     day.push(focus(T0 + 33 * MIN, T0 + 40 * MIN, false));
     assert_eq!(next_round(&day, T0 + 41 * MIN, LONG), 2);
 }
@@ -111,7 +114,10 @@ fn next_round_saturates_at_255() {
 #[test]
 fn focused_today_counts_every_focus_row_and_the_live_focus() {
     let mut day = rounds(2);
-    day.push(DaySession { quick: true, ..focus(T0 + 60 * MIN, T0 + 62 * MIN, true) });
+    day.push(DaySession {
+        quick: true,
+        ..focus(T0 + 60 * MIN, T0 + 62 * MIN, true)
+    });
     day.push(focus(T0 + 63 * MIN, T0 + 70 * MIN, false));
     // 25 + 25 + 2 + 7 minutes of focus; the breaks do not count.
     assert_eq!(focused_today(&day, 0), 59 * MIN);
@@ -123,7 +129,11 @@ fn focused_today_counts_every_focus_row_and_the_live_focus() {
 fn new_york(at_ms: u64) -> i32 {
     const SPRING: u64 = 1_772_953_200_000;
     const FALL: u64 = 1_793_512_800_000;
-    if (SPRING..FALL).contains(&at_ms) { -240 } else { -300 }
+    if (SPRING..FALL).contains(&at_ms) {
+        -240
+    } else {
+        -300
+    }
 }
 
 #[test]

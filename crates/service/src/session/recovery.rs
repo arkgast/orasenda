@@ -47,9 +47,11 @@ impl SessionService {
                 return false;
             }
         };
-        if let Some(Milestone::Ended(record)) = snapshot.advance(now_ms) {
-            self.pending.push(recovered(&record));
-            self.persist(now_ms, Some(record));
+        if let Some(records) = ended_records(snapshot.advance(now_ms, None)) {
+            if let Some(focus) = records.first() {
+                self.pending.push(recovered(focus));
+            }
+            self.persist(now_ms, records);
             return true;
         }
         self.engine = snapshot;
@@ -137,7 +139,7 @@ pub(super) enum RowFound {
     /// The session it held, recorded as ended: `completed` at its planned end if that has
     /// passed, otherwise `stopped` with its focused time (another session may now be live,
     /// so it cannot be restored).
-    Ended(SessionRecord),
+    Ended(Vec<SessionRecord>),
     Undecodable,
 }
 
@@ -151,8 +153,8 @@ pub(super) fn unread_row(txn: &Txn, now_ms: u64) -> Result<RowFound, StoreError>
         }
         Err(error) => return Err(error),
     };
-    if let Some(Milestone::Ended(record)) = session.advance(now_ms) {
-        return Ok(RowFound::Ended(record));
+    if let Some(records) = ended_records(session.advance(now_ms, None)) {
+        return Ok(RowFound::Ended(records));
     }
     // An idle snapshot has nothing to record.
     Ok(session
@@ -167,4 +169,12 @@ pub(super) fn recovered(record: &SessionRecord) -> MilestoneEvent {
         end_reason: Some(record.end_reason),
         session_id: Some(record.id.clone()),
     }
+}
+
+/// The records of the `Ended` milestone among `milestones`, if the session ended.
+fn ended_records(milestones: Vec<Milestone>) -> Option<Vec<SessionRecord>> {
+    milestones.into_iter().find_map(|m| match m {
+        Milestone::Ended(records) => Some(records),
+        _ => None,
+    })
 }

@@ -236,7 +236,7 @@ fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running(
     )
     .expect("turns notifications on");
     s.apply(start(), T0, id("a"));
-    let late = s.apply(Action::Pause, T0 + CLASSIC_MS + 5_000, id("x"));
+    let late = s.apply(Action::Pause, T0 + CLASSIC_END_MS + 5_000, id("x"));
     assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
     assert!(!late.was_idle);
     assert_eq!(late.view.state, EngineState::Idle);
@@ -282,7 +282,7 @@ fn stop_after_planned_end_records_completed() {
 fn start_after_planned_end_publishes_ended_then_started() {
     let mut s = service();
     s.apply(start(), T0, id("a"));
-    let late = s.apply(start(), T0 + CLASSIC_MS, id("b"));
+    let late = s.apply(start(), T0 + CLASSIC_END_MS, id("b"));
     assert_eq!(late.result, Ok(late.view.clone()));
     assert_eq!(
         late.milestones,
@@ -303,7 +303,7 @@ fn start_after_planned_end_publishes_ended_then_started() {
 fn state_after_planned_end_completes_and_reports_idle() {
     let mut s = service();
     s.apply(start(), T0, id("a"));
-    let (state, effects) = s.state(T0 + CLASSIC_MS + 1);
+    let (state, effects) = s.state(T0 + CLASSIC_END_MS + 1);
     assert_eq!(state.view.state, EngineState::Idle);
     assert!(state.pending.is_empty());
     assert_eq!(effects.result, Ok(effects.view.clone()));
@@ -386,7 +386,7 @@ fn keep_awake_begun_on_start_and_guard_returned_on_end() {
     assert_eq!(log.count(|e| *e == Event::Released), 1);
 
     s.apply(start(), T0 + 2 * MINUTE, id("b"));
-    let ended = s.tick(T0 + 2 * MINUTE + CLASSIC_MS);
+    let ended = s.tick(T0 + 2 * MINUTE + CLASSIC_END_MS);
     assert!(ended.drop_after_unlock.is_some());
     assert!(ended.notify_session_end);
 }

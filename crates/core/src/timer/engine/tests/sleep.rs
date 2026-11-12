@@ -10,15 +10,21 @@ fn sleep_across_focus_and_break_two_records() {
     let rs = records(ms);
     assert_eq!(rs.len(), 2);
     assert_eq!((rs[0].started_ms, rs[0].ended_ms), (T0, T0 + 25 * MIN));
-    assert_eq!((rs[0].end_reason, rs[0].focused_ms), (EndReason::Completed, 25 * MIN));
+    assert_eq!(
+        (rs[0].end_reason, rs[0].focused_ms),
+        (EndReason::Completed, 25 * MIN)
+    );
     assert_span(&rs[0], 0);
-    assert_eq!((rs[1].started_ms, rs[1].ended_ms), (T0 + 25 * MIN, T0 + 30 * MIN));
+    assert_eq!(
+        (rs[1].started_ms, rs[1].ended_ms),
+        (T0 + 25 * MIN, T0 + 30 * MIN)
+    );
     assert_eq!(rs[1].end_reason, EndReason::Completed);
     assert!(s.is_idle());
 }
 
 #[test]
-fn sleep_past_a_focus_end_lands_in_the_break_without_a_warning() {
+fn sleep_past_a_focus_end_warns_only_for_the_live_break() {
     let mut s = classic_at(T0);
     // 28:00 is inside the break's last two minutes, but its warning is for the live end only
     // when it has not been crossed; here the break is current, so it warns once.
@@ -36,7 +42,10 @@ fn sleep_across_a_long_break() {
     let ms = s.advance(T0 + 24 * 60 * MIN, None);
     let rs = records(ms);
     assert_eq!(rs[1].break_kind, Some(BreakKind::Long));
-    assert_eq!((rs[1].started_ms, rs[1].ended_ms), (T0 + 90 * MIN, T0 + 120 * MIN));
+    assert_eq!(
+        (rs[1].started_ms, rs[1].ended_ms),
+        (T0 + 90 * MIN, T0 + 120 * MIN)
+    );
 }
 
 #[test]

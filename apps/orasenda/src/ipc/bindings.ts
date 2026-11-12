@@ -249,7 +249,7 @@ export type OverlayShow = {
 };
 
 /**  Which part of the loop a session is in. */
-export type Phase = "focus";
+export type Phase = "focus" | "break";
 
 /**  One live preset, with what the list needs to say about it. */
 export type PresetEntry = {
