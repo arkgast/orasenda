@@ -26,6 +26,8 @@ const pause = () => run("timer_pause", () => commands.timerPause());
 const resume = () => run("timer_resume", () => commands.timerResume());
 /** The saved preset: the service reads the selected one when it starts (`quick: false`). */
 const start = () => run("timer_start", () => commands.timerStart({ quick: false }));
+/** Skip break is End: the same `timer_stop` Today's button sends. */
+const skipBreak = () => run("timer_stop", () => commands.timerStop());
 const open = () => run("main_show", () => commands.mainShow());
 const close = () => run("focus_view_close", () => commands.focusViewClose());
 
@@ -118,6 +120,10 @@ export function FloaterPage() {
           remainingLabel={view.remainingLabel}
           progress={view.progress}
           mode={view.mode}
+          phase={view.phase}
+          onSkipBreak={() => void skipBreak()}
+          // The floater has no preset list (no `presets_list` grant), so the button is "Keep going".
+          onKeepGoing={view.offer === "keepGoing" ? () => void start() : undefined}
           ended={ended}
           onPause={() => void pause()}
           onResume={() => void resume()}

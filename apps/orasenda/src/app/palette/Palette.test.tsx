@@ -1,7 +1,7 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { onIntentFieldRequest } from "../../features/today/intentEvents";
+import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { argsOf, mockBackend, RUNNING, settle } from "../../test/fixtures";
 import { stubPaletteDom } from "../../test/paletteDom";
@@ -12,6 +12,7 @@ beforeEach(() => {
   resetSettingsQueueForTests();
 });
 afterEach(async () => {
+  resetIntentEventsForTests();
   cleanup();
   await settle();
   resetSettingsQueueForTests();

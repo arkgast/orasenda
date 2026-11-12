@@ -36,7 +36,9 @@ test("auto_step_warning_offers_take_break_not_extend", async () => {
 
   expect(statusNodes()[0]).toHaveTextContent("Two minutes left. Finish the thought.");
   expect(screen.queryByRole("button", { name: /Add 10 minutes/ })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Take a break now" }));
+  const takeBreak = screen.getByRole("button", { name: "Take a break now" });
+  takeBreak.focus();
+  fireEvent.click(takeBreak);
   await settle();
   expect(argsOf(backend.calls, "timer_take_break")).toHaveLength(1);
 });
@@ -251,7 +253,9 @@ test("status_actions_keep_focus_off_the_body", async () => {
   expect(screen.getByRole("button", { name: "Pause session" })).toHaveFocus();
 
   await emitTimer(AUTO);
-  fireEvent.click(screen.getByRole("button", { name: "Take a break now" }));
+  const takeBreak = screen.getByRole("button", { name: "Take a break now" });
+  takeBreak.focus();
+  fireEvent.click(takeBreak);
   await emitTimer(BREAK);
   expect(document.body).not.toHaveFocus();
 

@@ -7,8 +7,8 @@ import { animatedElements } from "./support/motion.ts";
 import { pressTab } from "./support/specimen.ts";
 
 // The floater page (`layout.html?surface=floater`) at the three floater sizes (floating-timer.md),
-// in the states D renders: running, paused, deep (1:29:59), idle and ended. Break and warning
-// belong to E's last task. Light and dark come from the projects; one project is reduced motion.
+// in the states D renders (running, paused, deep (1:29:59), idle and ended) and E's cadence states
+// (break, warning, the keep-going offer). Light and dark come from the projects; one project is reduced motion.
 const SIZES = [
   { width: 280, height: 56 },
   { width: 280, height: 64 },
@@ -21,6 +21,9 @@ const STATES = [
   { scenario: "deepRunning", group: "Floating timer, Focus", first: "Pause session" },
   { scenario: "idle", group: "Floating timer, No session", first: "Start focus" },
   { scenario: "ended", group: "Floating timer, Session ended", first: "Start focus" },
+  { scenario: "breakShort", group: "Floating timer, Break", first: "Skip break" },
+  { scenario: "warning", group: "Floating timer, Almost up", first: "Pause session" },
+  { scenario: "keepGoing", group: "Floating timer, No session", first: "Keep going" },
 ] as const;
 
 async function openFloater(

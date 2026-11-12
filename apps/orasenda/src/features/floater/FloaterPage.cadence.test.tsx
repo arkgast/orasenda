@@ -59,7 +59,7 @@ test("floater_skip_break_and_keep_going", async () => {
   cleanup();
 
   const offer = await mount({ ...IDLE, offer: "keepGoing" });
-  fireEvent.click(screen.getByRole("button", { name: "Keep going with Steady Focus" }));
+  fireEvent.click(screen.getByRole("button", { name: "Keep going" }));
   await settle();
   expect(argsOf(offer.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
 });
