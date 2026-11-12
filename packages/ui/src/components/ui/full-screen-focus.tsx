@@ -5,9 +5,9 @@ import { timerLayout } from "../../lib/timer-layout";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 import { Dialog } from "./dialog";
+import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Kbd } from "./kbd";
-import { EndIcon, LeaveIcon, PauseIcon, PlayIcon, StartMark } from "./timer-glyphs";
 import { TimerRing, type TimerRingProps } from "./timer-ring";
 import { TimerStrip } from "./timer-strip";
 
@@ -34,6 +34,7 @@ export const FOCUS_PX = {
   statusRow: 18,
   controlsRow: 52,
   captionRow: 18,
+  // A free contract value from the README (the intent line's minimum track), not a token.
   intentMinTrack: 128,
   insetCompact: 16,
   inset: 64,
@@ -160,7 +161,7 @@ export function FullScreenFocus({
           <div className="absolute inset-e-0 top-0">
             <IconButton
               label="Leave full screen"
-              icon={<LeaveIcon />}
+              icon={<Icon name="collapse" />}
               shortcut="Esc"
               onClick={() => setLeaving(true)}
             />
@@ -205,7 +206,7 @@ export function FullScreenFocus({
               aria-keyshortcuts={startKeys}
               onClick={onStart}
             >
-              <StartMark />
+              <Icon name="play" />
               <span aria-hidden="true">Start focus</span>
             </Button>
           ) : (
@@ -213,12 +214,17 @@ export function FullScreenFocus({
               <IconButton
                 size="round"
                 label={paused ? "Resume session" : "Pause session"}
-                icon={paused ? <PlayIcon /> : <PauseIcon />}
+                icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
                 shortcut={singleKeys ? "Space" : undefined}
                 keyshortcuts={false}
                 onClick={paused ? onResume : onPause}
               />
-              <IconButton label="End session" icon={<EndIcon />} shortcut="⌘." onClick={onEnd} />
+              <IconButton
+                label="End session"
+                icon={<Icon name="stop" />}
+                shortcut="⌘."
+                onClick={onEnd}
+              />
             </>
           )}
         </div>

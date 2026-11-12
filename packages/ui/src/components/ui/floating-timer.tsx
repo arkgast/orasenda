@@ -2,9 +2,9 @@ import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
+import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { MenuBarTimer, type MenuBarTimerProps } from "./menu-bar-timer";
-import { OpenIcon, PauseIcon, PlayIcon, StartMark } from "./timer-glyphs";
 
 export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
   onPause?: () => void;
@@ -119,17 +119,17 @@ export function FloatingTimer({
       </p>
       {quiet ? (
         <Button variant="primary" aria-label="Start focus" className="shrink-0" onClick={onStart}>
-          <StartMark small />
+          <Icon name="play" size="md" />
           <span aria-hidden="true">Start</span>
         </Button>
       ) : (
         <IconButton
           label={shown === "paused" ? "Resume session" : "Pause session"}
-          icon={shown === "paused" ? <PlayIcon /> : <PauseIcon />}
+          icon={shown === "paused" ? <Icon name="play" /> : <Icon name="pause" />}
           onClick={shown === "paused" ? onResume : onPause}
         />
       )}
-      <IconButton label="Open Orasenda" icon={<OpenIcon />} onClick={onOpen} />
+      <IconButton label="Open Orasenda" icon={<Icon name="window" />} onClick={onOpen} />
     </div>
   );
 }

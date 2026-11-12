@@ -434,6 +434,7 @@
     "where": "T6: ShortcutRecorder hint and conflict line at rest"
   },
   {
+    "fg": "ink",
     "bg": "surface-raised",
     "kind": "mark",
     "where": "T5: FloatingTimer button glyphs against the floater fill"
