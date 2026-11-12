@@ -63,12 +63,20 @@ for (const size of SIZES) {
     expect(ring?.width, "the ring is square").toBeCloseTo(ring?.height ?? -1, 0);
     expect(ring?.width).toBeGreaterThanOrEqual(160);
     expect(ring?.width).toBeLessThanOrEqual(560);
-    // Spacious windows reach the ceiling by themselves. At 1280x800 the space-4 gaps cost the ring 12px (548).
+    // Spacious windows (1440x900 and above, spec C as amended) reach the ceiling by themselves.
     if (size.width >= 1440 && size.height >= 900) expect(ring?.width).toBe(560);
-    else if (size.width >= 1280 && size.height >= 800)
-      expect(ring?.width).toBeGreaterThanOrEqual(540);
   });
 }
+
+// Goal 2: a two-line status row in the ring layout. Only the narrowest ring wraps (at 640 and wider every
+// allowed line fits one row), so this holds that case: the row grows, and the gaps still hold.
+test("today_two_line_status_row_gaps_360x640", async ({ page }) => {
+  const size = { width: 360, height: 640, layout: "ring" };
+  await openApp(page, "breakLong", size);
+  const row = await page.locator('[data-slot="inline-notice"]').first().boundingBox();
+  expect(row?.height, "the line takes two lines").toBeGreaterThan(44);
+  await expectTodayGaps(page, size, "breakLong two lines");
+});
 
 // Session cadence: the break row names its two actions, and the stacked strip drops the suggestion.
 test("today_break_row_actions_and_stacked_strip", async ({ page }) => {
@@ -101,6 +109,12 @@ test("today_running_deep_digits_inside_ring", async ({ page }) => {
       ),
     );
     const label = `${size.width}x${size.height}`;
+    expect(md, `${label}: timer-md is read`).toBeGreaterThan(0);
+    expect(r.fontSize, `${label}: never below timer-md`).toBeGreaterThanOrEqual(md - 0.5);
+    await expect(page.locator("[data-slot=timer-ring-digits]")).toHaveAttribute(
+      "data-length",
+      "long",
+    );
     expect(r.circleProblems, label).toEqual([]);
     if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
   }

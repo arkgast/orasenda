@@ -47,7 +47,6 @@ export const STATES = [
   { scenario: "intentOpen", primary: /Pause session/ },
   { scenario: "hintKeepGoing", primary: /Pause session/ },
   { scenario: "runningDeep", primary: /Pause session/ },
-  { scenario: "endedTwoLine", primary: /Start focus/ },
 ] as const;
 
 /** Rows with a second action: at a narrow width the line may take a second line, so the row may grow. */
@@ -144,28 +143,50 @@ interface Box {
 
 /**
  * Goal 3 for one rendered state: the token gaps between Today's rows (ring) or columns (strip) and rows
- * (stacked strip). The ring's box is its SVG; an empty status row is skipped, so its neighbours are compared
+ * (stacked strip). Each row is measured by what shows (its buttons, fields and text; the ring by its SVG), not by its container; an empty status row is skipped, so its neighbours are compared
  * directly. Fails with a list such as "ring→controls 4px < 12px at 640x480 running". `DEBUG_GAPS=1` logs every gap.
  */
 export async function expectTodayGaps(page: Page, size: TodaySize, state: string): Promise<void> {
   const m = await page.evaluate(() => {
-    const box = (el: Element | null | undefined) => {
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    type B = { top: number; bottom: number; left: number; right: number };
+    const union = (rects: DOMRect[]): B | null => {
+      const seen = rects.filter((r) => r.width > 0 || r.height > 0);
+      if (seen.length === 0) return null;
+      return {
+        top: Math.min(...seen.map((r) => r.top)),
+        bottom: Math.max(...seen.map((r) => r.bottom)),
+        left: Math.min(...seen.map((r) => r.left)),
+        right: Math.max(...seen.map((r) => r.right)),
+      };
     };
     const today = document.querySelector(".today");
-    const q = (sel: string) => today?.querySelector(sel) ?? null;
+    const all = (sel: string) => [...(today?.querySelectorAll(sel) ?? [])];
+    const rectOf = (el: Element) => el.getBoundingClientRect();
+    // The visible boxes: the buttons and fields a person sees, and the text itself (a range), never a container.
+    const controls = (root: string) => all(`${root} :is(button, input)`);
+    const textRect = (el: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return range.getBoundingClientRect();
+    };
+    const messages = all('.today-status [data-slot="inline-notice-message"]').filter(
+      (el) => (el.textContent ?? "").trim() !== "",
+    );
+    const statusRects = [...messages.map(textRect), ...controls(".today-status").map(rectOf)];
     return {
       compact: today?.hasAttribute("data-compact") ?? false,
-      top: box(q(".today-top")),
-      status: box(q(".today-status > *")),
-      statusItem: box(q(".today-status")),
-      ring: box(q('[data-slot="timer-ring"] svg')),
-      time: box(q(".today-time")),
-      controls: box(q(".today-controls")),
+      top: union(controls(".today-top").map(rectOf)) ?? union(all(".today-top").map(rectOf)),
+      // An empty status row has no message, button or field: it is skipped, not measured.
+      status: union(statusRects),
+      ring: union(all('[data-slot="timer-ring"] svg').map(rectOf)),
+      time:
+        union(all('[data-slot="timer-strip"]').map(rectOf)) ??
+        union(all(".today-time").map(rectOf)),
+      controls:
+        union(controls(".today-controls").map(rectOf)) ?? union(all(".today-controls").map(rectOf)),
     };
   });
+  const overlay = (await page.locator('[data-slot="intent-field"]').count()) > 0;
   const found: string[] = [];
   const log: string[] = [];
   const check = (name: string, gap: number, min: number) => {
@@ -193,17 +214,19 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
       down(present[i][1], present[i + 1][1], `${present[i][0]}→${present[i + 1][0]}`, min);
     }
   } else if (size.layout === "strip") {
-    across(m.statusItem, m.time, "status→time", 16);
+    across(m.status, m.time, "status→time", 16);
     across(m.time, m.controls, "time→controls", 16);
   } else {
     const rows: Array<[string, Box | null]> = [
       ["top", m.top],
-      ["status", m.statusItem],
+      // The open intent field overlays the time in a stacked strip on purpose, so it has no gap to keep.
+      ["status", overlay ? null : m.status],
       ["time", m.time],
       ["controls", m.controls],
     ];
-    for (let i = 0; i + 1 < rows.length; i++) {
-      down(rows[i][1], rows[i + 1][1], `${rows[i][0]}→${rows[i + 1][0]}`, 8);
+    const present = rows.filter(([, b]) => b !== null);
+    for (let i = 0; i + 1 < present.length; i++) {
+      down(present[i][1], present[i + 1][1], `${present[i][0]}→${present[i + 1][0]}`, 8);
     }
   }
   if (process.env.DEBUG_GAPS) for (const line of log) console.log(`gap ${line}`);

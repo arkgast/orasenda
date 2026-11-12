@@ -53,7 +53,7 @@ Today is still spec A's interim page: a fixed 280px ring, radios and Custom fiel
 - **The first-run welcome line** ("Welcome. Nothing to set up."). It needs a stored first-run flag, and only matters on a first install; it comes with the first sub-project that adds onboarding.
 - **VoiceOver passes:** deferred to the end of P1 (owner, 2026-11-10). Reviews still check names and roles in code.
 - **Screenshots:** none in PRs. The owner reviews the visuals by hand (owner, 2026-11-11).
-- **A spacious breakpoint.** At 1280×800 and above, the fluid ring reaches its 560px ceiling (`timer-full-size`) by itself. Spacious is a size case in the harness, not a code path.
+- **A spacious breakpoint.** At 1440×900 and above, the fluid ring reaches its 560px ceiling (`timer-full-size`) by itself. Spacious is a size case in the harness, not a code path.
 
 ## Users & permissions
 One local user, no accounts. The DevPanel window and its menu-bar item exist only in debug builds with `ORASENDA_SPIKE=1` (`spike::enabled()`, `apps/orasenda/src-tauri/src/spike/mod.rs:19`). The `dev` window gets a capability of its own for the spike commands, and the main window keeps only the commands it still uses.

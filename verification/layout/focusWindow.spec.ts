@@ -142,6 +142,12 @@ test("focus_window_running_deep_digits_inside_ring", async ({ page }) => {
       ),
     );
     const label = `${size.w}x${size.h}`;
+    expect(md, `${label}: timer-md is read`).toBeGreaterThan(0);
+    expect(r.fontSize, `${label}: never below timer-md`).toBeGreaterThanOrEqual(md - 0.5);
+    await expect(page.locator("[data-slot=timer-ring-digits]")).toHaveAttribute(
+      "data-length",
+      "long",
+    );
     expect(r.circleProblems, label).toEqual([]);
     if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
   }
