@@ -10,7 +10,7 @@ export const commands = {
 	/**  The current timer view and any milestones not yet seen. */
 	timerState: () => __TAURI_INVOKE<TimerState_Serialize>("timer_state"),
 	/**  Starts a session. */
-	timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_start", { request })),
+	timerStart: (request: StartRequest) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_start", { request })),
 	/**  Pauses the running session. */
 	timerPause: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_pause")),
 	/**  Resumes a paused session. */
@@ -27,8 +27,8 @@ export const commands = {
 	notificationsOpenSettings: () => typedError<null, NotificationsError>(__TAURI_INVOKE("notifications_open_settings")),
 	/**  The page (and Settings target) the app was asked to show before the webview listened, once. */
 	navigateTake: () => __TAURI_INVOKE<Navigate_Serialize | null>("navigate_take"),
-	/**  The three fixed presets' lengths, in display order. */
-	presetsGet: () => __TAURI_INVOKE<PresetLength[]>("presets_get"),
+	/**  The live presets, in order. */
+	presetsList: () => __TAURI_INVOKE<PresetEntry[]>("presets_list"),
 	/**
 	 *  Shows the menu and answers the chosen item's id; `None` when dismissed, when a menu is
 	 *  already open, or when it could not be shown (logged).
@@ -55,6 +55,7 @@ export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
+	presetsChanged: makeEvent<PresetEntry[], PresetEntry[]>("presets-changed"),
 	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
 	timerMilestone: makeEvent<MilestoneEvent_Serialize, MilestoneEvent_Deserialize>("timer-milestone"),
@@ -120,12 +121,6 @@ export type ClockTick_Serialize = {
 	clock: string,
 	/**  When the chosen preset would finish if started now, as text. Set only while idle. */
 	idleFinish: string | null,
-};
-
-/**  The user's own focus and break lengths, in minutes. */
-export type CustomSpec = {
-	focusMin: number,
-	breakMin: number,
 };
 
 /**  How a session ended. */
@@ -256,15 +251,25 @@ export type OverlayShow = {
 /**  Which part of the loop a session is in. */
 export type Phase = "focus";
 
-/**  A named timing preset, serialized snake_case (`"fifty_ten"`). */
-export type Preset = "classic" | "fifty_ten" | "deep_block" | "custom" | "quick";
-
-/**  One fixed preset's lengths in whole minutes, for the preset picker. */
-export type PresetLength = {
-	preset: Preset,
+/**  One live preset, with what the list needs to say about it. */
+export type PresetEntry = {
+	id: PresetId,
+	name: string,
 	focusMin: number,
 	breakMin: number,
+	longBreakMin: number,
+	rounds: number,
+	/**  One of the three default presets. */
+	isDefault: boolean,
+	/**
+	 *  A default preset whose name or lengths differ from the shipped ones. Always false for
+	 *  a user's own preset.
+	 */
+	isChanged: boolean,
 };
+
+/**  Opaque preset identifier (a UUIDv7, or a default's fixed id), serialized as a bare string. */
+export type PresetId = string;
 
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;
@@ -272,9 +277,21 @@ export type SessionId = string;
 /**  The saved settings. */
 export type Settings = {
 	theme: Theme,
-	preset: Preset,
-	custom: CustomSpec,
+	/**  The selected library preset (`timer.preset`). */
+	presetId: PresetId,
+	/**  How many times "+10 min" is offered in one session, 0 to 3 (`timer.extension_cap`). */
+	extensionCap: number,
+	/**  Keep going in 10-minute steps when a focus ends (`timer.auto_continue`). */
+	autoContinue: boolean,
+	/**  Where auto-continue steps stop, in minutes, 60 to 150 (`timer.longest_focus_min`). */
+	longestFocusMin: number,
+	/**  Note, once a day, when the day's focus passes `deep_cap_hours` (`timer.deep_cap_on`). */
+	deepCapOn: boolean,
+	/**  The deep-hours cap, 2 to 8 hours (`timer.deep_cap_hours`). */
+	deepCapHours: number,
 	notifySessionEnd: boolean,
+	/**  Notify two minutes before the end (`notify.two_minutes`). */
+	notifyTwoMinutes: boolean,
 };
 
 /**  The settings changed. */
@@ -310,18 +327,9 @@ export type SpikeStatus = {
 export type SpikeUsageChanged = null;
 
 /**  Asks to start a session. */
-export type StartRequest = StartRequest_Serialize | StartRequest_Deserialize;
-
-/**  Asks to start a session. */
-export type StartRequest_Deserialize = {
-	preset: Preset,
-	custom?: CustomSpec | null,
-};
-
-/**  Asks to start a session. */
-export type StartRequest_Serialize = {
-	preset: Preset,
-	custom: CustomSpec | null,
+export type StartRequest = {
+	/**  Start the built-in two-minute focus; otherwise the selected preset. */
+	quick: boolean,
 };
 
 /**  Whether the session store could be used. */
@@ -372,11 +380,18 @@ export type TimerView_Deserialize = {
 	remainingLabel: string,
 	progress: number,
 	sessionId?: SessionId | null,
-	preset?: Preset | null,
+	/**  The library preset the running session started with; `None` while idle and for `quick`. */
+	presetId?: PresetId | null,
+	/**  The snapshot's name, or "Just 2 minutes" for `quick`; `None` while idle. */
+	presetName?: string | null,
+	/**  The running session is the built-in two-minute start. */
+	quick: boolean,
+	/**  The snapshot's break length in minutes; `None` while idle and for `quick`. */
+	breakMin?: number | null,
 	finish?: string | null,
 	/**
-	 *  The session's planned focus length in whole minutes, fixed at start (a Custom change
-	 *  in Settings mid-session does not move it); `None` while idle.
+	 *  The session's planned focus length in whole minutes, fixed at start (an edit to the preset
+	 *  mid-session does not move it); `None` while idle.
 	 */
 	plannedMin?: number | null,
 	store: StoreStatus,
@@ -393,11 +408,18 @@ export type TimerView_Serialize = {
 	remainingLabel: string,
 	progress: number,
 	sessionId: SessionId | null,
-	preset: Preset | null,
+	/**  The library preset the running session started with; `None` while idle and for `quick`. */
+	presetId: PresetId | null,
+	/**  The snapshot's name, or "Just 2 minutes" for `quick`; `None` while idle. */
+	presetName: string | null,
+	/**  The running session is the built-in two-minute start. */
+	quick: boolean,
+	/**  The snapshot's break length in minutes; `None` while idle and for `quick`. */
+	breakMin: number | null,
 	finish: string | null,
 	/**
-	 *  The session's planned focus length in whole minutes, fixed at start (a Custom change
-	 *  in Settings mid-session does not move it); `None` while idle.
+	 *  The session's planned focus length in whole minutes, fixed at start (an edit to the preset
+	 *  mid-session does not move it); `None` while idle.
 	 */
 	plannedMin: number | null,
 	store: StoreStatus,

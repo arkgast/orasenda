@@ -4,9 +4,9 @@ mod commands;
 mod entries;
 mod native;
 
-use orasenda_core::{CustomSpec, Preset};
+use orasenda_core::{PresetId, default_presets};
 
-use crate::ipc::Settings;
+use crate::ipc::{PresetEntry, Settings, entries};
 
 pub(in crate::tray) use commands::on_menu_event;
 #[cfg(test)]
@@ -29,43 +29,55 @@ pub(crate) const SETTINGS: &str = "Settings…";
 pub(crate) const DEV_PANEL: &str = "developer-panel";
 pub(crate) const QUIT: &str = "Quit Orasenda";
 
-/// The four presets the submenu lists, in order.
-const PRESETS: [Preset; 4] = [
-    Preset::Classic,
-    Preset::FiftyTen,
-    Preset::DeepBlock,
-    Preset::Custom,
-];
+/// The id prefix of a Preset submenu item; the rest is the library preset's id.
+pub(crate) const PRESET_PREFIX: &str = "preset:";
 
-/// The next session while idle: the saved preset, its focus minutes and the Custom minutes
-/// (the Custom check item shows them).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The next session while idle: the library, and which preset is selected.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NextSession {
-    pub(crate) preset: Preset,
-    pub(crate) focus_min: u32,
-    pub(crate) custom: CustomSpec,
+    /// The live presets, in order.
+    pub(crate) presets: Vec<PresetEntry>,
+    /// The selected preset (the first when the id is not in `presets`).
+    pub(crate) selected: PresetId,
 }
 
 impl Default for NextSession {
     fn default() -> NextSession {
-        NextSession::from_settings(&Settings::default())
+        NextSession::new(&Settings::default(), entries(&default_presets()))
     }
 }
 
 impl NextSession {
-    pub(crate) fn from_settings(settings: &Settings) -> NextSession {
-        let focus_min = match settings.preset.spec(&settings.custom) {
-            Ok(spec) => u32::try_from(spec.focus_ms / 60_000).unwrap_or(25),
-            Err(error) => {
-                eprintln!("tray: the saved preset has no length ({error}); showing 25");
-                25
-            }
+    pub(crate) fn new(settings: &Settings, presets: Vec<PresetEntry>) -> NextSession {
+        let selected = match presets.iter().find(|p| p.id == settings.preset_id) {
+            Some(found) => found.id.clone(),
+            None => presets
+                .first()
+                .map_or_else(|| settings.preset_id.clone(), |p| p.id.clone()),
         };
-        NextSession {
-            preset: settings.preset,
-            focus_min,
-            custom: settings.custom,
-        }
+        NextSession { presets, selected }
+    }
+
+    /// The same library with the selection of `settings`.
+    pub(crate) fn with_settings(&self, settings: &Settings) -> NextSession {
+        NextSession::new(settings, self.presets.clone())
+    }
+
+    /// The same selection over a changed library.
+    pub(crate) fn with_presets(&self, presets: Vec<PresetEntry>) -> NextSession {
+        let settings = Settings {
+            preset_id: self.selected.clone(),
+            ..Settings::default()
+        };
+        NextSession::new(&settings, presets)
+    }
+
+    /// The selected preset's focus minutes; 25 when the library is empty.
+    pub(crate) fn focus_min(&self) -> u32 {
+        self.presets
+            .iter()
+            .find(|p| p.id == self.selected)
+            .map_or(25, |p| u32::from(p.focus_min))
     }
 }
 
@@ -74,7 +86,7 @@ impl NextSession {
 pub(crate) enum MenuEntry {
     /// `checked: Some(_)` makes it a check item.
     Item {
-        id: &'static str,
+        id: String,
         label: String,
         accelerator: Option<&'static str>,
         checked: Option<bool>,

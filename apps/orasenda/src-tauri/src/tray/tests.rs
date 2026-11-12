@@ -11,6 +11,7 @@ use crate::ipc::{Mode, StoreStatus};
 
 mod header;
 mod menu_items;
+mod presets;
 mod retry;
 
 /// 24:59, 24:58 and 24:57 left.

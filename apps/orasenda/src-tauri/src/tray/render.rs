@@ -6,8 +6,8 @@ use tauri::image::Image;
 
 use super::menu::{MenuEntry, NextSession};
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
-use crate::ipc::Settings;
 use crate::ipc::{Mode, TimerView};
+use crate::ipc::{PresetEntry, Settings};
 use crate::runtime::session::NativeSurface;
 
 const FOCUS_ICON: Image<'static> = tauri::include_image!("src/tray/icons/focus.png");
@@ -133,9 +133,24 @@ impl NativeSurface for Tray {
     fn settings_changed(&self, settings: &Settings) {
         {
             let mut state = lock_state(&self.state);
-            state.next = NextSession::from_settings(settings);
+            state.next = state.next.with_settings(settings);
             // The menu toggles a check item itself when clicked, so what it shows may differ
             // from `drawn` even when the settings did not: always rebuild it.
+            if let Some(drawn) = state.drawn.as_mut() {
+                drawn.items.clear();
+            }
+            state.wanted = Some(Drawn::of(&state.view, &state.next));
+            state.retries = 0;
+            state.render_seq += 1;
+        }
+        post_draw(&self.handle, &self.state);
+    }
+
+    /// The library changed: the Preset submenu is rebuilt from the new list.
+    fn presets_changed(&self, presets: &[PresetEntry]) {
+        {
+            let mut state = lock_state(&self.state);
+            state.next = state.next.with_presets(presets.to_vec());
             if let Some(drawn) = state.drawn.as_mut() {
                 drawn.items.clear();
             }

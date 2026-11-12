@@ -1,13 +1,11 @@
 //! The menu entries per state: labels, accelerators and the preset ids.
 
-use orasenda_core::{CustomSpec, Preset};
-
 use super::*;
 use crate::ipc::{Mode, TimerView};
 
 fn item(id: &'static str, label: &str) -> MenuEntry {
     MenuEntry::Item {
-        id,
+        id: id.to_string(),
         label: label.to_string(),
         accelerator: None,
         checked: None,
@@ -16,32 +14,24 @@ fn item(id: &'static str, label: &str) -> MenuEntry {
 
 fn with_accelerator(id: &'static str, label: &str, accelerator: &'static str) -> MenuEntry {
     MenuEntry::Item {
-        id,
+        id: id.to_string(),
         label: label.to_string(),
         accelerator: Some(accelerator),
         checked: None,
     }
 }
 
-pub(super) fn preset_id(preset: Preset) -> &'static str {
-    match preset {
-        Preset::Classic => "preset:classic",
-        Preset::FiftyTen => "preset:fifty_ten",
-        Preset::DeepBlock => "preset:deep_block",
-        Preset::Custom => "preset:custom",
-        Preset::Quick => "preset:quick",
-    }
+/// The item id of library preset `id`.
+pub(super) fn preset_item_id(id: &PresetId) -> String {
+    format!("{PRESET_PREFIX}{}", id.0)
 }
 
-/// The preset check item's label, as in the Today popover.
-fn preset_label(preset: Preset, custom: &CustomSpec) -> String {
-    match preset {
-        Preset::Classic => "Classic 25 / 5".to_string(),
-        Preset::FiftyTen => "50/10 50 / 10".to_string(),
-        Preset::DeepBlock => "Deep Block 90 / 15".to_string(),
-        Preset::Custom => format!("Custom {} / {}", custom.focus_min, custom.break_min),
-        Preset::Quick => "Just 2 minutes".to_string(),
-    }
+/// The preset check item's label, as in the Today popover: "Steady Focus 25 / 5".
+fn preset_label(preset: &PresetEntry) -> String {
+    format!(
+        "{} {} / {}",
+        preset.name, preset.focus_min, preset.break_min
+    )
 }
 
 /// The menu for `view`, top to bottom. `spike` adds the Developer panel item, in its own
@@ -49,19 +39,20 @@ fn preset_label(preset: Preset, custom: &CustomSpec) -> String {
 pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> Vec<MenuEntry> {
     let mut entries = match view.mode {
         Mode::Idle => {
-            let mut presets: Vec<MenuEntry> = PRESETS
+            let mut presets: Vec<MenuEntry> = next
+                .presets
                 .iter()
-                .map(|&preset| MenuEntry::Item {
-                    id: preset_id(preset),
-                    label: preset_label(preset, &next.custom),
+                .map(|preset| MenuEntry::Item {
+                    id: preset_item_id(&preset.id),
+                    label: preset_label(preset),
                     accelerator: None,
-                    checked: Some(preset == next.preset),
+                    checked: Some(preset.id == next.selected),
                 })
                 .collect();
             presets.push(MenuEntry::Separator);
-            presets.push(item(EDIT_TIMES, "Edit times in Settings…"));
+            presets.push(item(EDIT_TIMES, "Edit presets in Settings…"));
             vec![
-                item(START, &format!("Start focus · {} min", next.focus_min)),
+                item(START, &format!("Start focus · {} min", next.focus_min())),
                 item(JUST_TWO, "Just 2 minutes"),
                 MenuEntry::Submenu {
                     label: "Preset",

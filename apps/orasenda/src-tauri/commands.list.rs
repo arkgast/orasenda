@@ -12,7 +12,7 @@ pub const COMMANDS: &[&str] = &[
     "notifications_request",
     "notifications_open_settings",
     "navigate_take",
-    "presets_get",
+    "presets_list",
     "native_menu_popup",
     "spike_status",
     "spike_running_apps",

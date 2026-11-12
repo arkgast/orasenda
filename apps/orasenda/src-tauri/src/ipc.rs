@@ -51,6 +51,18 @@ impl Type for TimerMilestoneEvent {
     }
 }
 
+/// `presets-changed`: the live presets after any preset write, from any surface.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "presets-changed")]
+pub struct PresetsChangedEvent(pub Vec<PresetEntry>);
+
+impl Type for PresetsChangedEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <Vec<PresetEntry> as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
@@ -101,7 +113,10 @@ mod tests {
                 "remainingLabel": "0 seconds",
                 "progress": 0.0,
                 "sessionId": null,
-                "preset": null,
+                "presetId": null,
+                "presetName": null,
+                "quick": false,
+                "breakMin": null,
                 "finish": null,
                 "plannedMin": null,
                 "store": "ok",
@@ -174,6 +189,7 @@ mod tests {
         assert_eq!(value, serde_json::to_value(&s).unwrap());
         assert_eq!(value["theme"], json!("dark"));
         assert!(value.get("notifySessionEnd").is_some());
+        assert!(value.get("presetId").is_some());
         assert_eq!(SettingsChanged::NAME, "settings-changed");
     }
 }

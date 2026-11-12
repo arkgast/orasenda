@@ -1,11 +1,12 @@
 //! The presets command.
 
-use crate::ipc::{PresetLength, preset_lengths};
+use crate::ipc::PresetEntry;
+use crate::runtime::session;
 
-// Sync: it reads core's constant table.
-/// The three fixed presets' lengths, in display order.
+// Sync: it only reads the cached library under a brief lock.
+/// The live presets, in order.
 #[tauri::command]
 #[specta::specta]
-pub fn presets_get() -> Vec<PresetLength> {
-    preset_lengths()
+pub fn presets_list(app: tauri::AppHandle) -> Vec<PresetEntry> {
+    session::run_presets_list(&app)
 }
