@@ -239,3 +239,17 @@ Architecture and product decisions, one entry each, newest last. Use the templat
   - **Frame memory:** a window that remembers its frame stores it in the device-only `window_frame` table, keyed by window and display, in display-relative points, with no `change_log` rows (ADR-012). Only the floater does so now.
   - **Capabilities:** one file per window kind (`focus.json` matches `focus-*`). A secondary window reads the view with `timer_view`, which doesn't drain pending milestones, and never sends a whole `Settings` object (ADR-014). Single-field saves go through a Rust command.
 - **Consequences:** a new window means a new HTML entry, a capability file with a test of its exact permissions, a window spec with a Rust test, and a line in this ADR's model. Floater behaviour rests on the class swap, so it is re-verified on every tao or objc2 upgrade, as ADR-004 says. Whether menu key equivalents reach the app while the non-activating floater is key is checked by hand in D; if they don't, a local `NSEvent` monitor in `crates/platform-macos` handles them, and the floater's Space, Return and Esc too, calling the same Rust commands. Spec: [docs/specs/2026-11-12-focus-views.md](specs/2026-11-12-focus-views.md).
+
+## ADR-017: Global shortcuts
+- **Date:** 2026-11-12
+- **Status:** proposed (spec [Hotkeys and capture](specs/2026-11-12-hotkeys-and-capture.md))
+- **Context:** P1-F adds system-wide shortcuts (⌃⌥F start or pause, ⌃⌥N capture) and single-key shortcuts inside surfaces. ADR-014 already rules out registering from JS, and ADR-016 makes app-wide keys native menu accelerators handled in Rust. A global shortcut can fail to register, because another app holds it, and VoiceOver takes ⌃⌥ keys before any app sees them.
+- **Options considered:**
+  1. **`tauri-plugin-global-shortcut` (2.4.1, global-hotkey 0.8) called only from Rust, behind a `ShortcutRegistrar` trait:** maintained by Tauri, covers macOS and Windows, and reports failures. One more dependency.
+  2. **Our own Carbon `RegisterEventHotKey` in `crates/platform-macos`:** no dependency, but unsafe FFI to maintain and a second implementation for Windows.
+- **Decision:** Option 1 (owner, 2026-11-12).
+  - Each global shortcut is a syncable setting (`keys.start_pause`, `keys.capture`) holding a canonical accelerator (modifiers Control, Alt, Shift, Super, then the `KeyboardEvent.code`, joined by `+`) or `"off"`.
+  - **Register before saving:** a change registers the new shortcut first and saves only if that succeeds, then unregisters the old one. A failure saves nothing and keeps the old one.
+  - Registered once, system-wide. The menu-bar item shows it as inert text, never as a live accelerator (critique F10). Registration status (`registered | off | failed`) lives in memory and is never stored.
+  - Single-key shortcuts belong to one surface, are bound in that webview, and honour `keys.single_key` (WCAG 2.1.4). A surface whose keys are its only controls and act only while it has focus (the floater) is exempt.
+- **Consequences:** a new global shortcut means a setting key, a Settings › Keyboard row and a handler in Rust. A new single key means a line in the All shortcuts list and a check of `singleKey`. Plugin upgrades go through baton:deps. Mobile builds keep the plugin behind `#[cfg(desktop)]`.
