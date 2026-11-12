@@ -16,6 +16,7 @@ pub(crate) mod spike;
 mod tray;
 #[cfg(test)]
 mod window_min_tests;
+mod windows;
 
 include!("../commands.list.rs");
 
@@ -38,6 +39,12 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::navigate_take,
             commands::presets_list,
             commands::native_menu_popup,
+            commands::displays_list,
+            commands::focus_view_open,
+            commands::focus_view_close,
+            commands::main_show,
+            commands::timer_view,
+            commands::preset_select,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -53,6 +60,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::SettingsChanged,
             ipc::PresetsChangedEvent,
             ipc::Navigate,
+            ipc::FocusInsets,
+            ipc::PaletteOpen,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])
@@ -95,6 +104,7 @@ pub fn run() {
         .manage(runtime::session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
         .manage(commands::PopupSlot::default())
+        .manage(windows::frames::Frames::default())
         .manage(notifications::Notifications::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {

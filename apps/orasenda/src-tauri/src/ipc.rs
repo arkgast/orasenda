@@ -91,6 +91,82 @@ pub enum SettingsTarget {
 #[tauri_specta(event_name = "settings-changed")]
 pub struct SettingsChanged(pub Settings);
 
+/// A connected display, as the Focus menu and the Focus view buttons list it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DisplayInfo {
+    /// The label-safe display key; the Focus window is `focus-<id>`.
+    pub id: String,
+    pub name: String,
+    /// Whether the main window is on this display.
+    pub has_main_window: bool,
+}
+
+/// Which Focus view to open.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum FocusViewTarget {
+    FullScreen { display_id: String },
+    Floater,
+}
+
+/// Why a Focus view did not open or close.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum FocusViewErrorKind {
+    /// The platform has no such window, or the call is not allowed for this window.
+    Unavailable,
+    /// The display is not connected.
+    NoDisplay,
+}
+
+/// A failed `focus_view_open` or `focus_view_close`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+pub struct FocusViewError {
+    pub kind: FocusViewErrorKind,
+    pub message: String,
+}
+
+impl FocusViewError {
+    pub fn unavailable(message: impl Into<String>) -> Self {
+        Self {
+            kind: FocusViewErrorKind::Unavailable,
+            message: message.into(),
+        }
+    }
+
+    pub fn no_display(message: impl Into<String>) -> Self {
+        Self {
+            kind: FocusViewErrorKind::NoDisplay,
+            message: message.into(),
+        }
+    }
+}
+
+/// The part of a Focus window's display that the menu bar and the Dock cover, in points.
+/// Sent to that one window, which pads its body by it.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,
+)]
+#[tauri_specta(event_name = "focus-insets")]
+pub struct FocusInsets {
+    pub top: u32,
+    pub right: u32,
+    pub bottom: u32,
+    pub left: u32,
+}
+
+/// Asks `main` to open the command palette. No payload.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,
+)]
+#[tauri_specta(event_name = "palette-open")]
+pub struct PaletteOpen;
+
 #[cfg(test)]
 mod tests {
     use orasenda_core::NotificationStatus;

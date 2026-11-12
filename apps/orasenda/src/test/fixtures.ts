@@ -3,6 +3,8 @@ import { act } from "@testing-library/react";
 import type {
   AppInfo,
   ClockTick_Serialize,
+  DisplayInfo,
+  FocusInsets,
   MilestoneEvent_Serialize,
   NavigatePage,
   PresetEntry,
@@ -111,6 +113,12 @@ export const PRESETS: PresetEntry[] = [
   entry(DEEP, "Deep Work", 90, 15, 30, 2),
 ];
 
+/** Two connected displays, the main window's first (`displays_list`). */
+export const DISPLAYS: DisplayInfo[] = [
+  { id: "1", name: "Built-in Retina Display", hasMainWindow: true },
+  { id: "2", name: "DELL U2720Q", hasMainWindow: false },
+];
+
 const DEFAULTS: Replies = {
   app_info: () => INFO,
   spike_status: () => ({ enabled: false, platformSupported: true }),
@@ -125,6 +133,12 @@ const DEFAULTS: Replies = {
   presets_list: () => PRESETS,
   notifications_request: () => "granted",
   notifications_open_settings: () => null,
+  timer_view: () => IDLE,
+  displays_list: () => DISPLAYS,
+  focus_view_open: () => null,
+  focus_view_close: () => null,
+  main_show: () => null,
+  preset_select: () => null,
 };
 
 /**
@@ -242,5 +256,17 @@ export async function emitNavigate(
 ): Promise<void> {
   await act(async () => {
     await events.navigate.emit({ page, target });
+  });
+}
+
+export async function emitFocusInsets(insets: Partial<FocusInsets> = {}): Promise<void> {
+  await act(async () => {
+    await events.focusInsets.emit({ top: 0, right: 0, bottom: 0, left: 0, ...insets });
+  });
+}
+
+export async function emitPaletteOpen(): Promise<void> {
+  await act(async () => {
+    await events.paletteOpen.emit();
   });
 }

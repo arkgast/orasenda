@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "focus",
+  "description": "What a Focus window's webview may do: read the timer view, run the session, save the next preset and close itself.",
+  "windows": ["focus-*"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-timer-view",
+    "allow-timer-start",
+    "allow-timer-pause",
+    "allow-timer-resume",
+    "allow-timer-stop",
+    "allow-settings-get",
+    "allow-presets-list",
+    "allow-preset-select",
+    "allow-focus-view-close"
+  ]
+}

@@ -30,6 +30,8 @@ export default defineConfig({
         main: resolve(import.meta.dirname, "index.html"),
         overlay: resolve(import.meta.dirname, "overlay.html"),
         dev: resolve(import.meta.dirname, "dev.html"),
+        focus: resolve(import.meta.dirname, "focus.html"),
+        floater: resolve(import.meta.dirname, "floater.html"),
       },
     },
   },

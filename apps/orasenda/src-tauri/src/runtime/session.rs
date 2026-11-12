@@ -54,6 +54,16 @@ pub fn run_state(app: &tauri::AppHandle) -> TimerState {
     orasenda_service::session::run_state(&AppHost::new(app))
 }
 
+/// `timer_view` on the app: the view without draining milestones.
+pub fn run_view(app: &tauri::AppHandle) -> TimerView {
+    orasenda_service::session::run_view(&AppHost::new(app))
+}
+
+/// `preset_select` on the app: a library preset id, saved while idle.
+pub fn run_select_preset(app: &tauri::AppHandle, id: String) -> Result<(), TimerCommandError> {
+    orasenda_service::session::run_select_preset(&AppHost::new(app), orasenda_core::PresetId(id))
+}
+
 /// `settings_set` on the app.
 pub fn run_set_settings(app: &tauri::AppHandle, settings: Settings) -> Result<(), SettingsError> {
     orasenda_service::session::run_set_settings(&AppHost::new(app), settings)
