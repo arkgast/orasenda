@@ -229,10 +229,3 @@
 @utility z-overlay {
   z-index: var(--z-overlay);
 }
-
-/* Preflight is off: the app owns its base. Radix and shadcn parts carry data-slot. */
-@layer base {
-  [data-slot] {
-    box-sizing: border-box;
-  }
-}
