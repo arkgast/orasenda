@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { overflows } from "./support/fits.ts";
+import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { smallTargets } from "./support/hitTargets.ts";
 import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
@@ -11,13 +12,15 @@ const SIZES = [
   { w: 1920, h: 1080, layout: "ring" },
   { w: 1000, h: 440, layout: "strip" },
   { w: 360, h: 240, layout: "stackedStrip" },
+  { w: 390, h: 844, layout: "ring" },
+  { w: 1440, h: 900, layout: "ring" },
 ] as const;
 
 const frame = (page: Page, mode: string, w: number, h: number): Locator =>
   page.locator(`[data-frame][data-state="full-screen-focus-${mode}-${w}x${h}"]`);
 const section = (f: Locator): Locator => f.locator("[data-slot=full-screen-focus]");
 
-test("full_screen_focus_ring_at_1280x720_and_1920x1080", async ({ page }, info) => {
+test("full_screen_focus_ring_at_phone_desktop_and_big_frames", async ({ page }, info) => {
   await openSpecimen(page, "FullScreenFocus");
   for (const { w, h, layout } of SIZES.filter((s) => s.layout === "ring")) {
     for (const mode of MODES) {
@@ -27,8 +30,10 @@ test("full_screen_focus_ring_at_1280x720_and_1920x1080", async ({ page }, info) 
       expect(ring, `${mode} ${w}x${h} ring`).not.toBeNull();
       if (!ring) continue;
       expect(Math.abs(ring.width - ring.height), "round").toBeLessThanOrEqual(1);
-      // The time track is 460 at 1280x720; at 1920x1080 the ring stops at timer-full-size.
-      expect(ring.width, `${mode} ${w}x${h} ring size`).toBeCloseTo(w === 1280 ? 460 : 560, -1);
+      // The time track is 460 at 1280x720; at 1920x1080 the ring stops at timer-full-size. The phone
+      // and xl frames only need a ring that fits, which the overflow check below holds.
+      if (w === 1280 || w === 1920)
+        expect(ring.width, `${mode} ${w}x${h} ring size`).toBeCloseTo(w === 1280 ? 460 : 560, -1);
       const over = (await overflows(f)).filter((line) => !line.includes("sr-only"));
       expect(over, `${mode} ${w}x${h}`).toEqual([]);
     }
@@ -112,6 +117,18 @@ test("full_screen_focus_keyboard_path", async ({ page }) => {
   for (const name of ["Leave full screen", "Start focus"]) {
     await pressTab(page);
     await expect(idle.getByRole("button", { name })).toBeFocused();
+  }
+});
+
+test("full_screen_focus_focus_ring_is_not_clipped", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  const f = frame(page, "focus", 360, 240);
+  await section(f).focus();
+  for (const name of ["Leave full screen", "Pause session"]) {
+    await pressTab(page);
+    const button = f.getByRole("button", { name });
+    await expect(button).toBeFocused();
+    await expectFocusRingVisible(button);
   }
 });
 

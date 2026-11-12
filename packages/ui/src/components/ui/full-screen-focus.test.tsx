@@ -213,7 +213,7 @@ test("full_screen_focus_ended_says_session_ended", () => {
   expect(screen.getAllByRole("status")).toHaveLength(1);
 });
 
-test("full_screen_focus_renders_host_summary_while_idle_or_ended_only", () => {
+test("full_screen_focus_renders_host_summary", () => {
   const view = render(
     <FullScreenFocus {...base} mode="idle" onExit={none} summary={<p>Classic · ends 15:20</p>} />,
   );

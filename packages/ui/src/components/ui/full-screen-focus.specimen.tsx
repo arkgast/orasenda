@@ -35,12 +35,14 @@ const STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
   ],
 ];
 
-// The frames the README names: the two big displays, the strip frame and the window minimum.
+// The frames the README names: the two big displays, the strip frame, the window minimum, a phone and an xl desktop.
 const SIZES = [
   [1280, 720],
   [1920, 1080],
   [1000, 440],
   [360, 240],
+  [390, 844],
+  [1440, 900],
 ] as const;
 
 export function FullScreenFocusSpecimen(): ReactElement {

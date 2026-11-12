@@ -27,7 +27,7 @@ const WORD = {
 } as const;
 
 // From this height (README, contract value) the state word of a running session sits on its own line.
-const TALL_HEIGHT = 88;
+export const TALL_HEIGHT = 88;
 
 /**
  * The always-on-top mini timer: a MenuBarTimer beside Pause or Resume (Start while idle or ended) and Open
@@ -53,7 +53,9 @@ export function FloatingTimer({
     const el = body.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
-      const height = entries[entries.length - 1]?.contentRect.height ?? 0;
+      // The body is border-box with a 1px border: the window's height is the border box, not the content box.
+      const height =
+        entries.at(-1)?.borderBoxSize?.[0]?.blockSize ?? el.getBoundingClientRect().height;
       setTall(height >= TALL_HEIGHT);
     });
     ro.observe(el);

@@ -1,9 +1,10 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { overflows } from "./support/fits.ts";
+import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { smallTargets } from "./support/hitTargets.ts";
 import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
-import { openSpecimen } from "./support/specimen.ts";
+import { openSpecimen, pressTab } from "./support/specimen.ts";
 
 const WALLPAPERS = ["light", "mid", "dark"] as const;
 const STATES = ["running", "paused", "warning", "idle", "ended", "deep", "break"] as const;
@@ -60,6 +61,40 @@ test("floating_timer_state_word_sits_on_its_own_line_from_88px", async ({ page }
   await expect(
     frame(page, "light", "running", 280, 64).locator("[data-slot=floating-timer-word]"),
   ).toHaveCount(0);
+});
+
+test("floating_timer_state_word_threshold_is_the_window_height", async ({ page }) => {
+  await openSpecimen(page, "FloatingTimer");
+  const body = page.locator("[data-slot=floating-timer]").first();
+  const word = body.locator("[data-slot=floating-timer-word]");
+  for (const [h, shown] of [
+    [88, true],
+    [87, false],
+  ] as const) {
+    await body.evaluate((el, height) => {
+      (el.parentElement as HTMLElement).style.height = `${height}px`;
+      (el.parentElement as HTMLElement).style.width = "280px";
+    }, h);
+    await expect(word, `280x${h}`).toHaveCount(shown ? 1 : 0);
+  }
+});
+
+test("floating_timer_keyboard_path_and_focus_rings", async ({ page }) => {
+  await openSpecimen(page, "FloatingTimer");
+  const f = frame(page, "light", "running", 280, 56);
+  await f.locator("[data-slot=floating-timer]").focus();
+  for (const name of ["Pause session", "Open Orasenda"]) {
+    await pressTab(page);
+    const button = f.getByRole("button", { name });
+    await expect(button).toBeFocused();
+    await expectFocusRingVisible(button);
+  }
+  const idle = frame(page, "light", "idle", 280, 56);
+  const start = idle.getByRole("button", { name: "Start focus" });
+  await start.focus();
+  await expectFocusRingVisible(start);
+  await pressTab(page);
+  await expect(idle.getByRole("button", { name: "Open Orasenda" })).toBeFocused();
 });
 
 test("floating_timer_aria_snapshot", async ({ page }) => {

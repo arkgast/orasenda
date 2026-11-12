@@ -2,6 +2,7 @@
 // caps, as the IconButton wrapper expects). Internal; the Icon set (T7) replaces them. Hidden from VoiceOver:
 // the button's label is the name.
 import type { ReactElement } from "react";
+import { PlayGlyph } from "./glyphs";
 
 function line(path: ReactElement): ReactElement {
   return (
@@ -27,18 +28,13 @@ export const LeaveIcon = (): ReactElement =>
 export const OpenIcon = (): ReactElement =>
   line(<path d="M8 4.5H4.5v11h11V12M11 4.5h4.5V9M15.5 4.5L9 11" />);
 
-/** The filled play mark on a Start button (a Button, so the glyph is sized and filled here); `small` is the floater pill's icon-md. */
+/** The filled play mark on a Start button (a Button, so the glyph is sized and filled here); `small` is the floater pill's icon-md. T7 replaces PlayGlyph, and this with it. */
 export function StartMark({ small }: { small?: boolean }): ReactElement {
-  return (
-    <svg
-      className={
-        small ? "size-icon-md flex-none fill-current" : "size-icon-lg flex-none fill-current"
-      }
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M6.5 4.6v10.8a.9.9 0 0 0 1.37.77l8.6-5.4a.9.9 0 0 0 0-1.54l-8.6-5.4A.9.9 0 0 0 6.5 4.6z" />
-    </svg>
+  return small ? (
+    <span className="contents *:size-icon-md">
+      <PlayGlyph />
+    </span>
+  ) : (
+    <PlayGlyph />
   );
 }

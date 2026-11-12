@@ -28,8 +28,23 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
 
 // Contract values from the README (the px of space-8, space-4, the fixed tracks and the intent line's
 // room), as timer-layout.ts keeps the layout tokens: read here only to size the box for timerLayout.
-const FIXED_TRACKS = 44 + 18 + 52 + 18;
-const INTENT_MIN_TRACK = 128;
+// Exported so a test can hold them against tokens.json.
+export const FOCUS_PX = {
+  leaveRow: 44,
+  statusRow: 18,
+  controlsRow: 52,
+  captionRow: 18,
+  intentMinTrack: 128,
+  insetCompact: 16,
+  inset: 64,
+  gapRoomy: 16,
+  gapTight: 4,
+  padRoomy: 32,
+  padTight: 8,
+} as const;
+const FIXED_TRACKS =
+  FOCUS_PX.leaveRow + FOCUS_PX.statusRow + FOCUS_PX.controlsRow + FOCUS_PX.captionRow;
+const INTENT_MIN_TRACK = FOCUS_PX.intentMinTrack;
 
 interface Geometry {
   layout: ReturnType<typeof timerLayout>;
@@ -41,15 +56,15 @@ interface Geometry {
 // space-8 (space-4 below layout-compact-width).
 function measure(width: number, height: number): Geometry {
   const compact = width < timerLayout.tokens["layout-compact-width"];
-  const inset = compact ? 16 : 64;
+  const inset = compact ? FOCUS_PX.insetCompact : FOCUS_PX.inset;
   const layout = timerLayout({
     contentWidth: width - inset,
     contentHeight: height - inset,
     windowWidth: width,
   });
   const roomy = layout === "ring" && !compact;
-  const gap = roomy ? 16 : 4;
-  const pad = roomy ? 32 : 8;
+  const gap = roomy ? FOCUS_PX.gapRoomy : FOCUS_PX.gapTight;
+  const pad = roomy ? FOCUS_PX.padRoomy : FOCUS_PX.padTight;
   const track = height - FIXED_TRACKS - 4 * gap - 2 * pad;
   return { layout, roomy, intent: layout === "ring" || track >= INTENT_MIN_TRACK };
 }

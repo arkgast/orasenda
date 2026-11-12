@@ -479,5 +479,23 @@
     "bg": "surface",
     "kind": "text",
     "where": "T5: FullScreenFocus status line, Session ended."
+  },
+  {
+    "fg": "amber",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T5: FloatingTimer warning ring arc shape on its own fill"
+  },
+  {
+    "fg": "break",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T5: FloatingTimer break half circle shape on its own fill"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T5: FloatingTimer focus ring arc shape on its own fill"
   }
 ]

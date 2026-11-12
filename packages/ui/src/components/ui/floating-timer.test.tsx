@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { FloatingTimer } from "./floating-timer";
+import { FloatingTimer, TALL_HEIGHT } from "./floating-timer";
 
 const run = { remaining: "18:42", remainingLabel: "18 minutes 42 seconds", mode: "focus" as const };
 
@@ -78,4 +78,48 @@ test("floating_timer_has_no_close_button_and_task_stays_in_the_name", () => {
   render(<FloatingTimer {...run} task="Draft the outline" />);
   expect(screen.queryByRole("button", { name: /close/i })).toBeNull();
   expect(screen.getByRole("timer")).toHaveAccessibleName(/Draft the outline/);
+});
+
+test("floating_timer_every_mode_has_word_or_shape_including_ended", () => {
+  render(<FloatingTimer mode="idle" ended />);
+  const body = screen.getByRole("group");
+  expect(
+    body.querySelector("[data-slot=menu-bar-timer-ring], [data-slot=menu-bar-timer-shape]"),
+  ).not.toBeNull();
+  expect(
+    within(body)
+      .getAllByText("Session ended.")
+      .some((n) => n.getAttribute("aria-hidden") === "true"),
+  ).toBe(true);
+});
+
+test("floating_timer_state_word_uses_the_border_box_height", () => {
+  const original = globalThis.ResizeObserver;
+  let fire: (blockSize: number) => void = () => {};
+  globalThis.ResizeObserver = class {
+    constructor(cb: ResizeObserverCallback) {
+      fire = (blockSize) =>
+        cb(
+          [
+            {
+              borderBoxSize: [{ blockSize, inlineSize: 280 }],
+              contentRect: { height: blockSize - 2 },
+            } as unknown as ResizeObserverEntry,
+          ],
+          this,
+        );
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+  try {
+    render(<FloatingTimer {...run} />);
+    act(() => fire(TALL_HEIGHT - 1));
+    expect(screen.queryByText("Focus", { selector: "[data-slot=floating-timer-word]" })).toBeNull();
+    act(() => fire(TALL_HEIGHT));
+    expect(screen.getByText("Focus", { selector: "[data-slot=floating-timer-word]" })).toBeTruthy();
+  } finally {
+    globalThis.ResizeObserver = original;
+  }
 });
