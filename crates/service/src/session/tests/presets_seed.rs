@@ -1,6 +1,6 @@
 //! Seeding the preset library, and migrating the old `timer.preset` and `timer.custom`.
 
-use orasenda_core::{NotificationStatus, PresetDef};
+use orasenda_core::{NotificationStatus, PresetDef, PresetId};
 use orasenda_store::{Store, meta, presets, settings};
 
 use super::super::test_support::*;
@@ -335,4 +335,32 @@ fn library_retry_without_a_seed_still_emits_presets_changed() {
     assert!(effects.settings_changed.is_some());
     assert!(!s.recover_owed.settings);
     assert!(!s.recover_owed.presets);
+}
+
+#[test]
+fn a_theme_change_while_presets_are_owed_keeps_the_cached_preset() {
+    let store = memory_store();
+    store
+        .write(0, |txn| settings::set(txn, KEY_PRESET, &"legacy-id"))
+        .expect("stores a legacy id");
+    store.fail_writes(true);
+    let mut s = launch(store);
+    assert!(s.recover_owed.presets);
+    s.settings.preset_id = PresetId("legacy-id".into());
+    db(&s).fail_writes(false);
+    let presented = s.settings();
+    assert_ne!(presented.preset_id, s.settings.preset_id);
+    s.set_settings(
+        Settings {
+            theme: crate::api::Theme::Dark,
+            ..presented
+        },
+        T0,
+    )
+    .expect("a theme-only change is saved");
+    assert_eq!(s.settings.preset_id.0, "legacy-id");
+    let stored: Option<String> = db(&s)
+        .read(|txn| settings::get(txn, KEY_PRESET))
+        .expect("reads");
+    assert_eq!(stored.as_deref(), Some("legacy-id"));
 }

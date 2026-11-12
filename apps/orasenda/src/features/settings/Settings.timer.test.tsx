@@ -220,3 +220,13 @@ test("store_newer_disables_every_control", async () => {
     "This data was saved by a newer Orasenda. Settings are read-only until you update.",
   );
 });
+
+test("settings_timer_presets_list_failure_shows_the_line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await openSettings({
+    presets_list: () => {
+      throw new Error("no library");
+    },
+  });
+  expect(screen.getByText("Can't read your presets right now.")).toBeInTheDocument();
+});

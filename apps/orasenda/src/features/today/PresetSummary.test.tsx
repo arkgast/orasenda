@@ -204,3 +204,16 @@ test("popover_failed_save_rolls_summary_back", async () => {
   await settle();
   expect(summary()).toHaveAccessibleName(/^Preset Steady Focus, 25 minutes/);
 });
+
+test("summary_presets_list_failure_shows_unavailable", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({
+    presets_list: () => {
+      throw new Error("no library");
+    },
+  });
+  expect(screen.getByRole("button", { name: "Presets unavailable" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+});

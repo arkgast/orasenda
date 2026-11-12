@@ -112,11 +112,17 @@ impl SessionService {
             });
         }
         let presented = self.settings();
-        let cached_preset = self.settings.preset_id.clone();
+        // While the library is owed the presented id is a stand-in for the cached one (the guard
+        // below lets only an echo of it through), so the cached id is left alone.
+        let cached_preset = if self.recover_owed.presets {
+            presented.preset_id.clone()
+        } else {
+            self.settings.preset_id.clone()
+        };
         let owed = self.recover_owed.settings;
         let theme_changed = settings.theme != presented.theme;
         let notify_changed = settings.notify_session_end != presented.notify_session_end;
-        if settings.preset_id != self.settings.preset_id && self.recover_owed.presets {
+        if settings.preset_id != presented.preset_id && self.recover_owed.presets {
             return Err(SettingsError {
                 kind: SettingsErrorKind::Unavailable,
                 message: "the preset can't be changed right now".into(),
