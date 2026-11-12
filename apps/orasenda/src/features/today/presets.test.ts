@@ -1,7 +1,8 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { DEEP, mockBackend, PRESETS, settle } from "../../test/fixtures";
+import { DEEP, mockBackend, PRESETS, SETTINGS, settle } from "../../test/fixtures";
 import {
+  presetChoices,
   presetMeta,
   presetName,
   presetsList,
@@ -82,4 +83,25 @@ test("presets_are_read_once_per_launch", async () => {
   await settle();
   expect(first).toHaveLength(3);
   expect(backend.calls.filter((call) => call.cmd === "presets_list")).toHaveLength(1);
+});
+
+test("preset_choices_four_rows_saved_checked", () => {
+  const extra = {
+    ...PRESETS[0],
+    id: "0192f6a0-0000-7000-8000-000000000009",
+    name: "Quiet",
+    focusMin: 40,
+  };
+  const rows = presetChoices({ ...SETTINGS, presetId: DEEP }, [...PRESETS, extra]);
+  expect(rows).toEqual([
+    { presetId: PRESETS[0].id, label: "Gentle Start", meta: "15 / 5", checked: false },
+    { presetId: PRESETS[1].id, label: "Steady Focus", meta: "25 / 5", checked: false },
+    { presetId: DEEP, label: "Deep Work", meta: "90 / 15", checked: true },
+    { presetId: extra.id, label: "Quiet", meta: "40 / 5", checked: false },
+  ]);
+});
+
+test("preset_choices_check_the_first_when_the_saved_one_is_gone", () => {
+  const rows = presetChoices({ ...SETTINGS, presetId: "gone" }, PRESETS);
+  expect(rows.map((row) => row.checked)).toEqual([true, false, false]);
 });
