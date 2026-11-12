@@ -20,3 +20,8 @@ block2.workspace = true
 [[test]]
 name = "status_item"
 harness = false
+
+# Null-window refusals run after the main-thread check, so they need the main thread too.
+[[test]]
+name = "windows_main_thread"
+harness = false
