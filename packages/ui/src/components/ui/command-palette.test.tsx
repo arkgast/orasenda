@@ -163,3 +163,62 @@ test("home_and_end_keep_moving_the_caret", () => {
   expect(fireEvent.keyDown(box, { key: "Home" })).toBe(true);
   expect(rows[1]).toHaveAttribute("aria-selected", "true");
 });
+
+const withShortcuts = [
+  { id: "start", label: "Start a session", hint: "Focus on one task", shortcut: "⌃⌥F" },
+  { id: "palette", label: "Open commands", shortcut: "⇧⌘P" },
+  { id: "plain", label: "Pause" },
+];
+
+test("command_palette_shortcut_is_kbd_in_row_name", () => {
+  setup({ commands: withShortcuts });
+  const row = screen.getByRole("option", { name: /Start a session/ });
+  expect(row).toHaveAccessibleName(/Control-Option-F/);
+  expect(screen.getByRole("option", { name: /Open commands/ })).toHaveAccessibleName(
+    /Shift-Command-P/,
+  );
+  // The glyphs are drawn, hidden from VoiceOver, and sit in a Kbd on the row's right.
+  const kbd = within(row).getByText("⌃⌥F");
+  expect(kbd).toHaveAttribute("data-slot", "kbd");
+  expect(kbd).toHaveAttribute("aria-hidden", "true");
+  expect(within(screen.getByRole("option", { name: "Pause" })).queryByText(/⌃|⌘/)).toBeNull();
+  expect(within(row).getByText("Focus on one task")).toBeTruthy();
+});
+
+test("command_palette_compact_has_close_icon_button", () => {
+  setup({ compact: true });
+  const close = screen.getByRole("button", { name: "Close" });
+  expect(close).toHaveAttribute("data-slot", "icon-button");
+  expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+  expect(screen.getByRole("dialog", { name: "Commands" })).toBeTruthy();
+  expect(screen.getByRole("combobox", { name: "Search commands" })).toBeTruthy();
+  expect(document.querySelector("[data-slot=dialog-title]")?.className).toContain("sr-only");
+});
+
+test("command_palette_compact_close_calls_on_close", () => {
+  const { onClose } = setup({ compact: true });
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("command_palette_list_is_one_tab_stop", () => {
+  setup({ commands: withShortcuts, compact: true });
+  const dialog = screen.getByRole("dialog", { name: "Commands" });
+  const stops = Array.from(
+    dialog.querySelectorAll<HTMLElement>("a[href], button, input, select, textarea, [tabindex]"),
+  ).filter((el) => el.getAttribute("tabindex") !== "-1");
+  // The search field is the list's stop; Close is the only other one.
+  expect(stops.map((el) => el.getAttribute("aria-label") ?? el.tagName.toLowerCase())).toEqual([
+    "input",
+    "Close",
+  ]);
+  for (const row of screen.getAllByRole("option")) expect(row.hasAttribute("tabindex")).toBe(false);
+});
+
+test("command_palette_current_props_unchanged", () => {
+  setup();
+  expect(screen.getAllByRole("option")).toHaveLength(3);
+  expect(screen.getByRole("button", { name: "Close" })).toHaveAttribute("data-slot", "button");
+  expect(document.querySelector("[data-slot=kbd]")).toBeNull();
+  expect(document.querySelector("[data-slot=dialog-title]")?.className).not.toContain("sr-only");
+});

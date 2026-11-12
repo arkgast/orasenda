@@ -37,7 +37,7 @@ test("capture_pad_renders_nothing_when_closed", () => {
 test("capture_pad_exposes_thought_field_with_helper_and_focus", async () => {
   render(<Host />);
   const field = screen.getByRole("textbox", { name: "Thought" });
-  expect(field).toHaveAccessibleDescription("Esc saves to Inbox and closes. ⌘Return saves too.");
+  expect(field).toHaveAccessibleDescription("Esc saves to Inbox and closes. ⌘\u21a9 saves too.");
   await waitFor(() => expect(document.activeElement).toBe(field));
 });
 
@@ -64,14 +64,13 @@ test("capture_pad_save_is_disabled_for_whitespace", () => {
   ).toBe(true);
 });
 
-test("capture_pad_save_sends_trimmed_text_closes_and_announces_once", async () => {
+test("capture_pad_save_sends_trimmed_text_and_closes", async () => {
   const onSave = vi.fn();
   const onClose = vi.fn();
   render(<Host initial="  buy milk  " initialKind="external" onSave={onSave} onClose={onClose} />);
   fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
   await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   expect(onSave).toHaveBeenCalledWith({ text: "buy milk", kind: "external" });
-  expect(screen.getByRole("status", { hidden: true }).textContent).toBe("Saved to Inbox.");
 });
 
 test("capture_pad_escape_saves_text", async () => {
@@ -130,20 +129,33 @@ test("capture_pad_suppresses_duplicate_saves_while_busy", async () => {
   await act(async () => release());
 });
 
-test("capture_pad_reopening_clears_the_saved_announcement", async () => {
-  const props = {
-    value: "note",
-    kind: "internal" as const,
-    onChange: vi.fn(),
-    onKindChange: vi.fn(),
-    onSave: vi.fn(),
-    onClose: vi.fn(),
-  };
-  const view = render(<CapturePad {...props} open />);
+const LIVE = '[role="status"], [role="alert"], [role="log"], [aria-live]';
+
+test("capture_pad_adds_no_live_region_besides_error", async () => {
+  const onClose = vi.fn();
+  const view = render(<Host initial="idea" onClose={onClose} />);
+  expect(document.querySelectorAll(LIVE)).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
-  await waitFor(() => expect(props.onClose).toHaveBeenCalled());
-  expect(screen.getByRole("status", { hidden: true }).textContent).toBe("Saved to Inbox.");
-  view.rerender(<CapturePad {...props} open={false} />);
-  view.rerender(<CapturePad {...props} open />);
-  await waitFor(() => expect(screen.getByRole("status", { hidden: true }).textContent).toBe(""));
+  await waitFor(() => expect(onClose).toHaveBeenCalled());
+  // The host announces "Saved to Inbox."; the pad leaves nothing behind that could.
+  expect(screen.queryByText("Saved to Inbox.")).toBeNull();
+  expect(document.querySelectorAll(LIVE)).toHaveLength(0);
+  view.unmount();
+  render(<Host initial="idea" onSave={() => Promise.reject(new Error("no"))} />);
+  fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
+  await screen.findByText("Your note is still here. Try saving again.");
+  for (const live of Array.from(document.querySelectorAll(LIVE)))
+    expect(live.closest("[data-slot=field-error]")).not.toBeNull();
+});
+
+test("capture_pad_redesign_copy", () => {
+  render(<Host />);
+  const dialog = screen.getByRole("dialog", { name: "Capture a thought" });
+  expect(dialog).toHaveAccessibleDescription("Leave it here and go back to what you were doing.");
+  expect(screen.getByRole("textbox", { name: "Thought" })).toHaveAccessibleDescription(
+    "Esc saves to Inbox and closes. ⌘\u21a9 saves too.",
+  );
+  expect(screen.getByText("This came from your own mind.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("radio", { name: "External" }));
+  expect(screen.getByText("This came from around you.")).toBeTruthy();
 });
