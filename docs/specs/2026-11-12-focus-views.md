@@ -33,8 +33,8 @@ Spec A and C give the timer only Today and the menu-bar item. The owner asked fo
 ## Goals / Success criteria
 1. The Focus view button sits in Today's top-right cell (`apps/orasenda/src/features/today/Today.tsx:217-218`), idle and running, at every Today size, without moving any other Today element. Every Today harness case still passes.
 2. Its menu lists exactly one "Full screen" item when there is one display. With several displays, it lists "Full screen on <NSScreen.localizedName>" for each display, the main window's display first and carrying ⇧⌘F, then "Floating timer, hide Orasenda" ⇧⌘T.
-3. Full screen opens a borderless window whose frame equals the chosen display's frame, at normal level, with collection behaviour `fullScreenAuxiliary | moveToActiveSpace` (Rust test on the window spec; hands-on on two displays with "Displays have separate Spaces" on and off: the other display stays usable).
-4. The Focus window's content stays inside the display's `visibleFrame` (menu bar and Dock never cover a control). It passes the `FullScreenFocus` README harness cases (`full-screen-focus.md:14`) as a hosted page.
+3. Full screen opens a borderless window whose frame equals the chosen display's `frame`, at normal level, with collection behaviour `fullScreenAuxiliary | moveToActiveSpace`. A Rust test checks the window spec. A hands-on check on two displays, with "Displays have separate Spaces" on and off, confirms the other display stays usable.
+4. The Focus window's content is laid out inside the insets that bring the display's `frame` to its `visibleFrame`, so the menu bar and Dock never cover a control. Its background fills the whole frame. It passes the `FullScreenFocus` README harness cases (`full-screen-focus.md:14`) as a hosted page, with and without insets.
 5. The floater is a non-activating panel at floating level on all Spaces. Clicking it, or opening it with ⌘⇧T, the Focus menu, the menu-bar item or ⌘K, makes it key without making Orasenda the active app (hands-on: the frontmost app's menu bar stays). It passes the `FloatingTimer` README sizes 280×56, 280×64 and 360×96 (`floating-timer.md:3`) as a hosted page.
 6. The floater's frame is stored per display in `window_frame`, writes no `change_log` row, and is used again after a relaunch. A frame that no longer fits its display is clamped inside `visibleFrame`.
 7. ⌘⇧F, ⌘⇧T and ⌘K work with key focus in the main window, a Focus window or the floater. ⌘K brings the main window forward and opens the palette there.
@@ -54,21 +54,23 @@ Spec A and C give the timer only Today and the menu-bar item. The owner asked fo
 ## Users & permissions
 One local user, no accounts. Webview permissions are per window (ADR-013, ADR-016):
 
-| Window (label) | Can | Cannot |
+| Capability file (`windows` pattern) | Permissions, exactly | Cannot |
 |---|---|---|
-| `main` | everything it has today (`apps/orasenda/src-tauri/capabilities/main.json:6-22`), plus `displays_list` and `focus_view_open` | close other windows; `focus_view_close`, `main_show`, `timer_view`, `preset_select` |
-| `focus-<display>` (Focus window) | listen; `timer_view`, `timer_start`, `timer_pause`, `timer_resume`, `timer_stop`, `settings_get`, `presets_get`, `preset_select`, `focus_view_close` | `settings_set`, `timer_state` (it would drain main's pending milestones), `native_menu_popup`, navigation, notifications |
-| `floater` | listen; `timer_view`, `timer_start`, `timer_pause`, `timer_resume`, `settings_get`, `native_menu_popup`, `focus_view_close`, `main_show`, `core:window:allow-start-dragging` | `timer_stop` (no End on the floater), `settings_set`, `timer_state`, `preset_select` |
-| `dev`, `overlay` | unchanged (spike only) | anything above |
+| `main.json` (`main`) | today's list (`apps/orasenda/src-tauri/capabilities/main.json:6-22`), plus `allow-displays-list` and `allow-focus-view-open` | `focus_view_close`, `main_show`, `timer_view`, `preset_select` |
+| `focus.json` (`focus-*`) | `core:event:allow-listen`, `core:event:allow-unlisten`, `allow-timer-view`, `allow-timer-start`, `allow-timer-pause`, `allow-timer-resume`, `allow-timer-stop`, `allow-settings-get`, `allow-presets-get`, `allow-preset-select`, `allow-focus-view-close` | `settings_set`, `timer_state` (it would drain main's pending milestones), `native_menu_popup`, navigation, notifications, any `core:window:*` |
+| `floater.json` (`floater`) | `core:event:allow-listen`, `core:event:allow-unlisten`, `core:window:allow-start-dragging` (the drag region), `allow-timer-view`, `allow-timer-start`, `allow-timer-pause`, `allow-timer-resume`, `allow-settings-get`, `allow-native-menu-popup`, `allow-focus-view-close`, `allow-main-show` | `timer_stop` (no End on the floater), `settings_set`, `timer_state`, `preset_select`, any other `core:window:*` |
+| `dev.json` (`dev`), `overlay.json` (`overlay`) | unchanged (spike only) | anything above |
+
+Showing, hiding, framing and closing windows all happen in Rust, so no webview needs another `core:window:*` permission. The capability tests (`apps/orasenda/src-tauri/src/lib.rs:183-300`) assert each file's exact `windows` **pattern** list (`["main"]`, `["dev"]`, `["focus-*"]`, `["floater"]`, `["overlay"]`) and its exact permission list. They do not assert resolved window labels. Tauri labels allow `-`, so `focus-<display UUID>` matches `focus-*`.
 
 ## Tenancy & localization
 n/a for tenancy (one device, one user). Copy is English only, like the rest of P1. Display names come from `NSScreen.localizedName` as macOS gives them, never translated or shortened. Times inside the views are formatted in Rust (ADR-011).
 
 ## Domain model
-- **Display:** a connected screen. Fields: `id` (a stable key: the display's `CGDisplayCreateUUIDFromDisplayID` UUID string), `name` (`localizedName`), `frame` and `visibleFrame` (points), `hasMainWindow` (the display that holds the main window's frame, even while it is hidden; if none does, `NSScreen.mainScreen`). The order is the display with the main window first, then `NSScreen.screens` order. Read from AppKit on demand, never stored.
+- **Display:** a connected screen. Fields: `id` (a stable key: the display's `CGDisplayCreateUUIDFromDisplayID` UUID string), `name` (`localizedName`), `frame` and `visibleFrame` (points), `hasMainWindow` (the display that holds the main window's frame as Rust recorded it on main's last move, resize or show; not `NSWindow.screen` of a hidden window; if nothing is recorded, `NSScreen.mainScreen`). The order is the display with the main window first, then `NSScreen.screens` order. Read from AppKit on demand, never stored.
 - **Focus window:** at most one per display, label `focus-<display id>`, created on demand and destroyed on leave. It has no state of its own: the view comes from `timer-tick`. "Ended" is local UI state set by the `ended` milestone and cleared by the next start, as on Today.
 - **Floater:** at most one, label `floater`. Shown or not is Rust state in the app crate (whether the window exists), read by the tray and the Focus menu.
-- **Window frame** (`window_frame`, device-only, ADR-012): `(window, display) → (x, y, width, height, updated_at)`. `window` is `'floater'` in D. Coordinates are points relative to the display frame's top-left. The floater opens on the connected display with the newest `updated_at`; with no stored frame, it opens on the main window's display at the default frame (Author's calls).
+- **Window frame** (`window_frame`, device-only, ADR-012): `(window, display) → (x, y, width, height, updated_at)`. `window` is `'floater'` in D. Coordinates are integer points, rounded, relative to the display frame's top-left. platform-macos converts from AppKit's bottom-left global coordinates. The floater opens on the connected display with the newest `updated_at`; with no stored frame, it opens on the main window's display at the default frame (Author's calls). Two identical monitors: the most recently written frame wins. If the fallback display key (Open question 2) doesn't match after a relaunch, the floater opens at its default position. That is accepted degradation.
 - **Invariants:** opening or closing any focus view never calls the session service. Every surface renders the last `timer-tick` payload. Rendering is a pure function of that payload (ADR-013, `docs/DECISIONS.md:180-193`).
 
 ## Interfaces
@@ -85,6 +87,9 @@ Pure specs beside the builders, tested like `dev_window_spec` (`apps/orasenda/sr
 | Content inset | the `visibleFrame` insets, passed as `focus.html?display=<id>&insets=t,r,b,l` and updated by the `focus-insets` event | none |
 
 - **platform-macos:** a new `crates/platform-macos/src/windows/` module (`displays.rs`, `focus_window.rs`, `floater.rs`). `overlay.rs` is 412 lines, so it only makes `swap_to_panel_class` `pub(crate)` and gains no new code. It exports `displays()`, `configure_focus_window(ns_window, display_id)`, `configure_floater(ns_window)`, `key_without_activation(ns_window)` and `frame_of(ns_window)` / `set_frame(ns_window, frame)` in display-relative points. These are `unsafe fn` with the same `# Safety` contract and main-thread check as `overlay.rs:30-46`. They add a screen-parameters observer (`NSApplicationDidChangeScreenParametersNotification`) that calls back into the app crate.
+- **Activation policy** stays `Regular` (spec A, open question 1, `docs/specs/2026-11-08-focus-session-loop.md:332`). Hiding `main` changes nothing about the Dock. After the floater closes, no Orasenda window may be visible. That is intended: the menu bar and the Dock remain. Rust emits ticks to every window whether it is visible or not, so a hidden `main` stays current.
+- **Main's frame:** Rust records `main`'s frame on its `Moved`, `Resized` and show. This feeds `hasMainWindow`.
+- **Frame debouncer** (app crate, `windows/frames.rs`): one trailing 500 ms timer per remembering window, on the existing `spawn_blocking` pattern. The window's frame is read on the main thread, with no lock held across the AppKit call. The write goes through the service.
 - **Lifecycle:** `on_close_requested` (`apps/orasenda/src-tauri/src/lifecycle.rs:44-51`) stays: only `main` hides. `focus-*` and `floater` close normally (⌘W included). `WindowEvent::Destroyed` for `floater` updates the shown flag and redraws the tray and Focus menu. `WindowEvent::Moved` and `Resized` for `floater` save its frame (§ Data).
 - **Display changes:** on a screen-parameters change, Rust rebuilds the Focus menu and the tray submenu, re-frames each Focus window to its display and emits `focus-insets`, and closes a Focus window whose display is gone. A floater whose display is gone moves to the main window's display at that display's stored or default frame.
 
@@ -96,8 +101,8 @@ Pure specs beside the builders, tested like `dev_window_spec` (`apps/orasenda/sr
 | `focus_view_open(target: FocusViewTarget)` | main | `{ kind: "fullScreen", displayId }` opens (or focuses) that display's Focus window; `{ kind: "floater" }` opens the floater with key focus, then hides `main`. Error `{ kind: "unavailable" \| "noDisplay", message }` |
 | `focus_view_close()` | Focus window, floater | closes the calling window; refused for `main` |
 | `main_show()` | floater | `lifecycle::show_main`, then closes the floater (Open Orasenda) |
-| `timer_view() -> TimerView` | Focus window, floater | the current view, **without** draining pending milestones (unlike `timer_state`, `crates/service/src/session/service.rs:61-62`) |
-| `preset_select(preset)` | Focus window | saves the preset through the same Rust path as the tray's Preset submenu (`apps/orasenda/src-tauri/src/tray/menu.rs:254-256`), so a second webview never sends a whole `Settings` object (ADR-014) |
+| `timer_view() -> TimerView` | Focus window, floater | the current view, **without** draining pending milestones or setting `listening`. `timer_state` does both (`SessionService::state`, `crates/service/src/session/view.rs:12-20`). It calls a new `pub fn run_view<H: Host>(host) -> TimerView` in `crates/service/src/session/run.rs`, which takes the lock and returns `SessionService::view(now_ms)` (`view.rs:23`, `&self`, no tick and no publish). Wired through `runtime/session.rs` like `run_state` (`apps/orasenda/src-tauri/src/runtime/session.rs:51-53`) |
+| `preset_select(preset)` | Focus window | saves the preset through the same Rust path as the tray's Preset submenu (`apps/orasenda/src-tauri/src/tray/menu.rs:254-256`), so a second webview never sends a whole `Settings` object (ADR-014). While a session runs or is paused it returns `TimerCommandError { kind: wrongState }` and saves nothing |
 | `native_menu_popup` (changed) | main, floater | pops up in the **calling** window, no longer always `main` (`apps/orasenda/src-tauri/src/commands/menu_popup.rs:180-182`) |
 
 Events: `timer-tick`, `timer-milestone`, `clock-tick` and `settings-changed` already broadcast to every window (`apps/orasenda/src-tauri/src/runtime/events.rs:20-39`). New: `focus-insets` (to one Focus window) and `palette-open` (to `main`, no payload).
@@ -115,7 +120,7 @@ Focus
   Commands…                       ⌘K
 ```
 
-- Accelerators `CmdOrCtrl+Shift+F`, `CmdOrCtrl+Shift+T` and `CmdOrCtrl+K` are live only here. The webview binds none of them (no `useShortcuts` entry), so a key press fires once.
+- Accelerators `CmdOrCtrl+Shift+F`, `CmdOrCtrl+Shift+T` and `CmdOrCtrl+K` are registered once, here. NSMenu key equivalents fire only from the main menu tree, or inside a popup while it is open. So the accelerators shown in the Focus view and Pages popups are display only. The webview binds none of them (no `useShortcuts` entry). A Vitest case and a hands-on check confirm that one ⌘K opens the palette exactly once.
 - ⌘K: `lifecycle::show_main`, then emit `palette-open` to `main`. From a Focus window or the floater, the main window comes forward and that window stays as it is.
 - **Split (500-line rule):** `menu/app_menu.rs` (158 lines) keeps the Settings insertion. A new `menu/focus_menu.rs` holds the pure model (`focus_menu_entries(displays, floater_shown)`), the native build and its events. `menu/mod.rs` dispatches ids. The ids are namespaced `focus:` and disjoint from the tray's and `popup:` (tested as in `app_menu.rs:149-157`).
 
@@ -132,7 +137,7 @@ Following brief §3.10, minus F's items. In both idle and running states, after 
 - "Show floating timer" opens it with key focus and hides `main`, like every other open path.
 - The idle Preset submenu stops using the hard-coded `PRESETS` (`tray/menu.rs:25-30`). It is built from `preset_lengths()` (`crates/service/src/api/settings.rs:50`) plus Custom from the saved settings, the same source Today reads through `presets_get` (`apps/orasenda/src/features/today/presets.ts:18-37`).
 - `MenuEntry::Item.id` becomes an owned `String` (it is `&'static str` today, `tray/menu.rs:69`), because display items carry the display id.
-- `tray/menu.rs` is 352 lines, so it is split first (a move-only PR step, `docs/conventions.md:76-77`) into `tray/menu/{mod,entries,commands,native}.rs`.
+- `tray/menu.rs` is 352 lines. Its move-only split into `tray/menu/{mod,entries,commands,native}.rs` (`docs/conventions.md:76-77`) is **D's first task**. E's tasks that touch the tray rebase on it, and the plan sequences them.
 
 ### Today: the Focus view button
 - In `today-top-end`: `IconButton` with `label="Focus view"`, `icon={<Icon name="expand" />}`, `aria-haspopup="menu"`, `aria-expanded` from the open state, no `shortcut` (F is F's). The tooltip is the label. It is available idle, running and paused.
@@ -140,15 +145,16 @@ Following brief §3.10, minus F's items. In both idle and running states, after 
 - **Pages menu** (compact): "Commands…" with `Cmd+K` is added after the six pages. Choosing it opens the palette directly.
 
 ### Focus window page (`focus.html`, `apps/orasenda/src/features/focus/`)
-- Hosts `FullScreenFocus` filling a body that is padded by the insets. `summary` is the preset summary (as Today's, `features/today/PresetSummary.tsx`). Its `PopoverMenu` uses the Focus-window form with no Settings row and saves through `preset_select`.
+- Hosts `FullScreenFocus` filling a body that is padded by the insets. `summary` is the preset summary (as Today's, `features/today/PresetSummary.tsx`). Its `PopoverMenu` uses the Focus-window form with no Settings row and saves through `preset_select`. It is read-only while a session runs (C's rule, brief Q17).
 - Data: `useTimer`-like subscription to `timer-tick` and `timer-milestone`, with the initial view from `timer_view`. `useTheme` (`apps/orasenda/src/app/useTheme.ts:15-35`). `clock-tick` for the clock and idle finish.
-- Keys (host's): ⌘↩ starts the saved preset with `custom: null`, ⌘. ends. `singleKeys` is `false` until F adds the setting, so the caption reads "⌘. ends · Esc leaves" or "⌘↩ starts · Esc leaves" (`full-screen-focus.md:21`). `onExit` calls `focus_view_close`.
+- Keys: Esc is always live (the component handles it; `singleKeys` never gates it). The host handles ⌘↩, which starts the saved preset with `custom: null`, and ⌘., which ends, as on Today. `singleKeys` is `false` until F adds the setting, so the caption reads "⌘. ends · Esc leaves" or "⌘↩ starts · Esc leaves" (`full-screen-focus.md:21`). `onExit` calls `focus_view_close`.
 - A failed command shows its message in the component's status line, the same slot as "Session ended." A view that can't be read shows "Orasenda can't reach the timer. Close this window and try again." (ADR-013's failure line).
 
 ### Floater page (`floater.html`, `apps/orasenda/src/features/floater/`)
 - Hosts `FloatingTimer`, with `data-tauri-drag-region` on its body (`floating-timer.md:5`). `onOpen` calls `main_show`. Start uses the saved preset with `custom: null`.
 - Keys (host's, only with key focus): Space pauses, resumes or starts; Return calls `main_show`; Esc calls `focus_view_close`. They are panel-scoped, so they need no single-key setting (WCAG 2.1.4's focus exception).
-- Context menu (`contextmenu` → `native_menu_popup` in the floater): "Close floating timer", and "Start focus" while idle or ended.
+- **Proof first:** the floater task starts with a hands-on check that Space, Return and Esc reach the webview while the class-swapped non-activating panel is key and Orasenda is not active. If they don't, a local `NSEvent` monitor in platform-macos handles those three keys for the floater and calls the same Rust commands. The floater stays usable by mouse either way.
+- Context menu, nice to have (`contextmenu` → `native_menu_popup` in the floater): "Close floating timer", and "Start focus" while idle or ended. Close is also Esc and the tray's "Hide floating timer", and Start is the pill. If the popup can't show from the panel, the task drops it and records that on its issue.
 
 ### Command palette (main window, `apps/orasenda/src/app/palette/`)
 Mounted fresh per `palette-open` or Pages "Commands…", only when no other modal is open (`command-palette.md:3,8`). `compact` follows `useWindowLayout`. The commands, filtered to those available now:
@@ -182,7 +188,7 @@ The preset rows come from the same helper as Today's popover. D moves `CHOICES` 
 - **Reduced motion and themes:** the components already handle both. The Focus window and floater bodies use tokens only, and each window applies the theme through `useTheme`.
 
 ## Data & migrations
-New migration `crates/store/migrations/000N_window_frame.sql`. N is assigned when it lands: E (Session cadence) also adds a migration in parallel, and whichever merges second takes the next number and bumps `SCHEMA_VERSION` (`crates/store/src/lib.rs:35`, `crates/store/src/migrate.rs:6-14`).
+New migration `crates/store/migrations/000N_window_frame.sql`. N is assigned when it lands, because E (Session cadence) also adds a migration in parallel and whichever merges second takes the next number. The SQL holds no version number. Renumbering means renaming the file, changing its `MIGRATIONS` entry and bumping `SCHEMA_VERSION` (`crates/store/src/migrate.rs:6-14`, `crates/store/src/lib.rs:35`).
 
 ```sql
 -- Device-only (ADR-012): window positions never sync and never write change_log.
@@ -203,8 +209,8 @@ CREATE TABLE window_frame (
 - No backfill. An older database simply has no frames.
 
 ## Testing strategy
-- **Rust (app crate):** window specs for the Focus window and floater (labels, page, decorations, sizes equal to the `floater-*` tokens); `focus_menu_entries` for 1, 2 and 3 displays (order, ⌘⇧F only on the main window's display, floater label); tray entries per state with displays and the floater flag; tray preset entries built from `preset_lengths()`; id namespaces disjoint; `on_close_requested` for `focus-*` and `floater`; a capability test per new file (exact window list and permissions; `focus.json` and `floater.json` lack `timer_state` and `settings_set`); the manifest test (`lib.rs:157-167`); `native_menu_popup` targets the calling window.
-- **Rust (service and store):** in-memory `window_frame` put/get/latest, no `change_log` rows after a put, migration from the previous version, the clamp and default-frame cases (off-screen, too large, removed display), `timer_view` leaves pending milestones in place.
+- **Rust (app crate):** window specs for the Focus window and floater (labels, page, decorations, sizes equal to the `floater-*` tokens); `focus_menu_entries` for 1, 2 and 3 displays (order, ⌘⇧F only on the main window's display, floater label); tray entries per state with displays and the floater flag; tray preset entries built from `preset_lengths()`; id namespaces disjoint; `on_close_requested` for `focus-*` and `floater`; a capability test per file (exact `windows` pattern list and exact permissions; `focus.json` and `floater.json` lack `timer_state` and `settings_set`); the manifest test (`lib.rs:157-167`); `native_menu_popup` targets the calling window.
+- **Rust (service and store):** in-memory `window_frame` put/get/latest, no `change_log` rows after a put, migration from the previous version, the clamp and default-frame cases (off-screen, too large, removed display), `run_view` leaves `pending` and `listening` untouched. Clamp tests use rounded integer points with a display-relative top-left origin, and the bottom-left to top-left conversion has its own pure test.
 - **Rust (platform-macos):** main-thread refusal and null-pointer refusal for each new `unsafe fn`, as in `overlay.rs`. AppKit behaviour itself is hands-on.
 - **Vitest:** the Focus view button (items for one and several displays, the chosen id calls `focus_view_open`, an empty list hides it, failure line); palette commands per state and their order (start first, Pause and End first while running, per `command-palette.md:3`); Pages "Commands…"; Focus window and floater hosts (keys, `focus_view_close` only after the confirm, `main_show`, the context menu items per state, never calling `timer_state`). Count listen and unlisten calls yourself (`docs/common-issues.md:5`).
 - **Playwright WebKit harness:** `layout.html` gains `?surface=focus|floater` against `mockIPC` (`apps/orasenda/src/dev/layout/layoutMain.tsx:9-10`). Focus window: 1280×720, 1920×1080, 390×844, 1440×900, 1000×440 and 360×240, each in focus, paused, idle, break, warning and ended, with and without insets. Floater: 280×56, 280×64 and 360×96 in running, paused, warning, break, deep, idle and ended. Both themes and reduced motion. Each asserts no scroll, controls inside the viewport, 44×44 targets and the focus ring.
@@ -265,7 +271,7 @@ These are not owner decisions; each can be changed at review.
 16. Off macOS, `displays_list` returns `[]` and every focus-view entry point is absent.
 
 ## Open questions
-1. Do key equivalents reach Orasenda's main menu while the non-activating floater is key and Orasenda is not the active app? If not, the floater page handles ⌘⇧F, ⌘⇧T and ⌘K itself and calls the same Rust commands. This is the first hands-on check of the floater task.
+1. Do key equivalents reach Orasenda's main menu while the non-activating floater is key and Orasenda is not the active app? If not, the same `NSEvent` monitor that the floater-keys fallback uses handles ⌘⇧F, ⌘⇧T and ⌘K and calls the same Rust commands. This is checked in the floater task's opening hands-on proof.
 2. Does `CGDisplayCreateUUIDFromDisplayID` (or an equivalent) bind cleanly with the `objc2` crates already in the tree (ADR-010)? If not, fall back to `NSScreenNumber` plus `localizedName` as the key. This is checked in the platform task.
 3. Does WKWebView forward an unhandled ⌘K from the main window to the menu once only? It is expected to; a hands-on check in the menu task confirms it.
 
