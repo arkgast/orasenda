@@ -57,6 +57,7 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Deep-hours cap | The daily focus total (every focused minute, local day) past which Orasenda says one calm line; default 4 hours, never blocks Start. | A limit or a lock |
 | Break suggestion | One rotating line shown during a break, labelled *optional* or *experimental* when the evidence is thin; not medical advice. | A routine (P4) |
 | Auto-continue | The opt-in setting *Keep going automatically* (off by default): a running focus that reaches its end keeps going in 10-minute steps, each an extension, until *Longest focus* (default 90 minutes); then the break starts. Each step offers *Take a break*. | The extension cap (manual "+10 min") |
+| Keep-going hint | A one-time quiet status line on Today after the first manual extension while auto-continue is off: it points to *Keep going automatically* in Settings › Timer. Shown once per device (`meta` key `hint.keep_going`). | The keep-going offer (*Keep going* / *Stop here* after a `quick` session) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
