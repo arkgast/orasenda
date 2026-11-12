@@ -102,3 +102,44 @@ test("status_line_invalid_spec_is_start_error", () => {
   expect(commandFailure({ kind: "invalidSpec", message: "out of range" })).toBe("failure");
   expect(commandFailure({ kind: "store", message: "disk" })).toBe("failure");
 });
+
+test("status_line_failed_open_ranks_with_notices", () => {
+  const failed = {
+    text: "The focus view didn't open.",
+    tone: "attention",
+    actions: [
+      {
+        id: "tryAgainOpen",
+        label: "Try again",
+        name: "Try again opening the focus view",
+        variant: "ghost",
+      },
+    ],
+  };
+  const shown = statusLine({ ...NONE, notice: ENDED, openFailed: true });
+  expect(shown?.text).toBe(failed.text);
+  expect(shown?.actions[0]?.name).toBe("Try again opening the focus view");
+  expect(statusLine({ ...NONE, startError: true, openFailed: true })?.text).toMatch(/didn't start/);
+});
+
+test("status_line_failed_open_does_not_hide_cadence_rows", () => {
+  const warning = {
+    state: "running",
+    phase: "focus",
+    mode: "warning",
+    canExtend: true,
+    intent: null,
+    suggestion: null,
+    offer: null,
+    checkIn: null,
+    capLine: null,
+  } as const;
+  const line = statusLine({ ...NONE, cadence: warning, openFailed: true });
+  expect(line?.text).toBe("Two minutes left. Finish the thought.");
+  const rest = statusLine({
+    ...NONE,
+    cadence: { ...warning, mode: "normal" as never },
+    openFailed: true,
+  });
+  expect(rest?.text).toBe("The focus view didn't open.");
+});

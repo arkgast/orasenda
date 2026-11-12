@@ -4,7 +4,8 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../ipc/timerQueue";
-import { emitTimer, IDLE, mockBackend, RUNNING, settle } from "../test/fixtures";
+import { emitPaletteOpen, emitTimer, IDLE, mockBackend, RUNNING, settle } from "../test/fixtures";
+import { stubPaletteDom } from "../test/paletteDom";
 import { App } from "./App";
 
 const PAGES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
@@ -20,6 +21,7 @@ function strictApp(commits: string[]) {
 }
 
 beforeEach(() => {
+  stubPaletteDom();
   resetTimerQueueForTests();
   resetSettingsQueueForTests();
 });
@@ -250,4 +252,41 @@ test("app_navigate_without_target_focuses_settings_h1", async () => {
   await settle();
 
   expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
+});
+
+// The palette
+
+test("palette_open_event_mounts_once", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+  await emitPaletteOpen();
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(screen.getByRole("combobox")).toBeInTheDocument();
+  await emitPaletteOpen();
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+});
+
+test("palette_open_ignored_while_modal_open", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+  const modal = document.createElement("div");
+  modal.setAttribute("role", "dialog");
+  document.body.append(modal);
+  await emitPaletteOpen();
+  expect(screen.queryByRole("combobox")).toBeNull();
+  modal.remove();
+});
+
+test("no_webview_binding_for_focus_shortcuts", async () => {
+  const backend = mockBackend();
+  render(<App />);
+  await settle();
+  fireEvent.keyDown(document.body, { key: "k", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "F", metaKey: true, shiftKey: true });
+  fireEvent.keyDown(document.body, { key: "T", metaKey: true, shiftKey: true });
+  await settle();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(backend.calls.some((c) => c.cmd === "focus_view_open")).toBe(false);
 });

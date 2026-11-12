@@ -1,6 +1,6 @@
 # Focus views (P1 sub-project D) — Spec
 
-- Status: approved (owner, 2026-11-12)
+- Status: implemented (2026-11-12; see Implementation status)
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP P1 row D](../ROADMAP.md#p1-sub-projects) (`docs/ROADMAP.md:48`), [spec A](2026-11-08-focus-session-loop.md), [spec C](2026-11-11-today-redesign.md) (reserved Today's top-right cell and "Commands… ⌘K" for D, `docs/specs/2026-11-11-today-redesign.md:49-50`), [P1 Components](2026-11-10-p1-components.md), the redesign brief §2.3, §3.10–3.12, §3.14 and Q7–Q9 (`design/reviews/04-redesign-pass/01-brief.md:179-196,466-548,566-584,669-671`) and its critique F1, F7 (`02-brief-critique.md:34-40,84-90`), ADR-004, ADR-012, ADR-013, ADR-014, ADR-015, proposed ADR-016 (this spec), #326 (VoiceOver pass, end of P1).
@@ -276,5 +276,14 @@ These are not owner decisions; each can be changed at review.
 3. Does WKWebView forward an unhandled ⌘K from the main window to the menu once only? It is expected to; a hands-on check in the menu task confirms it.
 
 ## Implementation status
-Updated by the PRs that implement this spec. The plan is not written yet. The roadmap estimates 5 tasks (`docs/ROADMAP.md:48`).
-- [ ] Plan (`baton:plan`)
+Implemented. Each task landed as its own PR (plan: `docs/plans/2026-11-12-focus-views.md`).
+- [x] Plan
+- [x] D1 tray menu split (#332, PR #351)
+- [x] D2 window frames, `run_view`, `run_select_preset` (#333, PR #355)
+- [x] D3 AppKit windows (#334, PR #353)
+- [x] D4 windows module and IPC contract (#335, PR #363)
+- [x] D5 native menus and display changes (#336, PR #368)
+- [x] D6 Focus window page (#337, PR #365)
+- [x] D7 floater page and keys (#338, PR #366)
+- [x] D8 Focus view button, Pages "Commands…", the palette, close-out (#339, PR #372)
+- Hands-on checks still owed to the owner: the three open questions above, the VoiceOver pass (#326).

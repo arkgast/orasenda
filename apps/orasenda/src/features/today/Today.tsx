@@ -4,6 +4,7 @@ import { PagesButton } from "../../app/PagesButton";
 import { useShortcuts } from "../../app/useShortcuts";
 import { useWindowLayout } from "../../app/useWindowLayout";
 import type {
+  FocusViewTarget,
   MilestoneEvent_Serialize,
   Settings,
   SettingsTarget,
@@ -16,6 +17,8 @@ import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useTimer } from "../timer/useTimer";
 import { Controls } from "./Controls";
+import { FocusViewButton } from "./FocusViewButton";
+import { openFocusView } from "./focusView";
 import { type IntentDone, IntentField } from "./IntentField";
 import { onIntentFieldRequest } from "./intentEvents";
 import { type Notice, noticeAfter } from "./notices";
@@ -54,6 +57,8 @@ export function Today({ onNavigate }: Props) {
     onMilestone: (event: MilestoneEvent_Serialize) => {
       const hours = latest()?.deepCapHours ?? 4;
       setNotice((previous) => noticeAfter(previous, event, hours));
+      // The newest one-shot line wins: a milestone ends the failed-open line.
+      setFailedOpen(null);
     },
   });
   // `settings` is only the saved preset here; the save chain lives in ../settingsQueue.
@@ -63,6 +68,8 @@ export function Today({ onNavigate }: Props) {
   // The start that failed, so Try again repeats it.
   const [failedStart, setFailedStart] = useState<StartRequest | null>(null);
   const [controlError, setControlError] = useState(false);
+  // The focus view that failed to open, so Try again repeats it.
+  const [failedOpen, setFailedOpen] = useState<FocusViewTarget | null>(null);
 
   useEffect(() => {
     const unregister = register({
@@ -98,6 +105,7 @@ export function Today({ onNavigate }: Props) {
     setSeenState(state);
     setFailedStart(null);
     setControlError(false);
+    setFailedOpen(null);
   }
 
   const presets = usePresets();
@@ -105,6 +113,7 @@ export function Today({ onNavigate }: Props) {
   const line = statusLine({
     startError: failedStart !== null,
     controlError,
+    openFailed: failedOpen !== null,
     timerUnavailable: timer.status === "error",
     notice: notice?.text ?? null,
     store: view?.store ?? "ok",
@@ -161,6 +170,10 @@ export function Today({ onNavigate }: Props) {
       .finally(() => setStarting(false));
   };
 
+  const openView = (target: FocusViewTarget) => {
+    openFocusView(target).then((opened) => setFailedOpen(opened ? null : target));
+  };
+
   const choosePreset = (presetId: string) => {
     const current = latest();
     if (current) save({ ...current, presetId });
@@ -208,6 +221,9 @@ export function Today({ onNavigate }: Props) {
     switch (id) {
       case "tryAgain":
         if (failedStart) start(failedStart);
+        break;
+      case "tryAgainOpen":
+        if (failedOpen) openView(failedOpen);
         break;
       case "extend":
         focus.startRequested();
@@ -274,8 +290,9 @@ export function Today({ onNavigate }: Props) {
             onOpenSettings={() => onNavigate("settings", "timer")}
           />
         </div>
-        {/* Reserved for the Focus view button (D). */}
-        <div className="today-top-end" />
+        <div className="today-top-end">
+          <FocusViewButton onOpen={openView} />
+        </div>
       </div>
 
       {/* One live region, always mounted; a new text is a new node, so each line is announced once. */}
