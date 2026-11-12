@@ -56,6 +56,7 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Intent | The optional one line "What will be done?", set after Start from the status row; stored in `focus_session.intent`, NULL when not given and then named "Deep focus". | A task (P2) |
 | Deep-hours cap | The daily focus total (every focused minute, local day) past which Orasenda says one calm line; default 4 hours, never blocks Start. | A limit or a lock |
 | Break suggestion | One rotating line shown during a break, labelled *optional* or *experimental* when the evidence is thin; not medical advice. | A routine (P4) |
+| Auto-continue | The opt-in setting *Keep going automatically* (off by default): a running focus that reaches its end keeps going in 10-minute steps, each an extension, until *Longest focus* (default 90 minutes); then the break starts. Each step offers *Take a break*. | The extension cap (manual "+10 min") |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
