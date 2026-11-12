@@ -38,7 +38,10 @@ function NumberField({ saved, range, plural, onCommit, ...rest }: NumberFieldPro
     setError(undefined);
   }, [saved]);
   const commit = () => {
-    if (draft === String(saved)) return;
+    if (draft === String(saved)) {
+      setError(undefined);
+      return;
+    }
     const value = parseMinutes(draft);
     if (value === null || value < range.min || value > range.max) {
       setError(`Between ${range.min} and ${range.max} ${plural}. Still using ${saved}.`);

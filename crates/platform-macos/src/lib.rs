@@ -4,7 +4,7 @@
 //! methods are thread-safe and run on any thread; observer registration needs the main thread.
 #![cfg(target_os = "macos")]
 
-mod app_active;
+pub mod app_active;
 mod bundle;
 mod control;
 mod foreground;

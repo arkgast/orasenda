@@ -11,6 +11,8 @@ export type NotifyKey = "notifySessionEnd" | "notifyTwoMinutes";
 
 let asking: NotifyKey | null = null;
 let request = 0;
+/** Boxes ticked during the one pending ask; all are saved when macOS says yes. */
+const pending = new Set<NotifyKey>();
 const listeners = new Set<() => void>();
 
 function setAsking(value: NotifyKey | null): void {
@@ -39,6 +41,7 @@ export function subscribeAsking(listener: () => void): () => void {
 export function resetNotificationsToggleForTests(): void {
   request += 1;
   asking = null;
+  pending.clear();
   listeners.clear();
 }
 
@@ -50,30 +53,41 @@ function setPreference(key: NotifyKey, value: boolean): void {
 /** Asks macOS; `saveOnGranted` is false for "Ask macOS" (the preference is already on). */
 function ask(key: NotifyKey, saveOnGranted: boolean): void {
   const mine = ++request;
+  pending.add(key);
   setAsking(key);
   commands.notificationsRequest().then(
     (status) => {
       if (mine !== request) return;
-      if (status === "granted" && saveOnGranted) setPreference(key, true);
+      if (status === "granted" && saveOnGranted) {
+        for (const each of pending) setPreference(each, true);
+      }
+      pending.clear();
       setAsking(null);
     },
     (error: unknown) => {
       console.error("notifications_request failed", error);
-      if (mine === request) setAsking(null);
+      if (mine === request) {
+        pending.clear();
+        setAsking(null);
+      }
     },
   );
 }
 
 /** The box was ticked while the status is `status`. */
 export function tick(status: NotificationStatus, key: NotifyKey = "notifySessionEnd"): void {
-  if (status === "notDetermined") ask(key, true);
+  if (status === "notDetermined" && asking !== null) pending.add(key);
+  else if (status === "notDetermined") ask(key, true);
   else setPreference(key, true);
 }
 
 /** The box was unticked (also while asking). */
 export function untick(key: NotifyKey = "notifySessionEnd"): void {
-  request += 1;
-  setAsking(null);
+  pending.delete(key);
+  if (pending.size === 0) {
+    request += 1;
+    setAsking(null);
+  }
   setPreference(key, false);
 }
 

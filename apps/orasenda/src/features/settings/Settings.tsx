@@ -247,7 +247,11 @@ export function Settings({
   const failedIn = (...keys: Key[]) => keys.some((key) => failedKeys.includes(key));
   const reasonIf = (...keys: Key[]) => (failedIn(...keys) ? WRITE_REASON : undefined);
 
-  const row = notificationsRow(status, asking || shown.notifySessionEnd, asking);
+  const row = notificationsRow(
+    status,
+    askingFor !== null || shown.notifySessionEnd || shown.notifyTwoMinutes,
+    askingFor !== null,
+  );
   const notifyLine =
     [
       reasonIf("notify", "notifyTwo"),

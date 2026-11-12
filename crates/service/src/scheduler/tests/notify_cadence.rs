@@ -124,3 +124,16 @@ fn skipping_and_taking_a_break_do_not_notify() {
     run_action_on(&host, Action::Stop).expect("skips");
     assert!(posted(&host).is_empty());
 }
+
+#[test]
+fn notify_quick_completed_body() {
+    let host = launched(NotificationStatus::Granted);
+    run_action_on(&host, start_quick()).expect("starts");
+    host.log().take();
+    host.set_now(T0 + 2 * MINUTE + 1);
+    iterate(&host);
+    assert_eq!(
+        posted(&host),
+        vec![pair("Focus session complete.", "Keep going if you like.")]
+    );
+}
