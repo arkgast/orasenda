@@ -1,6 +1,6 @@
 # Today and timer polish — Spec
 
-- Status: draft
+- Status: approved (owner, 2026-11-12)
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related: [spec C, Today redesign](2026-11-11-today-redesign.md) (Today's grid and size set), [spec D, Focus views](2026-11-12-focus-views.md) (the Focus window harness), [spec E, Session cadence](2026-11-12-session-cadence.md#auto-continue) (auto-continue), #119 (Today's layout harness), #326 (VoiceOver at the end of P1).
@@ -131,4 +131,7 @@ Rust already owns when an extension happens, from any window, and it owns the st
 None.
 
 ## Implementation status
-- [ ] Plan: `docs/plans/2026-11-12-today-timer-polish.md`
+- Plan: [docs/plans/2026-11-12-today-timer-polish.md](../plans/2026-11-12-today-timer-polish.md)
+- [ ] P1 TimerRing digits (#379)
+- [ ] P2 Today grid gaps and the gap check (#381)
+- [ ] P3 The keep-going hint (#380)
