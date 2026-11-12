@@ -114,7 +114,11 @@ fn delayed_retry_for_an_older_view_is_dropped() {
     assert_eq!(calls.take(), full_draw(&running(S58)));
     assert_eq!(
         lock_state(&tray.state).drawn,
-        Some(Drawn::of(&running(S58), &NextSession::default()))
+        Some(Drawn::of(
+            &running(S58),
+            &NextSession::default(),
+            &FocusItems::default()
+        ))
     );
 }
 
@@ -141,7 +145,11 @@ fn stale_view_through_the_gate_leaves_the_tray_idle() {
     assert_eq!(calls.take(), []);
     assert_eq!(
         lock_state(&tray.state).drawn,
-        Some(Drawn::of(&idle(), &NextSession::default())),
+        Some(Drawn::of(
+            &idle(),
+            &NextSession::default(),
+            &FocusItems::default()
+        )),
         "the tray stays idle"
     );
 }

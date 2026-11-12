@@ -9,6 +9,7 @@ use super::state::{DRAW_RETRIES, Drawn, TrayState};
 use super::*;
 use crate::ipc::{Mode, StoreStatus};
 
+mod focus_items;
 mod header;
 mod menu_items;
 mod presets;
@@ -206,7 +207,7 @@ fn tray_with(recorder: Recorder) -> (Arc<Tray>, Arc<Recorder>) {
 
 /// Everything a draw from the idle item to `view` calls.
 fn full_draw(view: &TimerView) -> Vec<Call> {
-    let drawn = Drawn::of(view, &NextSession::default());
+    let drawn = Drawn::of(view, &NextSession::default(), &FocusItems::default());
     vec![
         Call::Title(drawn.title),
         Call::Tooltip(drawn.label.clone()),
@@ -246,7 +247,12 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             accessibility_label(&paused(S58)),
             Call::Glyph(Glyph::Paused),
             Call::Menu(
-                menu_items(&paused(S58), &NextSession::default(), false),
+                menu_items(
+                    &paused(S58),
+                    &NextSession::default(),
+                    &FocusItems::default(),
+                    false
+                ),
                 header_text(&paused(S58)),
             ),
         ]
@@ -260,7 +266,12 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             accessibility_label(&running(S58)),
             Call::Glyph(Glyph::Focus),
             Call::Menu(
-                menu_items(&running(S58), &NextSession::default(), false),
+                menu_items(
+                    &running(S58),
+                    &NextSession::default(),
+                    &FocusItems::default(),
+                    false
+                ),
                 header_text(&running(S58)),
             ),
         ]
@@ -274,7 +285,15 @@ fn tray_render_skips_set_menu_when_class_unchanged() {
             Call::Tooltip("No session".into()),
             Call::AccessibilityLabel("No session".into()),
             Call::Glyph(Glyph::Idle),
-            Call::Menu(menu_items(&idle(), &NextSession::default(), false), None),
+            Call::Menu(
+                menu_items(
+                    &idle(),
+                    &NextSession::default(),
+                    &FocusItems::default(),
+                    false
+                ),
+                None
+            ),
         ]
     );
 }

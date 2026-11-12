@@ -12,6 +12,7 @@ use super::focus::{self, focus_label, focus_window_spec, insets_of, open_focus_o
 use super::frames::{DEBOUNCE_MS, Trailing};
 use super::{FLOATER, Ops, Screen, WindowSpec};
 use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
+mod displays;
 
 const NO_INSETS: FocusInsets = FocusInsets {
     top: 0,
@@ -51,6 +52,7 @@ struct Fake {
     fail_on: Option<&'static str>,
     /// How many `exists` answers are false although the window is there (a lost race).
     blind: std::cell::Cell<u32>,
+    on: Option<String>,
 }
 
 impl Fake {
@@ -64,6 +66,7 @@ impl Fake {
             calls: RefCell::new(Vec::new()),
             fail_on: None,
             blind: std::cell::Cell::new(0),
+            on: None,
         }
     }
 
@@ -100,6 +103,14 @@ impl Ops for Fake {
             return false;
         }
         self.windows.borrow().iter().any(|l| l == label)
+    }
+    fn focus_labels(&self) -> Vec<String> {
+        let mut all = self.windows.borrow().clone();
+        all.retain(|l| l.starts_with("focus-"));
+        all
+    }
+    fn window_display(&self, _label: &str) -> Option<String> {
+        self.on.clone()
     }
     fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError> {
         self.step(&format!("create {}", spec.label))?;

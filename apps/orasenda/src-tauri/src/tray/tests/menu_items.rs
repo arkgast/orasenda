@@ -31,7 +31,7 @@ fn preset_submenu(entries: &[MenuEntry]) -> &[MenuEntry] {
 
 #[test]
 fn menu_items_idle() {
-    let entries = menu_items(&idle(), &next(), false);
+    let entries = menu_items(&idle(), &next(), &FocusItems::default(), false);
     assert_eq!(
         labels(&entries),
         [
@@ -78,7 +78,12 @@ fn menu_items_idle() {
 #[test]
 fn menu_items_running() {
     assert_eq!(
-        labels(&menu_items(&running(S59), &next(), false)),
+        labels(&menu_items(
+            &running(S59),
+            &next(),
+            &FocusItems::default(),
+            false
+        )),
         [
             "<header>",
             "—",
@@ -96,7 +101,12 @@ fn menu_items_running() {
 #[test]
 fn menu_items_paused() {
     assert_eq!(
-        labels(&menu_items(&paused(S59), &next(), false)),
+        labels(&menu_items(
+            &paused(S59),
+            &next(),
+            &FocusItems::default(),
+            false
+        )),
         [
             "<header>",
             "—",
@@ -115,7 +125,7 @@ fn menu_items_paused() {
 fn tray_ids_never_collide_with_the_app_menu() {
     let spec_next = NextSession::default();
     for view in [idle(), running(S59), paused(S59)] {
-        for entry in menu_items(&view, &spec_next, false) {
+        for entry in menu_items(&view, &spec_next, &FocusItems::default(), false) {
             let mut stack = vec![entry];
             while let Some(entry) = stack.pop() {
                 match entry {
@@ -176,9 +186,9 @@ fn menu_command_maps_every_tray_item() {
 #[test]
 fn menu_items_spike() {
     for view in [idle(), running(S59), paused(S59)] {
-        let without = labels(&menu_items(&view, &next(), false));
+        let without = labels(&menu_items(&view, &next(), &FocusItems::default(), false));
         assert!(!without.contains(&"Developer panel".to_string()));
-        let with = labels(&menu_items(&view, &next(), true));
+        let with = labels(&menu_items(&view, &next(), &FocusItems::default(), true));
         let mut expected = without.clone();
         expected.splice(
             expected.len() - 1..expected.len() - 1,

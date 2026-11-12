@@ -124,6 +124,9 @@ pub fn run() {
             runtime::ticker::spawn(runtime::ticker::AppHost::new(app.handle()))?;
             spike::setup(app)?;
             lifecycle::finish_launch(app.handle());
+            // The first Focus menu and tray items, and the display observer.
+            #[cfg(desktop)]
+            windows::displays::install(app.handle());
             Ok(())
         });
     #[cfg(target_os = "macos")]
@@ -136,7 +139,7 @@ pub fn run() {
             return;
         }
         #[cfg(target_os = "macos")]
-        menu::app_menu::on_menu_event(app, id);
+        menu::on_menu_event(app, id);
     });
     lifecycle::install(app)
         .build(context)

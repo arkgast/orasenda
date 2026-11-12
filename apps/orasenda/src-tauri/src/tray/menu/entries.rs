@@ -1,7 +1,7 @@
 //! The menu entries per state: labels, accelerators and the preset ids.
 
 use super::*;
-use crate::ipc::{Mode, TimerView};
+use crate::ipc::{DisplayInfo, Mode, TimerView};
 
 fn item(id: &'static str, label: &str) -> MenuEntry {
     MenuEntry::Item {
@@ -34,9 +34,46 @@ fn preset_label(preset: &PresetEntry) -> String {
     )
 }
 
-/// The menu for `view`, top to bottom. `spike` adds the Developer panel item, in its own
-/// group above Quit.
-pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> Vec<MenuEntry> {
+/// Full screen (one item per display when several, the main window's first) and
+/// Show or Hide floating timer. No accelerators: the Focus menu owns them. Empty without displays.
+fn focus_entries(focus: &FocusItems) -> Vec<MenuEntry> {
+    let full_screen_id = |display: &DisplayInfo| format!("{FULL_SCREEN_PREFIX}{}", display.id);
+    let full_screen = match focus.displays.as_slice() {
+        [] => return Vec::new(),
+        [only] => item_with_id(full_screen_id(only), "Full screen"),
+        many => MenuEntry::Submenu {
+            label: "Full screen",
+            entries: many
+                .iter()
+                .map(|d| item_with_id(full_screen_id(d), &format!("Full screen on {}", d.name)))
+                .collect(),
+        },
+    };
+    let floater = if focus.floater_shown {
+        item(HIDE_FLOATER, "Hide floating timer")
+    } else {
+        item(SHOW_FLOATER, "Show floating timer")
+    };
+    vec![MenuEntry::Separator, full_screen, floater]
+}
+
+fn item_with_id(id: String, label: &str) -> MenuEntry {
+    MenuEntry::Item {
+        id,
+        label: label.to_string(),
+        accelerator: None,
+        checked: None,
+    }
+}
+
+/// The menu for `view`, top to bottom. `focus` adds the Focus views' group after the session
+/// group; `spike` adds the Developer panel item, in its own group above Quit.
+pub(crate) fn menu_items(
+    view: &TimerView,
+    next: &NextSession,
+    focus: &FocusItems,
+    spike: bool,
+) -> Vec<MenuEntry> {
     let mut entries = match view.mode {
         Mode::Idle => {
             let mut presets: Vec<MenuEntry> = next
@@ -73,6 +110,7 @@ pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> V
             item(END_SESSION, END_SESSION),
         ],
     };
+    entries.extend(focus_entries(focus));
     entries.extend([
         MenuEntry::Separator,
         item(SHOW, SHOW),

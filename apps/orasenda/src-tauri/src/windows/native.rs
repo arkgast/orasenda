@@ -45,6 +45,12 @@ mod other {
         fn main_display(&self) -> Option<String> {
             None
         }
+        fn focus_labels(&self) -> Vec<String> {
+            Vec::new()
+        }
+        fn window_display(&self, _label: &str) -> Option<String> {
+            None
+        }
         fn exists(&self, _label: &str) -> bool {
             false
         }
@@ -237,6 +243,21 @@ mod mac {
 
         fn exists(&self, label: &str) -> bool {
             self.app.get_webview_window(label).is_some()
+        }
+
+        fn focus_labels(&self) -> Vec<String> {
+            let mut labels: Vec<String> = self
+                .app
+                .webview_windows()
+                .into_keys()
+                .filter(|label| label.starts_with("focus-"))
+                .collect();
+            labels.sort();
+            labels
+        }
+
+        fn window_display(&self, label: &str) -> Option<String> {
+            read_frame_on_main(&self.app, label).map(|(display, _)| display)
         }
 
         fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError> {

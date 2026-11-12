@@ -50,6 +50,7 @@ pub(crate) use menu::{
 pub(crate) use render::header_text;
 pub(crate) use render::{Glyph, Tray, TrayHandle, tray_label, tray_title_and_icon};
 
+pub(crate) use menu::FocusItems;
 use menu::{MenuEntry, NextSession, build_menu, menu_items, on_menu_event};
 use render::report;
 use state::{RETRY_DELAY, lock_state};
@@ -152,6 +153,18 @@ impl TrayHandle for TauriTray {
     }
 }
 
+/// The tray, kept in managed state so the Focus views can tell it about displays and the floater.
+struct TrayRef(Arc<Tray>);
+
+/// Tells the menu-bar item the displays and whether the floater is shown (called from
+/// `windows::surfaces_changed`).
+pub(crate) fn focus_changed(app: &AppHandle, focus: FocusItems) {
+    match app.try_state::<TrayRef>() {
+        Some(tray) => tray.0.focus_changed(focus),
+        None => eprintln!("tray: no menu-bar item yet; the Focus items wait for the next change"),
+    }
+}
+
 /// Builds the idle menu-bar item and adds it to the [`Surfaces`] that `publish` renders.
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let handle = app.handle();
@@ -166,7 +179,12 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     );
     let (menu, header) = build_menu(
         handle,
-        &menu_items(&idle, &next, crate::spike::enabled()),
+        &menu_items(
+            &idle,
+            &next,
+            &FocusItems::default(),
+            crate::spike::enabled(),
+        ),
         None,
     )?;
     let icon = TrayIconBuilder::with_id(TRAY_ID)
@@ -193,13 +211,15 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         // The first render then redoes every call, the label included.
         lock_state(&tray.state).drawn = None;
     }
-    let tray: Arc<dyn NativeSurface> = Arc::new(tray);
+    let tray = Arc::new(tray);
+    app.manage(TrayRef(Arc::clone(&tray)));
+    let surface: Arc<dyn NativeSurface> = tray;
     match app.try_state::<Surfaces>() {
         Some(surfaces) => surfaces
             .0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push(tray),
+            .push(surface),
         None => eprintln!("tray: no Surfaces in managed state; the menu bar won't follow"),
     }
     Ok(())

@@ -14,6 +14,7 @@ use tauri::AppHandle;
 
 use crate::ipc::{FocusInsets, FocusViewError};
 
+pub(crate) mod displays;
 mod floater;
 mod floater_keys;
 pub(crate) mod focus;
@@ -64,6 +65,10 @@ pub(crate) trait Ops {
     /// The display `main` is on, from its recorded frame.
     fn main_display(&self) -> Option<String>;
     fn exists(&self, label: &str) -> bool;
+    /// The labels of the open Focus windows.
+    fn focus_labels(&self) -> Vec<String>;
+    /// The display a window is on now, from its frame; `None` when it can't be read.
+    fn window_display(&self, label: &str) -> Option<String>;
     /// Creates the window hidden. Fails when the label exists.
     fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError>;
     /// Frames a Focus window to the whole display.
@@ -109,10 +114,6 @@ pub(crate) fn close_floater(app: &AppHandle) {
 }
 
 /// Whether the floater window exists.
-#[expect(
-    dead_code,
-    reason = "called by the Focus menu and the floater keys (D5 #336, D7 #338)"
-)]
 pub(crate) fn floater_shown(app: &AppHandle) -> bool {
     AppOps::new(app).exists(FLOATER)
 }
@@ -134,6 +135,12 @@ pub(crate) fn open_palette(app: &AppHandle) {
     }
 }
 
-/// Called when the floater opens or is destroyed, and on a display change. The menus read
-/// the floater's state from it; empty until the Focus menu exists.
+/// Called when the floater opens or is destroyed, and on a display change: the Focus menu and
+/// the menu-bar item follow the floater and the displays (`displays::refresh_surfaces`).
+#[cfg(desktop)]
+pub(crate) fn surfaces_changed(app: &AppHandle) {
+    displays::refresh_surfaces(app);
+}
+
+#[cfg(not(desktop))]
 pub(crate) fn surfaces_changed(_app: &AppHandle) {}
