@@ -17,14 +17,15 @@ async function md(page: Page) {
   );
 }
 
-// Where the timer-md floor sets the size (160px), the digits cannot fit the inscribed square; they must
-// still lie inside the circle. Everywhere else they lie inside the inner square.
-async function expectInside(page: Page, frame: string, square: boolean) {
+// `floor`: fluid frames where the timer-md floor sets the size (160px) are held to the circle only.
+// Every other "long" frame lies inside the inner square; "short" is held to the circle (square=false).
+async function expectInside(page: Page, frame: string, square: boolean, floor = false) {
   const loc = page.locator(`[data-frame][data-state="${frame}"]`);
   const r = await digitsInsideRing(page, loc);
   const label = `${frame} (digits ${r.digits.w.toFixed(0)}x${r.digits.h.toFixed(0)} in ${r.inner.toFixed(0)})`;
   expect(r.circleProblems, label).toEqual([]);
-  if (square && r.fontSize > (await md(page)) + 0.5) expect(r.problems, label).toEqual([]);
+  if (square && !(floor && r.fontSize <= (await md(page)) + 0.5))
+    expect(r.problems, label).toEqual([]);
 }
 
 test("ring_digits_inside_for_h_mm_ss_every_size", async ({ page }) => {
@@ -32,7 +33,7 @@ test("ring_digits_inside_for_h_mm_ss_every_size", async ({ page }) => {
   const longs = states(page, "timer-ring-fluid-long");
   expect(await longs.count()).toBeGreaterThanOrEqual(3);
   for (let i = 0; i < (await longs.count()); i++) {
-    await expectInside(page, (await longs.nth(i).getAttribute("data-state")) ?? "", true);
+    await expectInside(page, (await longs.nth(i).getAttribute("data-state")) ?? "", true, true);
   }
   for (const s of LONG.slice(1)) await expectInside(page, s, true);
 });
@@ -52,26 +53,22 @@ test("ring_digits_inside_for_mm_ss_every_size", async ({ page }) => {
 
 test("ring_long_digits_at_least_timer_md", async ({ page }) => {
   await openSpecimen(page, "TimerRing");
-  const md = await page.evaluate(() =>
-    Number.parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
-    ),
-  );
+  const floor = await md(page);
   const longs = states(page, "timer-ring-fluid-long");
   for (let i = 0; i < (await longs.count()); i++) {
     const r = await digitsInsideRing(page, longs.nth(i));
-    expect(r.fontSize).toBeGreaterThanOrEqual(md);
+    expect(r.fontSize).toBeGreaterThanOrEqual(floor);
   }
 });
 
 test("ring_short_digits_unchanged_at_400", async ({ page }) => {
   await openSpecimen(page, "TimerRing");
   const r = await digitsInsideRing(page, page.locator("[data-state='timer-ring-fluid-focus']"));
-  // clamp(28px, 23cqi, 48px?) at 400px: the pre-change size.
+  // clamp(timer-md, 23cqi, timer-xl) at 400px: the pre-change size.
   const xl = await page.evaluate(() =>
     Number.parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue("--type-timer-xl-font-size"),
     ),
   );
-  expect(r.fontSize).toBeCloseTo(Math.min(xl, Math.max(28, 0.23 * 400)), 1);
+  expect(r.fontSize).toBeCloseTo(Math.min(xl, Math.max(await md(page), 0.23 * 400)), 1);
 });

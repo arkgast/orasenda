@@ -13,19 +13,18 @@ export interface DigitsInside {
 /**
  * Measures the TimerRing inside `frame` (a locator for any element that contains one). The inner square
  * is the circle's inscribed square (side = diameter / sqrt 2) inset by the stroke on every side. The
- * stroke is the arc's, read in rendered px; a ring with no arc (idle) has no digits and passes.
+ * stroke is the arc's, read in rendered px; a frame with no ring, digits or arc throws.
  * `circleProblems` is the weaker check, the corners against the circle itself. Returns the measurements so a spec can assert `problems` is empty and add its own checks.
  */
 export async function digitsInsideRing(page: Page, frame: Locator): Promise<DigitsInside> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   return frame.evaluate((root): DigitsInside => {
-    const ring = root.querySelector("[data-slot=timer-ring]") as HTMLElement;
+    const ring = root.querySelector("[data-slot=timer-ring]");
+    if (!ring) throw new Error("no TimerRing in frame");
     const digits = root.querySelector("[data-slot=timer-ring-digits]") as HTMLElement | null;
-    const svg = ring.querySelector("svg") as SVGSVGElement;
+    const svg = ring.querySelector("svg");
     const arc = ring.querySelector("[data-slot=timer-ring-arc]");
-    const none = { w: 0, h: 0 };
-    if (!digits || !arc)
-      return { problems: [], circleProblems: [], digits: none, inner: 0, fontSize: 0 };
+    if (!digits || !arc || !svg) throw new Error("TimerRing has no digits or arc (idle?)");
     const rb = svg.getBoundingClientRect();
     const scale = rb.width / svg.viewBox.baseVal.width;
     const stroke = Number.parseFloat(arc.getAttribute("stroke-width") ?? "0") * scale;

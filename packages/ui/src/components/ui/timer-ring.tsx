@@ -48,15 +48,16 @@ const WARNING_TRANSITION = `stroke-dashoffset ${CALM}, stroke var(--duration-slo
 
 // The digits scale with the ring (cqi is a unit of the ring's own box): timer-md up to timer-xl.
 // Mono digits are about 0.63 em wide, so "long" (H:MM:SS, 7 characters) takes a smaller factor than
-// "short" (MM:SS) and still fits the ring's inner square. Only the fluid path keeps the timer-md floor,
-// which at the smallest ring wins over the factor.
+// "short" (MM:SS). "long" fits the ring's inner square, except in the fluid path at the smallest rings
+// (about 160 to 190), where the timer-md floor wins over the factor and the digits stay inside the circle.
+// "short" uses 23cqi on every path (fluid, default, full): inside the circle, not the inner square.
 const DIGITS = {
   fluid: {
     short: "clamp(var(--type-timer-md-font-size), 23cqi, var(--type-timer-xl-font-size))",
     long: "clamp(var(--type-timer-md-font-size), 14cqi, var(--type-timer-xl-font-size))",
   },
   full: {
-    short: "min(var(--type-timer-xl-font-size), 20cqi)",
+    short: "min(var(--type-timer-xl-font-size), 23cqi)",
     long: "min(var(--type-timer-xl-font-size), 14cqi)",
   },
   default: {
