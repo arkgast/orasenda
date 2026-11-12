@@ -102,6 +102,19 @@ export const PAUSED: TimerView_Serialize = {
   finish: null,
 };
 
+/** A short break running, with its suggestion. */
+export const BREAK: TimerView_Serialize = {
+  ...RUNNING,
+  phase: "break",
+  mode: "break",
+  remainingMs: 299_000,
+  remaining: "4:59",
+  remainingLabel: "4 minutes 59 seconds",
+  breakKind: "short",
+  finish: "14:30",
+  suggestion: { text: "Look at something far away.", label: "optional" },
+};
+
 export const SETTINGS: Settings = {
   theme: "system",
   presetId: STEADY,
@@ -137,6 +150,10 @@ const DEFAULTS: Replies = {
   timer_pause: () => PAUSED,
   timer_resume: () => RUNNING,
   timer_stop: () => IDLE,
+  timer_extend: () => RUNNING,
+  timer_set_intent: () => RUNNING,
+  timer_dismiss_offer: () => IDLE,
+  timer_take_break: () => BREAK,
   navigate_take: () => null,
   presets_list: () => PRESETS,
   notifications_request: () => "granted",
