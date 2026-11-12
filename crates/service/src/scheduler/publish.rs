@@ -29,9 +29,10 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         presets_changed,
         apply_theme,
         seq,
+        idle_changed,
         ..
     } = effects;
-    if !was_idle || view.state != EngineState::Idle || store_changed {
+    if !was_idle || view.state != EngineState::Idle || store_changed || idle_changed {
         publish_view(host, seq, &view);
     }
     if let Some(theme) = apply_theme {

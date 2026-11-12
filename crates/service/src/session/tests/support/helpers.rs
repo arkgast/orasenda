@@ -24,6 +24,41 @@ pub(crate) fn milestone(
         kind,
         end_reason: reason,
         session_id: Some(SessionId(id.into())),
+        phase: orasenda_core::Phase::Focus,
+        quick: false,
+    }
+}
+
+/// The `breakStarted` event of focus `id`.
+pub(crate) fn break_started(id: &str) -> MilestoneEvent {
+    milestone_in(
+        MilestoneKind::BreakStarted,
+        None,
+        id,
+        orasenda_core::Phase::Break,
+    )
+}
+
+/// The `ended` event of a whole classic session `id`, which ends in its break.
+pub(crate) fn session_ended(id: &str) -> MilestoneEvent {
+    milestone_in(
+        MilestoneKind::Ended,
+        Some(EndReason::Completed),
+        id,
+        orasenda_core::Phase::Break,
+    )
+}
+
+/// [`milestone`] for an event in another phase.
+pub(crate) fn milestone_in(
+    kind: MilestoneKind,
+    reason: Option<EndReason>,
+    id: &str,
+    phase: orasenda_core::Phase,
+) -> MilestoneEvent {
+    MilestoneEvent {
+        phase,
+        ..milestone(kind, reason, id)
     }
 }
 
@@ -181,4 +216,52 @@ pub(crate) fn tick_views(events: &[Event]) -> Vec<TimerView> {
             _ => None,
         })
         .collect()
+}
+
+/// Break ids `brk-1`, `brk-2`, ... so a test can name the break it expects.
+pub(crate) fn numbered_break_ids(s: &mut SessionService) {
+    let mut n = 0;
+    s.ids = Box::new(move || {
+        n += 1;
+        SessionId(format!("brk-{n}"))
+    });
+}
+
+/// Saves the presented settings after `change`.
+pub(crate) fn change_settings(s: &mut SessionService, change: impl FnOnce(&mut Settings)) {
+    let mut settings = s.settings();
+    change(&mut settings);
+    s.set_settings(settings, T0).expect("settings save");
+}
+
+/// Starts the selected preset at `at` and ticks through its focus and its break, each at its
+/// exact end. Returns when the break ended and every milestone on the way.
+pub(crate) fn cycle(s: &mut SessionService, session: &str, at: u64) -> (u64, Vec<MilestoneEvent>) {
+    let started = s.apply(start(), at, id(session));
+    let mut milestones = started.milestones;
+    let focus_end = at + started.view.remaining_ms;
+    let to_break = s.tick(focus_end);
+    milestones.extend(to_break.milestones);
+    let break_end = focus_end + to_break.view.remaining_ms;
+    milestones.extend(s.tick(break_end).milestones);
+    (break_end, milestones)
+}
+
+pub(crate) fn kinds(milestones: &[MilestoneEvent]) -> Vec<MilestoneKind> {
+    milestones.iter().map(|m| m.kind).collect()
+}
+
+/// The stored sessions as `id:phase:end_reason`, in start order.
+pub(crate) fn stored_rows(store: &Store) -> Vec<String> {
+    store
+        .read(|txn| focus_sessions::started_between(txn, 0, u64::MAX >> 1))
+        .expect("reads")
+        .into_iter()
+        .map(|r| format!("{}:{}:{}", r.id, r.phase, r.end_reason))
+        .collect()
+}
+
+/// Rows in `focus_session`.
+pub(crate) fn row_count(store: &Store) -> usize {
+    stored_rows(store).len()
 }

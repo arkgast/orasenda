@@ -69,6 +69,14 @@ export const IDLE: TimerView_Serialize = {
   plannedMin: null,
   store: "ok",
   notifications: "granted",
+  breakKind: null,
+  extensions: 0,
+  canExtend: false,
+  intent: null,
+  suggestion: null,
+  offer: null,
+  checkIn: null,
+  capLine: null,
 };
 
 export const RUNNING: TimerView_Serialize = {
@@ -233,6 +241,8 @@ export async function emitMilestone(event: Partial<MilestoneEvent_Serialize>): P
       kind: "started",
       endReason: null,
       sessionId: null,
+      phase: "focus",
+      quick: false,
       ...event,
     });
   });

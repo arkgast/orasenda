@@ -65,6 +65,32 @@ impl Session {
         }
     }
 
+    /// The finished focus waiting in a break; it can still be extended.
+    pub fn open_focus(&self) -> Option<&crate::timer::SessionRecord> {
+        match self {
+            Session::Idle => None,
+            Session::Running { live } | Session::Paused { live, .. } => live.open_focus.as_deref(),
+        }
+    }
+
+    /// Breaks cut short by `+10 min`, written with the session.
+    pub fn cut_breaks(&self) -> &[crate::timer::SessionRecord] {
+        match self {
+            Session::Idle => &[],
+            Session::Running { live } | Session::Paused { live, .. } => &live.cut_breaks,
+        }
+    }
+
+    /// The live session is the built-in two-minute start.
+    pub fn is_quick(&self) -> bool {
+        match self {
+            Session::Idle => false,
+            Session::Running { live } | Session::Paused { live, .. } => {
+                live.preset == crate::timer::SessionPreset::Quick
+            }
+        }
+    }
+
     pub fn is_idle(&self) -> bool {
         matches!(self, Session::Idle)
     }

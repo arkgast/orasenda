@@ -279,10 +279,11 @@ fn run_state_returns_pending_when_publish_panics() {
     assert_eq!(state.view.state, EngineState::Running);
     assert_eq!(
         state.pending,
-        [milestone(
+        [milestone_in(
             MilestoneKind::Recovered,
             Some(EndReason::Completed),
-            "a"
+            "a",
+            orasenda_core::Phase::Break
         )]
     );
 }

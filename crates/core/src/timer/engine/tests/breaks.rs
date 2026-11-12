@@ -218,3 +218,32 @@ fn set_intent_in_focus_and_pause_only() {
         Err(TimerError::NothingRunning)
     );
 }
+
+#[test]
+fn a_reserved_break_id_is_used_kept_in_the_snapshot_and_never_replaced() {
+    let mut s = classic_at(T0);
+    assert!(s.needs_break_id());
+    s.reserve_break_id(SessionId("brk-1".into()));
+    assert!(!s.needs_break_id());
+    // A second id does not replace the first: the snapshot may already hold it.
+    s.reserve_break_id(SessionId("brk-2".into()));
+    let json = serde_json::to_string(&s).expect("serializes");
+    let mut restored: Session = serde_json::from_str(&json).expect("restores");
+    assert_eq!(restored, s);
+    restored.advance(T0 + 25 * MIN, None);
+    let v = restored.view(T0 + 25 * MIN);
+    assert_eq!(v.session_id, Some(SessionId("brk-1".into())));
+    assert!(!restored.needs_break_id(), "a break needs none");
+    let rs = records(restored.advance(T0 + 30 * MIN, None));
+    assert_eq!(rs[1].id, SessionId("brk-1".into()));
+}
+
+#[test]
+fn a_break_without_a_reserved_id_is_derived_from_its_focus() {
+    let mut s = classic_at(T0);
+    s.advance(T0 + 25 * MIN, None);
+    assert_eq!(
+        s.view(T0 + 25 * MIN).session_id,
+        Some(SessionId("a-b0".into()))
+    );
+}

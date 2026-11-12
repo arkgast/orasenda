@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-timer-extend"
+description = "Enables the timer_extend command without any pre-configured scope."
+commands.allow = ["timer_extend"]
+
+[[permission]]
+identifier = "deny-timer-extend"
+description = "Denies the timer_extend command without any pre-configured scope."
+commands.deny = ["timer_extend"]

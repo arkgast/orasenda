@@ -39,6 +39,15 @@ pub struct Effects {
     pub apply_theme: Option<Theme>,
     /// Orders `view` against every other published view (see [`ViewGate`]).
     pub seq: u64,
+    /// The idle cap line or the keep-going offer changed since the last numbered view: the
+    /// view is published even while idle (the midnight tick).
+    pub idle_changed: bool,
+    /// The two-minute warning fired during the call.
+    pub warned: bool,
+    /// A focus completed and its break began during the call.
+    pub break_started: bool,
+    /// A `quick` session ran to its end during the call.
+    pub quick_completed: bool,
 }
 
 /// What a transition adds to [`Effects`] besides the view and the result.
@@ -47,6 +56,9 @@ pub(super) struct Outcome {
     pub(super) milestones: Vec<MilestoneEvent>,
     pub(super) ended: Option<SessionRecord>,
     pub(super) drop_after_unlock: Option<Box<dyn Any + Send>>,
+    pub(super) warned: bool,
+    pub(super) break_started: bool,
+    pub(super) quick_completed: bool,
 }
 
 impl SessionService {
@@ -62,6 +74,11 @@ impl SessionService {
         let settings_changed =
             std::mem::take(&mut self.settings_event_owed).then_some(presented.clone());
         let presets_changed = std::mem::take(&mut self.presets_event_owed).then(|| self.presets());
+        let (warned, break_started, quick_completed) = (
+            outcome.warned,
+            outcome.break_started,
+            outcome.quick_completed,
+        );
         let mut milestones = outcome.milestones;
         if self.listening {
             if milestones.is_empty() {
@@ -85,6 +102,10 @@ impl SessionService {
             settings_changed,
             presets_changed,
             apply_theme: self.theme_owed.take(),
+            idle_changed: false,
+            warned,
+            break_started,
+            quick_completed,
         }
     }
 }

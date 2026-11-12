@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-timer-set-intent"
+description = "Enables the timer_set_intent command without any pre-configured scope."
+commands.allow = ["timer_set_intent"]
+
+[[permission]]
+identifier = "deny-timer-set-intent"
+description = "Denies the timer_set_intent command without any pre-configured scope."
+commands.deny = ["timer_set_intent"]

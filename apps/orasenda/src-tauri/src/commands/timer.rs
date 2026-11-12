@@ -64,3 +64,34 @@ pub async fn timer_resume(app: tauri::AppHandle) -> Result<TimerView, TimerComma
 pub async fn timer_stop(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
     run(app, Action::Stop).await
 }
+
+/// Adds ten minutes to the session: from the last two minutes of a focus, or from a break.
+#[tauri::command]
+#[specta::specta]
+pub async fn timer_extend(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::Extend).await
+}
+
+/// Names the running focus, or clears its name with `null`.
+#[tauri::command]
+#[specta::specta]
+pub async fn timer_set_intent(
+    app: tauri::AppHandle,
+    intent: Option<String>,
+) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::SetIntent(intent)).await
+}
+
+/// Clears the "Keep going?" offer. Safe to call twice.
+#[tauri::command]
+#[specta::specta]
+pub async fn timer_dismiss_offer(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::DismissOffer).await
+}
+
+/// Ends the focus now as completed and starts its break.
+#[tauri::command]
+#[specta::specta]
+pub async fn timer_take_break(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::TakeBreak).await
+}

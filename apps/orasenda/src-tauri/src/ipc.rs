@@ -197,6 +197,14 @@ mod tests {
                 "plannedMin": null,
                 "store": "ok",
                 "notifications": "unavailable",
+                "breakKind": null,
+                "extensions": 0,
+                "canExtend": false,
+                "intent": null,
+                "suggestion": null,
+                "offer": null,
+                "checkIn": null,
+                "capLine": null,
             })
         );
         assert_eq!(TimerTickEvent::NAME, "timer-tick");
@@ -208,10 +216,15 @@ mod tests {
             kind: MilestoneKind::Started,
             end_reason: None,
             session_id: None,
+            phase: orasenda_core::Phase::Focus,
+            quick: false,
         };
         assert_eq!(
             serde_json::to_value(&event).unwrap(),
-            json!({ "kind": "started", "endReason": null, "sessionId": null })
+            json!({
+                "kind": "started", "endReason": null, "sessionId": null,
+                "phase": "focus", "quick": false
+            })
         );
         assert_eq!(TimerMilestoneEvent::NAME, "timer-milestone");
     }

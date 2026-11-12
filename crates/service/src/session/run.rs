@@ -24,7 +24,7 @@ pub fn lock(service: &Mutex<SessionService>) -> MutexGuard<'_, SessionService> {
     service.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-fn new_session_id() -> SessionId {
+pub(super) fn new_session_id() -> SessionId {
     SessionId(Uuid::now_v7().to_string())
 }
 

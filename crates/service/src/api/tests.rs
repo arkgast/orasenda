@@ -128,3 +128,12 @@ fn preset_entries_flag_defaults_and_changes() {
         })
     );
 }
+
+#[test]
+fn milestone_kinds_go_over_ipc_in_camel_case() {
+    use crate::api::MilestoneKind;
+    let name = |k| serde_json::to_value(k).unwrap();
+    assert_eq!(name(MilestoneKind::BreakStarted), "breakStarted");
+    assert_eq!(name(MilestoneKind::CapReached), "capReached");
+    assert_eq!(name(MilestoneKind::Warned), "warned");
+}

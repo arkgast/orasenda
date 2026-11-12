@@ -60,7 +60,7 @@ pub(crate) fn menu_items(view: &TimerView, next: &NextSession, spike: bool) -> V
                 },
             ]
         }
-        Mode::Focus => vec![
+        Mode::Focus | Mode::Break | Mode::Warning => vec![
             MenuEntry::Header,
             MenuEntry::Separator,
             item(PAUSE, PAUSE),
