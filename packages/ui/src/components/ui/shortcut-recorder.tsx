@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from "react";
 import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
-import { AlertGlyph } from "./glyphs";
+import { Icon } from "./icon";
 
 export interface ShortcutRecorderProps {
   /** The row's label, drawn above the field and the first part of its name ("Start or pause focus from anywhere"). */
@@ -154,7 +154,7 @@ export function ShortcutRecorder({
           data-slot="field-error"
           className="m-0 flex items-baseline gap-2 text-body-sm text-ink-muted"
         >
-          <AlertGlyph />
+          <Icon name="alert" size="md" />
           {conflict}
         </p>
       ) : null}

@@ -7,6 +7,7 @@ import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
 import type { Command as CommandEntry } from "../../types";
 import { Button } from "./button";
+import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Kbd } from "./kbd";
 
@@ -39,22 +40,6 @@ export interface CommandPaletteProps {
   onClose: () => void;
   /** The host sets it below layout-compact-height: the title and label are visually hidden and a Close IconButton sits beside the field. */
   compact?: boolean;
-}
-
-// Interim close mark on the 20-unit grid, replaced by Icon in T7.
-function CloseMark() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      focusable="false"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 5l10 10M15 5L5 15" />
-    </svg>
-  );
 }
 
 const panel =
@@ -172,7 +157,7 @@ export function CommandPalette({
                   )}
                 />
                 {compact ? (
-                  <IconButton label="Close" icon={<CloseMark />} onClick={onClose} />
+                  <IconButton label="Close" icon={<Icon name="close" />} onClick={onClose} />
                 ) : null}
               </div>
               <Command.List
