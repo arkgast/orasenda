@@ -186,13 +186,13 @@ export function statusLine(input: StatusInput): StatusLine | null {
   if (input.timerUnavailable) {
     return line("Timer unavailable. Restart Orasenda to try again.", "attention");
   }
+  const cadence = input.cadence ?? null;
+  const fromView = cadence ? viewRow(cadence, input) : null;
+  if (fromView) return fromView;
   // Newest wins among the one-shot lines: a failed open is cleared by the next transition.
   if (input.openFailed) {
     return line("The focus view didn't open.", "attention", [TRY_AGAIN_OPEN]);
   }
-  const cadence = input.cadence ?? null;
-  const fromView = cadence ? viewRow(cadence, input) : null;
-  if (fromView) return fromView;
   const store = input.store === "ok" ? null : STORE_LINES[input.store];
   if (input.notice) {
     const joined = store ? `${input.notice} ${store}` : null;

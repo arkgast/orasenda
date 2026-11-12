@@ -38,7 +38,7 @@ test("palette_lists_start_first_and_runs_it", async () => {
 });
 
 test("palette_row_runs_focus_view_and_navigation", async () => {
-  const { backend, onNavigate } = await open();
+  const { backend } = await open();
   fireEvent.click(screen.getByRole("option", { name: /Floating timer/ }));
   await settle();
   expect(argsOf(backend.calls, "focus_view_open")).toEqual([{ target: { kind: "floater" } }]);
@@ -46,5 +46,13 @@ test("palette_row_runs_focus_view_and_navigation", async () => {
   const again = await open();
   fireEvent.click(screen.getByRole("option", { name: /Go to Settings/ }));
   expect(again.onNavigate).toHaveBeenCalledWith("settings");
-  void onNavigate;
+});
+
+test("palette_theme_and_preset_rows_save_settings", async () => {
+  const { backend } = await open();
+  fireEvent.click(screen.getByRole("option", { name: /Theme: Dark/ }));
+  await settle();
+  const saved = argsOf(backend.calls, "settings_set") as { settings?: { theme?: string } }[];
+  expect(saved.length).toBeGreaterThan(0);
+  expect(JSON.stringify(saved)).toContain('"theme":"dark"');
 });

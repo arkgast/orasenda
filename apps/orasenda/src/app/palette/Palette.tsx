@@ -80,7 +80,7 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
   );
 
   const change = (patch: Partial<Settings>) => {
-    const current = latest();
+    const current = latest() ?? settings;
     if (current) save({ ...current, ...patch });
   };
 

@@ -285,5 +285,5 @@ Implemented. Each task landed as its own PR (plan: `docs/plans/2026-11-12-focus-
 - [x] D5 native menus and display changes (#336, PR #368)
 - [x] D6 Focus window page (#337, PR #365)
 - [x] D7 floater page and keys (#338, PR #366)
-- [x] D8 Focus view button, Pages "Commands…", the palette, close-out (#339)
+- [x] D8 Focus view button, Pages "Commands…", the palette, close-out (#339, PR #372)
 - Hands-on checks still owed to the owner: the three open questions above, the VoiceOver pass (#326).
