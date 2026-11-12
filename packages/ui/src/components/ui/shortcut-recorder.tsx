@@ -95,8 +95,8 @@ export function ShortcutRecorder({
       return;
     }
     const plain = !(event.metaKey || event.ctrlKey || event.altKey || event.shiftKey);
-    // Plain Tab leaves the field (blur ends recording); everything else belongs to the recorder.
-    if (event.code === "Tab" && plain) return;
+    // Tab and Shift-Tab leave the field (blur ends recording); everything else belongs to the recorder.
+    if (event.code === "Tab" && !(event.metaKey || event.ctrlKey || event.altKey)) return;
     event.preventDefault();
     event.stopPropagation();
     if (event.code === "Escape") {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { describeShortcut } from "../../lib/shortcuts";
 import { ShortcutRecorder, type ShortcutRecorderProps } from "./shortcut-recorder";
@@ -40,6 +40,7 @@ test("shortcut_recorder_output_round_trips_describe_shortcut", () => {
     "Enter",
     "Space",
     "Tab",
+    "Backspace",
     "ArrowLeft",
     "ArrowUp",
     "ArrowRight",
@@ -142,4 +143,12 @@ test("shortcut_recorder_conflict_is_described_not_live", () => {
   expect(el.closest("[aria-live], [role=status], [role=alert]")).toBeNull();
   expect(field).not.toHaveAttribute("aria-invalid");
   expect(field).toHaveAttribute("data-conflict", "true");
+});
+
+test("shortcut_recorder_shift_tab_leaves_the_field", () => {
+  const { onRecord, field } = setup({ recording: true });
+  const event = createEvent.keyDown(field, { code: "Tab", key: "Tab", shiftKey: true });
+  fireEvent(field, event);
+  expect(event.defaultPrevented).toBe(false);
+  expect(onRecord).not.toHaveBeenCalled();
 });
