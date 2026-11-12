@@ -2,7 +2,7 @@
 //! session ends, and never updated (ADR-002).
 
 use crate::{Entity, StoreError, Txn, sql_int};
-use orasenda_core::SessionRecord;
+use orasenda_core::{SessionPreset, SessionRecord};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -10,14 +10,26 @@ use serde_json::Value;
 /// write time, so a late insert after a relaunch records the fact as it happened) and logs
 /// every synced column. A second insert with the same id fails.
 pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
-    let preset = text(&record.preset)?;
+    let (preset, snapshot) = match &record.preset {
+        SessionPreset::Quick => ("quick", None),
+        SessionPreset::Library {
+            id,
+            name,
+            focus_min,
+            break_min,
+            long_break_min,
+            rounds,
+        } => ("library", Some((id, name, focus_min, break_min, long_break_min, rounds))),
+    };
     let phase = text(&record.phase)?;
     let end_reason = text(&record.end_reason)?;
     txn.conn().execute(
         "INSERT INTO focus_session (id, created_at, updated_at, deleted_at, preset, phase,
              planned_ms, started_at, ended_at, paused_total_ms, focused_ms, end_reason,
-             extensions, intent)
-         VALUES (?1, ?2, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL)",
+             extensions, intent, preset_id, preset_name, focus_min, break_min, long_break_min,
+             rounds)
+         VALUES (?1, ?2, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL,
+             ?12, ?13, ?14, ?15, ?16, ?17)",
         rusqlite::params![
             record.id.0,
             sql_int(record.ended_ms)?,
@@ -30,27 +42,40 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
             sql_int(record.focused_ms)?,
             end_reason,
             record.extensions,
+            snapshot.map(|s| s.0.0.clone()),
+            snapshot.map(|s| s.1.clone()),
+            snapshot.map(|s| *s.2),
+            snapshot.map(|s| *s.3),
+            snapshot.map(|s| *s.4),
+            snapshot.map(|s| *s.5),
         ],
     )?;
-    txn.log_fields(
-        Entity::FocusSession,
-        &record.id.0,
-        &[
-            ("preset", Value::from(preset)),
-            ("phase", Value::from(phase)),
-            ("planned_ms", Value::from(record.planned_ms)),
-            ("started_at", Value::from(record.started_ms)),
-            ("ended_at", Value::from(record.ended_ms)),
-            ("paused_total_ms", Value::from(record.paused_total_ms)),
-            ("focused_ms", Value::from(record.focused_ms)),
-            ("end_reason", Value::from(end_reason)),
-            ("extensions", Value::from(record.extensions)),
-        ],
-    )
+    let mut fields = vec![
+        ("preset", Value::from(preset)),
+        ("phase", Value::from(phase)),
+        ("planned_ms", Value::from(record.planned_ms)),
+        ("started_at", Value::from(record.started_ms)),
+        ("ended_at", Value::from(record.ended_ms)),
+        ("paused_total_ms", Value::from(record.paused_total_ms)),
+        ("focused_ms", Value::from(record.focused_ms)),
+        ("end_reason", Value::from(end_reason)),
+        ("extensions", Value::from(record.extensions)),
+    ];
+    if let Some((id, name, focus_min, break_min, long_break_min, rounds)) = snapshot {
+        fields.extend([
+            ("preset_id", Value::from(id.0.clone())),
+            ("preset_name", Value::from(name.clone())),
+            ("focus_min", Value::from(*focus_min)),
+            ("break_min", Value::from(*break_min)),
+            ("long_break_min", Value::from(*long_break_min)),
+            ("rounds", Value::from(*rounds)),
+        ]);
+    }
+    txn.log_fields(Entity::FocusSession, &record.id.0, &fields)
 }
 
-/// The serde name of a unit enum (`Preset::FiftyTen` is `"fifty_ten"`), so the TEXT column and
-/// the logged JSON spell it the same way.
+/// The serde name of a unit enum (`Phase::Focus` is `"focus"`), so the TEXT column and the
+/// logged JSON spell it the same way.
 fn text<T: Serialize>(value: &T) -> Result<String, StoreError> {
     match serde_json::to_value(value)? {
         Value::String(name) => Ok(name),
@@ -105,12 +130,19 @@ mod tests {
     use super::*;
     use crate::Store;
     use crate::test_support::count;
-    use orasenda_core::{EndReason, Phase, Preset, SessionId};
+    use orasenda_core::{EndReason, Phase, PresetId, SessionId};
 
     fn record(id: &str) -> SessionRecord {
         SessionRecord {
             id: SessionId(id.into()),
-            preset: Preset::FiftyTen,
+            preset: SessionPreset::Library {
+                id: PresetId("0193-preset".into()),
+                name: "50/10".into(),
+                focus_min: 50,
+                break_min: 10,
+                long_break_min: 20,
+                rounds: 4,
+            },
             phase: Phase::Focus,
             planned_ms: 3_000_000,
             started_ms: 1_794_009_600_000,
@@ -170,7 +202,7 @@ mod tests {
                             1_794_012_700_000,
                             1_794_012_700_000,
                             None,
-                            "fifty_ten".into(),
+                            "library".into(),
                             "focus".into(),
                             3_000_000,
                         ),
@@ -195,7 +227,7 @@ mod tests {
                     })?
                     .collect::<Result<_, _>>()?;
                 let expected = [
-                    ("preset", "\"fifty_ten\""),
+                    ("preset", "\"library\""),
                     ("phase", "\"focus\""),
                     ("planned_ms", "3000000"),
                     ("started_at", "1794009600000"),
@@ -204,6 +236,12 @@ mod tests {
                     ("focused_ms", "3000000"),
                     ("end_reason", "\"completed\""),
                     ("extensions", "2"),
+                    ("preset_id", "\"0193-preset\""),
+                    ("preset_name", "\"50/10\""),
+                    ("focus_min", "50"),
+                    ("break_min", "10"),
+                    ("long_break_min", "20"),
+                    ("rounds", "4"),
                 ];
                 assert_eq!(logged.len(), expected.len());
                 for (row, (field, value)) in logged.iter().zip(expected) {
@@ -220,6 +258,60 @@ mod tests {
                 Ok(())
             })
             .expect("reads");
+    }
+
+    #[test]
+    fn insert_writes_the_snapshot_columns_for_a_library_session_and_nulls_for_quick() {
+        let store = Store::open_in_memory("device-a").expect("opens");
+        let quick = SessionRecord {
+            preset: SessionPreset::Quick,
+            ..record("quick")
+        };
+        store
+            .write(1, |txn| {
+                insert(txn, &record("lib"))?;
+                insert(txn, &quick)
+            })
+            .expect("writes");
+        let read = |id: &str| {
+            store
+                .read(|txn| {
+                    Ok(txn.conn().query_row(
+                        "SELECT preset, preset_id, preset_name, focus_min, break_min,
+                                long_break_min, rounds
+                         FROM focus_session WHERE id = ?1",
+                        [id],
+                        |row| {
+                            Ok((
+                                row.get::<_, String>(0)?,
+                                row.get::<_, Option<String>>(1)?,
+                                row.get::<_, Option<String>>(2)?,
+                                row.get::<_, Option<i64>>(3)?,
+                                row.get::<_, Option<i64>>(4)?,
+                                row.get::<_, Option<i64>>(5)?,
+                                row.get::<_, Option<i64>>(6)?,
+                            ))
+                        },
+                    )?)
+                })
+                .expect("reads")
+        };
+        assert_eq!(
+            read("lib"),
+            (
+                "library".into(),
+                Some("0193-preset".into()),
+                Some("50/10".into()),
+                Some(50),
+                Some(10),
+                Some(20),
+                Some(4)
+            )
+        );
+        assert_eq!(
+            read("quick"),
+            ("quick".into(), None, None, None, None, None, None)
+        );
     }
 
     #[test]
@@ -241,7 +333,7 @@ mod tests {
         store
             .read(|txn| {
                 assert_eq!(count(txn.conn(), "SELECT count(*) FROM focus_session"), 1);
-                assert_eq!(count(txn.conn(), "SELECT count(*) FROM change_log"), 9);
+                assert_eq!(count(txn.conn(), "SELECT count(*) FROM change_log"), 15);
                 Ok(())
             })
             .expect("reads");

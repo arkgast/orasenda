@@ -34,7 +34,16 @@ mod tests {
     use super::*;
     use crate::Store;
     use crate::test_support::count;
-    use orasenda_core::{CustomSpec, HlcStamp, Preset};
+    use orasenda_core::HlcStamp;
+    use serde::{Deserialize, Serialize};
+
+    /// A structured value, shaped like the retired custom lengths.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CustomSpec {
+        focus_min: u16,
+        break_min: u16,
+    }
 
     const DEVICE: &str = "device-a";
 
@@ -115,14 +124,14 @@ mod tests {
     fn settings_set_twice_updates_row_and_appends_log() {
         let store = Store::open_in_memory(DEVICE).expect("opens");
         store
-            .write(1_000, |txn| set(txn, "timer.preset", &Preset::Classic))
+            .write(1_000, |txn| set(txn, "timer.preset", &"classic"))
             .expect("writes");
         store
-            .write(2_000, |txn| set(txn, "timer.preset", &Preset::DeepBlock))
+            .write(2_000, |txn| set(txn, "timer.preset", &"deep_block"))
             .expect("writes");
 
-        let preset: Option<Preset> = store.read(|txn| get(txn, "timer.preset")).expect("reads");
-        assert_eq!(preset, Some(Preset::DeepBlock));
+        let preset: Option<String> = store.read(|txn| get(txn, "timer.preset")).expect("reads");
+        assert_eq!(preset.as_deref(), Some("deep_block"));
         assert_eq!(
             setting_row(&store, "timer.preset"),
             ("\"deep_block\"".into(), 2_000)
@@ -152,7 +161,7 @@ mod tests {
         store
             .write(1_000, |txn| set(txn, "notify.session_end", &true))
             .expect("writes");
-        let result = store.read(|txn| get::<Preset>(txn, "notify.session_end"));
+        let result = store.read(|txn| get::<String>(txn, "notify.session_end"));
         assert!(matches!(result, Err(StoreError::Json(_))), "{result:?}");
     }
 
