@@ -1,6 +1,6 @@
 # Code-first components — Spec
 
-- Status: approved (2026-11-10)
+- Status: implemented (2026-11-11)
 - Date: 2026-11-10
 - Owner: Arnold Gandarillas Castillo
 - Related: [ADR-015](../DECISIONS.md#adr-015-code-first-design-system-on-shadcn-tailwind-and-radix) (code-first, the shadcn/Tailwind/Radix stack, macOS 15.8.2), the [P1 Components spec](2026-11-10-p1-components.md) (its engine table and design-first steps are superseded here; its contracts, cases and tasks T5–T7 stay), [CLAUDE.md](../../CLAUDE.md) "Keeping the design system in sync", [CONTEXT.md](../../CONTEXT.md), the live design system https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73 (v34, version `1794308783-85b3`), the approved glyph sheet https://claude.ai/artifact/4sLPYxKhoptC8wJXbU2hqt, issues [#172](https://github.com/arkgast/orasenda/issues/172) (T5, owns #183), [#173](https://github.com/arkgast/orasenda/issues/173) (T6), [#174](https://github.com/arkgast/orasenda/issues/174) (T7), [#175](https://github.com/arkgast/orasenda/issues/175) (close-out), [#61](https://github.com/arkgast/orasenda/issues/61) (pre-beta device pass), [#149](https://github.com/arkgast/orasenda/issues/149) (licence notices). Decisions approved by the owner on 2026-11-10.
@@ -332,10 +332,10 @@ None at approval time. See the author's calls under Decisions.
 
 ## Implementation status
 Updated by the PRs that implement this spec.
-- [ ] Plan and backlog (Phase 2)
-- [ ] Foundation
-- [ ] Wave 1 (14 PRs)
-- [ ] Wave 2 (12 PRs)
-- [ ] Wave 3 (6 PRs)
-- [ ] T5 #172, T6 #173, T7 #174 in TSX
-- [ ] #175 close-out; legacy files deleted
+- [x] Plan and backlog (Phase 2)
+- [x] Foundation
+- [x] Wave 1 (14 PRs)
+- [x] Wave 2 (12 PRs)
+- [x] Wave 3 (6 PRs)
+- [x] T5 #172, T6 #173, T7 #174 in TSX (PRs #325, #327, #324)
+- [x] #175 close-out; legacy files deleted in R3 (#271, PR #290), which also turned Preflight on in `src/styles.css`
