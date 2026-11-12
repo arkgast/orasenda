@@ -1,0 +1,14 @@
+/* The floating timer's page. The panel is the whole window: the component owns the fill, the
+   edge and the shadow, so the page behind it takes the panel's fill (the webview is opaque). Tokens only. */
+html,
+body {
+  background: var(--surface-raised);
+  block-size: 100%;
+  overflow: hidden;
+}
+
+.app-floater {
+  position: fixed;
+  inset: 0;
+  display: grid;
+}

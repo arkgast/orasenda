@@ -132,20 +132,76 @@ fn save(app: &AppHandle, display: &str, frame: orasenda_service::windows::Frame)
 /// `Destroyed`) and saved on a thread; a pending trailing save is dropped.
 pub(crate) fn on_floater_close_requested(window: &Window) {
     let app = window.app_handle().clone();
-    let read = || native::frame_of_window(window);
-    // The guard is gone before the AppKit read: no lock is held across it.
-    if let Some(frames) = app.try_state::<Frames>() {
-        frames.floater().cancel();
+    close_save(
+        || {
+            // The guard is gone when this closure ends: no lock is held across the AppKit read.
+            if let Some(frames) = app.try_state::<Frames>() {
+                frames.floater().cancel();
+            }
+        },
+        || native::frame_of_window(window),
+        |display, frame| {
+            let app = app.clone();
+            let spawned = thread::Builder::new()
+                .name("floater-frame".into())
+                .spawn(move || save(&app, &display, frame));
+            if let Err(error) = spawned {
+                eprintln!("windows: could not save the floater frame: {error}");
+            }
+        },
+    );
+}
+
+/// The close request's steps, in order: drop the pending save, read the frame, save a readable
+/// one once. An unreadable frame is logged and nothing is saved (never a made-up frame).
+fn close_save(
+    cancel: impl FnOnce(),
+    read: impl FnOnce() -> Option<(String, orasenda_service::windows::Frame)>,
+    save: impl FnOnce(String, orasenda_service::windows::Frame),
+) {
+    cancel();
+    match read() {
+        Some((display, frame)) => save(display, frame),
+        None => eprintln!("windows: the floater's frame could not be read; not saved"),
     }
-    let frame = read();
-    let Some((display, frame)) = frame else {
-        eprintln!("windows: the floater's frame could not be read; not saved");
-        return;
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use orasenda_service::windows::Frame;
+
+    use super::close_save;
+
+    const FRAME: Frame = Frame {
+        x: 10,
+        y: 20,
+        width: 280,
+        height: 64,
     };
-    let spawned = thread::Builder::new()
-        .name("floater-frame".into())
-        .spawn(move || save(&app, &display, frame));
-    if let Err(error) = spawned {
-        eprintln!("windows: could not save the floater frame: {error}");
+
+    fn run(frame: Option<(String, Frame)>) -> Vec<String> {
+        let log = RefCell::new(Vec::new());
+        close_save(
+            || log.borrow_mut().push("cancel".to_owned()),
+            || {
+                log.borrow_mut().push("read".to_owned());
+                frame
+            },
+            |display, f| log.borrow_mut().push(format!("save {display} {}", f.x)),
+        );
+        log.into_inner()
+    }
+
+    #[test]
+    fn floater_frame_saved_on_close_requested() {
+        // Readable: the pending save is dropped first, then the frame is read and saved once.
+        assert_eq!(
+            run(Some(("1".into(), FRAME))),
+            ["cancel", "read", "save 1 10"]
+        );
+        // Unreadable: nothing is saved.
+        assert_eq!(run(None), ["cancel", "read"]);
     }
 }

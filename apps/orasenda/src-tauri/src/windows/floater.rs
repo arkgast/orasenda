@@ -17,6 +17,22 @@ pub(crate) const MAX_HEIGHT: u32 = 96;
 /// The gap from the screen edge of a new floater: the `space-6` token.
 pub(crate) const EDGE_INSET: u32 = 32;
 
+/// Where the floater's keys are heard (spec Open question 1; hands-on H3 and H4 choose).
+/// `Webview`: the page handles Space, Return and Esc, and the app menu gets the three chords.
+/// `Monitor`: a local `NSEvent` monitor consumes all six (`floater_keys.rs`). Flipping it is a
+/// one-line change.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum KeyRoute {
+    Webview,
+    #[cfg_attr(
+        all(not(test), target_os = "macos"),
+        expect(dead_code, reason = "chosen by the owner's hands-on check")
+    )]
+    Monitor,
+}
+
+pub(crate) const KEY_ROUTE: KeyRoute = KeyRoute::Webview;
+
 pub(crate) const LIMITS: Limits = Limits {
     min_width: WIDTH,
     min_height: MIN_HEIGHT,
