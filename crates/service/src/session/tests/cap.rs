@@ -69,6 +69,27 @@ fn cap_reached_not_on_relaunch_and_not_when_off() {
 }
 
 #[test]
+fn cap_reached_when_an_extension_from_the_break_crosses() {
+    let mut s = deep_work_two_hour_cap();
+    let (at, _) = cycle(&mut s, "a", T0);
+    s.apply(start(), at, id("b"));
+    // 20 minutes of focus: 110 minutes today, under the cap.
+    let taken = s.apply(Action::TakeBreak, at + 20 * MINUTE, id("x"));
+    assert_eq!(cap_reached(&taken.milestones), 0);
+    // "+10" from the break takes the focus to 30 minutes: 120, the cap.
+    let mut count = cap_reached(
+        &s.apply(Action::Extend, at + 21 * MINUTE, id("y"))
+            .milestones,
+    );
+    let mut now = at + 21 * MINUTE;
+    for _ in 0..200 {
+        now += 30_000;
+        count += cap_reached(&s.tick(now).milestones);
+    }
+    assert_eq!(count, 1);
+}
+
+#[test]
 fn cap_reached_counts_a_stopped_session() {
     let mut s = deep_work_two_hour_cap();
     let (at, _) = cycle(&mut s, "a", T0);

@@ -16,10 +16,11 @@ impl Live {
         let rounds = self.preset.rounds().max(1);
         let long = self.round.is_multiple_of(rounds);
         Live {
-            id: self
-                .break_id
-                .take()
-                .unwrap_or_else(|| derived_break_id(&self.id, self.extensions)),
+            id: self.break_id.take().unwrap_or_else(|| {
+                // The service always reserves a UUIDv7; this is for the engine alone.
+                eprintln!("timer: no break id was reserved; deriving one from the focus");
+                derived_break_id(&self.id, self.extensions)
+            }),
             preset: self.preset.clone(),
             phase: Phase::Break,
             break_kind: Some(if long {

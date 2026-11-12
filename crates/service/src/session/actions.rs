@@ -20,6 +20,7 @@ impl SessionService {
         new_id: impl FnOnce() -> SessionId,
     ) -> Effects {
         let was_idle = self.engine.is_idle();
+        let shown = self.shown_idle.clone();
         let mut outcome = Outcome::default();
         self.advance(now_ms, &mut outcome);
         let clears_offer = !matches!(action, Action::DismissOffer);
@@ -53,7 +54,9 @@ impl SessionService {
         if result.is_ok() && clears_offer {
             self.offer = false;
         }
-        self.effects(now_ms, was_idle, outcome, result)
+        let mut effects = self.effects(now_ms, was_idle, outcome, result);
+        effects.idle_changed = self.shown_idle != shown;
+        effects
     }
 
     /// The scheduler's once-a-second step: advance; write an end together with anything

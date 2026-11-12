@@ -235,11 +235,11 @@ export type MilestoneKind = "started" | "paused" | "resumed" |
 /**  Two minutes are left, once per end. */
 "warned" | 
 /**  A focus completed and its break began. */
-"breakstarted" | 
+"breakStarted" | 
 /**  "+10 min", manual or an automatic step. */
 "extended" | 
 /**  Today's focus passed the deep-hours cap, once, at the end of the session that crossed it. */
-"capreached";
+"capReached";
 
 /**  What the timer is doing, for the webview to name in words. */
 export type Mode = "focus" | 

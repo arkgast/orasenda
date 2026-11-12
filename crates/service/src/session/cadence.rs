@@ -118,15 +118,20 @@ impl SessionService {
     /// to the cap or past it. Once per session, and never for the focus a relaunch restored in
     /// its break.
     pub(super) fn check_cap(&mut self, focus: &SessionRecord, now_ms: u64, outcome: &mut Outcome) {
-        if self.cap_checked.as_ref() == Some(&focus.id) {
+        let seen = match &self.cap_checked {
+            Some((id, focused)) if *id == focus.id => Some(*focused),
+            _ => None,
+        };
+        if seen.is_some_and(|focused| focused >= focus.focused_ms) {
             return;
         }
-        self.cap_checked = Some(focus.id.clone());
+        self.cap_checked = Some((focus.id.clone(), focus.focused_ms));
         let Some(cap_ms) = self.cap_ms() else {
             return;
         };
         let before = focused_today(&self.day_sessions(now_ms, Some(&focus.id)), 0);
-        if before < cap_ms && before.saturating_add(focus.focused_ms) >= cap_ms {
+        let crossed_before = seen.is_some_and(|f| before.saturating_add(f) >= cap_ms);
+        if before < cap_ms && !crossed_before && before.saturating_add(focus.focused_ms) >= cap_ms {
             outcome.milestones.push(MilestoneEvent {
                 kind: MilestoneKind::CapReached,
                 end_reason: None,

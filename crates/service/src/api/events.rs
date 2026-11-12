@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// What happened to a session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum MilestoneKind {
     Started,
     Paused,

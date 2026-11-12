@@ -103,8 +103,9 @@ pub struct SessionService {
     pub(super) ids: Box<dyn FnMut() -> SessionId + Send>,
     /// A `quick` session ended and "Keep going?" is waiting. Memory only: a relaunch forgets it.
     pub(super) offer: bool,
-    /// The focus whose effect on the deep-hours cap was last checked (memory only).
-    pub(super) cap_checked: Option<SessionId>,
+    /// The focus whose effect on the deep-hours cap was last checked, with the focus time it had
+    /// then (memory only); an extension from the break brings the same focus back with more.
+    pub(super) cap_checked: Option<(SessionId, u64)>,
     /// The cap line and offer of the last numbered view, so the tick can tell they changed.
     pub(super) shown_idle: (Option<String>, Option<Offer>),
     /// Today's rows could not be read; set so the failure is logged once.

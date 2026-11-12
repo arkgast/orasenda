@@ -78,3 +78,15 @@ fn a_quick_session_rolls_on_with_auto_continue() {
     );
     assert_eq!(rolled.view.remaining_ms, CLASSIC_MS);
 }
+
+#[test]
+fn dismissing_the_offer_publishes_the_change_once() {
+    let mut s = service();
+    s.apply(start_quick(), T0, id("q"));
+    s.tick(QUICK_END);
+    let first = s.apply(Action::DismissOffer, QUICK_END + MINUTE, id("x"));
+    assert!(first.idle_changed, "the offer cleared");
+    assert_eq!(first.view.offer, None);
+    let second = s.apply(Action::DismissOffer, QUICK_END + 2 * MINUTE, id("y"));
+    assert!(!second.idle_changed, "nothing left to clear");
+}

@@ -58,7 +58,9 @@ impl SessionService {
             return true;
         }
         // A focus already finished (in its break) was weighed against the cap before the quit.
-        self.cap_checked = snapshot.open_focus().map(|focus| focus.id.clone());
+        self.cap_checked = snapshot
+            .open_focus()
+            .map(|focus| (focus.id.clone(), focus.focused_ms));
         self.engine = snapshot;
         if !self.engine.is_idle() {
             self.keep_awake = self.begin_keep_awake();
