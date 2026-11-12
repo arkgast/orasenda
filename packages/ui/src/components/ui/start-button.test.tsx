@@ -105,3 +105,10 @@ test("start_button_play_glyph_from_icon", () => {
   expect(svg?.getAttribute("fill")).toBe("none");
   expect(svg?.classList.contains("size-icon-lg")).toBe(true);
 });
+
+test("start_button_names_its_button_row_for_hosts", () => {
+  const { container } = render(<StartButton {...props} compactLabel="Start" />);
+  const row = container.querySelector("[data-slot=start-button-row]");
+  expect(row).not.toBeNull();
+  expect(row?.querySelectorAll("button")).toHaveLength(2);
+});
