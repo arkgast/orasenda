@@ -64,7 +64,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 
 ## Tasks
 
-### D1: Move-only split of the tray menu and `lib.rs`'s tests
+### D1 (#332): Move-only split of the tray menu and `lib.rs`'s tests
 - Priority: 0
 - Depends on: none
 - Owns:
@@ -79,7 +79,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: none new (move-only); the existing `menu_items_*`, `header_*`, retry and `lib` tests are the check.
 - Notes: haiku or sonnet. A refactor PR moves code or changes it, never both. Land it before any E task that touches the tray.
 
-### D2: Window frames in the store and service, `run_view`, `run_select_preset`
+### D2 (#333): Window frames in the store and service, `run_view`, `run_select_preset`
 - Priority: 0
 - Depends on: none
 - Owns:
@@ -108,7 +108,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `window_frame_migrates_from_v2`, `window_frame_put_writes_no_change_log`, `window_frame_latest_newest_connected`, `frame_within_clamps_oversize`, `frame_within_moves_offscreen_inside`, `frame_within_keeps_fitting_frame`, `default_frame_top_right_inset`, `frame_save_store_down_kept_in_memory`, `run_view_keeps_pending_and_listening`, `select_preset_refused_while_running`, `select_preset_idle_saves_only_preset`, `select_preset_refused_when_start_wins_race` (two threads, barrier, no sleeps).
 - Notes: sonnet. `SessionService.store` is `pub(super)` to `session`, so the store calls live in `session/frames.rs` and only the pure clamp in `windows.rs` (the spec names one file; see the gaps in the PR body). Rename the migration at landing if E's lands first.
 
-### D3: AppKit windows: displays, Focus window, floater panel, keys
+### D3 (#334): AppKit windows: displays, Focus window, floater panel, keys
 - Priority: 0
 - Depends on: none
 - Owns:
@@ -135,7 +135,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `windows_fns_refuse_off_main_thread`, `windows_fns_refuse_null_window`, `to_top_left_round_trips_two_displays`, `floater_key_maps_six_keys_only`, `display_key_is_label_safe`.
 - Notes: sonnet, opus review. The AppKit behaviour itself is the owner's hands-on check (Hands-on list H1–H6). The key monitor is built and tested here; D7 decides whether it is installed.
 
-### D4: The windows module and the IPC contract
+### D4 (#335): The windows module and the IPC contract
 - Priority: 0
 - Depends on: D1, D2, D3
 - Owns:
@@ -174,7 +174,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `focus_window_spec_matches_spec`, `floater_window_spec_uses_tokens`, `focus_label_is_valid_for_any_display_id`, `focus_view_open_unknown_display_is_no_display`, `focus_view_open_floater_twice_one_window`, `focus_view_close_refused_for_main`, `open_close_never_touch_session`, `close_requested_focus_and_floater_close`, `floater_frame_saved_on_close_requested`, `frame_debounce_trailing_500ms`, `menu_popup_targets_calling_window`, `focus_capability_exact`, `floater_capability_exact`, `main_capability_exact`, `use_surface_timer_never_calls_timer_state`, `use_surface_timer_ended_until_next_start`.
 - Notes: sonnet, opus review. Create windows from a `spawn_blocking` thread (window creation waits on the main thread) and run the AppKit calls on the main thread with no lock held (`tray/mod.rs` doc). This is the largest task; if it passes four hours, the controller moves `frames.rs` and the frame acceptance to D7.
 
-### D5: Native menus and display changes
+### D5 (#336): Native menus and display changes
 - Priority: 1
 - Depends on: D1, D4
 - Owns:
@@ -198,7 +198,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `focus_menu_entries_one_display`, `focus_menu_entries_two_displays_main_first`, `focus_menu_entries_three_displays_shortcut_on_first_only`, `focus_menu_ids_disjoint`, `tray_focus_items_idle`, `tray_focus_items_running`, `tray_floater_label_toggles`, `tray_presets_from_preset_lengths`, `screens_changed_closes_focus_on_gone_display`, `screens_changed_moves_floater_to_main_display`, `cmd_k_emits_palette_open_once`.
 - Notes: sonnet. E also changes the tray entries; D5 and E's tray task never run at once (Shared with E).
 
-### D6: The Focus window page
+### D6 (#337): The Focus window page
 - Priority: 1
 - Depends on: D4
 - Owns:
@@ -221,7 +221,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `focus_page_reads_timer_view_not_state`, `focus_page_insets_from_query_and_event`, `focus_cmd_enter_starts_saved_custom_null`, `focus_cmd_period_ends_only_in_session`, `focus_exit_closes_only_after_confirm`, `focus_command_failure_in_status_line`, `focus_view_unreadable_line`, `preset_choices_four_rows_saved_checked`, `summary_focus_form_has_no_settings_row`, `focus_window_fits_<size>_<state>` (generated).
 - Notes: sonnet. By eye (owner): the Focus window at 1280×720 and on the second display, idle, running, paused and ended, light and dark. Break and warning cases move to E's last task (ruling 2: no such `Mode` yet).
 
-### D7: The floater page and its keys
+### D7 (#338): The floater page and its keys
 - Priority: 1
 - Depends on: D4
 - Owns:
@@ -241,7 +241,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Tests first: `floater_space_pauses_resumes_starts`, `floater_return_calls_main_show`, `floater_escape_closes`, `floater_never_calls_timer_state`, `floater_context_menu_items_per_state`, `key_route_monitor_consumes_six_keys`, `key_route_webview_installs_no_monitor`, `floater_window_fits_<size>_<state>` (generated).
 - Notes: sonnet, opus review. By eye (owner): the floater at 280×56, 280×64 and 360×96, running, paused, idle and ended, on light, mid-grey and dark wallpapers, light and dark.
 
-### D8: Today's Focus view button, Pages "Commands…", the ⌘K palette; close-out
+### D8 (#339): Today's Focus view button, Pages "Commands…", the ⌘K palette; close-out
 - Priority: 1
 - Depends on: D6 (`presetChoices`); D5 and D7 only so it lands last
 - Owns:
