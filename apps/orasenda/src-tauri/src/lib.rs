@@ -135,11 +135,10 @@ pub fn run() {
     let app = app.on_menu_event(|app, event| {
         use tauri::Manager;
         let id = event.id().as_ref();
-        if app.state::<commands::PopupSlot>().record(id) {
-            return;
+        if !app.state::<commands::PopupSlot>().record(id) {
+            #[cfg(target_os = "macos")]
+            menu::on_menu_event(app, id);
         }
-        #[cfg(target_os = "macos")]
-        menu::on_menu_event(app, id);
     });
     lifecycle::install(app)
         .build(context)

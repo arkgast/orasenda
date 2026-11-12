@@ -58,6 +58,18 @@ export NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
 The Tauri CLI adds the other Rust targets it needs, for example `aarch64-apple-ios-sim` and
 `x86_64-linux-android`, the first time it builds for them.
 
+### Claude Code cloud sessions (Linux)
+`scripts/cloud-setup.sh` installs everything `just ci` needs on the Ubuntu image that cloud sessions
+use: the Tauri Linux libraries, Xvfb, Node 24.22.2, pnpm 12.18.0, just, gitleaks, the Rust
+toolchain and the workspace's packages. Use it as the environment's setup script:
+```sh
+if [ -d orasenda ]; then bash orasenda/scripts/cloud-setup.sh; fi
+```
+or run `./scripts/cloud-setup.sh` as root from the repo root. On Linux `just ci` skips the macOS-only
+steps (the WebKit layout checks and the mobile check). Its last step builds a debug app; to see
+it, run `xvfb-run -a target/debug/orasenda` and screenshot the display. Focus views and other
+macOS-only features are unavailable there.
+
 ### Commands
 - `just dev` runs the desktop app with hot reload.
 - `just build` builds the release app (a .app and .dmg on macOS).
