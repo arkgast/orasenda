@@ -58,6 +58,47 @@ fn text<T: Serialize>(value: &T) -> Result<String, StoreError> {
     }
 }
 
+/// A finished session as the day's history reads it: just the columns the cadence needs.
+/// Text columns stay text, so an old row (`fifty_ten`) reads like any other.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SessionRow {
+    pub id: String,
+    pub preset: String,
+    pub phase: String,
+    pub break_kind: Option<String>,
+    pub started_ms: u64,
+    pub ended_ms: u64,
+    pub focused_ms: u64,
+    pub end_reason: String,
+}
+
+/// The non-deleted sessions that started in `from_ms..to_ms`, in start order.
+pub fn started_between(txn: &Txn, from_ms: u64, to_ms: u64) -> Result<Vec<SessionRow>, StoreError> {
+    let mut stmt = txn.conn().prepare(
+        "SELECT id, preset, phase, break_kind, started_at, ended_at, focused_ms, end_reason
+         FROM focus_session
+         WHERE deleted_at IS NULL AND started_at >= ?1 AND started_at < ?2
+         ORDER BY started_at, ended_at, id",
+    )?;
+    let rows = stmt.query_map((sql_int(from_ms)?, sql_int(to_ms)?), |row| {
+        let ms = |index| {
+            row.get::<_, i64>(index)
+                .map(|v| u64::try_from(v).unwrap_or(0))
+        };
+        Ok(SessionRow {
+            id: row.get(0)?,
+            preset: row.get(1)?,
+            phase: row.get(2)?,
+            break_kind: row.get(3)?,
+            started_ms: ms(4)?,
+            ended_ms: ms(5)?,
+            focused_ms: ms(6)?,
+            end_reason: row.get(7)?,
+        })
+    })?;
+    Ok(rows.collect::<Result<_, _>>()?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,5 +244,40 @@ mod tests {
                 Ok(())
             })
             .expect("reads");
+    }
+
+    fn insert_raw(store: &Store, id: &str, started: i64, deleted: Option<i64>, preset: &str) {
+        store
+            .write(1, |txn| {
+                txn.conn().execute(
+                    "INSERT INTO focus_session (id, created_at, updated_at, deleted_at, preset,
+                         phase, planned_ms, started_at, ended_at, paused_total_ms, focused_ms,
+                         end_reason, extensions)
+                     VALUES (?1, 0, 0, ?2, ?3, 'focus', 1, ?4, ?4 + 10, 0, 5, 'completed', 0)",
+                    rusqlite::params![id, deleted, preset, started],
+                )?;
+                Ok(())
+            })
+            .expect("inserts");
+    }
+
+    #[test]
+    fn started_between_excludes_deleted_in_start_order() {
+        let store = Store::open_in_memory("device-a").expect("opens");
+        insert_raw(&store, "c", 300, None, "fifty_ten");
+        insert_raw(&store, "a", 100, None, "classic");
+        insert_raw(&store, "gone", 200, Some(999), "classic");
+        insert_raw(&store, "before", 99, None, "classic");
+        insert_raw(&store, "end", 400, None, "classic");
+        insert_raw(&store, "b", 150, None, "classic");
+
+        let rows = store
+            .read(|txn| started_between(txn, 100, 400))
+            .expect("reads");
+        let ids: Vec<_> = rows.iter().map(|row| row.id.as_str()).collect();
+        assert_eq!(ids, ["a", "b", "c"]);
+        assert_eq!(rows[2].preset, "fifty_ten", "old preset names still read");
+        assert_eq!(rows[0].ended_ms, 110);
+        assert_eq!(rows[0].break_kind, None);
     }
 }

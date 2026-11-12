@@ -65,7 +65,7 @@ fn fresh_file_reaches_v2_without_review_marker() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
     assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(version, 2);
+    assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(meta(&conn, "notify_review"), None);
     let mode: String = conn
         .pragma_query_value(None, "journal_mode", |row| row.get(0))
@@ -114,7 +114,14 @@ fn fresh_file_reaches_v2_without_review_marker() {
             "focused_ms",
             "end_reason",
             "extensions",
-            "intent"
+            "intent",
+            "preset_id",
+            "preset_name",
+            "focus_min",
+            "break_min",
+            "long_break_min",
+            "rounds",
+            "break_kind"
         ]
     );
     assert_eq!(
@@ -126,7 +133,7 @@ fn fresh_file_reaches_v2_without_review_marker() {
             &conn,
             "SELECT count(*) FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
         ),
-        5
+        6
     );
 }
 
@@ -153,7 +160,7 @@ fn reopen_is_idempotent_and_keeps_device_id() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
     assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(count(&conn, "SELECT count(*) FROM meta"), 2);
+    assert_eq!(count(&conn, "SELECT count(*) FROM meta"), 3);
 }
 
 fn v1_file(dir: &TempDir) {
@@ -179,7 +186,7 @@ fn v1_file_with_device_id_gets_review_marker() {
     let dir = TempDir::new("v1marker");
     v1_file(&dir);
     drop(Store::open(&dir.db(), "other").expect("opens"));
-    assert_eq!(user_version(&dir.db()), 2);
+    assert_eq!(user_version(&dir.db()), SCHEMA_VERSION);
     let conn = raw(&dir.db());
     assert_eq!(meta(&conn, "notify_review").as_deref(), Some("pending"));
     assert_eq!(meta(&conn, "device_id").as_deref(), Some("device-a"));
@@ -218,7 +225,7 @@ fn v2_reopen_after_review_keeps_no_marker() {
         .expect("removes");
     drop(store);
     drop(Store::open(&dir.db(), "other").expect("reopens"));
-    assert_eq!(user_version(&dir.db()), 2);
+    assert_eq!(user_version(&dir.db()), SCHEMA_VERSION);
     assert_eq!(meta(&raw(&dir.db()), "notify_review"), None);
 }
 

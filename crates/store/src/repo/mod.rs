@@ -3,4 +3,5 @@
 pub mod active_session;
 pub mod focus_sessions;
 pub mod meta;
+pub mod presets;
 pub mod settings;

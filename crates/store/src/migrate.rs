@@ -3,9 +3,10 @@
 use rusqlite::Connection;
 
 /// Every migration, in order. Each later sub-project appends `(N, include_str!(…000N_….sql))`.
-const MIGRATIONS: &[(u32, &str)] = &[
+pub(crate) const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("../migrations/0001_init.sql")),
     (2, include_str!("../migrations/0002_notify_review.sql")),
+    (3, include_str!("../migrations/0003_preset_library.sql")),
 ];
 
 const _: () = assert!(
