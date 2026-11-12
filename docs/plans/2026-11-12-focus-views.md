@@ -28,7 +28,7 @@ D5, D6, D7 and D8 build against D4's bindings. D2 owns the service functions the
 
 ## Impact
 - **Public IPC and permissions:** six new commands and two events. `main.json` gains exactly `allow-displays-list` and `allow-focus-view-open`; `focus.json` (`focus-*`) and `floater.json` (`floater`) are new, with the spec's exact lists (spec, Users & permissions). `native_menu_popup` changes behaviour for its one caller today (`PagesButton`, the Settings jump menu): `main` still gets its menu in `main`. Every command goes into `commands.list.rs`, which `build.rs` reads for the `AppManifest`; `manifest_commands_match_specta_builder` keeps the two lists equal.
-- **Call paths:** `lifecycle::install` routes window events for `focus-*` and `floater` to the new `windows` module; `on_close_requested` keeps hiding `main` only. The app menu gains the Focus menu after View; `lib.rs`'s `on_menu_event` dispatches through `menu::on_menu_event`. The tray's `MenuEntry::Item.id` becomes `String`, and its Preset submenu reads `preset_lengths()`.
+- **Call paths:** `lifecycle::install` routes window events for `focus-*` and `floater` to the new `windows` module; `on_close_requested` keeps hiding `main` only. The app menu gains the Focus menu after View; `lib.rs`'s `on_menu_event` dispatches through `menu::on_menu_event`. The tray's `MenuEntry::Item.id` becomes `String`, and its Preset submenu is built from E4's preset library (D5 does not touch it).
 - **Data and migrations:** one additive table, `window_frame`, device-only (ADR-012), no backfill. The migration number is provisional (`0003`) until it lands (see Shared with E). Forward-only: once a database is at the new version, a build without D2 refuses to open it. Dev data is disposable, so rollback of D2 means deleting `~/Library/Application Support/com.veloud.orasenda`.
 - **Shared modules:** `tray/menu.rs` (moved by D1), `lib.rs` (tests moved by D1), `commands/menu_popup.rs`, `features/today/{PresetSummary.tsx,presets.ts}` (Today, the Focus window and the palette read `presetChoices`).
 - **Tests that must stay green:** `cargo test` for `orasenda-store`, `orasenda-service`, `orasenda-platform-macos` and the app crate (tray `menu_items` cases, `app_menu` id disjointness, menu popup cases, capability tests); Vitest for Today, `PresetSummary`, `PagesButton`, App and Settings' jump menu; `just layout` (every Today case, the component specs); the bindings check; `just file-size`; `just mobile`.
@@ -52,7 +52,7 @@ D4 depends on D1, D2 and D3. D5, D6 and D7 depend on D4 (D5 edits D1's split fil
 | 3 | D5, D6, D7 | D4 merged |
 | 4 | D8 | D5, D6 and D7 merged |
 
-D and E share one budget of three concurrent pipelines; the controller interleaves them (ruling 11, see Shared with E).
+D and E share one budget of three concurrent pipelines; the controller interleaves them (ruling 11, see Shared with E). The combined D+E wave table lives in E's plan (`docs/plans/2026-11-12-session-cadence.md`, "Combined D + E waves"); with E4, D4 and D6 also wait for E4, and D8 for E8.
 
 ## Notes for every task
 - **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change, and their own Playwright specs (`pnpm exec playwright test <spec>`). The controller runs the full `baton verify` at landing.
@@ -137,7 +137,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 
 ### D4 (#335): The windows module and the IPC contract
 - Priority: 0
-- Depends on: D1, D2, D3
+- Depends on: D1, D2, D3, E4
 - Owns:
   - `apps/orasenda/src-tauri/src/windows/{mod.rs,focus.rs,floater.rs,frames.rs}` (new: the pure window specs, the builders, main's recorded frame, the 500 ms trailing frame debouncer, `floater_shown`) and its `mod` line in `lib.rs`
   - `apps/orasenda/src-tauri/src/commands/{focus_views.rs,menu_popup.rs,mod.rs}`
@@ -157,7 +157,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - Produces:
     - `displays_list() -> Vec<DisplayInfo>`, `DisplayInfo { id: String, name: String, has_main_window: bool }` → TS `commands.displaysList(): Promise<DisplayInfo[]>`.
     - `focus_view_open(target: FocusViewTarget) -> Result<(), FocusViewError>`, `FocusViewTarget = { kind: "fullScreen", displayId: string } | { kind: "floater" }`, `FocusViewError { kind: "unavailable" | "noDisplay", message }`.
-    - `focus_view_close() -> Result<(), FocusViewError>` (refused for `main`), `main_show()`, `timer_view() -> TimerView`, `preset_select(preset: Preset) -> Result<(), TimerCommandError>`.
+    - `focus_view_close() -> Result<(), FocusViewError>` (refused for `main`), `main_show()`, `timer_view() -> TimerView`, `preset_select(presetId: string) -> Result<(), TimerCommandError>` (a library preset id; E4 reshapes D2's `run_select_preset` to take it). `focus.json` and `floater.json` grant `allow-presets-list` (not `allow-presets-get`).
     - events `FocusInsets { top, right, bottom, left }` (`focus-insets`) and `PaletteOpen` (`palette-open`).
     - `windows::{focus_label(display_id: &str) -> String, open_focus(app, display_id) -> Result<(), FocusViewError>, open_floater(app) -> Result<(), FocusViewError>, close_floater(app), floater_shown(app) -> bool, main_display(app) -> Option<String>, open_palette(app), surfaces_changed(app)}`. `open_palette` runs `show_main` and emits `palette-open` to `main`; D5's ⌘K item and D7's key monitor both call it. `surfaces_changed` is called on floater open and destroy and on a display change; its body is empty until D5 fills it, so D5 never edits D7's `floater.rs`.
     - `useSurfaceTimer(): { view: TimerView | null; ended: boolean; failed: boolean }` (initial `timer_view`, then `timer-tick` and `timer-milestone`; `ended` set by the `ended` milestone and cleared by the next non-idle view; never calls `timer_state`).
@@ -179,11 +179,11 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Depends on: D1, D4
 - Owns:
   - `apps/orasenda/src-tauri/src/menu/{mod.rs,app_menu.rs,focus_menu.rs}` (`focus_menu.rs` new: `focus_menu_entries`, the native build, its events; `mod.rs` dispatches by prefix)
-  - `apps/orasenda/src-tauri/src/tray/menu/{mod.rs,entries.rs,commands.rs,native.rs}` (Full screen, Show/Hide floating timer, Preset submenu from `preset_lengths()`, `id: String`)
+  - `apps/orasenda/src-tauri/src/tray/menu/{mod.rs,entries.rs,commands.rs,native.rs}` (Full screen, Show/Hide floating timer, `id: String`; E4 builds the Preset submenu from the library)
   - `apps/orasenda/src-tauri/src/tray/tests/focus_items.rs` (new) and its `mod` line in `tray/tests.rs`
   - `apps/orasenda/src-tauri/src/windows/displays.rs` (new: the screen-parameters handler) and its `mod` line in `windows/mod.rs`
   - `apps/orasenda/src-tauri/src/lib.rs` (`on_menu_event` calls `menu::on_menu_event`; installs the screen observer)
-- Touches: `apps/orasenda/src-tauri/src/tray/{mod.rs,render.rs}` (the floater flag and displays in the render input), `apps/orasenda/src-tauri/src/tray/tests/menu_items.rs` (only the `id` type in existing cases), `apps/orasenda/src-tauri/src/windows/mod.rs` (fills D4's `surfaces_changed` body and adds the `displays` `mod` line; D7 never edits `mod.rs`), `crates/service/src/api/settings.rs` (read `preset_lengths`).
+- Touches: `apps/orasenda/src-tauri/src/tray/{mod.rs,render.rs}` (the floater flag and displays in the render input), `apps/orasenda/src-tauri/src/tray/tests/menu_items.rs` (only the `id` type in existing cases), `apps/orasenda/src-tauri/src/windows/mod.rs` (fills D4's `surfaces_changed` body and adds the `displays` `mod` line; D7 never edits `mod.rs`).
 - Interfaces:
   - Consumes: `windows::{open_focus, open_floater, close_floater, floater_shown, main_display}`, `displays_list`'s order, `PaletteOpen` (D4).
   - Produces: `focus_menu_entries(displays: &[DisplayInfo], floater_shown: bool) -> Vec<FocusMenuEntry>`; `menu_items(view: &TimerView, next: &NextSession, focus: &FocusItems, spike: bool) -> Vec<MenuEntry>` with `FocusItems { displays: Vec<DisplayInfo>, floater_shown: bool }`; `windows::displays::on_screens_changed(app: &AppHandle)`.
@@ -191,25 +191,25 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - [ ] The Focus menu sits after View: "Full Screen" ⇧⌘F with one display, or a "Full Screen ▸" submenu (main window's display first, ⇧⌘F on it only); "Floating Timer" ⇧⌘T; a separator; "Commands…" ⌘K. The accelerators are registered only here.
   - [ ] ⌘⇧T opens the floater or gives it key focus, never hides it. ⌘K calls `windows::open_palette`; a Focus window or floater stays as it is.
   - [ ] Ids are `focus:`-prefixed and disjoint from the tray's and `popup:` (`focus_menu_ids_disjoint`).
-  - [ ] Tray, idle and running: after the session group and before Show Orasenda, a separator, "Full screen" (or the submenu) and "Show floating timer" / "Hide floating timer", with no accelerators. The Preset submenu comes from `preset_lengths()` plus the saved Custom; `PRESETS` is gone.
+  - [ ] Tray, idle and running: after the session group and before Show Orasenda, a separator, "Full screen" (or the submenu) and "Show floating timer" / "Hide floating timer", with no accelerators.
   - [ ] Closing the floater by any path redraws the tray label and the Focus menu.
   - [ ] On a screen-parameters change: both menus rebuild, each Focus window is re-framed and gets `focus-insets`, a Focus window whose display is gone closes, and a floater whose display is gone moves to the main window's display at its stored or default frame. No window takes key focus.
   - [ ] Open question 3 recorded in the PR: one ⌘K in `main` reaches the menu once (code path asserted; the hands-on check is H7).
-- Tests first: `focus_menu_entries_one_display`, `focus_menu_entries_two_displays_main_first`, `focus_menu_entries_three_displays_shortcut_on_first_only`, `focus_menu_ids_disjoint`, `tray_focus_items_idle`, `tray_focus_items_running`, `tray_floater_label_toggles`, `tray_presets_from_preset_lengths`, `screens_changed_closes_focus_on_gone_display`, `screens_changed_moves_floater_to_main_display`, `cmd_k_emits_palette_open_once`.
+- Tests first: `focus_menu_entries_one_display`, `focus_menu_entries_two_displays_main_first`, `focus_menu_entries_three_displays_shortcut_on_first_only`, `focus_menu_ids_disjoint`, `tray_focus_items_idle`, `tray_focus_items_running`, `tray_floater_label_toggles`, `screens_changed_closes_focus_on_gone_display`, `screens_changed_moves_floater_to_main_display`, `cmd_k_emits_palette_open_once`.
 - Notes: sonnet. E also changes the tray entries; D5 and E's tray task never run at once (Shared with E).
 
 ### D6 (#337): The Focus window page
 - Priority: 1
-- Depends on: D4
+- Depends on: D4, E4
 - Owns:
   - `apps/orasenda/src/features/focus/{FocusPage.tsx,main.tsx,focus.css,FocusPage.test.tsx,FocusPage.keys.test.tsx}`
-  - `apps/orasenda/src/features/today/presets.ts` (`presetChoices(settings, lengths)`; `CHOICES` moves here from `PresetSummary.tsx`) and `presets.test.ts`
+  - `apps/orasenda/src/features/today/presets.ts` (`presetChoices(settings, presets)`; `CHOICES` moves here from `PresetSummary.tsx`) and `presets.test.ts`
   - `apps/orasenda/src/features/today/PresetSummary.tsx` (the Focus-window form: no Settings row, heading "Preset for the next session", line "Choosing one applies it and closes.") and `PresetSummary.test.tsx`
   - `verification/layout/focusWindow.spec.ts` (new)
 - Touches: `apps/orasenda/src/features/timer/{useSurfaceTimer.ts,useClock.ts}`, `apps/orasenda/src/app/useTheme.ts` (consume), `apps/orasenda/src/features/today/Today.tsx` (consumes the changed `PresetSummary`; unchanged).
 - Interfaces:
-  - Consumes: `useSurfaceTimer`, `commands.{timerView,timerStart,timerPause,timerResume,timerStop,settingsGet,presetsGet,presetSelect,focusViewClose}`, `events.focusInsets` (D4).
-  - Produces: `presetChoices(settings: Settings, lengths: PresetLength[]): Array<{ preset: Preset; label: string; meta: string; checked: boolean }>`.
+  - Consumes: `useSurfaceTimer`, `commands.{timerView,timerStart,timerPause,timerResume,timerStop,settingsGet,presetsList,presetSelect,focusViewClose}`, `events.focusInsets` (D4).
+  - Produces: `presetChoices(settings: Settings, presets: PresetEntry[]): Array<{ presetId: string; label: string; meta: string; checked: boolean }>`.
 - Acceptance:
   - [ ] The body is padded by the insets from the URL and follows `focus-insets`; the background fills the whole window.
   - [ ] `FullScreenFocus` gets the view's props, `summary` only while idle or ended, as the READMEs say (ruling 3; saving through `preset_select`), `singleKeys={false}`, `ended` from `useSurfaceTimer`.
@@ -243,7 +243,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 
 ### D8 (#339): Today's Focus view button, Pages "Commands…", the ⌘K palette; close-out
 - Priority: 1
-- Depends on: D6 (`presetChoices`); D5 and D7 only so it lands last
+- Depends on: D6 (`presetChoices`), E8 (Today.tsx, today.css and statusLine.ts are never edited by both at once); D5 and D7 only so it lands last
 - Owns:
   - `apps/orasenda/src/features/today/{FocusViewButton.tsx,FocusViewButton.test.tsx}` (new), `Today.tsx` (the button in `today-top-end`), `today.css` (that cell only), `statusLine.ts` and `statusLine.test.ts` (the failed-open line)
   - `apps/orasenda/src/app/PagesButton.tsx` and `PagesButton.test.tsx` ("Commands…" `Cmd+K` after the six pages)
@@ -254,7 +254,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Touches: `apps/orasenda/src/features/today/presets.ts` (consume `presetChoices`), `apps/orasenda/src/features/settings/notificationsToggle.ts`, `apps/orasenda/src/ipc/settingsQueue.ts`, `apps/orasenda/src/app/useWindowLayout.ts` (consume).
 - Interfaces:
   - Consumes: `commands.{displaysList,focusViewOpen,nativeMenuPopup}`, `events.paletteOpen` (D4); `presetChoices` (D6).
-  - Produces: `paletteCommands(input: { view: TimerView | null; settings: Settings | null; lengths: PresetLength[]; displays: DisplayInfo[]; notifications: NotificationStatus }): Command[]`.
+  - Produces: `paletteCommands(input: { view: TimerView | null; settings: Settings | null; presets: PresetEntry[]; displays: DisplayInfo[]; notifications: NotificationStatus }): Command[]`.
 - Acceptance:
   - [ ] The "Focus view" `IconButton` (`expand`, `aria-haspopup="menu"`, `aria-expanded` while open) shows idle, running and paused, at every Today size, without moving another element; it is absent when `displays_list` answers `[]`.
   - [ ] Its menu: "Full screen" `Cmd+Shift+F` with one display, or "Full screen on <name>" per display (only the first carries `Cmd+Shift+F`), then "Floating timer, hide Orasenda" `Cmd+Shift+T`. A choice calls `focus_view_open`; a failure shows "The focus view didn't open." in the status row with a ghost "Try again" button that repeats the same open; the line ranks with the one-shot notices (newest wins) and clears on the next transition or a successful open (ruling 5); `null` does nothing.
@@ -296,6 +296,7 @@ E (Session cadence, spec PR #330, not yet merged) runs in parallel. The controll
 9. The floater's frame is read on `CloseRequested`, not `Destroyed` (D4).
 10. Every open path hides `main`, including ⇧⌘T on an already-shown floater (D4).
 11. D and E share one budget of three concurrent pipelines; the controller interleaves them.
+12. E4 alignment (controller, 2026-11-12): E's preset library replaces the `Preset` enum, so D follows it. `preset_select(presetId: string)` takes a library preset id (E4 reshapes D2's `run_select_preset`); D6's `presetChoices` and D8's `paletteCommands` take `PresetEntry[]` from E4's `presets_list`; D5 drops its `preset_lengths()` tray bullet and test (E4 builds the Preset submenu); capabilities grant `allow-presets-list`, not `allow-presets-get`; D4 and D6 also depend on E4, D8 also on E8.
 
 ## Hands-on checks (owner, at the end of D)
 Two displays, "Displays have separate Spaces" on, then off. Implementers write the code path and test seam; the owner runs these.
@@ -322,7 +323,7 @@ Two displays, "Displays have separate Spaces" on, then off. Implementers write t
 | Goal 10: ≤ 500 lines, tokens, both themes, focus ring | D1, every UI task |
 | Commands, events, `native_menu_popup` change | D4 |
 | `timer_view` without draining; `preset_select` refusal | D2, D4 |
-| Focus menu and tray items; tray presets from `preset_lengths()` | D5 |
+| Focus menu and tray items (the Preset submenu is E4's) | D5 |
 | Display changes | D5 |
 | Lifecycle: close, hide `main`, Dock leaves the floater | D4 |
 | ADR-016 accepted, CONTEXT terms | D8 |
