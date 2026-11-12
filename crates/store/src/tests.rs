@@ -132,7 +132,7 @@ fn fresh_file_reaches_current_schema_without_review_marker() {
             &conn,
             "SELECT count(*) FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
         ),
-        6
+        7
     );
 }
 
