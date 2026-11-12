@@ -1,6 +1,6 @@
 # Code-first components — Spec
 
-- Status: approved (2026-11-10)
+- Status: implemented (2026-11-11)
 - Date: 2026-11-10
 - Owner: Arnold Gandarillas Castillo
 - Related: [ADR-015](../DECISIONS.md#adr-015-code-first-design-system-on-shadcn-tailwind-and-radix) (code-first, the shadcn/Tailwind/Radix stack, macOS 15.8.2), the [P1 Components spec](2026-11-10-p1-components.md) (its engine table and design-first steps are superseded here; its contracts, cases and tasks T5–T7 stay), [CLAUDE.md](../../CLAUDE.md) "Keeping the design system in sync", [CONTEXT.md](../../CONTEXT.md), the live design system https://claude.ai/artifact/Sk5N75HzRwY8v7dBxhsH73 (v34, version `1794308783-85b3`), the approved glyph sheet https://claude.ai/artifact/4sLPYxKhoptC8wJXbU2hqt, issues [#172](https://github.com/arkgast/orasenda/issues/172) (T5, owns #183), [#173](https://github.com/arkgast/orasenda/issues/173) (T6), [#174](https://github.com/arkgast/orasenda/issues/174) (T7), [#175](https://github.com/arkgast/orasenda/issues/175) (close-out), [#61](https://github.com/arkgast/orasenda/issues/61) (pre-beta device pass), [#149](https://github.com/arkgast/orasenda/issues/149) (licence notices). Decisions approved by the owner on 2026-11-10.
@@ -254,7 +254,7 @@ One PR before any component. **First step, before anything else:** prove that th
 - **Display gap.** The first code-first publish replaces v34, so the live artifact loses v34's `FullScreenFocus` redesign, `FloatingTimer`, Tooltip `data-os-esc` and the PopoverMenu Tab fallback until T5 merges. Accepted by the owner. The saved v34 is the reference.
 - **Mixed bundle.** Between waves, `bundle.js` mixes TSX components and legacy ones. A legacy component rendered inside a migrated one (or the reverse) keeps working because both read the same tokens; their CSS does not overlap (`os-*` classes vs Tailwind utilities). The `design-system-check` renders every export, so a broken mix fails CI.
 - **Radix replaces hand-written placement.** `Tooltip` and `PopoverMenu` today place a panel by script and render it inside the nearest open `<dialog>` (P1 Components, Engine baseline). On Radix, placement is Radix's Popper (flip and shift in the viewport) and the panel portals into the open `Dialog`'s content when there is one. The P1 cases stay: a Tooltip inside an open `Dialog` is visible over it; the menu inside an open `Dialog` is placed against its trigger; Esc closes only the topmost layer; Tab follows the README.
-- **Preflight is off while the legacy bundle exists.** Tailwind's base reset would restyle the legacy `os-*` components and `app.css` (buttons, headings, `hr`, borders). `src/styles.css` imports only Tailwind's theme and utilities layers, plus a small base layer scoped to `[data-slot]` with the resets shadcn's classes assume (`border-style: solid`, `border-width: 0`, box-sizing, `margin: 0` on the element itself). #175 decides whether to turn Preflight on once the legacy files are gone, as its own change with its own screenshots.
+- **Preflight is off while the legacy bundle exists.** Tailwind's base reset would restyle the legacy `os-*` components and `app.css` (buttons, headings, `hr`, borders). `src/styles.css` imports only Tailwind's theme and utilities layers, plus a small base layer scoped to `[data-slot]` with the resets shadcn's classes assume (`border-style: solid`, `border-width: 0`, box-sizing, `margin: 0` on the element itself). #175 decides whether to turn Preflight on once the legacy files are gone, as its own change with its own screenshots. Superseded: legacy deleted in R2 (PR #287), Preflight on in R3 (PR #290).
 - **Layering across legacy and Radix.** `Dialog` merges before `Tooltip` and `PopoverMenu` (wave 2 order). Until the legacy modal shell is gone (after wave 3), every Radix layer (`Tooltip`, `PopoverMenu`, later `CommandPalette`'s list) portals into the nearest open layer: an open Radix `Dialog`'s content if there is one, otherwise the nearest native `dialog[open]` (still in the top layer), otherwise `body`. One shared helper in `src/lib/layer.ts` returns that container, and Esc closes only the topmost layer, legacy or Radix. The P1 cases (`tooltip.spec.ts`, `popoverMenu.spec.ts` inside an open dialog) keep passing against both kinds; their `dialog[open]` selectors become `role="dialog"`.
 - **Native `<dialog>` to Radix Dialog.** Expected behaviour stays: focus moves in and returns to the trigger, the background is inert, Esc and the scrim close per the README, `Dialog destructive` keeps its safe initial focus. Tests that queried `dialog[open]` query `role="dialog"`/`"alertdialog"`. The `HTMLDialogElement` shims in `test-setup.ts` go when `Dialog` migrates.
 - **jsx-runtime in the classic bundle.** `react/jsx-runtime` is bundled into `bundle.js`, so the artifact declares only `react` and `react-dom`. If the foundation finds it pulls React internals that differ from `window.React`, it externalizes it to `window.React` instead (the self-built `react.js` then also assigns `jsx`, `jsxs`, `Fragment`) and records that in its PR.
@@ -332,10 +332,10 @@ None at approval time. See the author's calls under Decisions.
 
 ## Implementation status
 Updated by the PRs that implement this spec.
-- [ ] Plan and backlog (Phase 2)
-- [ ] Foundation
-- [ ] Wave 1 (14 PRs)
-- [ ] Wave 2 (12 PRs)
-- [ ] Wave 3 (6 PRs)
-- [ ] T5 #172, T6 #173, T7 #174 in TSX
-- [ ] #175 close-out; legacy files deleted
+- [x] Plan and backlog (Phase 2)
+- [x] Foundation
+- [x] Wave 1 (14 PRs)
+- [x] Wave 2 (12 PRs)
+- [x] Wave 3 (6 PRs)
+- [x] T5 #172, T6 #173, T7 #174 in TSX (PRs #325, #327, #324)
+- [x] #175 close-out; legacy files deleted in R2 (#270, PR #287) and Preflight turned on in R3 (#271, PR #290) in `packages/ui/src/styles.css`
