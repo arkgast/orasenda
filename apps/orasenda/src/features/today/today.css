@@ -23,6 +23,16 @@
   justify-content: center;
 }
 
+/* The ring layout keeps a token gap between top, status, ring and controls (the ring shrinks to the
+   smaller time track by itself); a compact window closes it to space-3. */
+.today[data-layout="ring"] {
+  row-gap: var(--space-4);
+}
+
+.today[data-layout="ring"][data-compact] {
+  row-gap: var(--space-3);
+}
+
 .today[data-layout="stackedStrip"] {
   grid-template-columns: minmax(0, 1fr);
   row-gap: var(--space-2);
