@@ -5,15 +5,16 @@
 - Status: draft
 
 ## Overview
-Ten tasks, one PR each. The spec outlined seven; three more come from the 500-line rule and the four-hour ceiling: the move-only engine split (E2), and the preset library and the cadence each cut into a core task and a service task, because both reshape types that every layer reads.
+Eleven tasks, one PR each. The spec outlined seven; three more come from the 500-line rule and the four-hour ceiling: the move-only engine split (E2), and the preset library and the cadence each cut into a core task and a service task, because both reshape types that every layer reads. The eleventh, E11, is the owner's ruling: the break actions join `FullScreenFocus` and `FloatingTimer` in a code-first design-system PR.
 - **Foundations, in parallel with D's first wave:** the preset library's core types and store (E1), the engine's move-only folder split (E2), the break suggestions and their source check (E3).
 - **The preset switch (E4), alone:** the `Preset` enum and Custom go; `Settings`, `StartRequest`, `TimerView`'s preset fields, `presets_list`, seeding, the Today popover and the tray's Preset submenu move to the library. Every later D and E task that names a preset builds on it (the owner's ruling: the library goes first).
 - **Then, in parallel:** preset editing (E5) and the cadence engine (E6), beside D4.
 - **The cadence service and IPC (E7)**, beside D6 and D7.
 - **Surfaces:** Today's states and the intent line (E8), then the menu bar, notifications and the Settings rows for the cadence (E9).
+- **Any early slot:** the break actions on `FullScreenFocus` and `FloatingTimer` (E11, `packages/ui` only).
 - **Last:** the floater and full-screen states, "Set intent" in the palette, and the close-out (E10), after D6, D7 and D8.
 
-E builds no design-system component or token (spec Non-goals); E8 and E9 change two READMEs (InlineNotice "Today slots", MenuBarTimer glyph table). See [Open points](#open-points-for-the-controller) for the one place the spec may need a component change.
+E builds no new design-system component or token (spec Non-goals). E11 extends two existing components (owner ruling); E8 and E9 change two READMEs (InlineNotice "Today slots", MenuBarTimer glyph table).
 
 ## Contract
 - **E4** owns the preset contract: `Settings` (every new key at once, so its shape changes once), `StartRequest { quick }`, `TimerView`'s `presetId`, `presetName`, `quick`, `breakMin` (replacing `preset`), `PresetEntry`, `PresetError`, `presets_list` (replacing `presets_get`), the `presets-changed` event.
@@ -28,6 +29,7 @@ Each contract task regenerates `apps/orasenda/src/ipc/bindings.ts`, updates `app
 - **The `Preset` enum and Custom (E4):** call paths in core (`timer/mod.rs`, the engine), service (`api/{settings,timer}.rs`, `session/{settings,actions,view,run}.rs`, every test helper that builds a `Settings` or a `StartRequest`), the app crate (`commands/presets.rs`, `ipc.rs`, `tray/menu/*`, `runtime/events.rs`), the webview (`Settings.tsx`, `sections/Timer.tsx`, `settingsKeys.ts`, `settingsQueue.ts`, `Today.tsx`, `presets.ts`, `PresetSummary.tsx`, `useNextMinutes.ts`) and D's `run_select_preset` (D2). A pre-E4 `active_session` snapshot no longer decodes and the app starts idle (`recovery.rs:37-38`).
 - **Settings object:** still `deny_unknown_fields`; a page and a Rust build of different shapes never meet (one PR). `timer.custom` stays stored, unread.
 - **IPC:** `TimerView.preset` removed; `Mode` and `Phase` gain values (any exhaustive TS switch must handle them); four timer commands and six preset commands added; `presets_get` removed (D's `focus.json` must grant `presets_list`, see Shared with D).
+- **Design system (E11):** `FullScreenFocus` and `FloatingTimer` gain optional props; existing callers (D6, D7, the specimens) are unchanged until E10 passes them. The controller republishes the artifact after E11 merges.
 - **Tray:** the Preset submenu reads the library (E4); glyphs and items per state (E9). The threading contract (`tray/mod.rs` doc) stays.
 - **Store:** `Entity::Preset`; `focus_sessions::insert` writes `intent`, `break_kind` and the snapshot; `started_between` reads today's rows.
 - **Must stay green:** `cargo test` for core, store, service and the app crate; Vitest for Today, Settings, `settingsQueue`, App; `just layout`; the bindings check; `just file-size`; `just mobile`.
@@ -39,23 +41,24 @@ Each contract task regenerates `apps/orasenda/src/ipc/bindings.ts`, updates `app
 E1, E2, D1, D2 ──> E4 ──┬──> E5 ──────────────> E9 ──┐
                         └──> E6 ──> E7 ──┬────> E9   ├──> E10
                              E3 ────┘    └────> E8 ──┘
+E11 (independent) ──> E10
 cross:  E4 ──> D4, D6     D6 ──> E8 ──> D8     D5 ──> E9     D6, D7, D8 ──> E10
 ```
-Can start immediately: E1, E2, E3 (with D1 and D3 the budget is three: see the wave table).
+Can start immediately: E1, E2, E3, E11 (with D1 and D3 the budget is three: see the wave table).
 
-Cross-sub-project edges: E4 needs D1 (tray split) and D2 (it adapts `run_select_preset`); D4 needs E4; D6 needs E4; E8 needs D6 and lands before D8 starts; E9 needs D5; E10 needs D6, D7, D8.
+Cross-sub-project edges: E4 needs D1 (tray split) and D2 (it adapts `run_select_preset`); D4 needs E4; D6 needs E4; E8 needs D6 and lands before D8 starts; E9 needs D5; E10 needs D6, D7, D8 and E11.
 
 ## Combined D + E waves (at most 3 pipelines)
 | Wave | Runs at once | Starts when |
 |---|---|---|
 | 1 | D1, D3, E1 | now |
 | 2 | D2, E2, E3 | a W1 slot frees (none of them needs W1, except the budget) |
-| 3 | E4 | E1, E2, D1 and D2 merged. One pipeline by design (D3 usually still runs): E4 changes the types D4, D5, D6 and D8 are spelled in |
+| 3 | E4, E11 | E1, E2, D1 and D2 merged (E4); a slot (E11). E4 is the only contract task: it changes the types D4, D5, D6 and D8 are spelled in. If D3 still runs, the three are D3, E4, E11 |
 | 4 | D4, E5, E6 | E4 merged (D4 also D1–D3) |
 | 5 | D6, D7, E7 | D4 merged (D6 also E4); E6 and E3 merged (E7) |
 | 6 | D5, E8 | D4 (D5); E7 and D6 (E8) |
 | 7 | D8, E9 | D5, D6, D7 and E8 (D8); D5, E5 and E7 (E9) |
-| 8 | E10 | D6, D7, D8, E8, E9 |
+| 8 | E10 | D6, D7, D8, E8, E9, E11 |
 
 A slot freed early takes the next ready task in table order. No two tasks in one wave own the same file; the append-only files below are the controller's at landing.
 
@@ -75,7 +78,8 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 | `features/focus/*`, `features/floater/*`, `verification/layout/{focusWindow,floaterWindow}.spec.ts` | E10 | D6, D7 | After D6, D7 and D8 merge; E10 adds the break and warning cases D leaves out (D ruling 2). |
 | `crates/platform-macos/src/lib.rs` | E9 (`mod` line) | D3 | Append-only; never concurrent (W1 vs W7). |
 | `CONTEXT.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md` | E10 | D8 | E10 after D8; append at the end. E's terms are already in `CONTEXT.md` (spec PR). |
-| `verification/contrast-pairs.json`, `packages/ui/src/designSystem.test.ts` (export count), `packages/ui/src/index.ts`, `packages/ui/src/types.ts` | none planned (E10 if a component change is ruled) | none planned | Append-only; the controller resolves. |
+| `verification/contrast-pairs.json`, `packages/ui/src/designSystem.test.ts` (export count), `packages/ui/src/index.ts`, `packages/ui/src/types.ts` | E11 (only if touched) | none planned | Append-only; the controller resolves. |
+| `packages/ui/src/components/ui/{full-screen-focus,floating-timer}.*`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts` | E11 | none (D6, D7 consume) | E11 adds optional props only, so D6 and D7 build unchanged; E10 passes them. |
 
 ## Notes for every task
 - **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change, and their own Playwright specs. The controller runs the full `baton verify` at landing. Each task sets `CARGO_TARGET_DIR=target/e<N>`.
@@ -95,7 +99,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - Produces: store `presets::{list(txn: &Txn) -> Result<Vec<StoredPreset>, StoreError>, list_with_removed(txn: &Txn), get(txn: &Txn, id: &PresetId) -> Result<Option<StoredPreset>, StoreError>, insert(txn: &mut Txn, preset: &StoredPreset), update(txn: &mut Txn, preset: &StoredPreset) /* logs changed fields only */, remove(txn: &mut Txn, id: &PresetId), undelete(txn: &mut Txn, id: &PresetId)}`, `StoredPreset { def: PresetDef, position: u32, deleted_at: Option<u64> }`; `focus_sessions::{started_between(txn: &Txn, from_ms: u64, to_ms: u64) -> Result<Vec<SessionRow>, StoreError>, SessionRow { id, preset: String, phase: String, break_kind: Option<String>, started_ms, ended_ms, focused_ms, end_reason: String }}`.
 - Acceptance:
   - [ ] Validation edges: focus 4/5/180/181, break 0/1/60/61, long 4/5/90/91, rounds 0/1/8/9; names trimmed, 1–40 characters, only spaces refused; uniqueness is the service's.
-  - [ ] The migration applies on the schema before it (built from `MIGRATIONS`), clears `active_session`, adds the marker, keeps old `focus_session` rows readable (`fifty_ten` included).
+  - [ ] The migration applies on the schema just before it, built from the `MIGRATIONS` list (ruling 6), clears `active_session`, adds the marker, keeps old `focus_session` rows readable (`fifty_ten` included).
   - [ ] `insert`, `update` and `remove` log `change_log` rows with entity `preset` (one per changed field; a tombstone is `deleted_at`); `list` excludes removed rows and orders by `position`.
   - [ ] `started_between` excludes deleted rows and returns start order.
 - Tests first: `preset_validation_edges`, `normalize_name_trims_and_refuses_blank`, `default_presets_fixed_ids`, `preset_library_migrates_from_previous_schema`, `preset_update_logs_only_changed_fields`, `preset_remove_is_tombstone`, `started_between_excludes_deleted_in_start_order`.
@@ -142,7 +146,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - Consumes: E1's `PresetId`, `PresetDef`, `default_presets`, `SessionPreset`, `presets::*`.
   - Produces: `Settings { theme, preset_id: PresetId, extension_cap: u8, auto_continue: bool, longest_focus_min: u16, deep_cap_on: bool, deep_cap_hours: u8, notify_session_end: bool, notify_two_minutes: bool }` (keys and defaults as the spec); `StartRequest { quick: bool }`; `TimerView { preset_id: Option<PresetId>, preset_name: Option<String>, quick: bool, break_min: Option<u32>, … }` (no `preset`); `PresetEntry { id, name, focus_min, break_min, long_break_min, rounds, is_default, is_changed }`; `PresetError { kind: PresetErrorKind, field: Option<PresetField>, message: String }`, `PresetErrorKind { Invalid, DuplicateName, Limit, LastPreset, NotFound, Unavailable, Write }`; command `presets_list() -> Vec<PresetEntry>`; event `presets-changed` (`Vec<PresetEntry>`); `session::run_presets_list<H: Host>(host: &H) -> Vec<PresetEntry>`; `Host::emit_presets_changed(&self, presets: &[PresetEntry])`; `NativeSurface::presets_changed(&self, presets: &[PresetEntry])`; `run_select_preset<H: Host>(host: &H, id: PresetId) -> Result<(), TimerCommandError>`; TS `presetName(entry)`, `summaryText(input)` reading entries.
 - Acceptance:
-  - [ ] A fresh database lists Gentle Start 15/5/15/4, Steady Focus 25/5/15/4, Deep Work 90/15/30/2, Steady Focus selected; seeding runs once, in one transaction, only while the marker is pending, maps `classic`, `deep_block`, `fifty_ten` ("50/10", 50/10/20/4) and `custom` ("Custom", break × 3, after 4) as the spec says; absent → Steady Focus.
+  - [ ] A fresh database lists Gentle Start 15/5/15/4, Steady Focus 25/5/15/4, Deep Work 90/15/30/2, Steady Focus selected; seeding runs once, in one transaction, only while the marker is pending, maps `classic`, `deep_block`, `fifty_ten` ("50/10", 50/10/20/4) and `custom` ("Custom", break × 3, after 4) as the spec says, a converted preset placed after the three defaults (ruling 4); absent → Steady Focus.
   - [ ] A failed seed is owed and retried like spec A's owed reads; meanwhile the core defaults show read-only. The retry runs the normal path's effects: `presets-changed`, `settings-changed`, and the tray's re-render.
   - [ ] An unknown or removed `timer.preset` is presented as the first live preset and logged; Start uses it.
   - [ ] A session keeps its snapshot; `TimerView.presetName` is the snapshot name or "Just 2 minutes"; `breakMin` the snapshot's break; the running heading reads "<name> · <focus> / <break>".
@@ -160,7 +164,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Touches (append-only): `commands.list.rs`, `commands/mod.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`, `ipc.rs`, `ipc/bindings.ts` (regenerated), `test/fixtures.ts`, `dev/layout/scenarios.ts`.
 - Interfaces:
   - Consumes: E4's `PresetEntry`, `PresetError`, `presets-changed`, `emit_presets_changed`.
-  - Produces: `preset_add() -> Result<PresetEntry, PresetError>`; `preset_update(id: PresetId, patch: PresetPatch) -> Result<PresetEntry, PresetError>` with `PresetPatch { name, focus_min, break_min, long_break_min, rounds }` (each `Option`); `preset_remove(id)`, `preset_undo_remove(id)`, `presets_restore_defaults()`, each `-> Result<Vec<PresetEntry>, PresetError>`.
+  - Produces: `preset_add() -> Result<PresetEntry, PresetError>`; `preset_update(id: PresetId, patch: PresetPatch) -> Result<PresetEntry, PresetError>` with `PresetPatch { name, focus_min, break_min, long_break_min, rounds }` (each `Option`); `preset_remove(id)`, `preset_undo_remove(id)`, `presets_restore_defaults()`, each `-> Result<Vec<PresetEntry>, PresetError>`, the live list (ruling 3).
 - Acceptance:
   - [ ] Add adds "New preset" with Steady Focus's lengths at the end and opens its editor with focus on Name; at 12 *Add preset* is `aria-disabled` with "Up to 12 presets.".
   - [ ] Remove tombstones; the last live preset's Remove is `aria-disabled` with "At least one preset stays."; removing the selected one selects the lowest `position` and says so; *Undo* restores, or answers `duplicateName` with the spec's line.
@@ -201,7 +205,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - [ ] The focus row is written when its break ends, with the break row, in one transaction; a failed write keeps both in `unsaved`, retried once each, never duplicated.
   - [ ] Recovery: a running break restored in time continues; a break that ended during a quit writes both rows and shows `recovered`; a crash mid-break writes the open focus from the snapshot. A snapshot restored inside the last 2:00 keeps `warned` and does not warn again.
   - [ ] `timer_set_intent` trims, collapses inner whitespace, ≤ 120 characters (`invalidIntent`), empty → NULL; `wrongState` in a break or idle. Races answer `wrongState`/`extensionCap`.
-  - [ ] Bindings regenerated; four commands listed and granted to `main`.
+  - [ ] Bindings regenerated; four commands listed and granted to `main`, `timer_take_break` included (ruling 2).
 - Tests first: `view_mode_each_phase`, `can_extend_caps_zero_to_three`, `round_counts_unsaved_and_open_focus`, `cap_reached_once_on_crossing`, `cap_line_midnight_tick_once`, `offer_lifecycle`, `auto_continue_hides_extend_and_offer`, `two_row_end_write_fails_keeps_both_unsaved_once`, `recovery_mid_break_continues`, `relaunch_in_warning_does_not_warn_again`, `set_intent_trims_and_limits`, `suggestion_rotates_per_day_kind`.
 - Notes: sonnet, opus review. Split tests by behaviour; `actions.rs` and `recovery.rs` tests are at 410 and 426.
 
@@ -240,25 +244,45 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 
 ### E10: Floater and full-screen states, "Set intent", close-out
 - Priority: 2
-- Depends on: E8, E9, D6, D7, D8
-- Owns: `features/focus/{FocusPage.tsx,FocusPage.test.tsx}`, `features/floater/{FloaterPage.tsx,FloaterPage.test.tsx}`; `verification/layout/{focusWindow,floaterWindow}.spec.ts` (break and warning cases); `capabilities/{focus,floater}.json` and `lib_tests.rs` (their exact lists); `app/palette/{paletteCommands.ts,paletteCommands.test.ts}` ("Set intent"); close-out: `docs/specs/2026-11-12-session-cadence.md` (status implemented, Implementation status with each PR), `docs/ROADMAP.md` (row E done), `CONTEXT.md` (check E's terms).
+- Depends on: E8, E9, E11, D6, D7, D8
+- Owns: `features/focus/{FocusPage.tsx,FocusPage.test.tsx}`, `features/floater/{FloaterPage.tsx,FloaterPage.test.tsx}`; `verification/layout/{focusWindow,floaterWindow}.spec.ts` (break, warning and offer cases); `capabilities/{focus,floater}.json` and `lib_tests.rs` (their exact lists); `app/palette/{paletteCommands.ts,paletteCommands.test.ts}` ("Set intent"); close-out: `docs/specs/2026-11-12-session-cadence.md` (status implemented, Implementation status with each PR), `docs/ROADMAP.md` (row E done), `CONTEXT.md` (check E's terms).
 - Touches: `features/today/intentEvents.ts` (consume), `features/timer/useSurfaceTimer.ts` (consume).
 - Interfaces:
-  - Consumes: E7's view; E8's `requestIntentField`; D's `useSurfaceTimer`, `paletteCommands`.
+  - Consumes: E7's view and commands; E8's `requestIntentField`; E11's `secondaryActions`, `onSkipBreak`, `onKeepGoing`, `keepGoingName`; D's `useSurfaceTimer`, `paletteCommands`.
 - Acceptance:
-  - [ ] The Focus window and the floater pass `mode` and `task` from the view; break and warning show their shapes and words; the cases D left out pass in both specs, both themes.
-  - [ ] +10, Skip break, Take a break and keep-going on these surfaces as the controller rules (Open point 1); the windows are granted exactly the commands they show.
+  - [ ] The Focus window and the floater pass `mode` and `task` from the view; break and warning show their shapes and words.
+  - [ ] The Focus window passes E11's secondary actions per state: "+10 min" while `canExtend` in focus or warning, "Skip break" in a break, "Keep going" and "Stop here" with `offer`, "Take a break" in an auto step; End reads "End break" in a break. The floater passes `onSkipBreak` in a break and `onKeepGoing` with the offer. Each calls the same command as Today.
+  - [ ] Grants are exactly what each window shows: `focus.json` gains `allow-timer-extend`, `allow-timer-take-break`, `allow-timer-dismiss-offer`; `floater.json` gains `allow-timer-stop` (Skip break only). The capability tests assert the exact lists.
+  - [ ] The cases D left out (break, warning, the offer) pass in both specs, both themes.
   - [ ] The palette lists "Set intent" only while a focus runs or is paused; it navigates to Today and calls `requestIntentField`.
   - [ ] The spec reads implemented; ROADMAP row E reads done.
-- Tests first: `focus_page_break_and_warning_modes`, `floater_break_and_warning_modes`, `focus_capability_exact_with_cadence`, `palette_set_intent_only_in_focus`, `palette_set_intent_opens_field`.
-- Notes: sonnet. By eye (owner): the Focus window and the floater in break and warning, light and dark, at D's sizes.
+- Tests first: `focus_page_break_and_warning_modes`, `focus_page_secondary_action_per_state`, `floater_skip_break_and_keep_going`, `floater_break_and_warning_modes`, `focus_capability_exact_with_cadence`, `floater_capability_exact_with_cadence`, `palette_set_intent_only_in_focus`, `palette_set_intent_opens_field`.
+- Notes: sonnet. By eye (owner): the Focus window and the floater in break, warning, auto step and the offer, light and dark, at D's sizes.
 
-## Open points for the controller
-1. **Actions on the Focus window and the floater.** The spec (Shared with D, last line) has E10 pass "+10, Skip break and keep-going" into `FullScreenFocus` and `FloatingTimer`, but neither component has a slot for them, their End is named "End session", and the spec's Non-goals rule out new components. Choices: (a) a code-first component change with a first-consumer check (its own PR before E10); (b) E10 shows only `mode` and `task`, and those actions stay on Today and the menu bar. Lean: (b) for P1.
-2. `timer_take_break` is in the spec's commands but not in its Users & permissions table; this plan grants it to `main` (E7).
-3. The spec gives no return type for `preset_remove`, `preset_undo_remove` and `presets_restore_defaults`; this plan returns the live list (E5).
-4. The spec does not place converted "50/10" and "Custom" presets; this plan puts them after the defaults (E4).
-5. D's plan spells `preset_select(Preset)`, `presetChoices(…, PresetLength[])` and the tray submenu from `preset_lengths()`; Shared with D reorders and respells them. D's plan needs those lines updated when E's lands.
+### E11: Break actions on FullScreenFocus and FloatingTimer (design system)
+- Priority: 1
+- Depends on: none (any early slot; the plan puts it in wave 3)
+- Owns: `packages/ui/src/components/ui/full-screen-focus.{tsx,md,specimen.tsx,test.tsx}`, `packages/ui/src/components/ui/floating-timer.{tsx,md,specimen.tsx,test.tsx}`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts`.
+- Touches (append-only, only if needed): `packages/ui/src/index.ts`, `packages/ui/src/designSystem.test.ts`, `verification/contrast-pairs.json`.
+- Interfaces (props inline in each `.tsx`, all optional, so D6 and D7 build unchanged):
+  - Produces: `FullScreenFocus` `secondaryActions?: ReadonlyArray<{ id: string; label: string; name?: string; onSelect: () => void }>` (0–2; two only for the keep-going offer, the second ghost), and End labelled "End break" when `mode="break"`.
+  - Produces: `FloatingTimer` `onSkipBreak?: () => void` (with `mode="break"`, Pause's slot becomes "Skip break") and `onKeepGoing?: () => void` with `keepGoingName?: string` (the Start pill's slot becomes "Keep going", named "Keep going with <name>").
+- Acceptance:
+  - [ ] FullScreenFocus: one quiet secondary slot in the controls row beside Pause/End; Pause/Resume stays the only round primary; "+10 min", "Skip break", "Keep going"/"Stop here" and "Take a break" render as the host passes them; the fixed control track does not grow; Tab order Leave → Pause/Resume → End → secondary actions (or as the README states).
+  - [ ] FloatingTimer: "Skip break" and "Keep going" fit at 280×56; the README states their widths in the same form as the deep and ended widths now; targets ≥ 44×44.
+  - [ ] Tokens only (closed Tailwind theme, no arbitrary values); new colour pairs, if any, in `contrast-pairs.json` at 4.5:1 text and 3:1 marks in both themes.
+  - [ ] Both READMEs describe the props, states and accessible names; the components' existing harness cases still pass; new Playwright specimen cases for each action state at the README sizes, both themes, reduced motion.
+  - [ ] First-consumer check (conventions): the review reads the spec's status-row names ("Add 10 minutes of focus", "Keep going with Steady Focus") and E10's acceptance.
+- Tests first: `full_screen_focus_secondary_action_slot`, `full_screen_focus_two_actions_for_offer`, `full_screen_focus_end_break_label`, `floating_timer_skip_break_in_pause_slot`, `floating_timer_keep_going_in_start_slot`, `floating_timer_actions_fit_280x56`.
+- Notes: sonnet, opus review (design-system change). After merge the controller republishes the design-system artifact from `main`. By eye (owner): both components in each new state at their README sizes, light and dark.
+
+## Rulings (owner and controller, 2026-11-12)
+1. **Owner:** the Focus window and floater get the break actions through a code-first component PR, E11; E10 depends on it and wires the props. Spec amended (Shared with D, last line).
+2. `timer_take_break` is granted to `main` (E7) and to the Focus window (E10). Spec amended (Users & permissions).
+3. `preset_remove`, `preset_undo_remove` and `presets_restore_defaults` return the live preset list (E5).
+4. Converted "50/10" and "Custom" presets go after the three defaults (E4).
+5. The controller updates D's plan (#331) and issues to match E4: `preset_select(presetId)`, `PresetEntry[]` in `presetChoices` and `paletteCommands`, D5 drops `preset_lengths()`, `allow-presets-list`, D4 and D6 depend on E4. The Shared with D rules above stand.
+6. Each migration test builds the schema just before its own migration from the `MIGRATIONS` list (E1, D2). Spec amended (Testing strategy, Store).
 
 ## Coverage check
 | Spec requirement | Task(s) |
@@ -279,7 +303,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 | Menu bar glyphs and items | E4 (Preset submenu), E9 |
 | Notifications table, frontmost | E9 |
 | READMEs: InlineNotice, MenuBarTimer | E8, E9 |
-| Floater and full screen | E10 |
+| Floater and full screen, their break actions | E11, E10 |
 | Amendments to A, B, C, Components; CONTEXT terms | done in the spec PR (#330); E10 checks |
 | Failure mode: a seed retried after a failed launch read | E4: `seed_retry_emits_presets_and_settings_changed` |
 | Failure mode: `timer.preset` names a removed preset | E4: `unknown_preset_id_presents_first_live` |
