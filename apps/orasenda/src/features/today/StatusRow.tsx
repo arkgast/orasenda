@@ -36,7 +36,7 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
         <Button
           variant={second.variant}
           aria-label={second.name || undefined}
-          className="flex-none px-3 text-focus"
+          className={second.variant === "ghost" ? "flex-none px-3 text-focus" : "flex-none px-3"}
           onClick={() => onAction(second.id)}
         >
           {second.label}

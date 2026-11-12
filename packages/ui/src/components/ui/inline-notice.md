@@ -7,8 +7,8 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 
 ## Status row (`variant="row"`)
 
-- **Anatomy:** a fixed 44px row with no box; one ghost or quiet action as a sibling. Today adds a second action as a sibling `Button` beside the row (`StatusRow`, a composition in the app, not a prop here); in the stacked strip the strip's own `ModeChip` is the state word, so the row adds none. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. The row is never the live region, so chip changes are never announced.
-- **Text:** `body-sm` `ink`, at most two lines; it never grows and never truncates. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
+- **Anatomy:** a 44px row with no box (two actions may grow it, see below); one ghost or quiet action as a sibling. Today adds a second action as a sibling `Button` beside the row (`StatusRow`, a composition in the app, not a prop here); in the stacked strip the strip's own `ModeChip` is the state word, so the row adds none. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. The row is never the live region, so chip changes are never announced.
+- **Text:** `body-sm` `ink`, at most two lines; it never truncates, and the row grows only for a second action that wraps. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
 - **Tones:** `neutral` (no glyph), `attention` (the alert glyph in `ink`), `warning` (the amber triangle, time only).
 - **Actions:** `actionVariant` is `'ghost'` by default, or `'quiet'`; names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
 - **Focus:** at a session end the line is announced first, then focus moves to Start focus, with the action one Shift-Tab away.
@@ -64,4 +64,4 @@ A start error shows here, on the same screen as Start. Focus stays on Start; the
 
 Two actions: the first is the notice's own, the second a sibling `Button` in reading order after it. Both keep the 44px hit target. Beside a long line the row may take a second line in a ring layout, and in the strip's narrow column the second action goes under the first row. While the intent field is open it replaces the row; at 360 x 240 it lies over the top of the time.
 
-Do: show one notice at a time, and keep the row's height fixed. Don't: use it to nag about stats.
+Do: show one notice at a time, and keep the row at 44px, growing only to two lines when a second action needs it. Don't: use it to nag about stats.

@@ -106,8 +106,11 @@ export async function expectTodayFits(
   const rowBox = page.locator('[data-slot="inline-notice"]');
   const row = (await rowBox.count()) > 0 ? await rowBox.first().boundingBox() : null;
   // A strip's status is a column beside the time, where a long line may take more height.
-  if (row && (size.layout === "strip" || grows)) expect(row.height).toBeGreaterThanOrEqual(44);
-  else if (row) expect(row.height, "the status row is 44px").toBe(44);
+  // Two lines of body-sm at most: the row may grow, but not past 88px.
+  if (row && (size.layout === "strip" || grows)) {
+    expect(row.height).toBeGreaterThanOrEqual(44);
+    expect(row.height, "at most two lines").toBeLessThanOrEqual(88);
+  } else if (row) expect(row.height, "the status row is 44px").toBe(44);
 
   expect(await smallTargets(page.locator("body")), "targets are 44px").toEqual([]);
   // The visually hidden h1 is a 1px box on purpose.
@@ -115,11 +118,13 @@ export async function expectTodayFits(
   const overlay =
     size.layout === "stackedStrip" &&
     (await page.locator('[data-slot="intent-field"]').count()) > 0;
+  // Only the intent line is clamped on purpose; without a task slot nothing may be.
+  const taskSlots = (await page.locator('[data-slot$="-task"]').count()) > 0;
   const spill = (await overflows(page.locator(".today"))).filter(
     // The task line is clamped to two lines on purpose (timer-ring and timer-strip READMEs).
     (line) =>
       !line.includes("sr-only") &&
-      !line.includes("line-clamp-2") &&
+      !(taskSlots && line.includes("line-clamp-2")) &&
       !(overlay && line.includes("today-status")),
   );
   expect(spill, "nothing overflows").toEqual([]);

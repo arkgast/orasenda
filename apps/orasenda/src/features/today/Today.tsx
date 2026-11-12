@@ -109,6 +109,7 @@ export function Today({ onNavigate }: Props) {
     notice: notice?.text ?? null,
     store: view?.store ?? "ok",
     cadence: view,
+    capNotice: notice?.persist === true,
     stacked: layout.timer === "stackedStrip",
     keepGoingPreset: selectedPreset(presets, settings)?.name ?? null,
   });
@@ -168,11 +169,12 @@ export function Today({ onNavigate }: Props) {
   const startSaved = () => start({ quick: false });
   const startQuick = () => start({ quick: true });
 
-  const control = (name: string, command: () => Promise<CommandResult>) => {
+  const control = (name: string, command: () => Promise<CommandResult>, onOk?: () => void) => {
     command().then(
       (result) => {
         if (result.status === "ok") {
           setControlError(false);
+          onOk?.();
           return;
         }
         focus.cancel();
@@ -208,9 +210,11 @@ export function Today({ onNavigate }: Props) {
         if (failedStart) start(failedStart);
         break;
       case "extend":
+        focus.startRequested();
         control("timer_extend", commands.timerExtend);
         break;
       case "takeBreak":
+        focus.startRequested();
         control("timer_take_break", commands.timerTakeBreak);
         break;
       case "skipBreak":
@@ -220,7 +224,7 @@ export function Today({ onNavigate }: Props) {
         startSaved();
         break;
       case "stopHere":
-        control("timer_dismiss_offer", commands.timerDismissOffer);
+        control("timer_dismiss_offer", commands.timerDismissOffer, focus.focusStart);
         break;
       case "intent":
         setEditingIntent(true);

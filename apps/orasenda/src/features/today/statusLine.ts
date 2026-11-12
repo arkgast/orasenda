@@ -36,6 +36,8 @@ export type StatusInput = {
   cadence?: CadenceInput | null;
   /** The stacked strip: its break row leaves the suggestion out. */
   stacked?: boolean;
+  /** `notice` is the deep-hours line, which outranks the keep-going offer. */
+  capNotice?: boolean;
   /** The selected preset's name, for the keep-going action's accessible name. */
   keepGoingPreset?: string | null;
 };
@@ -81,6 +83,7 @@ export function commandFailure(error: TimerCommandError): "race" | "failure" {
     case "alreadyRunning":
     case "nothingRunning":
     case "wrongState":
+    case "extensionCap":
       return "race";
     default:
       return "failure";
@@ -126,7 +129,7 @@ function breakRow(cadence: CadenceInput, input: StatusInput): StatusLine {
         },
       ]
     : [];
-  // A notice (the deep-hours line) replaces the suggestion; the stacked strip has room for neither.
+  // A notice (the deep-hours line) replaces the suggestion; the stacked strip has room for neither (the cap note does not fit 360x240).
   const text = input.stacked
     ? ""
     : (input.notice ?? (cadence.suggestion ? suggestionText(cadence.suggestion) : ""));
@@ -147,7 +150,8 @@ function viewRow(cadence: CadenceInput, input: StatusInput): StatusLine | null {
   }
   if (cadence.offer === "keepGoing") {
     const name = input.keepGoingPreset ? `Keep going with ${input.keepGoingPreset}` : undefined;
-    return line("Keep going?", "neutral", [
+    const text = input.capNotice && input.notice ? input.notice : "Keep going?";
+    return line(text, "neutral", [
       { id: "keepGoing", label: "Keep going", name, variant: "quiet" },
       { id: "stopHere", label: "Stop here", variant: "ghost" },
     ]);

@@ -157,3 +157,12 @@ test("status_line_joins_a_notice_and_the_store_only_without_actions", () => {
   const row = line(IDLE, { notice: "Break ended.", store: "unavailable" });
   expect(row?.text).toBe("Break ended. Orasenda can't save sessions right now.");
 });
+
+test("status_line_cap_note_outranks_the_offer", () => {
+  const cap = "You've focused 4 hours today. A good place to stop.";
+  const offer = { ...IDLE, offer: "keepGoing" as const };
+  const row = line(offer, { notice: cap, capNotice: true });
+  expect(row?.text).toBe(cap);
+  expect(row?.actions.map((a) => a.id)).toEqual(["keepGoing", "stopHere"]);
+  expect(line(offer, { notice: "Session ended." })?.text).toBe("Keep going?");
+});

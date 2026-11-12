@@ -88,6 +88,10 @@ export function useControlFocus(state: string | undefined, lineText: string | un
     },
     /** A start was asked for from this page. */
     startRequested: () => wish("pause"),
+    /** Moves focus to Start focus now (the row's own button is gone). */
+    focusStart: () => {
+      box.current?.querySelector<HTMLElement>("[data-slot='start-button'] button")?.focus();
+    },
     /** An end was asked for from this page. */
     endRequested: () => wish("start"),
     /** The command was refused: focus has nowhere to go. */

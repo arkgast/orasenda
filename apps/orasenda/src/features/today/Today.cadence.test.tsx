@@ -229,3 +229,34 @@ test("timer_set_intent_failure_shows_the_control_error", async () => {
   await settle();
   expect(statusNodes()[0]).toHaveTextContent("Orasenda's timer isn't responding.");
 });
+
+test("extend_refused_at_the_cap_is_a_race_and_shows_nothing", async () => {
+  await renderToday({
+    timer_extend: () => Promise.reject({ kind: "extensionCap", message: "cap" }),
+  });
+  await emitTimer(WARNING);
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  fireEvent.click(screen.getByRole("button", { name: "Add 10 minutes of focus" }));
+  await settle();
+  expect(statusNodes()[0]).toHaveTextContent("Two minutes left. Finish the thought.");
+  expect(screen.queryByText("Orasenda's timer isn't responding.")).toBeNull();
+});
+
+test("status_actions_keep_focus_off_the_body", async () => {
+  await renderToday();
+  await emitTimer(WARNING);
+  fireEvent.click(screen.getByRole("button", { name: "Add 10 minutes of focus" }));
+  await emitTimer({ ...RUNNING, extensions: 1 });
+  expect(document.body).not.toHaveFocus();
+  expect(screen.getByRole("button", { name: "Pause session" })).toHaveFocus();
+
+  await emitTimer(AUTO);
+  fireEvent.click(screen.getByRole("button", { name: "Take a break now" }));
+  await emitTimer(BREAK);
+  expect(document.body).not.toHaveFocus();
+
+  await emitTimer({ ...IDLE, offer: "keepGoing" });
+  fireEvent.click(screen.getByRole("button", { name: "Stop here" }));
+  await settle();
+  expect(document.body).not.toHaveFocus();
+});
