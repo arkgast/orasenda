@@ -77,7 +77,7 @@ export function Today({ onNavigate }: Props) {
       },
       accepted: () => {},
       loadFailed: () => {
-        console.error("settings_get failed: Today starts with Classic");
+        console.error("settings_get failed: Today starts with the selected preset");
         setSettingsFailed(true);
       },
       // The write is already logged and the store line explains it (spec C).

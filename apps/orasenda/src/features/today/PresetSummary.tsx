@@ -1,7 +1,7 @@
 import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
 import type { Settings } from "../../ipc/bindings";
-import { presetMeta, selectedPreset, summaryText, usePresets } from "./presets";
+import { presetMeta, selectedPreset, summaryText, usePresets, usePresetsFailed } from "./presets";
 
 type Props = {
   state: "idle" | "running" | "paused";
@@ -39,16 +39,17 @@ export function PresetSummary({
   onOpenSettings,
 }: Props): ReactElement {
   const presets = usePresets();
+  const presetsFailed = usePresetsFailed();
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const idle = state === "idle";
 
-  if (idle && (!settings || presets.length === 0) && !settingsFailed) {
+  if (idle && (!settings || presets.length === 0) && !settingsFailed && !presetsFailed) {
     // Still loading: the cell keeps its place and says nothing.
     return <div data-slot="preset-summary" className="today-preset-anchor" />;
   }
-  if (idle && !settings) {
+  if (idle && (!settings || presets.length === 0)) {
     return (
       <div data-slot="preset-summary" className="@container w-full">
         <span className="today-preset-anchor">

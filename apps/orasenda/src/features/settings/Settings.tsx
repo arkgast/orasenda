@@ -5,7 +5,7 @@ import type { Settings as SettingsValue, Theme } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
 import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
-import { usePresets } from "../today/presets";
+import { usePresets, usePresetsFailed } from "../today/presets";
 import { askMacOS, isAsking, subscribeAsking, tick, untick } from "./notificationsToggle";
 import {
   type Arrival,
@@ -67,6 +67,7 @@ export function Settings({
   const view = timer.status === "ok" ? timer.view : null;
   const [settings, setSettings] = useState<SettingsValue | null>(null);
   const presets = usePresets();
+  const presetsFailed = usePresetsFailed();
   const [line, setLine] = useState<Line>({ kind: "rest" });
   const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
@@ -300,6 +301,7 @@ export function Settings({
               <Timer
                 settings={shown}
                 presets={presets}
+                presetsFailed={presetsFailed}
                 running={running}
                 disabled={readOnly}
                 disabledReason={reason}

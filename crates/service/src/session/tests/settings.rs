@@ -141,6 +141,10 @@ fn unknown_preset_id_presents_first_live() {
         Some(format_clock(T0 + 15 * MINUTE, OFFSET_MIN, CYCLE)),
         "Start would use it"
     );
+    let mut s = s;
+    let started = s.apply(start(), T0, id("a"));
+    assert_eq!(started.view.preset_name.as_deref(), Some("Gentle Start"));
+    assert_eq!(started.view.planned_min, Some(15));
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! The cached settings: the launch read, saving, and the notify review.
 
-use orasenda_core::NotificationStatus;
+use orasenda_core::{NotificationStatus, PresetId};
 use orasenda_store::{StoreError, Txn, meta, settings};
 use serde::de::DeserializeOwned;
 
@@ -112,10 +112,11 @@ impl SessionService {
             });
         }
         let presented = self.settings();
+        let cached_preset = self.settings.preset_id.clone();
         let owed = self.recover_owed.settings;
         let theme_changed = settings.theme != presented.theme;
         let notify_changed = settings.notify_session_end != presented.notify_session_end;
-        if settings.preset_id != presented.preset_id && self.recover_owed.presets {
+        if settings.preset_id != self.settings.preset_id && self.recover_owed.presets {
             return Err(SettingsError {
                 kind: SettingsErrorKind::Unavailable,
                 message: "the preset can't be changed right now".into(),
@@ -128,7 +129,7 @@ impl SessionService {
             if owed {
                 stored = Some(read_settings(txn)?);
             }
-            write_changed(txn, &presented, &settings)?;
+            write_changed(txn, &presented, &cached_preset, &settings)?;
             if theme_changed {
                 settings::set(txn, KEY_THEME, &settings.theme)?;
             }
@@ -150,7 +151,7 @@ impl SessionService {
         if theme_changed {
             self.settings.theme = settings.theme;
         }
-        merge_changed(&mut self.settings, &presented, &settings);
+        merge_changed(&mut self.settings, &presented, &cached_preset, &settings);
         // An echoed value is not copied into the cache while the review is pending: the cache
         // keeps the stored-or-true value the review will use.
         if notify_changed {
@@ -224,8 +225,16 @@ fn read_ranged<T: DeserializeOwned + PartialOrd + Copy>(
 
 /// Writes the keys of `new` that differ from `presented`, except the theme and the notify
 /// choice, which `set_settings` writes with their own side effects.
-fn write_changed(txn: &mut Txn, presented: &Settings, new: &Settings) -> Result<(), StoreError> {
-    if new.preset_id != presented.preset_id {
+///
+/// The preset is compared with the cached id, not the presented one: the presented id resolves an
+/// unknown id to the first live preset, and an explicit pick of that fallback must still be written.
+fn write_changed(
+    txn: &mut Txn,
+    presented: &Settings,
+    cached_preset: &PresetId,
+    new: &Settings,
+) -> Result<(), StoreError> {
+    if new.preset_id != *cached_preset {
         settings::set(txn, KEY_PRESET, &new.preset_id)?;
     }
     if new.extension_cap != presented.extension_cap {
@@ -250,8 +259,13 @@ fn write_changed(txn: &mut Txn, presented: &Settings, new: &Settings) -> Result<
 }
 
 /// Copies the fields `write_changed` wrote into the cache.
-fn merge_changed(cache: &mut Settings, presented: &Settings, new: &Settings) {
-    if new.preset_id != presented.preset_id {
+fn merge_changed(
+    cache: &mut Settings,
+    presented: &Settings,
+    cached_preset: &PresetId,
+    new: &Settings,
+) {
+    if new.preset_id != *cached_preset {
         cache.preset_id = new.preset_id.clone();
     }
     if new.extension_cap != presented.extension_cap {

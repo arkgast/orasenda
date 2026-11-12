@@ -145,10 +145,21 @@ fn seed_maps_each_old_preset() {
     let s = launch(old_store(Some("custom"), Some((30, 60))));
     assert_eq!(stored_live(&s)[3].long_break_min, 90);
     let s = launch(old_store(Some("custom"), Some((4, 10))));
-    assert_eq!(stored_live(&s).len(), 3);
-    assert_eq!(s.settings().preset_id, default_id(1));
+    let fallback = &stored_live(&s)[3];
+    assert_eq!(
+        (
+            fallback.name.as_str(),
+            fallback.focus_min,
+            fallback.break_min,
+            fallback.long_break_min
+        ),
+        ("Custom", 45, 10, 30)
+    );
+    assert_eq!(s.settings().preset_id, fallback.id);
     let s = launch(old_store(Some("custom"), None));
-    assert_eq!(s.settings().preset_id, default_id(1));
+    let fallback = &stored_live(&s)[3];
+    assert_eq!((fallback.focus_min, fallback.break_min), (45, 10));
+    assert_eq!(s.settings().preset_id, fallback.id);
 }
 
 #[test]

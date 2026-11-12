@@ -17,6 +17,8 @@ type Props = {
   settings: Settings;
   /** The live presets, in order. */
   presets: PresetEntry[];
+  /** presets_list failed: say so instead of showing nothing. */
+  presetsFailed?: boolean;
   running: boolean;
   disabled: boolean;
   disabledReason?: string;
@@ -27,6 +29,7 @@ type Props = {
 export function Timer({
   settings,
   presets,
+  presetsFailed = false,
   running,
   disabled,
   disabledReason,
@@ -50,6 +53,11 @@ export function Timer({
         status={presetStatus}
         disabledReason={disabledReason}
       >
+        {presetsFailed && presets.length === 0 ? (
+          <p className="app-muted" role="status">
+            Can't read your presets right now.
+          </p>
+        ) : null}
         <ChoiceGroup labelledBy="preset-label">
           {presets.map((preset) => (
             <Choice

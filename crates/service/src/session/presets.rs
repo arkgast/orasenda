@@ -81,7 +81,12 @@ fn seed(txn: &mut Txn) -> Result<(), StoreError> {
                 let long = (c.break_min * 3).clamp(5, 90);
                 insert_user(txn, "Custom", c.focus_min, c.break_min, long)?
             }
-            _ => defaults[1].id.clone(),
+            other => {
+                if other.is_some() {
+                    eprintln!("presets: timer.custom is out of range; using 45/10");
+                }
+                insert_user(txn, "Custom", 45, 10, 30)?
+            }
         },
         Some(other) if live_id(txn, other)? => PresetId(other.to_string()),
         _ => defaults[1].id.clone(),
