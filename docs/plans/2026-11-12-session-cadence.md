@@ -51,14 +51,14 @@ Cross-sub-project edges: E4 needs D1 (tray split) and D2 (it adapts `run_select_
 ## Combined D + E waves (at most 3 pipelines)
 | Wave | Runs at once | Starts when |
 |---|---|---|
-| 1 | D1, D3, E1 | now |
-| 2 | D2, E2, E3 | a W1 slot frees (none of them needs W1, except the budget) |
-| 3 | E4, E11 | E1, E2, D1 and D2 merged (E4); a slot (E11). E4 is the only contract task: it changes the types D4, D5, D6 and D8 are spelled in. If D3 still runs, the three are D3, E4, E11 |
-| 4 | D4, E5, E6 | E4 merged (D4 also D1–D3) |
-| 5 | D6, D7, E7 | D4 merged (D6 also E4); E6 and E3 merged (E7) |
-| 6 | D5, E8 | D4 (D5); E7 and D6 (E8) |
-| 7 | D8, E9 | D5, D6, D7 and E8 (D8); D5, E5 and E7 (E9) |
-| 8 | E10 | D6, D7, D8, E8, E9, E11 |
+| 1 | D1, D3, E1 (#340) | now |
+| 2 | D2, E2 (#341), E3 (#342) | a W1 slot frees (none of them needs W1, except the budget) |
+| 3 | E4 (#344), E11 (#343) | E1 (#340), E2 (#341), D1 and D2 merged (E4 (#344)); a slot (E11 (#343)). E4 (#344) is the only contract task: it changes the types D4, D5, D6 and D8 are spelled in. If D3 still runs, the three are D3, E4 (#344), E11 (#343) |
+| 4 | D4, E5 (#345), E6 (#346) | E4 (#344) merged (D4 also D1–D3) |
+| 5 | D6, D7, E7 (#347) | D4 merged (D6 also E4 (#344)); E6 (#346) and E3 (#342) merged (E7 (#347)) |
+| 6 | D5, E8 (#348) | D4 (D5); E7 (#347) and D6 (E8 (#348)) |
+| 7 | D8, E9 (#349) | D5, D6, D7 and E8 (#348) (D8); D5, E5 (#345) and E7 (#347) (E9 (#349)) |
+| 8 | E10 (#350) | D6, D7, D8, E8 (#348), E9 (#349), E11 (#343) |
 
 A slot freed early takes the next ready task in table order. No two tasks in one wave own the same file; the append-only files below are the controller's at landing.
 
@@ -89,7 +89,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 
 ## Tasks
 
-### E1: Preset library: core types and store
+### E1 (#340): Preset library: core types and store
 - Priority: 0
 - Depends on: none
 - Owns: `crates/core/src/timer/preset.rs` and `timer/preset/tests.rs` (new); `crates/store/migrations/000N_preset_library.sql`, `crates/store/src/migrate.rs` (entry), `crates/store/src/lib.rs` (`SCHEMA_VERSION`, re-export); `crates/store/src/repo/presets.rs` and `repo/presets/tests.rs` (new), `repo/mod.rs`; `crates/store/src/txn.rs` (`Entity::Preset`); `crates/store/src/repo/focus_sessions.rs` (`started_between` only) and `repo/focus_sessions/tests.rs` (new, if the inline tests would pass 300).
@@ -105,7 +105,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `preset_validation_edges`, `normalize_name_trims_and_refuses_blank`, `default_presets_fixed_ids`, `preset_library_migrates_from_previous_schema`, `preset_update_logs_only_changed_fields`, `preset_remove_is_tombstone`, `started_between_excludes_deleted_in_start_order`.
 - Notes: sonnet. No existing type changes here; the switch is E4's. `store/src/tests.rs` is at 439: nothing new goes there.
 
-### E2: Move-only split of the engine and its tests
+### E2 (#341): Move-only split of the engine and its tests
 - Priority: 0
 - Depends on: none
 - Owns: `crates/core/src/timer/engine.rs` → `timer/engine/{mod.rs (Session, start, pause, resume, stop), advance.rs (advance, elapsed, planned end), view.rs (view, planned_end_ms, is_idle, phase)}`; `timer/engine/tests.rs` → `timer/engine/tests/{mod.rs (support), lifecycle.rs, advance.rs, view.rs}`.
@@ -118,7 +118,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: none new (move-only).
 - Notes: haiku or sonnet. A refactor PR moves code or changes it, never both.
 
-### E3: Break suggestions: the list, the pick, the source check
+### E3 (#342): Break suggestions: the list, the pick, the source check
 - Priority: 1
 - Depends on: none
 - Owns: `crates/core/src/timer/suggestions.rs` and `timer/suggestions/tests.rs` (new); the spec's Break suggestions table and Open question 3 (`docs/specs/2026-11-12-session-cadence.md`, those lines only).
@@ -132,7 +132,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `pick_rotates_per_kind`, `pick_short_never_returns_long_only`, `labelled_line_starts_with_label`, `every_line_ends_with_period_no_exclamation`.
 - Notes: opus for the source check (judgement), sonnet for the code. `BreakFor` keeps E3 independent of E6's `BreakKind`; E7 maps one to the other.
 
-### E4: Preset library: the switch (service, IPC, menu bar, webview)
+### E4 (#344): Preset library: the switch (service, IPC, menu bar, webview)
 - Priority: 0
 - Depends on: E1, E2, D1, D2
 - Owns:
@@ -157,7 +157,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `seed_fresh_database_three_defaults`, `seed_maps_each_old_preset`, `seed_runs_once`, `seed_retry_emits_presets_and_settings_changed`, `unknown_preset_id_presents_first_live`, `start_snapshots_preset`, `edit_after_start_leaves_snapshot`, `view_preset_name_quick`, `select_preset_takes_library_id`, `tray_preset_submenu_from_library`, `start_sends_quick_only`, `popover_lists_library_presets`, `settings_timer_radios_from_library`.
 - Notes: sonnet, opus review. The largest task: most of it is mechanical (every `Preset::Classic` in tests becomes a library id). The service cache holds the live presets; `view` and `clock_tick` resolve the selected one from it. Seeding runs in `session/presets.rs`, after the store opens and before the first view (spec Data & migrations). By eye (owner): Settings › Timer and the Today popover at 360×240, 900×600, 1440×900; the tray submenu; light and dark.
 
-### E5: Preset editing: commands and Settings › Timer list and editor
+### E5 (#345): Preset editing: commands and Settings › Timer list and editor
 - Priority: 1
 - Depends on: E4
 - Owns: `crates/service/src/session/presets.rs` → `session/presets/{mod.rs,edit.rs}` (split if it would pass 500), `session/tests/presets_edit.rs` (new), `api/presets.rs` (`PresetPatch`), `session/run.rs` (the `run_preset_*` functions), `commands/presets.rs`; `features/settings/sections/{PresetList.tsx,PresetEditor.tsx,Timer.tsx}`, `features/settings/{usePresets.ts,Settings.presets.test.tsx}` (new), `features/settings/Settings.tsx` (mounts the list; any move to stay ≤ 500 goes into `usePresets.ts`), `features/settings/settingsKeys.ts` (save-line copy); `verification/layout/settings.presets.spec.ts` (new).
@@ -175,7 +175,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `add_at_twelve_is_limit`, `remove_last_is_last_preset`, `remove_selected_selects_first`, `undo_remove_name_taken_is_duplicate`, `restore_defaults_positions_and_past_twelve`, `update_logs_changed_fields_only`, `editor_saves_on_blur_and_return`, `editor_escape_restores`, `editor_saves_chain_newest_wins` (two held replies), `presets_changed_from_tray_updates_list`.
 - Notes: sonnet. The commands call `orasenda_service::session::run_preset_*` through `AppHost` directly; `runtime/session.rs` is D4's in this wave and stays untouched. By eye (owner): the list, the editor open, Remove and Undo, at the three sizes, light and dark.
 
-### E6: Cadence engine (core)
+### E6 (#346): Cadence engine (core)
 - Priority: 0
 - Depends on: E2, E4
 - Owns: `crates/core/src/timer/engine/{mod.rs,advance.rs,view.rs}` and new `engine/{breaks.rs,extend.rs,auto.rs}`; `engine/tests/{breaks.rs,extend.rs,auto.rs,sleep.rs}` (new); `crates/core/src/timer/cadence.rs` and `timer/cadence/tests.rs` (new); `timer/mod.rs` (`Phase::Break`, `BreakKind`, `Milestone`, `SessionRecord`, `EngineView`); `crates/store/src/repo/focus_sessions.rs` (`insert` writes `intent`, `break_kind`); `crates/service/src/session/{actions.rs,persist.rs,recovery.rs}` (compile-level adaptation only: loop over milestones, persist several records, round 1, `auto: None`); `ipc/bindings.ts` (regenerated: `Phase`).
@@ -190,7 +190,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `break_starts_at_planned_end`, `long_break_at_round_n_each_default`, `warning_once_per_end`, `extend_from_break_records_stopped_break`, `auto_steps_to_limit_then_break`, `auto_none_when_focus_at_limit`, `sleep_across_focus_and_break_two_records`, `stop_in_break_completes_focus`, `next_round_resets_after_gap_not_at_gap`, `next_round_clock_set_back_no_panic`, `local_day_dst_23_and_25_hours`, `session_name_fallback`.
 - Notes: sonnet, opus review. The cap check, the round and `auto` come from the service (E7). Until E7 lands, a break shows as `mode: focus` and every break is short (Impact, interim).
 
-### E7: Cadence service and IPC
+### E7 (#347): Cadence service and IPC
 - Priority: 0
 - Depends on: E6, E3
 - Owns: `crates/service/src/session/cadence.rs` (new: today's rows via `started_between`, `next_round` input, `focused_today`, the cap line and `capReached`, the keep-going offer, `auto` from settings, the midnight tick), `session/{actions.rs,view.rs,service.rs,recovery.rs,persist.rs,run.rs,mod.rs}`, `session/view/` split if `view.rs` would pass 300; `session/tests/{cadence.rs,extend.rs,offer.rs,cap.rs,view_modes.rs,two_row_end.rs,recovery_break.rs}` (new); `api/{timer.rs,events.rs,errors.rs}`; `scheduler/tick.rs` (midnight `timer-tick`); `commands/timer.rs`; `ipc/bindings.ts`.
@@ -209,7 +209,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `view_mode_each_phase`, `can_extend_caps_zero_to_three`, `round_counts_unsaved_and_open_focus`, `cap_reached_once_on_crossing`, `cap_line_midnight_tick_once`, `offer_lifecycle`, `auto_continue_hides_extend_and_offer`, `two_row_end_write_fails_keeps_both_unsaved_once`, `recovery_mid_break_continues`, `relaunch_in_warning_does_not_warn_again`, `set_intent_trims_and_limits`, `suggestion_rotates_per_day_kind`.
 - Notes: sonnet, opus review. Split tests by behaviour; `actions.rs` and `recovery.rs` tests are at 410 and 426.
 
-### E8: Today: cadence states and the intent line
+### E8 (#348): Today: cadence states and the intent line
 - Priority: 1
 - Depends on: E7, D6
 - Owns: `features/today/{statusLine.ts,statusLine.test.ts,StatusRow.tsx,StatusRow.test.tsx,IntentField.tsx,IntentField.test.tsx,intentEvents.ts,Controls.tsx,TimeView.tsx,Today.tsx,today.css,presets.ts,PresetSummary.tsx,PresetSummary.test.tsx}`, `features/today/Today.cadence.test.tsx` (new); `verification/layout/today.fits.spec.ts` (the new states) and `verification/layout/support/today.ts`; `packages/ui/src/components/ui/inline-notice.md` ("Today slots").
@@ -227,7 +227,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `status_line_rank_for_every_row`, `status_row_two_actions_names`, `auto_step_warning_offers_take_break_not_extend`, `controls_in_break_skip_and_pause_break`, `summary_break_heading`, `intent_return_saves_blur_saves_escape_restores`, `intent_never_auto_opens`, `intent_request_event_opens_field`, `today_fits_<size>_<state>` (generated).
 - Notes: sonnet. Lands before D8 starts (Shared with D). By eye (owner): each new Today state at 360×240, 900×600, 1440×900 in light and dark; the warning fade with and without reduce-motion.
 
-### E9: Menu bar, notifications and the cadence settings rows
+### E9 (#349): Menu bar, notifications and the cadence settings rows
 - Priority: 1
 - Depends on: E7, E5, D5
 - Owns: `tray/{render.rs,mod.rs}`, `tray/icons/{warning.png,break.png}` (new), `tray/menu/{entries.rs,commands.rs}`, `tray/tests/cadence_items.rs` (new); `packages/ui/src/components/ui/menu-bar-timer.md` (the two "(later)" marks); `crates/service/src/scheduler/{publish.rs,host.rs}`, `scheduler/tests/notify_cadence.rs` (new); `crates/platform-macos/src/app_active.rs` (new) and its `mod` line; `runtime/ticker.rs` (`AppHost::app_active`); `features/settings/sections/{CadenceRows.tsx,CadenceRows.test.tsx,Timer.tsx,Notifications.tsx}`, `features/settings/{settingsKeys.ts,Settings.tsx}`, `Settings.notifications.test.tsx`.
@@ -242,7 +242,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `tray_items_warning`, `tray_items_break_with_extend`, `tray_items_auto_step`, `tray_glyph_per_mode`, `notify_break_start_body_long`, `notify_two_minutes_gated_by_setting_status_and_active`, `one_notification_per_advance`, `extension_cap_radios_save`, `longest_focus_helper_when_preset_reaches_it`, `two_minutes_checkbox_asks_when_not_determined`.
 - Notes: sonnet, opus review. If it passes four hours, the controller moves the Settings rows into their own PR with the same Owns subset. By eye (owner): both glyphs in light and dark menu bars; the Settings rows at the three sizes, light and dark.
 
-### E10: Floater and full-screen states, "Set intent", close-out
+### E10 (#350): Floater and full-screen states, "Set intent", close-out
 - Priority: 2
 - Depends on: E8, E9, E11, D6, D7, D8
 - Owns: `features/focus/{FocusPage.tsx,FocusPage.test.tsx}`, `features/floater/{FloaterPage.tsx,FloaterPage.test.tsx}`; `verification/layout/{focusWindow,floaterWindow}.spec.ts` (break, warning and offer cases); `capabilities/{focus,floater}.json` and `lib_tests.rs` (their exact lists); `app/palette/{paletteCommands.ts,paletteCommands.test.ts}` ("Set intent"); close-out: `docs/specs/2026-11-12-session-cadence.md` (status implemented, Implementation status with each PR), `docs/ROADMAP.md` (row E done), `CONTEXT.md` (check E's terms).
@@ -259,7 +259,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Tests first: `focus_page_break_and_warning_modes`, `focus_page_secondary_action_per_state`, `floater_skip_break_and_keep_going`, `floater_break_and_warning_modes`, `focus_capability_exact_with_cadence`, `floater_capability_exact_with_cadence`, `palette_set_intent_only_in_focus`, `palette_set_intent_opens_field`.
 - Notes: sonnet. By eye (owner): the Focus window and the floater in break, warning, auto step and the offer, light and dark, at D's sizes.
 
-### E11: Break actions on FullScreenFocus and FloatingTimer (design system)
+### E11 (#343): Break actions on FullScreenFocus and FloatingTimer (design system)
 - Priority: 1
 - Depends on: none (any early slot; the plan puts it in wave 3)
 - Owns: `packages/ui/src/components/ui/full-screen-focus.{tsx,md,specimen.tsx,test.tsx}`, `packages/ui/src/components/ui/floating-timer.{tsx,md,specimen.tsx,test.tsx}`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts`.
