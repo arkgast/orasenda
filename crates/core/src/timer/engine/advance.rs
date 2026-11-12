@@ -29,7 +29,7 @@ impl Session {
         }
         let record = SessionRecord {
             id: id.clone(),
-            preset: *preset,
+            preset: preset.clone(),
             phase: *phase,
             planned_ms: *planned_ms,
             started_ms: *started_ms,

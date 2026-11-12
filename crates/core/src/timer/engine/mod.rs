@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{EndReason, Phase, Preset, PresetSpec, SessionId, SessionRecord, TimerError};
+use super::{EndReason, Phase, SessionId, SessionPreset, SessionRecord, TimerError};
 
 /// The live session. Ending is not a state: [`Session::advance`] and [`Session::stop`] return
 /// the [`SessionRecord`] and leave the engine [`Session::Idle`]. Serialized as the
@@ -17,8 +17,7 @@ pub enum Session {
     Idle,
     Running {
         id: SessionId,
-        preset: Preset,
-        spec: PresetSpec,
+        preset: SessionPreset,
         phase: Phase,
         started_ms: u64,
         planned_ms: u64,
@@ -26,8 +25,7 @@ pub enum Session {
     },
     Paused {
         id: SessionId,
-        preset: Preset,
-        spec: PresetSpec,
+        preset: SessionPreset,
         phase: Phase,
         started_ms: u64,
         planned_ms: u64,
@@ -37,21 +35,19 @@ pub enum Session {
 }
 
 impl Session {
-    /// Starts a focus session of `spec.focus_ms`. Refused with `AlreadyRunning` unless idle.
+    /// Starts a focus session of `preset.focus_ms()`. Refused with `AlreadyRunning` unless idle.
     pub fn start(
         &mut self,
         id: SessionId,
-        preset: Preset,
-        spec: PresetSpec,
+        preset: SessionPreset,
         now_ms: u64,
     ) -> Result<(), TimerError> {
         match self {
             Session::Idle => {
-                let planned_ms = spec.focus_ms;
+                let planned_ms = preset.focus_ms();
                 *self = Session::Running {
                     id,
                     preset,
-                    spec,
                     phase: Phase::Focus,
                     started_ms: now_ms,
                     planned_ms,
@@ -76,7 +72,6 @@ impl Session {
             Session::Running {
                 id,
                 preset,
-                spec,
                 phase,
                 started_ms,
                 planned_ms,
@@ -84,8 +79,7 @@ impl Session {
             } => {
                 *self = Session::Paused {
                     id: id.clone(),
-                    preset: *preset,
-                    spec: spec.clone(),
+                    preset: preset.clone(),
                     phase: *phase,
                     started_ms: *started_ms,
                     planned_ms: *planned_ms,
@@ -111,7 +105,6 @@ impl Session {
             Session::Paused {
                 id,
                 preset,
-                spec,
                 phase,
                 started_ms,
                 planned_ms,
@@ -122,8 +115,7 @@ impl Session {
                     paused_total_ms.saturating_add(now_ms.saturating_sub(*pause_started_ms));
                 *self = Session::Running {
                     id: id.clone(),
-                    preset: *preset,
-                    spec: spec.clone(),
+                    preset: preset.clone(),
                     phase: *phase,
                     started_ms: *started_ms,
                     planned_ms: *planned_ms,
@@ -173,7 +165,7 @@ impl Session {
         };
         let record = SessionRecord {
             id: id.clone(),
-            preset: *preset,
+            preset: preset.clone(),
             phase: *phase,
             planned_ms: *planned_ms,
             started_ms: *started_ms,

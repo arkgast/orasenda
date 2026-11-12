@@ -71,8 +71,7 @@ fn adversarial_instants_never_panic() {
     let _ = s.advance(u64::MAX);
     let mut s = Session::Paused {
         id: id("x"),
-        preset: Preset::Classic,
-        spec: spec(Preset::Classic),
+        preset: steady(),
         phase: Phase::Focus,
         started_ms: u64::MAX,
         planned_ms: u64::MAX,
@@ -107,11 +106,15 @@ fn progress_stays_in_unit_interval() {
     assert_eq!(s.view(T0 + 99 * MIN).remaining_ms, 0);
     // A zero-length plan (only reachable from a hand-edited snapshot) is not a NaN.
     let mut z = Session::Idle;
-    let zero = PresetSpec {
-        focus_ms: 0,
-        ..spec(Preset::Classic)
+    let zero = SessionPreset::Library {
+        id: PresetId("zero".into()),
+        name: "Zero".into(),
+        focus_min: 0,
+        break_min: 5,
+        long_break_min: 15,
+        rounds: 4,
     };
-    z.start(id("z"), Preset::Custom, zero, T0).unwrap();
+    z.start(id("z"), zero, T0).unwrap();
     let p = z.view(T0).progress;
     assert!((0.0..=1.0).contains(&p), "{p}");
 }
