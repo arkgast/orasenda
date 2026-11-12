@@ -167,3 +167,58 @@ test("focus_views_no_motion_when_reduced", async ({ page }, info) => {
   await openSpecimen(page, "FullScreenFocus");
   expect(await animatedElements(page)).toEqual([]);
 });
+
+const ACTION_MODES = ["plus-ten", "skip-break", "take-break", "keep-going"] as const;
+
+test("full_screen_focus_break_actions_fit_every_frame_without_growing_the_track", async ({
+  page,
+}) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES)
+    for (const mode of ACTION_MODES) {
+      const f = frame(page, mode, w, h);
+      const label = `${mode} ${w}x${h}`;
+      const over = (await overflows(f)).filter((line) => !line.includes("sr-only"));
+      expect(over, label).toEqual([]);
+      expect(await smallTargets(f), label).toEqual([]);
+      const row = await f.locator("[data-slot=full-screen-focus-controls]").boundingBox();
+      expect(row?.height, `${label} track`).toBeCloseTo(52, 0);
+      const inside = await f
+        .locator("[data-slot=full-screen-focus-controls] [data-slot=button]")
+        .evaluateAll((els, rowRect) => {
+          const r = rowRect as { x: number; width: number };
+          return els.every((el) => {
+            const b = el.getBoundingClientRect();
+            return b.left >= r.x - 1 && b.right <= r.x + r.width + 1;
+          });
+        }, row);
+      expect(inside, `${label} inside the row`).toBe(true);
+    }
+});
+
+test("full_screen_focus_break_actions_tab_after_end", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  const f = frame(page, "plus-ten", 1280, 720);
+  await section(f).focus();
+  for (const name of [
+    "Leave full screen",
+    "Pause session",
+    "End session",
+    "Add 10 minutes of focus",
+  ]) {
+    await pressTab(page);
+    const button = f.getByRole("button", { name });
+    await expect(button).toBeFocused();
+    await expectFocusRingVisible(button);
+  }
+  const offer = frame(page, "keep-going", 1280, 720);
+  await section(offer).focus();
+  for (const name of ["Leave full screen", "Keep going with Steady Focus", "Stop here"]) {
+    await pressTab(page);
+    await expect(offer.getByRole("button", { name })).toBeFocused();
+  }
+  await expect(offer.getByRole("button", { name: "Start focus" })).toHaveCount(0);
+  await expect(
+    frame(page, "skip-break", 1280, 720).getByRole("button", { name: "End break" }),
+  ).toBeVisible();
+});

@@ -13,6 +13,12 @@ export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
   onOpen?: () => void;
   /** The session ended: shows as idle, says "Session ended." once and offers Start. */
   ended?: boolean;
+  /** With `mode="break"`, "Skip break" takes Pause's slot. */
+  onSkipBreak?: () => void;
+  /** While idle, "Keep going" takes the Start pill's slot. */
+  onKeepGoing?: () => void;
+  /** The preset's name: the button is then named "Keep going with <name>". */
+  keepGoingName?: string;
   /** Every data-* attribute lands on the body, so the host marks the drag region without the component knowing Tauri. */
   [key: `data-${string}`]: string | undefined;
 }
@@ -40,6 +46,9 @@ export function FloatingTimer({
   onStart,
   onOpen,
   ended,
+  onSkipBreak,
+  onKeepGoing,
+  keepGoingName,
   remaining,
   remainingLabel,
   progress,
@@ -65,6 +74,8 @@ export function FloatingTimer({
   const data = Object.fromEntries(Object.entries(rest).filter(([key]) => key.startsWith("data-")));
   const shown = ended ? "idle" : mode;
   const quiet = shown === "idle";
+  const keepGoing = quiet && onKeepGoing !== undefined;
+  const skipBreak = shown === "break" && onSkipBreak !== undefined;
   const state = ended ? "Session ended" : WORD[shown];
   return (
     // biome-ignore lint/a11y/useSemanticElements: the README names a group; a fieldset would add a legend and form semantics
@@ -77,7 +88,11 @@ export function FloatingTimer({
       data-tall={tall ? "true" : undefined}
       role="group"
       aria-label={`Floating timer, ${state}`}
-      className="@container flex size-full min-h-floater-min-height min-w-floater-width max-w-floater-max-width max-h-floater-max-height items-center gap-2 rounded-md border border-line-strong bg-surface-raised px-3 text-ink shadow-raised"
+      className={cn(
+        "@container flex size-full min-h-floater-min-height min-w-floater-width max-w-floater-max-width max-h-floater-max-height items-center rounded-md border border-line-strong bg-surface-raised px-3 text-ink shadow-raised",
+        // Skip break is wider than Pause: the gaps tighten so the timer keeps its digits at 280 wide.
+        skipBreak ? "gap-1" : "gap-2",
+      )}
     >
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div
@@ -95,7 +110,7 @@ export function FloatingTimer({
             mode={shown}
             task={task}
           />
-          {quiet ? (
+          {quiet && !keepGoing ? (
             <span
               aria-hidden="true"
               className={cn("truncate text-body-sm", ended ? "text-ink" : "text-ink-muted")}
@@ -117,10 +132,24 @@ export function FloatingTimer({
       <p role="status" data-slot="floating-timer-status" className="sr-only">
         {ended ? "Session ended." : ""}
       </p>
-      {quiet ? (
+      {keepGoing ? (
+        <Button
+          variant="primary"
+          aria-label={keepGoingName ? `Keep going with ${keepGoingName}` : "Keep going"}
+          className="shrink-0"
+          onClick={onKeepGoing}
+        >
+          <Icon name="play" size="md" />
+          <span aria-hidden="true">Keep going</span>
+        </Button>
+      ) : quiet ? (
         <Button variant="primary" aria-label="Start focus" className="shrink-0" onClick={onStart}>
           <Icon name="play" size="md" />
           <span aria-hidden="true">Start</span>
+        </Button>
+      ) : skipBreak ? (
+        <Button variant="quiet" className="shrink-0 text-body-sm" onClick={onSkipBreak}>
+          Skip break
         </Button>
       ) : (
         <IconButton

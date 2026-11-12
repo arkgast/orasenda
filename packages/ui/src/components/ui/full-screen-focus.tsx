@@ -11,6 +11,16 @@ import { Kbd } from "./kbd";
 import { TimerRing, type TimerRingProps } from "./timer-ring";
 import { TimerStrip } from "./timer-strip";
 
+/** A quiet action beside Pause and End, as the host passes it ("+10 min", "Skip break", "Keep going"). */
+export interface SecondaryAction {
+  id: string;
+  /** The visible words. */
+  label: string;
+  /** The accessible name when it says more than the label ("Add 10 minutes of focus"). */
+  name?: string;
+  onSelect: () => void;
+}
+
 export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "stroke"> {
   /** Fires only after the leave Dialog is confirmed. */
   onExit: () => void;
@@ -24,6 +34,11 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
   singleKeys?: boolean;
   /** The session ended: shows "Session ended." and idle, with Start and the summary back. */
   ended?: boolean;
+  /**
+   * Zero to two quiet actions in the controls row, after End. Two only for the keep-going offer
+   * ("Keep going", "Stop here"): the first is quiet, the second ghost. Pause or Resume stays the only round primary.
+   */
+  secondaryActions?: ReadonlyArray<SecondaryAction>;
 }
 
 // Contract values from the README (the px of space-8, space-4, the fixed tracks and the intent line's
@@ -70,6 +85,8 @@ function measure(width: number, height: number): Geometry {
   return { layout, roomy, intent: layout === "ring" || track >= INTENT_MIN_TRACK };
 }
 
+const gapByActions = ["gap-6", "gap-4", "gap-2"] as const;
+
 function Caption({ keys, verb }: { keys: string; verb: string }): JSX.Element {
   return (
     <>
@@ -93,6 +110,7 @@ export function FullScreenFocus({
   summary,
   singleKeys,
   ended,
+  secondaryActions,
   ...ring
 }: FullScreenFocusProps): JSX.Element {
   const [leaving, setLeaving] = useState(false);
@@ -134,6 +152,9 @@ export function FullScreenFocus({
     event.stopPropagation();
     setLeaving(true);
   };
+  // The keep-going offer (two actions while idle) stands in for Start: "Keep going" starts the next session, and
+  // Start, "Keep going" and "Stop here" together would not fit the fixed track at the window minimum.
+  const offer = idle && (secondaryActions?.length ?? 0) >= 2;
   const startKeys = singleKeys ? "Space Meta+Enter" : "Meta+Enter";
 
   return (
@@ -196,9 +217,13 @@ export function FullScreenFocus({
         </div>
         <div
           data-slot="full-screen-focus-controls"
-          className="flex h-control-lg shrink-0 items-center justify-center gap-6"
+          className={cn(
+            "flex h-control-lg w-full shrink-0 items-center justify-center",
+            // Room for the host's actions without growing the fixed track: the gap tightens with each one.
+            gapByActions[Math.min(secondaryActions?.length ?? 0, 2)],
+          )}
         >
-          {idle ? (
+          {offer ? null : idle ? (
             <Button
               variant="primary"
               size="lg"
@@ -220,13 +245,24 @@ export function FullScreenFocus({
                 onClick={paused ? onResume : onPause}
               />
               <IconButton
-                label="End session"
+                label={mode === "break" ? "End break" : "End session"}
                 icon={<Icon name="stop" />}
                 shortcut="⌘."
                 onClick={onEnd}
               />
             </>
           )}
+          {secondaryActions?.slice(0, 2).map((action, index) => (
+            <Button
+              key={action.id}
+              variant={index === 0 ? "quiet" : "ghost"}
+              aria-label={action.name}
+              onClick={action.onSelect}
+              className="shrink-0"
+            >
+              {action.name ? <span aria-hidden="true">{action.label}</span> : action.label}
+            </Button>
+          ))}
         </div>
         <p
           data-slot="full-screen-focus-caption"
