@@ -20,6 +20,11 @@ const STATES = [
   { name: "paused", scenario: "paused", primary: /Resume session/ },
   { name: "idle", scenario: "idle", primary: /Start focus/ },
   { name: "ended", scenario: "ended", primary: /Start focus/ },
+  { name: "break", scenario: "breakShort", primary: /Pause break/ },
+  { name: "warning", scenario: "warning", primary: /Pause session/ },
+  { name: "autoStep", scenario: "autoStep", primary: /Pause session/ },
+  { name: "intent", scenario: "intentSet", primary: /Pause session/ },
+  { name: "offer", scenario: "keepGoing", primary: /Keep going/ },
 ] as const;
 // The menu bar above and the Dock below, as a real display reports them. A 360x240 window is
 // smaller than any display's visible frame, so it has no inset case (recorded in the PR body).
@@ -38,7 +43,11 @@ async function openFocus(
   }
   await page.goto(`${APP_URL}/layout.html?${query}`);
   await page.getByRole("region", { name: "Full-screen focus" }).waitFor();
-  await page.getByRole("button", { name: /Start focus|Pause session|Resume session/ }).waitFor();
+  await page
+    .getByRole("button", {
+      name: /Start focus|Pause session|Resume session|Pause break|Keep going/,
+    })
+    .waitFor();
   if (scenario === "ended") {
     await page.waitForFunction(
       () =>

@@ -2,6 +2,7 @@ import { CommandPalette, type NavPage } from "@orasenda/ui";
 import { type ReactElement, useEffect, useMemo, useState } from "react";
 import { tick, untick } from "../../features/settings/notificationsToggle";
 import { openFocusView } from "../../features/today/focusView";
+import { requestIntentField } from "../../features/today/intentEvents";
 import { usePresets } from "../../features/today/presets";
 import type { DisplayInfo, Settings, Theme, TimerView_Serialize } from "../../ipc/bindings";
 import { commands, events } from "../../ipc/bindings";
@@ -97,6 +98,11 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         return logged("timer_resume", commands.timerResume());
       case "end":
         return logged("timer_stop", commands.timerStop());
+      case "intent":
+        onNavigate("today");
+        // After the palette has unmounted and handed focus back to its opener; asked sooner, the
+        // restored focus would blur the new field and close it at once.
+        return void setTimeout(requestIntentField, 0);
       case "fullScreen":
         return void openFocusView({ kind: "fullScreen", displayId: arg });
       case "floater":

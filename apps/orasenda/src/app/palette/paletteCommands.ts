@@ -42,12 +42,15 @@ function sessionCommands(input: PaletteInput): Command[] {
       { id: "quick", label: "Just 2 minutes", shortcut: "⇧⌘↩" },
     ];
   }
-  return [
+  const rows: Command[] = [
     view.state === "paused"
       ? { id: "resume", label: "Resume session" }
       : { id: "pause", label: "Pause session" },
     { id: "end", label: "End session", shortcut: "⌘." },
   ];
+  // The intent names a focus: not in a break, not while idle (Today's field opens the same way).
+  if (view.phase === "focus") rows.push({ id: "intent", label: "Set intent" });
+  return rows;
 }
 
 function focusViewCommands(displays: DisplayInfo[]): Command[] {

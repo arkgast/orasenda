@@ -20,7 +20,7 @@ import { Controls } from "./Controls";
 import { FocusViewButton } from "./FocusViewButton";
 import { openFocusView } from "./focusView";
 import { type IntentDone, IntentField } from "./IntentField";
-import { onIntentFieldRequest } from "./intentEvents";
+import { claimIntentRequest, onIntentFieldRequest } from "./intentEvents";
 import { type Notice, noticeAfter } from "./notices";
 import { PresetSummary } from "./PresetSummary";
 import { selectedPreset, usePresets } from "./presets";
@@ -134,10 +134,16 @@ export function Today({ onNavigate }: Props) {
   useEffect(
     () =>
       onIntentFieldRequest(() => {
-        if (canEditRef.current) setEditingIntent(true);
+        if (!canEditRef.current) return false;
+        setEditingIntent(true);
+        return true;
       }),
     [],
   );
+  // A request that arrived before the timer's first reply is held; take it once editing is possible.
+  useEffect(() => {
+    if (canEditIntent && claimIntentRequest()) setEditingIntent(true);
+  }, [canEditIntent]);
   const statusBox = useRef<HTMLDivElement>(null);
   const refocusStatus = useRef(false);
   useEffect(() => {

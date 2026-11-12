@@ -8,7 +8,9 @@ import { watchSettingsChanged } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useSurfaceTimer } from "../timer/useSurfaceTimer";
 import { PresetSummary } from "../today/PresetSummary";
+import { selectedPreset, usePresets } from "../today/presets";
 import { commandFailure } from "../today/statusLine";
+import { cadenceActions } from "./cadenceActions";
 import { useInsets } from "./useInsets";
 import "./focus.css";
 
@@ -116,6 +118,22 @@ export function FocusPage() {
   const end = timerCommand("timer_stop", commands.timerStop);
   const pause = timerCommand("timer_pause", commands.timerPause);
   const resume = timerCommand("timer_resume", commands.timerResume);
+  const extend = timerCommand("timer_extend", commands.timerExtend);
+  const takeBreak = timerCommand("timer_take_break", commands.timerTakeBreak);
+  const dismissOffer = timerCommand("timer_dismiss_offer", commands.timerDismissOffer);
+  const presets = usePresets();
+  const actions = cadenceActions(
+    view,
+    {
+      extend,
+      takeBreak,
+      // Skip break is End: the same command Today's button sends.
+      skipBreak: end,
+      keepGoing: start,
+      stopHere: dismissOffer,
+    },
+    selectedPreset(presets, settings)?.name ?? null,
+  );
 
   useShortcuts([
     { key: "Enter", meta: true, when: () => idle && view !== null, run: start },
@@ -152,6 +170,10 @@ export function FocusPage() {
         remainingLabel={shown?.remainingLabel ?? ""}
         progress={shown?.progress ?? 0}
         mode={shown?.mode ?? "idle"}
+        phase={shown?.phase ?? "focus"}
+        task={shown?.intent ?? undefined}
+        offer={shown?.state === "idle" && shown.offer === "keepGoing"}
+        secondaryActions={actions}
         clock={clock.status === "ok" ? clock.clock : undefined}
         ended={ended}
         status={failed && !view ? UNREADABLE : (problem ?? undefined)}

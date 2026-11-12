@@ -1,6 +1,6 @@
 # Session cadence (P1 sub-project E) — Spec
 
-- Status: approved (owner, 2026-11-12); amended the same day by the owner's auto-continue decision ([Auto-continue](#auto-continue))
+- Status: implemented (2026-11-12); approved (owner, 2026-11-12); amended the same day by the owner's auto-continue decision ([Auto-continue](#auto-continue))
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP P1, row E](../ROADMAP.md#p1-sub-projects), [#134](https://github.com/arkgast/orasenda/issues/134) (the re-cut and the amendment rule), [SPEC §1 and §2.1](../SPEC.md), [spec A](2026-11-08-focus-session-loop.md), [Settings spec (B)](2026-11-09-settings.md), [P1 components spec](2026-11-10-p1-components.md) ("E's components", line 148; "E's intent line", line 150), [Today redesign spec (C)](2026-11-11-today-redesign.md), [ADR-002](../DECISIONS.md#adr-002-local-storage-ready-for-sync), [ADR-011](../DECISIONS.md#adr-011-time-and-scheduling), [ADR-012](../DECISIONS.md#adr-012-store-crate-api), [ADR-013](../DECISIONS.md#adr-013-one-rust-state-many-surfaces), [ADR-014](../DECISIONS.md#adr-014-settings-one-object-one-save-chain-applied-in-rust), [ADR-015](../DECISIONS.md#adr-015-code-first-design-system-on-shadcn-tailwind-and-radix), [CONTEXT.md](../../CONTEXT.md). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,menu-bar-timer,floating-timer,full-screen-focus,inline-notice,start-button,popover-menu,mode-chip,wellness-note}.md`. Runs in parallel with D (Focus views); see [Shared with D](#shared-with-d).
@@ -331,5 +331,18 @@ The floater and full screen (E's last task) must show the same offer as Today (A
 
 ## Implementation status
 Planned as seven tasks: (1) preset library, core to IPC; (2) preset library UI (Settings, Today, menu bar; B's settings-chain tests in its Touches); (3) cadence engine, `sessions_today`, settings keys, auto-continue steps and `timer_take_break`; (4) Today and menu-bar states (the check-in included), notifications, Settings rows (Keep going automatically, Longest focus), README updates; (5) intent line; (6) break suggestions, with a verification step: a line ships only with a verified source or labelled "Optional"/"Experimental", and nothing unverified is stated as fact; (7) floater and full-screen states, after D.
-- [ ] Plan
-- [ ] Issues
+
+All merged 2026-11-12; the by-eye checks of the last task and the VoiceOver passes (#326) stay with the owner.
+- [x] E1 Preset library: core types and store (#340, PR #352)
+- [x] E2 Move-only split of the engine and its tests (#341, PR #356)
+- [x] E3 Break suggestions: the list, the pick, the source check (#342, PR #357)
+- [x] E11 Break actions on FullScreenFocus and FloatingTimer (#343, PR #358; design system)
+- [x] E4 Preset library: the switch (#344, PR #360)
+- [x] E5 Preset editing and Settings › Timer list and editor (#345, PR #361)
+- [x] E6 Cadence engine (#346, PR #362)
+- [x] E7 Cadence service and IPC (#347, PR #364)
+- [x] E8 Today: cadence states and the intent line (#348, PR #369)
+- [x] E9 Menu bar, notifications and the cadence Settings rows (#349, PR #370)
+- [x] E10 Floater and full-screen states, "Set intent", close-out (#350, PR #375)
+- [x] Plan
+- [x] Issues
