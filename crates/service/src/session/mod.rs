@@ -19,7 +19,7 @@ mod settings;
 mod tests;
 mod view;
 
-pub use effects::Effects;
+pub use effects::{Effects, Notice};
 pub use frames::{run_frame_get, run_frame_load, run_frame_save};
 pub use run::{
     current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_preset_add,

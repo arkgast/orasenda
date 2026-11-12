@@ -16,6 +16,9 @@ pub trait Host: Clone + Send + Sync + 'static {
     fn view_gate(&self) -> Option<&ViewGate>;
     fn notifier(&self) -> Arc<dyn Notifier>;
     fn now_ms(&self) -> u64;
+    /// Whether Orasenda is the active app (`NSApplication.isActive`), not whether some window
+    /// has focus. The notification for the two-minute warning stays quiet while it is.
+    fn app_active(&self) -> bool;
     /// Emits `timer-tick`. An emit error is logged, never fatal.
     fn emit_timer_tick(&self, view: &TimerView);
     /// Emits `timer-milestone`. An emit error is logged, never fatal.

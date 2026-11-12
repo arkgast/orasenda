@@ -152,3 +152,35 @@ test("open_settings_failure_adds_find_line", async () => {
   );
   expect(error).toHaveBeenCalled();
 });
+
+test("two_minutes_checkbox_asks_when_not_determined", async () => {
+  const { backend } = await openSettings({
+    timer_state: view({ notifications: "notDetermined" }),
+    settings_get: () => ({ ...SETTINGS, notifySessionEnd: false }),
+    notifications_request: () => Promise.resolve("granted"),
+  });
+  const box = screen.getByRole("checkbox", { name: "Two minutes before the end" });
+  expect(box).not.toBeChecked();
+  fireEvent.click(box);
+  await settle();
+  expect(argsOf(backend.calls, "notifications_request")).toHaveLength(1);
+  const saved = argsOf(backend.calls, "settings_set") as { settings: typeof SETTINGS }[];
+  expect(saved.at(-1)?.settings.notifyTwoMinutes).toBe(true);
+  // The session-end box is the person's own choice: asking for this one leaves it alone.
+  expect(saved.at(-1)?.settings.notifySessionEnd).toBe(false);
+  expect(screen.getByText("Only while Orasenda is in the background.")).toBeInTheDocument();
+});
+
+test("two_minutes_checkbox_saves_directly_when_granted_and_unticks", async () => {
+  const { backend } = await openSettings({
+    timer_state: view({ notifications: "granted" }),
+    settings_get: () => ({ ...SETTINGS, notifyTwoMinutes: true }),
+  });
+  const box = screen.getByRole("checkbox", { name: "Two minutes before the end" });
+  expect(box).toBeChecked();
+  fireEvent.click(box);
+  await settle();
+  expect(argsOf(backend.calls, "notifications_request")).toHaveLength(0);
+  const saved = argsOf(backend.calls, "settings_set") as { settings: typeof SETTINGS }[];
+  expect(saved.at(-1)?.settings.notifyTwoMinutes).toBe(false);
+});

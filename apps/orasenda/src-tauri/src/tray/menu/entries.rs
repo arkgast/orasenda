@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::ipc::{DisplayInfo, Mode, TimerView};
+use orasenda_core::Phase;
 
 fn item(id: &'static str, label: &str) -> MenuEntry {
     MenuEntry::Item {
@@ -88,27 +89,26 @@ pub(crate) fn menu_items(
                 .collect();
             presets.push(MenuEntry::Separator);
             presets.push(item(EDIT_TIMES, "Edit presets in Settings…"));
-            vec![
+            let mut idle = Vec::new();
+            if view.offer.is_some() {
+                idle.extend([
+                    item(KEEP_GOING, KEEP_GOING),
+                    item(STOP_HERE, STOP_HERE),
+                    MenuEntry::Separator,
+                ]);
+            }
+            idle.extend([
                 item(START, &format!("Start focus · {} min", next.focus_min())),
                 item(JUST_TWO, "Just 2 minutes"),
                 MenuEntry::Submenu {
                     label: "Preset",
                     entries: presets,
                 },
-            ]
+            ]);
+            idle
         }
-        Mode::Focus | Mode::Break | Mode::Warning => vec![
-            MenuEntry::Header,
-            MenuEntry::Separator,
-            item(PAUSE, PAUSE),
-            item(END_SESSION, END_SESSION),
-        ],
-        Mode::Paused => vec![
-            MenuEntry::Header,
-            MenuEntry::Separator,
-            item(RESUME, RESUME),
-            item(END_SESSION, END_SESSION),
-        ],
+        Mode::Paused => session_entries(view, true),
+        Mode::Focus | Mode::Break | Mode::Warning => session_entries(view, false),
     };
     entries.extend(focus_entries(focus));
     entries.extend([
@@ -121,5 +121,36 @@ pub(crate) fn menu_items(
         entries.extend([item(DEV_PANEL, "Developer panel"), MenuEntry::Separator]);
     }
     entries.extend([with_accelerator(QUIT, QUIT, "CmdOrCtrl+Q")]);
+    entries
+}
+
+/// The header and the session actions of a running or paused session: a break, a focus
+/// in an automatic step (a break one click away instead of "+10 min") or a plain focus.
+fn session_entries(view: &TimerView, paused: bool) -> Vec<MenuEntry> {
+    let mut entries = vec![MenuEntry::Header, MenuEntry::Separator];
+    if view.phase == Phase::Break {
+        let pause = if paused {
+            item(RESUME_BREAK, RESUME_BREAK)
+        } else {
+            item(PAUSE_BREAK, PAUSE_BREAK)
+        };
+        entries.push(pause);
+        if view.can_extend {
+            entries.push(item(BACK_TO_FOCUS, BACK_TO_FOCUS));
+        }
+        entries.push(item(SKIP_BREAK, SKIP_BREAK));
+        return entries;
+    }
+    entries.push(if paused {
+        item(RESUME, RESUME)
+    } else {
+        item(PAUSE, PAUSE)
+    });
+    if !paused && view.check_in.is_some() {
+        entries.push(item(TAKE_BREAK, TAKE_BREAK));
+    } else if view.can_extend {
+        entries.push(item(ADD_TEN, ADD_TEN));
+    }
+    entries.push(item(END_SESSION, END_SESSION));
     entries
 }

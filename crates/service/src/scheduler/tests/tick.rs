@@ -145,7 +145,11 @@ fn launch_status_read_publishes_one_tick_when_changed_and_none_when_not() {
 
 #[test]
 fn notification_posted_only_for_completed_when_granted_and_enabled() {
-    let expected = Event::Posted("Focus session complete.".into(), "Time for a break.".into());
+    // One advance across the focus and its break: the latest state, the break's end.
+    let expected = Event::Posted(
+        "Break over.".into(),
+        "Start focus when you're ready.".into(),
+    );
     let completed = launched(NotificationStatus::Granted);
     run_action_on(&completed, start()).expect("starts");
     completed.set_now(T0 + CLASSIC_END_MS);

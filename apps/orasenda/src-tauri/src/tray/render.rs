@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
+use orasenda_core::BreakKind;
 use tauri::image::Image;
 
 use super::menu::{FocusItems, MenuEntry, NextSession};
@@ -13,6 +14,8 @@ use crate::runtime::session::NativeSurface;
 const FOCUS_ICON: Image<'static> = tauri::include_image!("src/tray/icons/focus.png");
 const PAUSED_ICON: Image<'static> = tauri::include_image!("src/tray/icons/paused.png");
 const IDLE_ICON: Image<'static> = tauri::include_image!("src/tray/icons/idle.png");
+const WARNING_ICON: Image<'static> = tauri::include_image!("src/tray/icons/warning.png");
+const BREAK_ICON: Image<'static> = tauri::include_image!("src/tray/icons/break.png");
 
 /// The menu-bar glyph: the mode's shape, never a colour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,6 +23,10 @@ pub(crate) enum Glyph {
     Focus,
     Paused,
     Idle,
+    /// The triangle: the last two minutes.
+    Warning,
+    /// The half circle: a break.
+    Break,
 }
 
 impl Glyph {
@@ -28,6 +35,8 @@ impl Glyph {
             Glyph::Focus => FOCUS_ICON,
             Glyph::Paused => PAUSED_ICON,
             Glyph::Idle => IDLE_ICON,
+            Glyph::Warning => WARNING_ICON,
+            Glyph::Break => BREAK_ICON,
         }
     }
 }
@@ -36,33 +45,40 @@ impl Glyph {
 /// is paused (frozen digits), no title and the hollow circle when idle.
 pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph) {
     match view.mode {
-        // Until the menu-bar task draws them, a break and the warning look like a focus.
-        Mode::Focus | Mode::Break | Mode::Warning => (Some(view.remaining.clone()), Glyph::Focus),
+        Mode::Focus => (Some(view.remaining.clone()), Glyph::Focus),
+        Mode::Warning => (Some(view.remaining.clone()), Glyph::Warning),
+        Mode::Break => (Some(view.remaining.clone()), Glyph::Break),
         Mode::Paused => (Some(view.remaining.clone()), Glyph::Paused),
         Mode::Idle => (None, Glyph::Idle),
+    }
+}
+
+/// The mode word the label and the header lead with; `None` when idle.
+fn mode_word(view: &TimerView) -> Option<&'static str> {
+    match view.mode {
+        Mode::Focus => Some("Focus"),
+        Mode::Warning => Some("Almost up"),
+        Mode::Break if view.break_kind == Some(BreakKind::Long) => Some("Long break"),
+        Mode::Break => Some("Break"),
+        Mode::Paused => Some("Paused"),
+        Mode::Idle => None,
     }
 }
 
 /// The item's spoken name (design system `MenuBarTimer`, "Menu-bar glyphs"): the mode word
 /// and `remainingLabel`, or "No session" when idle. Set as the tooltip and accessibility label.
 pub(crate) fn tray_label(view: &TimerView) -> String {
-    let mode = match view.mode {
-        Mode::Focus | Mode::Break | Mode::Warning => "Focus",
-        Mode::Paused => "Paused",
-        Mode::Idle => return "No session".to_string(),
-    };
-    format!("{mode}, {} remaining", view.remaining_label)
+    match mode_word(view) {
+        Some(mode) => format!("{mode}, {} remaining", view.remaining_label),
+        None => "No session".to_string(),
+    }
 }
 
 /// The disabled status header at the top of the running and paused menus, or `None` when
 /// idle: "Focus · 18 minutes left · ends 15:20", "Paused · 18 minutes left". The minutes
 /// round up, and one reads "1 minute left". It changes at most once a minute.
 pub(crate) fn header_text(view: &TimerView) -> Option<String> {
-    let mode = match view.mode {
-        Mode::Focus | Mode::Break | Mode::Warning => "Focus",
-        Mode::Paused => "Paused",
-        Mode::Idle => return None,
-    };
+    let mode = mode_word(view)?;
     let minutes = view.remaining_ms.div_ceil(60_000).max(1);
     let left = if minutes == 1 {
         "1 minute left".to_string()

@@ -98,6 +98,7 @@ impl SessionService {
                 }
                 Milestone::BreakStarted => {
                     changed = true;
+                    outcome.advanced_break = true;
                     self.break_began(focus_id.clone(), now_ms, outcome);
                 }
                 Milestone::Warned => {

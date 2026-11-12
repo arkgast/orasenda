@@ -15,10 +15,10 @@ The macOS menu-bar item is a native `NSStatusItem`, which holds an image and a t
 | `focus` | filled circle | `remaining` |
 | `paused` | two vertical bars | `remaining`, frozen |
 | `idle` | hollow circle | none: no digits without a session |
-| `warning` (later) | triangle | `remaining` |
-| `break` (later) | half circle | `remaining` |
+| `warning` | triangle | `remaining` |
+| `break` | half circle | `remaining` |
 
-- The first focus-session release draws `focus`, `paused` and `idle`; `warning` and `break` come with breaks and the two-minute warning.
+- All five glyphs are drawn: `focus`, `paused`, `idle`, `warning` (the last two minutes of a focus or a break) and `break`. Each is set with `set_icon_with_as_template`, so none loses its template flag.
 - Glyphs are **template images**: black with alpha only, so macOS tints them for the light and dark menu bar, the selected state and Increase Contrast. Never colour them; the mode is told by the shape, never by hue.
 - `focus` uses the static filled circle from the mode shapes, not the component's draining ring: a template image does not animate, and the digits carry the progress.
 - Size: an 18×18 pt canvas, shipped as one 36×36 px image (`tray-icon` sizes the image to 18 pt high). The shape fills the centre 14×14 pt (28×28 px), matching `icon-md` beside the digits; the hollow circle's stroke is 1.5/10 of the shape (about 4 px in the asset), as in the component.
@@ -33,7 +33,10 @@ The menu has no chip, so a disabled header line carries the state word. Minutes 
 | --- | --- |
 | idle | "No session" |
 | running | "Focus · 19 minutes left · ends 15:20" (at 18:42); "Almost up · 2 minutes left · ends 15:20" (at 01:48) |
+| break | "Break · 4 minutes left · ends 14:30"; "Long break · 14 minutes left · ends 14:40" |
 | paused | "Paused · 19 minutes left" (at 18:42) |
+
+Items by state, after the header: focus: Pause session, End session; the last two minutes add "Add 10 minutes" while it is on offer; in an automatic step "Take a break" replaces it; a break: Pause break (Resume break when paused), "Back to focus · 10 min" while on offer, Skip break. After a short session ends, the idle menu leads with "Keep going" and "Stop here".
 
 - In every state the menu shows ⌃⌥F as inert text, a Full screen submenu with one item per display, and "Hide floating timer" as a toggle.
 - Commands live in this native menu, never in a webview popover.

@@ -268,6 +268,8 @@ pub struct HostInner {
     pub log: Log,
     /// How many host hooks that must run unlocked found the service locked.
     pub under_lock: std::sync::atomic::AtomicUsize,
+    /// What `Host::app_active` answers; false by default (Orasenda in the background).
+    pub active: std::sync::atomic::AtomicBool,
 }
 
 /// A recording [`Host`]: emits and renders go to the log.
@@ -310,6 +312,7 @@ impl TestHost {
             now: AtomicU64::new(T0),
             log,
             under_lock: std::sync::atomic::AtomicUsize::new(0),
+            active: std::sync::atomic::AtomicBool::new(false),
         }))
     }
 
@@ -323,6 +326,11 @@ impl TestHost {
 
     pub fn set_now(&self, now_ms: u64) {
         self.0.now.store(now_ms, Ordering::SeqCst);
+    }
+
+    /// Makes Orasenda the active app (or not).
+    pub fn set_active(&self, active: bool) {
+        self.0.active.store(active, Ordering::SeqCst);
     }
 
     pub fn log(&self) -> &Log {
@@ -345,6 +353,10 @@ impl Host for TestHost {
 
     fn notifier(&self) -> Arc<dyn Notifier> {
         self.0.notifier.clone()
+    }
+
+    fn app_active(&self) -> bool {
+        self.0.active.load(Ordering::SeqCst)
     }
 
     fn now_ms(&self) -> u64 {

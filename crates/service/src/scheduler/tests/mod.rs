@@ -1,5 +1,6 @@
 //! The scheduler tests, against the recording host.
 
+mod notify_cadence;
 mod publish;
 mod tick;
 

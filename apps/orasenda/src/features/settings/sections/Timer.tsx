@@ -2,6 +2,7 @@ import { SettingsRow } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "../../../ipc/bindings";
 import { selectedPreset } from "../../today/presets";
 import type { PresetEditing } from "../usePresets";
+import { type CadenceChange, CadenceRows } from "./CadenceRows";
 import { PresetList } from "./PresetList";
 
 /** The selected preset's name: the Settings index value and the failure line's "Back to". */
@@ -21,8 +22,10 @@ type Props = {
   editLocked: boolean;
   disabledReason?: string;
   presetStatus?: string;
+  cadenceStatus?: string;
   editor: PresetEditing;
   onPreset: (presetId: string) => void;
+  onCadence: CadenceChange;
 };
 
 export function Timer({
@@ -34,8 +37,10 @@ export function Timer({
   editLocked,
   disabledReason,
   presetStatus,
+  cadenceStatus,
   editor,
   onPreset,
+  onCadence,
 }: Props) {
   const selected = selectedPreset(presets, settings);
   return (
@@ -67,6 +72,14 @@ export function Timer({
           onPreset={onPreset}
         />
       </SettingsRow>
+      <CadenceRows
+        settings={settings}
+        selected={selected}
+        disabled={disabled}
+        disabledReason={disabledReason}
+        status={cadenceStatus}
+        onChange={onCadence}
+      />
     </section>
   );
 }

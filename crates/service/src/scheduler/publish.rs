@@ -3,18 +3,14 @@
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::PoisonError;
 
-use orasenda_core::{EndReason, EngineState, NotificationStatus};
+use orasenda_core::{EngineState, NotificationStatus};
 
 use super::Host;
 use crate::api::TimerView;
-use crate::session::{Effects, lock};
-
-/// The end notification (spec: Notification).
-const END_TITLE: &str = "Focus session complete.";
-const END_BODY: &str = "Time for a break.";
+use crate::session::{Effects, Notice, lock};
 
 /// Carries out `effects` after the service lock is released, in this order: the view and
-/// the surfaces, the theme (when a recovered read changed it), `settings-changed` (when owed), the end notification, the guard drop, the
+/// the surfaces, the theme (when a recovered read changed it), `settings-changed` (when owed), the notification, the guard drop, the
 /// milestones.
 pub fn publish<H: Host>(host: &H, effects: Effects) {
     let Effects {
@@ -22,8 +18,7 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         was_idle,
         store_changed,
         milestones,
-        ended,
-        notify_session_end,
+        notice,
         drop_after_unlock,
         settings_changed,
         presets_changed,
@@ -45,9 +40,11 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     if let Some(settings) = &settings_changed {
         host.emit_settings_changed(settings);
     }
-    let completed = ended.is_some_and(|record| record.end_reason == EndReason::Completed);
-    if completed && notify_session_end {
-        notify_end(host);
+    // Read now, not under the lock: the answer is the app's, and it may change any time.
+    if let Some(notice) = notice
+        && !(notice.two_minutes && host.app_active())
+    {
+        notify(host, notice);
     }
     drop(drop_after_unlock);
     for milestone in &milestones {
@@ -66,14 +63,14 @@ pub fn publish_caught<H: Host>(host: &H, effects: Effects) {
 
 /// Re-reads the status off-lock (a permission granted later in System Settings counts),
 /// publishes a change, then posts when granted.
-fn notify_end<H: Host>(host: &H) {
+fn notify<H: Host>(host: &H, notice: Notice) {
     let notifier = host.notifier();
     let status = notifier.status();
     store_status(host, status);
     if status == NotificationStatus::Granted
-        && let Err(error) = notifier.post(END_TITLE, END_BODY)
+        && let Err(error) = notifier.post(notice.title, notice.body)
     {
-        eprintln!("notifier: could not post the end notification: {error}");
+        eprintln!("notifier: could not post a notification: {error}");
     }
 }
 
