@@ -6,6 +6,7 @@ use specta::Type;
 pub mod engine;
 pub mod format;
 pub mod preset;
+pub mod suggestions;
 
 pub use engine::Session;
 pub use format::{format_clock, format_remaining, spoken_remaining};
