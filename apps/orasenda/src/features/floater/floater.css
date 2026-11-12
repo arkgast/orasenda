@@ -1,8 +1,8 @@
 /* The floating timer's page. The panel is the whole window: the component owns the fill, the
-   edge and the shadow, so the page itself stays clear. Tokens only. */
+   edge and the shadow, so the page behind it takes the panel's fill (the webview is opaque). Tokens only. */
 html,
 body {
-  background: var(--clear);
+  background: var(--surface-raised);
   block-size: 100%;
   overflow: hidden;
 }
@@ -11,20 +11,4 @@ body {
   position: fixed;
   inset: 0;
   display: grid;
-}
-
-/* The one line when no timer can be read: the panel's fill, radius and shadow. */
-.app-floater-unreadable {
-  display: flex;
-  align-items: center;
-  padding-inline: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-raised);
-  color: var(--ink);
-  font: var(--type-body-sm);
-}
-
-.app-floater-unreadable p {
-  margin: 0;
 }

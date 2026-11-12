@@ -43,7 +43,7 @@ test("floater_follows_the_saved_theme", async () => {
 test("floater_renders_the_view_as_a_floating_timer_with_a_drag_region", async () => {
   await mount();
   const group = screen.getByRole("group", { name: "Floating timer, Focus" });
-  expect(group).toHaveAttribute("data-tauri-drag-region");
+  expect(group).toHaveAttribute("data-tauri-drag-region", "deep");
   expect(group).toHaveTextContent("24:59");
   expect(screen.getByRole("button", { name: "Pause session" })).toBeVisible();
   expect(screen.getByRole("main", { name: "Floating timer" })).toBeVisible();

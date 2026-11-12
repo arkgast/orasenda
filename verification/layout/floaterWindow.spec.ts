@@ -88,7 +88,7 @@ for (const size of SIZES) {
       // The drag region is the body, and there is no End or Close inside the panel.
       await expect(page.getByRole("group", { name: group })).toHaveAttribute(
         "data-tauri-drag-region",
-        "",
+        "deep",
       );
       await expect(page.getByRole("button", { name: /^(end|stop|close)/i })).toHaveCount(0);
 

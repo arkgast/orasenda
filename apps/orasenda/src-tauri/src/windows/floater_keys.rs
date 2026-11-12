@@ -82,7 +82,7 @@ mod mac {
         static MONITOR: RefCell<Option<KeyMonitor>> = const { RefCell::new(None) };
     }
 
-    fn action_of(key: FloaterKey) -> KeyAction {
+    pub(super) fn action_of(key: FloaterKey) -> KeyAction {
         match key {
             FloaterKey::Space => KeyAction::TogglePause,
             FloaterKey::Return => KeyAction::OpenOrasenda,
@@ -116,9 +116,12 @@ mod mac {
                 // SAFETY: the caller's contract.
                 unsafe { appkit::install_floater_key_monitor(ns_window, wrapped) }
             },
-        )?;
-        if let Some(monitor) = installed {
-            MONITOR.with(|slot| *slot.borrow_mut() = Some(monitor));
+        );
+        // The floater stays usable by mouse without the keys: a failed install is logged only.
+        match installed {
+            Ok(Some(monitor)) => MONITOR.with(|slot| *slot.borrow_mut() = Some(monitor)),
+            Ok(None) => {}
+            Err(error) => eprintln!("floater keys: could not install the key monitor: {error:?}"),
         }
         Ok(())
     }
@@ -217,7 +220,23 @@ mod tests {
         }
         // The same six actions the commands and menus run, once each, in order.
         assert_eq!(*performed.borrow(), MONITOR_KEYS);
-        assert_eq!(MONITOR_KEYS.len(), 6);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn floater_keys_map_to_their_actions() {
+        use orasenda_platform_macos::windows::FloaterKey;
+        let expected = [
+            (FloaterKey::Space, KeyAction::TogglePause),
+            (FloaterKey::Return, KeyAction::OpenOrasenda),
+            (FloaterKey::Escape, KeyAction::Close),
+            (FloaterKey::FullScreen, KeyAction::FullScreen),
+            (FloaterKey::FloatingTimer, KeyAction::FloatingTimer),
+            (FloaterKey::Commands, KeyAction::Commands),
+        ];
+        for (key, action) in expected {
+            assert_eq!(super::mac::action_of(key), action, "{key:?}");
+        }
     }
 
     #[test]

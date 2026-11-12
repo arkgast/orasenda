@@ -10,10 +10,13 @@ import "./floater.css";
 // below stay but never see the keys.
 
 /** A command's outcome: a typed error and a thrown one both end in the console, never silently. */
-async function run(name: string, call: () => Promise<{ status: string } | unknown>): Promise<void> {
+async function run(
+  name: string,
+  call: () => Promise<{ status: "ok" } | { status: "error"; error: unknown }>,
+): Promise<void> {
   try {
-    const result = (await call()) as { status?: string; error?: unknown } | null;
-    if (result && result.status === "error") console.error(`${name} failed`, result.error);
+    const result = await call();
+    if (result.status === "error") console.error(`${name} failed`, result.error);
   } catch (error: unknown) {
     console.error(`${name} failed`, error);
   }
@@ -45,7 +48,9 @@ export function FloaterPage() {
   useTheme();
   const { view, ended, failed } = useSurfaceTimer();
   const latest = useRef({ view, ended });
-  latest.current = { view, ended };
+  useEffect(() => {
+    latest.current = { view, ended };
+  });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -90,8 +95,14 @@ export function FloaterPage() {
 
   if (failed && !view) {
     return (
-      <main aria-label="Floating timer" className="app-floater" data-tauri-drag-region="">
-        <div className="app-floater-unreadable">
+      // biome-ignore lint/a11y/noNoninteractiveElementInteractions: the panel's context menu is the host's, on the landmark
+      <main
+        aria-label="Floating timer"
+        className="app-floater"
+        data-tauri-drag-region="deep"
+        onContextMenu={contextMenu}
+      >
+        <div className="flex items-center rounded-md border border-line-strong bg-surface-raised px-3 text-body-sm text-ink shadow-raised">
           <p role="status">Orasenda can't reach the timer.</p>
         </div>
       </main>
@@ -102,7 +113,7 @@ export function FloaterPage() {
     <main aria-label="Floating timer" className="app-floater" onContextMenu={contextMenu}>
       {view ? (
         <FloatingTimer
-          data-tauri-drag-region=""
+          data-tauri-drag-region="deep"
           remaining={view.remaining}
           remainingLabel={view.remainingLabel}
           progress={view.progress}
