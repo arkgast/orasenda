@@ -1,99 +1,40 @@
-import { Choice, ChoiceGroup, Input, SettingsRow } from "@orasenda/ui";
+import { Choice, ChoiceGroup, SettingsRow } from "@orasenda/ui";
 import { useId } from "react";
-import type { CustomSpec, Preset, Settings } from "../../../ipc/bindings";
-import { BREAK_RANGE, BREAK_RANGE_HELP, FOCUS_RANGE, FOCUS_RANGE_HELP } from "../customRange";
+import type { PresetEntry, Settings } from "../../../ipc/bindings";
+import { selectedPreset } from "../../today/presets";
 
-export type Draft = { focus: string; break: string };
-export type FieldKey = keyof Draft;
-
-const PRESET_LABELS: Readonly<Record<Exclude<Preset, "custom">, string>> = {
-  classic: "Classic 25/5",
-  fifty_ten: "50/10",
-  deep_block: "Deep Block 90",
-  quick: "Quick",
-};
-
-const PRESET_ORDER: readonly Preset[] = ["classic", "fifty_ten", "deep_block", "custom"];
-
-/** "Custom 45/10" shows the saved values, never a literal. */
-export function presetLabel(settings: Pick<Settings, "preset" | "custom">): string {
-  return settings.preset === "custom"
-    ? `Custom ${settings.custom.focusMin}/${settings.custom.breakMin}`
-    : PRESET_LABELS[settings.preset];
+/** The selected preset's name: the Settings index value and the failure line's "Back to". */
+export function presetLabel(presets: PresetEntry[], settings: Pick<Settings, "presetId">): string {
+  return selectedPreset(presets, settings)?.name ?? "";
 }
 
-function customLabel(custom: CustomSpec): string {
-  return `Custom ${custom.focusMin}/${custom.breakMin}`;
+/** "25 / 5 · long 15 after 4": a preset's lengths in one line. */
+export function presetDetail(preset: PresetEntry): string {
+  return `${preset.focusMin} / ${preset.breakMin} · long ${preset.longBreakMin} after ${preset.rounds}`;
 }
 
 type Props = {
   settings: Settings;
-  draft: Draft;
-  /** The error text per field, or undefined. */
-  errors: { focus?: string; break?: string };
+  /** The live presets, in order. */
+  presets: PresetEntry[];
   running: boolean;
   disabled: boolean;
   disabledReason?: string;
   presetStatus?: string;
-  customStatus?: string;
-  onPreset: (preset: Preset) => void;
-  onDraft: (key: FieldKey, value: string) => void;
-  onCommit: () => void;
-  onRestore: (key: FieldKey) => void;
+  onPreset: (presetId: string) => void;
 };
 
 export function Timer({
   settings,
-  draft,
-  errors,
+  presets,
   running,
   disabled,
   disabledReason,
   presetStatus,
-  customStatus,
   onPreset,
-  onDraft,
-  onCommit,
-  onRestore,
 }: Props) {
   const name = useId();
-  const field = (
-    key: FieldKey,
-    label: string,
-    id: string,
-    help: string,
-    range: typeof FOCUS_RANGE,
-  ) => (
-    <Input
-      id={id}
-      label={label}
-      type="number"
-      inputMode="numeric"
-      unit="min"
-      min={range.min}
-      max={range.max}
-      value={draft[key]}
-      disabled={disabled}
-      helper={help}
-      error={errors[key]}
-      onChange={(event) => onDraft(key, event.target.value)}
-      onBlur={onCommit}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          onCommit();
-        } else if (event.key === "Escape") {
-          onRestore(key);
-        } else if (event.shiftKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-          // Plain arrows step by 1 natively; with Shift they step by 5 (the draft only).
-          event.preventDefault();
-          const base = Number.parseInt(draft[key], 10);
-          const from = Number.isNaN(base) ? range.min : base;
-          const next = from + (event.key === "ArrowUp" ? 5 : -5);
-          onDraft(key, String(Math.min(range.max, Math.max(range.min, next))));
-        }
-      }}
-    />
-  );
+  const selected = selectedPreset(presets, settings);
   return (
     <section id="settings-timer" aria-labelledby="settings-timer-heading">
       <h2 id="settings-timer-heading" tabIndex={-1} className="settings-heading">
@@ -105,36 +46,26 @@ export function Timer({
       <SettingsRow
         id="preset"
         label="Preset"
-        helper="New sessions start with this. Classic is Pomodoro-style."
+        helper="New sessions start with this. Steady Focus is Pomodoro-style."
         status={presetStatus}
         disabledReason={disabledReason}
       >
         <ChoiceGroup labelledBy="preset-label">
-          {PRESET_ORDER.map((preset) => (
+          {presets.map((preset) => (
             <Choice
-              key={preset}
+              key={preset.id}
+              long
               name={name}
-              value={preset}
-              checked={settings.preset === preset}
+              value={preset.id}
+              description={presetDetail(preset)}
+              checked={selected?.id === preset.id}
               disabled={disabled}
-              onChange={() => onPreset(preset)}
+              onChange={() => onPreset(preset.id)}
             >
-              {preset === "custom" ? customLabel(settings.custom) : PRESET_LABELS[preset]}
+              {preset.name}
             </Choice>
           ))}
         </ChoiceGroup>
-      </SettingsRow>
-      <SettingsRow
-        id="custom"
-        label="Custom times"
-        helper="Used when Custom is the preset. Typing doesn't switch presets. A value saves when you leave the field or press Return; Esc puts the saved value back."
-        status={customStatus}
-        disabledReason={disabledReason}
-      >
-        <div className="settings-fields">
-          {field("focus", "Focus minutes", "focusMinutes", FOCUS_RANGE_HELP, FOCUS_RANGE)}
-          {field("break", "Break minutes", "breakMinutes", BREAK_RANGE_HELP, BREAK_RANGE)}
-        </div>
       </SettingsRow>
     </section>
   );

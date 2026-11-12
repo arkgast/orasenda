@@ -5,7 +5,7 @@ import type {
   ClockTick_Serialize,
   MilestoneEvent_Serialize,
   NavigatePage,
-  PresetLength,
+  PresetEntry,
   Settings,
   SettingsTarget,
   TimerState_Serialize,
@@ -35,6 +35,21 @@ type Internals = { invoke: Invoke; callbacks: Map<number, (event: unknown) => vo
 
 export const INFO: AppInfo = { name: "Orasenda", version: "0.1.0", os: "macos", arch: "aarch64" };
 
+export const GENTLE = "0192f6a0-0000-7000-8000-000000000001";
+export const STEADY = "0192f6a0-0000-7000-8000-000000000002";
+export const DEEP = "0192f6a0-0000-7000-8000-000000000003";
+
+function entry(
+  id: string,
+  name: string,
+  focusMin: number,
+  breakMin: number,
+  longBreakMin: number,
+  rounds: number,
+): PresetEntry {
+  return { id, name, focusMin, breakMin, longBreakMin, rounds, isDefault: true, isChanged: false };
+}
+
 export const IDLE: TimerView_Serialize = {
   state: "idle",
   phase: "focus",
@@ -44,7 +59,10 @@ export const IDLE: TimerView_Serialize = {
   remainingLabel: "",
   progress: 0,
   sessionId: null,
-  preset: null,
+  presetId: null,
+  presetName: null,
+  quick: false,
+  breakMin: null,
   finish: null,
   plannedMin: null,
   store: "ok",
@@ -60,7 +78,9 @@ export const RUNNING: TimerView_Serialize = {
   remainingLabel: "24 minutes 59 seconds",
   progress: 0.001,
   sessionId: "s1",
-  preset: "classic",
+  presetId: STEADY,
+  presetName: "Steady Focus",
+  breakMin: 5,
   finish: "15:20",
   plannedMin: 25,
 };
@@ -74,15 +94,21 @@ export const PAUSED: TimerView_Serialize = {
 
 export const SETTINGS: Settings = {
   theme: "system",
-  preset: "classic",
-  custom: { focusMin: 45, breakMin: 10 },
+  presetId: STEADY,
+  extensionCap: 2,
+  autoContinue: false,
+  longestFocusMin: 90,
+  deepCapOn: true,
+  deepCapHours: 4,
   notifySessionEnd: true,
+  notifyTwoMinutes: false,
 };
 
-export const PRESET_LENGTHS: PresetLength[] = [
-  { preset: "classic", focusMin: 25, breakMin: 5 },
-  { preset: "fifty_ten", focusMin: 50, breakMin: 10 },
-  { preset: "deep_block", focusMin: 90, breakMin: 15 },
+/** The three default presets, as `presets_list` answers on a fresh library. */
+export const PRESETS: PresetEntry[] = [
+  entry(GENTLE, "Gentle Start", 15, 5, 15, 4),
+  entry(STEADY, "Steady Focus", 25, 5, 15, 4),
+  entry(DEEP, "Deep Work", 90, 15, 30, 2),
 ];
 
 const DEFAULTS: Replies = {
@@ -96,7 +122,7 @@ const DEFAULTS: Replies = {
   timer_resume: () => RUNNING,
   timer_stop: () => IDLE,
   navigate_take: () => null,
-  presets_get: () => PRESET_LENGTHS,
+  presets_list: () => PRESETS,
   notifications_request: () => "granted",
   notifications_open_settings: () => null,
 };
@@ -201,6 +227,12 @@ export async function emitMilestone(event: Partial<MilestoneEvent_Serialize>): P
 export async function emitSettingsChanged(settings: Settings): Promise<void> {
   await act(async () => {
     await events.settingsChanged.emit(settings);
+  });
+}
+
+export async function emitPresetsChanged(presets: PresetEntry[]): Promise<void> {
+  await act(async () => {
+    await events.presetsChanged.emit(presets);
   });
 }
 

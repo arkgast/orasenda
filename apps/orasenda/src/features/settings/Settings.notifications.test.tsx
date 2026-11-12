@@ -6,7 +6,7 @@ import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
 import { argsOf, deferred, emitSettingsChanged, SETTINGS, settle } from "../../test/fixtures";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
-import { focusInput, openSettings, type, view } from "./Settings.support";
+import { openSettings, view } from "./Settings.support";
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -151,13 +151,4 @@ test("open_settings_failure_adds_find_line", async () => {
     "Find Orasenda in System Settings, Notifications.",
   );
   expect(error).toHaveBeenCalled();
-});
-
-test("settings_changed_keeps_unsaved_field_draft", async () => {
-  const { backend } = await openSettings();
-  await type(focusInput(), "77");
-  await emitSettingsChanged({ ...SETTINGS, theme: "dark" });
-  const gets = argsOf(backend.calls, "settings_get").length;
-  expect(gets).toBeGreaterThanOrEqual(2);
-  expect(focusInput()).toHaveValue(77);
 });

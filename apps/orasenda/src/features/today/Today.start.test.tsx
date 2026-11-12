@@ -5,9 +5,11 @@ import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
 import {
   argsOf,
+  DEEP,
   deferred,
   emitClock,
   emitTimer,
+  GENTLE,
   PAUSED,
   RUNNING,
   settle,
@@ -33,53 +35,35 @@ function press(init: KeyboardEventInit) {
   return event;
 }
 
-test("start_focus_calls_timer_start_with_saved_preset", async () => {
-  const { backend } = await renderToday(savedSettings({ preset: "fifty_ten" }));
+test("start_sends_quick_only", async () => {
+  const { backend } = await renderToday(savedSettings({ presetId: DEEP }));
 
   fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
   await settle();
 
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "fifty_ten", custom: null } },
-  ]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
 });
 
-test("start_sends_custom_null", async () => {
-  // Even with Custom saved: Rust uses the saved spec when `custom` is null.
-  const { backend } = await renderToday(savedSettings({ preset: "custom" }));
-
-  fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
-  await settle();
-
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "custom", custom: null } },
-  ]);
-});
-
-test("start_before_settings_load_uses_classic", async () => {
+test("start_before_settings_load_sends_quick_false", async () => {
   const { backend } = await renderToday({ settings_get: () => new Promise(() => {}) });
 
   fireEvent.click(screen.getByRole("button", { name: "Start focus" }));
   await settle();
 
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "classic", custom: null } },
-  ]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
 });
 
 test("just_two_minutes_calls_timer_start_with_quick", async () => {
-  const { backend } = await renderToday(savedSettings({ preset: "custom" }));
+  const { backend } = await renderToday(savedSettings({ presetId: GENTLE }));
 
   fireEvent.click(screen.getByRole("button", { name: "Just 2 minutes" }));
   await settle();
 
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "quick", custom: null } },
-  ]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: true } }]);
 });
 
 test("today_has_no_radios_fields_or_dev_panel", async () => {
-  await renderToday(savedSettings({ preset: "custom" }));
+  await renderToday(savedSettings({ presetId: GENTLE }));
 
   expect(screen.queryByRole("radio")).toBeNull();
   expect(screen.queryByRole("spinbutton")).toBeNull();
@@ -96,15 +80,13 @@ test("start_has_no_finish_time_line_and_advertises_cmd_enter", async () => {
 });
 
 test("cmd_enter_starts_only_idle", async () => {
-  const { backend } = await renderToday(savedSettings({ preset: "deep_block" }));
+  const { backend } = await renderToday(savedSettings({ presetId: DEEP }));
 
   const event = press({ key: "Enter", metaKey: true });
   await settle();
 
   expect(event.defaultPrevented).toBe(true);
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "deep_block", custom: null } },
-  ]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
 
   await emitTimer(RUNNING);
   const again = press({ key: "Enter", metaKey: true });
@@ -140,9 +122,7 @@ test("cmd_shift_enter_quick", async () => {
   await settle();
 
   expect(event.defaultPrevented).toBe(true);
-  expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "quick", custom: null } },
-  ]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: true } }]);
 });
 
 test("start_moves_focus_to_pause_session", async () => {
@@ -169,7 +149,7 @@ test("start_error_shows_line_and_try_again_repeats_the_request", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   let answer: "fail" | "ok" = "fail";
   const { backend } = await renderToday({
-    ...savedSettings({ preset: "fifty_ten" }),
+    ...savedSettings({ presetId: DEEP }),
     timer_start: () =>
       answer === "fail" ? Promise.reject({ kind: "store", message: "x" }) : RUNNING,
   });
@@ -187,8 +167,8 @@ test("start_error_shows_line_and_try_again_repeats_the_request", async () => {
   await settle();
 
   expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "quick", custom: null } },
-    { request: { preset: "quick", custom: null } },
+    { request: { quick: true } },
+    { request: { quick: true } },
   ]);
   // A successful start clears the line.
   expect(statusNodes()).toHaveLength(0);
@@ -197,7 +177,7 @@ test("start_error_shows_line_and_try_again_repeats_the_request", async () => {
 test("try_again_repeats_start", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { backend } = await renderToday({
-    ...savedSettings({ preset: "deep_block" }),
+    ...savedSettings({ presetId: DEEP }),
     timer_start: () => Promise.reject({ kind: "invalidSpec", message: "out of range" }),
   });
 
@@ -207,8 +187,8 @@ test("try_again_repeats_start", async () => {
   await settle();
 
   expect(argsOf(backend.calls, "timer_start")).toEqual([
-    { request: { preset: "deep_block", custom: null } },
-    { request: { preset: "deep_block", custom: null } },
+    { request: { quick: false } },
+    { request: { quick: false } },
   ]);
 });
 

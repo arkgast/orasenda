@@ -4,7 +4,7 @@ import type { Settings, TimerView_Serialize } from "../../ipc/bindings";
 import { argsOf, IDLE, mockBackend, type Replies, settle } from "../../test/fixtures";
 
 export const WRITE = { kind: "write", message: "disk full" };
-export const INVALID = { kind: "invalidSpec", message: "focus_min out of range" };
+export const INVALID = { kind: "invalidSpec", message: "that preset isn't in the library" };
 export const WRITE_REASON = "Orasenda can't write its data file.";
 export const REST = "Changes save as you make them.";
 
@@ -22,20 +22,7 @@ export async function openSettings(replies: Replies = {}) {
 }
 
 export const h1 = () => screen.getByRole("heading", { level: 1, name: "Settings" });
-export const focusInput = () => screen.getByLabelText("Focus minutes") as HTMLInputElement;
-export const breakInput = () => screen.getByLabelText("Break minutes") as HTMLInputElement;
 export const statusNodes = () => screen.queryAllByRole("status");
 export const saveLine = () => statusNodes()[0] as HTMLElement;
 export const sets = (backend: { calls: { cmd: string; args: unknown }[] }) =>
   argsOf(backend.calls, "settings_set") as { settings: Settings }[];
-
-export async function type(input: HTMLInputElement, value: string) {
-  fireEvent.change(input, { target: { value } });
-  await settle();
-}
-
-export async function blur(input: HTMLInputElement) {
-  input.focus();
-  fireEvent.blur(input);
-  await settle();
-}

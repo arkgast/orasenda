@@ -1,6 +1,7 @@
 import type {
   AppInfo,
   MilestoneEvent_Serialize,
+  PresetEntry,
   Settings,
   TimerView_Serialize,
 } from "../../ipc/bindings";
@@ -10,6 +11,17 @@ import type {
  * Plain data, no test library: the page runs in a real browser with `mockIPC`, never in Tauri.
  */
 export type Handler = (cmd: string, args: unknown) => unknown;
+
+const GENTLE = "0192f6a0-0000-7000-8000-000000000001";
+const STEADY = "0192f6a0-0000-7000-8000-000000000002";
+const DEEP = "0192f6a0-0000-7000-8000-000000000003";
+
+/** The three default presets, as a fresh library lists them. */
+const PRESETS: PresetEntry[] = [
+  { id: GENTLE, name: "Gentle Start", focusMin: 15, breakMin: 5, longBreakMin: 15, rounds: 4 },
+  { id: STEADY, name: "Steady Focus", focusMin: 25, breakMin: 5, longBreakMin: 15, rounds: 4 },
+  { id: DEEP, name: "Deep Work", focusMin: 90, breakMin: 15, longBreakMin: 30, rounds: 2 },
+].map((preset) => ({ ...preset, isDefault: true, isChanged: false }));
 
 const INFO: AppInfo = { name: "Orasenda", version: "0.1.0", os: "macos", arch: "aarch64" };
 
@@ -22,7 +34,10 @@ const IDLE: TimerView_Serialize = {
   remainingLabel: "",
   progress: 0,
   sessionId: null,
-  preset: null,
+  presetId: null,
+  presetName: null,
+  quick: false,
+  breakMin: null,
   plannedMin: null,
   finish: null,
   store: "ok",
@@ -38,7 +53,9 @@ const RUNNING: TimerView_Serialize = {
   remainingLabel: "24 minutes 59 seconds",
   progress: 0.001,
   sessionId: "s1",
-  preset: "classic",
+  presetId: STEADY,
+  presetName: "Steady Focus",
+  breakMin: 5,
   plannedMin: 25,
   finish: "15:20",
 };
@@ -47,9 +64,14 @@ const PAUSED: TimerView_Serialize = { ...RUNNING, state: "paused", mode: "paused
 
 const SETTINGS: Settings = {
   theme: "system",
-  preset: "classic",
-  custom: { focusMin: 45, breakMin: 10 },
+  presetId: STEADY,
+  extensionCap: 2,
+  autoContinue: false,
+  longestFocusMin: 90,
+  deepCapOn: true,
+  deepCapHours: 4,
   notifySessionEnd: true,
+  notifyTwoMinutes: false,
 };
 
 const ENDED: MilestoneEvent_Serialize = {
@@ -77,11 +99,7 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     timer_pause: () => PAUSED,
     timer_resume: () => RUNNING,
     timer_stop: () => IDLE,
-    presets_get: () => [
-      { preset: "classic", focusMin: 25, breakMin: 5 },
-      { preset: "fifty_ten", focusMin: 50, breakMin: 10 },
-      { preset: "deep_block", focusMin: 90, breakMin: 15 },
-    ],
+    presets_list: () => PRESETS,
     navigate_take: () => null,
     notifications_request: () => view.notifications,
     notifications_open_settings: () => null,
@@ -110,8 +128,8 @@ const SCENARIOS: Record<string, Handler> = {
   settingsUnavailable: backend({ replies: { settings_get: rejects("unavailable", "no store") } }),
   // Pause answers an error, so the status row shows its line while the session still runs.
   pauseError: backend({ view: RUNNING, replies: { timer_pause: rejects("store", "no timer") } }),
-  customChecked: backend({ settings: { ...SETTINGS, preset: "custom" } }),
-  // Settings: a refused custom spec gives the longest save line once both fields are out of range.
+  deepWorkChecked: backend({ settings: { ...SETTINGS, presetId: DEEP } }),
+  // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: macOS has notifications off while the preference is on (the longest status line).
   notificationsDenied: backend({ view: { ...IDLE, notifications: "denied" } }),

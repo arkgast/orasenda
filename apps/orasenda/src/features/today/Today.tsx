@@ -6,10 +6,9 @@ import { useWindowLayout } from "../../app/useWindowLayout";
 import type {
   MilestoneEvent_Serialize,
   MilestoneKind,
-  Preset,
   Settings,
   SettingsTarget,
-  StartRequest_Deserialize,
+  StartRequest,
   TimerCommandError,
   TimerView_Serialize,
 } from "../../ipc/bindings";
@@ -24,9 +23,6 @@ import { TimeView } from "./TimeView";
 import { useControlFocus } from "./useControlFocus";
 import { useNextMinutes } from "./useNextMinutes";
 import "./today.css";
-
-// The preset Rust uses when nothing is saved; Start uses it until `settings_get` answers.
-const DEFAULT_PRESET: Preset = "classic";
 
 /** One-shot notices; the other milestones (`started`, `paused`, `resumed`) dismiss them. */
 const MILESTONE_NOTICES: Partial<Record<MilestoneKind, string>> = {
@@ -52,8 +48,8 @@ type Props = {
 /**
  * Today: a grid that fills the window (top, status, time, controls), never scrolling. Every time
  * string comes formatted from Rust. Local state is the one-shot notice, the saved settings, the
- * answers to the last start and the last control, and whether a start is in flight. It always
- * starts with `custom: null`: Rust uses the saved spec.
+ * answers to the last start and the last control, and whether a start is in flight. A start sends
+ * `{ quick }` only: Rust starts the selected preset, or the two-minute one.
  */
 export function Today({ onNavigate }: Props) {
   const clock = useClock();
@@ -70,7 +66,7 @@ export function Today({ onNavigate }: Props) {
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [starting, setStarting] = useState(false);
   // The start that failed, so Try again repeats it.
-  const [failedStart, setFailedStart] = useState<StartRequest_Deserialize | null>(null);
+  const [failedStart, setFailedStart] = useState<StartRequest | null>(null);
   const [controlError, setControlError] = useState(false);
 
   useEffect(() => {
@@ -80,7 +76,6 @@ export function Today({ onNavigate }: Props) {
         setSettingsFailed(false);
       },
       accepted: () => {},
-      refused: () => {},
       loadFailed: () => {
         console.error("settings_get failed: Today starts with Classic");
         setSettingsFailed(true);
@@ -120,7 +115,7 @@ export function Today({ onNavigate }: Props) {
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
 
-  const start = (request: StartRequest_Deserialize) => {
+  const start = (request: StartRequest) => {
     setStarting(true);
     focus.startRequested();
     commands
@@ -144,13 +139,13 @@ export function Today({ onNavigate }: Props) {
       .finally(() => setStarting(false));
   };
 
-  const choosePreset = (preset: Preset) => {
+  const choosePreset = (presetId: string) => {
     const current = latest();
-    if (current) save({ ...current, preset });
+    if (current) save({ ...current, presetId });
   };
 
-  const startSaved = () => start({ preset: settings?.preset ?? DEFAULT_PRESET, custom: null });
-  const startQuick = () => start({ preset: "quick", custom: null });
+  const startSaved = () => start({ quick: false });
+  const startQuick = () => start({ quick: true });
 
   const control = (name: string, command: () => Promise<CommandResult>) => {
     command().then(
@@ -205,7 +200,14 @@ export function Today({ onNavigate }: Props) {
             settingsFailed={settingsFailed}
             session={
               view
-                ? { preset: view.preset, plannedMin: view.plannedMin, finish: view.finish }
+                ? {
+                    presetId: view.presetId,
+                    presetName: view.presetName,
+                    quick: view.quick,
+                    breakMin: view.breakMin,
+                    plannedMin: view.plannedMin,
+                    finish: view.finish,
+                  }
                 : null
             }
             idleFinish={clock.status === "ok" ? clock.idleFinish : null}

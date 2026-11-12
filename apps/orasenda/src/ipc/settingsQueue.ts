@@ -1,4 +1,4 @@
-import type { CustomSpec, Settings } from "./bindings";
+import type { Settings } from "./bindings";
 import { commands, events } from "./bindings";
 import { subscribe } from "./subscribe";
 
@@ -24,57 +24,42 @@ export type CoversEveryKey<T, Keys extends readonly (keyof T)[]> = [
 /** Fails to compile unless `Check` is `true`. */
 type AssertTrue<Check extends true> = Check;
 
-/** Every `CustomSpec` field, compared by `sameCustom`. */
-export const CUSTOM_KEYS = [
-  "focusMin",
-  "breakMin",
-] as const satisfies readonly (keyof CustomSpec)[];
-
 /**
  * Every `Settings` field, compared by `sameSettings`. A field added to the generated type
  * must be listed here, or a change to only that field would never be sent (#114).
  */
 export const SETTINGS_KEYS = [
   "theme",
-  "preset",
-  "custom",
+  "presetId",
+  "extensionCap",
+  "autoContinue",
+  "longestFocusMin",
+  "deepCapOn",
+  "deepCapHours",
   "notifySessionEnd",
+  "notifyTwoMinutes",
 ] as const satisfies readonly (keyof Settings)[];
 
-// Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field these lists miss.
-export type CustomKeysAreComplete = AssertTrue<CoversEveryKey<CustomSpec, typeof CUSTOM_KEYS>>;
+// Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field this list misses.
 export type SettingsKeysAreComplete = AssertTrue<CoversEveryKey<Settings, typeof SETTINGS_KEYS>>;
 
-// A new non-`custom` field must be a primitive, or `sameSettings` would compare it by reference;
-// an object field fails to compile here until it gets its own compare.
-export type OtherSettingsArePrimitive = AssertTrue<
-  [Exclude<Settings[Exclude<keyof Settings, "custom">], string | number | boolean | null>] extends [
-    never,
-  ]
-    ? true
-    : false
+// Every field must be a primitive, or `sameSettings` would compare it by reference; an object
+// field fails to compile here until it gets its own compare.
+export type SettingsArePrimitive = AssertTrue<
+  [Settings[keyof Settings]] extends [string | number | boolean | null] ? true : false
 >;
-
-export function sameCustom(a: CustomSpec, b: CustomSpec): boolean {
-  return CUSTOM_KEYS.every((key) => a[key] === b[key]);
-}
 
 function sameSettings(a: Settings | null, b: Settings | null): boolean {
   if (!a || !b) return a === b;
-  // `custom` is the one object field; a new object field needs its own compare here.
-  return SETTINGS_KEYS.every((key) =>
-    key === "custom" ? sameCustom(a.custom, b.custom) : a[key] === b[key],
-  );
+  return SETTINGS_KEYS.every((key) => a[key] === b[key]);
 }
 
 /** What the live page is told. */
 export type SettingsListener = {
-  /** The settings to show. `resetDraft`: the Custom fields must show `settings.custom`. */
+  /** The settings to show. `resetDraft`: a field being typed in must show the saved value. */
   shown: (settings: Settings, resetDraft: boolean) => void;
-  /** The latest intent was written: earlier range helpers no longer apply. */
+  /** The latest intent was written. */
   accepted: () => void;
-  /** Rust refused this spec as out of range; the draft stays as typed. */
-  refused: (custom: CustomSpec) => void;
   /** settings_get failed and there is nothing to show. */
   loadFailed: () => void;
   /**
@@ -199,14 +184,9 @@ function sendSave(next: Settings): void {
         if (result.status === "ok") {
           accepted = next;
           if (sameSettings(intended, next)) listener?.accepted();
-        } else if (result.error.kind === "invalidSpec") {
-          const current = intended;
-          // A spec typed since this one was sent replaces it, and its own save decides.
-          if (!current || !sameCustom(current.custom, next.custom) || !accepted) return;
-          // Keep the typed draft beside the helper, but never resend the rejected spec.
-          intended = { ...current, custom: accepted.custom };
-          listener?.refused(next.custom);
         } else {
+          // `invalidSpec` is a value Rust refused (a preset no longer in the library): it
+          // rolls back like a failed write.
           failed(result.error, result.error.kind === "unavailable" ? "unavailable" : "write");
         }
       },

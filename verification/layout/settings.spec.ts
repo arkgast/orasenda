@@ -64,12 +64,10 @@ for (const size of SIZES) {
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
     await openApp(page, "settingsInvalid", size, { page: "settings" });
-    await page.getByLabel("Focus minutes").fill("3");
-    await page.getByLabel("Break minutes").fill("70");
-    await page.getByLabel("Break minutes").blur();
-    const line = page.getByText("Focus and break minutes weren't saved. Still using 45 and 10.");
+    await page.getByRole("radio", { name: /^Deep Work/ }).check();
+    const line = page.getByText("Preset wasn't saved. Back to Steady Focus.");
     await expect(line).toBeVisible();
-    await expect(page.getByRole("button", { name: "Show focus minutes" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Try again saving preset" })).toBeVisible();
     await expectSettingsFit(page);
   });
 
@@ -154,13 +152,9 @@ for (const size of COMPACT) {
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
     await openApp(page, "settingsInvalid", size, { page: "settings" });
-    await page.getByLabel("Focus minutes").fill("3");
-    await page.getByLabel("Break minutes").fill("70");
-    await page.getByLabel("Break minutes").blur();
-    await expect(
-      page.getByText("Focus and break minutes weren't saved. Still using 45 and 10."),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Show focus minutes" })).toBeVisible();
+    await page.getByRole("radio", { name: /^Deep Work/ }).check();
+    await expect(page.getByText("Preset wasn't saved. Back to Steady Focus.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Try again saving preset" })).toBeVisible();
     await expectSettingsFit(page);
   });
 

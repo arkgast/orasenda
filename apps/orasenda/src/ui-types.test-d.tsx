@@ -63,8 +63,8 @@ import type {
   WellnessNoteProps,
 } from "@orasenda/ui";
 import { Button, type ButtonProps } from "@orasenda/ui";
-import type { CustomSpec, Settings } from "./ipc/bindings";
-import type { CoversEveryKey, CUSTOM_KEYS, SETTINGS_KEYS } from "./ipc/settingsQueue";
+import type { Settings } from "./ipc/bindings";
+import type { CoversEveryKey, SETTINGS_KEYS } from "./ipc/settingsQueue";
 
 export const valid = (
   <Button onClick={() => {}} type="button" disabled aria-label="Start" variant="primary">
@@ -79,19 +79,15 @@ export const onClick: ButtonProps["onClick"] = (event) => event.currentTarget.bl
 
 // #114: the settings key lists cover every generated field, and a list missing one fails to compile.
 export const settingsKeysComplete: CoversEveryKey<Settings, typeof SETTINGS_KEYS> = true;
-export const customKeysComplete: CoversEveryKey<CustomSpec, typeof CUSTOM_KEYS> = true;
 
 // @ts-expect-error a list without notifySessionEnd does not cover Settings.
-export const settingsKeyMissing: CoversEveryKey<Settings, ["theme", "preset", "custom"]> = true;
+export const settingsKeyMissing: CoversEveryKey<Settings, ["theme", "presetId"]> = true;
 
 // @ts-expect-error a list without theme does not cover Settings.
 export const settingsThemeMissing: CoversEveryKey<
   Settings,
-  ["preset", "custom", "notifySessionEnd"]
+  ["presetId", "extensionCap", "notifySessionEnd"]
 > = true;
-
-// @ts-expect-error a list without breakMin does not cover CustomSpec.
-export const customKeyMissing: CoversEveryKey<CustomSpec, ["focusMin"]> = true;
 
 // The type-only exports of the previous surface stay exported: dropping one fails this file.
 export type TypeSurface = [

@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
 import { expectTodayFits, provoke, SIZES, STATES } from "./support/today.ts";
 
-// #119 and #120: at the default window, Start stays fully visible after an end and with Custom saved.
-for (const scenario of ["idle", "ended", "customChecked"]) {
+// #119 and #120: at the default window, Start stays fully visible after an end and with Deep Work saved.
+for (const scenario of ["idle", "ended", "deepWorkChecked"]) {
   test(`today_start_visible_900x600_${scenario}`, async ({ page }) => {
     const size = { width: 900, height: 600 };
     await openApp(page, scenario, size);
@@ -18,7 +18,7 @@ test("today_900x600_ended_scenario_renders", async ({ page }) => {
 });
 
 test("today_has_no_radios_or_fields", async ({ page }) => {
-  await openApp(page, "customChecked", { width: 900, height: 600 });
+  await openApp(page, "deepWorkChecked", { width: 900, height: 600 });
   await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByRole("spinbutton")).toHaveCount(0);
 });

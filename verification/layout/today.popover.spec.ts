@@ -35,14 +35,14 @@ for (const scenario of ["idle", "running"]) {
 
 test("today_popover_opens_from_the_keyboard", async ({ page }) => {
   await openApp(page, "idle", { width: 900, height: 600 });
-  await page.getByRole("button", { name: /^Preset Classic/ }).press("Enter");
+  await page.getByRole("button", { name: /^Preset Steady Focus/ }).press("Enter");
   await expect(page.getByRole("menu", { name: "Preset for the next session" })).toBeVisible();
 });
 
 // The summary's short form is a container query on the cell's width, and the strip layouts leave
 // the minutes out of the visible text.
 async function visibleSummary(page: import("@playwright/test").Page): Promise<string> {
-  const button = page.getByRole("button", { name: /^Preset Classic/ });
+  const button = page.getByRole("button", { name: /^Preset Steady Focus/ });
   await button.waitFor();
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   return button.evaluate((node) => {
@@ -59,17 +59,17 @@ test("today_summary_short_form_at_360", async ({ page }) => {
   await openApp(page, "idle", { width: 360, height: 640 });
   const text = await visibleSummary(page);
   expect(text).toContain("25 min");
-  expect(text).not.toContain("Classic");
+  expect(text).not.toContain("Steady Focus");
 });
 
 test("today_summary_full_form_at_900", async ({ page }) => {
   await openApp(page, "idle", { width: 900, height: 600 });
-  expect(await visibleSummary(page)).toContain("Classic · 25 min");
+  expect(await visibleSummary(page)).toContain("Steady Focus · 25 min");
 });
 
 test("today_summary_strip_leaves_minutes_out", async ({ page }) => {
   await openApp(page, "idle", { width: 800, height: 300 });
   const text = await visibleSummary(page);
-  expect(text).toContain("Classic");
+  expect(text).toContain("Steady Focus");
   expect(text).not.toContain("min");
 });

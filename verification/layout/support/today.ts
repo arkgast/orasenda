@@ -28,7 +28,7 @@ export const STATES = [
   { scenario: "timerUnavailable", primary: /Start focus/ },
   { scenario: "starting", primary: /Starting/ },
   { scenario: "settingsUnavailable", primary: /Start focus/ },
-  { scenario: "customChecked", primary: /Start focus/ },
+  { scenario: "deepWorkChecked", primary: /Start focus/ },
   { scenario: "pauseError", primary: /Pause session/ },
 ] as const;
 
