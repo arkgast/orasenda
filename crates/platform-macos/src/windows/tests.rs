@@ -10,7 +10,12 @@ use super::*;
 const PRIMARY_HEIGHT: f64 = 900.0;
 
 fn rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
-    Rect { x, y, width, height }
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
 }
 
 #[test]
@@ -21,11 +26,23 @@ fn to_top_left_round_trips_two_displays() {
     let above = rect(0.0, PRIMARY_HEIGHT, 1920.0, 1080.0);
     let left = rect(-1280.0, 100.0, 1280.0, 720.0);
 
-    assert_eq!(to_top_left(primary, PRIMARY_HEIGHT), rect(0.0, 0.0, 1440.0, 900.0));
-    assert_eq!(to_top_left(above, PRIMARY_HEIGHT), rect(0.0, -1080.0, 1920.0, 1080.0));
-    assert_eq!(to_top_left(left, PRIMARY_HEIGHT), rect(-1280.0, 80.0, 1280.0, 720.0));
+    assert_eq!(
+        to_top_left(primary, PRIMARY_HEIGHT),
+        rect(0.0, 0.0, 1440.0, 900.0)
+    );
+    assert_eq!(
+        to_top_left(above, PRIMARY_HEIGHT),
+        rect(0.0, -1080.0, 1920.0, 1080.0)
+    );
+    assert_eq!(
+        to_top_left(left, PRIMARY_HEIGHT),
+        rect(-1280.0, 80.0, 1280.0, 720.0)
+    );
     for frame in [primary, above, left] {
-        assert_eq!(to_appkit(to_top_left(frame, PRIMARY_HEIGHT), PRIMARY_HEIGHT), frame);
+        assert_eq!(
+            to_appkit(to_top_left(frame, PRIMARY_HEIGHT), PRIMARY_HEIGHT),
+            frame
+        );
     }
 }
 
@@ -61,39 +78,104 @@ fn relative_frames_survive_a_round_trip_on_the_second_display() {
     let global = rect(-1000.4, 200.6, 320.0, 180.0);
     let relative = displays::to_relative(&second, global);
     assert_eq!(relative, rect(280.0, 121.0, 320.0, 180.0));
-    assert_eq!(displays::from_relative(&second, relative), rect(-1000.0, 201.0, 320.0, 180.0));
+    assert_eq!(
+        displays::from_relative(&second, relative),
+        rect(-1000.0, 201.0, 320.0, 180.0)
+    );
 }
 
 #[test]
 fn display_containing_picks_the_display_under_the_window_centre() {
-    let a = Display { id: "a".into(), name: "A".into(), frame: rect(0.0, 0.0, 100.0, 100.0), visible: rect(0.0, 0.0, 100.0, 100.0) };
-    let b = Display { id: "b".into(), name: "B".into(), frame: rect(100.0, 0.0, 100.0, 100.0), visible: rect(100.0, 0.0, 100.0, 100.0) };
+    let a = Display {
+        id: "a".into(),
+        name: "A".into(),
+        frame: rect(0.0, 0.0, 100.0, 100.0),
+        visible: rect(0.0, 0.0, 100.0, 100.0),
+    };
+    let b = Display {
+        id: "b".into(),
+        name: "B".into(),
+        frame: rect(100.0, 0.0, 100.0, 100.0),
+        visible: rect(100.0, 0.0, 100.0, 100.0),
+    };
     let all = [a, b];
-    assert_eq!(displays::display_containing(&all, rect(90.0, 10.0, 40.0, 10.0)).map(|d| d.id.as_str()), Some("b"));
-    assert_eq!(displays::display_containing(&all, rect(500.0, 10.0, 10.0, 10.0)), None);
+    assert_eq!(
+        displays::display_containing(&all, rect(90.0, 10.0, 40.0, 10.0)).map(|d| d.id.as_str()),
+        Some("b")
+    );
+    assert_eq!(
+        displays::display_containing(&all, rect(500.0, 10.0, 10.0, 10.0)),
+        None
+    );
 }
 
 #[test]
 fn floater_key_maps_six_keys_only() {
     let none = Modifiers::default();
-    let command = Modifiers { command: true, ..none };
-    let shift_command = Modifiers { shift: true, command: true, ..none };
+    let command = Modifiers {
+        command: true,
+        ..none
+    };
+    let shift_command = Modifiers {
+        shift: true,
+        command: true,
+        ..none
+    };
 
     assert_eq!(floater_key(49, none), Some(FloaterKey::Space));
     assert_eq!(floater_key(36, none), Some(FloaterKey::Return));
     assert_eq!(floater_key(53, none), Some(FloaterKey::Escape));
     assert_eq!(floater_key(3, shift_command), Some(FloaterKey::FullScreen));
-    assert_eq!(floater_key(17, shift_command), Some(FloaterKey::FloatingTimer));
+    assert_eq!(
+        floater_key(17, shift_command),
+        Some(FloaterKey::FloatingTimer)
+    );
     assert_eq!(floater_key(40, command), Some(FloaterKey::Commands));
 
     // Any other modifier set, and any other key, is not ours.
     assert_eq!(floater_key(49, command), None);
-    assert_eq!(floater_key(53, Modifiers { shift: true, ..none }), None);
+    assert_eq!(
+        floater_key(
+            53,
+            Modifiers {
+                shift: true,
+                ..none
+            }
+        ),
+        None
+    );
     assert_eq!(floater_key(3, command), None);
-    assert_eq!(floater_key(3, Modifiers { option: true, ..shift_command }), None);
-    assert_eq!(floater_key(17, Modifiers { control: true, ..shift_command }), None);
+    assert_eq!(
+        floater_key(
+            3,
+            Modifiers {
+                option: true,
+                ..shift_command
+            }
+        ),
+        None
+    );
+    assert_eq!(
+        floater_key(
+            17,
+            Modifiers {
+                control: true,
+                ..shift_command
+            }
+        ),
+        None
+    );
     assert_eq!(floater_key(40, shift_command), None);
-    assert_eq!(floater_key(40, Modifiers { option: true, ..command }), None);
+    assert_eq!(
+        floater_key(
+            40,
+            Modifiers {
+                option: true,
+                ..command
+            }
+        ),
+        None
+    );
     assert_eq!(floater_key(0, none), None);
 }
 
@@ -105,14 +187,20 @@ fn windows_fns_refuse_off_main_thread() {
         assert_eq!(configure_focus_window(null_mut(), "x"), refused);
         assert_eq!(configure_floater(null_mut()), refused);
         assert_eq!(key_without_activation(null_mut()), refused);
-        assert_eq!(set_frame(null_mut(), "x", rect(0.0, 0.0, 1.0, 1.0)), refused);
+        assert_eq!(
+            set_frame(null_mut(), "x", rect(0.0, 0.0, 1.0, 1.0)),
+            refused
+        );
         assert_eq!(frame_of(null_mut()), None);
         assert!(matches!(
             install_floater_key_monitor(null_mut(), Box::new(|_| false)),
             Err(WindowError::NotOnMainThread)
         ));
     }
-    assert_eq!(displays().map(|d| d.len()), Err(WindowError::NotOnMainThread));
+    assert_eq!(
+        displays().map(|d| d.len()),
+        Err(WindowError::NotOnMainThread)
+    );
     assert!(matches!(
         observe_screen_changes(Box::new(|| {})),
         Err(WindowError::NotOnMainThread)

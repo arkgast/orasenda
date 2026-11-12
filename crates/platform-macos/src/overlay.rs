@@ -161,7 +161,7 @@ define_class!(
 
 /// Switches `window`'s class to an [`OverlayPanel`] class with the same instance size
 /// (`object_setClass`, the approach of the `tauri-nspanel` plugin). Idempotent.
-fn swap_to_panel_class(window: &NSWindow) -> Result<(), PlatformError> {
+pub(crate) fn swap_to_panel_class(window: &NSWindow) -> Result<(), PlatformError> {
     let object: &AnyObject = window.as_ref();
     let current = object.class();
     if inherits_from(current, OverlayPanel::class()) {

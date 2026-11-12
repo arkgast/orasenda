@@ -12,7 +12,12 @@ fn main() {
     };
 
     let refused = Err(WindowError::NullWindow);
-    let any_frame = Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 };
+    let any_frame = Rect {
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+    };
     // SAFETY: null is allowed by the contract and reported as `NullWindow`.
     unsafe {
         assert_eq!(configure_focus_window(null_mut(), "x"), refused);
@@ -28,9 +33,17 @@ fn main() {
     // Reading the displays works on the main thread (a headless runner may report none).
     let found = displays().expect("displays on the main thread");
     for display in &found {
-        assert!(display.id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'));
+        assert!(
+            display
+                .id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-')
+        );
     }
-    println!("windows_main_thread: null refusals ok, {} display(s)", found.len());
+    println!(
+        "windows_main_thread: null refusals ok, {} display(s)",
+        found.len()
+    );
 }
 
 #[cfg(not(target_os = "macos"))]

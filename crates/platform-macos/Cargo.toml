@@ -10,8 +10,8 @@ publish.workspace = true
 [target.'cfg(target_os = "macos")'.dependencies]
 orasenda-core = { path = "../core" }
 objc2.workspace = true
-objc2-foundation = { workspace = true, features = ["NSArray", "NSBundle", "NSDate", "NSDateFormatter", "NSDictionary", "NSEnumerator", "NSError", "NSFormatter", "NSLocale", "NSNotification", "NSOperation", "NSProcessInfo", "NSString", "NSTimeZone", "NSURL", "NSUserDefaults", "block2"] }
-objc2-app-kit = { workspace = true, features = ["NSAccessibilityProtocols", "NSApplication", "NSButton", "NSControl", "NSPanel", "NSResponder", "NSRunningApplication", "NSScreen", "NSStatusBar", "NSStatusBarButton", "NSStatusItem", "NSView", "NSWindow", "NSWorkspace", "libc", "objc2-core-foundation"] }
+objc2-foundation = { workspace = true, features = ["NSArray", "NSBundle", "NSDate", "NSDateFormatter", "NSDictionary", "NSEnumerator", "NSError", "NSFormatter", "NSLocale", "NSNotification", "NSOperation", "NSProcessInfo", "NSString", "NSTimeZone", "NSValue", "NSURL", "NSUserDefaults", "block2"] }
+objc2-app-kit = { workspace = true, features = ["NSAccessibilityProtocols", "NSApplication", "NSButton", "NSControl", "NSPanel", "NSResponder", "NSRunningApplication", "NSScreen", "NSStatusBar", "NSStatusBarButton", "NSEvent", "NSGraphics", "NSStatusItem", "NSView", "NSWindow", "NSWorkspace", "block2", "libc", "objc2-core-foundation"] }
 objc2-core-graphics = { workspace = true, features = ["CGEventSource", "CGEventTypes"] }
 objc2-user-notifications = { workspace = true, features = ["UNNotificationContent", "UNNotificationRequest", "UNNotificationSettings", "UNNotificationTrigger", "UNUserNotificationCenter", "block2"] }
 block2.workspace = true
