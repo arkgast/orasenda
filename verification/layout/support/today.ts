@@ -46,6 +46,8 @@ export const STATES = [
   { scenario: "intentPaused", primary: /Resume session/ },
   { scenario: "intentOpen", primary: /Pause session/ },
   { scenario: "hintKeepGoing", primary: /Pause session/ },
+  { scenario: "runningDeep", primary: /Pause session/ },
+  { scenario: "endedTwoLine", primary: /Start focus/ },
 ] as const;
 
 /** Rows with a second action: at a narrow width the line may take a second line, so the row may grow. */
@@ -129,4 +131,81 @@ export async function expectTodayFits(
       !(overlay && line.includes("today-status")),
   );
   expect(spill, "nothing overflows").toEqual([]);
+}
+
+export type TodaySize = { width: number; height: number; layout?: string };
+
+interface Box {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+/**
+ * Goal 3 for one rendered state: the token gaps between Today's rows (ring) or columns (strip) and rows
+ * (stacked strip). The ring's box is its SVG; an empty status row is skipped, so its neighbours are compared
+ * directly. Fails with a list such as "ring→controls 4px < 12px at 640x480 running". `DEBUG_GAPS=1` logs every gap.
+ */
+export async function expectTodayGaps(page: Page, size: TodaySize, state: string): Promise<void> {
+  const m = await page.evaluate(() => {
+    const box = (el: Element | null | undefined) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    };
+    const today = document.querySelector(".today");
+    const q = (sel: string) => today?.querySelector(sel) ?? null;
+    return {
+      compact: today?.hasAttribute("data-compact") ?? false,
+      top: box(q(".today-top")),
+      status: box(q(".today-status > *")),
+      statusItem: box(q(".today-status")),
+      ring: box(q('[data-slot="timer-ring"] svg')),
+      time: box(q(".today-time")),
+      controls: box(q(".today-controls")),
+    };
+  });
+  const found: string[] = [];
+  const log: string[] = [];
+  const check = (name: string, gap: number, min: number) => {
+    const line = `${name} ${gap.toFixed(1)}px (min ${min}px) at ${size.width}x${size.height} ${state}`;
+    log.push(line);
+    if (gap < min - 0.5)
+      found.push(`${name} ${gap.toFixed(1)}px < ${min}px at ${size.width}x${size.height} ${state}`);
+  };
+  const down = (a: Box | null, b: Box | null, name: string, min: number) => {
+    if (a && b) check(name, b.top - a.bottom, min);
+  };
+  const across = (a: Box | null, b: Box | null, name: string, min: number) => {
+    if (a && b) check(name, b.left - a.right, min);
+  };
+  if (size.layout === "ring") {
+    const min = m.compact ? 12 : 16;
+    const rows: Array<[string, Box | null]> = [
+      ["top", m.top],
+      ["status", m.status],
+      ["ring", m.ring],
+      ["controls", m.controls],
+    ];
+    const present = rows.filter(([, b]) => b !== null);
+    for (let i = 0; i + 1 < present.length; i++) {
+      down(present[i][1], present[i + 1][1], `${present[i][0]}→${present[i + 1][0]}`, min);
+    }
+  } else if (size.layout === "strip") {
+    across(m.statusItem, m.time, "status→time", 16);
+    across(m.time, m.controls, "time→controls", 16);
+  } else {
+    const rows: Array<[string, Box | null]> = [
+      ["top", m.top],
+      ["status", m.statusItem],
+      ["time", m.time],
+      ["controls", m.controls],
+    ];
+    for (let i = 0; i + 1 < rows.length; i++) {
+      down(rows[i][1], rows[i + 1][1], `${rows[i][0]}→${rows[i + 1][0]}`, 8);
+    }
+  }
+  if (process.env.DEBUG_GAPS) for (const line of log) console.log(`gap ${line}`);
+  expect(found, "the gaps between Today's rows").toEqual([]);
 }

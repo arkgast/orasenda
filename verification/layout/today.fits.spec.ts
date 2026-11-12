@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
+import { digitsInsideRing } from "./support/ring.ts";
 import {
   expectTodayFits,
+  expectTodayGaps,
   provoke,
   SIZES,
   STATES,
@@ -39,6 +41,19 @@ for (const size of SIZES) {
       await expect(page.locator(".today")).toHaveAttribute("data-layout", size.layout);
       await expectTodayFits(page, size, primary, TWO_ACTIONS.has(scenario));
     });
+
+    // The layout-specific names are the issue's: one test per size and state, named by what it measures.
+    const gapsName =
+      size.layout === "strip"
+        ? "today_strip_column_gaps"
+        : size.layout === "stackedStrip"
+          ? "today_stacked_strip_row_gaps"
+          : "today_gaps_every_size_and_state";
+    test(`${gapsName}_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
+      await openApp(page, scenarioOf(scenario), size);
+      await provoke(page, scenario);
+      await expectTodayGaps(page, size, scenario);
+    });
   }
 
   test(`today_ring_size_${size.width}x${size.height}`, async ({ page }) => {
@@ -70,4 +85,21 @@ test("today_intent_shows_in_the_ring_and_not_the_stacked_strip", async ({ page }
   await expect(page.locator('[data-slot="timer-ring-task"]')).toBeVisible();
   await openApp(page, "intentSet", { width: 360, height: 240 });
   await expect(page.locator('[data-slot="timer-strip-task"]')).toHaveCount(0);
+});
+
+// Goal 1 on Today: Deep Work's "1:29:59" inside the ring at every ring size. The long face is held to the
+// inner square, except where the timer-md floor binds (about 160 to 190px), where it is held to the circle.
+test("today_running_deep_digits_inside_ring", async ({ page }) => {
+  for (const size of SIZES.filter((s) => s.layout === "ring")) {
+    await openApp(page, "runningDeep", size);
+    const r = await digitsInsideRing(page, page.locator(".today"));
+    const md = await page.evaluate(() =>
+      Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
+      ),
+    );
+    const label = `${size.width}x${size.height}`;
+    expect(r.circleProblems, label).toEqual([]);
+    if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
+  }
 });

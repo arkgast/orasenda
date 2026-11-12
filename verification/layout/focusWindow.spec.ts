@@ -3,6 +3,7 @@ import { APP_URL } from "./support/app.ts";
 import { overflows } from "./support/fits.ts";
 import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { smallTargets } from "./support/hitTargets.ts";
+import { digitsInsideRing } from "./support/ring.ts";
 import { pressTab } from "./support/specimen.ts";
 
 // The Focus window page (`layout.html?surface=focus`), as the real page against mockIPC.
@@ -129,3 +130,19 @@ for (const size of SIZES) {
     }
   }
 }
+
+// Goal 1 in the Focus window: Deep Work's "1:29:59" inside the ring at every ring size.
+test("focus_window_running_deep_digits_inside_ring", async ({ page }) => {
+  for (const size of SIZES.filter((s) => s.layout === "ring")) {
+    await openFocus(page, "runningDeep", size, false);
+    const r = await digitsInsideRing(page, page.locator("[data-slot=full-screen-focus]"));
+    const md = await page.evaluate(() =>
+      Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
+      ),
+    );
+    const label = `${size.w}x${size.h}`;
+    expect(r.circleProblems, label).toEqual([]);
+    if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
+  }
+});

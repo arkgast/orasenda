@@ -246,6 +246,12 @@ const SCENARIOS: Record<string, Handler> = {
   breakOver: backend({ pending: [ended("break", "completed")] }),
   breakEnded: backend({ pending: [ended("break", "stopped")] }),
   capLine: backend({ view: { ...IDLE, capLine: "4 hours of focus today." } }),
+  // Today polish: Deep Work at its longest face, and an ended session whose line takes two lines.
+  runningDeep: backend({ view: DEEP_RUNNING }),
+  endedTwoLine: backend({
+    view: { ...IDLE, store: "unavailable" },
+    pending: [{ ...ENDED, kind: "recovered", endReason: null }],
+  }),
   intentSet: backend({ view: { ...RUNNING, intent: INTENT } }),
   intentPaused: backend({ view: { ...PAUSED, intent: "Reply to Sam" } }),
   // The one-time keep-going hint after a first "+10 min" (a running focus).
