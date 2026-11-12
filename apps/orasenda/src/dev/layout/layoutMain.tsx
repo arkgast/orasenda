@@ -41,7 +41,13 @@ if (surface !== null && name === "ended") {
   // The `ended` scenario is a milestone, which a Focus window or floater takes from the event
   // (it never calls `timer_state`): send it once the page is listening.
   const emitEnded = () =>
-    void events.timerMilestone.emit({ kind: "ended", endReason: "completed", sessionId: "s1" });
+    void events.timerMilestone.emit({
+      kind: "ended",
+      endReason: "completed",
+      sessionId: "s1",
+      phase: "focus",
+      quick: false,
+    });
   // Specs call this once the stub is visible (deterministic); by eye, the timer sends it.
   (window as unknown as { __layoutEmitEnded?: () => void }).__layoutEmitEnded = emitEnded;
   setTimeout(emitEnded, 200);
