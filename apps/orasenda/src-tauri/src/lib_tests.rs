@@ -229,7 +229,7 @@ fn main_capability_exact() {
 }
 
 #[test]
-fn focus_capability_exact() {
+fn focus_capability_exact_with_cadence() {
     assert_capability(
         "focus.json",
         &["focus-*"],
@@ -241,6 +241,9 @@ fn focus_capability_exact() {
             "allow-timer-pause",
             "allow-timer-resume",
             "allow-timer-stop",
+            "allow-timer-extend",
+            "allow-timer-take-break",
+            "allow-timer-dismiss-offer",
             "allow-settings-get",
             "allow-presets-list",
             "allow-preset-select",
@@ -263,7 +266,7 @@ fn focus_capability_exact() {
 }
 
 #[test]
-fn floater_capability_exact() {
+fn floater_capability_exact_with_cadence() {
     assert_capability(
         "floater.json",
         &["floater"],
@@ -275,6 +278,7 @@ fn floater_capability_exact() {
             "allow-timer-start",
             "allow-timer-pause",
             "allow-timer-resume",
+            "allow-timer-stop",
             "allow-settings-get",
             "allow-native-menu-popup",
             "allow-focus-view-close",
@@ -283,7 +287,9 @@ fn floater_capability_exact() {
     );
     let (_, floater) = capability("floater.json");
     for withheld in [
-        "allow-timer-stop",
+        "allow-timer-extend",
+        "allow-timer-take-break",
+        "allow-timer-dismiss-offer",
         "allow-settings-set",
         "allow-timer-state",
         "allow-preset-select",
