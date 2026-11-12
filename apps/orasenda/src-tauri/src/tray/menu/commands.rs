@@ -9,6 +9,7 @@ use crate::ipc::StartRequest;
 use crate::lifecycle;
 use crate::runtime::session::{self, Action};
 
+/// What a menu item does.
 #[derive(Debug, PartialEq)]
 pub(crate) enum MenuCommand {
     Session(Action),

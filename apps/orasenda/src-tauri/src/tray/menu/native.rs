@@ -5,6 +5,7 @@ use tauri::{AppHandle, Wry};
 
 use super::{HEADER, MenuEntry};
 
+/// Appends `entries` to `append`; `header` collects the header item for `set_text`.
 fn append_entries(
     app: &AppHandle,
     entries: &[MenuEntry],
