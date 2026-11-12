@@ -81,3 +81,14 @@ pub struct PresetError {
     pub field: Option<PresetField>,
     pub message: String,
 }
+
+/// The fields of a preset to change; each absent field stays as it is.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetPatch {
+    pub name: Option<String>,
+    pub focus_min: Option<u16>,
+    pub break_min: Option<u16>,
+    pub long_break_min: Option<u16>,
+    pub rounds: Option<u8>,
+}

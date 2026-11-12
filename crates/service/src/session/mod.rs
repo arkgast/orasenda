@@ -21,8 +21,9 @@ mod view;
 pub use effects::Effects;
 pub use frames::{run_frame_get, run_frame_load, run_frame_save};
 pub use run::{
-    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_presets_list,
-    run_select_preset, run_set_settings, run_state, run_view,
+    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_preset_add,
+    run_preset_remove, run_preset_undo_remove, run_preset_update, run_presets_list,
+    run_presets_restore_defaults, run_select_preset, run_set_settings, run_state, run_view,
 };
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
 pub use settings::SettingsSaved;
