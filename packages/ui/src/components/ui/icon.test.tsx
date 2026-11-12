@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { expect, expectTypeOf, test } from "vitest";
-import { Icon, type IconName, ICON_NAMES } from "./icon.tsx";
+import { ICON_NAMES, Icon, type IconName } from "./icon.tsx";
 
 const APPROVED: readonly IconName[] = [
   "play",

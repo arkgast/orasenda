@@ -1,6 +1,5 @@
-import { Button, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
+import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
-import { ChevronGlyph } from "../../app/glyphs";
 import type { Preset, Settings } from "../../ipc/bindings";
 import { lengthOf, presetName, summaryText, usePresetLengths } from "./presets";
 
@@ -115,7 +114,7 @@ export function PresetSummary({
               {text.short}
             </span>
             <span className="today-preset-chevron">
-              <ChevronGlyph />
+              <Icon name="chevron" size="md" />
             </span>
           </Button>
         </Tooltip>

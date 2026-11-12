@@ -1,9 +1,9 @@
 import { type ReactElement, type RefObject, useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
-import { Menu } from "../../../specimens/icons.tsx";
 import { describeShortcut } from "../../lib/shortcuts";
 import { Button } from "./button";
 import { Dialog } from "./dialog";
+import { Icon } from "./icon.tsx";
 import { IconButton } from "./icon-button";
 import { PopoverMenu, type PopoverMenuItem } from "./popover-menu";
 import { Tooltip } from "./tooltip";
@@ -70,7 +70,7 @@ export function PopoverMenuSpecimen(): ReactElement {
     open === key ? (
       <PopoverMenu id={`pm-${key}`} anchor={anchor} onClose={close} onSelect={pick} {...props} />
     ) : null;
-  const glyph = <Menu />;
+  const glyph = <Icon name="menu" />;
   const summary = `${nameOf(preset)} · ends 15:20`;
 
   return (

@@ -1,7 +1,8 @@
 import type { JSX, ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
-import { AlertGlyph, ModeShape } from "./glyphs";
+import { Icon } from "./icon";
+import { ModeShape } from "./mode-shape";
 
 /** variant 'row' is the reserved 44px status row; tone 'attention' (alert glyph) and 'rest' (ink-muted, no glyph) are for that row only. actionName is the accessible name when it differs from the visible actionLabel (e.g. "Try again saving break minutes"). */
 export type InlineNoticeProps = {
@@ -44,7 +45,7 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
             tone === "rest" ? "text-ink-muted" : "text-ink",
           )}
         >
-          {tone === "attention" ? <AlertGlyph /> : null}
+          {tone === "attention" ? <Icon name="alert" size="md" /> : null}
           {tone === "warning" ? (
             <span className="inline-flex text-amber">
               <ModeShape mode="warning" />

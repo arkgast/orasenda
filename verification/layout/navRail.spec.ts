@@ -54,30 +54,43 @@ test("nav_rail_label_is_caption_size_and_current_has_side_bar", async ({ page })
   expect(other).not.toBe(cur);
 });
 
-test("nav_rail_focus_ring_visible_on_keyboard", async ({ page }, info) => {
+test("rail_roving_focus_one_tab_stop", async ({ page }, info) => {
   await openSpecimen(page, "NavRail");
-  const first = page.locator("[data-state=nav-rail-today] [data-slot=nav-rail-item]");
-  for (let i = 0; i < (await first.count()); i++) {
-    await pressTab(page);
-    const active = page.locator(":focus");
-    await expect(active).toHaveCount(1);
-    await expect(active).toHaveAttribute("data-slot", "nav-rail-item");
-    await expectFocusRingVisible(active);
-  }
+  const rail = page.locator("[data-state=nav-rail-today]");
+  const stops = rail.locator("[data-slot=nav-rail-item][tabindex='0']");
+  await expect(stops).toHaveCount(1);
+  await expect(stops).toHaveText("Today");
+  await pressTab(page);
+  const first = page.locator(":focus");
+  await expect(first).toHaveAttribute("data-slot", "nav-rail-item");
+  await expect(first).toHaveText("Today");
+  await expectFocusRingVisible(first);
   await shoot(page, info, "nav-rail-focus");
+  // Arrows move within the rail and the tab stop moves with focus.
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator(":focus")).toHaveText("Board");
+  await expect(stops).toHaveText("Board");
+  await expectFocusRingVisible(page.locator(":focus"));
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await expect(page.locator(":focus")).toHaveText("Settings");
+  // Tab leaves the rail: the next stop is not a rail item of the first frame.
+  await pressTab(page);
+  expect(await rail.locator(":focus").count()).toBe(0);
 });
 
 test("nav_rail_keyboard_activates_and_marks_current", async ({ page }) => {
   await openSpecimen(page, "NavRail");
-  const board = page.locator("[data-state=nav-rail-today] button", { hasText: "Board" });
-  await board.focus();
+  const rail = page.locator("[data-state=nav-rail-today]");
+  const current = rail.locator("[aria-current=page]");
+  await rail.getByRole("button", { name: "Today" }).focus();
+  await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await page.keyboard.press("Space");
-  const current = page.locator("[data-state=nav-rail-today] [aria-current=page]");
   await expect(current).toHaveText("Board");
-  await page.locator("[data-state=nav-rail-today] button", { hasText: "Calendar" }).focus();
+  await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Space");
   await expect(current).toHaveText("Calendar");
+  await expect(rail.locator("[data-slot=nav-rail-item][tabindex='0']")).toHaveText("Calendar");
   await expect(page.locator("[data-state=nav-rail-settings] [aria-current=page]")).toHaveText(
     "Settings",
   );

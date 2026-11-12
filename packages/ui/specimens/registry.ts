@@ -4,6 +4,7 @@ import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
+import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
@@ -16,6 +17,7 @@ import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.ts
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
 
 export const specimens: Record<string, () => ReactElement> = {
+  Icon: IconSpecimen,
   IconButton: IconButtonSpecimen,
   Tooltip: TooltipSpecimen,
   FullScreenFocus: FullScreenFocusSpecimen,

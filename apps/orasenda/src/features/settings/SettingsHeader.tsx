@@ -1,6 +1,5 @@
-import { IconButton, type NavPage } from "@orasenda/ui";
+import { Icon, IconButton, type NavPage } from "@orasenda/ui";
 import { type ReactElement, type ReactNode, useRef, useState } from "react";
-import { JumpGlyph } from "../../app/glyphs";
 import { PagesButton } from "../../app/PagesButton";
 import { commands } from "../../ipc/bindings";
 
@@ -52,7 +51,7 @@ export function JumpButton({ current, onJump }: JumpProps): ReactElement {
     <span ref={box} className="inline-flex">
       <IconButton
         label="Jump to section"
-        icon={<JumpGlyph />}
+        icon={<Icon name="jump" />}
         aria-haspopup="menu"
         aria-expanded={expanded}
         onClick={open}

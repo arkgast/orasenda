@@ -369,4 +369,4 @@ Updated by the PRs that implement this spec.
 - [x] T4 The preset popover (VoiceOver: [ ] PopoverMenu)
 - [ ] T5 Focus window and floater (VoiceOver: [ ] FullScreenFocus [ ] FloatingTimer)
 - [ ] T6 Commands, capture and the shortcut recorder (VoiceOver: [ ] CommandPalette [ ] CapturePad [ ] ShortcutRecorder)
-- [ ] T7 The icon set and the rail (VoiceOver: [ ] NavRail)
+- [x] T7 The icon set and the rail (VoiceOver: [ ] NavRail)

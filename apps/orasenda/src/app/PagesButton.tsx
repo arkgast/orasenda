@@ -1,7 +1,6 @@
-import { IconButton, type NavPage } from "@orasenda/ui";
+import { Icon, IconButton, type NavPage } from "@orasenda/ui";
 import { type ReactElement, useRef, useState } from "react";
 import { commands } from "../ipc/bindings";
-import { PagesGlyph } from "./glyphs";
 
 export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "today", label: "Today" },
@@ -56,7 +55,7 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
     <span ref={box} className="inline-flex">
       <IconButton
         label="Pages"
-        icon={<PagesGlyph />}
+        icon={<Icon name="pages" />}
         shortcut={CHORDS}
         shortcutLabel="⌘1–6"
         aria-haspopup="menu"
