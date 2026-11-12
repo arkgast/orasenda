@@ -108,9 +108,9 @@ No schema change. One new `meta` key, `hint.keep_going`, whose value is the RFC 
 - **packages/ui:** unit tests for `data-length`. The timerRing layout spec checks digits inside the ring's inner square for "1:29:59" and "25:00" at every specimen size, and the font size is ≥ `timer-md`.
 - **verification:** `expectTodayGaps` runs at every size and state in `today.fits.spec.ts`, plus the `runningDeep` digits check on Today and in `focusWindow.spec.ts`. The existing `expectTodayFits` and the focus, motion and popover specs stay green.
 - **Rust:**
-  - service tests: the first manual extend sets the hint and writes `meta`; a second session doesn't set it; it isn't set when `autoContinue` is on; it isn't set for an automatic step; it clears at the focus's end; a failed write gives no hint;
-  - a `lib_tests.rs` capability check, only if a command is added (none is planned: the hint rides on `TimerView`).
-- **Webview:** `statusLine` tests for rank (outranked by a warning, the offer and errors), Today tests for **Open settings** navigating to `keepGoing`, and a Settings test for scroll and focus on the row.
+  - service tests: a manual extend sets the pending hint; `hint_shown` writes `meta` and clears it; after the write, a later extend doesn't set it; it isn't set when `autoContinue` is on, or for an automatic step; it clears at the focus's end; a failed startup read means no hint;
+  - the `lib_tests.rs` exact capability list includes `hint_shown`.
+- **Webview:** `statusLine` tests for rank (outranked by a warning, the offer and errors), Today tests for calling `hint_shown` once on first render, Today tests for **Open settings** navigating to `keepGoing`, and a Settings test for scroll and focus on the row.
 - **Owner by eye, both themes:** Today at 360×640, 640×480, 900×600 and 1280×800 in idle, running Deep Work, paused, "Session ended." and a two-line status; the Focus window at 1280×720 and 390×844 running Deep Work; the hint line at 900×600.
 
 ## Decisions
