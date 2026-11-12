@@ -45,6 +45,7 @@ export const STATES = [
   { scenario: "intentSet", primary: /Pause session/ },
   { scenario: "intentPaused", primary: /Resume session/ },
   { scenario: "intentOpen", primary: /Pause session/ },
+  { scenario: "hintKeepGoing", primary: /Pause session/ },
 ] as const;
 
 /** Rows with a second action: at a narrow width the line may take a second line, so the row may grow. */

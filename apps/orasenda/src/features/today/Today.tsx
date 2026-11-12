@@ -28,6 +28,7 @@ import { StatusRow } from "./StatusRow";
 import { commandFailure, type StatusActionId, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
 import { useControlFocus } from "./useControlFocus";
+import { useKeepGoingHint } from "./useKeepGoingHint";
 import { useNextMinutes } from "./useNextMinutes";
 import "./today.css";
 
@@ -110,7 +111,10 @@ export function Today({ onNavigate }: Props) {
 
   const presets = usePresets();
   const inBreak = view !== null && view.state !== "idle" && view.phase === "break";
+  const [hintShownLine, setHintShownLine] = useState(false);
+  const hintDue = useKeepGoingHint(view, hintShownLine);
   const line = statusLine({
+    hint: hintDue,
     startError: failedStart !== null,
     controlError,
     openFailed: failedOpen !== null,
@@ -122,6 +126,8 @@ export function Today({ onNavigate }: Props) {
     stacked: layout.timer === "stackedStrip",
     keepGoingPreset: selectedPreset(presets, settings)?.name ?? null,
   });
+  const hintOnScreen = line?.actions.some((action) => action.id === "openSettings") ?? false;
+  if (hintOnScreen !== hintShownLine) setHintShownLine(hintOnScreen);
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
 
@@ -250,6 +256,9 @@ export function Today({ onNavigate }: Props) {
         break;
       case "intent":
         setEditingIntent(true);
+        break;
+      case "openSettings":
+        onNavigate("settings", "keepGoing");
         break;
     }
   };

@@ -4,6 +4,7 @@
 
 mod errors;
 mod events;
+mod hint;
 mod presets;
 mod settings;
 #[cfg(test)]
@@ -15,6 +16,7 @@ pub use errors::{
     TimerCommandError, TimerCommandErrorKind,
 };
 pub use events::{MilestoneEvent, MilestoneKind, NavigatePage};
+pub use hint::Hint;
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
 pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{

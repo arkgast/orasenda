@@ -16,6 +16,7 @@
     "allow-timer-set-intent",
     "allow-timer-dismiss-offer",
     "allow-timer-take-break",
+    "allow-hint-shown",
     "allow-settings-get",
     "allow-settings-set",
     "allow-notifications-request",

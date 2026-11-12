@@ -84,6 +84,8 @@ pub enum SettingsTarget {
     About,
     FocusMinutes,
     BreakMinutes,
+    /// The *Keep going automatically* row in Timer.
+    KeepGoing,
 }
 
 /// The settings changed.
@@ -205,6 +207,7 @@ mod tests {
                 "offer": null,
                 "checkIn": null,
                 "capLine": null,
+                "hint": null,
             })
         );
         assert_eq!(TimerTickEvent::NAME, "timer-tick");

@@ -164,6 +164,9 @@ impl SessionService {
             self.settings.notify_session_end = settings.notify_session_end;
             self.review_pending = false;
         }
+        if self.settings.auto_continue {
+            self.hint.pending = false;
+        }
         // A known status is applied at once; the save's one event carries the outcome.
         if self.review_pending {
             self.run_notify_review(now_ms);

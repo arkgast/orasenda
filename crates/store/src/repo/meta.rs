@@ -20,3 +20,13 @@ pub fn remove(txn: &Txn, key: &str) -> Result<(), StoreError> {
         .execute("DELETE FROM meta WHERE key = ?1", [key])?;
     Ok(())
 }
+
+/// Sets `key` to `value`, replacing what was there.
+pub fn set(txn: &Txn, key: &str, value: &str) -> Result<(), StoreError> {
+    txn.conn().execute(
+        "INSERT INTO meta (key, value) VALUES (?1, ?2)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        (key, value),
+    )?;
+    Ok(())
+}

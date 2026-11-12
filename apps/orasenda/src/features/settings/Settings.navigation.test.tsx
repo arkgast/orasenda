@@ -94,6 +94,20 @@ test("field_target_lands_on_the_timer_section", async () => {
   expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
 });
 
+test("settings_keep_going_target_focuses_checkbox", async () => {
+  const { Settings: Page } = await import("./Settings");
+  mockBackend();
+  render(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 1, target: "keepGoing" }}
+      onNavigate={() => {}}
+    />,
+  );
+  await settle();
+  expect(screen.getByRole("checkbox", { name: "Keep going automatically" })).toHaveFocus();
+});
+
 test("pending_navigation_taken_at_mount", async () => {
   mockBackend({ navigate_take: () => ({ page: "settings", target: null }) });
   render(<App />);

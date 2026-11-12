@@ -161,6 +161,7 @@ export function CadenceRows({
         disabledReason={disabledReason}
       >
         <Choice
+          id="keep-going-auto"
           type="checkbox"
           checked={settings.autoContinue}
           disabled={disabled}

@@ -77,6 +77,7 @@ export const IDLE: TimerView_Serialize = {
   offer: null,
   checkIn: null,
   capLine: null,
+  hint: null,
 };
 
 export const RUNNING: TimerView_Serialize = {
@@ -154,6 +155,7 @@ const DEFAULTS: Replies = {
   timer_set_intent: () => RUNNING,
   timer_dismiss_offer: () => IDLE,
   timer_take_break: () => BREAK,
+  hint_shown: () => RUNNING,
   navigate_take: () => null,
   presets_list: () => PRESETS,
   notifications_request: () => "granted",

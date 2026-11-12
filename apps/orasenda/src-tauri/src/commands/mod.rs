@@ -4,6 +4,7 @@ use orasenda_core::AppInfo;
 use tauri::PackageInfo;
 
 mod focus_views;
+mod hint;
 mod menu_popup;
 mod navigation;
 mod notifications;
@@ -14,6 +15,7 @@ mod timer;
 pub use focus_views::*;
 #[cfg(test)]
 pub(crate) use focus_views::{closable, display_infos};
+pub use hint::*;
 pub use menu_popup::*;
 pub use navigation::*;
 pub use notifications::*;
