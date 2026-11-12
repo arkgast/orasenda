@@ -42,6 +42,10 @@ pub struct Live {
     pub(crate) auto_step: bool,
     pub(crate) open_focus: Option<Box<SessionRecord>>,
     pub(crate) cut_breaks: Vec<SessionRecord>,
+    /// The id the next break takes, reserved by the caller (see [`Session::reserve_break_id`]).
+    /// Kept in the snapshot so a restored session writes the same id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) break_id: Option<SessionId>,
 }
 
 /// The live session. Ending is not a state: [`Session::advance`] and [`Session::stop`] return
@@ -92,6 +96,7 @@ impl Session {
                         auto_step: false,
                         open_focus: None,
                         cut_breaks: Vec::new(),
+                        break_id: None,
                     },
                 };
                 Ok(())
@@ -144,6 +149,32 @@ impl Session {
                 *self = Session::Running { live };
                 Ok(())
             }
+        }
+    }
+
+    /// Whether a focus that can have a break has no id reserved for it yet.
+    pub fn needs_break_id(&self) -> bool {
+        match self {
+            Session::Idle => false,
+            Session::Running { live } | Session::Paused { live, .. } => {
+                live.phase == Phase::Focus
+                    && live.preset != SessionPreset::Quick
+                    && live.break_id.is_none()
+            }
+        }
+    }
+
+    /// Reserves the id the next break takes: a UUIDv7 made by the caller, which owns the id
+    /// source (ADR-002). Call it, when [`Session::needs_break_id`], before every
+    /// [`Session::advance`] and [`Session::take_break`] that may start a break. It keeps an id
+    /// already reserved, and does nothing in a break or when idle. Without a reserved id the
+    /// break falls back to an id derived from its focus's, which callers never rely on.
+    pub fn reserve_break_id(&mut self, id: SessionId) {
+        if let Session::Running { live } | Session::Paused { live, .. } = self
+            && live.phase == Phase::Focus
+            && live.break_id.is_none()
+        {
+            live.break_id = Some(id);
         }
     }
 

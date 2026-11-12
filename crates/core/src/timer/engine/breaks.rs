@@ -16,7 +16,10 @@ impl Live {
         let rounds = self.preset.rounds().max(1);
         let long = self.round.is_multiple_of(rounds);
         Live {
-            id: break_id(&self.id, self.extensions),
+            id: self
+                .break_id
+                .take()
+                .unwrap_or_else(|| derived_break_id(&self.id, self.extensions)),
             preset: self.preset.clone(),
             phase: Phase::Break,
             break_kind: Some(if long {
@@ -35,13 +38,14 @@ impl Live {
             auto_step: false,
             open_focus: Some(Box::new(focus)),
             cut_breaks: std::mem::take(&mut self.cut_breaks),
+            break_id: None,
         }
     }
 }
 
-/// A break's id is derived from its focus's id and extension count, so a break cut by `+10 min`
-/// and the one after the longer focus differ, and recovery writes the same id twice at most.
-fn break_id(focus: &SessionId, extensions: u8) -> SessionId {
+/// The fallback id when the caller reserved none: derived from the focus's id and extension
+/// count, so a break cut by `+10 min` and the one after the longer focus differ.
+fn derived_break_id(focus: &SessionId, extensions: u8) -> SessionId {
     SessionId(format!("{}-b{extensions}", focus.0))
 }
 

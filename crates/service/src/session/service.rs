@@ -1,18 +1,19 @@
 //! The service struct, its constructor and its small accessors.
 
 use std::any::Any;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use orasenda_core::{
-    KeepAwake, LocalTime, NotificationStatus, Notifier, PresetDef, Session, SessionRecord,
-    default_presets,
+    KeepAwake, LocalTime, NotificationStatus, Notifier, PresetDef, Session, SessionId,
+    SessionRecord, default_presets,
 };
 use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
 use crate::api::{
-    MilestoneEvent, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
+    MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
 };
 use crate::windows::Frame;
 
@@ -31,6 +32,14 @@ pub enum Action {
     Pause,
     Resume,
     Stop,
+    /// "+10 min", from the last two minutes of a focus or from a break.
+    Extend,
+    /// Names the focus, or clears the name with `None`.
+    SetIntent(Option<String>),
+    /// "Stop here": clears the keep-going offer.
+    DismissOffer,
+    /// Ends the focus now as completed and starts its break.
+    TakeBreak,
 }
 
 /// A native view of the timer (T9's menu-bar item).
@@ -90,6 +99,16 @@ pub struct SessionService {
     pub(super) view_seq: u64,
     /// Window frames whose store write failed or had no store, kept for this run only, with the time saved.
     pub(super) frames: HashMap<(String, String), (Frame, u64)>,
+    /// Makes the ids of the rows the service starts itself: a break, a roll-on. UUIDv7.
+    pub(super) ids: Box<dyn FnMut() -> SessionId + Send>,
+    /// A `quick` session ended and "Keep going?" is waiting. Memory only: a relaunch forgets it.
+    pub(super) offer: bool,
+    /// The focus whose effect on the deep-hours cap was last checked (memory only).
+    pub(super) cap_checked: Option<SessionId>,
+    /// The cap line and offer of the last numbered view, so the tick can tell they changed.
+    pub(super) shown_idle: (Option<String>, Option<Offer>),
+    /// Today's rows could not be read; set so the failure is logged once.
+    pub(super) day_read_failed: Cell<bool>,
 }
 
 impl SessionService {
@@ -127,6 +146,11 @@ impl SessionService {
             theme_owed: None,
             view_seq: 0,
             frames: HashMap::new(),
+            ids: Box::new(new_session_id),
+            offer: false,
+            cap_checked: None,
+            shown_idle: (None, None),
+            day_read_failed: Cell::new(false),
         };
         // The seed runs before the settings are read: it rewrites `timer.preset`.
         service.load_presets(now_ms);

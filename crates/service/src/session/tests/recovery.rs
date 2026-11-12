@@ -36,10 +36,11 @@ fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
     assert_eq!(back.store_status, StoreStatus::Ok);
     assert_eq!(
         back.pending,
-        [milestone(
+        [milestone_in(
             MilestoneKind::Recovered,
             Some(EndReason::Completed),
-            "a"
+            "a",
+            orasenda_core::Phase::Break
         )]
     );
     assert!(back.unsaved.is_empty());
@@ -406,7 +407,7 @@ fn end_write_failure_keeps_record_unsaved_and_next_tick_flushes_it() {
     let record = ended_record(&ended);
     assert_eq!(ended.view.store, StoreStatus::Unavailable);
     assert_eq!(s.unsaved.len(), 2);
-    assert_eq!(s.unsaved[0], record);
+    assert_eq!(s.unsaved[1], record, "the break is the last row");
     db(&s).fail_writes(false);
     let next = s.tick(T0 + CLASSIC_END_MS + 1_000);
     assert!(next.ended.is_none());

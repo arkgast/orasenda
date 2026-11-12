@@ -1,6 +1,6 @@
 //! Launch recovery: the reads a failed launch still owes, and the rows they find.
 
-use orasenda_core::{Milestone, Session, SessionRecord};
+use orasenda_core::{Milestone, Session, SessionId, SessionPreset, SessionRecord};
 use orasenda_store::{StoreError, Txn, active_session};
 
 use super::*;
@@ -47,13 +47,18 @@ impl SessionService {
                 return false;
             }
         };
-        if let Some(records) = ended_records(snapshot.advance(now_ms, None)) {
-            if let Some(focus) = records.first() {
-                self.pending.push(recovered(focus));
+        if snapshot.needs_break_id() {
+            snapshot.reserve_break_id((self.ids)());
+        }
+        if let Some(records) = ended_records(snapshot.advance(now_ms, self.auto_longest_ms())) {
+            if let Some(event) = recovered(&records) {
+                self.pending.push(event);
             }
             self.persist(now_ms, records);
             return true;
         }
+        // A focus already finished (in its break) was weighed against the cap before the quit.
+        self.cap_checked = snapshot.open_focus().map(|focus| focus.id.clone());
         self.engine = snapshot;
         if !self.engine.is_idle() {
             self.keep_awake = self.begin_keep_awake();
@@ -143,7 +148,14 @@ pub(super) enum RowFound {
     Undecodable,
 }
 
-pub(super) fn unread_row(txn: &Txn, now_ms: u64) -> Result<RowFound, StoreError> {
+/// `auto` and `break_id` are what the engine is given if that session's focus has ended: the
+/// automatic steps allowed, and the id its break takes.
+pub(super) fn unread_row(
+    txn: &Txn,
+    now_ms: u64,
+    auto: Option<u64>,
+    break_id: Option<SessionId>,
+) -> Result<RowFound, StoreError> {
     let mut session = match active_session::get::<Session>(txn) {
         Ok(Some(session)) => session,
         Ok(None) => return Ok(RowFound::Nothing),
@@ -153,7 +165,12 @@ pub(super) fn unread_row(txn: &Txn, now_ms: u64) -> Result<RowFound, StoreError>
         }
         Err(error) => return Err(error),
     };
-    if let Some(records) = ended_records(session.advance(now_ms, None)) {
+    if let Some(id) = break_id
+        && session.needs_break_id()
+    {
+        session.reserve_break_id(id);
+    }
+    if let Some(records) = ended_records(session.advance(now_ms, auto)) {
         return Ok(RowFound::Ended(records));
     }
     // An idle snapshot has nothing to record.
@@ -162,13 +179,17 @@ pub(super) fn unread_row(txn: &Txn, now_ms: u64) -> Result<RowFound, StoreError>
         .map_or(RowFound::Nothing, RowFound::Ended))
 }
 
-/// The `recovered` milestone for a session that ended while Orasenda was closed.
-pub(super) fn recovered(record: &SessionRecord) -> MilestoneEvent {
-    MilestoneEvent {
+/// The `recovered` milestone for a session that ended while Orasenda was closed: the session
+/// by its focus (the first row), how it ended by its last row.
+pub(super) fn recovered(records: &[SessionRecord]) -> Option<MilestoneEvent> {
+    let (first, last) = (records.first()?, records.last()?);
+    Some(MilestoneEvent {
         kind: MilestoneKind::Recovered,
-        end_reason: Some(record.end_reason),
-        session_id: Some(record.id.clone()),
-    }
+        end_reason: Some(last.end_reason),
+        session_id: Some(first.id.clone()),
+        phase: last.phase,
+        quick: first.preset == SessionPreset::Quick,
+    })
 }
 
 /// The records of the `Ended` milestone among `milestones`, if the session ended.

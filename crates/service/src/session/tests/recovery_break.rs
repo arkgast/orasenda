@@ -20,7 +20,10 @@ fn recovery_mid_break_continues() {
     let now = T0 + CLASSIC_MS + 2 * MINUTE;
     let mut back = relaunch(&mut s, now);
     let view = back.view(now);
-    assert_eq!((view.state, view.mode, view.phase), (EngineState::Running, Mode::Break, Phase::Break));
+    assert_eq!(
+        (view.state, view.mode, view.phase),
+        (EngineState::Running, Mode::Break, Phase::Break)
+    );
     assert_eq!(view.remaining_ms, 3 * MINUTE);
     assert_eq!(view.session_id, Some(SessionId("brk-1".into())));
     assert!(back.state(now).0.pending.is_empty());
@@ -33,7 +36,7 @@ fn recovery_mid_break_continues() {
 #[test]
 fn recovery_after_the_break_ended_writes_both_rows_and_says_so() {
     let mut s = on_break();
-    let mut back = relaunch(&mut s, T0 + 60 * MINUTE);
+    let back = relaunch(&mut s, T0 + 60 * MINUTE);
     assert_eq!(back.view(T0 + 60 * MINUTE).state, EngineState::Idle);
     assert_eq!(row_count(db(&back)), 2);
     assert_eq!(
@@ -63,15 +66,10 @@ fn a_break_cut_by_a_crash_writes_the_open_focus_from_the_snapshot() {
     // The snapshot was never read; the next write records what it held.
     back.apply(start(), now, id("b"));
     assert_eq!(row_count(db(&back)), 2);
-    let ids: Vec<String> = db(&back)
-        .read(|txn| {
-            let mut stmt = txn
-                .conn()
-                .prepare("SELECT id || ':' || phase || ':' || end_reason FROM focus_session ORDER BY started_at")?;
-            Ok(stmt.query_map([], |r| r.get(0))?.collect::<Result<_, _>>()?)
-        })
-        .expect("reads");
-    assert_eq!(ids, ["a:focus:completed", "brk-1:break:stopped"]);
+    assert_eq!(
+        stored_rows(db(&back)),
+        ["a:focus:completed", "brk-1:break:stopped"]
+    );
 }
 
 #[test]

@@ -36,7 +36,8 @@ impl Glyph {
 /// is paused (frozen digits), no title and the hollow circle when idle.
 pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph) {
     match view.mode {
-        Mode::Focus => (Some(view.remaining.clone()), Glyph::Focus),
+        // Until the menu-bar task draws them, a break and the warning look like a focus.
+        Mode::Focus | Mode::Break | Mode::Warning => (Some(view.remaining.clone()), Glyph::Focus),
         Mode::Paused => (Some(view.remaining.clone()), Glyph::Paused),
         Mode::Idle => (None, Glyph::Idle),
     }
@@ -46,7 +47,7 @@ pub(crate) fn tray_title_and_icon(view: &TimerView) -> (Option<String>, Glyph) {
 /// and `remainingLabel`, or "No session" when idle. Set as the tooltip and accessibility label.
 pub(crate) fn tray_label(view: &TimerView) -> String {
     let mode = match view.mode {
-        Mode::Focus => "Focus",
+        Mode::Focus | Mode::Break | Mode::Warning => "Focus",
         Mode::Paused => "Paused",
         Mode::Idle => return "No session".to_string(),
     };
@@ -58,7 +59,7 @@ pub(crate) fn tray_label(view: &TimerView) -> String {
 /// round up, and one reads "1 minute left". It changes at most once a minute.
 pub(crate) fn header_text(view: &TimerView) -> Option<String> {
     let mode = match view.mode {
-        Mode::Focus => "Focus",
+        Mode::Focus | Mode::Break | Mode::Warning => "Focus",
         Mode::Paused => "Paused",
         Mode::Idle => return None,
     };
@@ -69,7 +70,9 @@ pub(crate) fn header_text(view: &TimerView) -> Option<String> {
         format!("{minutes} minutes left")
     };
     Some(match (&view.mode, &view.finish) {
-        (Mode::Focus, Some(finish)) => format!("{mode} · {left} · ends {finish}"),
+        (Mode::Focus | Mode::Break | Mode::Warning, Some(finish)) => {
+            format!("{mode} · {left} · ends {finish}")
+        }
         _ => format!("{mode} · {left}"),
     })
 }

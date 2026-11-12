@@ -1,14 +1,18 @@
 //! What the surfaces see: the view, the clock text and the state read.
 
+use orasenda_core::timer::suggestions::{BreakFor, pick};
 use orasenda_core::{
-    EngineState, NotificationStatus, SessionPreset, format_clock, format_remaining,
-    spoken_remaining,
+    BreakKind, EngineState, NotificationStatus, Phase, SessionPreset, format_clock,
+    format_remaining, spoken_remaining,
 };
 
 use super::*;
-use crate::api::{ClockTick, Mode, TimerState, TimerView};
+use crate::api::{ClockTick, Mode, Offer, SuggestionView, TimerState, TimerView};
 
 /// What a `quick` session is called.
+/// Two minutes: the warning comes this long before an end.
+const WARNING_MS: u64 = 120_000;
+
 const QUICK_NAME: &str = "Just 2 minutes";
 
 impl SessionService {
@@ -29,8 +33,21 @@ impl SessionService {
         let mode = match engine.state {
             EngineState::Idle => Mode::Idle,
             EngineState::Paused => Mode::Paused,
+            // The last two minutes of an end longer than that, once the warning has fired.
+            EngineState::Running
+                if engine.warned
+                    && engine.remaining_ms <= WARNING_MS
+                    && engine
+                        .planned_ms
+                        .is_some_and(|planned| planned > WARNING_MS) =>
+            {
+                Mode::Warning
+            }
+            EngineState::Running if engine.phase == Phase::Break => Mode::Break,
             EngineState::Running => Mode::Focus,
         };
+        let idle = engine.state == EngineState::Idle;
+        let running = engine.state == EngineState::Running;
         let (preset_id, preset_name, quick, break_min) = match &engine.preset {
             None => (None, None, false, None),
             Some(SessionPreset::Quick) => (None, Some(QUICK_NAME.to_string()), true, None),
@@ -54,7 +71,7 @@ impl SessionService {
             remaining: format_remaining(engine.remaining_ms),
             remaining_label: spoken_remaining(engine.remaining_ms),
             progress: engine.progress,
-            session_id: engine.session_id,
+            session_id: engine.session_id.clone(),
             preset_id,
             preset_name,
             quick,
@@ -67,6 +84,30 @@ impl SessionService {
             notifications: self
                 .notifications
                 .unwrap_or(NotificationStatus::Unavailable),
+            break_kind: engine.break_kind,
+            extensions: engine.extensions,
+            can_extend: self.can_extend(&engine),
+            intent: engine.intent.clone(),
+            suggestion: engine.break_kind.map(|kind| self.suggestion(kind, now_ms)),
+            offer: (idle && self.offer && !self.settings.auto_continue).then_some(Offer::KeepGoing),
+            check_in: (running && engine.auto_step && engine.phase == Phase::Focus).then(|| {
+                let finish = engine.planned_end_ms.map(|end| self.clock_text(end));
+                format!("Still going · ends {}", finish.unwrap_or_default())
+            }),
+            cap_line: idle.then(|| self.cap_line(now_ms)).flatten(),
+        }
+    }
+
+    /// The line for the break running now: the next of today's rotation for its kind.
+    fn suggestion(&self, kind: BreakKind, now_ms: u64) -> SuggestionView {
+        let kind = match kind {
+            BreakKind::Short => BreakFor::Short,
+            BreakKind::Long => BreakFor::Long,
+        };
+        let line = pick(kind, self.breaks_today(kind, now_ms));
+        SuggestionView {
+            text: line.text.to_owned(),
+            label: line.label,
         }
     }
 

@@ -1,8 +1,8 @@
 //! Transitions, views and keep-awake.
 
 use orasenda_core::{
-    EndReason, EngineState, NotificationStatus, PresetId, QUICK_START_MS, SessionId, SessionPreset,
-    format_clock, format_remaining, spoken_remaining,
+    EndReason, EngineState, NotificationStatus, Phase, PresetId, QUICK_START_MS, SessionId,
+    SessionPreset, format_clock, format_remaining, spoken_remaining,
 };
 use orasenda_store::OpenError;
 
@@ -240,16 +240,11 @@ fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running(
     assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
     assert!(!late.was_idle);
     assert_eq!(late.view.state, EngineState::Idle);
-    assert_eq!(
-        late.milestones,
-        [milestone(
-            MilestoneKind::Ended,
-            Some(EndReason::Completed),
-            "a"
-        )]
-    );
+    // The focus ended at its planned end into its break, which ended at its own.
+    assert_eq!(late.milestones, [break_started("a"), session_ended("a")]);
     let record = ended_record(&late);
-    assert_eq!(record.ended_ms, T0 + CLASSIC_MS);
+    assert_eq!(record.phase, Phase::Break);
+    assert_eq!(record.ended_ms, T0 + CLASSIC_END_MS);
     assert_eq!(record.end_reason, EndReason::Completed);
     assert!(late.notify_session_end);
     assert!(late.drop_after_unlock.is_some(), "the guard is handed out");
@@ -273,8 +268,9 @@ fn stop_after_planned_end_records_completed() {
     assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
     let record = ended_record(&late);
     assert_eq!(record.end_reason, EndReason::Completed);
-    assert_eq!(record.ended_ms, T0 + CLASSIC_MS);
-    assert_eq!(record.focused_ms, CLASSIC_MS);
+    assert_eq!(record.phase, Phase::Break);
+    assert_eq!(record.ended_ms, T0 + CLASSIC_END_MS);
+    assert_eq!(record.focused_ms, CLASSIC_END_MS - CLASSIC_MS);
     assert_eq!(late.view.state, EngineState::Idle);
 }
 
@@ -287,7 +283,8 @@ fn start_after_planned_end_publishes_ended_then_started() {
     assert_eq!(
         late.milestones,
         [
-            milestone(MilestoneKind::Ended, Some(EndReason::Completed), "a"),
+            break_started("a"),
+            session_ended("a"),
             milestone(MilestoneKind::Started, None, "b"),
         ]
     );
@@ -307,14 +304,7 @@ fn state_after_planned_end_completes_and_reports_idle() {
     assert_eq!(state.view.state, EngineState::Idle);
     assert!(state.pending.is_empty());
     assert_eq!(effects.result, Ok(effects.view.clone()));
-    assert_eq!(
-        effects.milestones,
-        [milestone(
-            MilestoneKind::Ended,
-            Some(EndReason::Completed),
-            "a"
-        )]
-    );
+    assert_eq!(effects.milestones, [break_started("a"), session_ended("a")]);
     assert!(has_row(db(&s), &ended_record(&effects)));
 }
 
@@ -326,10 +316,11 @@ fn timer_state_drains_pending() {
     let (first, effects) = back.state(T0 + 60 * MINUTE);
     assert_eq!(
         first.pending,
-        [milestone(
+        [milestone_in(
             MilestoneKind::Recovered,
             Some(EndReason::Completed),
-            "a"
+            "a",
+            Phase::Break
         )]
     );
     assert!(effects.milestones.is_empty(), "recovered is never emitted");

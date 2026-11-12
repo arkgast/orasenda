@@ -1,6 +1,7 @@
 //! The timer's types: the view, the clock and the requests that start a session.
 
-use orasenda_core::{EngineState, NotificationStatus, Phase, PresetId, SessionId};
+use orasenda_core::timer::suggestions::SuggestionLabel;
+use orasenda_core::{BreakKind, EngineState, NotificationStatus, Phase, PresetId, SessionId};
 use serde::{Deserialize, Serialize};
 
 use super::events::MilestoneEvent;
@@ -32,8 +33,29 @@ pub enum StoreStatus {
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     Focus,
+    /// A break is running.
+    Break,
+    /// The last two minutes of a focus or a break, once the warning has fired.
+    Warning,
     Paused,
     Idle,
+}
+
+/// One break suggestion: the line and how firmly the evidence backs it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SuggestionView {
+    pub text: String,
+    /// `optional` or `experimental`; `None` for a line with a source or a product principle.
+    pub label: Option<SuggestionLabel>,
+}
+
+/// A question the timer is waiting on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Offer {
+    /// A `quick` session ended: keep going with the selected preset, or stop here.
+    KeepGoing,
 }
 
 /// Everything the webview shows about the timer, emitted as `timer-tick`.
@@ -64,6 +86,22 @@ pub struct TimerView {
     pub planned_min: Option<u32>,
     pub store: StoreStatus,
     pub notifications: NotificationStatus,
+    /// Which break it is, during a break.
+    pub break_kind: Option<BreakKind>,
+    /// "+10 min" taken so far in this session, in a break too (the focus's count).
+    pub extensions: u8,
+    /// "+10 min" is on offer now: under the cap, and not while paused or for `quick`.
+    pub can_extend: bool,
+    /// What the focus is for; `None` when not given and in a break.
+    pub intent: Option<String>,
+    /// The break's line, during a break only.
+    pub suggestion: Option<SuggestionView>,
+    /// "Keep going?", while idle after a `quick` session and auto-continue is off.
+    pub offer: Option<Offer>,
+    /// "Still going · ends 15:40", while running in an automatic step.
+    pub check_in: Option<String>,
+    /// The quiet line while idle once today's focus has passed the deep-hours cap.
+    pub cap_line: Option<String>,
 }
 
 impl TimerView {
@@ -86,6 +124,14 @@ impl TimerView {
             planned_min: None,
             store,
             notifications,
+            break_kind: None,
+            extensions: 0,
+            can_extend: false,
+            intent: None,
+            suggestion: None,
+            offer: None,
+            check_in: None,
+            cap_line: None,
         }
     }
 }

@@ -98,10 +98,11 @@ fn reads_recover_and_the_next_tick_runs_recovery() {
     assert_eq!(effects.view.state, EngineState::Idle);
     assert_eq!(
         late.pending,
-        [milestone(
+        [milestone_in(
             MilestoneKind::Recovered,
             Some(EndReason::Completed),
-            "a"
+            "a",
+            orasenda_core::Phase::Break
         )]
     );
     assert!(has_row(db(&late), &row_a()));
@@ -171,10 +172,11 @@ fn late_recovered_event_is_emitted_once_the_webview_listens() {
     host.log().take();
     host.set_now(T0 + 61 * MINUTE);
     crate::scheduler::iterate(&host);
-    let recovered = Event::Milestone(milestone(
+    let recovered = Event::Milestone(milestone_in(
         MilestoneKind::Recovered,
         Some(EndReason::Completed),
         "a",
+        orasenda_core::Phase::Break,
     ));
     assert_eq!(host.log().count(|event| *event == recovered), 1);
     assert!(run_state(&host).pending.is_empty(), "not handed out again");
@@ -237,10 +239,11 @@ fn start_while_row_unread_records_a_finished_pre_quit_session_as_completed() {
     assert_eq!(started.view.state, EngineState::Running);
     assert_eq!(
         s.pending,
-        [milestone(
+        [milestone_in(
             MilestoneKind::Recovered,
             Some(EndReason::Completed),
-            "a"
+            "a",
+            orasenda_core::Phase::Break
         )]
     );
     db(&s).fail_reads(false);

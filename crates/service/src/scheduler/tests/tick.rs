@@ -48,6 +48,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             "status",
             "post",
             "released",
+            "milestone",
             "milestone"
         ]
     );
@@ -56,6 +57,8 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
         kind: MilestoneKind::Ended,
         end_reason: Some(EndReason::Completed),
         session_id: idle_session_id(&running),
+        phase: orasenda_core::Phase::Break,
+        quick: false,
     })));
 
     host.set_now(T0 + CLASSIC_MS + 1_000);

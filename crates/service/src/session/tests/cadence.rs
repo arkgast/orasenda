@@ -82,5 +82,8 @@ fn round_resets_after_a_gap_longer_than_the_long_break() {
         at = cycle(&mut s, &format!("f{n}"), at).0;
     }
     let long_break_ms = 15 * MINUTE;
-    assert_eq!(fourth_break(&mut s, at + long_break_ms + 1), Some(BreakKind::Short));
+    assert_eq!(
+        fourth_break(&mut s, at + long_break_ms + 1),
+        Some(BreakKind::Short)
+    );
 }

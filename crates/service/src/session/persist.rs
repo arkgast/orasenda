@@ -28,13 +28,16 @@ impl SessionService {
         let Some(store) = &self.store else {
             return Err(StoreError::Closed);
         };
-        let (unsaved, engine) = (&self.unsaved, &self.engine);
         let row_unread = self.recover_owed.snapshot;
+        let auto = self.auto_longest_ms();
+        // The id a break takes if the unread row held a focus whose end has passed.
+        let break_id = row_unread.then(|| (self.ids)());
+        let (unsaved, engine) = (&self.unsaved, &self.engine);
         let written = store.write(now_ms, |txn| {
             // The launch read of the row failed: whatever session it holds predates this
             // run, so it is recorded as ended before the row is replaced.
             let found = if row_unread {
-                unread_row(txn, now_ms)?
+                unread_row(txn, now_ms, auto, break_id.clone())?
             } else {
                 RowFound::Nothing
             };
@@ -60,9 +63,9 @@ impl SessionService {
         let written = written.map(|found| {
             self.recover_owed.snapshot = false;
             if let RowFound::Ended(records) = found
-                && let Some(focus) = records.first()
+                && let Some(event) = recovered(&records)
             {
-                self.pending.push(recovered(focus));
+                self.pending.push(event);
             }
         });
         match &written {
@@ -95,6 +98,8 @@ impl SessionService {
     /// outside [`Effects`] (focus, a notification status change).
     pub fn snapshot(&mut self, now_ms: u64) -> (u64, TimerView) {
         self.view_seq += 1;
-        (self.view_seq, self.view(now_ms))
+        let view = self.view(now_ms);
+        self.shown_idle = (view.cap_line.clone(), view.offer);
+        (self.view_seq, view)
     }
 }

@@ -22,12 +22,19 @@ fn offer_lifecycle() {
     assert_eq!(ended_event.kind, MilestoneKind::Ended);
 
     // It stays until something clears it, and starts nothing by itself.
-    assert_eq!(s.tick(QUICK_END + 30 * MINUTE).view.offer, Some(Offer::KeepGoing));
+    assert_eq!(
+        s.tick(QUICK_END + 30 * MINUTE).view.offer,
+        Some(Offer::KeepGoing)
+    );
     // "Stop here" clears it, and clearing twice is fine.
     let dismissed = s.apply(Action::DismissOffer, QUICK_END + MINUTE, id("x"));
     assert_eq!(dismissed.result, Ok(dismissed.view.clone()));
     assert_eq!(dismissed.view.offer, None);
-    assert!(s.apply(Action::DismissOffer, QUICK_END + MINUTE, id("x")).result.is_ok());
+    assert!(
+        s.apply(Action::DismissOffer, QUICK_END + MINUTE, id("x"))
+            .result
+            .is_ok()
+    );
 
     // "Keep going" is a start: it clears the offer.
     s.apply(start_quick(), QUICK_END + 2 * MINUTE, id("q2"));

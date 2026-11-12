@@ -78,6 +78,7 @@ impl Live {
             auto_step: false,
             open_focus: None,
             cut_breaks,
+            break_id: None,
         })
     }
 }

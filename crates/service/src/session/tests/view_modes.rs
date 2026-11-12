@@ -35,7 +35,10 @@ fn view_mode_each_phase() {
     let view = on_break.view;
     assert_eq!((view.mode, view.phase), (Mode::Break, Phase::Break));
     assert_eq!(view.break_kind, Some(BreakKind::Short));
-    assert_eq!(view.session_id, Some(orasenda_core::SessionId("brk-1".into())));
+    assert_eq!(
+        view.session_id,
+        Some(orasenda_core::SessionId("brk-1".into()))
+    );
     assert_eq!(view.state, EngineState::Running);
 
     // A break of five minutes warns in its last two, once.
@@ -64,7 +67,10 @@ fn can_extend_caps_zero_to_three() {
         numbered_break_ids(&mut s);
         change_settings(&mut s, |v| v.extension_cap = cap);
         s.apply(start(), T0, id("a"));
-        assert!(!s.view(T0 + MINUTE).can_extend, "not offered with 24 minutes left");
+        assert!(
+            !s.view(T0 + MINUTE).can_extend,
+            "not offered with 24 minutes left"
+        );
         let mut end = T0 + CLASSIC_MS;
         let mut taken = 0;
         loop {
@@ -119,7 +125,10 @@ fn auto_continue_hides_extend_and_offer() {
     });
     s.apply(start(), T0, id("a"));
     let warning = s.tick(T0 + 24 * MINUTE);
-    assert!(!warning.view.can_extend, "no +10 in focus while auto-continue is on");
+    assert!(
+        !warning.view.can_extend,
+        "no +10 in focus while auto-continue is on"
+    );
     assert_eq!(warning.view.check_in, None);
     let refused = s.apply(Action::Extend, T0 + 24 * MINUTE, id("x"));
     assert_eq!(kind(&refused), Some(TimerCommandErrorKind::WrongState));
@@ -128,19 +137,20 @@ fn auto_continue_hides_extend_and_offer() {
     let step = s.tick(T0 + 25 * MINUTE);
     assert_eq!(kinds(&step.milestones), [MilestoneKind::Extended]);
     let finish = format_clock(T0 + 35 * MINUTE, OFFSET_MIN, CYCLE);
-    assert_eq!(step.view.check_in, Some(format!("Still going · ends {finish}")));
+    assert_eq!(
+        step.view.check_in,
+        Some(format!("Still going · ends {finish}"))
+    );
     let paused = s.apply(Action::Pause, T0 + 26 * MINUTE, id("x"));
     assert_eq!(paused.view.check_in, None, "hidden while paused");
-    s.apply(Action::Resume, T0 + 26 * MINUTE, id("x"));
 
-    // 25 → 35 → 45 → 55; 65 is over the limit, so the focus completes at 55.
-    s.tick(T0 + 35 * MINUTE);
-    s.tick(T0 + 45 * MINUTE);
-    let ends = s.tick(T0 + 55 * MINUTE);
-    assert_eq!(kinds(&ends.milestones), [MilestoneKind::BreakStarted]);
-    assert!(ends.view.can_extend, "+10 stays on offer from a break");
-    assert_eq!(ends.view.check_in, None);
-    assert_eq!(ends.view.offer, None::<Offer>);
+    // Take a break from the first step: "+10 min" is offered there, under the cap.
+    s.apply(Action::Resume, T0 + 26 * MINUTE, id("x"));
+    let on_break = s.apply(Action::TakeBreak, T0 + 27 * MINUTE, id("x"));
+    assert_eq!(on_break.view.mode, Mode::Break);
+    assert!(on_break.view.can_extend, "+10 stays on offer from a break");
+    assert_eq!(on_break.view.check_in, None);
+    assert_eq!(on_break.view.offer, None::<Offer>);
 }
 
 #[test]

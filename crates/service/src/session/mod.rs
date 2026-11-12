@@ -6,6 +6,7 @@
 //! fill [`Effects`], which [`crate::scheduler::publish`] carries out after the lock is released.
 
 mod actions;
+mod cadence;
 mod effects;
 mod frames;
 mod persist;
@@ -35,6 +36,7 @@ pub mod test_support;
 use effects::Outcome;
 use presets::snapshot_of;
 use recovery::{RecoverOwed, RowFound, recovered, unread_row};
+use run::new_session_id;
 use settings::read_settings;
 #[cfg(test)]
 use settings::{KEY_NOTIFY, KEY_PRESET, KEY_THEME, META_NOTIFY_REVIEW};

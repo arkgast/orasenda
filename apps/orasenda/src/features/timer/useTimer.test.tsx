@@ -20,6 +20,8 @@ const RECOVERED: MilestoneEvent_Serialize = {
   kind: "recovered",
   endReason: "completed",
   sessionId: "s0",
+  phase: "break",
+  quick: false,
 };
 
 beforeEach(() => {
@@ -128,6 +130,8 @@ test("new_on_milestone_identity_does_not_resubscribe", async () => {
     kind: "ended",
     endReason: "completed",
     sessionId: "s1",
+    phase: "focus",
+    quick: false,
   });
 });
 

@@ -17,6 +17,14 @@ export const commands = {
 	timerResume: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_resume")),
 	/**  Stops the session. */
 	timerStop: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_stop")),
+	/**  Adds ten minutes to the session: from the last two minutes of a focus, or from a break. */
+	timerExtend: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_extend")),
+	/**  Names the running focus, or clears its name with `null`. */
+	timerSetIntent: (intent: string | null) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_set_intent", { intent })),
+	/**  Clears the "Keep going?" offer. Safe to call twice. */
+	timerDismissOffer: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_dismiss_offer")),
+	/**  Ends the focus now as completed and starts its break. */
+	timerTakeBreak: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_take_break")),
 	/**  The saved settings. */
 	settingsGet: () => __TAURI_INVOKE<Settings>("settings_get"),
 	/**  Saves the settings. */
@@ -124,6 +132,9 @@ export type BlockRule = {
 	action: BlockAction,
 };
 
+/**  Which break a [`Phase::Break`] is: the long one comes every `rounds` completed focus sessions. */
+export type BreakKind = "short" | "long";
+
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
 export type ClockTick = ClockTick_Serialize | ClockTick_Deserialize;
 
@@ -197,6 +208,10 @@ export type MilestoneEvent_Deserialize = {
 	kind: MilestoneKind,
 	endReason?: EndReason | null,
 	sessionId?: SessionId | null,
+	/**  The phase the event happened in (after it, for `breakStarted` and an extension). */
+	phase: Phase,
+	/**  The session is the built-in two-minute start. */
+	quick: boolean,
 };
 
 /**  A session milestone, emitted as `timer-milestone`. */
@@ -204,13 +219,34 @@ export type MilestoneEvent_Serialize = {
 	kind: MilestoneKind,
 	endReason: EndReason | null,
 	sessionId: SessionId | null,
+	/**  The phase the event happened in (after it, for `breakStarted` and an extension). */
+	phase: Phase,
+	/**  The session is the built-in two-minute start. */
+	quick: boolean,
 };
 
 /**  What happened to a session. */
-export type MilestoneKind = "started" | "paused" | "resumed" | "ended" | "recovered";
+export type MilestoneKind = "started" | "paused" | "resumed" | 
+/**
+ *  The session is over: a focus stopped, a `quick` one done, or a break ended (by time, or
+ *  skipped). `phase` and `end_reason` describe its last row.
+ */
+"ended" | "recovered" | 
+/**  Two minutes are left, once per end. */
+"warned" | 
+/**  A focus completed and its break began. */
+"breakstarted" | 
+/**  "+10 min", manual or an automatic step. */
+"extended" | 
+/**  Today's focus passed the deep-hours cap, once, at the end of the session that crossed it. */
+"capreached";
 
 /**  What the timer is doing, for the webview to name in words. */
-export type Mode = "focus" | "paused" | "idle";
+export type Mode = "focus" | 
+/**  A break is running. */
+"break" | 
+/**  The last two minutes of a focus or a break, once the warning has fired. */
+"warning" | "paused" | "idle";
 
 /**  One entry of the menu. */
 export type NativeMenuItem = NativeMenuItem_Serialize | NativeMenuItem_Deserialize;
@@ -282,6 +318,11 @@ export type NotificationsError = {
 
 /**  Why a notification settings call failed. */
 export type NotificationsErrorKind = "unavailable" | "failed";
+
+/**  A question the timer is waiting on. */
+export type Offer = 
+/**  A `quick` session ended: keep going with the selected preset, or stop here. */
+"keepGoing";
 
 /**  Operating system family, serialized lowercase (`"macos"`, …). */
 export type Os = "macos" | "windows" | "linux" | "ios" | "android" | "other";
@@ -441,6 +482,26 @@ export type StartRequest = {
 /**  Whether the session store could be used. */
 export type StoreStatus = "ok" | "unavailable" | "newer";
 
+/**  How firmly a line is backed by evidence. Unlabelled lines have a source or are plain product principle. */
+export type SuggestionLabel = "optional" | "experimental";
+
+/**  One break suggestion: the line and how firmly the evidence backs it. */
+export type SuggestionView = SuggestionView_Serialize | SuggestionView_Deserialize;
+
+/**  One break suggestion: the line and how firmly the evidence backs it. */
+export type SuggestionView_Deserialize = {
+	text: string,
+	/**  `optional` or `experimental`; `None` for a line with a source or a product principle. */
+	label?: SuggestionLabel | null,
+};
+
+/**  One break suggestion: the line and how firmly the evidence backs it. */
+export type SuggestionView_Serialize = {
+	text: string,
+	/**  `optional` or `experimental`; `None` for a line with a source or a product principle. */
+	label: SuggestionLabel | null,
+};
+
 /**  The colour theme the person chose. */
 export type Theme = 
 /**  Follow the system appearance. */
@@ -456,7 +517,11 @@ export type TimerCommandError = {
 };
 
 /**  Why a timer command failed. */
-export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store";
+export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store" | 
+/**  "+10 min" was asked past the extension cap. */
+"extensionCap" | 
+/**  The intent is longer than 120 characters. */
+"invalidIntent";
 
 /**  The view plus milestones the webview has not seen yet. */
 export type TimerState = TimerState_Serialize | TimerState_Deserialize;
@@ -502,6 +567,22 @@ export type TimerView_Deserialize = {
 	plannedMin?: number | null,
 	store: StoreStatus,
 	notifications: NotificationStatus,
+	/**  Which break it is, during a break. */
+	breakKind?: BreakKind | null,
+	/**  "+10 min" taken so far in this session, in a break too (the focus's count). */
+	extensions: number,
+	/**  "+10 min" is on offer now: under the cap, and not while paused or for `quick`. */
+	canExtend: boolean,
+	/**  What the focus is for; `None` when not given and in a break. */
+	intent?: string | null,
+	/**  The break's line, during a break only. */
+	suggestion?: SuggestionView_Deserialize | null,
+	/**  "Keep going?", while idle after a `quick` session and auto-continue is off. */
+	offer?: Offer | null,
+	/**  "Still going · ends 15:40", while running in an automatic step. */
+	checkIn?: string | null,
+	/**  The quiet line while idle once today's focus has passed the deep-hours cap. */
+	capLine?: string | null,
 };
 
 /**  Everything the webview shows about the timer, emitted as `timer-tick`. */
@@ -530,6 +611,22 @@ export type TimerView_Serialize = {
 	plannedMin: number | null,
 	store: StoreStatus,
 	notifications: NotificationStatus,
+	/**  Which break it is, during a break. */
+	breakKind: BreakKind | null,
+	/**  "+10 min" taken so far in this session, in a break too (the focus's count). */
+	extensions: number,
+	/**  "+10 min" is on offer now: under the cap, and not while paused or for `quick`. */
+	canExtend: boolean,
+	/**  What the focus is for; `None` when not given and in a break. */
+	intent: string | null,
+	/**  The break's line, during a break only. */
+	suggestion: SuggestionView_Serialize | null,
+	/**  "Keep going?", while idle after a `quick` session and auto-continue is off. */
+	offer: Offer | null,
+	/**  "Still going · ends 15:40", while running in an automatic step. */
+	checkIn: string | null,
+	/**  The quiet line while idle once today's focus has passed the deep-hours cap. */
+	capLine: string | null,
 };
 
 /**  A stretch of time one app was in front. `end_ms` is `None` while open. */

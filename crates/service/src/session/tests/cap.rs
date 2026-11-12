@@ -33,10 +33,17 @@ fn cap_reached_once_on_crossing() {
     let started = s.apply(start(), at, id("b"));
     let crossing = s.tick(at + 90 * MINUTE);
     let order = kinds(&crossing.milestones);
-    assert_eq!(order, [MilestoneKind::BreakStarted, MilestoneKind::CapReached]);
+    assert_eq!(
+        order,
+        [MilestoneKind::BreakStarted, MilestoneKind::CapReached]
+    );
     assert_eq!(started.milestones.len(), 1);
     let rest = s.tick(at + 90 * MINUTE + crossing.view.remaining_ms);
-    assert_eq!(cap_reached(&rest.milestones), 0, "the break's end does not fire it again");
+    assert_eq!(
+        cap_reached(&rest.milestones),
+        0,
+        "the break's end does not fire it again"
+    );
     // Past the cap already: a third session fires nothing.
     let (_, third) = cycle(&mut s, "c", at + 3 * HOUR);
     assert_eq!(cap_reached(&third), 0);
@@ -78,14 +85,20 @@ fn cap_line_midnight_tick_once() {
     let (at, _) = cycle(&mut s, "b", at);
     // Idle and past the cap: the line shows, and a view is owed once.
     let first = s.tick(at);
-    assert_eq!(first.view.cap_line.as_deref(), Some("2 hours of focus today."));
+    assert_eq!(
+        first.view.cap_line.as_deref(),
+        Some("2 hours of focus today.")
+    );
     assert!(!s.tick(at + MINUTE).idle_changed, "nothing changed since");
     assert!(!s.tick(at + 10 * HOUR).idle_changed);
 
     // The fake local time is UTC+1, so the day ends at T0 + 23 h.
     let before = s.tick(T0 + 23 * HOUR - 1);
     assert!(!before.idle_changed);
-    assert_eq!(before.view.cap_line.as_deref(), Some("2 hours of focus today."));
+    assert_eq!(
+        before.view.cap_line.as_deref(),
+        Some("2 hours of focus today.")
+    );
     let midnight = s.tick(T0 + 23 * HOUR);
     assert!(midnight.idle_changed, "the new day has no focus yet");
     assert_eq!(midnight.view.cap_line, None);

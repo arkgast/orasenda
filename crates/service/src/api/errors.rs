@@ -27,6 +27,10 @@ pub enum TimerCommandErrorKind {
     WrongState,
     InvalidSpec,
     Store,
+    /// "+10 min" was asked past the extension cap.
+    ExtensionCap,
+    /// The intent is longer than 120 characters.
+    InvalidIntent,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
