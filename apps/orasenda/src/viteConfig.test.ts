@@ -33,3 +33,15 @@ describe("vite dev server", () => {
     expect(server.hmr).toEqual({ protocol: "ws", host: "192.168.1.20", port: 1421 });
   });
 });
+
+describe("vite build inputs", () => {
+  it("builds one page per window, the Focus window and the floater included", async () => {
+    vi.resetModules();
+    const config = (await import("../vite.config")).default;
+    const input = config.build?.rolldownOptions?.input as Record<string, string>;
+    expect(Object.keys(input).sort()).toEqual(["dev", "floater", "focus", "main", "overlay"]);
+    for (const [name, page] of Object.entries(input)) {
+      expect(page.endsWith(name === "main" ? "index.html" : `${name}.html`), name).toBe(true);
+    }
+  });
+});

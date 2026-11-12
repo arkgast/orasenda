@@ -1,5 +1,6 @@
 import type {
   AppInfo,
+  DisplayInfo,
   MilestoneEvent_Serialize,
   PresetEntry,
   Settings,
@@ -62,6 +63,28 @@ const RUNNING: TimerView_Serialize = {
 
 const PAUSED: TimerView_Serialize = { ...RUNNING, state: "paused", mode: "paused", finish: null };
 
+// The floater's longest case: a Deep Work session of 1:30:00.
+const DEEP_RUNNING: TimerView_Serialize = {
+  ...RUNNING,
+  remainingMs: 5_399_000,
+  remaining: "1:29:59",
+  remainingLabel: "1 hour 29 minutes 59 seconds",
+  presetId: DEEP,
+  presetName: "Deep Work",
+  breakMin: 15,
+  plannedMin: 90,
+  finish: "16:50",
+};
+
+const DISPLAY_NAMES = ["Built-in Retina Display", "DELL U2720Q", "LG UltraFine"];
+
+/** `count` connected displays (1 to 3), the main window's first: `layout.html?displays=<count>`. */
+export function displaysFor(count: number): DisplayInfo[] {
+  return DISPLAY_NAMES.slice(0, Math.min(Math.max(count, 1), DISPLAY_NAMES.length)).map(
+    (name, index) => ({ id: String(index + 1), name, hasMainWindow: index === 0 }),
+  );
+}
+
 const SETTINGS: Settings = {
   theme: "system",
   presetId: STEADY,
@@ -103,6 +126,14 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     navigate_take: () => null,
     notifications_request: () => view.notifications,
     notifications_open_settings: () => null,
+    // The Focus window and the floater: the view without draining, and their actions.
+    timer_view: () => view,
+    displays_list: () => displaysFor(1),
+    focus_view_open: () => null,
+    focus_view_close: () => null,
+    main_show: () => null,
+    preset_select: () => null,
+    native_menu_popup: () => null,
     ...replies,
   };
   return (cmd) => {
@@ -133,6 +164,14 @@ const SCENARIOS: Record<string, Handler> = {
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: macOS has notifications off while the preference is on (the longest status line).
   notificationsDenied: backend({ view: { ...IDLE, notifications: "denied" } }),
+  // Focus window and floater: the longest running case, and the failures their status lines show.
+  deepRunning: backend({ view: DEEP_RUNNING }),
+  viewUnreadable: backend({ replies: { timer_view: rejects("store", "no timer") } }),
+  presetSelectError: backend({ replies: { preset_select: rejects("store", "disk full") } }),
+  closeError: backend({
+    view: RUNNING,
+    replies: { focus_view_close: rejects("unavailable", "no window") },
+  }),
 };
 
 export const SCENARIO_NAMES: readonly string[] = Object.keys(SCENARIOS);

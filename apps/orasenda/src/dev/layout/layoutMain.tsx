@@ -1,24 +1,49 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { createRoot } from "react-dom/client";
 import { App } from "../../app/App";
+import { FloaterPage } from "../../features/floater/FloaterPage";
+import { FocusPage } from "../../features/focus/FocusPage";
+import { events } from "../../ipc/bindings";
 // The design system first, so the app's own rules can build on it.
 import "@orasenda/ui/styles.css";
 import "../../styles/app.css";
-import { SCENARIO_NAMES, scenarioHandler } from "./scenarios";
+import { displaysFor, SCENARIO_NAMES, scenarioHandler } from "./scenarios";
 
 // `layout.html?scenario=<name>[&page=settings][&popover=1]`: the real App against mockIPC, no Tauri.
+// `&surface=focus|floater` renders that window's page instead (the Focus window reads
+// `&insets=t,r,b,l` from this same query, as it does from `focus.html`), and `&displays=1|2|3`
+// sets how many displays `displays_list` answers.
 // A dev page for verification/layout; it is not a build input.
 const query = new URLSearchParams(location.search);
 const name = query.get("scenario") ?? "idle";
-const handler = scenarioHandler(name);
+const scenario = scenarioHandler(name);
+const displays = displaysFor(Number(query.get("displays") ?? "1"));
+const handler = scenario
+  ? (cmd: string, args: unknown) => (cmd === "displays_list" ? displays : scenario(cmd, args))
+  : undefined;
 const root = document.getElementById("root");
 if (!root) throw new Error("layout.html has no #root element");
 if (!handler) {
   throw new Error(`unknown scenario "${name}"; use one of ${SCENARIO_NAMES.join(", ")}`);
 }
 
+const surface = query.get("surface");
+if (surface !== null && surface !== "focus" && surface !== "floater") {
+  throw new Error(`unknown surface "${surface}"; use "focus", "floater" or leave it out`);
+}
+
 mockIPC(handler, { shouldMockEvents: true });
-createRoot(root).render(<App />);
+createRoot(root).render(
+  surface === "focus" ? <FocusPage /> : surface === "floater" ? <FloaterPage /> : <App />,
+);
+
+if (surface !== null && name === "ended") {
+  // The `ended` scenario is a milestone, which a Focus window or floater takes from the event
+  // (it never calls `timer_state`): send it once the page is listening.
+  setTimeout(() => {
+    void events.timerMilestone.emit({ kind: "ended", endReason: "completed", sessionId: "s1" });
+  }, 200);
+}
 
 const page = query.get("page");
 if (page !== null && page !== "settings") {
