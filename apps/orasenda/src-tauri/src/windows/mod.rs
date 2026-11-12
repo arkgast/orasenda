@@ -15,6 +15,7 @@ use tauri::AppHandle;
 use crate::ipc::{FocusInsets, FocusViewError};
 
 mod floater;
+mod floater_keys;
 pub(crate) mod focus;
 pub(crate) mod frames;
 mod native;
@@ -117,10 +118,6 @@ pub(crate) fn floater_shown(app: &AppHandle) -> bool {
 }
 
 /// The display `main` is on: its recorded display, or the primary one.
-#[expect(
-    dead_code,
-    reason = "called by the Focus menu and the floater keys (D5 #336, D7 #338)"
-)]
 pub(crate) fn main_display(app: &AppHandle) -> Option<String> {
     let ops = AppOps::new(app);
     ops.main_display()
@@ -129,10 +126,6 @@ pub(crate) fn main_display(app: &AppHandle) -> Option<String> {
 
 /// Shows `main` and asks it to open the command palette.
 #[cfg(desktop)]
-#[expect(
-    dead_code,
-    reason = "called by the Focus menu and the floater keys (D5 #336, D7 #338)"
-)]
 pub(crate) fn open_palette(app: &AppHandle) {
     use tauri_specta::Event as _;
     crate::lifecycle::show_main(app);

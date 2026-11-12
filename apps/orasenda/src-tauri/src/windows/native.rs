@@ -94,6 +94,7 @@ mod mac {
     use crate::ipc::FocusInsets;
     use crate::lifecycle::MAIN;
     use crate::runtime::ticker::AppHost;
+    use crate::windows::floater_keys;
     use crate::windows::focus::insets_of;
     use crate::windows::frames::Frames;
     use crate::windows::{FLOATER, Ops, Screen, WindowSpec};
@@ -268,9 +269,12 @@ mod mac {
         }
 
         fn make_floater(&self, label: &str) -> Result<(), FocusViewError> {
-            // SAFETY: as above.
-            self.with_window(label, |pointer| unsafe {
-                appkit::configure_floater(pointer)
+            let app = self.app.clone();
+            // SAFETY: as above. The key monitor (only on the `Monitor` route) is installed on
+            // the main thread, once, with the panel it listens to.
+            self.with_window(label, move |pointer| unsafe {
+                appkit::configure_floater(pointer)?;
+                floater_keys::install(&app, pointer)
             })
         }
 
