@@ -257,12 +257,9 @@ impl SessionService {
         self.require_writable()?;
         let defaults = default_presets();
         let taken = defaults.iter().find(|d| {
-            let live_default = self.presets.iter().any(|p| p.id == d.id);
-            !live_default
-                && self
-                    .presets
-                    .iter()
-                    .any(|p| p.default_key.is_none() && same_name(&p.name, &d.name))
+            self.presets
+                .iter()
+                .any(|p| p.default_key.is_none() && same_name(&p.name, &d.name))
         });
         if let Some(d) = taken {
             return Err(duplicate(&d.name));

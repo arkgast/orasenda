@@ -161,6 +161,19 @@ fn restore_defaults_positions_and_past_twelve() {
 }
 
 #[test]
+fn restore_refuses_a_name_a_live_default_would_clash_with() {
+    let h = host();
+    run_preset_update(&h, default_id(0), rename("Calm")).expect("renames");
+    let user = run_preset_add(&h).expect("adds");
+    run_preset_update(&h, user.id.clone(), rename("Gentle Start")).expect("takes the name");
+    assert_eq!(
+        kind(run_presets_restore_defaults(&h)),
+        PresetErrorKind::DuplicateName
+    );
+    assert!(names(&h).contains(&"Calm".to_string()));
+}
+
+#[test]
 fn update_validates_and_refuses_duplicates() {
     let h = host();
     let blank = run_preset_update(&h, default_id(1), rename("   ")).expect_err("blank");

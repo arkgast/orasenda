@@ -26,7 +26,7 @@ export function PresetList({ presets, selectedId, editor, disabled, locked, onPr
   const restoreWhy = `${group}-restore-why`;
   return (
     <>
-      <ChoiceGroup labelledBy="preset-label">
+      <ChoiceGroup legend="Preset library" legendClassName="sr-only">
         {presets.map((preset) => {
           const open = editor.editing === preset.id;
           return (
@@ -35,6 +35,7 @@ export function PresetList({ presets, selectedId, editor, disabled, locked, onPr
                 <div className="min-w-0 flex-1">
                   <Choice
                     long
+                    id={`preset-${preset.id}-radio`}
                     name={group}
                     value={preset.id}
                     description={presetDetail(preset)}
@@ -47,6 +48,7 @@ export function PresetList({ presets, selectedId, editor, disabled, locked, onPr
                 </div>
                 <Button
                   variant="ghost"
+                  id={`preset-${preset.id}-edit`}
                   aria-label={`Edit ${preset.name}`}
                   aria-expanded={open}
                   disabled={locked}
@@ -73,7 +75,10 @@ export function PresetList({ presets, selectedId, editor, disabled, locked, onPr
                   focusName={editor.focusName}
                   onSave={(field, value) => editor.save(preset.id, field, value)}
                   onClearError={editor.clearError}
-                  onDone={() => editor.open(null)}
+                  onDone={() => {
+                    editor.open(null);
+                    document.getElementById(`preset-${preset.id}-edit`)?.focus();
+                  }}
                 />
               ) : null}
             </div>

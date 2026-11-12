@@ -69,8 +69,10 @@ export function Settings({
   const [settings, setSettings] = useState<SettingsValue | null>(null);
   const presets = usePresets();
   const presetsFailed = usePresetsFailed();
-  const editor = usePresetEditing(presets, selectedPreset(presets, settings)?.id);
   const [line, setLine] = useState<Line>({ kind: "rest" });
+  const editor = usePresetEditing(presets, selectedPreset(presets, settings)?.id, () =>
+    setLine({ kind: "rest" }),
+  );
   const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
@@ -208,18 +210,17 @@ export function Settings({
       };
     }
     if (editor.line) {
-      const { text, undo } = editor.line;
-      return {
-        text,
-        tone: "neutral",
-        action: undo
-          ? {
-              label: "Undo",
-              name: `Undo removing ${undo.name}`,
-              run: () => editor.undo(undo.id, undo.name),
-            }
-          : undefined,
-      };
+      const { text, undo, retry } = editor.line;
+      const action = undo
+        ? {
+            label: "Undo",
+            name: `Undo removing ${undo.name}`,
+            run: () => editor.undo(undo.id, undo.name),
+          }
+        : retry
+          ? { label: "Try again", name: "Try again", run: retry }
+          : undefined;
+      return { text, tone: retry ? "attention" : "neutral", action };
     }
     if (loadError && !settings) {
       return { text: "Orasenda can't read settings right now.", tone: "attention" };

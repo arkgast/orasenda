@@ -54,7 +54,9 @@ const presetRadio = (name: string) => screen.getByRole("radio", { name: new RegE
 
 test("settings_timer_radios_from_library", async () => {
   const { backend } = await openSettings();
-  const radios = within(screen.getByRole("radiogroup", { name: "Preset" })).getAllByRole("radio");
+  const radios = within(screen.getByRole("group", { name: "Preset library" })).getAllByRole(
+    "radio",
+  );
   expect(radios.map((radio) => radio.closest("label")?.textContent)).toEqual([
     "Gentle Start15 / 5 · long 15 after 4",
     "Steady Focus25 / 5 · long 15 after 4",

@@ -15,7 +15,7 @@ import {
 } from "../../test/fixtures";
 import { resetPresetsForTests } from "../today/presets";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
-import { openSettings, saveLine } from "./Settings.support";
+import { INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
 
 beforeEach(() => {
   resetPresetsForTests();
@@ -103,7 +103,9 @@ test("presets_changed_from_tray_updates_list", async () => {
     { ...STEADY, name: "Morning", focusMin: 40 },
     PRESETS[2] as PresetEntry,
   ]);
-  const radios = within(screen.getByRole("radiogroup", { name: "Preset" })).getAllByRole("radio");
+  const radios = within(screen.getByRole("group", { name: "Preset library" })).getAllByRole(
+    "radio",
+  );
   expect(radios).toHaveLength(2);
   expect(radios[0]?.closest("label")).toHaveTextContent("Morning40 / 5");
 });
@@ -208,4 +210,53 @@ test("a_degraded_store_makes_the_editing_read_only", async () => {
   });
   await emitSettingsChanged(SETTINGS);
   expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toBeDisabled();
+});
+
+const later = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+test("a_remove_after_a_settings_failure_shows_removed_with_undo", async () => {
+  await openSettings({
+    settings_set: () => Promise.reject(INVALID),
+    preset_remove: () => [PRESETS[0], PRESETS[2]],
+  });
+  fireEvent.click(screen.getByRole("radio", { name: /Gentle Start/ }));
+  await settle();
+  expect(saveLine()).not.toHaveTextContent("Removed");
+  fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
+  await settle();
+  expect(saveLine()).toHaveTextContent("Removed Deep Work.");
+  expect(screen.getByRole("button", { name: "Undo removing Deep Work" })).toBeInTheDocument();
+});
+
+test("a_failed_action_says_so_and_offers_try_again", async () => {
+  const { backend } = await openSettings({ preset_remove: () => Promise.reject(WRITE) });
+  fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
+  await settle();
+  expect(saveLine()).toHaveTextContent("Deep Work wasn't removed.");
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await settle();
+  expect(argsOf(backend.calls, "preset_remove")).toHaveLength(2);
+});
+
+test("focus_lands_on_a_control_that_stays", async () => {
+  await openSettings({
+    preset_remove: () => [PRESETS[0], PRESETS[1]],
+    preset_undo_remove: () => PRESETS,
+  });
+  edit("Steady Focus");
+  fireEvent.click(screen.getByRole("button", { name: "Done editing Steady Focus" }));
+  expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toHaveFocus();
+
+  fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
+  await settle();
+  await emitPresetsChanged([PRESETS[0] as PresetEntry, STEADY]);
+  await later();
+  const undo = screen.getByRole("button", { name: "Undo removing Deep Work" });
+  expect(undo).toHaveFocus();
+
+  fireEvent.click(undo);
+  await settle();
+  await emitPresetsChanged(PRESETS as PresetEntry[]);
+  await later();
+  expect(screen.getByRole("radio", { name: /Deep Work/ })).toHaveFocus();
 });

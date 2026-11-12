@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { PresetEntry, PresetError, PresetPatch } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
+import { BREAK_RANGE, FOCUS_RANGE } from "./customRange";
 
 /** The editor's fields, named as the patch names them. */
 export type EditField = "name" | "focusMin" | "breakMin" | "longBreakMin" | "rounds";
@@ -9,8 +10,8 @@ export const MAX_PRESETS = 12;
 
 /** The allowed range of each number field. */
 export const RANGE: Record<Exclude<EditField, "name">, [number, number]> = {
-  focusMin: [5, 180],
-  breakMin: [1, 60],
+  focusMin: [FOCUS_RANGE.min, FOCUS_RANGE.max],
+  breakMin: [BREAK_RANGE.min, BREAK_RANGE.max],
   longBreakMin: [5, 90],
   rounds: [1, 8],
 };
@@ -32,7 +33,12 @@ const FIELD_LABEL: Record<EditField, { text: string; verb: string }> = {
   rounds: { text: "Long break after", verb: "wasn't" },
 };
 
-export type PresetLine = { text: string; undo?: { id: string; name: string } };
+export type PresetLine = {
+  text: string;
+  undo?: { id: string; name: string };
+  /** A failure: shown in the attention tone with Try again, which resends the same call. */
+  retry?: () => void;
+};
 export type FieldErrors = Partial<Record<EditField, string>>;
 
 function rangeText(field: Exclude<EditField, "name">, old: number): string {
@@ -58,6 +64,15 @@ async function call<T>(
   }
 }
 
+/** Moves focus once React has drawn the answer, so it doesn't fall to the page when a control goes. */
+function focusSoon(find: () => Element | null | undefined, tries = 10) {
+  setTimeout(() => {
+    const target = find() as HTMLElement | null | undefined;
+    if (target) target.focus();
+    else if (tries > 0) focusSoon(find, tries - 1);
+  }, 0);
+}
+
 export type PresetEditing = ReturnType<typeof usePresetEditing>;
 
 /**
@@ -65,7 +80,12 @@ export type PresetEditing = ReturnType<typeof usePresetEditing>;
  * action (the page's save line) and the errors beside the editor's fields. The list itself
  * comes from `presets-changed`, never from these replies, so a late reply can't undo a newer one.
  */
-export function usePresetEditing(presets: PresetEntry[], selectedId: string | undefined) {
+export function usePresetEditing(
+  presets: PresetEntry[],
+  selectedId: string | undefined,
+  /** Called when an action starts, so an older line from elsewhere on the page steps aside. */
+  onStart: () => void = () => {},
+) {
   const [editing, setEditing] = useState<string | null>(null);
   const [focusName, setFocusName] = useState(false);
   const [line, setLine] = useState<PresetLine | null>(null);
@@ -73,6 +93,10 @@ export function usePresetEditing(presets: PresetEntry[], selectedId: string | un
   const latest = useRef(presets);
   latest.current = presets;
   const turn = useRef(0);
+  const begin = () => {
+    onStart();
+    return ++turn.current;
+  };
 
   const open = (id: string | null, focus = false) => {
     setEditing(id);
@@ -111,7 +135,7 @@ export function usePresetEditing(presets: PresetEntry[], selectedId: string | un
       patch = { [field]: value };
     }
     setError(field, undefined);
-    const mine = ++turn.current;
+    const mine = begin();
     const result = await call(() => commands.presetUpdate(id, patch));
     if (result.ok) {
       answer(mine, { text: `Saved. ${summary(result.data)}.` });
@@ -124,15 +148,19 @@ export function usePresetEditing(presets: PresetEntry[], selectedId: string | un
     } else if (kind === "invalid" && field !== "name") {
       const bad = FIELD_FROM_RUST[result.error?.field ?? ""] ?? field;
       if (bad !== "name") setError(bad, rangeText(bad, old[bad]));
+      answer(mine, null);
     } else {
       const label = FIELD_LABEL[field];
-      answer(mine, { text: `${label.text} ${label.verb} saved. Still using ${old[field]}.` });
+      answer(mine, {
+        text: `${label.text} ${label.verb} saved. Still using ${old[field]}.`,
+        retry: () => void save(id, field, raw),
+      });
     }
     return false;
   }
 
   async function add(): Promise<void> {
-    const mine = ++turn.current;
+    const mine = begin();
     const result = await call(() => commands.presetAdd());
     if (result.ok) {
       open(result.data.id, true);
@@ -140,51 +168,61 @@ export function usePresetEditing(presets: PresetEntry[], selectedId: string | un
     } else if (result.error?.kind === "limit") {
       answer(mine, { text: "Up to 12 presets." });
     } else {
-      answer(mine, { text: "A new preset couldn't be added. Try again." });
+      answer(mine, { text: "A new preset couldn't be added.", retry: () => void add() });
     }
   }
 
   async function remove(id: string): Promise<void> {
     const old = latest.current.find((entry) => entry.id === id);
     if (!old) return;
-    const mine = ++turn.current;
+    const mine = begin();
     const result = await call(() => commands.presetRemove(id));
     if (result.ok) {
-      if (editing === id) open(null);
+      setEditing((now) => (now === id ? null : now));
       const next = result.data[0];
       const moved = selectedId === id && next;
       answer(mine, {
         text: `Removed ${old.name}.${moved ? ` ${next.name} is selected.` : ""}`,
         undo: { id, name: old.name },
       });
+      focusSoon(
+        () =>
+          [...document.querySelectorAll("button")].find(
+            (b) => b.getAttribute("aria-label") === `Undo removing ${old.name}`,
+          ) ?? document.querySelector<HTMLElement>('input[type="radio"]'),
+      );
     } else if (result.error?.kind === "lastPreset") {
       answer(mine, { text: "At least one preset stays." });
     } else {
-      answer(mine, { text: `${old.name} wasn't removed. Try again.` });
+      answer(mine, { text: `${old.name} wasn't removed.`, retry: () => void remove(id) });
     }
   }
 
   async function undo(id: string, name: string): Promise<void> {
-    const mine = ++turn.current;
+    const mine = begin();
     const result = await call(() => commands.presetUndoRemove(id));
     if (result.ok) {
       answer(mine, { text: `Brought back ${name}.` });
+      focusSoon(() => document.getElementById(`preset-${id}-radio`));
     } else if (result.error?.kind === "duplicateName") {
       answer(mine, { text: "Another preset has this name now. Rename it first." });
     } else {
-      answer(mine, { text: `${name} couldn't be brought back. Try again.` });
+      answer(mine, {
+        text: `${name} couldn't be brought back.`,
+        retry: () => void undo(id, name),
+      });
     }
   }
 
   async function restore(): Promise<void> {
-    const mine = ++turn.current;
+    const mine = begin();
     const result = await call(() => commands.presetsRestoreDefaults());
     if (result.ok) {
       answer(mine, { text: "Default presets restored." });
     } else if (result.error?.kind === "duplicateName") {
       answer(mine, { text: "Another preset has a default's name. Rename it first." });
     } else {
-      answer(mine, { text: "Default presets weren't restored. Try again." });
+      answer(mine, { text: "Default presets weren't restored.", retry: () => void restore() });
     }
   }
 

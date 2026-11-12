@@ -29,7 +29,7 @@ const TWELVE: PresetEntry[] = [
   ...PRESETS,
   ...Array.from({ length: 9 }, (_, i) => ({
     id: `user-${i}`,
-    name: i === 8 ? "A very long preset name of forty chars" : `Study block ${i + 1}`,
+    name: i === 8 ? "A very long preset name of forty chars!!" : `Study block ${i + 1}`,
     focusMin: 40,
     breakMin: 10,
     longBreakMin: 30,
@@ -177,9 +177,9 @@ const SCENARIOS: Record<string, Handler> = {
   deepWorkChecked: backend({ settings: { ...SETTINGS, presetId: DEEP } }),
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
-  // Settings: macOS has notifications off while the preference is on (the longest status line).
   // Settings: twelve presets, so Add preset is at its limit.
   presetsTwelve: backend({ replies: { presets_list: () => TWELVE } }),
+  // Settings: macOS has notifications off while the preference is on (the longest status line).
   notificationsDenied: backend({ view: { ...IDLE, notifications: "denied" } }),
   // Focus window and floater: the longest running case, and the failures their status lines show.
   deepRunning: backend({ view: DEEP_RUNNING }),
