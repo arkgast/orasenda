@@ -2,6 +2,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { mockBackend, settle } from "../test/fixtures";
+import { onPaletteRequest } from "./palette/paletteRequest";
 import { PagesButton } from "./PagesButton";
 
 afterEach(async () => {
@@ -11,7 +12,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-const NAMES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
+const NAMES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings", "Commands…"];
 
 function open(answer: string | null, current: "today" | "board" = "board") {
   const backend = mockBackend({ native_menu_popup: () => answer });
@@ -44,9 +45,9 @@ test("pages_button_sends_six_items_current_checked", async () => {
   ).request;
   expect(request.items.map((i) => i.label)).toEqual(NAMES);
   expect(request.items.map((i) => i.accelerator)).toEqual(
-    [1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`),
+    [...[1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`), "Cmd+K"],
   );
-  expect(request.items.map((i) => i.checked)).toEqual([false, true, false, false, false, false]);
+  expect(request.items.map((i) => i.checked)).toEqual([false, true, false, false, false, false, null]);
   expect(request.items.map((i) => i.id)).toEqual([
     "today",
     "board",
@@ -54,6 +55,7 @@ test("pages_button_sends_six_items_current_checked", async () => {
     "routines",
     "review",
     "settings",
+    "commands",
   ]);
   expect({ x: request.x, y: request.y }).toEqual({ x: 12, y: 56 });
 });
@@ -92,4 +94,14 @@ test("a_failed_popup_is_logged_and_does_nothing", async () => {
   await settle();
   expect(onNavigate).not.toHaveBeenCalled();
   expect(error).toHaveBeenCalled();
+});
+
+test("pages_commands_opens_palette", async () => {
+  const opened = vi.fn();
+  const stop = onPaletteRequest(opened);
+  const { onNavigate } = open("commands");
+  await settle();
+  expect(opened).toHaveBeenCalledTimes(1);
+  expect(onNavigate).not.toHaveBeenCalled();
+  stop();
 });
