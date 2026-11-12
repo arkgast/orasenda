@@ -56,6 +56,9 @@ impl Trailing {
 pub(crate) struct Frames {
     main_display: Mutex<Option<String>>,
     floater: Mutex<Trailing>,
+    /// The display the floater was last placed on or saved on. A display that goes away is
+    /// read from here, since AppKit has already moved the window by the time we look.
+    floater_display: Mutex<Option<String>>,
 }
 
 impl Frames {
@@ -64,6 +67,20 @@ impl Frames {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone()
+    }
+
+    pub(crate) fn floater_display(&self) -> Option<String> {
+        self.floater_display
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    pub(crate) fn set_floater_display(&self, display: String) {
+        *self
+            .floater_display
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(display);
     }
 
     fn set_main_display(&self, display: String) {
@@ -119,7 +136,12 @@ fn flush_floater(app: &AppHandle) {
         return;
     }
     match native::read_frame_on_main(app, FLOATER) {
-        Some((display, frame)) => save(app, &display, frame),
+        Some((display, frame)) => {
+            if let Some(frames) = app.try_state::<Frames>() {
+                frames.set_floater_display(display.clone());
+            }
+            save(app, &display, frame);
+        }
         None => eprintln!("windows: the floater's frame could not be read; not saved"),
     }
 }

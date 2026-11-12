@@ -12,7 +12,7 @@ use super::focus::{self, focus_label, focus_window_spec, insets_of, open_focus_o
 use super::frames::{DEBOUNCE_MS, Trailing};
 use super::{FLOATER, Ops, Screen, WindowSpec};
 use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
-
+mod displays;
 const NO_INSETS: FocusInsets = FocusInsets {
     top: 0,
     right: 0,
@@ -51,6 +51,7 @@ struct Fake {
     fail_on: Option<&'static str>,
     /// How many `exists` answers are false although the window is there (a lost race).
     blind: std::cell::Cell<u32>,
+    on: Option<String>,
 }
 
 impl Fake {
@@ -64,6 +65,7 @@ impl Fake {
             calls: RefCell::new(Vec::new()),
             fail_on: None,
             blind: std::cell::Cell::new(0),
+            on: None,
         }
     }
 
@@ -100,6 +102,15 @@ impl Ops for Fake {
             return false;
         }
         self.windows.borrow().iter().any(|l| l == label)
+    }
+    fn focus_labels(&self) -> Vec<String> {
+        let mut all = self.windows.borrow().clone();
+        all.retain(|l| l.starts_with("focus-"));
+        all
+    }
+    fn window_display(&self, _label: &str) -> Option<String> {
+        let on = self.on.as_ref()?;
+        self.screens.iter().any(|s| &s.id == on).then(|| on.clone())
     }
     fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError> {
         self.step(&format!("create {}", spec.label))?;
@@ -449,32 +460,6 @@ fn floater_close_drops_the_pending_trailing_save() {
         !trailing.due(10_000),
         "the pending trailing save is dropped"
     );
-}
-
-#[test]
-fn display_infos_flag_the_main_display_first_fallback() {
-    use crate::commands::display_infos;
-    let mut ops = Fake::new(vec![screen("1", 1440, 900), screen("2", 1920, 1080)]);
-    ops.main = Some("2".into());
-    let infos = display_infos(&ops);
-    assert_eq!(
-        infos.iter().map(|d| d.has_main_window).collect::<Vec<_>>(),
-        vec![true, false]
-    );
-    assert_eq!(
-        infos.iter().map(|d| d.id.as_str()).collect::<Vec<_>>(),
-        vec!["2", "1"],
-        "the main window's display first, the rest in screen order"
-    );
-    ops.main = Some("gone".into());
-    assert_eq!(
-        display_infos(&ops)
-            .iter()
-            .map(|d| d.has_main_window)
-            .collect::<Vec<_>>(),
-        vec![true, false]
-    );
-    assert_eq!(focus::focus_label("1"), "focus-1");
 }
 
 #[test]

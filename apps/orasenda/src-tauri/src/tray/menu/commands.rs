@@ -17,6 +17,10 @@ pub(crate) enum MenuCommand {
     JustTwo,
     SetPreset(PresetId),
     EditTimes,
+    /// *Full screen* on the display with this id.
+    FullScreen(String),
+    ShowFloater,
+    HideFloater,
     Show,
     Settings,
     DevPanel,
@@ -28,7 +32,12 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
     if let Some(preset) = id.strip_prefix(PRESET_PREFIX) {
         return Some(MenuCommand::SetPreset(PresetId(preset.to_string())));
     }
+    if let Some(display) = id.strip_prefix(FULL_SCREEN_PREFIX) {
+        return Some(MenuCommand::FullScreen(display.to_string()));
+    }
     match id {
+        SHOW_FLOATER => Some(MenuCommand::ShowFloater),
+        HIDE_FLOATER => Some(MenuCommand::HideFloater),
         START => Some(MenuCommand::Start),
         JUST_TWO => Some(MenuCommand::JustTwo),
         EDIT_TIMES => Some(MenuCommand::EditTimes),
@@ -97,6 +106,22 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
         MenuCommand::Session(action) => action,
         MenuCommand::Start => start_action(false),
         MenuCommand::JustTwo => start_action(true),
+        MenuCommand::FullScreen(display) => {
+            if let Err(error) = crate::windows::open_focus(app, &display) {
+                eprintln!("tray: Full screen didn't open: {}", error.message);
+            }
+            return;
+        }
+        MenuCommand::ShowFloater => {
+            if let Err(error) = crate::windows::open_floater(app) {
+                eprintln!("tray: the floating timer didn't open: {}", error.message);
+            }
+            return;
+        }
+        MenuCommand::HideFloater => {
+            crate::windows::close_floater(app);
+            return;
+        }
         MenuCommand::SetPreset(preset) => {
             // The same chain `settings_set` uses: it saves, then emits `settings-changed`.
             let settings = preset_choice(session::current_settings(app), preset);

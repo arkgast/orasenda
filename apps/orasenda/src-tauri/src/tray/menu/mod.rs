@@ -6,7 +6,7 @@ mod native;
 
 use orasenda_core::{PresetId, default_presets};
 
-use crate::ipc::{PresetEntry, Settings, entries};
+use crate::ipc::{DisplayInfo, PresetEntry, Settings, entries};
 
 pub(in crate::tray) use commands::on_menu_event;
 #[cfg(test)]
@@ -28,6 +28,21 @@ pub(crate) const SHOW: &str = "Show Orasenda";
 pub(crate) const SETTINGS: &str = "Settings…";
 pub(crate) const DEV_PANEL: &str = "developer-panel";
 pub(crate) const QUIT: &str = "Quit Orasenda";
+
+/// The id prefix of a Full screen item; the rest is the display id. Not `focus:`, the app
+/// menu's prefix: both handlers see every menu event.
+pub(crate) const FULL_SCREEN_PREFIX: &str = "full-screen:";
+pub(crate) const SHOW_FLOATER: &str = "show-floater";
+pub(crate) const HIDE_FLOATER: &str = "hide-floater";
+
+/// What the Focus views add to the menu: the connected displays (the main window's first)
+/// and whether the floater is shown. No displays means no Focus items (off macOS, or the
+/// displays could not be read).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct FocusItems {
+    pub(crate) displays: Vec<DisplayInfo>,
+    pub(crate) floater_shown: bool,
+}
 
 /// The id prefix of a Preset submenu item; the rest is the library preset's id.
 pub(crate) const PRESET_PREFIX: &str = "preset:";

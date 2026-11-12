@@ -1,4 +1,5 @@
-//! The app menu: tauri's default menu plus *Settings…* ⌘, right after *About Orasenda*.
+//! The app menu: tauri's default menu plus *Settings…* ⌘, right after *About Orasenda*, and
+//! the Focus menu right after *View* (`focus_menu.rs`).
 
 //!
 //! Registered on macOS only: tauri installs its default menu there alone, and on Windows
@@ -31,6 +32,10 @@ pub(crate) const SETTINGS_ACCELERATOR: &str = "CmdOrCtrl+,";
     expect(dead_code, reason = "macOS builds the menu")
 )]
 pub(crate) const SETTINGS_AT: usize = 1;
+
+/// The default menu's View submenu, which the Focus menu follows.
+#[cfg(target_os = "macos")]
+const VIEW_TEXT: &str = "View";
 
 /// What `build` inserts into the app submenu, in order. `build` and the tested model
 /// [`app_menu_ids`] both read this, so they cannot drift.
@@ -100,6 +105,18 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         })
         .collect();
     submenu.insert_items(&items, SETTINGS_AT)?;
+    // The displays are read after launch (`windows::surfaces_changed`), off the main thread.
+    let focus = super::focus_menu::build_submenu(app, &[], false)?;
+    let view = menu
+        .items()?
+        .iter()
+        .position(|kind| matches!(kind, MenuItemKind::Submenu(s) if s.text().is_ok_and(|t| t == VIEW_TEXT)))
+        .ok_or_else(|| {
+            tauri::Error::Io(std::io::Error::other(
+                "app_menu: the default menu has no View submenu to put Focus after",
+            ))
+        })?;
+    menu.insert(&focus, view + 1)?;
     Ok(menu)
 }
 

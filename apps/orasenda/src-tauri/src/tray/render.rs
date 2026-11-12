@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use tauri::image::Image;
 
-use super::menu::{MenuEntry, NextSession};
+use super::menu::{FocusItems, MenuEntry, NextSession};
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
 use crate::ipc::{Mode, TimerView};
 use crate::ipc::{PresetEntry, Settings};
@@ -110,7 +110,8 @@ impl Tray {
             handle,
             state: Arc::new(Mutex::new(TrayState {
                 wanted: None,
-                drawn: Some(Drawn::of(shown, &next)),
+                drawn: Some(Drawn::of(shown, &next, &FocusItems::default())),
+                focus: FocusItems::default(),
                 view: shown.clone(),
                 next,
                 retries: 0,
@@ -120,12 +121,30 @@ impl Tray {
     }
 }
 
+impl Tray {
+    /// The displays or the floater changed: the Full screen and floating timer items follow.
+    /// Does nothing when they are the same, so a display event doesn't rebuild an open menu.
+    pub(crate) fn focus_changed(&self, focus: FocusItems) {
+        {
+            let mut state = lock_state(&self.state);
+            if state.focus == focus {
+                return;
+            }
+            state.focus = focus;
+            state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
+            state.retries = 0;
+            state.render_seq += 1;
+        }
+        post_draw(&self.handle, &self.state);
+    }
+}
+
 impl NativeSurface for Tray {
     fn render(&self, view: &TimerView) {
         {
             let mut state = lock_state(&self.state);
             state.view = view.clone();
-            state.wanted = Some(Drawn::of(view, &state.next));
+            state.wanted = Some(Drawn::of(view, &state.next, &state.focus));
             state.retries = 0;
             state.render_seq += 1;
         }
@@ -142,7 +161,7 @@ impl NativeSurface for Tray {
             if let Some(drawn) = state.drawn.as_mut() {
                 drawn.items.clear();
             }
-            state.wanted = Some(Drawn::of(&state.view, &state.next));
+            state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
             state.retries = 0;
             state.render_seq += 1;
         }
@@ -157,7 +176,7 @@ impl NativeSurface for Tray {
             if let Some(drawn) = state.drawn.as_mut() {
                 drawn.items.clear();
             }
-            state.wanted = Some(Drawn::of(&state.view, &state.next));
+            state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
             state.retries = 0;
             state.render_seq += 1;
         }

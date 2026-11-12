@@ -3,7 +3,7 @@
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
-use super::menu::{MenuEntry, NextSession, menu_items};
+use super::menu::{FocusItems, MenuEntry, NextSession, menu_items};
 use super::render::{Glyph, header_text, tray_label, tray_title_and_icon};
 use crate::ipc::TimerView;
 
@@ -19,13 +19,13 @@ pub(super) struct Drawn {
 }
 
 impl Drawn {
-    pub(super) fn of(view: &TimerView, next: &NextSession) -> Drawn {
+    pub(super) fn of(view: &TimerView, next: &NextSession, focus: &FocusItems) -> Drawn {
         let (title, glyph) = tray_title_and_icon(view);
         Drawn {
             title,
             label: tray_label(view),
             glyph,
-            items: menu_items(view, next, crate::spike::enabled()),
+            items: menu_items(view, next, focus, crate::spike::enabled()),
             header: header_text(view),
         }
     }
@@ -36,6 +36,8 @@ pub(super) struct TrayState {
     pub(super) view: TimerView,
     /// The saved preset and its minutes, as of the last settings change.
     pub(super) next: NextSession,
+    /// The displays and the floater, as of the last Focus change.
+    pub(super) focus: FocusItems,
     /// The latest view's state, not yet taken by a draw.
     pub(super) wanted: Option<Drawn>,
     /// What the menu bar shows; `None` after a failed call, so the next draw redoes it all.

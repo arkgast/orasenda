@@ -54,7 +54,7 @@ fn tray_preset_submenu_from_library() {
         },
         library,
     );
-    let menu = menu_items(&idle(), &next, false);
+    let menu = menu_items(&idle(), &next, &FocusItems::default(), false);
     let items = preset_items(&menu);
     let labels: Vec<_> = items.iter().map(|(_, label, _)| label.as_str()).collect();
     assert_eq!(
@@ -103,7 +103,7 @@ fn an_unknown_selection_checks_the_first_preset() {
         },
         entries(&default_presets()),
     );
-    let checked: Vec<_> = preset_items(&menu_items(&idle(), &next, false))
+    let checked: Vec<_> = preset_items(&menu_items(&idle(), &next, &FocusItems::default(), false))
         .into_iter()
         .map(|(_, _, c)| c)
         .collect();
@@ -141,10 +141,13 @@ fn settings_change_rerenders_menu() {
     );
     assert_eq!(
         calls.take(),
-        [Call::Menu(menu_items(&idle(), &next, false), None)]
+        [Call::Menu(
+            menu_items(&idle(), &next, &FocusItems::default(), false),
+            None
+        )]
     );
     assert_eq!(
-        labels_of(&menu_items(&idle(), &next, false))[0],
+        labels_of(&menu_items(&idle(), &next, &FocusItems::default(), false))[0],
         "Start focus · 90 min"
     );
 
@@ -156,7 +159,10 @@ fn settings_change_rerenders_menu() {
     });
     assert_eq!(
         calls.take(),
-        [Call::Menu(menu_items(&idle(), &next, false), None)]
+        [Call::Menu(
+            menu_items(&idle(), &next, &FocusItems::default(), false),
+            None
+        )]
     );
 }
 
@@ -169,7 +175,13 @@ fn presets_changed_rerenders_the_submenu_from_the_new_library() {
     tray.presets_changed(&library);
     let next = NextSession::default().with_presets(library);
     let calls = calls.take();
-    assert_eq!(calls, [Call::Menu(menu_items(&idle(), &next, false), None)]);
+    assert_eq!(
+        calls,
+        [Call::Menu(
+            menu_items(&idle(), &next, &FocusItems::default(), false),
+            None
+        )]
+    );
     let Call::Menu(items, _) = &calls[0] else {
         unreachable!()
     };
