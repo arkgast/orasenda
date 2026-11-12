@@ -1,6 +1,6 @@
 # Focus views (P1 sub-project D) — Spec
 
-- Status: draft (awaiting owner approval)
+- Status: approved (owner, 2026-11-12)
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related: [ROADMAP P1 row D](../ROADMAP.md#p1-sub-projects) (`docs/ROADMAP.md:48`), [spec A](2026-11-08-focus-session-loop.md), [spec C](2026-11-11-today-redesign.md) (reserved Today's top-right cell and "Commands… ⌘K" for D, `docs/specs/2026-11-11-today-redesign.md:49-50`), [P1 Components](2026-11-10-p1-components.md), the redesign brief §2.3, §3.10–3.12, §3.14 and Q7–Q9 (`design/reviews/04-redesign-pass/01-brief.md:179-196,466-548,566-584,669-671`) and its critique F1, F7 (`02-brief-critique.md:34-40,84-90`), ADR-004, ADR-012, ADR-013, ADR-014, ADR-015, proposed ADR-016 (this spec), #326 (VoiceOver pass, end of P1).

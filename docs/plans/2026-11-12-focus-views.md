@@ -52,7 +52,7 @@ D4 depends on D1, D2 and D3. D5, D6 and D7 depend on D4 (D5 edits D1's split fil
 | 3 | D5, D6, D7 | D4 merged |
 | 4 | D8 | D5, D6 and D7 merged |
 
-E's tasks share the three-at-once budget; the controller interleaves them (see Shared with E).
+D and E share one budget of three concurrent pipelines; the controller interleaves them (ruling 11, see Shared with E).
 
 ## Notes for every task
 - **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change, and their own Playwright specs (`pnpm exec playwright test <spec>`). The controller runs the full `baton verify` at landing.
@@ -104,7 +104,7 @@ E's tasks share the three-at-once budget; the controller interleaves them (see S
   - [ ] `frame_within`: too large → clamped to the limits; outside `visible` → moved inside keeping its size; inside → unchanged. `default_frame` is the top-right of `visible` inset by `inset`.
   - [ ] A failed or degraded store write is logged and kept in memory; `run_frame_get` returns the in-memory frame for this run.
   - [ ] `run_view` leaves `pending` and `listening` untouched (`run_state` afterwards still drains `recovered`).
-  - [ ] `run_select_preset` while running or paused returns `WrongState` and saves nothing; while idle it saves only `preset` and emits `settings-changed` once. A failed save maps to `TimerCommandError { kind: Store }`.
+  - [ ] `run_select_preset` while running or paused returns `WrongState` and saves nothing; while idle it saves only `preset` and emits `settings-changed` once. A failed save maps to `TimerCommandError { kind: Store }` (ruling 4); `WrongState` stays as a guard although the summary only shows idle or ended (ruling 3).
 - Tests first: `window_frame_migrates_from_v2`, `window_frame_put_writes_no_change_log`, `window_frame_latest_newest_connected`, `frame_within_clamps_oversize`, `frame_within_moves_offscreen_inside`, `frame_within_keeps_fitting_frame`, `default_frame_top_right_inset`, `frame_save_store_down_kept_in_memory`, `run_view_keeps_pending_and_listening`, `select_preset_refused_while_running`, `select_preset_idle_saves_only_preset`, `select_preset_refused_when_start_wins_race` (two threads, barrier, no sleeps).
 - Notes: sonnet. `SessionService.store` is `pub(super)` to `session`, so the store calls live in `session/frames.rs` and only the pure clamp in `windows.rs` (the spec names one file; see the gaps in the PR body). Rename the migration at landing if E's lands first.
 
@@ -212,14 +212,14 @@ E's tasks share the three-at-once budget; the controller interleaves them (see S
   - Produces: `presetChoices(settings: Settings, lengths: PresetLength[]): Array<{ preset: Preset; label: string; meta: string; checked: boolean }>`.
 - Acceptance:
   - [ ] The body is padded by the insets from the URL and follows `focus-insets`; the background fills the whole window.
-  - [ ] `FullScreenFocus` gets the view's props, `summary` while idle or ended (saving through `preset_select`), `singleKeys={false}`, `ended` from `useSurfaceTimer`.
+  - [ ] `FullScreenFocus` gets the view's props, `summary` only while idle or ended, as the READMEs say (ruling 3; saving through `preset_select`), `singleKeys={false}`, `ended` from `useSurfaceTimer`.
   - [ ] ⌘↩ starts the saved preset with `custom: null` only while idle or ended; ⌘. ends only while running or paused; neither is prevented otherwise.
   - [ ] `onExit` (after the dialog's confirm) calls `focus_view_close`; Esc alone never closes.
   - [ ] A failed command shows its message in the status line; an unreadable view shows "Orasenda can't reach the timer. Close this window and try again."
   - [ ] Today's `PresetSummary` tests and every Today harness case still pass.
   - [ ] `focusWindow.spec.ts`: 1280×720, 1920×1080, 390×844, 1440×900, 1000×440 and 360×240 × focus, paused, idle and ended, with and without insets, both themes and reduced motion: no scroll, controls inside the viewport and inside the insets, targets ≥ 44×44, the focus ring at each stop.
 - Tests first: `focus_page_reads_timer_view_not_state`, `focus_page_insets_from_query_and_event`, `focus_cmd_enter_starts_saved_custom_null`, `focus_cmd_period_ends_only_in_session`, `focus_exit_closes_only_after_confirm`, `focus_command_failure_in_status_line`, `focus_view_unreadable_line`, `preset_choices_four_rows_saved_checked`, `summary_focus_form_has_no_settings_row`, `focus_window_fits_<size>_<state>` (generated).
-- Notes: sonnet. By eye (owner): the Focus window at 1280×720 and on the second display, idle, running, paused and ended, light and dark. Break and warning cases wait for E (no such `Mode` yet).
+- Notes: sonnet. By eye (owner): the Focus window at 1280×720 and on the second display, idle, running, paused and ended, light and dark. Break and warning cases move to E's last task (ruling 2: no such `Mode` yet).
 
 ### D7: The floater page and its keys
 - Priority: 1
@@ -257,12 +257,12 @@ E's tasks share the three-at-once budget; the controller interleaves them (see S
   - Produces: `paletteCommands(input: { view: TimerView | null; settings: Settings | null; lengths: PresetLength[]; displays: DisplayInfo[]; notifications: NotificationStatus }): Command[]`.
 - Acceptance:
   - [ ] The "Focus view" `IconButton` (`expand`, `aria-haspopup="menu"`, `aria-expanded` while open) shows idle, running and paused, at every Today size, without moving another element; it is absent when `displays_list` answers `[]`.
-  - [ ] Its menu: "Full screen" `Cmd+Shift+F` with one display, or "Full screen on <name>" per display (only the first carries `Cmd+Shift+F`), then "Floating timer, hide Orasenda" `Cmd+Shift+T`. A choice calls `focus_view_open`; a failure shows "The focus view didn't open. Try again." in the status row; `null` does nothing.
+  - [ ] Its menu: "Full screen" `Cmd+Shift+F` with one display, or "Full screen on <name>" per display (only the first carries `Cmd+Shift+F`), then "Floating timer, hide Orasenda" `Cmd+Shift+T`. A choice calls `focus_view_open`; a failure shows "The focus view didn't open." in the status row with a ghost "Try again" button that repeats the same open; the line ranks with the one-shot notices (newest wins) and clears on the next transition or a successful open (ruling 5); `null` does nothing.
   - [ ] No webview binding for ⌘⇧F, ⌘⇧T or ⌘K (`useShortcuts` has none); one `palette-open` mounts one palette.
   - [ ] The palette lists only what is available now, start first, Pause and End first while running, per the spec's table; each row runs the same command as its twin. `palette-open` while another modal is open only leaves the window forward.
   - [ ] Every Today harness case still passes; `palette.spec.ts`: the palette at 360×240 (compact) and 900×600, both themes, no document scroll, the focus ring.
   - [ ] ADR-016 reads accepted; the spec's status reads implemented with each task's PR; the roadmap row D reads done.
-- Tests first: `focus_view_button_one_display_items`, `focus_view_button_several_displays_first_has_shortcut`, `focus_view_choice_calls_open`, `focus_view_button_hidden_without_displays`, `focus_view_open_failure_status_line`, `pages_commands_opens_palette`, `palette_open_event_mounts_once`, `palette_open_ignored_while_modal_open`, `palette_commands_idle_order`, `palette_commands_running_pause_end_first`, `palette_presets_exclude_selected`, `palette_theme_lists_two_not_current`, `no_webview_binding_for_focus_shortcuts`.
+- Tests first: `focus_view_button_one_display_items`, `focus_view_button_several_displays_first_has_shortcut`, `focus_view_choice_calls_open`, `focus_view_button_hidden_without_displays`, `focus_view_open_failure_status_line`, `focus_view_try_again_repeats_open`, `focus_view_line_clears_on_transition`, `pages_commands_opens_palette`, `palette_open_event_mounts_once`, `palette_open_ignored_while_modal_open`, `palette_commands_idle_order`, `palette_commands_running_pause_end_first`, `palette_presets_exclude_selected`, `palette_theme_lists_two_not_current`, `no_webview_binding_for_focus_shortcuts`.
 - Notes: sonnet. By eye (owner): Today with the button at 360×240, 900×600 and 1440×900; the palette regular and compact; light and dark. E adds "Set intent" to `paletteCommands` after D8 merges.
 
 ## Shared with E
@@ -280,9 +280,22 @@ E (Session cadence, spec PR #330, not yet merged) runs in parallel. The controll
 | `src/ipc/bindings.ts` | D4 | Generated: regenerate after every rebase, never hand-merge. |
 | `src/test/fixtures.ts`, `src/dev/layout/scenarios.ts` | D4 | Append-only; the controller resolves. D6 and D7 don't edit them. |
 | ⌘K command list (`app/palette/paletteCommands.ts`) | D8 | E adds "Set intent" after D8 merges. |
-| `features/focus/*`, `features/floater/*` | D4, D6, D7 | E's last task (states and keys) starts after D6, D7 and D8 merge. |
+| `features/focus/*`, `features/floater/*`, `verification/layout/{focusWindow,floaterWindow}.spec.ts` | D4, D6, D7 | E's last task (states and keys) starts after D6, D7 and D8 merge, and adds the break and warning harness cases D leaves out (ruling 2). |
 | `CONTEXT.md`, `docs/DECISIONS.md` | D8 | Append at the end; E's ADRs are 017 onward. |
 | `verification/contrast-pairs.json`, `packages/ui/src/designSystem.test.ts` (export count), `packages/ui/src/index.ts`, `packages/ui/src/types.ts` | none planned | Append-only conflicts; the controller resolves them if either side adds a component. |
+
+## Rulings (controller, 2026-11-12)
+1. The spec's Status reads `approved (owner, 2026-11-12)` from this plan's PR; D8 sets it to implemented.
+2. D tests focus, paused, idle and ended (plus deep on the floater). Break and warning cases move to E's last task (Shared with E).
+3. The Focus window shows the summary only idle or ended, as the READMEs say; `preset_select` keeps `wrongState` as a guard (D2, D6).
+4. A failed `preset_select` save answers `TimerCommandError { kind: store }` (D2).
+5. A failed open shows "The focus view didn't open." with a ghost "Try again" button that repeats the same open. It ranks with the one-shot notices (newest wins) and clears on the next transition or a successful open (D8).
+6. `display_key` returns only `[A-Za-z0-9-]`, so `focus-<key>` is a valid label (D3, D4).
+7. The pure clamp lives in `service/windows.rs`, the store calls in `session/frames.rs` (D2).
+8. A frame whose write fails is kept in a `SessionService` field for this run (D2).
+9. The floater's frame is read on `CloseRequested`, not `Destroyed` (D4).
+10. Every open path hides `main`, including ⇧⌘T on an already-shown floater (D4).
+11. D and E share one budget of three concurrent pipelines; the controller interleaves them.
 
 ## Hands-on checks (owner, at the end of D)
 Two displays, "Displays have separate Spaces" on, then off. Implementers write the code path and test seam; the owner runs these.
@@ -300,7 +313,7 @@ Two displays, "Displays have separate Spaces" on, then off. Implementers write t
 | Goal 1: the Focus view button, every Today size, harness still passes | D8 |
 | Goal 2: the button's menu items and order | D8 (items), D4 (`displays_list` order) |
 | Goal 3: borderless Focus window, normal level, collection behaviour | D3, D4; H1 |
-| Goal 4: insets, background, `FullScreenFocus` harness cases | D6 (break and warning wait for E) |
+| Goal 4: insets, background, `FullScreenFocus` harness cases | D6 (break and warning: E's last task, ruling 2) |
 | Goal 5: non-activating floater, key without activation, README sizes | D3, D4, D7; H2 |
 | Goal 6: `window_frame`, no `change_log`, relaunch, clamp | D2, D4; H6 |
 | Goal 7: ⇧⌘F, ⇧⌘T, ⌘K from every window | D5, D3 (fallback), D7; H4 |
