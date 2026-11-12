@@ -1,6 +1,7 @@
 import { Icon, IconButton, type NavPage } from "@orasenda/ui";
 import { type ReactElement, useRef, useState } from "react";
 import { commands } from "../ipc/bindings";
+import { requestPalette } from "./palette/paletteRequest";
 
 export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "today", label: "Today" },
@@ -28,12 +29,15 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
     setExpanded(true);
     commands
       .nativeMenuPopup({
-        items: PAGE_ORDER.map(({ id, label }, index) => ({
-          id,
-          label,
-          accelerator: `Cmd+${index + 1}`,
-          checked: id === current,
-        })),
+        items: [
+          ...PAGE_ORDER.map(({ id, label }, index) => ({
+            id,
+            label,
+            accelerator: `Cmd+${index + 1}`,
+            checked: id === current,
+          })),
+          { id: "commands", label: "Commands…", accelerator: "Cmd+K", checked: null },
+        ],
         x: rect?.left ?? 0,
         y: rect?.bottom ?? 0,
       })
@@ -41,6 +45,10 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
         (chosen) => {
           setExpanded(false);
           // null: dismissed, or the menu could not be shown (logged in Rust). Nothing to do.
+          if (chosen === "commands") {
+            requestPalette();
+            return;
+          }
           const page = PAGE_ORDER.find(({ id }) => id === chosen);
           if (page) onNavigate(page.id);
         },

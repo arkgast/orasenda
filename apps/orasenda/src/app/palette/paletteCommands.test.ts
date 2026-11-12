@@ -20,7 +20,7 @@ test("palette_commands_idle_order", () => {
     label: "Start focus · Steady Focus 25 min",
     shortcut: "⌘↩",
   });
-  expect(commands[1]).toMatchObject({ id: "quick", label: "Just 2 minutes", shortcut: "⌘⇧↩" });
+  expect(commands[1]).toMatchObject({ id: "quick", label: "Just 2 minutes", shortcut: "⇧⌘↩" });
   const names = commands.map((c) => c.label);
   expect(names).toContain("Full screen on Built-in Retina Display");
   expect(commands.find((c) => c.id === "fullScreen:1")?.shortcut).toBe("⇧⌘F");
@@ -35,10 +35,11 @@ test("palette_commands_idle_order", () => {
 });
 
 test("palette_commands_running_pause_end_first", () => {
-  expect(paletteCommands({ ...base, view: RUNNING }).map((c) => c.id).slice(0, 2)).toEqual([
-    "pause",
-    "end",
-  ]);
+  expect(
+    paletteCommands({ ...base, view: RUNNING })
+      .map((c) => c.id)
+      .slice(0, 2),
+  ).toEqual(["pause", "end"]);
   expect(paletteCommands({ ...base, view: PAUSED })[0]).toMatchObject({ label: "Resume session" });
   const running = labels({ ...base, view: RUNNING });
   expect(running.some((l) => l.startsWith("Start focus"))).toBe(false);
@@ -73,5 +74,7 @@ test("palette_notifications_row_follows_preference", () => {
   expect(labels({ ...base, settings: { ...SETTINGS, notifySessionEnd: false } })).toContain(
     "Turn notifications on",
   );
-  expect(labels({ ...base, notifications: "unavailable" }).some((l) => /notifications/.test(l))).toBe(false);
+  expect(
+    labels({ ...base, notifications: "unavailable" }).some((l) => /notifications/.test(l)),
+  ).toBe(false);
 });

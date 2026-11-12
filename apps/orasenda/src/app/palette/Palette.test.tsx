@@ -3,9 +3,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { argsOf, mockBackend, settle } from "../../test/fixtures";
+import { stubPaletteDom } from "../../test/paletteDom";
 import { Palette } from "./Palette";
 
-beforeEach(() => resetSettingsQueueForTests());
+beforeEach(() => {
+  stubPaletteDom();
+  resetSettingsQueueForTests();
+});
 afterEach(async () => {
   cleanup();
   await settle();

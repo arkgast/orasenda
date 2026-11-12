@@ -16,6 +16,8 @@ import { commands, events } from "../ipc/bindings";
 import { subscribe } from "../ipc/subscribe";
 import { PageBoundary } from "./PageBoundary";
 import { PAGE_ORDER } from "./PagesButton";
+import { Palette } from "./palette/Palette";
+import { onPaletteRequest } from "./palette/paletteRequest";
 import { useShortcuts } from "./useShortcuts";
 import { useTheme } from "./useTheme";
 import { useWindowLayout } from "./useWindowLayout";
@@ -82,6 +84,21 @@ export function App() {
 
   const { compact } = useWindowLayout();
   useTheme();
+
+  // A fresh palette per opening; ignored while any modal is open (command-palette.md).
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    const openPalette = () => {
+      if (document.querySelector('[role="dialog"], dialog[open]')) return;
+      setPaletteOpen(true);
+    };
+    const stopEvent = subscribe("palette-open", events.paletteOpen.listen, openPalette);
+    const stopRequest = onPaletteRequest(openPalette);
+    return () => {
+      stopEvent();
+      stopRequest();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +184,13 @@ export function App() {
             </Suspense>
           </PageBoundary>
         </main>
+        {paletteOpen ? (
+          <Palette
+            compact={compact}
+            onClose={() => setPaletteOpen(false)}
+            onNavigate={(page) => navigate(page)}
+          />
+        ) : null}
       </div>
     </div>
   );

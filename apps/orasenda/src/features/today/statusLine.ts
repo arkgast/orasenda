@@ -27,6 +27,8 @@ export type StatusInput = {
   startError: boolean;
   /** `timer_pause`, `timer_resume` or `timer_stop` answered an error that is not a race. */
   controlError: boolean;
+  /** `focus_view_open` failed and nothing newer has happened. */
+  openFailed?: boolean;
   /** `timer_state` failed: no view will come this launch. */
   timerUnavailable: boolean;
   /** The one-shot milestone line ("Session ended."), or `null`. */
@@ -44,6 +46,7 @@ export type StatusInput = {
 
 export type StatusActionId =
   | "tryAgain"
+  | "tryAgainOpen"
   | "extend"
   | "takeBreak"
   | "skipBreak"
@@ -95,6 +98,12 @@ const TRY_AGAIN: StatusAction = {
   label: "Try again",
   name: "Try again starting focus",
   variant: "quiet",
+};
+const TRY_AGAIN_OPEN: StatusAction = {
+  id: "tryAgainOpen",
+  label: "Try again",
+  name: "Try again opening the focus view",
+  variant: "ghost",
 };
 const TAKE_BREAK: StatusAction = {
   id: "takeBreak",
@@ -176,6 +185,10 @@ export function statusLine(input: StatusInput): StatusLine | null {
   if (input.controlError) return line("Orasenda's timer isn't responding.", "attention");
   if (input.timerUnavailable) {
     return line("Timer unavailable. Restart Orasenda to try again.", "attention");
+  }
+  // Newest wins among the one-shot lines: a failed open is cleared by the next transition.
+  if (input.openFailed) {
+    return line("The focus view didn't open.", "attention", [TRY_AGAIN_OPEN]);
   }
   const cadence = input.cadence ?? null;
   const fromView = cadence ? viewRow(cadence, input) : null;

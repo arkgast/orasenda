@@ -4,14 +4,8 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../ipc/timerQueue";
-import {
-  emitPaletteOpen,
-  emitTimer,
-  IDLE,
-  mockBackend,
-  RUNNING,
-  settle,
-} from "../test/fixtures";
+import { emitPaletteOpen, emitTimer, IDLE, mockBackend, RUNNING, settle } from "../test/fixtures";
+import { stubPaletteDom } from "../test/paletteDom";
 import { App } from "./App";
 
 const PAGES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
@@ -27,6 +21,7 @@ function strictApp(commits: string[]) {
 }
 
 beforeEach(() => {
+  stubPaletteDom();
   resetTimerQueueForTests();
   resetSettingsQueueForTests();
 });

@@ -2,8 +2,8 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { mockBackend, settle } from "../test/fixtures";
-import { onPaletteRequest } from "./palette/paletteRequest";
 import { PagesButton } from "./PagesButton";
+import { onPaletteRequest } from "./palette/paletteRequest";
 
 afterEach(async () => {
   cleanup();
@@ -44,10 +44,19 @@ test("pages_button_sends_six_items_current_checked", async () => {
     }
   ).request;
   expect(request.items.map((i) => i.label)).toEqual(NAMES);
-  expect(request.items.map((i) => i.accelerator)).toEqual(
-    [...[1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`), "Cmd+K"],
-  );
-  expect(request.items.map((i) => i.checked)).toEqual([false, true, false, false, false, false, null]);
+  expect(request.items.map((i) => i.accelerator)).toEqual([
+    ...[1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`),
+    "Cmd+K",
+  ]);
+  expect(request.items.map((i) => i.checked)).toEqual([
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    null,
+  ]);
   expect(request.items.map((i) => i.id)).toEqual([
     "today",
     "board",

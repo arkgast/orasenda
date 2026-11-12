@@ -227,7 +227,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-016: Windows and surfaces
 - **Date:** 2026-11-12
-- **Status:** proposed (spec D; accepted by D's last task)
+- **Status:** accepted (2026-11-12, by D8, #339)
 - **Context:** ADR-013 makes every surface a subscriber to one Rust state, and the spike proved a Tauri window can be turned into a non-activating panel (ADR-004). P1-D adds the first product windows beside `main`: a full-screen Focus window on a chosen display and a floating timer over other apps, including full-screen ones, plus app-wide shortcuts that must work from any of them. Without one rule for window kinds, levels, keys, positions and permissions, each later window (E's states, F's capture panel, P6's blocking overlay) would choose its own.
 - **Options considered:**
   1. **One window kind per surface, each its own HTML entry and capability file; levels and Space behaviour set in `crates/platform-macos`; app-wide shortcuts as native menu accelerators handled in Rust; window positions in a device-only store table:** each window gets only the commands it uses; shortcuts fire once from any window; positions survive relaunch without syncing.
