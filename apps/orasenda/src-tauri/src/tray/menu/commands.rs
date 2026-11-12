@@ -1,0 +1,128 @@
+//! What a menu item does: the command for an id and how it runs.
+
+use orasenda_core::Preset;
+use tauri::AppHandle;
+
+use super::entries::preset_id;
+use super::*;
+use crate::ipc::StartRequest;
+use crate::lifecycle;
+use crate::runtime::session::{self, Action};
+
+/// What a menu item does.
+#[derive(Debug, PartialEq)]
+pub(crate) enum MenuCommand {
+    Session(Action),
+    /// *Start focus*: the saved preset, read when the item is chosen.
+    Start,
+    /// *Just 2 minutes*.
+    JustTwo,
+    SetPreset(Preset),
+    EditTimes,
+    Show,
+    Settings,
+    DevPanel,
+    Quit,
+}
+
+/// The command for a menu item id; `None` for ids that are not the tray's.
+pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
+    if let Some(preset) = PRESETS.iter().find(|&&preset| preset_id(preset) == id) {
+        return Some(MenuCommand::SetPreset(*preset));
+    }
+    match id {
+        START => Some(MenuCommand::Start),
+        JUST_TWO => Some(MenuCommand::JustTwo),
+        EDIT_TIMES => Some(MenuCommand::EditTimes),
+        PAUSE => Some(MenuCommand::Session(Action::Pause)),
+        RESUME => Some(MenuCommand::Session(Action::Resume)),
+        END_SESSION => Some(MenuCommand::Session(Action::Stop)),
+        SHOW => Some(MenuCommand::Show),
+        SETTINGS => Some(MenuCommand::Settings),
+        DEV_PANEL => Some(MenuCommand::DevPanel),
+        QUIT => Some(MenuCommand::Quit),
+        _ => None,
+    }
+}
+
+/// The start a *Start focus* (`quick: false`) or *Just 2 minutes* item runs: the saved
+/// preset or `quick`, never custom minutes.
+pub(crate) fn start_action(saved: Preset, quick: bool) -> Action {
+    Action::Start(StartRequest {
+        preset: if quick { Preset::Quick } else { saved },
+        custom: None,
+    })
+}
+
+/// Where in Settings a menu item opens, when not at the top.
+pub(crate) fn settings_target(command: &MenuCommand) -> Option<crate::ipc::SettingsTarget> {
+    match command {
+        MenuCommand::EditTimes => Some(crate::ipc::SettingsTarget::Timer),
+        _ => None,
+    }
+}
+
+/// Runs on the main thread. Anything that reads or writes the session or the settings goes
+/// to a blocking thread, so the main thread never waits on the service lock or the scheduler.
+pub(in crate::tray) fn on_menu_event(app: &AppHandle, id: &str) {
+    match menu_command(id) {
+        Some(MenuCommand::Show) => lifecycle::show_main(app),
+        Some(command @ (MenuCommand::Settings | MenuCommand::EditTimes)) => {
+            lifecycle::show_settings_on(app, settings_target(&command));
+        }
+        Some(MenuCommand::Quit) => app.exit(0),
+        // Creating a window waits on the main thread, so it runs on a blocking thread.
+        Some(MenuCommand::DevPanel) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(error) = crate::spike::window::open_dev_panel(&app) {
+                    eprintln!("tray: could not open the Developer panel: {error}");
+                }
+            });
+        }
+        Some(command) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn_blocking(move || run_command(&app, command));
+        }
+        None => {}
+    }
+}
+
+/// `current` with the chosen preset and nothing else changed.
+pub(crate) fn preset_choice(current: Settings, preset: Preset) -> Settings {
+    Settings { preset, ..current }
+}
+
+/// On a blocking thread. `run_action` has already published the true view, so the tray shows it.
+fn run_command(app: &AppHandle, command: MenuCommand) {
+    let action = match command {
+        MenuCommand::Session(action) => action,
+        MenuCommand::Start => start_action(session::current_settings(app).preset, false),
+        MenuCommand::JustTwo => start_action(Preset::Quick, true),
+        MenuCommand::SetPreset(preset) => {
+            // The same chain `settings_set` uses: it saves, then emits `settings-changed`.
+            let settings = preset_choice(session::current_settings(app), preset);
+            let saved = session::run_set_settings(app, settings);
+            if let Err(error) = &saved {
+                eprintln!("tray: could not save the preset: {}", error.message);
+            }
+            // The menu already toggled the clicked check item. A failed save emits nothing, so
+            // tell the tray the saved settings again: it rebuilds the menu and the true preset
+            // shows. (A save emits `settings-changed`, which does the same.)
+            if saved.is_err() {
+                crate::runtime::events::resync_surfaces(app, &session::current_settings(app));
+            }
+            return;
+        }
+        MenuCommand::Show
+        | MenuCommand::Settings
+        | MenuCommand::EditTimes
+        | MenuCommand::DevPanel
+        | MenuCommand::Quit => {
+            return;
+        }
+    };
+    if let Err(error) = session::run_action(app, action) {
+        eprintln!("tray: menu action refused: {}", error.message);
+    }
+}
