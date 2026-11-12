@@ -47,10 +47,22 @@ const ARC_TRANSITION = `stroke-dashoffset ${CALM}, stroke ${CALM}`;
 const WARNING_TRANSITION = `stroke-dashoffset ${CALM}, stroke var(--duration-slow) var(--easing-calm)`;
 
 // The digits scale with the ring (cqi is a unit of the ring's own box): timer-md up to timer-xl.
+// Mono digits are about 0.63 em wide, so "long" (H:MM:SS, 7 characters) takes a smaller factor than
+// "short" (MM:SS) and still fits the ring's inner square. Only the fluid path keeps the timer-md floor,
+// which at the smallest ring wins over the factor.
 const DIGITS = {
-  fluid: "clamp(var(--type-timer-md-font-size), 23cqi, var(--type-timer-xl-font-size))",
-  full: "min(var(--type-timer-xl-font-size), 30cqi)",
-  default: "min(var(--type-timer-lg-font-size), 23cqi)",
+  fluid: {
+    short: "clamp(var(--type-timer-md-font-size), 23cqi, var(--type-timer-xl-font-size))",
+    long: "clamp(var(--type-timer-md-font-size), 14cqi, var(--type-timer-xl-font-size))",
+  },
+  full: {
+    short: "min(var(--type-timer-xl-font-size), 20cqi)",
+    long: "min(var(--type-timer-xl-font-size), 14cqi)",
+  },
+  default: {
+    short: "min(var(--type-timer-lg-font-size), 23cqi)",
+    long: "min(var(--type-timer-lg-font-size), 14cqi)",
+  },
 } as const;
 
 // The ring takes the slot's shorter side, between timer-min-size and timer-full-size.
@@ -76,6 +88,8 @@ export function TimerRing(p: TimerRingProps): ReactElement {
   const c = 2 * Math.PI * r;
   const progress = clamp(p.progress);
   const full = !fluid && size >= 480;
+  const text = p.remaining || "25:00";
+  const length = text.length > 5 ? "long" : "short";
 
   const ringStyle: CSSProperties = { width: fluid ? FLUID_WIDTH : size };
   const ring = (
@@ -128,10 +142,11 @@ export function TimerRing(p: TimerRingProps): ReactElement {
         {mode !== "idle" ? (
           <div
             data-slot="timer-ring-digits"
-            style={{ fontSize: DIGITS[fluid ? "fluid" : full ? "full" : "default"] }}
+            data-length={length}
+            style={{ fontSize: DIGITS[fluid ? "fluid" : full ? "full" : "default"][length] }}
             className="font-light font-mono text-ink leading-none tabular-nums"
           >
-            {p.remaining || "25:00"}
+            {text}
           </div>
         ) : null}
         {p.task ? (

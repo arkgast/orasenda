@@ -92,3 +92,18 @@ test("exposes_timer_with_name", () => {
     screen.getByRole("timer", { name: "Paused, 12 minutes 16 seconds remaining" }),
   ).toBeTruthy();
 });
+
+test("digits_length_attr_long_for_h_mm_ss", () => {
+  const long = render(<TimerRing mode="focus" remaining="1:29:59" />);
+  expect(
+    long.container.querySelector("[data-slot=timer-ring-digits]")?.getAttribute("data-length"),
+  ).toBe("long");
+  const short = render(<TimerRing mode="focus" remaining="25:00" />);
+  expect(
+    short.container.querySelector("[data-slot=timer-ring-digits]")?.getAttribute("data-length"),
+  ).toBe("short");
+  const five = render(<TimerRing mode="focus" remaining="9:59" />);
+  expect(
+    five.container.querySelector("[data-slot=timer-ring-digits]")?.getAttribute("data-length"),
+  ).toBe("short");
+});

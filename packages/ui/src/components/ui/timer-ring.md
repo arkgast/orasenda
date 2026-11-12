@@ -8,3 +8,4 @@ The countdown ring. The arc shows what is left, not what is spent: full at the s
 - When the window is a strip, Today and the Focus window show `TimerStrip` instead (`timerLayout`, TimerStrip README, "Choosing the layout").
 
 Do: switch to `warning` once. The word and the triangle switch at once; the arc and chip colour fade over `duration-slow` (`easing-calm`); under reduced motion it is instant. Don't: announce every tick; the ring is `role="timer"` with `aria-live="off"`.
+- Digits fit inside the ring for up to seven characters ("1:29:59"). The digits element carries `data-length="short"` (five characters or fewer, "MM:SS") or `"long"` (more than five, "H:MM:SS"); "long" uses a smaller `cqi` factor in each size path. "fluid" keeps its `timer-md` floor, so at the smallest ring (160) a "long" face is held by the floor and still lies inside the circle, not its inscribed square.

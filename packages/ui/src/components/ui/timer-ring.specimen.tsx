@@ -16,6 +16,16 @@ const SIZES: Array<[number, number]> = [
   [1200, 900],
 ];
 
+const LONG = {
+  remaining: "1:29:59",
+  remainingLabel: "1 hour 29 minutes 59 seconds",
+  progress: 0.25,
+};
+const LONG_SIZES: Array<[number, number]> = [
+  SIZES[0] as [number, number],
+  SIZES[SIZES.length - 1] as [number, number],
+];
+
 export function TimerRingSpecimen(): ReactElement {
   return (
     <>
@@ -52,6 +62,28 @@ export function TimerRingSpecimen(): ReactElement {
       ))}
       <Frame state="timer-ring-fluid-focus" width={400} height={400}>
         <TimerRing size="fluid" mode="focus" {...RUN} task={TASK} />
+      </Frame>
+      <Frame state="timer-ring-fluid-long" width={400} height={400}>
+        <TimerRing size="fluid" mode="focus" {...LONG} task={TASK} />
+      </Frame>
+      {LONG_SIZES.map(([w, h]) => (
+        <Frame
+          key={`long-${w}x${h}`}
+          state={`timer-ring-fluid-long-${w}x${h}`}
+          width={w}
+          height={h}
+        >
+          <TimerRing size="fluid" mode="focus" {...LONG} task={TASK} />
+        </Frame>
+      ))}
+      <Frame state="timer-ring-numeric-long" width={320} height={320}>
+        <TimerRing size={280} mode="focus" {...LONG} />
+      </Frame>
+      <Frame state="timer-ring-full-long" width={600} height={600}>
+        <TimerRing size={560} mode="focus" {...LONG} />
+      </Frame>
+      <Frame state="timer-ring-full-short" width={600} height={600}>
+        <TimerRing size={560} mode="focus" remaining="25:00" progress={0.25} />
       </Frame>
       <Frame state="timer-ring-fluid-break" width={400} height={400}>
         <TimerRing
