@@ -343,6 +343,6 @@ All merged 2026-11-12; the by-eye checks of the last task and the VoiceOver pass
 - [x] E7 Cadence service and IPC (#347, PR #364)
 - [x] E8 Today: cadence states and the intent line (#348, PR #369)
 - [x] E9 Menu bar, notifications and the cadence Settings rows (#349, PR #370)
-- [x] E10 Floater and full-screen states, "Set intent", close-out (#350, PR E10_PR)
+- [x] E10 Floater and full-screen states, "Set intent", close-out (#350, PR #375)
 - [ ] Plan
 - [ ] Issues
