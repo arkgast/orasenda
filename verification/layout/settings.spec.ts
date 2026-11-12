@@ -64,7 +64,7 @@ for (const size of SIZES) {
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
     await openApp(page, "settingsInvalid", size, { page: "settings" });
-    await page.getByRole("radio", { name: /^Deep Work/ }).check();
+    await page.getByRole("radio", { name: /^Deep Work/ }).click();
     const line = page.getByText("Preset wasn't saved. Back to Steady Focus.");
     await expect(line).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again saving preset" })).toBeVisible();
@@ -152,7 +152,7 @@ for (const size of COMPACT) {
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
     await openApp(page, "settingsInvalid", size, { page: "settings" });
-    await page.getByRole("radio", { name: /^Deep Work/ }).check();
+    await page.getByRole("radio", { name: /^Deep Work/ }).click();
     await expect(page.getByText("Preset wasn't saved. Back to Steady Focus.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again saving preset" })).toBeVisible();
     await expectSettingsFit(page);
