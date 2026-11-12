@@ -202,6 +202,11 @@ fn main_capability_exact() {
             "allow-native-menu-popup",
             "allow-displays-list",
             "allow-focus-view-open",
+            "allow-preset-add",
+            "allow-preset-update",
+            "allow-preset-remove",
+            "allow-preset-undo-remove",
+            "allow-presets-restore-defaults",
         ],
     );
     let (_, main) = capability("main.json");
