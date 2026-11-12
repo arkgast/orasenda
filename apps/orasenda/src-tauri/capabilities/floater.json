@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "floater",
+  "description": "What the floating timer's webview may do: read the timer view, start, pause and resume, drag itself, open its menu, close itself and bring Orasenda back.",
+  "windows": ["floater"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "allow-timer-view",
+    "allow-timer-start",
+    "allow-timer-pause",
+    "allow-timer-resume",
+    "allow-settings-get",
+    "allow-native-menu-popup",
+    "allow-focus-view-close",
+    "allow-main-show"
+  ]
+}

@@ -121,21 +121,31 @@ pub(crate) fn item_specs(items: &[NativeMenuItem], generation: u64) -> Vec<ItemS
 #[specta::specta]
 pub async fn native_menu_popup(
     app: tauri::AppHandle,
+    window: tauri::WebviewWindow,
     request: NativeMenuRequest,
 ) -> Option<String> {
     #[cfg(desktop)]
     {
-        popup(app, request).await
+        popup(app, window.label().to_owned(), request).await
     }
     #[cfg(not(desktop))]
     {
-        let _ = (app, request);
+        let _ = (app, window, request);
         None
     }
 }
 
+/// The window a popup opens in: the one that asked.
+pub(crate) fn popup_label(caller: &str) -> &str {
+    caller
+}
+
 #[cfg(desktop)]
-async fn popup(app: tauri::AppHandle, request: NativeMenuRequest) -> Option<String> {
+async fn popup(
+    app: tauri::AppHandle,
+    caller: String,
+    request: NativeMenuRequest,
+) -> Option<String> {
     use tauri::Manager;
 
     let slot = app.state::<PopupSlot>();
@@ -143,7 +153,7 @@ async fn popup(app: tauri::AppHandle, request: NativeMenuRequest) -> Option<Stri
     let (done, finished) = std::sync::mpsc::channel::<()>();
     let shown = app.clone();
     let queued = app.run_on_main_thread(move || {
-        if let Err(error) = show(&shown, &request, generation) {
+        if let Err(error) = show(&shown, popup_label(&caller), &request, generation) {
             eprintln!("native_menu_popup: {error}");
         }
         let _ = done.send(());
@@ -173,12 +183,17 @@ async fn settle(app: &tauri::AppHandle) {
 }
 
 #[cfg(desktop)]
-fn show(app: &tauri::AppHandle, request: &NativeMenuRequest, generation: u64) -> tauri::Result<()> {
+fn show(
+    app: &tauri::AppHandle,
+    label: &str,
+    request: &NativeMenuRequest,
+    generation: u64,
+) -> tauri::Result<()> {
     use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem};
     use tauri::{LogicalPosition, Manager};
 
     let window = app
-        .get_webview_window("main")
+        .get_webview_window(label)
         .ok_or(tauri::Error::WindowNotFound)?;
     let menu = Menu::new(app)?;
     for spec in item_specs(&request.items, generation) {
@@ -215,6 +230,13 @@ mod tests {
             label: id.to_uppercase(),
             accelerator: accelerator.map(Into::into),
             checked,
+        }
+    }
+
+    #[test]
+    fn menu_popup_targets_calling_window() {
+        for label in ["main", "floater", "focus-1"] {
+            assert_eq!(popup_label(label), label);
         }
     }
 

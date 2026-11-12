@@ -18,6 +18,8 @@
     "allow-notifications-open-settings",
     "allow-navigate-take",
     "allow-presets-list",
-    "allow-native-menu-popup"
+    "allow-native-menu-popup",
+    "allow-displays-list",
+    "allow-focus-view-open"
   ]
 }

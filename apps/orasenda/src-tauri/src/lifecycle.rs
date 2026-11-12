@@ -60,6 +60,18 @@ pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
                 crate::notifications::on_main_focused(window.app_handle());
             }
         }
+        // The floater's frame is read while the window still exists (not on `Destroyed`).
+        tauri::WindowEvent::CloseRequested { .. } if window.label() == crate::windows::FLOATER => {
+            crate::windows::frames::on_floater_close_requested(window);
+        }
+        tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => match window.label() {
+            MAIN => crate::windows::frames::record_main(window),
+            crate::windows::FLOATER => crate::windows::frames::on_floater_moved(window),
+            _ => {}
+        },
+        tauri::WindowEvent::Destroyed if window.label() == crate::windows::FLOATER => {
+            crate::windows::surfaces_changed(window.app_handle());
+        }
         tauri::WindowEvent::CloseRequested { api, .. }
             if on_close_requested(window.label()) == CloseAction::Hide =>
         {
@@ -94,6 +106,8 @@ pub fn show_main(app: &AppHandle) {
     if let Err(error) = window.set_focus() {
         eprintln!("lifecycle: could not focus {MAIN}: {error}");
     }
+    // Remember which display `main` is on (the floater opens there by default).
+    crate::windows::frames::record_main(&window.as_ref().window());
 }
 
 /// The theme, window and navigation calls that launch and *Settings…* make, behind a small
@@ -197,6 +211,17 @@ mod tests {
         assert_eq!(on_close_requested("main"), CloseAction::Hide);
         assert_eq!(on_close_requested("overlay"), CloseAction::Pass);
         assert_eq!(on_close_requested("Main"), CloseAction::Pass);
+    }
+
+    #[test]
+    fn close_requested_focus_and_floater_close() {
+        assert_eq!(on_close_requested("floater"), CloseAction::Pass);
+        assert_eq!(on_close_requested("focus-69732992"), CloseAction::Pass);
+        assert_eq!(on_close_requested("focus-"), CloseAction::Pass);
+    }
+
+    #[test]
+    fn close_requested_other_labels_pass() {
         assert_eq!(on_close_requested(""), CloseAction::Pass);
     }
 

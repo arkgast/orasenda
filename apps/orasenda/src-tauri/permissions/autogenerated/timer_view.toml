@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-timer-view"
+description = "Enables the timer_view command without any pre-configured scope."
+commands.allow = ["timer_view"]
+
+[[permission]]
+identifier = "deny-timer-view"
+description = "Denies the timer_view command without any pre-configured scope."
+commands.deny = ["timer_view"]

@@ -166,6 +166,174 @@ fn main_capability_grants_settings_page_commands() {
     }
 }
 
+/// A capability's window patterns and permissions must equal these, in this order.
+fn assert_capability(file: &str, windows: &[&str], permissions: &[&str]) {
+    let (found_windows, found_permissions) = capability(file);
+    assert_eq!(found_windows, windows, "{file}: windows");
+    assert_eq!(found_permissions, permissions, "{file}: permissions");
+}
+
+#[test]
+fn main_capability_exact() {
+    assert_capability(
+        "main.json",
+        &["main"],
+        &[
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
+            "allow-app-info",
+            "allow-timer-state",
+            "allow-timer-start",
+            "allow-timer-pause",
+            "allow-timer-resume",
+            "allow-timer-stop",
+            "allow-settings-get",
+            "allow-settings-set",
+            "allow-notifications-request",
+            "allow-notifications-open-settings",
+            "allow-navigate-take",
+            "allow-presets-list",
+            "allow-native-menu-popup",
+            "allow-displays-list",
+            "allow-focus-view-open",
+        ],
+    );
+    let (_, main) = capability("main.json");
+    for withheld in [
+        "allow-focus-view-close",
+        "allow-main-show",
+        "allow-timer-view",
+        "allow-preset-select",
+    ] {
+        assert!(!main.iter().any(|p| p == withheld), "main has {withheld}");
+    }
+}
+
+#[test]
+fn focus_capability_exact() {
+    assert_capability(
+        "focus.json",
+        &["focus-*"],
+        &[
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
+            "allow-timer-view",
+            "allow-timer-start",
+            "allow-timer-pause",
+            "allow-timer-resume",
+            "allow-timer-stop",
+            "allow-settings-get",
+            "allow-presets-list",
+            "allow-preset-select",
+            "allow-focus-view-close",
+        ],
+    );
+    let (_, focus) = capability("focus.json");
+    for withheld in [
+        "allow-timer-state",
+        "allow-settings-set",
+        "allow-native-menu-popup",
+        "allow-presets-get",
+    ] {
+        assert!(!focus.iter().any(|p| p == withheld), "focus has {withheld}");
+    }
+    assert!(
+        !focus.iter().any(|p| p.starts_with("core:window:")),
+        "focus has a window permission"
+    );
+}
+
+#[test]
+fn floater_capability_exact() {
+    assert_capability(
+        "floater.json",
+        &["floater"],
+        &[
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
+            "core:window:allow-start-dragging",
+            "allow-timer-view",
+            "allow-timer-start",
+            "allow-timer-pause",
+            "allow-timer-resume",
+            "allow-settings-get",
+            "allow-native-menu-popup",
+            "allow-focus-view-close",
+            "allow-main-show",
+        ],
+    );
+    let (_, floater) = capability("floater.json");
+    for withheld in [
+        "allow-timer-stop",
+        "allow-settings-set",
+        "allow-timer-state",
+        "allow-preset-select",
+    ] {
+        assert!(
+            !floater.iter().any(|p| p == withheld),
+            "floater has {withheld}"
+        );
+    }
+    // Only the floater may start a drag.
+    for file in ["main.json", "focus.json", "dev.json", "overlay.json"] {
+        let (_, other) = capability(file);
+        assert!(
+            !other
+                .iter()
+                .any(|p| p == "core:window:allow-start-dragging"),
+            "{file} may drag"
+        );
+    }
+}
+
+#[test]
+fn dev_and_overlay_capabilities_exact() {
+    assert_capability(
+        "dev.json",
+        &["dev"],
+        &[
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
+            "allow-spike-status",
+            "allow-spike-running-apps",
+            "allow-spike-rule",
+            "allow-spike-set-rule",
+            "allow-spike-usage",
+        ],
+    );
+    assert_capability(
+        "overlay.json",
+        &["overlay"],
+        &[
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
+            "allow-spike-overlay-ready",
+            "allow-spike-overlay-choice",
+        ],
+    );
+}
+
+#[test]
+fn every_manifest_command_is_granted_somewhere() {
+    let granted: Vec<String> = [
+        "main.json",
+        "focus.json",
+        "floater.json",
+        "dev.json",
+        "overlay.json",
+    ]
+    .iter()
+    .flat_map(|file| capability(file).1)
+    .collect();
+    for command in COMMANDS {
+        let permission = format!("allow-{}", command.replace('_', "-"));
+        assert!(
+            granted.contains(&permission),
+            "no capability grants {permission}"
+        );
+    }
+}
+
 /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.
 #[test]
 fn export_bindings() {
@@ -187,6 +355,14 @@ fn export_bindings() {
         "plannedMin: number | null",
         "presetsList: () => __TAURI_INVOKE<PresetEntry[]>(\"presets_list\")",
         "nativeMenuPopup",
+        "displaysList: () => __TAURI_INVOKE<DisplayInfo[]>(\"displays_list\")",
+        "focusViewOpen: (target: FocusViewTarget) => typedError<null, FocusViewError>",
+        "focusViewClose: () => typedError<null, FocusViewError>",
+        "mainShow: () => typedError<null, FocusViewError>",
+        "timerView: () => __TAURI_INVOKE<TimerView_Serialize>(\"timer_view\")",
+        "presetSelect: (presetId: string) => typedError<null, TimerCommandError>",
+        "focusInsets: makeEvent<",
+        "paletteOpen: makeEvent<",
         "progress: number",
         "timerStart: (request: StartRequest) => typedError<TimerView_Serialize, TimerCommandError>",
         "timerStop: () => typedError<TimerView_Serialize, TimerCommandError>",
