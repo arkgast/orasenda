@@ -1,7 +1,6 @@
 // Type-only exports: the *NextProps contracts and the contract-only components (README and static
 // preview, no implementation yet). Each one is exported as a type; none has a runtime export.
 import type * as React from "react";
-import type { CommandPaletteProps } from "./components/ui/command-palette";
 import type { DialogProps } from "./components/ui/dialog";
 import type { FullScreenFocusProps } from "./components/ui/full-screen-focus";
 import type { IntentPromptProps } from "./components/ui/intent-prompt";
@@ -25,6 +24,8 @@ export interface Command {
   id: string;
   label: string;
   hint?: string;
+  /** One canonical glyph string ("⌃⌥F"), drawn as a right-aligned Kbd whose spoken form is part of the row's name. */
+  shortcut?: string;
 }
 
 declare global {
@@ -66,6 +67,7 @@ declare global {
       ) => React.ReactElement;
       describeShortcut: (glyphs: string) => { aria: string; spoken: string };
       PopoverMenu: typeof import("./components/ui/popover-menu").PopoverMenu;
+      ShortcutRecorder: typeof import("./components/ui/shortcut-recorder").ShortcutRecorder;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;
     };
@@ -108,15 +110,6 @@ export interface KanbanColumnNextProps extends KanbanColumnProps {
   collapsed?: boolean;
   onToggle?: () => void;
 }
-/** Not implemented in bundle.js yet. shortcut is a right-aligned Kbd glyph string. */
-export interface CommandNext extends Command {
-  shortcut?: string;
-}
-/** Not implemented in bundle.js yet. compact applies below layout-compact-height. */
-export interface CommandPaletteNextProps extends Omit<CommandPaletteProps, "commands"> {
-  commands: CommandNext[];
-  compact?: boolean;
-}
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps {
   compact?: boolean;
@@ -136,15 +129,6 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 export interface SessionSlotProps extends Omit<MenuBarTimerProps, "compact"> {
   onPause: () => void;
   onResume: () => void;
-}
-export interface ShortcutRecorderProps {
-  label: string;
-  keys?: string;
-  spokenKeys?: string;
-  recording?: boolean;
-  conflict?: string;
-  onRecord: (keys: string | null) => void;
-  onRestoreDefault?: () => void;
 }
 export type AppRole = "distracting" | "allowed" | "focus" | "neutral" | "neverRecord" | "site";
 export interface RoleTagProps {

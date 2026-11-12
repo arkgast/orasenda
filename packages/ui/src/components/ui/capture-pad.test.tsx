@@ -91,7 +91,7 @@ test("capture_pad_escape_on_empty_pad_closes_without_saving", () => {
   expect(onSave).not.toHaveBeenCalled();
 });
 
-test("capture_pad_command_enter_saves", async () => {
+test("capture_pad_cmd_return_saves", async () => {
   const onSave = vi.fn();
   render(<Host initial="idea" onSave={onSave} />);
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Thought" }), {

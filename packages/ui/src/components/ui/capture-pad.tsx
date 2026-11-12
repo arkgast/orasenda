@@ -1,5 +1,5 @@
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { type JSX, useEffect, useId, useRef, useState } from "react";
+import { type JSX, useId, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { Button } from "./button";
 import { Choice, ChoiceGroup } from "./choice";
@@ -25,7 +25,8 @@ const KINDS: { kind: InterruptionKind; label: string; line: string }[] = [
 /**
  * The hotkey capture pad inside a Radix Dialog. Escape and Command-Return save; neither discards. The pad
  * closes only after `onSave` resolves; a rejection keeps the text and says so. Duplicate saves are ignored
- * while one is running. A saved note is announced once as "Saved to Inbox.".
+ * while one is running. The pad closes on success, so it cannot announce from a closed dialog: the host
+ * announces "Saved to Inbox." once. The pad adds no live region of its own.
  */
 export function CapturePad({
   open: openProp,
@@ -39,17 +40,11 @@ export function CapturePad({
   const open = openProp !== false;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [announce, setAnnounce] = useState("");
   const saving = useRef(false);
   const group = useId();
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const hasText = value.trim().length > 0;
-
-  // A reopened pad starts with a quiet status line, not the last save's "Saved to Inbox.".
-  useEffect(() => {
-    if (open) setAnnounce("");
-  }, [open]);
 
   function save() {
     if (saving.current) return;
@@ -60,14 +55,12 @@ export function CapturePad({
     saving.current = true;
     setBusy(true);
     setError("");
-    setAnnounce("");
     Promise.resolve()
       .then(() => onSave({ text: value.trim(), kind }))
       .then(
         () => {
           saving.current = false;
           setBusy(false);
-          setAnnounce("Saved to Inbox.");
           onClose();
         },
         () => {
@@ -141,7 +134,8 @@ export function CapturePad({
                       if (hasText) save();
                     }
                   }}
-                  helper="Esc saves to Inbox and closes. ⌘Return saves too."
+                  // Written as an escape: the copy guard reads the return arrow as an emoji.
+                  helper={"Esc saves to Inbox and closes. ⌘\u21a9 saves too."}
                   error={error}
                 />
                 <ChoiceGroup legend="Interruption source" disabled={busy}>
@@ -173,9 +167,6 @@ export function CapturePad({
           </DialogPrimitive.Overlay>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
-      <div role="status" data-slot="capture-pad-status" className="sr-only">
-        {announce}
-      </div>
     </>
   );
 }

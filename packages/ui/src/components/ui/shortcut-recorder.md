@@ -1,9 +1,11 @@
 Records the global shortcut that starts or pauses focus from anywhere.
 
-- **Anatomy:** a field-like `button` on `surface-sunken` with a `line-strong` border, at least `field-width` wide; the keys in mono (`aria-hidden`) plus a hidden span with the keys in words; the visible hint "Change".
-- **States:** rest; recording (`selection` ground, `focus` border, hint "Type the new keys, Esc cancels"); conflict (the `Input` thick border plus an alert-glyph line "Orasenda uses ⌘K for Commands. Pick a different one."); off.
-- **Keyboard:** Return or Space starts recording; Esc cancels; ⌫ turns the shortcut off; "Use ⌃⌥F" restores the default. A shortcut needs ⌘, ⌃ or ⌥ plus a key.
-- **VoiceOver:** no `aria-label` and no `aria-invalid`. The name comes from `aria-labelledby`: row label + spoken keys + hint ("Start or pause focus from anywhere, Control Option F, Change"). The conflict, VoiceOver and off lines and the helper are linked with `aria-describedby`.
-- The All shortcuts table caps at `panel-width`.
+- **Anatomy:** the row `label` above a field-like `button` on `surface-sunken` with a `line-strong` border, at least `field-width` wide (never wider than `panel-width`); the keys in mono (`aria-hidden`) plus a hidden span with the keys in words; the visible hint "Change". A helper line below says what a shortcut needs, and an optional ghost button "Restore default" shows when `onRestoreDefault` is set.
+- **Props:** `label`, `keys` (a canonical glyph string; omit it for off, shown as "Off"), `spokenKeys` (defaults to `describeShortcut(keys).spoken`), `recording` (starts the field recording), `conflict` (the host's line), `onRecord(keys | null)`, `onRestoreDefault`, `id` (lands on the button).
+- **States:** rest; recording (`selection` ground, `focus` border, hint "Type the new keys, Esc cancels"); conflict (a `line-strong` inset ring plus an alert-glyph line, for example "Orasenda uses ⌘K for Commands. Pick a different one."); off.
+- **Keyboard:** Return, Space or a click starts recording; Esc cancels; Delete alone calls `onRecord(null)` (off); a press with ⌘, ⌃ or ⌥ plus a key calls `onRecord` with its canonical glyph string and ends recording. A modifier pressed alone, a plain letter and an unknown key record nothing and recording continues. A plain Tab leaves the field and ends recording.
+- **Output:** it reads `KeyboardEvent.code` (so Option-F is still F) and the modifiers, and emits the key table's form in `⌃⌥⇧⌘` order: `⌃⌥F`, `⇧⌘P`, `⌘.`. Every string it can emit round-trips through `describeShortcut`. Keys: A to Z, 0 to 9, Period, Comma, Return, Space, Tab and the arrows.
+- **Decisions stay with the host:** the recorder never decides whether a binding is allowed. The host passes `conflict` (Rust decides) and may pass a new `keys`.
+- **VoiceOver:** no `aria-label` and no `aria-invalid`. The name comes from `aria-labelledby`: label + spoken keys + hint ("Start or pause focus from anywhere, Control-Option-F, Change"). The conflict line and the helper are linked with `aria-describedby`; neither is a live region.
 
 Do: name the clash and what to do. Don't: accept a single letter without a modifier.

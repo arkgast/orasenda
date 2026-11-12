@@ -3,8 +3,12 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
+import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
+import type { Command as CommandEntry } from "../../types";
 import { Button } from "./button";
+import { IconButton } from "./icon-button";
+import { Kbd } from "./kbd";
 
 // WebKit does not focus a button on click, so remember the last pressed button as the opener fallback (same
 // approach as Dialog). A press only counts while fresh, and any key press clears it.
@@ -30,13 +34,31 @@ if (typeof document !== "undefined") {
 
 export interface CommandPaletteProps {
   open?: boolean;
-  commands: { id: string; label: string; hint?: string }[];
+  commands: CommandEntry[];
   onSelect: (id: string) => void;
   onClose: () => void;
+  /** The host sets it below layout-compact-height: the title and label are visually hidden and a Close IconButton sits beside the field. */
+  compact?: boolean;
+}
+
+// Interim close mark on the 20-unit grid, replaced by Icon in T7.
+function CloseMark() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      focusable="false"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 5l10 10M15 5L5 15" />
+    </svg>
+  );
 }
 
 const panel =
-  "flex max-h-full w-full max-w-panel-width flex-col gap-5 overflow-hidden rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+  "flex max-h-full w-full max-w-panel-width flex-col overflow-hidden rounded-lg border border-line-strong bg-surface-overlay text-ink shadow-overlay";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
@@ -49,6 +71,7 @@ export function CommandPalette({
   commands,
   onSelect,
   onClose,
+  compact = false,
 }: CommandPaletteProps): JSX.Element {
   const [query, setQuery] = useState("");
   const [value, setValue] = useState("");
@@ -90,7 +113,7 @@ export function CommandPalette({
             // layer.ts finds open layers by this slot, so Esc and portals treat the palette like a Dialog.
             data-slot="dialog-content"
             ref={contentRef}
-            className={panel}
+            className={cn(panel, compact ? "gap-2 p-3" : "gap-5 p-5")}
             onOpenAutoFocus={(event) => {
               const active = document.activeElement as HTMLElement | null;
               const press =
@@ -109,7 +132,10 @@ export function CommandPalette({
               if (contentRef.current && !isTopmostLayer(contentRef.current)) event.preventDefault();
             }}
           >
-            <DialogPrimitive.Title data-slot="dialog-title" className="m-0 text-title text-ink">
+            <DialogPrimitive.Title
+              data-slot="dialog-title"
+              className={cn("m-0 text-title text-ink", compact && "sr-only")}
+            >
               Commands
             </DialogPrimitive.Title>
             <Command
@@ -122,24 +148,33 @@ export function CommandPalette({
               onValueChange={setValue}
               className="flex min-h-0 flex-col gap-2"
             >
-              <span aria-hidden="true" data-slot="field-label" className="text-body-sm text-ink">
+              <span
+                aria-hidden="true"
+                data-slot="field-label"
+                className={cn("text-body-sm text-ink", compact && "sr-only")}
+              >
                 Search commands
               </span>
-              <Command.Input
-                ref={inputRef}
-                data-slot="input"
-                value={query}
-                onValueChange={setQuery}
-                // cmdk jumps to the first or last row on Home and End; keep them moving the caret as in a plain field.
-                onKeyDown={(event) => {
-                  if (event.key === "Home" || event.key === "End") event.stopPropagation();
-                }}
-                className={cn(
-                  "block min-h-hit-min w-full min-w-0 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
-                  "hover:border-focus",
-                  focusRing,
-                )}
-              />
+              <div className="flex items-center gap-2">
+                <Command.Input
+                  ref={inputRef}
+                  data-slot="input"
+                  value={query}
+                  onValueChange={setQuery}
+                  // cmdk jumps to the first or last row on Home and End; keep them moving the caret as in a plain field.
+                  onKeyDown={(event) => {
+                    if (event.key === "Home" || event.key === "End") event.stopPropagation();
+                  }}
+                  className={cn(
+                    "block min-h-hit-min min-w-0 flex-1 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
+                    "hover:border-focus",
+                    focusRing,
+                  )}
+                />
+                {compact ? (
+                  <IconButton label="Close" icon={<CloseMark />} onClick={onClose} />
+                ) : null}
+              </div>
               <Command.List
                 label="Commands"
                 className="flex min-h-0 flex-col gap-1 overflow-auto p-1"
@@ -152,15 +187,22 @@ export function CommandPalette({
                     onMouseDown={(event) => event.preventDefault()}
                     data-slot="command-palette-item"
                     className={cn(
-                      "flex min-h-hit-min cursor-pointer flex-col gap-1 rounded-sm border-s-2 border-clear px-3 py-2 text-body",
+                      "relative flex min-h-hit-min cursor-pointer items-start justify-between gap-3 rounded-sm border-s-2 border-clear px-3 py-2 text-body",
                       "data-[selected=true]:border-focus data-[selected=true]:bg-selection",
                     )}
                   >
-                    <span>{c.label}</span>
-                    {c.hint ? <span className="text-ink-muted">{c.hint}</span> : null}
-                    {c.id === selected ? (
-                      <span aria-hidden="true" className="text-caption text-focus">
-                        Selected
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="break-words">{c.label}</span>
+                      {c.hint ? <span className="break-words text-ink-muted">{c.hint}</span> : null}
+                      {c.id === selected ? (
+                        <span aria-hidden="true" className="text-caption text-focus">
+                          Selected
+                        </span>
+                      ) : null}
+                    </span>
+                    {c.shortcut ? (
+                      <span className="shrink-0">
+                        <Kbd keys={c.shortcut} spoken={describeShortcut(c.shortcut).spoken} />
                       </span>
                     ) : null}
                   </Command.Item>
@@ -172,11 +214,13 @@ export function CommandPalette({
                 No matching commands. Try a different word.
               </p>
             )}
-            <div data-slot="dialog-actions" className="flex justify-end">
-              <Button variant="ghost" onClick={onClose}>
-                Close
-              </Button>
-            </div>
+            {compact ? null : (
+              <div data-slot="dialog-actions" className="flex justify-end">
+                <Button variant="ghost" onClick={onClose}>
+                  Close
+                </Button>
+              </div>
+            )}
           </DialogPrimitive.Content>
         </DialogPrimitive.Overlay>
       </DialogPrimitive.Portal>

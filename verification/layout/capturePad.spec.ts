@@ -25,7 +25,8 @@ test("capture_pad_opens_named_with_thought_focused_and_saves_on_escape", async (
   await shoot(page, info, "capture-pad");
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("status")).toHaveText("Saved to Inbox.");
+  // The host announces the save; the pad has no live region of its own.
+  await expect(page.getByRole("status")).toHaveCount(0);
   await expect(opener).toBeFocused();
 });
 

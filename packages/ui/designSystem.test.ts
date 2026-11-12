@@ -44,6 +44,7 @@ const PREVIOUS_SURFACE = [
   "Kbd",
   "describeShortcut",
   "PopoverMenu",
+  "ShortcutRecorder",
   "Choice",
   "ChoiceGroup",
 ];
@@ -164,6 +165,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     onClose: noop,
     anchor: { current: null },
   },
+  ShortcutRecorder: { label: "Start or pause focus", keys: "⌃⌥F", onRecord: noop },
 };
 
 /** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */
