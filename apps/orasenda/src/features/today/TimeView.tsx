@@ -20,6 +20,16 @@ export function TimeView({ view, layout, clock, idleLength }: Props): ReactEleme
     progress: view?.progress ?? 0,
     mode: view?.mode ?? "idle",
   } as const;
-  if (layout === "ring") return <TimerRing size="fluid" clock={clock} {...shown} />;
-  return <TimerStrip stacked={layout === "stackedStrip"} idleLength={idleLength} {...shown} />;
+  // The intent is the task line; the stacked strip has no room for it (timer-strip README).
+  const task = view?.intent ?? undefined;
+  if (layout === "ring") return <TimerRing size="fluid" clock={clock} task={task} {...shown} />;
+  const stacked = layout === "stackedStrip";
+  return (
+    <TimerStrip
+      stacked={stacked}
+      idleLength={idleLength}
+      task={stacked ? undefined : task}
+      {...shown}
+    />
+  );
 }

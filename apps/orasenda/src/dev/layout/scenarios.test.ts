@@ -17,6 +17,19 @@ const NAMES = [
   "viewUnreadable",
   "presetSelectError",
   "closeError",
+  "warning",
+  "warningAuto",
+  "autoStep",
+  "breakShort",
+  "breakLong",
+  "breakPaused",
+  "breakCap",
+  "keepGoing",
+  "breakOver",
+  "breakEnded",
+  "capLine",
+  "intentSet",
+  "intentPaused",
 ];
 
 const NEW_COMMANDS = [

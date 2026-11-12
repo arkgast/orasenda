@@ -18,7 +18,7 @@
   min-block-size: 0;
   min-inline-size: 0;
   grid-template-columns: minmax(0, var(--content-width));
-  grid-template-rows: var(--hit-min) var(--hit-min) minmax(0, 1fr) var(--control-lg);
+  grid-template-rows: var(--hit-min) minmax(var(--hit-min), auto) minmax(0, 1fr) var(--control-lg);
   grid-template-areas: "top" "status" "time" "controls";
   justify-content: center;
 }
@@ -84,6 +84,40 @@
   min-block-size: var(--hit-min);
 }
 
+/* The status row: the notice and, beside it, a second action. The row may grow when two actions
+   and a long line do not fit one 44px line; a single line stays 44px. */
+.today-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.today-status-row > [data-slot="inline-notice"] {
+  flex: 1 1 auto;
+}
+
+.today-status-row[data-actions="2"] > [data-slot="inline-notice"] {
+  block-size: auto;
+  min-block-size: var(--hit-min);
+}
+
+/* A strip's status column is narrow: the second action goes under the notice, not beside it. */
+.today[data-layout="strip"] .today-status-row[data-actions="2"] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.today[data-layout="strip"] .today-status-row[data-actions="2"] > [data-slot="inline-notice"] {
+  align-self: stretch;
+}
+
+/* The intent field takes the status row's place: its label and the field stack. */
+.today-intent {
+  min-inline-size: 0;
+}
+
 .today-status {
   grid-area: status;
   min-inline-size: 0;
@@ -132,4 +166,17 @@
    Outside the strip (whose column reads from the start) the row centres on the column. */
 .today:not([data-layout="strip"]) .today-controls [data-slot="start-button"] > div {
   justify-content: center;
+}
+
+/* At 360x240 the time track has no spare height: the open field lies over the top of the time
+   instead of pushing it (a positioned box paints above the in-flow time that follows it). */
+.today[data-layout="stackedStrip"] .today-status {
+  position: relative;
+}
+
+.today[data-layout="stackedStrip"] .today-intent {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  background: var(--surface);
 }

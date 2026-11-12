@@ -7,8 +7,8 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 
 ## Status row (`variant="row"`)
 
-- **Anatomy:** a fixed 44px row with no box; an optional `ModeChip` (stacked strip only) and one ghost or quiet action as siblings. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. The row is never the live region, so chip changes are never announced.
-- **Text:** `body-sm` `ink`, at most two lines; it never grows and never truncates. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
+- **Anatomy:** a 44px row with no box (two actions may grow it, see below); one ghost or quiet action as a sibling. Today adds a second action as a sibling `Button` beside the row (`StatusRow`, a composition in the app, not a prop here); in the stacked strip the strip's own `ModeChip` is the state word, so the row adds none. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. The row is never the live region, so chip changes are never announced.
+- **Text:** `body-sm` `ink`, at most two lines; it never truncates, and the row grows only for a second action that wraps. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
 - **Tones:** `neutral` (no glyph), `attention` (the alert glyph in `ink`), `warning` (the amber triangle, time only).
 - **Actions:** `actionVariant` is `'ghost'` by default, or `'quiet'`; names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
 - **Focus:** at a session end the line is announced first, then focus moves to Start focus, with the action one Shift-Tab away.
@@ -18,10 +18,11 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 The row holds at most two sentences, in this order:
 
 1. The answer to the person's last action (a start that failed, a failed save).
-2. A one-shot milestone ("Session ended.", "Your last session ended while Orasenda was closed.", "Two minutes left. Finish the thought.").
+2. A cadence row or one-shot milestone ("Session ended.", "Your last session ended while Orasenda was closed.", "Two minutes left. Finish the thought."), in the order of Today's table below.
 3. The standing store line, joined after a short milestone in the same row ("Session ended. Orasenda can't save sessions right now."). If the two together exceed 65 characters, the higher one shows and the store line returns when it clears. A joined row takes the tone and glyph of its first sentence.
-4. The welcome line (first run only).
-5. A tip, only when the row is otherwise empty and Today is idle.
+4. The intent button, in a running or paused focus with nothing above: no text, a quiet "What will be done?" ("Edit intent" once one is set).
+5. The welcome line (first run only), then the idle rest line ("4 hours of focus today.", `rest` tone).
+6. A tip, only when the row is otherwise empty and Today is idle.
 
 ### Today slots
 
@@ -32,7 +33,15 @@ The row holds at most two sentences, in this order:
 | Timer unavailable (`timer_state` failed at launch) | attention | "Timer unavailable. Restart Orasenda to try again." | none | never this launch |
 | Natural end, ⌘. or End | neutral | "Session ended." | none ("Got it" only when joined with a tip) | next transition |
 | Recovered on launch | neutral | "Your last session ended while Orasenda was closed." | none | next transition |
-| Two minutes left | warning | "Two minutes left. Finish the thought." | none | the end |
+| Two minutes left, in a focus | warning | "Two minutes left. Finish the thought." | quiet "+10 min" (name "Add 10 minutes of focus") while it is on offer; in an automatic step, quiet "Take a break" (name "Take a break now") instead | the end, or +10 |
+| Deep-hours note: the focus that crossed the cap ended | neutral | "You've focused 4 hours today. A good place to stop." | the break's two actions | the next transition |
+| A break (also in its last 2:00, which stays the break row) | neutral | the suggestion, its label as the first word: "Optional: look at something far away." Left out in the stacked strip, where only the actions show | quiet "+10 min" (name "Back to focus for 10 more minutes") while on offer, then ghost "Skip break" | the break's end |
+| Keep going offer, idle after a `quick` session | neutral | "Keep going?" | quiet "Keep going" (name "Keep going with Steady Focus"), then ghost "Stop here" | any transition, Stop here, a page change |
+| Running in an automatic step, not in its last 2:00 | neutral | "Still going · ends 15:40" | quiet "Take a break" (name "Take a break now") | the step's warning, or its end |
+| A break ended by time | neutral | "Break over. Start when you're ready." | none | next transition |
+| A break skipped | neutral | "Break ended." | none | next transition |
+| A focus is running or paused, nothing above | none | empty | quiet "What will be done?" or "Edit intent": it swaps the row for an `Input` | the field closing |
+| Idle after the deep-hours cap | rest | "4 hours of focus today." | none | midnight, or a new session |
 | Store unavailable | attention | "Orasenda can't save sessions right now." | none (it already retries every second) | while the state lasts |
 | Store newer | attention | "This data was saved by a newer Orasenda." | none | while the state lasts |
 | First run | neutral | "Welcome. Nothing to set up." | none | first Start |
@@ -53,4 +62,6 @@ A start error shows here, on the same screen as Start. Focus stays on Start; the
 | Store newer | controls read-only, each with the reason | "This data was saved by a newer Orasenda. Settings are read-only until you update." |
 | Shortcut conflict | the recorder's conflict line | none (the index shows "Pick a new shortcut" with the alert glyph) |
 
-Do: show one notice at a time, and keep the row's height fixed. Don't: use it to nag about stats.
+Two actions: the first is the notice's own, the second a sibling `Button` in reading order after it. Both keep the 44px hit target. Beside a long line the row may take a second line in a ring layout, and in the strip's narrow column the second action goes under the first row. While the intent field is open it replaces the row; at 360 x 240 it lies over the top of the time.
+
+Do: show one notice at a time, and keep the row at 44px, growing only to two lines when a second action needs it. Don't: use it to nag about stats.
