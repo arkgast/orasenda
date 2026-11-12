@@ -128,24 +128,16 @@ fn save(app: &AppHandle, display: &str, frame: orasenda_service::windows::Frame)
     crate::runtime::session::run_frame_save(&AppHost::new(app), FLOATER, display, frame);
 }
 
-/// The close step apart from Tauri: a pending trailing save is dropped, then the frame is read.
-pub(crate) fn frame_on_close<T>(
-    trailing: &mut Trailing,
-    read: impl FnOnce() -> Option<T>,
-) -> Option<T> {
-    trailing.cancel();
-    read()
-}
-
 /// `CloseRequested` on the floater: the window still exists, so its frame is read now (not on
 /// `Destroyed`) and saved on a thread; a pending trailing save is dropped.
 pub(crate) fn on_floater_close_requested(window: &Window) {
     let app = window.app_handle().clone();
     let read = || native::frame_of_window(window);
-    let frame = match app.try_state::<Frames>() {
-        Some(frames) => frame_on_close(&mut frames.floater(), read),
-        None => read(),
-    };
+    // The guard is gone before the AppKit read: no lock is held across it.
+    if let Some(frames) = app.try_state::<Frames>() {
+        frames.floater().cancel();
+    }
+    let frame = read();
     let Some((display, frame)) = frame else {
         eprintln!("windows: the floater's frame could not be read; not saved");
         return;

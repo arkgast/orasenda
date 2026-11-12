@@ -19,7 +19,7 @@ fn task_failed() -> FocusViewError {
     FocusViewError::unavailable("Orasenda couldn't finish that. Try again.")
 }
 
-/// The connected displays in menu order, the main window's flagged. `[]` off macOS or when
+/// The connected displays: the main window's first (flagged), then the rest in screen order. `[]` off macOS or when
 /// they can't be read (logged).
 pub(crate) fn display_infos<O: Ops>(ops: &O) -> Vec<DisplayInfo> {
     let screens = match ops.screens() {
@@ -33,14 +33,15 @@ pub(crate) fn display_infos<O: Ops>(ops: &O) -> Vec<DisplayInfo> {
         .main_display()
         .filter(|id| screens.iter().any(|screen| &screen.id == id))
         .or_else(|| screens.first().map(|screen| screen.id.clone()));
-    screens
+    let (first, rest): (Vec<_>, Vec<_>) = screens
         .into_iter()
         .map(|screen| DisplayInfo {
             has_main_window: main.as_deref() == Some(screen.id.as_str()),
             id: screen.id,
             name: screen.name,
         })
-        .collect()
+        .partition(|info| info.has_main_window);
+    first.into_iter().chain(rest).collect()
 }
 
 /// The connected displays.
@@ -89,9 +90,12 @@ pub async fn focus_view_close(
     closable(&label)?;
     on_blocking(move || {
         let ops = AppOps::new(&app);
-        if ops.exists(&label) {
-            ops.close(&label);
+        if !ops.exists(&label) {
+            return Err(FocusViewError::unavailable(
+                "There is no focus view to close here.",
+            ));
         }
+        ops.close(&label);
         Ok(())
     })
     .await

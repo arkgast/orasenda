@@ -135,9 +135,13 @@ pub async fn native_menu_popup(
     }
 }
 
-/// The window a popup opens in: the one that asked.
-pub(crate) fn popup_label(caller: &str) -> &str {
-    caller
+/// The window a popup opens in: the one that asked, never a fallback to `main`.
+#[cfg(any(desktop, test))]
+pub(crate) fn target_window<W>(
+    lookup: impl FnOnce(&str) -> Option<W>,
+    caller: &str,
+) -> tauri::Result<W> {
+    lookup(caller).ok_or(tauri::Error::WindowNotFound)
 }
 
 #[cfg(desktop)]
@@ -153,7 +157,7 @@ async fn popup(
     let (done, finished) = std::sync::mpsc::channel::<()>();
     let shown = app.clone();
     let queued = app.run_on_main_thread(move || {
-        if let Err(error) = show(&shown, popup_label(&caller), &request, generation) {
+        if let Err(error) = show(&shown, &caller, &request, generation) {
             eprintln!("native_menu_popup: {error}");
         }
         let _ = done.send(());
@@ -192,9 +196,7 @@ fn show(
     use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem};
     use tauri::{LogicalPosition, Manager};
 
-    let window = app
-        .get_webview_window(label)
-        .ok_or(tauri::Error::WindowNotFound)?;
+    let window = target_window(|label| app.get_webview_window(label), label)?;
     let menu = Menu::new(app)?;
     for spec in item_specs(&request.items, generation) {
         let accelerator = spec.accelerator.as_deref();
@@ -236,8 +238,19 @@ mod tests {
     #[test]
     fn menu_popup_targets_calling_window() {
         for label in ["main", "floater", "focus-1"] {
-            assert_eq!(popup_label(label), label);
+            let asked = std::cell::RefCell::new(Vec::new());
+            let found = target_window(
+                |l| {
+                    asked.borrow_mut().push(l.to_owned());
+                    Some(l.to_owned())
+                },
+                label,
+            );
+            assert_eq!(found.unwrap(), label);
+            assert_eq!(*asked.borrow(), vec![label.to_owned()]);
         }
+        let missing = target_window(|_| None::<String>, "floater");
+        assert!(matches!(missing, Err(tauri::Error::WindowNotFound)));
     }
 
     #[test]

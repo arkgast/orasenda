@@ -3,13 +3,13 @@
 use std::cell::RefCell;
 
 use orasenda_core::NotificationStatus;
-use orasenda_service::session::test_support::{Event, TestHost};
+use orasenda_service::session::test_support::TestHost;
 use orasenda_service::session::{run_frame_load, run_frame_save};
 use orasenda_service::windows::Frame;
 
 use super::floater::{self, LIMITS, close_floater_on, floater_window_spec, open_floater_on};
 use super::focus::{self, focus_label, focus_window_spec, insets_of, open_focus_on};
-use super::frames::{DEBOUNCE_MS, Trailing, frame_on_close};
+use super::frames::{DEBOUNCE_MS, Trailing};
 use super::{FLOATER, Ops, Screen, WindowSpec};
 use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
 
@@ -49,6 +49,8 @@ struct Fake {
     windows: RefCell<Vec<String>>,
     calls: RefCell<Vec<String>>,
     fail_on: Option<&'static str>,
+    /// How many `exists` answers are false although the window is there (a lost race).
+    blind: std::cell::Cell<u32>,
 }
 
 impl Fake {
@@ -61,6 +63,7 @@ impl Fake {
             windows: RefCell::new(Vec::new()),
             calls: RefCell::new(Vec::new()),
             fail_on: None,
+            blind: std::cell::Cell::new(0),
         }
     }
 
@@ -92,11 +95,15 @@ impl Ops for Fake {
         self.main.clone()
     }
     fn exists(&self, label: &str) -> bool {
+        if self.blind.get() > 0 {
+            self.blind.set(self.blind.get() - 1);
+            return false;
+        }
         self.windows.borrow().iter().any(|l| l == label)
     }
     fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError> {
         self.step(&format!("create {}", spec.label))?;
-        if self.exists(&spec.label) {
+        if self.windows.borrow().contains(&spec.label) {
             return Err(FocusViewError::unavailable("exists"));
         }
         self.windows.borrow_mut().push(spec.label.clone());
@@ -355,9 +362,12 @@ fn focus_view_open_floater_twice_one_window() {
 fn floater_create_race_focuses_the_winner() {
     let ops = Fake::new(vec![screen("1", 1440, 900)]);
     ops.windows.borrow_mut().push(FLOATER.into());
-    // `exists` is true up front here, so the race is the other branch: create fails, exists stays.
+    // The first `exists` misses the window (a second open is mid-create): create fails, then
+    // the window exists, so the loser focuses it.
+    ops.blind.set(1);
     open_floater_on(&ops).unwrap();
-    assert_eq!(ops.count("create"), 0);
+    assert_eq!(ops.count("create"), 1);
+    assert_eq!(ops.count("key floater"), 1);
     assert_eq!(ops.count("hide_main"), 1);
 }
 
@@ -402,11 +412,6 @@ fn open_close_never_touch_session() {
         "no tick, milestone, settings or theme was published: {}",
         events.len()
     );
-    assert_eq!(
-        host.log()
-            .count(|e| matches!(e, Event::Tick(_) | Event::Milestone(_))),
-        0
-    );
 }
 
 #[test]
@@ -436,21 +441,13 @@ fn frame_debounce_trailing_500ms() {
 }
 
 #[test]
-fn floater_frame_saved_on_close_requested() {
+fn floater_close_drops_the_pending_trailing_save() {
     let mut trailing = Trailing::default();
     trailing.touch(0);
-    let saved = frame_on_close(&mut trailing, || {
-        Some(("1".to_owned(), rect(10, 20, 280, 64)))
-    });
-    assert_eq!(saved, Some(("1".to_owned(), rect(10, 20, 280, 64))));
+    trailing.cancel();
     assert!(
         !trailing.due(10_000),
         "the pending trailing save is dropped"
-    );
-    assert_eq!(
-        frame_on_close(&mut trailing, || None::<()>),
-        None,
-        "an unreadable frame is not invented"
     );
 }
 
@@ -462,7 +459,12 @@ fn display_infos_flag_the_main_display_first_fallback() {
     let infos = display_infos(&ops);
     assert_eq!(
         infos.iter().map(|d| d.has_main_window).collect::<Vec<_>>(),
-        vec![false, true]
+        vec![true, false]
+    );
+    assert_eq!(
+        infos.iter().map(|d| d.id.as_str()).collect::<Vec<_>>(),
+        vec!["2", "1"],
+        "the main window's display first, the rest in screen order"
     );
     ops.main = Some("gone".into());
     assert_eq!(
