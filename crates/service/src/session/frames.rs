@@ -2,7 +2,8 @@
 //!
 //! A frame whose write fails (or that has no store to go to) is kept in
 //! [`SessionService::frames`] for this run, and read from there first: it is newer than
-//! anything stored. Nothing is shown to the user, because nothing they asked for failed.
+//! anything stored for the same display. Across displays the newest in-memory copy wins over
+//! the store (accepted degradation: the store's write time is not compared). Nothing is shown to the user, because nothing they asked for failed.
 
 use orasenda_store::window_frames::{self, StoredFrame};
 
@@ -11,6 +12,14 @@ use crate::scheduler::Host;
 use crate::windows::Frame;
 
 fn from_stored(stored: StoredFrame) -> Option<Frame> {
+    let frame = from_stored_inner(stored);
+    if frame.is_none() {
+        eprintln!("frames: a stored frame is out of range and was ignored");
+    }
+    frame
+}
+
+fn from_stored_inner(stored: StoredFrame) -> Option<Frame> {
     Some(Frame {
         x: i32::try_from(stored.x).ok()?,
         y: i32::try_from(stored.y).ok()?,
@@ -37,7 +46,7 @@ impl SessionService {
     /// failed read is logged and answers `None`.
     pub fn frame_get(&self, window: &str, display: &str) -> Option<Frame> {
         if let Some(frame) = self.frames.get(&key(window, display)) {
-            return Some(*frame);
+            return Some(frame.0);
         }
         let store = self.store.as_ref()?;
         match store.read(|txn| window_frames::get(txn, window, display)) {
@@ -53,11 +62,15 @@ impl SessionService {
     /// for the first listed display that has one, else the stored frame on the connected
     /// display written most recently.
     pub fn frame_load(&self, window: &str, displays: &[&str]) -> Option<(String, Frame)> {
-        if let Some((display, frame)) = displays.iter().find_map(|display| {
-            self.frames
-                .get(&key(window, display))
-                .map(|frame| (*display, *frame))
-        }) {
+        if let Some((display, (frame, _))) = displays
+            .iter()
+            .filter_map(|display| {
+                self.frames
+                    .get(&key(window, display))
+                    .map(|entry| (*display, *entry))
+            })
+            .max_by_key(|(_, (_, at))| *at)
+        {
             return Some((display.to_owned(), frame));
         }
         let store = self.store.as_ref()?;
@@ -87,7 +100,7 @@ impl SessionService {
             }
             Err(error) => {
                 eprintln!("frames: {window} on {display} not saved ({error}); kept for this run");
-                self.frames.insert(key(window, display), frame);
+                self.frames.insert(key(window, display), (frame, now_ms));
             }
         }
     }

@@ -77,8 +77,8 @@ pub struct SessionService {
     pub(super) theme_owed: Option<Theme>,
     /// The number given to the last view handed out (see [`ViewGate`]).
     pub(super) view_seq: u64,
-    /// Window frames whose store write failed or had no store, kept for this run only.
-    pub(super) frames: HashMap<(String, String), Frame>,
+    /// Window frames whose store write failed or had no store, kept for this run only, with the time saved.
+    pub(super) frames: HashMap<(String, String), (Frame, u64)>,
 }
 
 impl SessionService {
