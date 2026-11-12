@@ -51,3 +51,50 @@ test("nav_rail_current_label_is_semibold_like_legacy", () => {
     expect(label?.classList.contains("font-semibold")).toBe(button.hasAttribute("aria-current"));
   }
 });
+
+function tabStops(): HTMLElement[] {
+  return screen.getAllByRole("button").filter((b) => b.tabIndex === 0);
+}
+
+test("nav_rail_is_one_roving_tab_stop", () => {
+  render(<NavRail current="board" onNavigate={() => {}} />);
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Board"]);
+});
+
+test("nav_rail_tab_stop_follows_current_page", () => {
+  const { rerender } = render(<NavRail current="today" onNavigate={() => {}} />);
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Today"]);
+  rerender(<NavRail current="review" onNavigate={() => {}} />);
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Review"]);
+});
+
+test("nav_rail_arrows_move_and_return_navigates", () => {
+  const onNavigate = vi.fn();
+  render(<NavRail current="today" onNavigate={onNavigate} />);
+  screen.getByRole("button", { name: "Today" }).focus();
+  fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
+  expect(document.activeElement?.textContent).toBe("Board");
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Board"]);
+  fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
+  fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
+  expect(document.activeElement?.textContent).toBe("Board");
+  fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
+  fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
+  expect(document.activeElement?.textContent).toBe("Settings");
+  fireEvent.click(document.activeElement as Element);
+  expect(onNavigate).toHaveBeenCalledWith("settings");
+});
+
+test("nav_rail_keeps_aria_current_page", () => {
+  render(<NavRail current="routines" onNavigate={() => {}} />);
+  const current = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-current"));
+  expect(current.map((b) => b.textContent)).toEqual(["Routines"]);
+});
+
+test("nav_rail_icons_come_from_icon", () => {
+  render(<NavRail current="today" onNavigate={() => {}} />);
+  for (const button of screen.getAllByRole("button")) {
+    expect(button.querySelector("svg")?.getAttribute("stroke-width")).toBe("1.5");
+    expect(button.querySelector("svg")?.classList.contains("size-icon-lg")).toBe(true);
+  }
+});
