@@ -127,3 +127,9 @@
 .today[data-layout="strip"] .today-controls {
   align-self: center;
 }
+
+/* #321: with a compact label the Start button fills the column and its row sat at the start of it.
+   Outside the strip (whose column reads from the start) the row centres on the column. */
+.today:not([data-layout="strip"]) .today-controls [data-slot="start-button"] > div {
+  justify-content: center;
+}
