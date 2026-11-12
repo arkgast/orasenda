@@ -41,6 +41,21 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Window frame | A window's remembered position and size on one display, in display-relative points, in the device-only `window_frame` table. Only the floater has one. | A display's frame (the screen's own rectangle) |
 | Key focus without activation | The floater receiving keys after a click or an explicit open while another app stays active and keeps the menu bar. | Activating Orasenda (what the main and Focus windows do) |
 | Command palette | The ⌘K list of every action available now, in the main window only (`CommandPalette`). | A menu (native, fixed items) |
+| Preset library | The `preset` table (syncable, from sub-project E): named presets with focus, break, long break and rounds, at least one and up to 12 added by hand. Replaces the fixed list in *Preset* above; `quick` stays a built-in, never listed. | The selected preset (the `timer.preset` setting, a preset id) |
+| Default preset | One of Gentle Start 15/5, Steady Focus 25/5 and Deep Work 90/15, seeded with a fixed id; *Restore default presets* brings back a missing or changed one. | A user preset (added by the person) |
+| Preset snapshot | The preset's id, name and lengths copied into a session at start, so edits never change a running or recorded session. | The preset row itself |
+| Break | A session of phase `break` that starts by itself when a focus session completes; it ends in idle. Recorded as its own `focus_session` row. | A pause (inside a session) |
+| Long break | A break of the preset's long length, taken when the round is a multiple of the preset's rounds. | A break skipped or extended |
+| Round | A completed focus session (an extended one counts once); `quick` and ended-early sessions are not rounds. | A session |
+| Chain | Today's run of rounds toward the long break; it resets after a long break, at local midnight and after a gap longer than the long break. | A day's total |
+| Extension | "+10 min": ten more minutes of the same focus session, from the two-minute warning or from its break; counted in `extensions`. | A new session |
+| Extension cap | The global setting for how many extensions one session may take: Off, 1, 2 or 3 (default 2). | The deep-hours cap |
+| Two-minute warning | The one-time switch of every surface to `mode: warning` at 2:00 left in a focus session or break longer than 2 minutes. | The end notification |
+| Keep-going offer | "Keep going?" after a completed "Just 2 minutes": *Keep going* starts the selected preset at once, *Stop here* stays idle. Held in Rust. | A break (a quick session never starts one) |
+| Open focus | A completed focus session whose break is running; it can still be extended, and its row is written when the break ends. | An unsaved record (a failed write) |
+| Intent | The optional one line "What will be done?", set after Start from the status row; stored in `focus_session.intent`, NULL when not given and then named "Deep focus". | A task (P2) |
+| Deep-hours cap | The daily focus total (every focused minute, local day) past which Orasenda says one calm line; default 4 hours, never blocks Start. | A limit or a lock |
+| Break suggestion | One rotating line shown during a break, labelled *optional* or *experimental* when the evidence is thin; not medical advice. | A routine (P4) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.

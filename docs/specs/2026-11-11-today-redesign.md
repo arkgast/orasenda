@@ -1,6 +1,6 @@
 # Today redesign (P1 sub-project C) — Spec
 
-- Status: approved (owner, 2026-11-11); implemented 2026-11-11
+- Status: approved (owner, 2026-11-11); implemented 2026-11-11; amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs) (status row, presets, menu bar)
 - Date: 2026-11-11
 - Owner: Arnold Gandarillas Castillo
 - Related: [#134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut; comment 6780298891 is the Today canvas inventory this spec builds from), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window), [#120](https://github.com/arkgast/orasenda/issues/120) (refused start, Today half), [spec A](2026-11-08-focus-session-loop.md) (amended here, see [Amends spec A](#amends-spec-a)), [Settings spec](2026-11-09-settings.md) (B; its compact layout and its harness handover are C's), [structure refactor spec](2026-11-10-structure-refactor.md) (the file layout C keeps), [SPEC §1](../SPEC.md), [ADR-011](../DECISIONS.md) (time is formatted in Rust), [ADR-013](../DECISIONS.md) (one Rust state, many surfaces), [ADR-014](../DECISIONS.md) (settings: one object, one save chain), [ADR-015](../DECISIONS.md) (code-first design system). Design source: the timer-surfaces canvas https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX (`Today.dc.html`, verdict "approve"). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,start-button,popover-menu,inline-notice,icon-button,tooltip,mode-chip,kbd,nav-rail,page-frame,settings-index}.md`.
@@ -77,7 +77,7 @@ Preset display names: Classic, 50/10, Deep Block, Custom, and Just 2 minutes (fo
 
 ### IPC (Rust → `apps/orasenda/src/ipc/bindings.ts`, regenerated)
 - `TimerView.plannedMin: number | null`: the session's planned focus minutes while running or paused, `null` when idle. The field is declared on `TimerView` in `crates/service/src/api/timer.rs:42` and filled in `crates/service/src/session/view.rs` from the engine's planned length. The same task corrects `ClockTick.idleFinish`'s doc comment, which says "if one is running" although `view.rs:49-57` sets it only while idle.
-- `presets_get() -> PresetLength[]`, with `{ preset: Preset, focusMin: number, breakMin: number }` for `classic`, `fifty_ten` and `deep_block` from `crates/core`'s preset table. The webview reads it once per launch. Custom comes from settings, and `quick` is never listed.
+- `presets_get() -> PresetLength[]`, with `{ preset: Preset, focusMin: number, breakMin: number }` for `classic`, `fifty_ten` and `deep_block` from `crates/core`'s preset table. The webview reads it once per launch. Custom comes from settings, and `quick` is never listed. *(Amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs): `presets_get` is replaced by `presets_list`, the preset library with names and every length.)*
 - `native_menu_popup(request: { items: NativeMenuItem[], x: number, y: number }) -> string | null`, with `NativeMenuItem = { id: string, label: string, accelerator?: string, checked?: boolean }`. It shows a native menu at the window-relative logical point (the trigger's bottom-left), runs on the main thread, and answers with the chosen id, or `null` when the menu was dismissed. Pages and Jump to section use it. It lives in `src-tauri/src/commands/menu_popup.rs` and is added to `build.rs`'s `AppManifest` and granted in `capabilities/main.json`. A second call while a popup is open answers `null` without showing a second menu.
 - Unchanged: `timer_start` (Today always sends `custom: null`), `timer_pause`, `timer_resume`, `timer_stop`, `settings_get`, `settings_set`, `settings-changed`, `navigate`, `clock-tick`.
 
@@ -130,16 +130,16 @@ Where each value comes from:
 - **Idle:**
   - heading "Preset for the next session";
   - line "Choosing one applies it and closes.";
-  - radio rows Classic (meta "25 / 5"), 50/10 ("50 / 10"), Deep Block ("90 / 15") and Custom ("45 / 10" from the saved values);
+  - radio rows Classic (meta "25 / 5"), 50/10 ("50 / 10"), Deep Block ("90 / 15") and Custom ("45 / 10" from the saved values); *(Amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs): the radio rows are every live preset of the library; the link row reads "Edit presets in Settings".)*
   - a separator, then the link row "Edit times in Settings" with meta "⌘,".
 - **Choosing:**
   - a radio saves `{ ...latest(), preset }` through `ipc/settingsQueue` (as today, `features/today/Today.tsx:137-141`);
   - the link opens Settings › Timer through the existing `SettingsTarget` path.
 - **Running or paused:** `readOnly`, heading "<name> · <plannedMin> min" (for example "Classic · 25 min"), line "Presets can change between sessions.", and the Settings row live. For a `quick` session the heading is "Just 2 minutes" and no radio is checked.
-- **Why the running heading omits the break** *(author's call)*: the canvas draws "Classic · 25 / 5", but the session holds no break length (breaks are E's; the store keeps only `planned_ms`). A Custom break edited in Settings mid-session would therefore show a value the session does not have. E restores "/ <break>" when sessions carry their break.
+- **Why the running heading omits the break** *(author's call)*: the canvas draws "Classic · 25 / 5", but the session holds no break length (breaks are E's; the store keeps only `planned_ms`). A Custom break edited in Settings mid-session would therefore show a value the session does not have. E restores "/ <break>" when sessions carry their break. *(Amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs): E restores "/ <break>" from the session's preset snapshot.)*
 
 ### Status row
-The status row is `InlineNotice variant="row"` (`features/today/statusLine.ts` picks the line, as a pure function). It is the one live region on Today. Lines, in priority order:
+The status row is `InlineNotice variant="row"` (`features/today/statusLine.ts` picks the line, as a pure function). It is the one live region on Today. Lines, in priority order: *(Amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs): E adds the warning, break, keep-going, break-over, cap and intent rows; two actions are a composition of `InlineNotice` and `Button`.)*
 
 | # | When | Tone | Text | Action | Clears |
 |---|---|---|---|---|---|
@@ -200,7 +200,7 @@ Rules for the row:
 | spike enabled, any state | the above, plus "Developer panel" above Quit, in its own group |
 
 Details:
-- **Preset ▸** is a submenu: the four presets as check items, with the saved one checked and labels as in the popover ("Classic 25 / 5"). Then a separator and "Edit times in Settings…", which opens Settings › Timer. Choosing a preset saves it through the service's settings chain (ADR-014). That publishes `settings-changed`, so Today and Settings follow.
+- **Preset ▸** is a submenu: the four presets as check items, with the saved one checked and labels as in the popover ("Classic 25 / 5"). Then a separator and "Edit times in Settings…", which opens Settings › Timer. Choosing a preset saves it through the service's settings chain (ADR-014). That publishes `settings-changed`, so Today and Settings follow. *(Amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs): the submenu lists the preset library; E adds the break and warning items.)*
 - **"Start focus · 25 min"** runs `Action::Start` with the saved preset and `custom: None`. "Just 2 minutes" runs it with `quick`.
 - **The header's minutes** are `ceil(remaining_ms / 60 000)`, with "1 minute left" for one. They are formatted in Rust beside `tray_label` (`tray/render.rs`). The header changes with `set_text` once a minute; the menu is rebuilt only when its item list changes.
 - **The tray learns of a settings change** through the same publish path as a view (`runtime/`), so the Start item's length and the checked preset follow Settings.
