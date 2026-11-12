@@ -29,6 +29,7 @@ export { RoutineItem } from "./components/ui/routine-item";
 export { ScrollRegion } from "./components/ui/scroll-region";
 export { SettingsIndex } from "./components/ui/settings-index";
 export { SettingsRow } from "./components/ui/settings-row";
+export { ShortcutRecorder } from "./components/ui/shortcut-recorder";
 export { StartButton } from "./components/ui/start-button";
 export { TaskCard } from "./components/ui/task-card";
 export { TextArea } from "./components/ui/text-area";
@@ -52,6 +53,7 @@ export type { IntentPromptProps, IntentReason } from "./components/ui/intent-pro
 export { WellnessNote } from "./components/ui/wellness-note";
 export type { KanbanColumnProps } from "./components/ui/kanban-column";
 export type { KbdProps } from "./components/ui/kbd";
+export type { ShortcutRecorderProps } from "./components/ui/shortcut-recorder";
 export type { RoutineItemProps } from "./components/ui/routine-item";
 export type { TooltipProps } from "./components/ui/tooltip";
 export type { WellnessNoteProps } from "./components/ui/wellness-note";

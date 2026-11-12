@@ -97,3 +97,101 @@ test("command_palette_keeps_focus_inside_while_open", async ({ page }) => {
     expect(inside).toBe(true);
   }
 });
+
+const OPEN_COMPACT = "Open the compact command palette";
+
+test("command_palette_compact_fits_360x240", async ({ page }, info) => {
+  await page.setViewportSize({ width: 360, height: 240 });
+  await openSpecimen(page, "CommandPalette");
+  await page.getByRole("button", { name: OPEN_COMPACT }).click();
+  const dialog = page.getByRole("dialog", { name: "Commands" });
+  await expect(dialog).toBeVisible();
+  const box = await dialog.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      left: r.left,
+      right: r.right,
+      top: r.top,
+      bottom: r.bottom,
+      vw: document.documentElement.clientWidth,
+      vh: document.documentElement.clientHeight,
+    };
+  });
+  expect(box.left).toBeGreaterThanOrEqual(0);
+  expect(box.right).toBeLessThanOrEqual(box.vw);
+  expect(box.top).toBeGreaterThanOrEqual(0);
+  expect(box.bottom).toBeLessThanOrEqual(box.vh);
+  // The title and label are hidden; the field and Close share one line.
+  const title = await dialog.getByRole("heading", { name: "Commands" }).boundingBox();
+  expect(title ? title.width * title.height : 0).toBeLessThanOrEqual(1);
+  const field = await page.getByRole("combobox", { name: "Search commands" }).boundingBox();
+  const close = await page.getByRole("button", { name: "Close" }).boundingBox();
+  expect(field && close && Math.abs(field.y - close.y) < field.height).toBe(true);
+  expect(close ? close.x : 0).toBeGreaterThan(field ? field.x + field.width - 1 : 0);
+  // The list scrolls inside the panel instead of pushing it off the window.
+  const list = dialog.getByRole("listbox");
+  expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  await shoot(page, info, "command-palette-compact-360x240");
+});
+
+test("long_command_wraps_without_hiding_kbd", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openSpecimen(page, "CommandPalette");
+  await page.getByRole("button", { name: OPEN }).click();
+  const row = page.getByRole("option", { name: /Change the length of every focus session/ });
+  await row.scrollIntoViewIfNeeded();
+  const kbd = row.locator('[data-slot="kbd"]');
+  await expect(kbd).toBeVisible();
+  const measured = await row.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const k = el.querySelector('[data-slot="kbd"]')?.getBoundingClientRect();
+    const label = el.querySelector("span span")?.getBoundingClientRect();
+    return {
+      rowRight: r.right,
+      kbdRight: k?.right ?? 0,
+      kbdLeft: k?.left ?? 0,
+      labelRight: label?.right ?? 0,
+    };
+  });
+  expect(measured.kbdRight).toBeLessThanOrEqual(measured.rowRight);
+  expect(measured.labelRight).toBeLessThanOrEqual(measured.kbdLeft);
+  const box = await row.boundingBox();
+  // Wrapped onto several lines, so it is taller than one hit-min row.
+  expect(box?.height).toBeGreaterThan(60);
+});
+
+test("palette_rows_and_close_meet_hit_min", async ({ page }) => {
+  for (const [opener, viewport] of [
+    [OPEN, { width: 1440, height: 900 }],
+    [OPEN_COMPACT, { width: 360, height: 240 }],
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await openSpecimen(page, "CommandPalette");
+    await page.getByRole("button", { name: opener }).click();
+    const dialog = page.getByRole("dialog", { name: "Commands" });
+    await expect(dialog).toBeVisible();
+    expect(await smallTargets(dialog)).toEqual([]);
+    for (const row of await dialog.getByRole("option").all()) {
+      expect((await row.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    }
+    const close = await page.getByRole("button", { name: "Close" }).boundingBox();
+    expect(close?.width).toBeGreaterThanOrEqual(44);
+    expect(close?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("command_palette_list_is_one_tab_stop_in_the_browser", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 240 });
+  await openSpecimen(page, "CommandPalette");
+  await page.getByRole("button", { name: OPEN_COMPACT }).click();
+  await expect(page.getByRole("combobox", { name: "Search commands" })).toBeFocused();
+  await page.keyboard.press("Alt+Tab");
+  await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
+  // Two stops only: the next press leaves Close and the list's rows never take focus.
+  await page.keyboard.press("Alt+Tab");
+  const rows = await page.evaluate(
+    () => !!document.activeElement?.closest("[cmdk-item], [role=option]"),
+  );
+  expect(rows).toBe(false);
+  expect(await page.locator("[role=option][tabindex]").count()).toBe(0);
+});

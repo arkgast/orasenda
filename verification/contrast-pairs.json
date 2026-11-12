@@ -402,5 +402,35 @@
     "bg": "selection",
     "kind": "mark",
     "where": "T7: rail icon on the current page"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface-sunken",
+    "kind": "mark",
+    "where": "T6: ShortcutRecorder hover and recording border on its field"
+  },
+  {
+    "fg": "focus",
+    "bg": "surface-overlay",
+    "kind": "mark",
+    "where": "T6: CommandPalette selected row's start border, search field hover border"
+  },
+  {
+    "fg": "ink",
+    "bg": "selection",
+    "kind": "text",
+    "where": "T6: ShortcutRecorder keys while recording; CommandPalette row label and shortcut column"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-overlay",
+    "kind": "text",
+    "where": "T6: CapturePad helper and kind lines; CommandPalette hint under a long label"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-sunken",
+    "kind": "text",
+    "where": "T6: ShortcutRecorder hint and conflict line at rest"
   }
 ]
