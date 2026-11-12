@@ -28,7 +28,7 @@ test("status_hint_lowest_rank", () => {
   expect(shown?.actions[0]).toMatchObject({
     id: "openSettings",
     label: "Open settings",
-    name: "Open Timer settings",
+    name: "Open settings for Timer",
     variant: "ghost",
   });
   expect(shown?.actions.map((action) => action.id)).toEqual(["openSettings"]);
@@ -53,4 +53,10 @@ test("status_hint_outranked_by_warning", () => {
     statusLine({ ...NONE, openFailed: true, cadence: FOCUS }),
   ];
   for (const row of outranking) expect(row?.text).not.toBe(HINT);
+});
+
+test("status_hint_waits_in_the_side_by_side_strip", () => {
+  expect(statusLine({ ...NONE, strip: true, cadence: FOCUS })?.actions.map((a) => a.id)).toEqual([
+    "intent",
+  ]);
 });

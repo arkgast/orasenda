@@ -28,7 +28,7 @@ import { StatusRow } from "./StatusRow";
 import { commandFailure, type StatusActionId, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
 import { useControlFocus } from "./useControlFocus";
-import { useKeepGoingHint } from "./useKeepGoingHint";
+import { useKeepGoingHint, usePageVisible } from "./useKeepGoingHint";
 import { useNextMinutes } from "./useNextMinutes";
 import "./today.css";
 
@@ -111,6 +111,10 @@ export function Today({ onNavigate }: Props) {
 
   const presets = usePresets();
   const inBreak = view !== null && view.state !== "idle" && view.phase === "break";
+  const canEditIntent = view !== null && view.state !== "idle" && view.phase === "focus";
+  const [editingIntent, setEditingIntent] = useState(false);
+  if (editingIntent && !canEditIntent) setEditingIntent(false);
+  const visible = usePageVisible();
   const [hintShownLine, setHintShownLine] = useState(false);
   const hintDue = useKeepGoingHint(view, hintShownLine);
   const line = statusLine({
@@ -124,17 +128,16 @@ export function Today({ onNavigate }: Props) {
     cadence: view,
     capNotice: notice?.persist === true,
     stacked: layout.timer === "stackedStrip",
+    strip: layout.timer === "strip",
     keepGoingPreset: selectedPreset(presets, settings)?.name ?? null,
   });
-  const hintOnScreen = line?.actions.some((action) => action.id === "openSettings") ?? false;
+  const hintOnScreen =
+    visible && !editingIntent && (line?.actions.some((a) => a.id === "openSettings") ?? false);
   if (hintOnScreen !== hintShownLine) setHintShownLine(hintOnScreen);
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
 
   // The intent field: only the person opens it, and only while a focus runs or is paused.
-  const canEditIntent = view !== null && view.state !== "idle" && view.phase === "focus";
-  const [editingIntent, setEditingIntent] = useState(false);
-  if (editingIntent && !canEditIntent) setEditingIntent(false);
   const canEditRef = useRef(canEditIntent);
   canEditRef.current = canEditIntent;
   useEffect(

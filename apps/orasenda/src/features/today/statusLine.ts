@@ -42,8 +42,14 @@ export type StatusInput = {
   capNotice?: boolean;
   /** The selected preset's name, for the keep-going action's accessible name. */
   keepGoingPreset?: string | null;
-  /** The keep-going hint is due (lowest rank: it waits while any other line shows). */
+  /**
+   * The keep-going hint is due. It waits while any other line shows, and it is shown in place of
+   * the intent button (a deliberate deviation from the spec's table: otherwise a running focus
+   * would always hide it).
+   */
   hint?: boolean;
+  /** The side-by-side strip: the hint's text takes three lines beside its button, so it waits. */
+  strip?: boolean;
 };
 
 export type StatusActionId =
@@ -117,7 +123,7 @@ const TAKE_BREAK: StatusAction = {
 const OPEN_SETTINGS: StatusAction = {
   id: "openSettings",
   label: "Open settings",
-  name: "Open Timer settings",
+  name: "Open settings for Timer",
   variant: "ghost",
 };
 const HINT_TEXT = "You can keep going automatically in Settings › Timer.";
@@ -217,9 +223,10 @@ export function statusLine(input: StatusInput): StatusLine | null {
           variant: "quiet",
         }
       : null;
-  // Below every other line. One action only: with the intent button beside it the text takes
-  // three lines at the narrow sizes. The intent field stays one shortcut away (intentEvents).
-  if (input.hint) return line(HINT_TEXT, "neutral", [OPEN_SETTINGS]);
+  // Above the intent button, below every other line. One action only: with the intent button
+  // beside it the text takes three lines at the narrow sizes. The intent field stays one shortcut
+  // away (intentEvents). In the strip it waits (the text would wrap past two lines).
+  if (input.hint && !input.strip) return line(HINT_TEXT, "neutral", [OPEN_SETTINGS]);
   if (intent) return line("", "neutral", [intent]);
   return cadence?.capLine ? line(cadence.capLine, "rest") : null;
 }

@@ -95,3 +95,15 @@ fn rfc3339_utc(epoch_ms: u64) -> String {
         rem % 60
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::rfc3339_utc;
+
+    #[test]
+    fn rfc3339_utc_exact_values() {
+        assert_eq!(rfc3339_utc(0), "1970-01-01T00:00:00Z");
+        assert_eq!(rfc3339_utc(1_709_208_000_000), "2024-02-29T12:00:00Z");
+        assert_eq!(rfc3339_utc(1_704_067_199_000), "2023-12-31T23:59:59Z");
+    }
+}

@@ -5,7 +5,7 @@ use orasenda_store::meta;
 
 use super::super::test_support::*;
 use super::super::*;
-use crate::api::{Hint, Settings};
+use crate::api::{Hint, Settings, StoreStatus};
 
 fn stored(s: &SessionService) -> Option<String> {
     db(s)
@@ -18,7 +18,9 @@ fn extended(s: &mut SessionService) -> Option<Hint> {
     numbered_break_ids(s);
     s.apply(start(), T0, id("a"));
     s.tick(T0 + 23 * MINUTE);
-    s.apply(Action::Extend, T0 + 24 * MINUTE, id("x")).view.hint
+    let effects = s.apply(Action::Extend, T0 + 24 * MINUTE, id("x"));
+    assert!(effects.result.is_ok(), "the extend must succeed");
+    effects.view.hint
 }
 
 fn auto_on(s: &mut SessionService) {
@@ -149,6 +151,7 @@ fn hint_write_failure_clears_for_run() {
     );
     db(&s).fail_writes(false);
     assert_eq!(shown.view.hint, None);
+    assert_eq!(shown.view.store, StoreStatus::Unavailable);
     assert_eq!(stored(&s), None);
     s.tick(T0 + 35 * MINUTE);
     let again = s.apply(Action::Extend, T0 + 36 * MINUTE, id("x"));

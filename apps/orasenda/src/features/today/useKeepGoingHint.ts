@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { commands, type TimerView_Serialize } from "../../ipc/bindings";
 
 /**
@@ -28,4 +28,14 @@ export function useKeepGoingHint(view: TimerView_Serialize | null, rendered: boo
   }, [rendered]);
 
   return due;
+}
+
+function subscribeVisibility(notify: () => void): () => void {
+  document.addEventListener("visibilitychange", notify);
+  return () => document.removeEventListener("visibilitychange", notify);
+}
+
+/** False while the window is hidden (closing main hides it; Today stays mounted). */
+export function usePageVisible(): boolean {
+  return useSyncExternalStore(subscribeVisibility, () => document.visibilityState !== "hidden");
 }

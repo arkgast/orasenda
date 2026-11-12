@@ -1,5 +1,5 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
@@ -57,6 +57,37 @@ test("hint_outranked_waits_without_calling_hint_shown", async () => {
 test("open_settings_targets_keep_going", async () => {
   const { onNavigate } = await renderWith();
   await emitTimer(HINTED);
-  fireEvent.click(screen.getByRole("button", { name: "Open Timer settings" }));
+  fireEvent.click(screen.getByRole("button", { name: "Open settings for Timer" }));
   expect(onNavigate).toHaveBeenCalledWith("settings", "keepGoing");
+});
+
+test("today_calls_hint_shown_once_when_the_view_arrives_with_the_hint", async () => {
+  resetPresetsForTests();
+  const backend = mockBackend({ timer_state: () => ({ view: HINTED, pending: [] }) });
+  render(<Today onNavigate={vi.fn()} />);
+  await settle();
+  expect(statusNodes()[0]).toHaveTextContent(HINT);
+  expect(argsOf(backend.calls, "hint_shown")).toHaveLength(1);
+});
+
+test("hint_shown_not_called_while_the_intent_field_is_open", async () => {
+  const { backend } = await renderWith();
+  await emitTimer(RUNNING);
+  fireEvent.click(screen.getByRole("button", { name: "What will be done?" }));
+  await emitTimer(HINTED);
+  expect(argsOf(backend.calls, "hint_shown")).toHaveLength(0);
+});
+
+test("hint_shown_waits_while_the_window_is_hidden", async () => {
+  let state: DocumentVisibilityState = "hidden";
+  vi.spyOn(document, "visibilityState", "get").mockImplementation(() => state);
+  const { backend } = await renderWith();
+  await emitTimer(HINTED);
+  expect(argsOf(backend.calls, "hint_shown")).toHaveLength(0);
+  state = "visible";
+  await act(async () => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await settle();
+  expect(argsOf(backend.calls, "hint_shown")).toHaveLength(1);
 });

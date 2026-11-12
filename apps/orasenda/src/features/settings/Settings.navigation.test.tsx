@@ -97,6 +97,8 @@ test("field_target_lands_on_the_timer_section", async () => {
 test("settings_keep_going_target_focuses_checkbox", async () => {
   const { Settings: Page } = await import("./Settings");
   mockBackend();
+  const scrolled = vi.fn();
+  Element.prototype.scrollIntoView = scrolled;
   render(
     <Page
       info={{ status: "loading" }}
@@ -105,7 +107,10 @@ test("settings_keep_going_target_focuses_checkbox", async () => {
     />,
   );
   await settle();
-  expect(screen.getByRole("checkbox", { name: "Keep going automatically" })).toHaveFocus();
+  const box = screen.getByRole("checkbox", { name: "Keep going automatically" });
+  expect(box).toHaveFocus();
+  expect(scrolled).toHaveBeenCalledWith({ block: "center" });
+  expect(scrolled.mock.contexts[0]).toBe(box.closest('[data-slot="settings-row"]'));
 });
 
 test("pending_navigation_taken_at_mount", async () => {
