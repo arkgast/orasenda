@@ -215,6 +215,7 @@ pub unsafe fn set_frame(
 }
 
 /// Keeps a screen-parameters observer registered; dropping it unregisters.
+#[must_use = "dropping it unregisters the observer"]
 pub struct ScreenObserver(Retained<ProtocolObject<dyn NSObjectProtocol>>);
 
 impl Drop for ScreenObserver {

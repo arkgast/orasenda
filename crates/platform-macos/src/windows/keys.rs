@@ -11,6 +11,8 @@ use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2_app_kit::{NSEvent, NSEventMask, NSEventModifierFlags};
 
+use orasenda_core::platform::PlatformError;
+
 use super::{WindowError, main_thread, window};
 
 /// The modifier keys that matter to the floater. Caps lock, fn and the rest are ignored by
@@ -72,6 +74,7 @@ pub fn floater_key(key_code: u16, modifiers: Modifiers) -> Option<FloaterKey> {
 }
 
 /// An installed key monitor; dropping it removes the monitor.
+#[must_use = "dropping it unregisters the observer"]
 pub struct KeyMonitor(Retained<AnyObject>);
 
 impl Drop for KeyMonitor {
@@ -81,6 +84,9 @@ impl Drop for KeyMonitor {
     }
 }
 
+/// The key codes are ANSI key positions (physical keys), not characters, so on a non-QWERTY
+/// layout they differ from the menu's character shortcuts (check in H3/H4).
+///
 /// Installs a local key-down monitor for the floater. A key press is passed to `handler`
 /// only when it is one of the six [`FloaterKey`]s and the event is for this window and the
 /// window is key; the event is consumed only when `handler` returns true, otherwise it goes
@@ -109,6 +115,9 @@ pub unsafe fn install_floater_key_monitor(
             Modifiers::from_flags(event_ref.modifierFlags()),
         );
         match key {
+            // Auto-repeat of a mapped key is consumed without calling the handler, so
+            // holding Space does not toggle pause and resume.
+            Some(_) if ours && event_ref.isARepeat() => null_mut(),
             Some(key) if ours && handler(key) => null_mut(),
             _ => event.as_ptr(),
         }
@@ -117,6 +126,8 @@ pub unsafe fn install_floater_key_monitor(
     let monitor = unsafe {
         NSEvent::addLocalMonitorForEventsMatchingMask_handler(NSEventMask::KeyDown, &block)
     }
-    .ok_or(WindowError::NotAWindow)?;
+    .ok_or_else(|| {
+        WindowError::Platform(PlatformError::Other("key monitor not installed".into()))
+    })?;
     Ok(KeyMonitor(monitor))
 }

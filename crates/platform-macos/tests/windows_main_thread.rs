@@ -4,6 +4,26 @@
 
 #[cfg(target_os = "macos")]
 fn main() {
+    windows_fns_refuse_null_window();
+    not_a_window_is_refused();
+}
+
+#[cfg(target_os = "macos")]
+fn not_a_window_is_refused() {
+    let object = objc2::runtime::NSObject::new();
+    let ptr = objc2::rc::Retained::as_ptr(&object)
+        .cast_mut()
+        .cast::<std::ffi::c_void>();
+    // SAFETY: points at a live NSObject for the call.
+    let r = unsafe { orasenda_platform_macos::windows::configure_floater(ptr) };
+    assert_eq!(
+        r,
+        Err(orasenda_platform_macos::windows::WindowError::NotAWindow)
+    );
+}
+
+#[cfg(target_os = "macos")]
+fn windows_fns_refuse_null_window() {
     use std::ptr::null_mut;
 
     use orasenda_platform_macos::windows::{
