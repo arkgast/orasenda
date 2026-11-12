@@ -123,3 +123,10 @@ test("theme_has_a_zero_spacing_step", async () => {
     assert.ok(css.includes(`.${name} {`), `${name} emits CSS`);
   }
 });
+
+test("theme_has_no_stale_preflight_comment_or_box_sizing_rule", () => {
+  const theme = buildTheme();
+  assert.doesNotMatch(theme, /Preflight is off/);
+  assert.doesNotMatch(theme, /box-sizing/);
+  assert.doesNotMatch(theme, /@layer base/);
+});
