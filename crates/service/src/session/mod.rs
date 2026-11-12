@@ -7,6 +7,7 @@
 
 mod actions;
 mod effects;
+mod frames;
 mod persist;
 mod recovery;
 mod run;
@@ -17,9 +18,10 @@ mod tests;
 mod view;
 
 pub use effects::Effects;
+pub use frames::{run_frame_get, run_frame_load, run_frame_save};
 pub use run::{
-    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_set_settings,
-    run_state,
+    current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_select_preset,
+    run_set_settings, run_state, run_view,
 };
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
 pub use settings::SettingsSaved;

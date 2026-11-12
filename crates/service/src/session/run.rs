@@ -4,7 +4,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use orasenda_core::{NotificationStatus, SessionId};
+use orasenda_core::{NotificationStatus, Preset, SessionId};
 use orasenda_store::{OpenError, Store};
 use uuid::Uuid;
 
@@ -85,9 +85,22 @@ pub fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), Set
         let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
         (result, changed)
     };
-    // The save is committed: a panic while publishing is logged, never turned into a failure.
+    publish_settings_saved(host, &result, changed);
+    result?;
+    Ok(())
+}
+
+/// What a settings save does after unlock, in this order: apply the theme when it changed, a
+/// `timer-tick` when the store status changed, a `clock-tick`, then `settings-changed`. Only
+/// the `timer-tick` part follows a failed save. The save is committed, so a panic here is
+/// logged and never turned into a failure.
+fn publish_settings_saved<H: Host, E>(
+    host: &H,
+    result: &Result<SettingsSaved, E>,
+    changed: Option<(u64, TimerView)>,
+) {
     let published = panic::catch_unwind(AssertUnwindSafe(|| {
-        if let Ok(saved) = &result
+        if let Ok(saved) = result
             && let Some(theme) = saved.theme
         {
             host.apply_theme(theme);
@@ -95,7 +108,7 @@ pub fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), Set
         if let Some((seq, view)) = changed {
             scheduler::publish_view(host, seq, &view);
         }
-        if let Ok(saved) = &result {
+        if let Ok(saved) = result {
             scheduler::publish_clock(host);
             host.emit_settings_changed(&saved.presented);
         }
@@ -103,8 +116,6 @@ pub fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), Set
     if published.is_err() {
         eprintln!("session: publishing a settings save panicked; its result stands");
     }
-    result?;
-    Ok(())
 }
 
 /// `settings_get`: the cached settings under a brief lock; defaults before setup.
@@ -119,4 +130,53 @@ pub fn flush_on_exit<H: Host>(host: &H) {
     if let Some(service) = host.service() {
         lock(service).flush(host.now_ms());
     }
+}
+
+/// `timer_view`: the current view under a brief lock. No tick, no publish, and it neither
+/// drains `pending` nor sets `listening`, so a Focus window or floater can read it without
+/// taking what only `timer_state` (Today) hands out. Idle before setup.
+pub fn run_view<H: Host>(host: &H) -> TimerView {
+    match host.service() {
+        Some(service) => lock(service).view(host.now_ms()),
+        None => TimerView::idle(StoreStatus::Unavailable, NotificationStatus::Unavailable),
+    }
+}
+
+/// `preset_select`: saves `preset` as the chosen preset while idle. Checks idle and saves under
+/// one lock, so a start can't slip between them; then does what `settings_set` does after
+/// unlock. `WrongState` while a session runs or is paused, `InvalidSpec` for a preset that is
+/// never saved, `Store` when the save fails.
+pub fn run_select_preset<H: Host>(host: &H, preset: Preset) -> Result<(), TimerCommandError> {
+    let Some(service) = host.service() else {
+        return Err(TimerCommandError {
+            kind: TimerCommandErrorKind::Store,
+            message: "Orasenda is still starting".into(),
+        });
+    };
+    let now_ms = host.now_ms();
+    let (result, changed) = {
+        let mut service = lock(service);
+        if !service.engine.is_idle() {
+            return Err(TimerCommandError {
+                kind: TimerCommandErrorKind::WrongState,
+                message: "the preset can be chosen when no session is running".into(),
+            });
+        }
+        let before = service.store_status;
+        let chosen = Settings {
+            preset,
+            ..service.settings()
+        };
+        let result = service.set_settings(chosen, now_ms);
+        let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
+        (result, changed)
+    };
+    publish_settings_saved(host, &result, changed);
+    result.map(|_| ()).map_err(|error| TimerCommandError {
+        kind: match error.kind {
+            SettingsErrorKind::InvalidSpec => TimerCommandErrorKind::InvalidSpec,
+            _ => TimerCommandErrorKind::Store,
+        },
+        message: error.message,
+    })
 }
