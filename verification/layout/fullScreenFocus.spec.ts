@@ -1,52 +1,152 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { overflows } from "./support/fits.ts";
 import { smallTargets } from "./support/hitTargets.ts";
+import { animatedElements } from "./support/motion.ts";
 import { shoot } from "./support/shots.ts";
-import { frames, openSpecimen } from "./support/specimen.ts";
+import { openSpecimen, pressTab } from "./support/specimen.ts";
 
-const STATES = [
-  "full-screen-focus-390x844",
-  "full-screen-focus-800x600",
-  "full-screen-focus-1440x900",
-  "full-screen-focus-paused-1440x900",
-];
+const MODES = ["focus", "paused", "idle", "break", "warning", "ended"] as const;
+const SIZES = [
+  { w: 1280, h: 720, layout: "ring" },
+  { w: 1920, h: 1080, layout: "ring" },
+  { w: 1000, h: 440, layout: "strip" },
+  { w: 360, h: 240, layout: "stackedStrip" },
+] as const;
 
-for (const viewport of [
-  { width: 390, height: 844 },
-  { width: 800, height: 600 },
-  { width: 1440, height: 900 },
-]) {
-  test(`full_screen_focus_fits_and_keeps_ring_round_at_${viewport.width}x${viewport.height}`, async ({
-    page,
-  }, info) => {
-    await page.setViewportSize(viewport);
-    await openSpecimen(page, "FullScreenFocus");
-    await expect(frames(page)).toHaveCount(STATES.length);
-    for (const state of STATES) {
-      const frame = page.locator(`[data-frame][data-state="${state}"]`);
-      // The visually hidden wall-clock span is clipped on purpose.
-      const over = (await overflows(frame)).filter((line) => !line.includes("span.sr-only"));
-      expect(over, state).toEqual([]);
-      const ring = await frame.locator("[data-slot=timer-ring]").boundingBox();
-      const box = await frame.boundingBox();
-      expect(ring, state).not.toBeNull();
-      if (!ring || !box) continue;
-      expect(Math.abs(ring.width - ring.height), `${state} is round`).toBeLessThanOrEqual(1);
-      expect(ring.width, `${state} ring fits the width`).toBeLessThanOrEqual(box.width);
-      expect(ring.height, `${state} ring fits the height`).toBeLessThanOrEqual(box.height);
-      expect(ring.width, `${state} ring is not collapsed`).toBeGreaterThanOrEqual(160);
-      const own = state.includes(`${viewport.width}x${viewport.height}`);
-      if (own && viewport.width === 1440)
-        expect(ring.width, `${state} ring is full size`).toBeCloseTo(560, 0);
-      // The margin follows the viewport (sm = 640), so it is checked on the frame made for it: space-4 below, space-8 (64) from sm.
-      if (own) {
-        const pad = await frame
-          .locator("[data-slot=full-screen-focus]")
-          .evaluate((el) => Number.parseFloat(getComputedStyle(el).paddingLeft));
-        expect(pad, `${state} margin`).toBeCloseTo(viewport.width >= 640 ? 64 : 16, 0);
-      }
-      expect(await smallTargets(frame.locator("button")), `${state} hit targets`).toEqual([]);
+const frame = (page: Page, mode: string, w: number, h: number): Locator =>
+  page.locator(`[data-frame][data-state="full-screen-focus-${mode}-${w}x${h}"]`);
+const section = (f: Locator): Locator => f.locator("[data-slot=full-screen-focus]");
+
+test("full_screen_focus_ring_at_1280x720_and_1920x1080", async ({ page }, info) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h, layout } of SIZES.filter((s) => s.layout === "ring")) {
+    for (const mode of MODES) {
+      const f = frame(page, mode, w, h);
+      await expect(section(f), `${mode} ${w}x${h}`).toHaveAttribute("data-layout", layout);
+      const ring = await f.locator("[data-slot=timer-ring]").boundingBox();
+      expect(ring, `${mode} ${w}x${h} ring`).not.toBeNull();
+      if (!ring) continue;
+      expect(Math.abs(ring.width - ring.height), "round").toBeLessThanOrEqual(1);
+      // The time track is 460 at 1280x720; at 1920x1080 the ring stops at timer-full-size.
+      expect(ring.width, `${mode} ${w}x${h} ring size`).toBeCloseTo(w === 1280 ? 460 : 560, -1);
+      const over = (await overflows(f)).filter((line) => !line.includes("sr-only"));
+      expect(over, `${mode} ${w}x${h}`).toEqual([]);
     }
-    await shoot(page, info, "full-screen-focus");
-  });
-}
+  }
+  await shoot(page, info, "full-screen-focus");
+});
+
+test("full_screen_focus_strip_in_strip_frame", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h, layout } of SIZES.filter((s) => s.layout !== "ring")) {
+    for (const mode of MODES) {
+      const f = frame(page, mode, w, h);
+      await expect(section(f), `${mode} ${w}x${h}`).toHaveAttribute("data-layout", layout);
+      await expect(f.locator("[data-slot=timer-strip]")).toHaveCount(1);
+      await expect(f.locator("[data-slot=timer-ring]")).toHaveCount(0);
+      const over = (await overflows(f)).filter((line) => !line.includes("sr-only"));
+      expect(over, `${mode} ${w}x${h}`).toEqual([]);
+    }
+  }
+});
+
+test("full_screen_focus_two_line_intent_fits_every_frame", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h, layout } of SIZES) {
+    for (const mode of MODES) {
+      const f = frame(page, mode, w, h);
+      // The ring's idle name is "No session" without the intent: the intent is a hidden line after the ring.
+      const quiet = layout === "ring" && (mode === "idle" || mode === "ended");
+      const name = quiet
+        ? await f.locator("[data-slot=full-screen-focus-ring] > .sr-only").first().textContent()
+        : await f.locator("[role=timer]").getAttribute("aria-label");
+      expect(name, `${mode} ${w}x${h} name`).toContain("Finish the chapter 3 outline");
+      const task = f.locator("[data-slot=timer-ring-task], [data-slot=timer-strip-task]");
+      if (layout === "stackedStrip") {
+        // The window minimum has no room for the line: it is hidden, and still whole in the name.
+        await expect(task, `${mode} ${w}x${h}`).toBeHidden();
+        continue;
+      }
+      await expect(task, `${mode} ${w}x${h}`).toBeVisible();
+      const lines = await task.evaluate((el) => {
+        const lh = Number.parseFloat(getComputedStyle(el).lineHeight);
+        return el.getBoundingClientRect().height / lh;
+      });
+      expect(lines, `${mode} ${w}x${h} lines`).toBeLessThanOrEqual(2.01);
+      const inside = await task.evaluate((el) => {
+        const t = el.getBoundingClientRect();
+        const p = el.closest("[data-slot=full-screen-focus]")?.getBoundingClientRect();
+        return (
+          !!p && t.top >= p.top && t.bottom <= p.bottom && t.left >= p.left && t.right <= p.right
+        );
+      });
+      expect(inside, `${mode} ${w}x${h} inside`).toBe(true);
+    }
+  }
+});
+
+test("full_screen_focus_controls_are_hit_min", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES)
+    for (const mode of MODES)
+      expect(await smallTargets(frame(page, mode, w, h)), `${mode} ${w}x${h}`).toEqual([]);
+});
+
+test("full_screen_focus_keyboard_path", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  const f = frame(page, "focus", 1280, 720);
+  await section(f).focus();
+  await page.keyboard.press("Escape");
+  const dialog = page.getByRole("dialog", { name: "Leave full screen?" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Stay in full screen" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(section(f)).toBeFocused();
+  for (const name of ["Leave full screen", "Pause session", "End session"]) {
+    await pressTab(page);
+    await expect(f.getByRole("button", { name })).toBeFocused();
+  }
+  const idle = frame(page, "idle", 1280, 720);
+  await section(idle).focus();
+  for (const name of ["Leave full screen", "Start focus"]) {
+    await pressTab(page);
+    await expect(idle.getByRole("button", { name })).toBeFocused();
+  }
+});
+
+test("full_screen_focus_esc_opens_the_dialog_while_the_leave_tooltip_shows", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  const f = frame(page, "focus", 1280, 720);
+  await section(f).focus();
+  await pressTab(page);
+  await expect(f.getByRole("button", { name: "Leave full screen" })).toBeFocused();
+  await expect(page.locator("[data-slot=tooltip]")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Leave full screen?" })).toBeVisible();
+});
+
+test("focus_views_aria_snapshot", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  await expect(frame(page, "focus", 1280, 720)).toMatchAriaSnapshot(`
+    - region "Full-screen focus":
+      - button "Leave full screen"
+      - status
+      - timer "Focus, 18 minutes 42 seconds remaining, Finish the chapter 3 outline and send the draft to Maya, Wall clock, 09:41"
+      - button "Pause session"
+      - button "End session"
+  `);
+  await expect(frame(page, "ended", 1000, 440)).toMatchAriaSnapshot(`
+    - region "Full-screen focus":
+      - button "Leave full screen"
+      - status: Session ended.
+      - timer "No session, Finish the chapter 3 outline and send the draft to Maya"
+      - button "Start focus"
+  `);
+});
+
+test("focus_views_no_motion_when_reduced", async ({ page }, info) => {
+  test.skip(info.project.name !== "light-reduced-motion", "reduced motion project only");
+  await openSpecimen(page, "FullScreenFocus");
+  expect(await animatedElements(page)).toEqual([]);
+});

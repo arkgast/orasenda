@@ -172,11 +172,17 @@ test("full_screen_focus_idle_shows_start", () => {
 });
 
 test("full_screen_focus_caption_follows_single_keys", () => {
-  const view = render(<FullScreenFocus {...base} onExit={none} singleKeys />);
-  const caption = () =>
-    screen
+  // What is seen: the Kbd glyphs and words, without the visually hidden spoken names.
+  const caption = () => {
+    const el = screen
       .getByLabelText("Full-screen focus")
-      .querySelector("[data-slot=full-screen-focus-caption]");
+      .querySelector("[data-slot=full-screen-focus-caption]")
+      ?.cloneNode(true) as HTMLElement;
+    for (const hidden of el.querySelectorAll(".sr-only")) hidden.remove();
+    return el;
+  };
+  const view = render(<FullScreenFocus {...base} onExit={none} singleKeys />);
+  screen.getByLabelText("Full-screen focus").querySelector("[data-slot=full-screen-focus-caption]");
   expect(caption()).toHaveTextContent("Space pauses · Esc leaves");
   view.rerender(<FullScreenFocus {...base} onExit={none} />);
   expect(caption()).toHaveTextContent("⌘. ends · Esc leaves");

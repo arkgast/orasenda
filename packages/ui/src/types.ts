@@ -2,7 +2,6 @@
 // preview, no implementation yet). Each one is exported as a type; none has a runtime export.
 import type * as React from "react";
 import type { DialogProps } from "./components/ui/dialog";
-import type { FullScreenFocusProps } from "./components/ui/full-screen-focus";
 import type { IntentPromptProps } from "./components/ui/intent-prompt";
 import type { KanbanColumnProps } from "./components/ui/kanban-column";
 import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
@@ -98,13 +97,6 @@ export interface IntentPromptNextProps extends IntentPromptProps {
 export interface DialogNextProps extends DialogProps {
   emphasis?: "default" | "safe";
 }
-/** Not implemented in bundle.js yet. */
-export interface FullScreenFocusNextProps extends FullScreenFocusProps {
-  onPause?: () => void;
-  onResume?: () => void;
-  onEnd?: () => void;
-  onStart?: () => void;
-}
 /** Not implemented in bundle.js yet. Folds into a column-strip-width strip. */
 export interface KanbanColumnNextProps extends KanbanColumnProps {
   collapsed?: boolean;
@@ -113,12 +105,6 @@ export interface KanbanColumnNextProps extends KanbanColumnProps {
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps {
   compact?: boolean;
-}
-export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
-  onPause?: () => void;
-  onResume?: () => void;
-  onStart?: () => void;
-  onOpen?: () => void;
 }
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string;

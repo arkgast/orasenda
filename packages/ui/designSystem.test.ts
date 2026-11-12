@@ -22,6 +22,7 @@ const PREVIOUS_SURFACE = [
   "WellnessNote",
   "IntentPrompt",
   "Dialog",
+  "FloatingTimer",
   "FullScreenFocus",
   "Input",
   "TextArea",
@@ -73,7 +74,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(36);
+  expect(components).toHaveLength(37);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -120,6 +121,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   WellnessNote: { children: "Drink water" },
   IntentPrompt: { open: true, app: "Safari", onReturn: noop },
   Dialog: { open: true, title: "Title", children: "Body" },
+  FloatingTimer: { remaining: "25:00", progress: 0.4, mode: "focus" },
   FullScreenFocus: { remaining: "25:00", onExit: noop },
   Input: { label: "Name" },
   Choice: { children: "Classic" },

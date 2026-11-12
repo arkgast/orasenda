@@ -432,5 +432,52 @@
     "bg": "surface-sunken",
     "kind": "text",
     "where": "T6: ShortcutRecorder hint and conflict line at rest"
+  },
+  {
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T5: FloatingTimer button glyphs against the floater fill"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "T5: FloatingTimer digits and Session ended."
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface-raised",
+    "kind": "text",
+    "where": "T5: FloatingTimer idle and state words"
+  },
+  {
+    "fg": "on-focus",
+    "bg": "focus",
+    "kind": "text",
+    "where": "T5: FloatingTimer Start pill"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "T5: FloatingTimer hollow circle and ring track against its own fill"
+  },
+  {
+    "fg": "ink-muted",
+    "bg": "surface",
+    "kind": "text",
+    "where": "T5: FullScreenFocus caption"
+  },
+  {
+    "fg": "line-strong",
+    "bg": "surface",
+    "kind": "mark",
+    "where": "T5: FullScreenFocus caption Kbd edge"
+  },
+  {
+    "fg": "ink",
+    "bg": "surface",
+    "kind": "text",
+    "where": "T5: FullScreenFocus status line, Session ended."
   }
 ]

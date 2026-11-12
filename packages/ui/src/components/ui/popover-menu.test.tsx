@@ -287,6 +287,18 @@ test("popover_menu_tab_with_nothing_after_returns_to_trigger", async () => {
 
 afterEach(() => {
   vi.useRealTimers();
+  document.documentElement.style.removeProperty("--duration-quick");
+});
+
+test("popover_menu_tab_falls_back_to_the_trigger_when_the_next_element_does_not_take_focus", async () => {
+  const log: string[] = [];
+  render(<Host log={log} after />);
+  // A tabbable the DOM lists but the browser will not focus (display:none, closed details).
+  screen.getByRole("button", { name: "After" }).focus = () => {};
+  await key("Tab");
+  expect(log).toEqual(["close"]);
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(document.activeElement).toBe(trigger());
 });
 
 test("popover_menu_one_esc_closes_menu_while_a_tooltip_shows_elsewhere", async () => {
