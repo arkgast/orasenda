@@ -27,7 +27,7 @@ fn run_action_publishes_effects_on_error() {
     read_and_clear(&host);
     run_action_on(&host, start()).expect("starts");
     host.log().take();
-    host.set_now(T0 + CLASSIC_MS + 5_000);
+    host.set_now(T0 + CLASSIC_END_MS + 5_000);
     let error = run_action_on(&host, Action::Pause).expect_err("nothing running");
     assert_eq!(error.kind, TimerCommandErrorKind::NothingRunning);
     let events = host.log().take();

@@ -25,8 +25,8 @@ impl SessionService {
             Action::Resume => self.engine.resume(now_ms).map(|()| {
                 self.changed(now_ms, MilestoneKind::Resumed, &mut outcome);
             }),
-            Action::Stop => self.engine.stop(now_ms).map(|record| {
-                self.end(record, now_ms, &mut outcome);
+            Action::Stop => self.engine.stop(now_ms).map(|records| {
+                self.end(records, now_ms, &mut outcome);
             }),
         };
         self.effects(
@@ -57,14 +57,26 @@ impl SessionService {
     }
 
     /// Advances the engine; on a natural end records it like a stop. True when it ended.
+    /// Until the cadence service lands a break shows as a focus and `auto` is off.
     pub(super) fn advance(&mut self, now_ms: u64, outcome: &mut Outcome) -> bool {
-        match self.engine.advance(now_ms) {
-            Some(Milestone::Ended(record)) => {
-                self.end(record, now_ms, outcome);
-                true
+        let mut ended = false;
+        let mut changed = false;
+        for milestone in self.engine.advance(now_ms, None) {
+            match milestone {
+                Milestone::Ended(records) => {
+                    self.end(records, now_ms, outcome);
+                    ended = true;
+                }
+                // The engine moved on (a break began, a warning fired): write the snapshot.
+                Milestone::BreakStarted | Milestone::Warned | Milestone::Extended => changed = true,
+                Milestone::Started | Milestone::Paused | Milestone::Resumed | Milestone::RollOn => {
+                }
             }
-            _ => false,
         }
+        if changed && !ended {
+            self.persist(now_ms, Vec::new());
+        }
+        ended
     }
 
     pub(super) fn start(
@@ -83,7 +95,8 @@ impl SessionService {
         } else {
             snapshot_of(self.selected())
         };
-        self.engine.start(new_id(), preset, now_ms)?;
+        // The round comes from today's rows once the cadence service lands; until then it is 1.
+        self.engine.start(new_id(), preset, 1, now_ms)?;
         self.keep_awake = self.begin_keep_awake();
         self.changed(now_ms, MilestoneKind::Started, outcome);
         Ok(())
@@ -91,7 +104,7 @@ impl SessionService {
 
     /// A start, pause or resume: write the snapshot and add the milestone.
     pub(super) fn changed(&mut self, now_ms: u64, kind: MilestoneKind, outcome: &mut Outcome) {
-        self.persist(now_ms, None);
+        self.persist(now_ms, Vec::new());
         outcome.milestones.push(MilestoneEvent {
             kind,
             end_reason: None,
@@ -99,15 +112,19 @@ impl SessionService {
         });
     }
 
-    /// A natural end or a stop: write the record, hand out the guard, add the milestone.
-    pub(super) fn end(&mut self, record: SessionRecord, now_ms: u64, outcome: &mut Outcome) {
+    /// A natural end or a stop: write the records, hand out the guard, add the milestone. The
+    /// milestone and `ended` describe the focus, the first record.
+    pub(super) fn end(&mut self, records: Vec<SessionRecord>, now_ms: u64, outcome: &mut Outcome) {
+        let Some(focus) = records.first().cloned() else {
+            return;
+        };
         outcome.milestones.push(MilestoneEvent {
             kind: MilestoneKind::Ended,
-            end_reason: Some(record.end_reason),
-            session_id: Some(record.id.clone()),
+            end_reason: Some(focus.end_reason),
+            session_id: Some(focus.id.clone()),
         });
         outcome.drop_after_unlock = self.keep_awake.take();
-        outcome.ended = Some(record.clone());
-        self.persist(now_ms, Some(record));
+        outcome.ended = Some(focus);
+        self.persist(now_ms, records);
     }
 }

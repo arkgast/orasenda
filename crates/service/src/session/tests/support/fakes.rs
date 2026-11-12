@@ -19,6 +19,8 @@ use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
 pub const T0: u64 = 1_794_009_600_000;
 pub const MINUTE: u64 = 60_000;
 pub const CLASSIC_MS: u64 = 25 * MINUTE;
+/// When a classic session is over for good: its focus, then its 5-minute break.
+pub const CLASSIC_END_MS: u64 = CLASSIC_MS + 5 * MINUTE;
 /// The fake local time: one hour east of UTC, 12-hour clock.
 pub const OFFSET_MIN: i32 = 60;
 pub const CYCLE: HourCycle = HourCycle::H12;

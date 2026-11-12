@@ -35,7 +35,7 @@ fn start_pause_resume_stop_arithmetic() {
     assert_eq!(v.remaining_ms, 18 * MIN);
     assert_eq!(v.progress, 7.0 / 25.0);
 
-    let r = s.stop(T0 + 10 * MIN).unwrap();
+    let r = s.stop(T0 + 10 * MIN).unwrap().remove(0);
     assert_eq!(r.id, id("a"));
     assert_eq!(r.preset, steady());
     assert_eq!(r.phase, Phase::Focus);
@@ -72,14 +72,14 @@ fn start_while_running_is_already_running_and_changes_nothing() {
     let mut s = classic_at(T0);
     let running = s.clone();
     assert_eq!(
-        s.start(id("b"), SessionPreset::Quick, T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, 1, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, running);
     s.pause(T0 + MIN).unwrap();
     let paused = s.clone();
     assert_eq!(
-        s.start(id("b"), SessionPreset::Quick, T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, 1, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, paused);
@@ -92,7 +92,7 @@ fn stop_records_real_focused_ms_excluding_pauses() {
     s.pause(T0 + 4 * MIN).unwrap();
     s.resume(T0 + 6 * MIN).unwrap();
     s.pause(T0 + 9 * MIN).unwrap();
-    let r = s.stop(T0 + 20 * MIN).unwrap();
+    let r = s.stop(T0 + 20 * MIN).unwrap().remove(0);
     assert_eq!(r.focused_ms, 7 * MIN);
     assert_eq!(r.paused_total_ms, 13 * MIN);
     assert_eq!(r.ended_ms, T0 + 20 * MIN);
@@ -103,7 +103,7 @@ fn stop_records_real_focused_ms_excluding_pauses() {
     let mut s = classic_at(T0);
     s.pause(T0 + 4 * MIN).unwrap();
     s.resume(T0 + 6 * MIN).unwrap();
-    let r = s.stop(T0 + 16 * MIN + 500).unwrap();
+    let r = s.stop(T0 + 16 * MIN + 500).unwrap().remove(0);
     assert_eq!(r.focused_ms, 14 * MIN + 500);
     assert_eq!(r.paused_total_ms, 2 * MIN);
     assert_eq!(r.end_reason, EndReason::Stopped);

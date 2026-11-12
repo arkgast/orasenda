@@ -22,6 +22,8 @@ fn row_a() -> SessionRecord {
         focused_ms: 0,
         end_reason: EndReason::Stopped,
         extensions: 0,
+        break_kind: None,
+        intent: None,
     }
 }
 

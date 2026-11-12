@@ -55,6 +55,8 @@ fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
         focused_ms: CLASSIC_MS,
         end_reason: EndReason::Completed,
         extensions: 0,
+        break_kind: None,
+        intent: None,
     };
     assert!(has_row(db(&back), &record));
     assert_eq!(snapshot(db(&back)), None);
@@ -74,7 +76,8 @@ fn recovery_with_failing_write_keeps_record_unsaved() {
         fakes(NotificationStatus::NotDetermined, false).platform,
         T0 + 60 * MINUTE,
     );
-    assert_eq!(back.unsaved.len(), 1);
+    // The focus and its break both ended while the app was closed.
+    assert_eq!(back.unsaved.len(), 2);
     assert_eq!(back.unsaved[0].ended_ms, T0 + CLASSIC_MS);
     assert!(back.snapshot_dirty);
     assert_eq!(back.view(T0).store, StoreStatus::Unavailable);
@@ -112,7 +115,7 @@ fn recovers_paused_session_as_paused() {
 fn clock_set_back_after_end_does_not_reopen() {
     let mut s = service();
     s.apply(start(), T0, id("a"));
-    let end = s.tick(T0 + CLASSIC_MS);
+    let end = s.tick(T0 + CLASSIC_END_MS);
     let record = ended_record(&end);
     assert_eq!(record.end_reason, EndReason::Completed);
     assert_eq!(end.view.state, EngineState::Idle);
@@ -399,12 +402,13 @@ fn end_write_failure_keeps_record_unsaved_and_next_tick_flushes_it() {
     let mut s = service();
     s.apply(start(), T0, id("a"));
     db(&s).fail_writes(true);
-    let ended = s.tick(T0 + CLASSIC_MS);
+    let ended = s.tick(T0 + CLASSIC_END_MS);
     let record = ended_record(&ended);
     assert_eq!(ended.view.store, StoreStatus::Unavailable);
-    assert_eq!(s.unsaved, std::slice::from_ref(&record));
+    assert_eq!(s.unsaved.len(), 2);
+    assert_eq!(s.unsaved[0], record);
     db(&s).fail_writes(false);
-    let next = s.tick(T0 + CLASSIC_MS + 1_000);
+    let next = s.tick(T0 + CLASSIC_END_MS + 1_000);
     assert!(next.ended.is_none());
     assert_eq!(next.view.store, StoreStatus::Ok);
     assert!(s.unsaved.is_empty());

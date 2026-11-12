@@ -43,7 +43,7 @@ fn elapsed_clamped_on_backward_clock_never_negative() {
     assert_eq!(v.remaining_ms, 25 * MIN);
     assert_eq!(v.progress, 0.0);
     assert_eq!(s.view(0).remaining_ms, 25 * MIN);
-    assert_eq!(s.advance(0), None);
+    assert_eq!(s.advance(0, None), Vec::<Milestone>::new());
     // Remaining grows by the jump back.
     assert_eq!(s.view(T0 + 10 * MIN).remaining_ms, 15 * MIN);
     assert_eq!(s.view(T0 + 4 * MIN).remaining_ms, 21 * MIN);
@@ -52,7 +52,7 @@ fn elapsed_clamped_on_backward_clock_never_negative() {
     s.resume(T0 + 2 * MIN).unwrap();
     assert_eq!(s.planned_end_ms(), Some(T0 + 25 * MIN));
     // Stop before the start: no focused time, and the record never ends before it starts.
-    let r = s.stop(T0 - MIN).unwrap();
+    let r = s.stop(T0 - MIN).unwrap().remove(0);
     assert_eq!(r.focused_ms, 0);
     assert!(r.ended_ms >= r.started_ms);
 }
@@ -68,16 +68,14 @@ fn adversarial_instants_never_panic() {
     s.pause(0).unwrap();
     s.resume(u64::MAX).unwrap();
     assert!(s.view(u64::MAX).progress <= 1.0);
-    let _ = s.advance(u64::MAX);
-    let mut s = Session::Paused {
-        id: id("x"),
-        preset: steady(),
-        phase: Phase::Focus,
-        started_ms: u64::MAX,
-        planned_ms: u64::MAX,
-        paused_total_ms: u64::MAX,
-        pause_started_ms: 0,
-    };
+    let _ = s.advance(u64::MAX, None);
+    let mut s: Session = serde_json::from_value(serde_json::json!({
+        "state": "paused", "id": "x", "preset": steady(), "phase": "focus", "break_kind": null,
+        "started_ms": u64::MAX, "planned_ms": u64::MAX, "paused_total_ms": u64::MAX,
+        "gap_ms": u64::MAX, "extensions": 255, "round": 255, "intent": null, "warned": false,
+        "auto_step": false, "open_focus": null, "cut_breaks": [], "pause_started_ms": 0,
+    }))
+    .unwrap();
     let v = s.view(u64::MAX);
     assert!((0.0..=1.0).contains(&v.progress));
     s.resume(u64::MAX).unwrap();
@@ -114,7 +112,19 @@ fn progress_stays_in_unit_interval() {
         long_break_min: 15,
         rounds: 4,
     };
-    z.start(id("z"), zero, T0).unwrap();
+    z.start(id("z"), zero, 1, T0).unwrap();
     let p = z.view(T0).progress;
     assert!((0.0..=1.0).contains(&p), "{p}");
+}
+
+#[test]
+fn a_break_view_reports_the_extensions_already_taken() {
+    let mut s = classic_at(T0);
+    s.advance(T0 + 23 * MIN, None);
+    s.extend(T0 + 23 * MIN).unwrap();
+    assert_eq!(s.view(T0 + 23 * MIN).extensions, 1);
+    s.advance(T0 + 35 * MIN, None);
+    let v = s.view(T0 + 35 * MIN);
+    assert_eq!(v.phase, Phase::Break);
+    assert_eq!(v.extensions, 1);
 }

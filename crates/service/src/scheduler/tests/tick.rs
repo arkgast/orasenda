@@ -15,7 +15,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
     assert_eq!(ticks(&running).len(), 1);
     assert_eq!(ticks(&running)[0].state, EngineState::Running);
 
-    host.set_now(T0 + CLASSIC_MS);
+    host.set_now(T0 + CLASSIC_END_MS);
     iterate(&host);
     let events = host.log().take();
     let idle = ticks(&events);
@@ -145,7 +145,7 @@ fn notification_posted_only_for_completed_when_granted_and_enabled() {
     let expected = Event::Posted("Focus session complete.".into(), "Time for a break.".into());
     let completed = launched(NotificationStatus::Granted);
     run_action_on(&completed, start()).expect("starts");
-    completed.set_now(T0 + CLASSIC_MS);
+    completed.set_now(T0 + CLASSIC_END_MS);
     iterate(&completed);
     assert_eq!(completed.log().count(|e| *e == expected), 1);
 
@@ -156,7 +156,7 @@ fn notification_posted_only_for_completed_when_granted_and_enabled() {
 
     let denied = launched(NotificationStatus::Denied);
     run_action_on(&denied, start()).expect("starts");
-    denied.set_now(T0 + CLASSIC_MS);
+    denied.set_now(T0 + CLASSIC_END_MS);
     iterate(&denied);
     assert_eq!(denied.log().count(|e| matches!(e, Event::Posted(..))), 0);
     assert_eq!(denied.log().count(|e| *e == Event::Requested), 0);
@@ -172,7 +172,7 @@ fn notification_posted_only_for_completed_when_granted_and_enabled() {
         )
         .expect("saves");
     run_action_on(&disabled, start()).expect("starts");
-    disabled.set_now(T0 + CLASSIC_MS);
+    disabled.set_now(T0 + CLASSIC_END_MS);
     iterate(&disabled);
     assert_eq!(disabled.log().count(|e| matches!(e, Event::Posted(..))), 0);
     assert_eq!(disabled.log().count(|e| *e == Event::StatusRead), 0);
@@ -185,7 +185,7 @@ fn end_rereads_status_before_posting_and_publishes_the_change() {
     // Granted later in System Settings; the request is never answered.
     host.0.notifier.set_status(NotificationStatus::Granted);
     host.log().take();
-    host.set_now(T0 + CLASSIC_MS);
+    host.set_now(T0 + CLASSIC_END_MS);
     iterate(&host);
     let events = host.log().take();
     let all = ticks(&events);
