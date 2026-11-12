@@ -53,6 +53,19 @@ impl Host for AppHost {
         super::session::now_ms()
     }
 
+    /// Cached from the activation notifications (`observe_activation`, at tray setup), so
+    /// any thread may read it. Always false off macOS, where nothing is observed.
+    fn app_active(&self) -> bool {
+        #[cfg(target_os = "macos")]
+        {
+            orasenda_platform_macos::app_active()
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            false
+        }
+    }
+
     fn emit_timer_tick(&self, view: &TimerView) {
         super::events::emit_timer_tick(&self.0, view);
     }

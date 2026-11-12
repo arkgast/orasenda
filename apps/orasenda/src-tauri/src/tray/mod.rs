@@ -3,7 +3,8 @@
 //! The glyphs in `tray/icons/` are template images (black with alpha only) drawn from the
 //! design system's mode shapes (`viewBox 0 0 10 10`): `focus` the filled circle (r 5), `paused`
 //! the two bars (`M1 1h3v8H1zM6 1h3v8H6z`), `idle` the hollow circle (r 4, stroke 1.5, so about
-//! 4.2 px in the asset). Each is one 36×36 px image: an 18×18 pt canvas at 2x, the shape filling
+//! 4.2 px in the asset), `warning` the triangle (`M5 0.5 9.6 9.5H0.4z`) and `break` the half
+//! circle (`M5 0a5 5 0 0 1 0 10z`). Each is one 36×36 px image: an 18×18 pt canvas at 2x, the shape filling
 //! the centre 28×28 px (2.8 px per unit, a 4 px margin). `tray-icon` sizes the image to 18 pt
 //! high. The title is `remaining` in the system font, or none when idle.
 //!
@@ -43,8 +44,9 @@ use crate::runtime::session::{NativeSurface, Surfaces};
 
 #[cfg(test)]
 pub(crate) use menu::{
-    EDIT_TIMES, END_SESSION, JUST_TWO, MenuCommand, PAUSE, QUIT, RESUME, SETTINGS, SHOW, START,
-    menu_command, settings_target, start_action,
+    ADD_TEN, BACK_TO_FOCUS, EDIT_TIMES, END_SESSION, JUST_TWO, KEEP_GOING, MenuCommand, PAUSE,
+    PAUSE_BREAK, QUIT, RESUME, RESUME_BREAK, SETTINGS, SHOW, SKIP_BREAK, START, STOP_HERE,
+    TAKE_BREAK, menu_command, settings_target, start_action,
 };
 #[cfg(test)]
 pub(crate) use render::header_text;
@@ -168,6 +170,9 @@ pub(crate) fn focus_changed(app: &AppHandle, focus: FocusItems) {
 /// Builds the idle menu-bar item and adds it to the [`Surfaces`] that `publish` renders.
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let handle = app.handle();
+    // On the main thread, like every tray call: caches whether Orasenda is the active app.
+    #[cfg(target_os = "macos")]
+    orasenda_platform_macos::observe_activation();
     let idle = TimerView::idle(
         crate::ipc::StoreStatus::Ok,
         orasenda_core::NotificationStatus::Unavailable,

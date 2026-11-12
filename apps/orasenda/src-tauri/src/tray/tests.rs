@@ -9,6 +9,7 @@ use super::state::{DRAW_RETRIES, Drawn, TrayState};
 use super::*;
 use crate::ipc::{Mode, StoreStatus};
 
+mod cadence_items;
 mod focus_items;
 mod header;
 mod menu_items;

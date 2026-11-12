@@ -4,6 +4,7 @@
 //! methods are thread-safe and run on any thread; observer registration needs the main thread.
 #![cfg(target_os = "macos")]
 
+mod app_active;
 mod bundle;
 mod control;
 mod foreground;
@@ -15,6 +16,7 @@ mod overlay;
 mod status_item;
 pub mod windows;
 
+pub use app_active::{is_active as app_active, observe_activation};
 pub use bundle::is_app_bundle;
 pub use control::{MacAppControl, phone_bundle_id};
 pub use foreground::MacForeground;

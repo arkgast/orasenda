@@ -246,7 +246,7 @@ fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running(
     assert_eq!(record.phase, Phase::Break);
     assert_eq!(record.ended_ms, T0 + CLASSIC_END_MS);
     assert_eq!(record.end_reason, EndReason::Completed);
-    assert!(late.notify_session_end);
+    assert_eq!(late.notice.map(|n| n.title), Some("Break over."));
     assert!(late.drop_after_unlock.is_some(), "the guard is handed out");
     assert_eq!(
         log.count(|e| *e == Event::Released),
@@ -379,7 +379,7 @@ fn keep_awake_begun_on_start_and_guard_returned_on_end() {
     s.apply(start(), T0 + 2 * MINUTE, id("b"));
     let ended = s.tick(T0 + 2 * MINUTE + CLASSIC_END_MS);
     assert!(ended.drop_after_unlock.is_some());
-    assert!(ended.notify_session_end);
+    assert_eq!(ended.notice.map(|n| n.title), Some("Break over."));
 }
 
 #[test]
