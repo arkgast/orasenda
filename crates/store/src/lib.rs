@@ -2,7 +2,7 @@
 //!
 //! One [`Store`] holds one connection behind a mutex. Every access is a closure that runs in one
 //! SQLite transaction: [`Store::read`] and [`Store::write`]. Repositories ([`settings`],
-//! [`focus_sessions`], [`presets`], [`active_session`]) are functions over the [`Txn`] the closure receives.
+//! [`focus_sessions`], [`presets`], [`active_session`], [`window_frames`]) are functions over the [`Txn`] the closure receives.
 //! Syncable repositories log every field they write through [`Txn::log_fields`]; device-only
 //! ones never touch `change_log`.
 //!
@@ -32,4 +32,4 @@ pub use repo::{active_session, focus_sessions, meta, presets, settings, window_f
 pub use txn::{Entity, Txn};
 
 /// The schema version this build writes, kept only in `PRAGMA user_version` (ADR-012).
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;

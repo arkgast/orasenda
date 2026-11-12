@@ -4,7 +4,8 @@
 //! Coordinates are integer points relative to the display frame's top-left. There is no id,
 //! `created_at` or tombstone, like `active_session`.
 
-use crate::{StoreError, Txn};
+use crate::{StoreError, Txn, sql_int};
+use rusqlite::OptionalExtension;
 
 /// A stored frame: points from the display frame's top-left.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,31 +17,79 @@ pub struct StoredFrame {
 }
 
 /// The frame stored for `window` on `display`, or `None`.
-pub fn get(_txn: &Txn, _window: &str, _display: &str) -> Result<Option<StoredFrame>, StoreError> {
-    todo!()
+pub fn get(txn: &Txn, window: &str, display: &str) -> Result<Option<StoredFrame>, StoreError> {
+    Ok(row(txn, window, display)?.map(|(frame, _)| frame))
 }
 
 /// The frame of `window` on the connected display (one of `displays`) written most recently,
 /// with that display's key. On equal times the earlier display in `displays` wins. `None` when
 /// no listed display has a frame.
 pub fn latest(
-    _txn: &Txn,
-    _window: &str,
-    _displays: &[&str],
+    txn: &Txn,
+    window: &str,
+    displays: &[&str],
 ) -> Result<Option<(String, StoredFrame)>, StoreError> {
-    todo!()
+    let mut newest: Option<(String, StoredFrame, i64)> = None;
+    for display in displays {
+        if let Some((frame, updated_at)) = row(txn, window, display)?
+            && newest
+                .as_ref()
+                .is_none_or(|(_, _, best)| updated_at > *best)
+        {
+            newest = Some(((*display).to_owned(), frame, updated_at));
+        }
+    }
+    Ok(newest.map(|(display, frame, _)| (display, frame)))
 }
 
 /// Replaces the frame of `window` on `display`, with `updated_at = now_ms`. Takes `&Txn`
 /// because it logs nothing.
 pub fn put(
-    _txn: &Txn,
-    _window: &str,
-    _display: &str,
-    _frame: StoredFrame,
-    _now_ms: u64,
+    txn: &Txn,
+    window: &str,
+    display: &str,
+    frame: StoredFrame,
+    now_ms: u64,
 ) -> Result<(), StoreError> {
-    todo!()
+    txn.conn().execute(
+        "INSERT INTO window_frame (window, display, x, y, width, height, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+         ON CONFLICT (window, display) DO UPDATE
+         SET x = excluded.x, y = excluded.y, width = excluded.width,
+             height = excluded.height, updated_at = excluded.updated_at",
+        (
+            window,
+            display,
+            frame.x,
+            frame.y,
+            frame.width,
+            frame.height,
+            sql_int(now_ms)?,
+        ),
+    )?;
+    Ok(())
+}
+
+fn row(txn: &Txn, window: &str, display: &str) -> Result<Option<(StoredFrame, i64)>, StoreError> {
+    Ok(txn
+        .conn()
+        .query_row(
+            "SELECT x, y, width, height, updated_at FROM window_frame
+             WHERE window = ?1 AND display = ?2",
+            (window, display),
+            |row| {
+                Ok((
+                    StoredFrame {
+                        x: row.get(0)?,
+                        y: row.get(1)?,
+                        width: row.get(2)?,
+                        height: row.get(3)?,
+                    },
+                    row.get(4)?,
+                ))
+            },
+        )
+        .optional()?)
 }
 
 #[cfg(test)]
@@ -64,7 +113,7 @@ mod tests {
     /// without naming a version.
     #[test]
     fn window_frame_migrates_from_previous_version() {
-        let own = include_str!("../../migrations/0003_window_frame.sql");
+        let own = include_str!("../../migrations/0004_window_frame.sql");
         let (index, _) = crate::migrate::MIGRATIONS
             .iter()
             .enumerate()

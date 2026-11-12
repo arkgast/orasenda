@@ -24,14 +24,47 @@ pub struct Limits {
 
 /// `stored`, made to fit: clamped to `limits` (and to `visible` when that is smaller), then
 /// moved inside `visible` keeping its size. A frame that already fits is returned unchanged.
-pub fn frame_within(_stored: Frame, _visible: Frame, _limits: Limits) -> Frame {
-    todo!()
+pub fn frame_within(stored: Frame, visible: Frame, limits: Limits) -> Frame {
+    // `max` then `min`, so inverted limits can't panic; the display caps the size last.
+    let width = stored
+        .width
+        .max(limits.min_width)
+        .min(limits.max_width)
+        .min(visible.width);
+    let height = stored
+        .height
+        .max(limits.min_height)
+        .min(limits.max_height)
+        .min(visible.height);
+    Frame {
+        x: place(stored.x, width, visible.x, visible.width),
+        y: place(stored.y, height, visible.y, visible.height),
+        width,
+        height,
+    }
+}
+
+/// `start` moved so `len` points from it end inside `origin .. origin + span`.
+fn place(start: i32, len: u32, origin: i32, span: u32) -> i32 {
+    let low = i64::from(origin);
+    // `len <= span`, so `high >= low`.
+    let high = low + i64::from(span) - i64::from(len);
+    i32::try_from(i64::from(start).clamp(low, high)).unwrap_or(origin)
 }
 
 /// The top-right of `visible`, `inset` points from its top and right edges, for a window of
 /// `size` (width, height).
-pub fn default_frame(_visible: Frame, _size: (u32, u32), _inset: u32) -> Frame {
-    todo!()
+pub fn default_frame(visible: Frame, size: (u32, u32), inset: u32) -> Frame {
+    let (width, height) = size;
+    let right = i64::from(visible.x) + i64::from(visible.width);
+    let x = (right - i64::from(width) - i64::from(inset)).max(i64::from(visible.x));
+    let y = i64::from(visible.y) + i64::from(inset);
+    Frame {
+        x: i32::try_from(x).unwrap_or(visible.x),
+        y: i32::try_from(y).unwrap_or(visible.y),
+        width,
+        height,
+    }
 }
 
 #[cfg(test)]
