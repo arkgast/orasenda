@@ -45,6 +45,11 @@ test("floater_break_and_warning_modes", async () => {
   expect(screen.getByRole("button", { name: "Skip break" })).toBeVisible();
 });
 
+test("floater_passes_the_intent_as_the_task", async () => {
+  await mount({ ...RUNNING, intent: "Write the report" });
+  expect(screen.getByRole("timer", { name: /Write the report/ })).toBeVisible();
+});
+
 test("floater_skip_break_and_keep_going", async () => {
   const skip = await mount(BREAK);
   expect(screen.queryByRole("button", { name: "Pause break" })).toBeNull();

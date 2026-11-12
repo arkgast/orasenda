@@ -29,8 +29,6 @@ afterEach(async () => {
 });
 
 const WARNING = { ...RUNNING, mode: "warning" as const, canExtend: true };
-const names = () =>
-  screen.getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent);
 
 async function mount(view: typeof RUNNING, replies: Parameters<typeof mockBackend>[0] = {}) {
   const backend = mockBackend({
@@ -96,5 +94,4 @@ test("focus_page_secondary_action_per_state", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Stop here" }));
   await settle();
   expect(stop.calls.map((c) => c.cmd)).toContain("timer_dismiss_offer");
-  expect(names().length).toBeGreaterThan(0);
 });

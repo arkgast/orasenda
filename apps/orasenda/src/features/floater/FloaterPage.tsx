@@ -121,6 +121,7 @@ export function FloaterPage() {
           progress={view.progress}
           mode={view.mode}
           phase={view.phase}
+          task={view.intent ?? undefined}
           onSkipBreak={() => void skipBreak()}
           // The floater has no preset list (no `presets_list` grant), so the button is "Keep going".
           onKeepGoing={view.offer === "keepGoing" ? () => void start() : undefined}

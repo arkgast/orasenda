@@ -6,7 +6,7 @@
  * that window (it was not reachable), a later visit must not open the field out of the blue.
  */
 const HOLD_MS = 1000;
-const listeners = new Set<() => void>();
+const listeners = new Set<() => boolean>();
 let pending = false;
 let expiry: ReturnType<typeof setTimeout> | undefined;
 
@@ -17,21 +17,32 @@ function drop(): void {
 }
 
 export function requestIntentField(): void {
-  if (listeners.size === 0) {
-    pending = true;
-    clearTimeout(expiry);
-    expiry = setTimeout(drop, HOLD_MS);
-    return;
+  for (const listener of [...listeners]) {
+    if (listener()) {
+      drop();
+      return;
+    }
   }
-  for (const listener of [...listeners]) listener();
+  // Nobody could take it yet (Today is not mounted, or its timer has not replied): keep it briefly.
+  pending = true;
+  clearTimeout(expiry);
+  expiry = setTimeout(drop, HOLD_MS);
 }
 
-/** Listens for requests; returns the function that stops listening. */
-export function onIntentFieldRequest(callback: () => void): () => void {
+/** Takes a held request, if one is still pending. Today calls this once it can edit the intent. */
+export function claimIntentRequest(): boolean {
+  const had = pending;
+  drop();
+  return had;
+}
+
+/** Listens for requests; the callback returns whether it took one. Returns the stop function. */
+export function onIntentFieldRequest(callback: () => boolean): () => void {
   listeners.add(callback);
   if (pending) {
-    drop();
-    queueMicrotask(callback);
+    queueMicrotask(() => {
+      if (pending && callback()) drop();
+    });
   }
   return () => {
     listeners.delete(callback);

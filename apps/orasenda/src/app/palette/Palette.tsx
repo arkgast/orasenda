@@ -100,7 +100,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         return logged("timer_stop", commands.timerStop());
       case "intent":
         onNavigate("today");
-        return requestIntentField();
+        // After the palette has unmounted and handed focus back to its opener; asked sooner, the
+        // restored focus would blur the new field and close it at once.
+        return void setTimeout(requestIntentField, 0);
       case "fullScreen":
         return void openFocusView({ kind: "fullScreen", displayId: arg });
       case "floater":
