@@ -34,18 +34,16 @@ export const commands = {
 	 *  already open, or when it could not be shown (logged).
 	 */
 	nativeMenuPopup: (request: NativeMenuRequest_Deserialize) => __TAURI_INVOKE<string | null>("native_menu_popup", { request }),
-	/**  The connected displays. */
-	displaysList: () => __TAURI_INVOKE<DisplayInfo[]>("displays_list"),
-	/**  Opens a display's Focus window (or focuses it), or the floater (then hides `main`). */
-	focusViewOpen: (target: FocusViewTarget) => typedError<null, FocusViewError>(__TAURI_INVOKE("focus_view_open", { target })),
-	/**  Closes the calling Focus window or floater; refused for `main`. */
-	focusViewClose: () => typedError<null, FocusViewError>(__TAURI_INVOKE("focus_view_close")),
-	/**  Open Orasenda: shows `main`, then closes the floater. */
-	mainShow: () => typedError<null, FocusViewError>(__TAURI_INVOKE("main_show")),
-	/**  The current timer view, without taking the milestones `timer_state` hands to Today. */
-	timerView: () => __TAURI_INVOKE<TimerView_Serialize>("timer_view"),
-	/**  Saves a library preset as the next session's, while idle. */
-	presetSelect: (presetId: string) => typedError<null, TimerCommandError>(__TAURI_INVOKE("preset_select", { presetId })),
+	/**  Adds "New preset" at the end of the list. */
+	presetAdd: () => typedError<PresetEntry, PresetError_Serialize>(__TAURI_INVOKE("preset_add")),
+	/**  Changes the given fields of a preset. */
+	presetUpdate: (id: PresetId, patch: PresetPatch_Deserialize) => typedError<PresetEntry, PresetError_Serialize>(__TAURI_INVOKE("preset_update", { id, patch })),
+	/**  Removes a preset (it can be brought back); answers the live list. */
+	presetRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_remove", { id })),
+	/**  Brings a removed preset back; answers the live list. */
+	presetUndoRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_undo_remove", { id })),
+	/**  Restores the default presets; answers the live list. */
+	presetsRestoreDefaults: () => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("presets_restore_defaults")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -65,10 +63,8 @@ export const commands = {
 /** Events */
 export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
-	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
 	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
-	paletteOpen: makeEvent<PaletteOpen, PaletteOpen>("palette-open"),
 	presetsChanged: makeEvent<PresetEntry[], PresetEntry[]>("presets-changed"),
 	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
@@ -137,47 +133,11 @@ export type ClockTick_Serialize = {
 	idleFinish: string | null,
 };
 
-/**  A connected display, as the Focus menu and the Focus view buttons list it. */
-export type DisplayInfo = {
-	/**  The label-safe display key; the Focus window is `focus-<id>`. */
-	id: string,
-	name: string,
-	/**  Whether the main window is on this display. */
-	hasMainWindow: boolean,
-};
-
 /**  How a session ended. */
 export type EndReason = "completed" | "stopped";
 
 /**  Whether the timer is idle, counting or paused. */
 export type EngineState = "idle" | "running" | "paused";
-
-/**
- *  The part of a Focus window's display that the menu bar and the Dock cover, in points.
- *  Sent to that one window, which pads its body by it.
- */
-export type FocusInsets = {
-	top: number,
-	right: number,
-	bottom: number,
-	left: number,
-};
-
-/**  A failed `focus_view_open` or `focus_view_close`. */
-export type FocusViewError = {
-	kind: FocusViewErrorKind,
-	message: string,
-};
-
-/**  Why a Focus view did not open or close. */
-export type FocusViewErrorKind = 
-/**  The platform has no such window, or the call is not allowed for this window. */
-"unavailable" | 
-/**  The display is not connected. */
-"noDisplay";
-
-/**  Which Focus view to open. */
-export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind: "floater" };
 
 /**  A session milestone, emitted as `timer-milestone`. */
 export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
@@ -298,11 +258,8 @@ export type OverlayShow = {
 	appName: string,
 };
 
-/**  Asks `main` to open the command palette. No payload. */
-export type PaletteOpen = null;
-
 /**  Which part of the loop a session is in. */
-export type Phase = "focus" | "break";
+export type Phase = "focus";
 
 /**  One live preset, with what the list needs to say about it. */
 export type PresetEntry = {
@@ -321,8 +278,51 @@ export type PresetEntry = {
 	isChanged: boolean,
 };
 
+export type PresetError = PresetError_Serialize | PresetError_Deserialize;
+
+/**  Why a preset call failed. */
+export type PresetErrorKind = "invalid" | "duplicateName" | "limit" | "lastPreset" | "notFound" | "unavailable" | "write";
+
+export type PresetError_Deserialize = {
+	kind: PresetErrorKind,
+	/**  The field that is out of range, for `invalid`. */
+	field?: PresetField | null,
+	message: string,
+};
+
+export type PresetError_Serialize = {
+	kind: PresetErrorKind,
+	/**  The field that is out of range, for `invalid`. */
+	field: PresetField | null,
+	message: string,
+};
+
+/**  The field of a [`PresetDef`] that is out of range. */
+export type PresetField = "name" | "focus_min" | "break_min" | "long_break_min" | "rounds";
+
 /**  Opaque preset identifier (a UUIDv7, or a default's fixed id), serialized as a bare string. */
 export type PresetId = string;
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch = PresetPatch_Serialize | PresetPatch_Deserialize;
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch_Deserialize = {
+	name?: string | null,
+	focusMin?: number | null,
+	breakMin?: number | null,
+	longBreakMin?: number | null,
+	rounds?: number | null,
+};
+
+/**  The fields of a preset to change; each absent field stays as it is. */
+export type PresetPatch_Serialize = {
+	name: string | null,
+	focusMin: number | null,
+	breakMin: number | null,
+	longBreakMin: number | null,
+	rounds: number | null,
+};
 
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;

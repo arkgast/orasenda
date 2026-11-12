@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preset-undo-remove"
+description = "Enables the preset_undo_remove command without any pre-configured scope."
+commands.allow = ["preset_undo_remove"]
+
+[[permission]]
+identifier = "deny-preset-undo-remove"
+description = "Denies the preset_undo_remove command without any pre-configured scope."
+commands.deny = ["preset_undo_remove"]

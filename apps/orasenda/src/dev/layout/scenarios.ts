@@ -24,6 +24,21 @@ const PRESETS: PresetEntry[] = [
   { id: DEEP, name: "Deep Work", focusMin: 90, breakMin: 15, longBreakMin: 30, rounds: 2 },
 ].map((preset) => ({ ...preset, isDefault: true, isChanged: false }));
 
+/** Twelve presets: the three defaults and nine of the person's own, one with the longest name. */
+const TWELVE: PresetEntry[] = [
+  ...PRESETS,
+  ...Array.from({ length: 9 }, (_, i) => ({
+    id: `user-${i}`,
+    name: i === 8 ? "A very long preset name of forty chars" : `Study block ${i + 1}`,
+    focusMin: 40,
+    breakMin: 10,
+    longBreakMin: 30,
+    rounds: 3,
+    isDefault: false,
+    isChanged: false,
+  })),
+];
+
 const INFO: AppInfo = { name: "Orasenda", version: "0.1.0", os: "macos", arch: "aarch64" };
 
 const IDLE: TimerView_Serialize = {
@@ -163,6 +178,8 @@ const SCENARIOS: Record<string, Handler> = {
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: macOS has notifications off while the preference is on (the longest status line).
+  // Settings: twelve presets, so Add preset is at its limit.
+  presetsTwelve: backend({ replies: { presets_list: () => TWELVE } }),
   notificationsDenied: backend({ view: { ...IDLE, notifications: "denied" } }),
   // Focus window and floater: the longest running case, and the failures their status lines show.
   deepRunning: backend({ view: DEEP_RUNNING }),
