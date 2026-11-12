@@ -92,13 +92,15 @@ export function Tooltip({
   }, [hover, focus, dismissed]);
 
   // Esc hides the tooltip without moving focus and does nothing else on that press (no dialog cancel, no host
-  // key handler), unless the press comes from inside an open PopoverMenu: then it hides the tooltip and still
-  // reaches the menu.
+  // key handler), unless the press comes from inside an open PopoverMenu or an element marked data-os-esc (the
+  // Focus window, where Esc means Leave): then it hides the tooltip and still reaches the menu or the section.
   useEffect(() => {
     if (!shown) return;
     const key = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      const inMenu = (event.target as Element | null)?.closest?.("[data-slot='popover-menu']");
+      const inMenu = (event.target as Element | null)?.closest?.(
+        "[data-slot='popover-menu'], [data-os-esc]",
+      );
       cancel();
       setDismissed(true);
       if (!inMenu) {

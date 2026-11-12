@@ -67,6 +67,23 @@ test("tooltip_esc_hides", () => {
   expect(document.activeElement).toBe(trigger);
 });
 
+test("tooltip_esc_in_a_data_os_esc_element_hides_and_still_reaches_the_host", () => {
+  const host = vi.fn();
+  render(
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: a stand-in host that records the key it receives
+    <section data-os-esc="" onKeyDown={(e) => host(e.key)}>
+      <Preset />
+    </section>,
+  );
+  const trigger = screen.getByRole("button");
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => trigger.focus());
+  expect(panel()).not.toBeNull();
+  fireEvent.keyDown(trigger, { key: "Escape" });
+  expect(panel()).toBeNull();
+  expect(host).toHaveBeenCalledWith("Escape");
+});
+
 test("tooltip_stays_while_hovered", () => {
   render(<Preset />);
   const trigger = screen.getByRole("button");

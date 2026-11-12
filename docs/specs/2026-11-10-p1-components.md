@@ -367,6 +367,6 @@ Updated by the PRs that implement this spec.
 - [x] T2 The small controls and the key table (VoiceOver: [ ] IconButton [ ] Tooltip [ ] Kbd)
 - [x] T3 Timer faces and Start (VoiceOver: [ ] TimerRing [ ] TimerStrip [ ] StartButton)
 - [x] T4 The preset popover (VoiceOver: [ ] PopoverMenu)
-- [ ] T5 Focus window and floater (VoiceOver: [ ] FullScreenFocus [ ] FloatingTimer)
+- [x] T5 Focus window and floater (VoiceOver: [ ] FullScreenFocus [ ] FloatingTimer)
 - [x] T6 Commands, capture and the shortcut recorder (VoiceOver: [ ] CommandPalette [ ] CapturePad [ ] ShortcutRecorder)
 - [x] T7 The icon set and the rail (VoiceOver: [ ] NavRail)

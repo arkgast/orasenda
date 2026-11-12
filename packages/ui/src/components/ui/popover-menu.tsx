@@ -238,10 +238,10 @@ export function PopoverMenu({
       const next = event.shiftKey
         ? null
         : nextTabbable(focusTarget(anchor.current), event.currentTarget);
-      if (next) {
-        next.focus();
-        onClose();
-      } else close();
+      next?.focus();
+      // Focus that did not move (an element the browser will not focus) goes back to the trigger.
+      if (next && next.ownerDocument.activeElement === next) onClose();
+      else close();
     } else if (k === "Escape") {
       // Radix gives Esc only to the topmost layer, so a tooltip showing elsewhere would take it. The press
       // comes from inside the menu, so it closes the menu here (when the menu is topmost, onEscapeKeyDown has

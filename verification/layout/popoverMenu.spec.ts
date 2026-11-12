@@ -8,18 +8,30 @@ import { frames, openSpecimen, pressTab } from "./support/specimen.ts";
 const PANEL = '[data-slot="popover-menu"]';
 
 const FORMS = [
-  { shot: "popover-menu-today", trigger: "Classic · ends 15:20, Change preset", menu: "Preset" },
+  {
+    shot: "popover-menu-today",
+    trigger: "Classic · ends 15:20, Change preset",
+    menu: "Preset",
+    expectSep: true,
+  },
   {
     shot: "popover-menu-read-only",
     trigger: "Preset while a session runs",
     menu: "Classic · 25 / 5",
+    expectSep: true,
   },
   {
     shot: "popover-menu-focus-window",
     trigger: "Preset for the next session",
     menu: "Preset for the next session",
+    expectSep: false,
   },
-  { shot: "popover-menu-checkbox", trigger: "Checkbox rows", menu: "Checkbox rows" },
+  {
+    shot: "popover-menu-checkbox",
+    trigger: "Checkbox rows",
+    menu: "Checkbox rows",
+    expectSep: false,
+  },
 ] as const;
 
 /** Opens a menu and waits until focus has moved into it, so the next key reaches the menu. */
@@ -69,7 +81,9 @@ test("popover_menu_fits_at_360", async ({ page }, info) => {
         list: p.clientWidth,
       };
     });
-    if (sep.has) {
+    // A form with a link row must keep its separator: a missing hr fails here, it is not skipped.
+    expect(sep.has, `${form.shot} separator`).toBe(form.expectSep);
+    if (form.expectSep) {
       expect(sep.hr).toBeGreaterThan(0);
       expect(Math.abs(sep.hr - sep.list)).toBeLessThanOrEqual(1);
     }

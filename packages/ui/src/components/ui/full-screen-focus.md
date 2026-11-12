@@ -1,10 +1,30 @@
-The Focus window: a fluid ring with large tabular digits, the task, a small wall clock and one quiet way out.
+The Focus window (`full-screen-focus.tsx`): the time and the intent, one quiet way out, and the controls for the session, nothing else.
 
-- Takes `TimerRing` props (`remaining`, `remainingLabel`, `progress`, `mode`, `task`, `clock`) plus `onExit`. The ring is `size="fluid"`; when the window is a strip it shows `TimerStrip`.
-- Leave full screen is a top-right `IconButton` (Esc). It opens the `Dialog` "Leave full screen?" / "Your focus session will keep running." with "Stay in full screen" as the initial focus. `onExit` fires only after confirmation.
-- The same controls row as Today: Pause/Resume and End. An idle state shows the summary, the preset `PopoverMenu` (no Settings row) and Start.
-- Caption "Space pauses · Esc leaves" while single-key shortcuts are on; "⌘. ends · Esc leaves" when they are off.
-- Stays open at the end with "Session ended."
-- It is a borderless window per display, not macOS native full screen. The layout takes focus on mount so Escape works at once; margins are `space-8`, `space-4` on narrow windows. It fills its host: the host must have a definite height, or the fluid ring takes its width as its height and the layout scrolls.
+- **Anatomy:** four fixed tracks and one flexible time track, top to bottom: the top row (the host's `summary`, centred, while idle or ended; Leave full screen, an `IconButton` with the Esc `Kbd`, at the end), the status line, the time track, the controls row and the caption. Timer surfaces never scroll.
+- **Props:** `TimerRing` props (`remaining`, `remainingLabel`, `progress`, `mode`, `task`, `clock`) plus `onExit`, `onPause`, `onResume`, `onEnd`, `onStart`, `summary`, `singleKeys` and `ended`. `task` is E's intent line ("What will be done?").
+- **Layout:** it fills its host (the Focus window's body, which the host sizes to the window) and measures its own box with a `ResizeObserver`. In that callback, and nowhere else, it calls `timerLayout` with the box from TimerStrip's README: `contentWidth` and `contentHeight` are its width and height minus `space-8` (minus `space-4` below `layout-compact-width`), `windowWidth` is its width. A tick never re-runs it. `ring` shows `TimerRing size="fluid"` with `task` and `clock`; `strip` and `stackedStrip` show `TimerStrip` (`stacked` for the second) with `task` and no clock. The section carries the result as `data-layout`.
+- **Margins and gaps:** the ring from `layout-compact-width` wide: `space-6` on each side (the `space-8` of the box) and `space-4` between tracks. Below `layout-compact-width`, and in both strips: `space-2` on each side and `space-1` between tracks, so short windows keep their time track.
+- **Fixed tracks:** top `hit-min` (44), status 18 (one `body-sm` line, reserved even when empty, so nothing moves when a session ends), controls `control-lg` (52), caption 18: 132 plus the four gaps. In strips, the digits follow the time track's height as well as its width (never below `timer-md`).
 
-Do: keep the menu-bar timer running underneath. Don't: add anything else to this screen.
+## The intent line
+
+- Two lines, clamped, in the ring's `task` slot or the strip's `task` line, in every state: focus, paused, break, warning, idle and ended. It stays whole in the timer's accessible name in every layout, because `FullScreenFocus` passes `task` in all of them. One exception, kept for compatibility: `TimerRing`'s idle name is "No session" without the task, so in the ring while idle or ended `FullScreenFocus` adds the intent as a visually hidden line right after the ring.
+- **Where it shows in a strip:** the time track's height, worked out from the window's box in the same resize callback (`data-intent` on the section; the line stays in the DOM and the name). The strip's intent line shows when the track is at least 128px tall (the tallest strip with its intent is 126: 64px digits, `space-2`, the 10px bar, `space-2`, two 18px lines) and is hidden below that. The ring always has room for it.
+- **At the minimum window (360 × 240):** the box is 344 × 224 and the result is `stackedStrip`. The fixed tracks and gaps take 148, which leaves a 76px time track. The stacked strip shows its head (the chip and the digits, about 30px here), `space-1` and the 10px bar, and no intent line, as Today's stacked strip does at the minimum (TimerStrip README, "Today's stacked strip", ruling (a)). Unlike Today, the intent stays in the strip's accessible name. At 360 × 360 the track is 196px and the intent shows.
+- **Cases the harness checks:** 1280 × 720 (ring, 460px track), 1920 × 1080 (ring 560), the phone 390 × 844 and xl 1440 × 900 (both ring), the strip frame 1000 × 440 (strip, 276px track) and the minimum 360 × 240 (stacked strip, no intent line), each in focus, paused, idle, break, warning and ended.
+
+## Controls and keys
+
+- **By mode:** during a session, Pause (`round` `IconButton`, "Pause session"), or Resume ("Resume session") while paused, centred, with End ("End session", ⌘.) beside it. Idle or `ended`: Start, the `StartButton`'s primary with the play glyph, named "Start focus" (there is no Just 2 minutes here). Each calls its handler; the host changes the mode.
+- **Leaving:** the Leave `IconButton` and Esc open the `Dialog` "Leave full screen?" with the scrim, the line "Your focus session will keep running." during a session (no line while idle), "Stay in full screen" (the initial focus) and "Leave full screen". `onExit` fires only after the confirm. Esc in the dialog stays.
+- **Esc while the Leave tooltip shows:** the section carries `data-os-esc`. An Esc pressed inside it while a tooltip shows (Leave's, on key focus or under the pointer) hides that tooltip and still reaches the section, so one press opens the leave dialog. In the Focus window Esc has one job, leaving; a press that only hid a tooltip would read as Esc not working, and the dialog takes focus anyway, so the tooltip is gone (Tooltip README, Keyboard). An Esc inside the host's open `PopoverMenu` closes only the menu.
+- **Caption (`singleKeys`):** true: "Space pauses · Esc leaves" ("Space resumes" while paused, "Space starts" while idle or ended), and Pause's tooltip shows Space. Omitted or false: "⌘. ends · Esc leaves" ("⌘↩ starts · Esc leaves" while idle or ended). Start's `aria-keyshortcuts` follows it: `Space Meta+Enter` or `Meta+Enter`. Each key is a `Kbd` with its spoken name. Space, ⌘. and ⌘↩ are the host's keys; the component handles only Esc.
+- **Focus:** the section ("Full-screen focus") takes focus on mount, so Esc works at once. Tab order: summary (idle or ended) → Leave full screen → Pause or Resume, or Start → End.
+
+## States and announcements
+
+- **`ended`:** the status line says "Session ended.", the timer shows idle (and the intent), Start and the summary return, and the window stays open.
+- **Live region:** one, the status line: an always-mounted `role="status"` paragraph that holds "Session ended." while `ended` and otherwise only an `aria-hidden` non-breaking space (it keeps the line's height), so the end is announced once. The Focus window is its own window and has no page status to announce through. The timer stays `role="timer"`, `aria-live="off"`.
+- It is a borderless window per display, not macOS native full screen.
+
+Do: keep the menu-bar timer running underneath. Don't: add anything else to this screen, or call `timerLayout` on a tick.
