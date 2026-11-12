@@ -220,15 +220,15 @@ Rust picks one per break (`suggestions::pick`); the list lives in core so every 
 | Text | Breaks | Label | Basis |
 |---|---|---|---|
 | Stand up and stretch gently. | short, long | none (moderate) | Albulescu 2022 |
-| Look at something far away. | short | optional | to verify before the copy ships |
-| Take a slow sip of water. | short | none | to verify before the copy ships |
+| Look at something far away. | short | optional | no source opened; labelled until one is (E3) |
+| Take a slow sip of water. | short | optional | no source opened; labelled until one is (E3) |
 | Breathe in twice, then out long. | short | optional | Balban 2023 tested a daily 5-minute practice, not one sigh |
 | Walk to another room. | short, long | none | Albulescu 2022 |
-| Step outside for some daylight. | long | optional | to verify before the copy ships |
-| Sit quietly and let your mind wander. | long | experimental | Buch et al. 2021 tested motor skills; to verify before the copy ships |
-| Close your eyes and rest for a few minutes. | long | experimental | to verify before the copy ships |
+| Step outside for some daylight. | long | optional | no source opened; labelled until one is (E3) |
+| Sit quietly and let your mind wander. | long | experimental | Buch et al. 2021 tested motor skills only; labelled until a source is opened (E3) |
+| Close your eyes and rest for a few minutes. | long | experimental | no source opened; labelled until one is (E3) |
 | Leave your phone where it is. | short, long | none | product principle (breaks steer away from the phone, SPEC §2.1) |
-| Make a warm drink and sip it slowly. | long | optional | to verify before the copy ships |
+| Make a warm drink and sip it slowly. | long | optional | no source opened; labelled until one is (E3) |
 
 Labelled lines read "Optional: step outside for some daylight." and "Experimental: sit quietly and let your mind wander." Biwer 2023 is the basis for offering breaks at all, not for any one line.
 
@@ -327,7 +327,7 @@ The floater and full screen (E's last task) must show the same offer as Today (A
 ## Open questions
 1. **An off switch for break suggestions?** Not asked for; easy to add as a Settings › Timer checkbox. Recommendation: wait for beta feedback.
 2. **Should "fixed ids for seeded defaults" become an ADR** (ADR-017) before P4's routine templates? Recommendation: decide in P4's spec.
-3. **The six "to verify" suggestion lines** need a source or the label "Optional"/"Experimental" before the copy ships (task 6's verification step).
+3. **The six "to verify" suggestion lines** (resolved in E3, #342): none had a source opened, so all six ship labelled Optional or Experimental (water moved from none to optional). A later source can remove a label.
 
 ## Implementation status
 Planned as seven tasks: (1) preset library, core to IPC; (2) preset library UI (Settings, Today, menu bar; B's settings-chain tests in its Touches); (3) cadence engine, `sessions_today`, settings keys, auto-continue steps and `timer_take_break`; (4) Today and menu-bar states (the check-in included), notifications, Settings rows (Keep going automatically, Longest focus), README updates; (5) intent line; (6) break suggestions, with a verification step: a line ships only with a verified source or labelled "Optional"/"Experimental", and nothing unverified is stated as fact; (7) floater and full-screen states, after D.

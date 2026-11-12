@@ -37,11 +37,23 @@ fn pick_short_never_returns_long_only() {
 
 #[test]
 fn labelled_line_starts_with_label() {
-    let opt = Suggestion { text: "Step outside for some daylight.", label: Some(SuggestionLabel::Optional) };
+    let opt = Suggestion {
+        text: "Step outside for some daylight.",
+        label: Some(SuggestionLabel::Optional),
+    };
     assert_eq!(opt.line(), "Optional: step outside for some daylight.");
-    let exp = Suggestion { text: "Sit quietly and let your mind wander.", label: Some(SuggestionLabel::Experimental) };
-    assert_eq!(exp.line(), "Experimental: sit quietly and let your mind wander.");
-    let plain = Suggestion { text: "Walk to another room.", label: None };
+    let exp = Suggestion {
+        text: "Sit quietly and let your mind wander.",
+        label: Some(SuggestionLabel::Experimental),
+    };
+    assert_eq!(
+        exp.line(),
+        "Experimental: sit quietly and let your mind wander."
+    );
+    let plain = Suggestion {
+        text: "Walk to another room.",
+        label: None,
+    };
     assert_eq!(plain.line(), "Walk to another room.");
 }
 
