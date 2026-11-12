@@ -34,6 +34,13 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Static card | The generated `preview.html` for a component with no specimen: name, the README's first paragraph and the props table, in both themes. | A specimen |
 | Closed theme | `packages/tokens/theme.css`: a Tailwind `@theme` that first clears every default (`--*: initial`) and then lists only Orasenda tokens, so a class can only name a token. Generated from `tokens.json`; also maps shadcn's semantic variables (`primary` → `focus`, `destructive` → `critical`, …). | `tokens.css` (the plain CSS variables, also generated) |
 | Type-only export | A type `@orasenda/ui` exports with no runtime: the `*NextProps` contracts and the contract-only components (`Select`, `SessionSlot`, `AppRow`, `RoleTag`, `AppPicker`, `BarRow`), in `src/types.ts`. | A runtime component (in `window.Orasenda`) |
+| Focus view | Either way of showing the timer outside Today: the Focus window or the floater, chosen each time from the Focus view button, the Focus menu, the menu-bar menu or ⌘K. | Today (the main window's page) |
+| Focus window | The borderless window, label `focus-<display>`, that covers one display's frame at normal window level with `FullScreenFocus`; at most one per display; it stays open, idle, after a session ends. | macOS native full screen (a Space of its own, never used) |
+| Floater | The floating timer: a non-activating, always-on-top panel (label `floater`) on every Space with `FloatingTimer`; opening it hides the main window. | The menu-bar item (a native status item, not a window) |
+| Display | A connected screen, keyed by its CoreGraphics UUID, named by `NSScreen.localizedName`, with a frame and a visible frame (the frame minus the menu bar and Dock). Read from macOS, never stored on its own. | A Space (a desktop; one display can have several) |
+| Window frame | A window's remembered position and size on one display, in display-relative points, in the device-only `window_frame` table. Only the floater has one. | A display's frame (the screen's own rectangle) |
+| Key focus without activation | The floater receiving keys after a click or an explicit open while another app stays active and keeps the menu bar. | Activating Orasenda (what the main and Focus windows do) |
+| Command palette | The ⌘K list of every action available now, in the main window only (`CommandPalette`). | A menu (native, fixed items) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
