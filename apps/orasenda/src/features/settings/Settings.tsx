@@ -6,7 +6,7 @@ import { commands } from "../../ipc/bindings";
 import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
 import { selectedPreset, usePresets, usePresetsFailed } from "../today/presets";
-import { askMacOS, isAsking, subscribeAsking, tick, untick } from "./notificationsToggle";
+import { askingKey, askMacOS, subscribeAsking, tick, untick } from "./notificationsToggle";
 import {
   type Arrival,
   SECTIONS,
@@ -76,7 +76,9 @@ export function Settings({
   const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
-  const asking = useSyncExternalStore(subscribeAsking, isAsking);
+  const askingFor = useSyncExternalStore(subscribeAsking, askingKey);
+  const asking = askingFor === "notifySessionEnd";
+  const [savedLine, setSavedLine] = useState<string | null>(null);
 
   useEffect(() => {
     const unregister = register({
@@ -149,12 +151,18 @@ export function Settings({
   // A change clears the answer to the last action, so the line returns to rest.
   const change = (next: SettingsValue) => {
     setLine({ kind: "rest" });
+    setSavedLine(null);
     editor.clearLine();
     save(next);
   };
   const withLatest = (patch: Partial<SettingsValue>) => {
     const base = latest();
     if (base) change({ ...base, ...patch });
+  };
+  // A cadence row's change, and the line that says it was made ("Extra 10 minutes: twice.").
+  const changeCadence = (patch: Partial<SettingsValue>, saved: string) => {
+    withLatest(patch);
+    setSavedLine(saved);
   };
 
   const openSystemSettings = () => {
@@ -222,6 +230,7 @@ export function Settings({
           : undefined;
       return { text, tone: retry ? "attention" : "neutral", action };
     }
+    if (savedLine) return { text: savedLine, tone: "neutral" };
     if (loadError && !settings) {
       return { text: "Orasenda can't read settings right now.", tone: "attention" };
     }
@@ -241,7 +250,7 @@ export function Settings({
   const row = notificationsRow(status, asking || shown.notifySessionEnd, asking);
   const notifyLine =
     [
-      reasonIf("notify"),
+      reasonIf("notify", "notifyTwo"),
       row.line,
       row.action === "open" && openFailed
         ? "Find Orasenda in System Settings, Notifications."
@@ -325,8 +334,10 @@ export function Settings({
                 editLocked={readOnly || store === "unavailable"}
                 disabledReason={reason}
                 presetStatus={reasonIf("preset")}
+                cadenceStatus={reasonIf("cadence")}
                 editor={editor}
                 onPreset={(presetId: string) => withLatest({ presetId })}
+                onCadence={changeCadence}
               />
               <Notifications
                 checked={asking || shown.notifySessionEnd}
@@ -337,8 +348,17 @@ export function Settings({
                 action={row.action}
                 onToggle={(checked) => {
                   setLine({ kind: "rest" });
+                  setSavedLine(null);
                   if (checked) tick(status);
                   else untick();
+                }}
+                twoMinutes={askingFor === "notifyTwoMinutes" || shown.notifyTwoMinutes}
+                twoMinutesAsking={askingFor === "notifyTwoMinutes"}
+                onTwoMinutes={(checked) => {
+                  setLine({ kind: "rest" });
+                  setSavedLine(null);
+                  if (checked) tick(status, "notifyTwoMinutes");
+                  else untick("notifyTwoMinutes");
                 }}
                 onAsk={askMacOS}
                 onOpen={openSystemSettings}

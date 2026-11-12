@@ -64,6 +64,10 @@ type Props = {
   line: string | null;
   action: "ask" | "open" | null;
   onToggle: (checked: boolean) => void;
+  /** "Two minutes before the end": its box, and whether it is the one asking macOS. */
+  twoMinutes: boolean;
+  twoMinutesAsking: boolean;
+  onTwoMinutes: (checked: boolean) => void;
   onAsk: () => void;
   onOpen: () => void;
 };
@@ -76,6 +80,9 @@ export function Notifications({
   line,
   action,
   onToggle,
+  twoMinutes,
+  twoMinutesAsking,
+  onTwoMinutes,
   onAsk,
   onOpen,
 }: Props) {
@@ -116,6 +123,19 @@ export function Notifications({
         >
           Tell me when a session ends
         </Choice>
+        <Choice
+          type="checkbox"
+          checked={twoMinutes}
+          disabled={disabled}
+          aria-describedby="notifications-two-help"
+          aria-busy={twoMinutesAsking ? "true" : undefined}
+          onChange={(event) => onTwoMinutes(event.target.checked)}
+        >
+          Two minutes before the end
+        </Choice>
+        <p id="notifications-two-help" className="app-muted">
+          Only while Orasenda is in the background.
+        </p>
       </SettingsRow>
     </section>
   );

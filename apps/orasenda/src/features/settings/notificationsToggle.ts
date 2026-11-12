@@ -6,17 +6,25 @@ import { latest, save } from "../../ipc/settingsQueue";
 // outlives the page, like the save chain. `request` numbers each ask: an answer that is not
 // the newest is dropped, so an untick while asking is never undone by a late reply.
 
-let asking = false;
+/** The two notification preferences a box can ask macOS for. */
+export type NotifyKey = "notifySessionEnd" | "notifyTwoMinutes";
+
+let asking: NotifyKey | null = null;
 let request = 0;
 const listeners = new Set<() => void>();
 
-function setAsking(value: boolean): void {
+function setAsking(value: NotifyKey | null): void {
   if (asking === value) return;
   asking = value;
   for (const listener of listeners) listener();
 }
 
 export function isAsking(): boolean {
+  return asking !== null;
+}
+
+/** Which box is waiting on the macOS prompt, for `useSyncExternalStore`. */
+export function askingKey(): NotifyKey | null {
   return asking;
 }
 
@@ -30,46 +38,46 @@ export function subscribeAsking(listener: () => void): () => void {
 
 export function resetNotificationsToggleForTests(): void {
   request += 1;
-  asking = false;
+  asking = null;
   listeners.clear();
 }
 
-function setPreference(notifySessionEnd: boolean): void {
+function setPreference(key: NotifyKey, value: boolean): void {
   const current = latest();
-  if (current) save({ ...current, notifySessionEnd });
+  if (current) save({ ...current, [key]: value });
 }
 
 /** Asks macOS; `saveOnGranted` is false for "Ask macOS" (the preference is already on). */
-function ask(saveOnGranted: boolean): void {
+function ask(key: NotifyKey, saveOnGranted: boolean): void {
   const mine = ++request;
-  setAsking(true);
+  setAsking(key);
   commands.notificationsRequest().then(
     (status) => {
       if (mine !== request) return;
-      if (status === "granted" && saveOnGranted) setPreference(true);
-      setAsking(false);
+      if (status === "granted" && saveOnGranted) setPreference(key, true);
+      setAsking(null);
     },
     (error: unknown) => {
       console.error("notifications_request failed", error);
-      if (mine === request) setAsking(false);
+      if (mine === request) setAsking(null);
     },
   );
 }
 
 /** The box was ticked while the status is `status`. */
-export function tick(status: NotificationStatus): void {
-  if (status === "notDetermined") ask(true);
-  else setPreference(true);
+export function tick(status: NotificationStatus, key: NotifyKey = "notifySessionEnd"): void {
+  if (status === "notDetermined") ask(key, true);
+  else setPreference(key, true);
 }
 
 /** The box was unticked (also while asking). */
-export function untick(): void {
+export function untick(key: NotifyKey = "notifySessionEnd"): void {
   request += 1;
-  setAsking(false);
-  setPreference(false);
+  setAsking(null);
+  setPreference(key, false);
 }
 
 /** The quiet "Ask macOS" action: the preference is on, macOS hasn't been asked. */
 export function askMacOS(): void {
-  ask(false);
+  ask("notifySessionEnd", false);
 }
