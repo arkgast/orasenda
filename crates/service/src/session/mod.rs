@@ -9,6 +9,7 @@ mod actions;
 mod cadence;
 mod effects;
 mod frames;
+mod hint;
 mod persist;
 mod presets;
 mod recovery;

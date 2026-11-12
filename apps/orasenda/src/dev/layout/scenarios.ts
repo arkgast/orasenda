@@ -66,6 +66,7 @@ const IDLE: TimerView_Serialize = {
   offer: null,
   checkIn: null,
   capLine: null,
+  hint: null,
 };
 
 const RUNNING: TimerView_Serialize = {
@@ -247,6 +248,11 @@ const SCENARIOS: Record<string, Handler> = {
   capLine: backend({ view: { ...IDLE, capLine: "4 hours of focus today." } }),
   intentSet: backend({ view: { ...RUNNING, intent: INTENT } }),
   intentPaused: backend({ view: { ...PAUSED, intent: "Reply to Sam" } }),
+  // The one-time keep-going hint after a first "+10 min" (a running focus).
+  hintKeepGoing: backend({
+    view: { ...RUNNING, hint: "keepGoing" },
+    replies: { hint_shown: () => RUNNING },
+  }),
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: twelve presets, so Add preset is at its limit.

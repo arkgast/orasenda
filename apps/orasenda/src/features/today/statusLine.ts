@@ -42,6 +42,14 @@ export type StatusInput = {
   capNotice?: boolean;
   /** The selected preset's name, for the keep-going action's accessible name. */
   keepGoingPreset?: string | null;
+  /**
+   * The keep-going hint is due. It waits while any other line shows, and it is shown in place of
+   * the intent button (a deliberate deviation from the spec's table: otherwise a running focus
+   * would always hide it).
+   */
+  hint?: boolean;
+  /** The side-by-side strip: the hint's text takes three lines beside its button, so it waits. */
+  strip?: boolean;
 };
 
 export type StatusActionId =
@@ -52,6 +60,7 @@ export type StatusActionId =
   | "skipBreak"
   | "keepGoing"
   | "stopHere"
+  | "openSettings"
   | "intent";
 
 export type StatusAction = {
@@ -111,6 +120,13 @@ const TAKE_BREAK: StatusAction = {
   name: "Take a break now",
   variant: "quiet",
 };
+const OPEN_SETTINGS: StatusAction = {
+  id: "openSettings",
+  label: "Open settings",
+  name: "Open settings for Timer",
+  variant: "ghost",
+};
+const HINT_TEXT = "You can keep going automatically in Settings › Timer.";
 const SKIP_BREAK: StatusAction = { id: "skipBreak", label: "Skip break", variant: "ghost" };
 
 const line = (
@@ -199,14 +215,18 @@ export function statusLine(input: StatusInput): StatusLine | null {
     return line(joined && joined.length <= JOIN_LIMIT ? joined : input.notice, "neutral");
   }
   if (store) return line(store, "attention");
-  if (cadence && cadence.state !== "idle" && cadence.phase === "focus") {
-    return line("", "neutral", [
-      {
-        id: "intent",
-        label: cadence.intent ? "Edit intent" : "What will be done?",
-        variant: "quiet",
-      },
-    ]);
-  }
+  const intent: StatusAction | null =
+    cadence && cadence.state !== "idle" && cadence.phase === "focus"
+      ? {
+          id: "intent",
+          label: cadence.intent ? "Edit intent" : "What will be done?",
+          variant: "quiet",
+        }
+      : null;
+  // Above the intent button, below every other line. One action only: with the intent button
+  // beside it the text takes three lines at the narrow sizes. The intent field stays one shortcut
+  // away (intentEvents). In the strip it waits (the text would wrap past two lines).
+  if (input.hint && !input.strip) return line(HINT_TEXT, "neutral", [OPEN_SETTINGS]);
+  if (intent) return line("", "neutral", [intent]);
   return cadence?.capLine ? line(cadence.capLine, "rest") : null;
 }

@@ -5,6 +5,7 @@ mod cadence;
 mod cap;
 mod extend;
 mod frames;
+mod hint;
 mod notifications;
 mod offer;
 mod presets_edit;

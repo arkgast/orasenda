@@ -95,6 +95,7 @@ impl SessionService {
                 format!("Still going · ends {}", finish.unwrap_or_default())
             }),
             cap_line: idle.then(|| self.cap_line(now_ms)).flatten(),
+            hint: self.hint_due(),
         }
     }
 

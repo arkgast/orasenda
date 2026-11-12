@@ -110,6 +110,7 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-timer-set-intent",
         "allow-timer-dismiss-offer",
         "allow-timer-take-break",
+        "allow-hint-shown",
         "allow-settings-get",
         "allow-settings-set",
         "allow-presets-list",
@@ -201,6 +202,7 @@ fn main_capability_exact() {
             "allow-timer-set-intent",
             "allow-timer-dismiss-offer",
             "allow-timer-take-break",
+            "allow-hint-shown",
             "allow-settings-get",
             "allow-settings-set",
             "allow-notifications-request",
@@ -253,6 +255,7 @@ fn focus_capability_exact_with_cadence() {
     let (_, focus) = capability("focus.json");
     for withheld in [
         "allow-timer-state",
+        "allow-hint-shown",
         "allow-settings-set",
         "allow-native-menu-popup",
         "allow-presets-get",
@@ -290,6 +293,7 @@ fn floater_capability_exact_with_cadence() {
         "allow-timer-extend",
         "allow-timer-take-break",
         "allow-timer-dismiss-offer",
+        "allow-hint-shown",
         "allow-settings-set",
         "allow-timer-state",
         "allow-preset-select",

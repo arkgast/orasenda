@@ -23,7 +23,7 @@ impl SessionService {
         let shown = self.shown_idle.clone();
         let mut outcome = Outcome::default();
         self.advance(now_ms, &mut outcome);
-        let clears_offer = !matches!(action, Action::DismissOffer);
+        let clears_offer = !matches!(action, Action::DismissOffer | Action::HintShown(_));
         let result = match action {
             Action::Start(request) => self
                 .start(&request, now_ms, new_id, &mut outcome)
@@ -50,6 +50,10 @@ impl SessionService {
                 Ok(())
             }
             Action::TakeBreak => self.take_break(now_ms, &mut outcome),
+            Action::HintShown(hint) => {
+                self.mark_shown(hint, now_ms);
+                Ok(())
+            }
         };
         if result.is_ok() && clears_offer {
             self.offer = false;
@@ -177,6 +181,7 @@ impl SessionService {
             .extend(now_ms)
             .map_err(TimerCommandError::from)?;
         self.persist(now_ms, Vec::new());
+        self.note_manual_extend();
         let id = self.engine.view(now_ms).session_id;
         self.event(MilestoneKind::Extended, Phase::Focus, id, outcome);
         Ok(())
@@ -195,6 +200,7 @@ impl SessionService {
     /// A break began: the milestone, and the focus that just completed against the cap.
     fn break_began(&mut self, focus_id: Option<SessionId>, now_ms: u64, outcome: &mut Outcome) {
         outcome.break_started = true;
+        self.hint.pending = false;
         self.event(MilestoneKind::BreakStarted, Phase::Break, focus_id, outcome);
         // Absent when the break has also ended in the same step; its `Ended` checks the cap.
         if let Some(focus) = self.engine.open_focus().cloned() {
@@ -243,6 +249,7 @@ impl SessionService {
         let (Some(first), Some(last)) = (records.first().cloned(), records.last().cloned()) else {
             return;
         };
+        self.hint.pending = false;
         let quick = first.preset == SessionPreset::Quick;
         outcome.milestones.push(MilestoneEvent {
             kind: MilestoneKind::Ended,

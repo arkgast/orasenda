@@ -4,7 +4,7 @@ import { PagesButton } from "../../app/PagesButton";
 import { commands } from "../../ipc/bindings";
 
 export type SectionId = "general" | "timer" | "notifications" | "appsAndSites" | "about";
-export type SettingsTarget = SectionId | "focusMinutes" | "breakMinutes";
+export type SettingsTarget = SectionId | "focusMinutes" | "breakMinutes" | "keepGoing";
 
 /** A visit to the page: a new `seq` is a new arrival (focus moves); `target` says where. */
 export type Arrival = { seq: number; target?: SettingsTarget };

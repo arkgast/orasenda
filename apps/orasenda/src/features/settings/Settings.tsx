@@ -20,6 +20,7 @@ import { General, themeLabel } from "./sections/General";
 import { Notifications, notificationsRow } from "./sections/Notifications";
 import { presetLabel, Timer } from "./sections/Timer";
 import { backTo, changedKeys, FAILURE_NAME, KEY_SECTION, type Key, withKeys } from "./settingsKeys";
+import { focusKeepGoing } from "./settingsTarget";
 import { usePresetEditing } from "./usePresets";
 
 export type { Arrival, SectionId, SettingsTarget };
@@ -104,6 +105,8 @@ export function Settings({
     if (!node) return;
     if (!target) {
       node.querySelector<HTMLElement>("h1")?.focus();
+    } else if (target === "keepGoing") {
+      if (!focusKeepGoing(node)) jump("timer");
     } else if (target === "focusMinutes" || target === "breakMinutes") {
       // The length fields moved into the preset editor; the Timer section is the closest place.
       jump("timer");

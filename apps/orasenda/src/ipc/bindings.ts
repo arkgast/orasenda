@@ -25,6 +25,8 @@ export const commands = {
 	timerDismissOffer: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_dismiss_offer")),
 	/**  Ends the focus now as completed and starts its break. */
 	timerTakeBreak: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_take_break")),
+	/**  Today showed `hint`: remember it for good and return the view without it. */
+	hintShown: (hint: Hint) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("hint_shown", { hint })),
 	/**  The saved settings. */
 	settingsGet: () => __TAURI_INVOKE<Settings>("settings_get"),
 	/**  Saves the settings. */
@@ -199,6 +201,11 @@ export type FocusViewErrorKind =
 
 /**  Which Focus view to open. */
 export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind: "floater" };
+
+/**  A hint the timer view can carry. Each is shown once, ever. */
+export type Hint = 
+/**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
+"keepGoing";
 
 /**  A session milestone, emitted as `timer-milestone`. */
 export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
@@ -453,7 +460,9 @@ export type SettingsError = {
 export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
 
 /**  A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`. */
-export type SettingsTarget = "general" | "timer" | "notifications" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes";
+export type SettingsTarget = "general" | "timer" | "notifications" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes" | 
+/**  The *Keep going automatically* row in Timer. */
+"keepGoing";
 
 /**  Why a spike command failed, with a message for the log. */
 export type SpikeError = {
@@ -583,6 +592,8 @@ export type TimerView_Deserialize = {
 	checkIn?: string | null,
 	/**  The quiet line while idle once today's focus has passed the deep-hours cap. */
 	capLine?: string | null,
+	/**  A one-time hint for the status line; `None` once shown and while none is due. */
+	hint?: Hint | null,
 };
 
 /**  Everything the webview shows about the timer, emitted as `timer-tick`. */
@@ -627,6 +638,8 @@ export type TimerView_Serialize = {
 	checkIn: string | null,
 	/**  The quiet line while idle once today's focus has passed the deep-hours cap. */
 	capLine: string | null,
+	/**  A one-time hint for the status line; `None` once shown and while none is due. */
+	hint: Hint | null,
 };
 
 /**  A stretch of time one app was in front. `end_ms` is `None` while open. */

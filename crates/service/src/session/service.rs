@@ -13,7 +13,7 @@ use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
 use crate::api::{
-    MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
+    Hint, MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
 };
 use crate::windows::Frame;
 
@@ -40,6 +40,8 @@ pub enum Action {
     DismissOffer,
     /// Ends the focus now as completed and starts its break.
     TakeBreak,
+    /// Today showed the hint: remember it, once and for all.
+    HintShown(Hint),
 }
 
 /// A native view of the timer (T9's menu-bar item).
@@ -110,6 +112,8 @@ pub struct SessionService {
     pub(super) shown_idle: (Option<String>, Option<Offer>),
     /// Today's rows could not be read; set so the failure is logged once.
     pub(super) day_read_failed: Cell<bool>,
+    /// The keep-going hint: due now, and whether it was shown before.
+    pub(super) hint: hint::HintState,
 }
 
 impl SessionService {
@@ -152,6 +156,7 @@ impl SessionService {
             cap_checked: None,
             shown_idle: (None, None),
             day_read_failed: Cell::new(false),
+            hint: hint::HintState::default(),
         };
         // The seed runs before the settings are read: it rewrites `timer.preset`.
         service.load_presets(now_ms);
@@ -162,6 +167,7 @@ impl SessionService {
         {
             service.load_settings(read);
         }
+        service.load_hint();
         service.log_unknown_selection();
         if let Some(read) = service
             .store

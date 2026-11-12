@@ -215,6 +215,23 @@ fn meta_get_and_remove_write_no_change_log() {
 }
 
 #[test]
+fn meta_set_inserts_then_overwrites() {
+    let dir = TempDir::new("metaset");
+    v1_file(&dir);
+    let store = Store::open(&dir.db(), "other").expect("opens");
+    store
+        .write(1_000, |txn| meta::set(txn, "hint.keep_going", "first"))
+        .expect("inserts");
+    store
+        .write(2_000, |txn| meta::set(txn, "hint.keep_going", "second"))
+        .expect("upserts");
+    let got = store
+        .read(|txn| meta::get(txn, "hint.keep_going"))
+        .expect("reads");
+    assert_eq!(got.as_deref(), Some("second"));
+}
+
+#[test]
 fn v2_reopen_after_review_keeps_no_marker() {
     let dir = TempDir::new("v2reopen");
     v1_file(&dir);

@@ -5,6 +5,7 @@ use orasenda_core::{BreakKind, EngineState, NotificationStatus, Phase, PresetId,
 use serde::{Deserialize, Serialize};
 
 use super::events::MilestoneEvent;
+use super::hint::Hint;
 
 /// The wall clock, emitted as `clock-tick` on every whole second.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
@@ -102,6 +103,8 @@ pub struct TimerView {
     pub check_in: Option<String>,
     /// The quiet line while idle once today's focus has passed the deep-hours cap.
     pub cap_line: Option<String>,
+    /// A one-time hint for the status line; `None` once shown and while none is due.
+    pub hint: Option<Hint>,
 }
 
 impl TimerView {
@@ -132,6 +135,7 @@ impl TimerView {
             offer: None,
             check_in: None,
             cap_line: None,
+            hint: None,
         }
     }
 }
