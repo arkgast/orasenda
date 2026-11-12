@@ -1,37 +1,32 @@
 use super::*;
 
-fn all(kind: BreakFor) -> Vec<&'static Suggestion> {
-    let first = pick(kind, 0);
-    let mut out = vec![first];
-    let mut n = 1;
-    while !std::ptr::eq(pick(kind, n), first) {
-        out.push(pick(kind, n));
-        n += 1;
-        assert!(n < 100, "pick never wraps");
-    }
-    out
-}
+const SHORT: [&str; 6] = [
+    "Stand up and stretch gently.",
+    "Look at something far away.",
+    "Take a slow sip of water.",
+    "Breathe in twice, then out long.",
+    "Walk to another room.",
+    "Leave your phone where it is.",
+];
+
+const LONG: [&str; 7] = [
+    "Stand up and stretch gently.",
+    "Walk to another room.",
+    "Step outside for some daylight.",
+    "Sit quietly and let your mind wander.",
+    "Close your eyes and rest for a few minutes.",
+    "Leave your phone where it is.",
+    "Make a warm drink and sip it slowly.",
+];
 
 #[test]
-fn pick_rotates_per_kind() {
-    for kind in [BreakFor::Short, BreakFor::Long] {
-        let list = all(kind);
-        assert!(!list.is_empty());
-        for n in 0..list.len() * 3 {
-            assert!(std::ptr::eq(pick(kind, n), list[n % list.len()]));
-        }
-    }
-}
-
-#[test]
-fn pick_short_never_returns_long_only() {
-    let long_only = ["Step outside for some daylight."];
-    for n in 0..40 {
-        assert!(!long_only.contains(&pick(BreakFor::Short, n).text));
-    }
-    let short_only = ["Look at something far away.", "Take a slow sip of water."];
-    for n in 0..40 {
-        assert!(!short_only.contains(&pick(BreakFor::Long, n).text));
+fn pick_follows_the_spec_list_and_rotates_per_kind() {
+    for (kind, expected) in [(BreakFor::Short, &SHORT[..]), (BreakFor::Long, &LONG[..])] {
+        let got: Vec<&str> = (0..expected.len() * 3)
+            .map(|n| pick(kind, n).text)
+            .collect();
+        let want: Vec<&str> = expected.iter().cycle().take(got.len()).copied().collect();
+        assert_eq!(got, want);
     }
 }
 
@@ -59,12 +54,10 @@ fn labelled_line_starts_with_label() {
 
 #[test]
 fn every_line_ends_with_period_no_exclamation() {
-    for kind in [BreakFor::Short, BreakFor::Long] {
-        for s in all(kind) {
-            let line = s.line();
-            assert!(line.ends_with('.'), "{line}");
-            assert!(!line.contains('!'), "{line}");
-            assert!(s.text.chars().count() <= 60, "{line}");
-        }
+    for e in LIST.iter() {
+        let line = e.suggestion.line();
+        assert!(line.ends_with('.'), "{line}");
+        assert!(!line.contains('!'), "{line}");
+        assert!(line.chars().count() <= 60, "{line}");
     }
 }
