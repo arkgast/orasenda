@@ -54,7 +54,7 @@ export function StartButton(props: StartButtonProps): JSX.Element {
       data-slot="start-button"
       className={cn("flex flex-col gap-fluid-stack", props.compactLabel && "@container w-full")}
     >
-      <div className="flex flex-wrap items-center gap-fluid-stack">
+      <div data-slot="start-button-row" className="flex flex-wrap items-center gap-fluid-stack">
         <Button
           variant="primary"
           size="lg"
