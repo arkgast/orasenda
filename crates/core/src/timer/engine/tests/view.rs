@@ -116,3 +116,15 @@ fn progress_stays_in_unit_interval() {
     let p = z.view(T0).progress;
     assert!((0.0..=1.0).contains(&p), "{p}");
 }
+
+#[test]
+fn a_break_view_reports_the_extensions_already_taken() {
+    let mut s = classic_at(T0);
+    s.advance(T0 + 23 * MIN, None);
+    s.extend(T0 + 23 * MIN).unwrap();
+    assert_eq!(s.view(T0 + 23 * MIN).extensions, 1);
+    s.advance(T0 + 35 * MIN, None);
+    let v = s.view(T0 + 35 * MIN);
+    assert_eq!(v.phase, Phase::Break);
+    assert_eq!(v.extensions, 1);
+}

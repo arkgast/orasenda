@@ -16,7 +16,7 @@ pub struct DaySession {
     pub started_ms: u64,
     pub ended_ms: u64,
     pub focused_ms: u64,
-    /// The row ended at its planned end (not `stopped`).
+    /// The row's `end_reason` is `completed` (not `stopped`).
     pub completed: bool,
 }
 

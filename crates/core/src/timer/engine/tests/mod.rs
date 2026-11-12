@@ -50,6 +50,17 @@ fn records(ms: Vec<Milestone>) -> Vec<SessionRecord> {
     });
     let records = found.next().expect("an Ended milestone");
     assert!(found.next().is_none(), "more than one Ended milestone");
+    // The row invariant on every focus that ends: the breaks cut inside its span are the rest.
+    let focus = &records[0];
+    if focus.phase == Phase::Focus {
+        let cut_ms: u64 = records[1..]
+            .iter()
+            .filter(|r| r.phase == Phase::Break && r.started_ms < focus.ended_ms)
+            .filter(|r| r.ended_ms <= focus.ended_ms)
+            .map(|r| r.ended_ms - r.started_ms)
+            .sum();
+        assert_span(focus, cut_ms);
+    }
     records
 }
 

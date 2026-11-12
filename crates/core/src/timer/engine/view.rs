@@ -44,7 +44,11 @@ impl Session {
             planned_end_ms: self.planned_end_ms(),
             planned_ms: Some(planned_ms),
             break_kind: live.break_kind,
-            extensions: live.extensions,
+            // In a break the extensions taken belong to the focus waiting in `open_focus`.
+            extensions: live
+                .open_focus
+                .as_ref()
+                .map_or(live.extensions, |f| f.extensions),
             intent: live.intent.clone(),
             warned: live.warned,
             auto_step: live.auto_step,
