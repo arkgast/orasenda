@@ -246,6 +246,8 @@ const SCENARIOS: Record<string, Handler> = {
   breakOver: backend({ pending: [ended("break", "completed")] }),
   breakEnded: backend({ pending: [ended("break", "stopped")] }),
   capLine: backend({ view: { ...IDLE, capLine: "4 hours of focus today." } }),
+  // Today polish: Deep Work at its longest face. The twin of deepRunning (the plan's name for Today), the same view.
+  runningDeep: backend({ view: DEEP_RUNNING }),
   intentSet: backend({ view: { ...RUNNING, intent: INTENT } }),
   intentPaused: backend({ view: { ...PAUSED, intent: "Reply to Sam" } }),
   // The one-time keep-going hint after a first "+10 min" (a running focus).

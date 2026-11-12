@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
+import { digitsInsideRing } from "./support/ring.ts";
 import {
   expectTodayFits,
+  expectTodayGaps,
   provoke,
   SIZES,
   STATES,
@@ -39,6 +41,19 @@ for (const size of SIZES) {
       await expect(page.locator(".today")).toHaveAttribute("data-layout", size.layout);
       await expectTodayFits(page, size, primary, TWO_ACTIONS.has(scenario));
     });
+
+    // The layout-specific names are the issue's: one test per size and state, named by what it measures.
+    const gapsName =
+      size.layout === "strip"
+        ? "today_strip_column_gaps"
+        : size.layout === "stackedStrip"
+          ? "today_stacked_strip_row_gaps"
+          : "today_gaps_every_size_and_state";
+    test(`${gapsName}_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
+      await openApp(page, scenarioOf(scenario), size);
+      await provoke(page, scenario);
+      await expectTodayGaps(page, size, scenario);
+    });
   }
 
   test(`today_ring_size_${size.width}x${size.height}`, async ({ page }) => {
@@ -48,10 +63,20 @@ for (const size of SIZES) {
     expect(ring?.width, "the ring is square").toBeCloseTo(ring?.height ?? -1, 0);
     expect(ring?.width).toBeGreaterThanOrEqual(160);
     expect(ring?.width).toBeLessThanOrEqual(560);
-    // Spacious windows reach the ceiling by themselves.
-    if (size.width >= 1280 && size.height >= 800) expect(ring?.width).toBe(560);
+    // Spacious windows (1440x900 and above, spec C as amended) reach the ceiling by themselves.
+    if (size.width >= 1440 && size.height >= 900) expect(ring?.width).toBe(560);
   });
 }
+
+// Goal 2: a two-line status row in the ring layout. Only the narrowest ring wraps (at 640 and wider every
+// allowed line fits one row), so this holds that case: the row grows, and the gaps still hold.
+test("today_two_line_status_row_gaps_360x640", async ({ page }) => {
+  const size = { width: 360, height: 640, layout: "ring" };
+  await openApp(page, "breakLong", size);
+  const row = await page.locator('[data-slot="inline-notice"]').first().boundingBox();
+  expect(row?.height, "the line takes two lines").toBeGreaterThan(44);
+  await expectTodayGaps(page, size, "breakLong two lines");
+});
 
 // Session cadence: the break row names its two actions, and the stacked strip drops the suggestion.
 test("today_break_row_actions_and_stacked_strip", async ({ page }) => {
@@ -70,4 +95,27 @@ test("today_intent_shows_in_the_ring_and_not_the_stacked_strip", async ({ page }
   await expect(page.locator('[data-slot="timer-ring-task"]')).toBeVisible();
   await openApp(page, "intentSet", { width: 360, height: 240 });
   await expect(page.locator('[data-slot="timer-strip-task"]')).toHaveCount(0);
+});
+
+// Goal 1 on Today: Deep Work's "1:29:59" inside the ring at every ring size. The long face is held to the
+// inner square, except where the timer-md floor binds (about 160 to 190px), where it is held to the circle.
+test("today_running_deep_digits_inside_ring", async ({ page }) => {
+  for (const size of SIZES.filter((s) => s.layout === "ring")) {
+    await openApp(page, "runningDeep", size);
+    const r = await digitsInsideRing(page, page.locator(".today"));
+    const md = await page.evaluate(() =>
+      Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--type-timer-md-font-size"),
+      ),
+    );
+    const label = `${size.width}x${size.height}`;
+    expect(md, `${label}: timer-md is read`).toBeGreaterThan(0);
+    expect(r.fontSize, `${label}: never below timer-md`).toBeGreaterThanOrEqual(md - 0.5);
+    await expect(page.locator("[data-slot=timer-ring-digits]")).toHaveAttribute(
+      "data-length",
+      "long",
+    );
+    expect(r.circleProblems, label).toEqual([]);
+    if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
+  }
 });

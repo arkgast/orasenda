@@ -1,5 +1,5 @@
 /* Today: one grid that fills the window and never scrolls (spec C, "Today's grid"). Every length is
-   a token. The shell's column already pads the page (space-6, space-4 when compact): the spec's space-8 would cost the ring 28px at 1280x800 and break its 560px ceiling. */
+   a token. The shell's column already pads the page (space-6, space-4 when compact): the spec's space-8 would cost the ring 28px. With the space-4 gaps the ring reaches its 560px ceiling at 1440x900 and above (548px at 1280x800). */
 
 /* The page box is the grid's one cell, so Today can take its height. It does not scroll, and it
    does not clip either: the focus ring of the controls at its edge must show. */
@@ -21,6 +21,16 @@
   grid-template-rows: var(--hit-min) minmax(var(--hit-min), auto) minmax(0, 1fr) var(--control-lg);
   grid-template-areas: "top" "status" "time" "controls";
   justify-content: center;
+}
+
+/* The ring layout keeps a token gap between top, status, ring and controls (the ring shrinks to the
+   smaller time track by itself); a compact window closes it to space-3. */
+.today[data-layout="ring"] {
+  row-gap: var(--space-4);
+}
+
+.today[data-layout="ring"][data-compact] {
+  row-gap: var(--space-3);
 }
 
 .today[data-layout="stackedStrip"] {
