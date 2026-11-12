@@ -5,6 +5,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   argsOf,
+  DEEP,
   deferred,
   emitSettingsChanged,
   mockBackend,
@@ -34,7 +35,6 @@ function listener() {
   return {
     shown: vi.fn<SettingsListener["shown"]>(),
     accepted: vi.fn<SettingsListener["accepted"]>(),
-    refused: vi.fn<SettingsListener["refused"]>(),
     loadFailed: vi.fn<SettingsListener["loadFailed"]>(),
     saveFailed: vi.fn<SettingsListener["saveFailed"]>(),
   } satisfies SettingsListener;
@@ -80,7 +80,7 @@ test("strict_mode_mount_sends_one_settings_get", async () => {
 });
 
 test("remount_after_a_change_queues_one_more_get", async () => {
-  const CHANGED: Settings = { ...SETTINGS, preset: "fifty_ten" };
+  const CHANGED: Settings = { ...SETTINGS, presetId: DEEP };
   const gets = heldGets();
   const saving = deferred<null>();
   const backend = mockBackend({
@@ -119,7 +119,7 @@ test("remount_after_a_change_queues_one_more_get", async () => {
 });
 
 test("settings_changed_reloads_behind_save_in_flight", async () => {
-  const CHANGED: Settings = { ...SETTINGS, preset: "fifty_ten" };
+  const CHANGED: Settings = { ...SETTINGS, presetId: DEEP };
   const saving = deferred<null>();
   const backend = mockBackend({ settings_set: () => saving.promise });
   const page = listener();
@@ -141,7 +141,7 @@ test("settings_changed_reloads_behind_save_in_flight", async () => {
 
 test("save_failed_reports_sent_restored_and_kind", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  const CHANGED: Settings = { ...SETTINGS, preset: "fifty_ten" };
+  const CHANGED: Settings = { ...SETTINGS, presetId: DEEP };
   const failures = [
     [() => Promise.reject({ kind: "write", message: "disk" }), "write"],
     [() => Promise.reject({ kind: "unavailable", message: "none" }), "unavailable"],
@@ -175,7 +175,9 @@ test("save_failed_reports_sent_restored_and_kind", async () => {
   register(page);
   load();
   await settle();
-  save({ ...SETTINGS, custom: { focusMin: 3, breakMin: 10 } });
+  save(CHANGED);
   await settle();
-  expect(page.saveFailed).not.toHaveBeenCalled();
+  // A value Rust refused (a preset no longer in the library) rolls back like a failed write.
+  expect(page.saveFailed).toHaveBeenCalledWith(CHANGED, SETTINGS, "write");
+  expect(page.shown).toHaveBeenLastCalledWith(SETTINGS, true);
 });

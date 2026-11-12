@@ -41,7 +41,7 @@ impl Session {
         EngineView {
             state,
             phase: self.phase(),
-            preset: Some(*preset),
+            preset: Some(preset.clone()),
             session_id: Some(session_id.clone()),
             remaining_ms: planned_ms.saturating_sub(elapsed_ms),
             progress,

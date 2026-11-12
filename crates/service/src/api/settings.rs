@@ -1,6 +1,6 @@
 //! The saved settings.
 
-use orasenda_core::{CustomSpec, Preset};
+use orasenda_core::{PresetId, default_presets};
 use serde::{Deserialize, Serialize};
 
 /// The colour theme the person chose.
@@ -21,45 +21,40 @@ pub enum Theme {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Settings {
     pub theme: Theme,
-    pub preset: Preset,
-    pub custom: CustomSpec,
+    /// The selected library preset (`timer.preset`).
+    pub preset_id: PresetId,
+    /// How many times "+10 min" is offered in one session, 0 to 3 (`timer.extension_cap`).
+    pub extension_cap: u8,
+    /// Keep going in 10-minute steps when a focus ends (`timer.auto_continue`).
+    pub auto_continue: bool,
+    /// Where auto-continue steps stop, in minutes, 60 to 150 (`timer.longest_focus_min`).
+    pub longest_focus_min: u16,
+    /// Note, once a day, when the day's focus passes `deep_cap_hours` (`timer.deep_cap_on`).
+    pub deep_cap_on: bool,
+    /// The deep-hours cap, 2 to 8 hours (`timer.deep_cap_hours`).
+    pub deep_cap_hours: u8,
     pub notify_session_end: bool,
+    /// Notify two minutes before the end (`notify.two_minutes`).
+    pub notify_two_minutes: bool,
 }
 
 impl Default for Settings {
     fn default() -> Settings {
         Settings {
             theme: Theme::System,
-            preset: Preset::Classic,
-            custom: CustomSpec::default(),
+            preset_id: default_selected_id(),
+            extension_cap: 2,
+            auto_continue: false,
+            longest_focus_min: 90,
+            deep_cap_on: true,
+            deep_cap_hours: 4,
             notify_session_end: false,
+            notify_two_minutes: false,
         }
     }
 }
 
-/// One fixed preset's lengths in whole minutes, for the preset picker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct PresetLength {
-    pub preset: Preset,
-    pub focus_min: u32,
-    pub break_min: u32,
-}
-
-/// The three fixed presets, in display order, read from core's table.
-pub fn preset_lengths() -> Vec<PresetLength> {
-    let custom = CustomSpec::default();
-    [Preset::Classic, Preset::FiftyTen, Preset::DeepBlock]
-        .into_iter()
-        .map(|preset| {
-            let spec = preset
-                .spec(&custom)
-                .expect("the fixed preset table is valid");
-            PresetLength {
-                preset,
-                focus_min: u32::try_from(spec.focus_ms / 60_000).expect("minutes fit u32"),
-                break_min: u32::try_from(spec.short_break_ms / 60_000).expect("minutes fit u32"),
-            }
-        })
-        .collect()
+/// Steady Focus, the preset a fresh install selects.
+pub fn default_selected_id() -> PresetId {
+    default_presets()[1].id.clone()
 }

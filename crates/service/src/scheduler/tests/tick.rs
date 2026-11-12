@@ -6,7 +6,7 @@ use super::*;
 fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
     let host = launched(NotificationStatus::Granted);
     with_recorder(&host);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.log().take();
     host.set_now(T0 + 1_000);
     iterate(&host);
@@ -34,6 +34,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::Requested => "requested",
             Event::Begun => "begun",
             Event::SettingsChanged(_) => "settings",
+            Event::PresetsChanged(_) => "presets",
             Event::ApplyTheme(_) => "theme",
             Event::OpenedSettings => "opened",
         })
@@ -111,7 +112,7 @@ fn start_never_requests_notification_permission() {
         NotificationStatus::Unavailable,
     ] {
         let host = launched(status);
-        run_action_on(&host, start(Preset::Classic)).expect("starts");
+        run_action_on(&host, start()).expect("starts");
         assert_eq!(
             host.log().count(|e| *e == Event::Requested),
             0,
@@ -119,7 +120,7 @@ fn start_never_requests_notification_permission() {
         );
     }
     let unread = TestHost::new(NotificationStatus::NotDetermined);
-    run_action_on(&unread, start(Preset::Classic)).expect("starts");
+    run_action_on(&unread, start()).expect("starts");
     assert_eq!(unread.log().count(|e| *e == Event::Requested), 0, "unread");
 }
 
@@ -143,18 +144,18 @@ fn launch_status_read_publishes_one_tick_when_changed_and_none_when_not() {
 fn notification_posted_only_for_completed_when_granted_and_enabled() {
     let expected = Event::Posted("Focus session complete.".into(), "Time for a break.".into());
     let completed = launched(NotificationStatus::Granted);
-    run_action_on(&completed, start(Preset::Classic)).expect("starts");
+    run_action_on(&completed, start()).expect("starts");
     completed.set_now(T0 + CLASSIC_MS);
     iterate(&completed);
     assert_eq!(completed.log().count(|e| *e == expected), 1);
 
     let stopped = launched(NotificationStatus::Granted);
-    run_action_on(&stopped, start(Preset::Classic)).expect("starts");
+    run_action_on(&stopped, start()).expect("starts");
     run_action_on(&stopped, Action::Stop).expect("stops");
     assert_eq!(stopped.log().count(|e| matches!(e, Event::Posted(..))), 0);
 
     let denied = launched(NotificationStatus::Denied);
-    run_action_on(&denied, start(Preset::Classic)).expect("starts");
+    run_action_on(&denied, start()).expect("starts");
     denied.set_now(T0 + CLASSIC_MS);
     iterate(&denied);
     assert_eq!(denied.log().count(|e| matches!(e, Event::Posted(..))), 0);
@@ -170,7 +171,7 @@ fn notification_posted_only_for_completed_when_granted_and_enabled() {
             T0,
         )
         .expect("saves");
-    run_action_on(&disabled, start(Preset::Classic)).expect("starts");
+    run_action_on(&disabled, start()).expect("starts");
     disabled.set_now(T0 + CLASSIC_MS);
     iterate(&disabled);
     assert_eq!(disabled.log().count(|e| matches!(e, Event::Posted(..))), 0);
@@ -180,7 +181,7 @@ fn notification_posted_only_for_completed_when_granted_and_enabled() {
 #[test]
 fn end_rereads_status_before_posting_and_publishes_the_change() {
     let host = launched(NotificationStatus::NotDetermined);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     // Granted later in System Settings; the request is never answered.
     host.0.notifier.set_status(NotificationStatus::Granted);
     host.log().take();
@@ -203,7 +204,7 @@ fn end_rereads_status_before_posting_and_publishes_the_change() {
     assert!(second_tick < posted, "{events:?}");
 
     // An unchanged re-read emits no extra tick.
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.set_now(T0 + 2 * CLASSIC_MS);
     host.log().take();
     iterate(&host);
@@ -216,7 +217,7 @@ fn end_rereads_status_before_posting_and_publishes_the_change() {
 #[test]
 fn idle_flush_back_to_ok_publishes_one_timer_tick() {
     let host = launched(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     db(&lock(&host.0.service)).fail_writes(true);
     run_action_on(&host, Action::Stop).expect("stops");
     host.log().take();
@@ -241,7 +242,7 @@ fn focused_republishes_timer_tick_only_while_non_idle() {
     assert_eq!(idle.len(), 1, "{idle:?}");
     assert!(matches!(idle[0], Event::Clock(_)));
 
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.log().take();
     publish_focus(&host);
     let running = host.log().take();

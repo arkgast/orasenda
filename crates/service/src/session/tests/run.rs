@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use orasenda_core::{EndReason, EngineState, NotificationStatus, Preset, format_clock};
+use orasenda_core::{EndReason, EngineState, NotificationStatus, PresetId, format_clock};
 
 use super::super::test_support::*;
 use super::super::*;
@@ -15,7 +15,7 @@ use crate::api::{
 #[test]
 fn run_action_start_makes_a_uuid_v7() {
     let host = TestHost::new(NotificationStatus::Denied);
-    let view = run_action_on(&host, start(Preset::Classic)).expect("starts");
+    let view = run_action_on(&host, start()).expect("starts");
     let id = view.session_id.expect("an id").0;
     let uuid = uuid::Uuid::parse_str(&id).expect("a UUID");
     assert_eq!(uuid.get_version_num(), 7);
@@ -25,7 +25,7 @@ fn run_action_start_makes_a_uuid_v7() {
 fn run_action_publishes_effects_on_error() {
     let host = TestHost::new(NotificationStatus::Granted);
     read_and_clear(&host);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.log().take();
     host.set_now(T0 + CLASSIC_MS + 5_000);
     let error = run_action_on(&host, Action::Pause).expect_err("nothing running");
@@ -61,7 +61,7 @@ fn read_and_clear(host: &TestHost) {
 #[test]
 fn run_state_publishes_and_drains() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let back = relaunch(&mut s, T0 + 60 * MINUTE);
     let Fakes { log, notifier, .. } = fakes(NotificationStatus::Denied, false);
     let host = TestHost::with(back, log, notifier);
@@ -80,7 +80,7 @@ fn run_set_settings_write_failure_publishes_one_unavailable_timer_tick() {
     let host = TestHost::fresh(NotificationStatus::Denied);
     db(&lock(&host.0.service)).fail_writes(true);
     host.log().take();
-    let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
+    let err = run_set_settings(&host, deep_work()).expect_err("the write fails");
     assert_eq!(err.kind, SettingsErrorKind::Write);
     let events = host.log().take();
     let ticks = tick_views(&events);
@@ -100,12 +100,12 @@ fn run_set_settings_write_failure_publishes_one_unavailable_timer_tick() {
 #[test]
 fn run_set_settings_flushing_what_was_owed_publishes_one_ok_timer_tick() {
     let host = TestHost::new(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     db(&lock(&host.0.service)).fail_writes(true);
     run_action_on(&host, Action::Stop).expect("stops");
     db(&lock(&host.0.service)).fail_writes(false);
     host.log().take();
-    run_set_settings(&host, fifty_ten()).expect("saves");
+    run_set_settings(&host, deep_work()).expect("saves");
     let events = host.log().take();
     let ticks = tick_views(&events);
     assert_eq!(ticks.len(), 1, "{events:?}");
@@ -135,12 +135,12 @@ fn run_set_settings_without_a_store_change_publishes_no_timer_tick() {
         )
     };
     host.log().take();
-    run_set_settings(&host, fifty_ten()).expect("saves");
+    run_set_settings(&host, deep_work()).expect("saves");
     assert_eq!(count(&host), (0, 1));
 
     let quick = Settings {
         theme: Theme::System,
-        preset: Preset::Quick,
+        preset_id: PresetId("missing".into()),
         ..Settings::default()
     };
     assert!(run_set_settings(&host, quick).is_err());
@@ -167,7 +167,7 @@ fn run_set_settings_after_a_failed_settings_read_publishes_one_ok_timer_tick() {
     let _ = platform;
     let host = TestHost::with(s, log, notifier);
     host.log().take();
-    run_set_settings(&host, fifty_ten()).expect("saves");
+    run_set_settings(&host, deep_work()).expect("saves");
     let events = host.log().take();
     let ticks = tick_views(&events);
     assert_eq!(ticks.len(), 1, "{events:?}");
@@ -186,7 +186,7 @@ fn run_set_settings_publishes_one_clock_tick() {
     let host = TestHost::new(NotificationStatus::Denied);
     let changed = Settings {
         theme: Theme::System,
-        preset: Preset::FiftyTen,
+        preset_id: default_id(2),
         ..Settings::default()
     };
     run_set_settings(&host, changed.clone()).expect("saves");
@@ -201,7 +201,7 @@ fn run_set_settings_publishes_one_clock_tick() {
     assert_eq!(clocks.len(), 1, "{events:?}");
     assert_eq!(
         clocks[0].idle_finish,
-        Some(format_clock(T0 + 50 * MINUTE, OFFSET_MIN, CYCLE))
+        Some(format_clock(T0 + 90 * MINUTE, OFFSET_MIN, CYCLE))
     );
     assert_eq!(current_settings(&host), changed);
 
@@ -209,7 +209,7 @@ fn run_set_settings_publishes_one_clock_tick() {
         &host,
         Settings {
             theme: Theme::System,
-            preset: Preset::Quick,
+            preset_id: PresetId("missing".into()),
             ..Settings::default()
         },
     );
@@ -220,7 +220,7 @@ fn run_set_settings_publishes_one_clock_tick() {
 #[test]
 fn flush_on_exit_writes_what_is_owed() {
     let host = TestHost::new(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     db(&lock(&host.0.service)).fail_writes(true);
     host.set_now(T0 + MINUTE);
     run_action_on(&host, Action::Stop).expect("stops");
@@ -259,7 +259,7 @@ fn with_panicking_surface(host: &TestHost) {
 fn run_action_returns_its_result_when_publish_panics() {
     let host = TestHost::new(NotificationStatus::Denied);
     with_panicking_surface(&host);
-    let started = run_action_on(&host, start(Preset::Classic)).expect("the start committed");
+    let started = run_action_on(&host, start()).expect("the start committed");
     assert_eq!(started.state, EngineState::Running);
     let paused = run_action_on(&host, Action::Pause).expect("the pause committed");
     assert_eq!(paused.state, EngineState::Paused);
@@ -268,9 +268,9 @@ fn run_action_returns_its_result_when_publish_panics() {
 #[test]
 fn run_state_returns_pending_when_publish_panics() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let mut back = relaunch(&mut s, T0 + 60 * MINUTE);
-    back.apply(start(Preset::Classic), T0 + 60 * MINUTE, id("b"));
+    back.apply(start(), T0 + 60 * MINUTE, id("b"));
     let Fakes { log, notifier, .. } = fakes(NotificationStatus::Denied, false);
     let host = TestHost::with(back, log, notifier);
     host.set_now(T0 + 60 * MINUTE);
@@ -290,14 +290,14 @@ fn run_state_returns_pending_when_publish_panics() {
 #[test]
 fn run_set_settings_returns_ok_when_publish_panics() {
     let host = TestHost::new(NotificationStatus::Denied);
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     db(&lock(&host.0.service)).fail_writes(true);
     run_action_on(&host, Action::Stop).expect("stops");
     db(&lock(&host.0.service)).fail_writes(false);
     assert_eq!(lock(&host.0.service).store_status, StoreStatus::Unavailable);
     with_panicking_surface(&host);
-    run_set_settings(&host, fifty_ten()).expect("the save committed");
-    assert_eq!(current_settings(&host), fifty_ten());
+    run_set_settings(&host, deep_work()).expect("the save committed");
+    assert_eq!(current_settings(&host), deep_work());
     let service = lock(&host.0.service);
     assert_eq!(service.store_status, StoreStatus::Ok);
     assert!(!service.snapshot_dirty);
@@ -308,7 +308,7 @@ fn run_set_settings_returns_its_write_error_when_publish_panics() {
     let host = TestHost::fresh(NotificationStatus::Denied);
     with_panicking_surface(&host);
     db(&lock(&host.0.service)).fail_writes(true);
-    let err = run_set_settings(&host, fifty_ten()).expect_err("the write fails");
+    let err = run_set_settings(&host, deep_work()).expect_err("the write fails");
     assert_eq!(err.kind, SettingsErrorKind::Write);
     assert_eq!(current_settings(&host), Settings::default());
 }

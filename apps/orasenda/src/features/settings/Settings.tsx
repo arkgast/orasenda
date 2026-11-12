@@ -1,11 +1,11 @@
 import { InlineNotice, type NavPage, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/ui";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useWindowLayout } from "../../app/useWindowLayout";
-import type { Preset, Settings as SettingsValue, Theme } from "../../ipc/bindings";
+import type { Settings as SettingsValue, Theme } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
-import { latest, load, register, sameCustom, save } from "../../ipc/settingsQueue";
+import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
-import { BREAK_RANGE_HELP, FOCUS_RANGE_HELP, outOfRange, parseMinutes } from "./customRange";
+import { usePresets, usePresetsFailed } from "../today/presets";
 import { askMacOS, isAsking, subscribeAsking, tick, untick } from "./notificationsToggle";
 import {
   type Arrival,
@@ -18,25 +18,22 @@ import { About, type AboutInfo } from "./sections/About";
 import { AppsAndSites } from "./sections/AppsAndSites";
 import { General, themeLabel } from "./sections/General";
 import { Notifications, notificationsRow } from "./sections/Notifications";
-import { type Draft, type FieldKey, presetLabel, Timer } from "./sections/Timer";
-import {
-  backTo,
-  changedKeys,
-  draftOf,
-  FAILURE_NAME,
-  KEY_SECTION,
-  type Key,
-  withKeys,
-} from "./settingsKeys";
+import { presetLabel, Timer } from "./sections/Timer";
+import { backTo, changedKeys, FAILURE_NAME, KEY_SECTION, type Key, withKeys } from "./settingsKeys";
 
 export type { Arrival, SectionId, SettingsTarget };
 
 // What the page shows until the first settings_get answers (or when the store is unavailable).
 const DEFAULT_SETTINGS: SettingsValue = {
   theme: "system",
-  preset: "classic",
-  custom: { focusMin: 25, breakMin: 5 },
+  presetId: "0192f6a0-0000-7000-8000-000000000002",
+  extensionCap: 2,
+  autoContinue: false,
+  longestFocusMin: 90,
+  deepCapOn: true,
+  deepCapHours: 4,
   notifySessionEnd: false,
+  notifyTwoMinutes: false,
 };
 
 const REST = "Changes save as you make them.";
@@ -45,8 +42,6 @@ const READ_ONLY = "Read-only until you update Orasenda.";
 
 type Line =
   | { kind: "rest" }
-  | { kind: "saved"; text: string }
-  | { kind: "fields" }
   | {
       kind: "failed";
       sent: SettingsValue;
@@ -71,64 +66,23 @@ export function Settings({
   const timer = useTimer({ onMilestone: noop });
   const view = timer.status === "ok" ? timer.view : null;
   const [settings, setSettings] = useState<SettingsValue | null>(null);
-  const [draft, setDraft] = useState<Draft>({
-    focus: String(DEFAULT_SETTINGS.custom.focusMin),
-    break: String(DEFAULT_SETTINGS.custom.breakMin),
-  });
-  const [fieldErr, setFieldErr] = useState<{ focus: boolean; break: boolean }>({
-    focus: false,
-    break: false,
-  });
+  const presets = usePresets();
+  const presetsFailed = usePresetsFailed();
   const [line, setLine] = useState<Line>({ kind: "rest" });
   const [loadError, setLoadError] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
   const asking = useSyncExternalStore(subscribeAsking, isAsking);
-  // The minutes a field save in flight carries, for the "Saved." line.
-  const pendingSaved = useRef<{
-    focus: boolean;
-    break: boolean;
-    custom: SettingsValue["custom"];
-  } | null>(null);
-  const shownCustom = useRef<SettingsValue["custom"] | null>(null);
 
   useEffect(() => {
     const unregister = register({
-      shown: (shown, resetDraft) => {
+      shown: (shown) => {
         setLoadError(false);
         setSettings(shown);
-        // The draft follows only when the saved minutes changed: a reload for another setting
-        // (a theme change from the menu bar) never overwrites text being typed.
-        if (
-          resetDraft &&
-          (!shownCustom.current || !sameCustom(shownCustom.current, shown.custom))
-        ) {
-          setDraft(draftOf(shown.custom));
-        }
-        shownCustom.current = shown.custom;
       },
-      accepted: () => {
-        const sent = pendingSaved.current;
-        if (!sent) return;
-        pendingSaved.current = null;
-        setFieldErr({ focus: false, break: false });
-        const parts: string[] = [];
-        if (sent.focus) parts.push(`Custom focus is now ${sent.custom.focusMin} minutes.`);
-        if (sent.break) parts.push(`Custom break is now ${sent.custom.breakMin} minutes.`);
-        setLine({ kind: "saved", text: `Saved. ${parts.join(" ")}` });
-      },
-      refused: (custom) => {
-        pendingSaved.current = null;
-        // The queue has put the saved minutes back as the intent; the draft stays as typed.
-        const intent = latest();
-        if (intent) setSettings(intent);
-        const range = outOfRange(custom);
-        setFieldErr(range.focus || range.break ? range : { focus: true, break: true });
-        setLine({ kind: "fields" });
-      },
+      accepted: () => {},
       loadFailed: () => setLoadError(true),
       saveFailed: (sent, restored, cause) => {
-        pendingSaved.current = null;
         setLine({ kind: "failed", sent, restored, cause, keys: changedKeys(sent, restored) });
       },
     });
@@ -145,9 +99,8 @@ export function Settings({
     if (!target) {
       node.querySelector<HTMLElement>("h1")?.focus();
     } else if (target === "focusMinutes" || target === "breakMinutes") {
-      const field = document.getElementById(target);
-      field?.scrollIntoView?.({ block: "nearest" });
-      field?.focus();
+      // The length fields moved into the preset editor; the Timer section is the closest place.
+      jump("timer");
     } else {
       jump(target);
     }
@@ -191,57 +144,12 @@ export function Settings({
 
   // A change clears the answer to the last action, so the line returns to rest.
   const change = (next: SettingsValue) => {
-    pendingSaved.current = null;
     setLine({ kind: "rest" });
     save(next);
   };
   const withLatest = (patch: Partial<SettingsValue>) => {
     const base = latest();
     if (base) change({ ...base, ...patch });
-  };
-
-  const commit = () => {
-    const base = latest();
-    if (!base) return;
-    const focusMin = parseMinutes(draft.focus);
-    const breakMin = parseMinutes(draft.break);
-    const focusOk = focusMin !== null;
-    const breakOk = breakMin !== null;
-    const savedDraft = draftOf(base.custom);
-    const bad = {
-      focus: !focusOk && draft.focus !== savedDraft.focus,
-      break: !breakOk && draft.break !== savedDraft.break,
-    };
-    if (bad.focus || bad.break) {
-      setFieldErr(bad);
-      setLine({ kind: "fields" });
-      return;
-    }
-    if (focusMin === null || breakMin === null) return;
-    const custom = { focusMin, breakMin };
-    if (sameCustom(custom, base.custom)) {
-      setFieldErr({ focus: false, break: false });
-      setLine((previous) => (previous.kind === "fields" ? { kind: "rest" } : previous));
-      return;
-    }
-    change({ ...base, custom });
-    pendingSaved.current = {
-      focus: custom.focusMin !== base.custom.focusMin,
-      break: custom.breakMin !== base.custom.breakMin,
-      custom,
-    };
-  };
-
-  const restore = (key: FieldKey) => {
-    const base = latest() ?? shown;
-    const saved = draftOf(base.custom);
-    setDraft((previous) => ({ ...previous, [key]: saved[key] }));
-    const other: FieldKey = key === "focus" ? "break" : "focus";
-    setFieldErr((previous) => ({ ...previous, [key]: false }));
-    // The other field's error, its save line and its Show action stay while it still shows.
-    setLine((previous) =>
-      previous.kind === "fields" && !fieldErr[other] ? { kind: "rest" } : previous,
-    );
   };
 
   const openSystemSettings = () => {
@@ -256,14 +164,6 @@ export function Settings({
   };
 
   // Save line.
-  const saved = shown.custom;
-  const fieldsText = (() => {
-    if (fieldErr.focus && fieldErr.break)
-      return `Focus and break minutes weren't saved. Still using ${saved.focusMin} and ${saved.breakMin}.`;
-    if (fieldErr.focus) return `Focus minutes weren't saved. Still using ${saved.focusMin}.`;
-    if (fieldErr.break) return `Break minutes weren't saved. Still using ${saved.breakMin}.`;
-    return null;
-  })();
   type Notice = {
     text: string;
     tone: "neutral" | "attention" | "rest";
@@ -276,32 +176,11 @@ export function Settings({
         tone: "attention",
       };
     }
-    if (line.kind === "fields" && fieldsText) {
-      return {
-        text: fieldsText,
-        tone: "attention",
-        action: {
-          label: "Show",
-          name: fieldErr.focus ? "Show focus minutes" : "Show break minutes",
-          run: () =>
-            document.getElementById(fieldErr.focus ? "focusMinutes" : "breakMinutes")?.focus(),
-        },
-      };
-    }
     if (line.kind === "failed") {
       const resend = () => {
         const base = latest();
         if (!base) return;
-        const next = withKeys(base, line.sent, line.keys);
-        const customKeys = line.keys.filter((key) => key === "focus" || key === "break");
-        change(next);
-        if (customKeys.length > 0) {
-          pendingSaved.current = {
-            focus: customKeys.includes("focus"),
-            break: customKeys.includes("break"),
-            custom: next.custom,
-          };
-        }
+        change(withKeys(base, line.sent, line.keys));
       };
       if (store === "unavailable" && line.cause === "unavailable") {
         return {
@@ -314,7 +193,7 @@ export function Settings({
       if (only && more.length === 0) {
         const name = FAILURE_NAME[only];
         return {
-          text: `${name.subject} ${name.verb} saved. Back to ${backTo(only, line.restored)}.`,
+          text: `${name.subject} ${name.verb} saved. Back to ${backTo(only, line.restored, presets)}.`,
           tone: "attention",
           action: { label: "Try again", name: `Try again saving ${name.again}`, run: resend },
         };
@@ -325,7 +204,6 @@ export function Settings({
         action: { label: "Try again", name: "Try again saving your changes", run: resend },
       };
     }
-    if (line.kind === "saved") return { text: line.text, tone: "neutral" };
     if (loadError && !settings) {
       return { text: "Orasenda can't read settings right now.", tone: "attention" };
     }
@@ -354,20 +232,13 @@ export function Settings({
       .filter(Boolean)
       .join(" ") || null;
 
-  const errors = {
-    focus: fieldErr.focus ? `${FOCUS_RANGE_HELP} Still using ${saved.focusMin}.` : undefined,
-    break: fieldErr.break ? `${BREAK_RANGE_HELP} Still using ${saved.breakMin}.` : undefined,
-  };
-
   const problem = (id: SectionId): { text: string } | undefined => {
     if (failedKeys.some((key) => KEY_SECTION[key] === id)) return { text: "Not saved" };
-    if (id === "timer" && fieldErr.focus) return { text: "Check focus minutes" };
-    if (id === "timer" && fieldErr.break) return { text: "Check break minutes" };
     return undefined;
   };
   const values: Record<SectionId, string> = {
     general: themeLabel(shown.theme),
-    timer: presetLabel(shown),
+    timer: presetLabel(presets, shown),
     notifications: row.value,
     appsAndSites: "Nothing recorded",
     about:
@@ -429,17 +300,13 @@ export function Settings({
               />
               <Timer
                 settings={shown}
-                draft={draft}
-                errors={errors}
+                presets={presets}
+                presetsFailed={presetsFailed}
                 running={running}
                 disabled={readOnly}
                 disabledReason={reason}
                 presetStatus={reasonIf("preset")}
-                customStatus={reasonIf("focus", "break")}
-                onPreset={(preset: Preset) => withLatest({ preset })}
-                onDraft={(key, value) => setDraft((previous) => ({ ...previous, [key]: value }))}
-                onCommit={commit}
-                onRestore={restore}
+                onPreset={(presetId: string) => withLatest({ presetId })}
               />
               <Notifications
                 checked={asking || shown.notifySessionEnd}

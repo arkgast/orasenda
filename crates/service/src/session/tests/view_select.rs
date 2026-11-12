@@ -3,7 +3,7 @@
 use std::sync::{Arc, Barrier};
 use std::thread;
 
-use orasenda_core::{EngineState, NotificationStatus, Preset};
+use orasenda_core::{EngineState, NotificationStatus, PresetId};
 
 use super::super::test_support::*;
 use super::super::*;
@@ -13,7 +13,8 @@ fn host() -> TestHost {
     TestHost::fresh(NotificationStatus::NotDetermined)
 }
 
-fn saved_preset(host: &TestHost) -> Option<Preset> {
+/// The stored `timer.preset`; a fresh library has seeded Steady Focus.
+fn saved_preset(host: &TestHost) -> Option<PresetId> {
     db(&lock(&host.0.service))
         .read(|txn| orasenda_store::settings::get(txn, "timer.preset"))
         .expect("reads")
@@ -52,14 +53,14 @@ fn run_view_keeps_pending_and_listening() {
 #[test]
 fn select_preset_idle_saves_only_preset() {
     let host = host();
-    run_select_preset(&host, Preset::DeepBlock).expect("selects");
-    assert_eq!(saved_preset(&host), Some(Preset::DeepBlock));
+    run_select_preset(&host, default_id(2)).expect("selects");
+    assert_eq!(saved_preset(&host), Some(default_id(2)));
     let events = settings_events(&host);
     assert_eq!(events.len(), 1, "one settings-changed");
     assert_eq!(
         events[0],
         Settings {
-            preset: Preset::DeepBlock,
+            preset_id: default_id(2),
             ..Settings::default()
         }
     );
@@ -70,19 +71,31 @@ fn select_preset_idle_saves_only_preset() {
 }
 
 #[test]
+fn select_preset_takes_library_id() {
+    let host = host();
+    let error = run_select_preset(&host, PresetId("not-in-the-library".into()))
+        .expect_err("an unknown id is refused");
+    assert_eq!(error.kind, TimerCommandErrorKind::InvalidSpec);
+    assert_eq!(saved_preset(&host), Some(default_id(1)));
+    assert!(settings_events(&host).is_empty());
+    run_select_preset(&host, default_id(0)).expect("a library id is taken");
+    assert_eq!(saved_preset(&host), Some(default_id(0)));
+}
+
+#[test]
 fn select_preset_refused_while_running() {
     let host = host();
-    run_action_on(&host, start(Preset::Classic)).expect("starts");
+    run_action_on(&host, start()).expect("starts");
     host.log().take();
-    let error = run_select_preset(&host, Preset::DeepBlock).expect_err("refused");
+    let error = run_select_preset(&host, default_id(2)).expect_err("refused");
     assert_eq!(error.kind, TimerCommandErrorKind::WrongState);
-    assert_eq!(saved_preset(&host), None);
+    assert_eq!(saved_preset(&host), Some(default_id(1)));
     assert!(settings_events(&host).is_empty());
 
     run_action_on(&host, Action::Pause).expect("pauses");
-    let error = run_select_preset(&host, Preset::DeepBlock).expect_err("refused when paused");
+    let error = run_select_preset(&host, default_id(2)).expect_err("refused when paused");
     assert_eq!(error.kind, TimerCommandErrorKind::WrongState);
-    assert_eq!(saved_preset(&host), None);
+    assert_eq!(saved_preset(&host), Some(default_id(1)));
 }
 
 #[test]
@@ -90,7 +103,7 @@ fn select_preset_failed_save_is_a_store_error() {
     let host = host();
     db(&lock(&host.0.service)).fail_writes(true);
     host.log().take();
-    let error = run_select_preset(&host, Preset::DeepBlock).expect_err("fails");
+    let error = run_select_preset(&host, default_id(2)).expect_err("fails");
     assert_eq!(error.kind, TimerCommandErrorKind::Store);
     assert!(settings_events(&host).is_empty(), "nothing was saved");
 }
@@ -106,14 +119,14 @@ fn select_preset_refused_when_start_wins_race() {
             let (host, barrier) = (host.clone(), Arc::clone(&barrier));
             thread::spawn(move || {
                 barrier.wait();
-                run_action_on(&host, start(Preset::Classic))
+                run_action_on(&host, start())
             })
         };
         let selector = {
             let (host, barrier) = (host.clone(), Arc::clone(&barrier));
             thread::spawn(move || {
                 barrier.wait();
-                run_select_preset(&host, Preset::DeepBlock)
+                run_select_preset(&host, default_id(2))
             })
         };
         starter
@@ -122,10 +135,14 @@ fn select_preset_refused_when_start_wins_race() {
             .expect("start succeeds");
         let selected = selector.join().expect("selector joins");
         match selected {
-            Ok(()) => assert_eq!(saved_preset(&host), Some(Preset::DeepBlock)),
+            Ok(()) => assert_eq!(saved_preset(&host), Some(default_id(2))),
             Err(error) => {
                 assert_eq!(error.kind, TimerCommandErrorKind::WrongState);
-                assert_eq!(saved_preset(&host), None, "a refused select saves nothing");
+                assert_eq!(
+                    saved_preset(&host),
+                    Some(default_id(1)),
+                    "a refused select saves nothing"
+                );
             }
         }
         assert_eq!(lock(&host.0.service).view(T0).state, EngineState::Running);

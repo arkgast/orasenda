@@ -1,5 +1,5 @@
 use super::*;
-use crate::timer::{CustomSpec, EngineState, Milestone, QUICK_START_MS};
+use crate::timer::{EngineState, Milestone, PresetId, QUICK_START_MS, default_presets};
 
 const S: u64 = 1_000;
 const MIN: u64 = 60 * S;
@@ -9,14 +9,27 @@ fn id(s: &str) -> SessionId {
     SessionId(s.into())
 }
 
-fn spec(p: Preset) -> PresetSpec {
-    p.spec(&CustomSpec::default()).unwrap()
+/// Steady Focus, 25 / 5, as a session snapshot.
+fn steady() -> SessionPreset {
+    library(1)
+}
+
+/// The snapshot of default `index` (0 Gentle Start, 1 Steady Focus, 2 Deep Work).
+fn library(index: usize) -> SessionPreset {
+    let d = &default_presets()[index];
+    SessionPreset::Library {
+        id: d.id.clone(),
+        name: d.name.clone(),
+        focus_min: d.focus_min,
+        break_min: d.break_min,
+        long_break_min: d.long_break_min,
+        rounds: d.rounds,
+    }
 }
 
 fn classic_at(now: u64) -> Session {
     let mut s = Session::default();
-    s.start(id("a"), Preset::Classic, spec(Preset::Classic), now)
-        .unwrap();
+    s.start(id("a"), steady(), now).unwrap();
     s
 }
 

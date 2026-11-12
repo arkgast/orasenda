@@ -4,20 +4,17 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "../../app/App";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
-import { argsOf, deferred, emitNavigate, mockBackend, SETTINGS, settle } from "../../test/fixtures";
-import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import {
-  blur,
-  breakInput,
-  focusInput,
-  h1,
-  INVALID,
-  openSettings,
-  saveLine,
-  sets,
-  type,
-  WRITE,
-} from "./Settings.support";
+  argsOf,
+  DEEP,
+  deferred,
+  emitNavigate,
+  mockBackend,
+  SETTINGS,
+  settle,
+} from "../../test/fixtures";
+import { resetNotificationsToggleForTests } from "./notificationsToggle";
+import { h1, INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -64,7 +61,7 @@ test("rail_cmd_comma_and_tray_land_on_settings_with_h1_focus", async () => {
   }
 });
 
-test("field_target_focuses_field", async () => {
+test("field_target_lands_on_the_timer_section", async () => {
   // C's "Open Settings" calls navigate(page, target); drive the page through its arrival prop.
   const { Settings: Page } = await import("./Settings");
   mockBackend();
@@ -76,16 +73,16 @@ test("field_target_focuses_field", async () => {
     />,
   );
   await settle();
-  expect(focusInput()).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
   rerender(
     <Page
       info={{ status: "loading" }}
-      arrival={{ seq: 2, target: "breakMinutes" }}
+      arrival={{ seq: 2, target: "notifications" }}
       onNavigate={() => {}}
     />,
   );
   await settle();
-  expect(breakInput()).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 2, name: "Notifications" })).toHaveFocus();
   rerender(
     <Page
       info={{ status: "loading" }}
@@ -156,24 +153,16 @@ test("about_line_and_pending_index_value", async () => {
 // ---- Index ----
 
 test("index_values_follow_each_section", async () => {
-  await openSettings({ settings_get: () => ({ ...SETTINGS, theme: "dark", preset: "custom" }) });
+  await openSettings({ settings_get: () => ({ ...SETTINGS, theme: "dark", presetId: DEEP }) });
   const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
   expect(nav.getByText("Dark")).toBeInTheDocument();
-  expect(nav.getByText("Custom 45/10")).toBeInTheDocument();
+  expect(nav.getByText("Deep Work")).toBeInTheDocument();
   expect(nav.getByText("On")).toBeInTheDocument();
   expect(nav.getByText("Nothing recorded")).toBeInTheDocument();
   expect(nav.getByText("Version 0.1.0")).toBeInTheDocument();
 
   fireEvent.keyDown(nav.getByRole("button", { name: /^Timer/ }), { key: "Enter" });
   expect(screen.getByRole("heading", { level: 2, name: "Timer" })).toHaveFocus();
-});
-
-test("index_shows_problems_in_words", async () => {
-  await openSettings({ settings_set: () => Promise.reject(INVALID) });
-  const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
-  await type(focusInput(), "3");
-  await blur(focusInput());
-  expect(nav.getByText("Check focus minutes")).toBeInTheDocument();
 });
 
 test("index_says_not_saved_after_a_write_failure", async () => {
@@ -183,52 +172,6 @@ test("index_says_not_saved_after_a_write_failure", async () => {
   await settle();
   const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
   expect(nav.getByText("Not saved")).toBeInTheDocument();
-});
-
-test("check_break_minutes_in_index", async () => {
-  await openSettings({ settings_set: () => Promise.reject(INVALID) });
-  await type(breakInput(), "70");
-  await blur(breakInput());
-  const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
-  expect(nav.getByText("Check break minutes")).toBeInTheDocument();
-});
-
-test("shift_arrows_step_by_five_in_the_draft", async () => {
-  const { backend } = await openSettings();
-  fireEvent.keyDown(focusInput(), { key: "ArrowUp", shiftKey: true });
-  expect(focusInput()).toHaveValue(50);
-  fireEvent.keyDown(focusInput(), { key: "ArrowDown", shiftKey: true });
-  fireEvent.keyDown(focusInput(), { key: "ArrowDown", shiftKey: true });
-  expect(focusInput()).toHaveValue(40);
-  expect(sets(backend)).toHaveLength(0);
-});
-
-test("minute_field_write_failure_rolls_back_the_draft", async () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await openSettings({ settings_set: () => Promise.reject(WRITE) });
-  await type(focusInput(), "50");
-  await blur(focusInput());
-  expect(focusInput()).toHaveValue(45);
-  expect(saveLine()).toHaveTextContent("Focus minutes weren't saved. Back to 45.");
-});
-
-test("huge_number_refused_locally", async () => {
-  const { backend } = await openSettings();
-  await type(focusInput(), "99999999999");
-  await blur(focusInput());
-  expect(sets(backend)).toHaveLength(0);
-  expect(saveLine()).toHaveTextContent("Focus minutes weren't saved. Still using 45.");
-});
-
-test("esc_keeps_the_other_fields_error", async () => {
-  await openSettings({ settings_set: () => Promise.reject(INVALID) });
-  await type(focusInput(), "3");
-  await type(breakInput(), "70");
-  await blur(breakInput());
-  fireEvent.keyDown(focusInput(), { key: "Escape" });
-  await settle();
-  expect(saveLine()).toHaveTextContent("Break minutes weren't saved. Still using 10.");
-  expect(screen.getByRole("button", { name: "Show break minutes" })).toBeInTheDocument();
 });
 
 test("load_failure_says_so", async () => {

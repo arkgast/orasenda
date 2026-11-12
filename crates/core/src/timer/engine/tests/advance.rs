@@ -63,37 +63,28 @@ fn advance_after_end_with_earlier_now_stays_idle() {
 
 #[test]
 fn record_carries_the_preset_given_to_start() {
-    let custom = CustomSpec {
-        focus_min: 30,
-        break_min: 7,
-    };
-    for (preset, sp) in [
-        (Preset::Quick, spec(Preset::Quick)),
-        (Preset::Classic, spec(Preset::Classic)),
-        (Preset::Custom, Preset::Custom.spec(&custom).unwrap()),
+    for (preset, planned) in [
+        (SessionPreset::Quick, QUICK_START_MS),
+        (steady(), 25 * MIN),
+        (library(2), 90 * MIN),
     ] {
-        let planned = sp.focus_ms;
         let mut s = Session::Idle;
-        s.start(id("p"), preset, sp, T0).unwrap();
+        s.start(id("p"), preset.clone(), T0).unwrap();
         let r = ended(s.advance(T0 + planned));
         assert_eq!(r.preset, preset);
         assert_eq!(r.planned_ms, planned);
         assert_eq!(r.focused_ms, planned);
     }
     let mut s = Session::Idle;
-    s.start(id("q"), Preset::Quick, spec(Preset::Quick), T0)
-        .unwrap();
+    s.start(id("q"), SessionPreset::Quick, T0).unwrap();
     assert_eq!(s.view(T0).remaining_ms, QUICK_START_MS);
-    assert_eq!(s.stop(T0 + MIN).unwrap().preset, Preset::Quick);
+    assert_eq!(s.stop(T0 + MIN).unwrap().preset, SessionPreset::Quick);
 }
 
 #[test]
 fn one_milestone_per_transition_none_per_tick() {
     let mut s = Session::Idle;
-    assert_eq!(
-        s.start(id("a"), Preset::Classic, spec(Preset::Classic), T0),
-        Ok(())
-    );
+    assert_eq!(s.start(id("a"), steady(), T0), Ok(()));
     for t in (0..25 * 60).map(|k| T0 + k * S) {
         assert_eq!(s.advance(t), None, "tick at {t}");
     }

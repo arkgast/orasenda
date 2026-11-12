@@ -26,6 +26,7 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         notify_session_end,
         drop_after_unlock,
         settings_changed,
+        presets_changed,
         apply_theme,
         seq,
         ..
@@ -35,6 +36,10 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     }
     if let Some(theme) = apply_theme {
         host.apply_theme(theme);
+    }
+    // The library first: the settings that follow may name a preset it just added.
+    if let Some(presets) = &presets_changed {
+        host.emit_presets_changed(presets);
     }
     if let Some(settings) = &settings_changed {
         host.emit_settings_changed(settings);

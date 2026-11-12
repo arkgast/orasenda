@@ -1,6 +1,6 @@
 //! Reading and saving the settings.
 
-use orasenda_core::{CustomSpec, NotificationStatus, Preset};
+use orasenda_core::{NotificationStatus, PresetId, format_clock};
 use orasenda_store::{OpenError, settings};
 
 use super::super::test_support::*;
@@ -9,15 +9,11 @@ use crate::api::{Settings, SettingsErrorKind, StoreStatus, Theme};
 
 #[test]
 fn undecodable_setting_falls_back_to_default_without_rewrite() {
-    let store = memory_store();
-    let custom = CustomSpec {
-        focus_min: 30,
-        break_min: 5,
-    };
+    let store = seeded_store();
     store
         .write(T0, |txn| {
-            orasenda_store::settings::set(txn, "timer.preset", &"nonsense")?;
-            orasenda_store::settings::set(txn, "timer.custom", &custom)?;
+            orasenda_store::settings::set(txn, "timer.preset", &5)?;
+            orasenda_store::settings::set(txn, "timer.extension_cap", &"many")?;
             orasenda_store::settings::set(txn, "notify.session_end", &false)
         })
         .expect("settings written");
@@ -26,52 +22,90 @@ fn undecodable_setting_falls_back_to_default_without_rewrite() {
         fakes(NotificationStatus::NotDetermined, false).platform,
         T0,
     );
-    assert_eq!(
-        s.settings(),
-        Settings {
-            theme: Theme::System,
-            preset: Preset::Classic,
-            custom,
-            notify_session_end: false,
-        }
-    );
-    s.apply(start(Preset::Classic), T0, id("a"));
+    assert_eq!(s.settings(), Settings::default());
+    s.apply(start(), T0, id("a"));
     let raw: Option<serde_json::Value> = db(&s)
         .read(|txn| orasenda_store::settings::get(txn, "timer.preset"))
         .expect("reads");
-    assert_eq!(raw, Some(serde_json::json!("nonsense")));
+    assert_eq!(raw, Some(serde_json::json!(5)));
 }
 
 #[test]
-fn settings_set_refuses_quick_and_out_of_range_custom() {
+fn out_of_range_setting_reads_as_its_default() {
+    let store = seeded_store();
+    store
+        .write(T0, |txn| {
+            orasenda_store::settings::set(txn, "timer.extension_cap", &9)?;
+            orasenda_store::settings::set(txn, "timer.longest_focus_min", &30)?;
+            orasenda_store::settings::set(txn, "timer.deep_cap_hours", &1)
+        })
+        .expect("settings written");
+    let s = SessionService::new(
+        Ok(store),
+        fakes(NotificationStatus::NotDetermined, false).platform,
+        T0,
+    );
+    assert_eq!(s.settings(), Settings::default());
+}
+
+#[test]
+fn every_new_key_round_trips() {
+    let mut s = service();
+    let all = Settings {
+        theme: Theme::Dark,
+        preset_id: default_id(2),
+        extension_cap: 3,
+        auto_continue: true,
+        longest_focus_min: 120,
+        deep_cap_on: false,
+        deep_cap_hours: 6,
+        notify_session_end: true,
+        notify_two_minutes: true,
+    };
+    s.set_settings(all.clone(), T0).expect("saves");
+    assert_eq!(s.settings(), all);
+    let back = relaunch(&mut s, T0);
+    assert_eq!(back.settings(), all);
+}
+
+#[test]
+fn settings_set_refuses_unknown_presets_and_out_of_range_values() {
     let mut s = service();
     let valid = Settings {
-        theme: Theme::System,
-        preset: Preset::DeepBlock,
-        custom: CustomSpec {
-            focus_min: 60,
-            break_min: 10,
+        preset_id: default_id(2),
+        extension_cap: 1,
+        longest_focus_min: 100,
+        deep_cap_hours: 5,
+        ..Settings::default()
+    };
+    let bad = [
+        Settings {
+            preset_id: PresetId("not-in-the-library".into()),
+            ..valid.clone()
         },
-        notify_session_end: false,
-    };
-    let quick = Settings {
-        theme: Theme::System,
-        preset: Preset::Quick,
-        ..valid.clone()
-    };
-    let error = s.set_settings(quick, T0).expect_err("quick is refused");
-    assert_eq!(error.kind, SettingsErrorKind::InvalidSpec);
-    for (focus_min, break_min) in [(4, 5), (181, 5), (30, 0), (30, 61)] {
-        let bad = Settings {
-            theme: Theme::System,
-            preset: Preset::Custom,
-            custom: CustomSpec {
-                focus_min,
-                break_min,
-            },
-            notify_session_end: true,
-        };
-        let error = s.set_settings(bad, T0).expect_err("out of range");
+        Settings {
+            extension_cap: 4,
+            ..valid.clone()
+        },
+        Settings {
+            longest_focus_min: 59,
+            ..valid.clone()
+        },
+        Settings {
+            longest_focus_min: 151,
+            ..valid.clone()
+        },
+        Settings {
+            deep_cap_hours: 1,
+            ..valid.clone()
+        },
+        Settings {
+            deep_cap_hours: 9,
+            ..valid.clone()
+        },
+    ];
+    for settings in bad {
+        let error = s.set_settings(settings, T0).expect_err("refused");
         assert_eq!(error.kind, SettingsErrorKind::InvalidSpec);
     }
     assert_eq!(s.settings(), Settings::default());
@@ -84,15 +118,42 @@ fn settings_set_refuses_quick_and_out_of_range_custom() {
 }
 
 #[test]
+fn unknown_preset_id_presents_first_live() {
+    let store = seeded_store();
+    store
+        .write(T0, |txn| {
+            orasenda_store::settings::set(txn, "timer.preset", &"0192-removed-preset")
+        })
+        .expect("written");
+    let s = SessionService::new(
+        Ok(store),
+        fakes(NotificationStatus::NotDetermined, false).platform,
+        T0,
+    );
+    assert_eq!(
+        s.settings().preset_id,
+        default_id(0),
+        "the first live preset"
+    );
+    assert_eq!(s.view(T0).planned_min, None);
+    assert_eq!(
+        s.clock_tick(T0).idle_finish,
+        Some(format_clock(T0 + 15 * MINUTE, OFFSET_MIN, CYCLE)),
+        "Start would use it"
+    );
+    let mut s = s;
+    let started = s.apply(start(), T0, id("a"));
+    assert_eq!(started.view.preset_name.as_deref(), Some("Gentle Start"));
+    assert_eq!(started.view.planned_min, Some(15));
+}
+
+#[test]
 fn settings_set_write_failure_is_write_and_keeps_the_cache() {
     let mut s = service();
     db(&s).fail_writes(true);
-    let changed = Settings {
-        theme: Theme::System,
-        preset: Preset::FiftyTen,
-        ..Settings::default()
-    };
-    let error = s.set_settings(changed, T0).expect_err("the write fails");
+    let error = s
+        .set_settings(deep_work(), T0)
+        .expect_err("the write fails");
     assert_eq!(error.kind, SettingsErrorKind::Write);
     assert_eq!(s.settings(), Settings::default());
     assert_eq!(s.view(T0).store, StoreStatus::Unavailable);
@@ -130,19 +191,6 @@ fn settings_get_defaults_when_degraded() {
         T0,
     );
     assert_eq!(s.settings(), Settings::default());
-
-    let store = memory_store();
-    store
-        .write(T0, |txn| {
-            orasenda_store::settings::set(txn, "timer.preset", &Preset::Quick)
-        })
-        .expect("written");
-    let s = SessionService::new(
-        Ok(store),
-        fakes(NotificationStatus::NotDetermined, false).platform,
-        T0,
-    );
-    assert_eq!(s.settings().preset, Preset::Classic, "never quick");
 }
 
 /// A pending store with non-default preset/custom and notify stored true, whose launch
@@ -151,14 +199,9 @@ fn read_owed_service() -> (SessionService, usize) {
     read_owed_service_with_theme(Theme::System)
 }
 
-fn stored_custom(s: &SessionService) -> (Option<Preset>, Option<CustomSpec>) {
+fn stored_preset(s: &SessionService) -> Option<PresetId> {
     db(s)
-        .read(|txn| {
-            Ok((
-                settings::get(txn, KEY_PRESET)?,
-                settings::get(txn, KEY_CUSTOM)?,
-            ))
-        })
+        .read(|txn| settings::get(txn, KEY_PRESET))
         .expect("reads")
 }
 
@@ -177,16 +220,7 @@ fn settings_set_while_settings_read_owed_writes_only_the_change() {
             T0 + 1,
         )
         .expect("saves");
-    assert_eq!(
-        stored_custom(&s),
-        (
-            Some(Preset::Custom),
-            Some(CustomSpec {
-                focus_min: 50,
-                break_min: 10
-            })
-        )
-    );
+    assert_eq!(stored_preset(&s), Some(default_id(2)));
     assert_eq!(
         db(&s)
             .read(|txn| settings::get::<Theme>(txn, KEY_THEME))
@@ -196,7 +230,7 @@ fn settings_set_while_settings_read_owed_writes_only_the_change() {
     assert_eq!(stored_notify(&s), Some(true));
     assert_eq!(marker(&s), None);
     assert!(saved.presented.notify_session_end);
-    assert_eq!(saved.presented.preset, Preset::Custom);
+    assert_eq!(saved.presented.preset_id, default_id(2));
     assert!(!s.recover_owed.settings);
     assert!(!s.settings_event_owed);
     assert!(!s.review_pending);
@@ -226,7 +260,7 @@ fn settings_set_while_settings_read_owed_with_unknown_status_leaves_the_review_p
     assert!(s.review_pending);
     assert!(!s.recover_owed.settings);
     assert_eq!(db(&s).change_log_ids()[before..], ["ui.theme"]);
-    assert_eq!(stored_custom(&s).0, Some(Preset::Custom));
+    assert_eq!(stored_preset(&s), Some(default_id(2)));
 }
 
 #[test]
@@ -240,7 +274,8 @@ fn unchanged_keys_log_no_change_log_row() {
         T0,
     )
     .expect("saves");
-    assert_eq!(db(&s).change_log_ids(), ["ui.theme"]);
+    let seeded = db(&s).change_log_ids().len() - 1;
+    assert_eq!(db(&s).change_log_ids()[seeded..], ["ui.theme"]);
     s.set_settings(
         Settings {
             theme: Theme::Dark,
@@ -249,5 +284,5 @@ fn unchanged_keys_log_no_change_log_row() {
         T0,
     )
     .expect("an unchanged save succeeds");
-    assert_eq!(db(&s).change_log_ids(), ["ui.theme"]);
+    assert_eq!(db(&s).change_log_ids()[seeded..], ["ui.theme"]);
 }

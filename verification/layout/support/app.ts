@@ -19,7 +19,7 @@ export async function openApp(
   if (opts.page) query.set("page", opts.page);
   await page.goto(`${APP_URL}/layout.html?${query}`);
   if (opts.page === "settings") {
-    await page.getByLabel("Focus minutes").waitFor();
+    await page.getByRole("radio", { name: /^Steady Focus/ }).waitFor();
   } else {
     await page
       .getByRole("button", { name: /Start focus|Starting|Pause|Resume/ })

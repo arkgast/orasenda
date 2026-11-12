@@ -1,10 +1,13 @@
 //! The emits and the theme mapping on the app.
 
-use orasenda_service::api::{MilestoneEvent, Settings, Theme, TimerView};
+use orasenda_service::api::{MilestoneEvent, PresetEntry, Settings, Theme, TimerView};
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
-use crate::ipc::{ClockTick, ClockTickEvent, SettingsChanged, TimerMilestoneEvent, TimerTickEvent};
+use crate::ipc::{
+    ClockTick, ClockTickEvent, PresetsChangedEvent, SettingsChanged, TimerMilestoneEvent,
+    TimerTickEvent,
+};
 use crate::runtime::session::Surfaces;
 
 /// The Tauri theme for a saved one: `System` clears the override.
@@ -43,6 +46,19 @@ pub(super) fn emit_settings_changed(app: &AppHandle, settings: &Settings) {
     resync_surfaces(app, &crate::runtime::session::current_settings(app));
 }
 
+/// Emits `presets-changed`, then tells every surface the library changed (the tray rebuilds
+/// its Preset submenu).
+pub(super) fn emit_presets_changed(app: &AppHandle, presets: &[PresetEntry]) {
+    if let Err(error) = PresetsChangedEvent(presets.to_vec()).emit(app) {
+        eprintln!("session-scheduler: could not emit presets-changed: {error}");
+    }
+    if let Some(surfaces) = app.try_state::<Surfaces>() {
+        for surface in surfaces_of(&surfaces) {
+            surface.presets_changed(presets);
+        }
+    }
+}
+
 /// Tells every surface `settings`. Also the tray's resync after a failed preset save, whose
 /// check mark the menu already toggled.
 pub(crate) fn resync_surfaces(app: &AppHandle, settings: &Settings) {
@@ -54,14 +70,19 @@ pub(crate) fn resync_surfaces(app: &AppHandle, settings: &Settings) {
 /// The surfaces list is copied under its lock and told after it is released, as `publish`
 /// does for a view.
 fn notify_settings(surfaces: &Surfaces, settings: &Settings) {
-    let list = surfaces
+    for surface in surfaces_of(surfaces) {
+        surface.settings_changed(settings);
+    }
+}
+
+fn surfaces_of(
+    surfaces: &Surfaces,
+) -> Vec<std::sync::Arc<dyn orasenda_service::session::NativeSurface>> {
+    surfaces
         .0
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
-    for surface in list {
-        surface.settings_changed(settings);
-    }
+        .clone()
 }
 
 #[cfg(test)]
@@ -94,7 +115,7 @@ mod tests {
         });
         surfaces.0.lock().unwrap().push(probe.clone());
         let settings = Settings {
-            preset: orasenda_core::Preset::DeepBlock,
+            preset_id: orasenda_core::default_presets()[2].id.clone(),
             ..Settings::default()
         };
         notify_settings(&surfaces, &settings);

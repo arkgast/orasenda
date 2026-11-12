@@ -20,7 +20,7 @@ fn start_pause_resume_stop_arithmetic() {
     let v = s.view(T0);
     assert_eq!(v.state, EngineState::Running);
     assert_eq!(v.phase, Phase::Focus);
-    assert_eq!(v.preset, Some(Preset::Classic));
+    assert_eq!(v.preset, Some(steady()));
     assert_eq!(v.session_id, Some(id("a")));
     assert_eq!(v.remaining_ms, 25 * MIN);
     assert_eq!(v.progress, 0.0);
@@ -37,7 +37,7 @@ fn start_pause_resume_stop_arithmetic() {
 
     let r = s.stop(T0 + 10 * MIN).unwrap();
     assert_eq!(r.id, id("a"));
-    assert_eq!(r.preset, Preset::Classic);
+    assert_eq!(r.preset, steady());
     assert_eq!(r.phase, Phase::Focus);
     assert_eq!(r.planned_ms, 25 * MIN);
     assert_eq!(r.started_ms, T0);
@@ -72,14 +72,14 @@ fn start_while_running_is_already_running_and_changes_nothing() {
     let mut s = classic_at(T0);
     let running = s.clone();
     assert_eq!(
-        s.start(id("b"), Preset::Quick, spec(Preset::Quick), T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, running);
     s.pause(T0 + MIN).unwrap();
     let paused = s.clone();
     assert_eq!(
-        s.start(id("b"), Preset::Quick, spec(Preset::Quick), T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, paused);
@@ -114,7 +114,8 @@ fn session_snapshot_round_trips_json() {
     let mut s = classic_at(T0);
     let j = serde_json::to_value(&s).unwrap();
     assert_eq!(j["state"], "running");
-    assert_eq!(j["preset"], "classic");
+    assert_eq!(j["preset"]["kind"], "library");
+    assert_eq!(j["preset"]["name"], "Steady Focus");
     assert_eq!(j["phase"], "focus");
     assert_eq!(j["id"], "a");
     assert_eq!(j["started_ms"], T0);

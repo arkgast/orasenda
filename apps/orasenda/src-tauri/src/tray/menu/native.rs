@@ -20,7 +20,13 @@ fn append_entries(
                 label,
                 accelerator,
                 checked: None,
-            } => append(&MenuItem::with_id(app, *id, label, true, *accelerator)?)?,
+            } => append(&MenuItem::with_id(
+                app,
+                id.as_str(),
+                label,
+                true,
+                *accelerator,
+            )?)?,
             MenuEntry::Item {
                 id,
                 label,
@@ -28,7 +34,7 @@ fn append_entries(
                 checked: Some(checked),
             } => append(&CheckMenuItem::with_id(
                 app,
-                *id,
+                id.as_str(),
                 label,
                 true,
                 *checked,

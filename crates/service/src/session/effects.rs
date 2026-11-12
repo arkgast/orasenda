@@ -5,7 +5,7 @@ use std::any::Any;
 use orasenda_core::SessionRecord;
 
 use super::*;
-use crate::api::{MilestoneEvent, Settings, Theme, TimerCommandError, TimerView};
+use crate::api::{MilestoneEvent, PresetEntry, Settings, Theme, TimerCommandError, TimerView};
 
 /// Everything the caller does after unlocking, in the order [`crate::scheduler::publish`]
 /// does it.
@@ -31,6 +31,9 @@ pub struct Effects {
     /// The presented settings to emit as `settings-changed`: owed by a recovered launch read
     /// of the settings, and by a notify review run from the retry of that read.
     pub settings_changed: Option<Settings>,
+    /// The preset library to emit as `presets-changed` and tell the surfaces: owed by a
+    /// recovered load of the library, which comes before `settings_changed`.
+    pub presets_changed: Option<Vec<PresetEntry>>,
     /// The cached theme, when a recovered launch read changed it; applied after unlock,
     /// before `settings_changed`.
     pub apply_theme: Option<Theme>,
@@ -58,6 +61,7 @@ impl SessionService {
         let presented = self.settings();
         let settings_changed =
             std::mem::take(&mut self.settings_event_owed).then_some(presented.clone());
+        let presets_changed = std::mem::take(&mut self.presets_event_owed).then(|| self.presets());
         let mut milestones = outcome.milestones;
         if self.listening {
             if milestones.is_empty() {
@@ -79,6 +83,7 @@ impl SessionService {
             ended: outcome.ended,
             drop_after_unlock: outcome.drop_after_unlock,
             settings_changed,
+            presets_changed,
             apply_theme: self.theme_owed.take(),
         }
     }

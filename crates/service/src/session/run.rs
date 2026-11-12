@@ -4,14 +4,14 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use orasenda_core::{NotificationStatus, Preset, SessionId};
+use orasenda_core::{NotificationStatus, PresetId, SessionId, default_presets};
 use orasenda_store::{OpenError, Store};
 use uuid::Uuid;
 
 use super::*;
 use crate::api::{
-    Settings, SettingsError, SettingsErrorKind, StoreStatus, TimerCommandError,
-    TimerCommandErrorKind, TimerState, TimerView,
+    PresetEntry, Settings, SettingsError, SettingsErrorKind, StoreStatus, TimerCommandError,
+    TimerCommandErrorKind, TimerState, TimerView, entries,
 };
 use crate::scheduler::{self, Host};
 
@@ -142,11 +142,19 @@ pub fn run_view<H: Host>(host: &H) -> TimerView {
     }
 }
 
-/// `preset_select`: saves `preset` as the chosen preset while idle. Checks idle and saves under
+/// `presets_list`: the live presets under a brief lock; core's defaults before setup.
+pub fn run_presets_list<H: Host>(host: &H) -> Vec<PresetEntry> {
+    match host.service() {
+        Some(service) => lock(service).presets(),
+        None => entries(&default_presets()),
+    }
+}
+
+/// `preset_select`: saves the library preset `id` as the chosen preset while idle. Checks idle and saves under
 /// one lock, so a start can't slip between them; then does what `settings_set` does after
-/// unlock. `WrongState` while a session runs or is paused, `InvalidSpec` for a preset that is
-/// never saved, `Store` when the save fails.
-pub fn run_select_preset<H: Host>(host: &H, preset: Preset) -> Result<(), TimerCommandError> {
+/// unlock. `WrongState` while a session runs or is paused, `InvalidSpec` for an id that is not in
+/// the library, `Store` when the save fails.
+pub fn run_select_preset<H: Host>(host: &H, id: PresetId) -> Result<(), TimerCommandError> {
     let Some(service) = host.service() else {
         return Err(TimerCommandError {
             kind: TimerCommandErrorKind::Store,
@@ -164,7 +172,7 @@ pub fn run_select_preset<H: Host>(host: &H, preset: Preset) -> Result<(), TimerC
         }
         let before = service.store_status;
         let chosen = Settings {
-            preset,
+            preset_id: id,
             ..service.settings()
         };
         let result = service.set_settings(chosen, now_ms);

@@ -20,9 +20,8 @@ pub use platform::{
     NoopNotifier, NotificationStatus, Notifier, PlatformError, UtcLocalTime,
 };
 pub use timer::{
-    CustomSpec, DefaultPreset, EndReason, EngineState, EngineView, Milestone, Phase, Preset,
-    PresetDef, PresetField, PresetId, PresetInvalid, PresetSpec, QUICK_START_MS, Session,
-    SessionId, SessionPreset, SessionRecord, TimerError, default_presets, format_clock,
-    format_remaining, normalize_name, spoken_remaining,
+    DefaultPreset, EndReason, EngineState, EngineView, Milestone, Phase, PresetDef, PresetField,
+    PresetId, PresetInvalid, QUICK_START_MS, Session, SessionId, SessionPreset, SessionRecord,
+    TimerError, default_presets, format_clock, format_remaining, normalize_name, spoken_remaining,
 };
 pub use usage::{IDLE_THRESHOLD_MS, UsageSegment, UsageTracker};

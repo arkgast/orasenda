@@ -1,6 +1,6 @@
 //! The cached settings: the launch read, saving, and the notify review.
 
-use orasenda_core::{NotificationStatus, Preset};
+use orasenda_core::{NotificationStatus, PresetId};
 use orasenda_store::{StoreError, Txn, meta, settings};
 use serde::de::DeserializeOwned;
 
@@ -20,8 +20,13 @@ pub struct SettingsSaved {
 
 /// Settings keys (spec: Store).
 pub(super) const KEY_PRESET: &str = "timer.preset";
-pub(super) const KEY_CUSTOM: &str = "timer.custom";
+pub(super) const KEY_EXTENSION_CAP: &str = "timer.extension_cap";
+pub(super) const KEY_AUTO_CONTINUE: &str = "timer.auto_continue";
+pub(super) const KEY_LONGEST_FOCUS: &str = "timer.longest_focus_min";
+pub(super) const KEY_DEEP_CAP_ON: &str = "timer.deep_cap_on";
+pub(super) const KEY_DEEP_CAP_HOURS: &str = "timer.deep_cap_hours";
 pub(super) const KEY_NOTIFY: &str = "notify.session_end";
+pub(super) const KEY_NOTIFY_TWO: &str = "notify.two_minutes";
 pub(super) const KEY_THEME: &str = "ui.theme";
 pub(super) const META_NOTIFY_REVIEW: &str = "notify_review";
 
@@ -94,16 +99,10 @@ impl SessionService {
         settings: Settings,
         now_ms: u64,
     ) -> Result<SettingsSaved, SettingsError> {
-        if settings.preset == Preset::Quick {
+        if let Some(message) = self.invalid(&settings) {
             return Err(SettingsError {
                 kind: SettingsErrorKind::InvalidSpec,
-                message: "the 2-minute start can't be the saved preset".into(),
-            });
-        }
-        if let Err(error) = settings.custom.validate() {
-            return Err(SettingsError {
-                kind: SettingsErrorKind::InvalidSpec,
-                message: error.to_string(),
+                message: message.into(),
             });
         }
         if self.store.is_none() {
@@ -113,11 +112,22 @@ impl SessionService {
             });
         }
         let presented = self.settings();
+        // While the library is owed the presented id is a stand-in for the cached one (the guard
+        // below lets only an echo of it through), so the cached id is left alone.
+        let cached_preset = if self.recover_owed.presets {
+            presented.preset_id.clone()
+        } else {
+            self.settings.preset_id.clone()
+        };
         let owed = self.recover_owed.settings;
         let theme_changed = settings.theme != presented.theme;
-        let preset_changed = settings.preset != presented.preset;
-        let custom_changed = settings.custom != presented.custom;
         let notify_changed = settings.notify_session_end != presented.notify_session_end;
+        if settings.preset_id != presented.preset_id && self.recover_owed.presets {
+            return Err(SettingsError {
+                kind: SettingsErrorKind::Unavailable,
+                message: "the preset can't be changed right now".into(),
+            });
+        }
         // While the launch read is owed, the stored values are read inside this transaction
         // (the store is reachable, since it is being written) and the changes go on top.
         let mut stored: Option<(Settings, bool)> = None;
@@ -125,12 +135,7 @@ impl SessionService {
             if owed {
                 stored = Some(read_settings(txn)?);
             }
-            if preset_changed {
-                settings::set(txn, KEY_PRESET, &settings.preset)?;
-            }
-            if custom_changed {
-                settings::set(txn, KEY_CUSTOM, &settings.custom)?;
-            }
+            write_changed(txn, &presented, &cached_preset, &settings)?;
             if theme_changed {
                 settings::set(txn, KEY_THEME, &settings.theme)?;
             }
@@ -152,12 +157,7 @@ impl SessionService {
         if theme_changed {
             self.settings.theme = settings.theme;
         }
-        if preset_changed {
-            self.settings.preset = settings.preset;
-        }
-        if custom_changed {
-            self.settings.custom = settings.custom;
-        }
+        merge_changed(&mut self.settings, &presented, &cached_preset, &settings);
         // An echoed value is not copied into the cache while the review is pending: the cache
         // keeps the stored-or-true value the review will use.
         if notify_changed {
@@ -176,8 +176,7 @@ impl SessionService {
     }
 }
 
-/// Reads the settings. A value that fails to decode, a saved `Quick` and an out-of-range
-/// Custom are logged and replaced by their default in memory, never rewritten. A database
+/// Reads the settings. A value that fails to decode and an out-of-range value are logged and replaced by their default in memory, never rewritten. A database
 /// error fails the whole read.
 /// Also reads the notify review marker in the same transaction; while it is pending an absent
 /// `notify.session_end` reads `true` (spec A's default) so the review sees what A meant. The
@@ -194,24 +193,125 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
             true
         }
     };
-    let mut preset = read_setting(txn, KEY_PRESET, defaults.preset)?;
-    if preset == Preset::Quick {
-        eprintln!("settings: {KEY_PRESET} is quick, which is never saved; using the default");
-        preset = defaults.preset;
-    }
-    let mut custom = read_setting(txn, KEY_CUSTOM, defaults.custom)?;
-    if custom.validate().is_err() {
-        eprintln!("settings: {KEY_CUSTOM} is out of range; using the default");
-        custom = defaults.custom;
-    }
     let notify_default = pending || defaults.notify_session_end;
     let settings = Settings {
         theme: read_setting(txn, KEY_THEME, defaults.theme)?,
-        preset,
-        custom,
+        preset_id: read_setting(txn, KEY_PRESET, defaults.preset_id)?,
+        extension_cap: read_ranged(txn, KEY_EXTENSION_CAP, defaults.extension_cap, 0..=3)?,
+        auto_continue: read_setting(txn, KEY_AUTO_CONTINUE, defaults.auto_continue)?,
+        longest_focus_min: read_ranged(
+            txn,
+            KEY_LONGEST_FOCUS,
+            defaults.longest_focus_min,
+            60..=150,
+        )?,
+        deep_cap_on: read_setting(txn, KEY_DEEP_CAP_ON, defaults.deep_cap_on)?,
+        deep_cap_hours: read_ranged(txn, KEY_DEEP_CAP_HOURS, defaults.deep_cap_hours, 2..=8)?,
         notify_session_end: read_setting(txn, KEY_NOTIFY, notify_default)?,
+        notify_two_minutes: read_setting(txn, KEY_NOTIFY_TWO, defaults.notify_two_minutes)?,
     };
     Ok((settings, pending))
+}
+
+/// A value that must lie in `range`; one outside it is logged and replaced by `default`.
+fn read_ranged<T: DeserializeOwned + PartialOrd + Copy>(
+    txn: &Txn,
+    key: &str,
+    default: T,
+    range: std::ops::RangeInclusive<T>,
+) -> Result<T, StoreError> {
+    let value = read_setting(txn, key, default)?;
+    if range.contains(&value) {
+        Ok(value)
+    } else {
+        eprintln!("settings: {key} is out of range; using the default");
+        Ok(default)
+    }
+}
+
+/// Writes the keys of `new` that differ from `presented`, except the theme and the notify
+/// choice, which `set_settings` writes with their own side effects.
+///
+/// The preset is compared with the cached id, not the presented one: the presented id resolves an
+/// unknown id to the first live preset, and an explicit pick of that fallback must still be written.
+fn write_changed(
+    txn: &mut Txn,
+    presented: &Settings,
+    cached_preset: &PresetId,
+    new: &Settings,
+) -> Result<(), StoreError> {
+    if new.preset_id != *cached_preset {
+        settings::set(txn, KEY_PRESET, &new.preset_id)?;
+    }
+    if new.extension_cap != presented.extension_cap {
+        settings::set(txn, KEY_EXTENSION_CAP, &new.extension_cap)?;
+    }
+    if new.auto_continue != presented.auto_continue {
+        settings::set(txn, KEY_AUTO_CONTINUE, &new.auto_continue)?;
+    }
+    if new.longest_focus_min != presented.longest_focus_min {
+        settings::set(txn, KEY_LONGEST_FOCUS, &new.longest_focus_min)?;
+    }
+    if new.deep_cap_on != presented.deep_cap_on {
+        settings::set(txn, KEY_DEEP_CAP_ON, &new.deep_cap_on)?;
+    }
+    if new.deep_cap_hours != presented.deep_cap_hours {
+        settings::set(txn, KEY_DEEP_CAP_HOURS, &new.deep_cap_hours)?;
+    }
+    if new.notify_two_minutes != presented.notify_two_minutes {
+        settings::set(txn, KEY_NOTIFY_TWO, &new.notify_two_minutes)?;
+    }
+    Ok(())
+}
+
+/// Copies the fields `write_changed` wrote into the cache.
+fn merge_changed(
+    cache: &mut Settings,
+    presented: &Settings,
+    cached_preset: &PresetId,
+    new: &Settings,
+) {
+    if new.preset_id != *cached_preset {
+        cache.preset_id = new.preset_id.clone();
+    }
+    if new.extension_cap != presented.extension_cap {
+        cache.extension_cap = new.extension_cap;
+    }
+    if new.auto_continue != presented.auto_continue {
+        cache.auto_continue = new.auto_continue;
+    }
+    if new.longest_focus_min != presented.longest_focus_min {
+        cache.longest_focus_min = new.longest_focus_min;
+    }
+    if new.deep_cap_on != presented.deep_cap_on {
+        cache.deep_cap_on = new.deep_cap_on;
+    }
+    if new.deep_cap_hours != presented.deep_cap_hours {
+        cache.deep_cap_hours = new.deep_cap_hours;
+    }
+    if new.notify_two_minutes != presented.notify_two_minutes {
+        cache.notify_two_minutes = new.notify_two_minutes;
+    }
+}
+
+impl SessionService {
+    /// Why `settings` can't be saved, if it can't: a preset that is not in the library, or a
+    /// value outside its range.
+    fn invalid(&self, settings: &Settings) -> Option<&'static str> {
+        if !self.presets.iter().any(|p| p.id == settings.preset_id) {
+            return Some("that preset isn't in the library");
+        }
+        if settings.extension_cap > 3 {
+            return Some("extra 10 minutes can be off, once, twice or 3 times");
+        }
+        if !(60..=150).contains(&settings.longest_focus_min) {
+            return Some("the longest focus can be 60 to 150 minutes");
+        }
+        if !(2..=8).contains(&settings.deep_cap_hours) {
+            return Some("the deep-hours note can be set from 2 to 8 hours");
+        }
+        None
+    }
 }
 
 fn read_setting<T: DeserializeOwned>(txn: &Txn, key: &str, default: T) -> Result<T, StoreError> {

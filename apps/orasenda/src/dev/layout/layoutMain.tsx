@@ -29,7 +29,7 @@ if (page === "settings") {
   // page chord (Cmd+6) there, until the page is up (the shortcut listener mounts a tick later).
   const started = Date.now();
   const timer = setInterval(() => {
-    if (document.getElementById("focusMinutes")) {
+    if (document.getElementById("settings-timer")) {
       clearInterval(timer);
       return;
     }

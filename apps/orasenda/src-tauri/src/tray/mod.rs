@@ -160,7 +160,10 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         orasenda_core::NotificationStatus::Unavailable,
     );
     let (_, glyph) = tray_title_and_icon(&idle);
-    let next = NextSession::from_settings(&crate::runtime::session::current_settings(handle));
+    let next = NextSession::new(
+        &crate::runtime::session::current_settings(handle),
+        crate::runtime::session::run_presets_list(handle),
+    );
     let (menu, header) = build_menu(
         handle,
         &menu_items(&idle, &next, crate::spike::enabled()),

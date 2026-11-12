@@ -8,7 +8,9 @@ use std::thread;
 use std::time::SystemTime;
 
 use orasenda_core::clock::epoch_ms;
-use orasenda_service::api::{Settings, SettingsError, TimerCommandError, TimerState, TimerView};
+use orasenda_service::api::{
+    PresetEntry, Settings, SettingsError, TimerCommandError, TimerState, TimerView,
+};
 use orasenda_store::OpenError;
 use tauri::Manager;
 use uuid::Uuid;
@@ -55,6 +57,11 @@ pub fn run_state(app: &tauri::AppHandle) -> TimerState {
 /// `settings_set` on the app.
 pub fn run_set_settings(app: &tauri::AppHandle, settings: Settings) -> Result<(), SettingsError> {
     orasenda_service::session::run_set_settings(&AppHost::new(app), settings)
+}
+
+/// `presets_list` on the app.
+pub fn run_presets_list(app: &tauri::AppHandle) -> Vec<PresetEntry> {
+    orasenda_service::session::run_presets_list(&AppHost::new(app))
 }
 
 /// `settings_get` on the app.

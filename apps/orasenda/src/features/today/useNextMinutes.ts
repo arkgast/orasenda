@@ -1,12 +1,12 @@
 import type { Settings } from "../../ipc/bindings";
-import { lengthOf, usePresetLengths } from "./presets";
+import { selectedPreset, usePresets } from "./presets";
 
 /**
- * The next session's focus length ("25 min") for the strip while idle. The three fixed presets
- * come from the once-per-launch cache; Custom comes from the saved settings. `undefined` until known.
+ * The next session's focus length ("25 min") for the strip while idle, from the selected library
+ * preset. `undefined` until the presets and the settings are known.
  */
 export function useNextMinutes(settings: Settings | null): string | undefined {
-  const lengths = usePresetLengths();
-  const minutes = lengthOf(settings?.preset ?? "classic", settings, lengths)?.focusMin;
+  const presets = usePresets();
+  const minutes = settings ? selectedPreset(presets, settings)?.focusMin : undefined;
   return minutes === undefined ? undefined : `${minutes} min`;
 }

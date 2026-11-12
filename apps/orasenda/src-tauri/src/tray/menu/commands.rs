@@ -1,23 +1,21 @@
 //! What a menu item does: the command for an id and how it runs.
 
-use orasenda_core::Preset;
-use tauri::AppHandle;
-
-use super::entries::preset_id;
 use super::*;
 use crate::ipc::StartRequest;
 use crate::lifecycle;
 use crate::runtime::session::{self, Action};
+use orasenda_core::PresetId;
+use tauri::AppHandle;
 
 /// What a menu item does.
 #[derive(Debug, PartialEq)]
 pub(crate) enum MenuCommand {
     Session(Action),
-    /// *Start focus*: the saved preset, read when the item is chosen.
+    /// *Start focus*: the selected preset, read by the service when the item is chosen.
     Start,
     /// *Just 2 minutes*.
     JustTwo,
-    SetPreset(Preset),
+    SetPreset(PresetId),
     EditTimes,
     Show,
     Settings,
@@ -27,8 +25,8 @@ pub(crate) enum MenuCommand {
 
 /// The command for a menu item id; `None` for ids that are not the tray's.
 pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
-    if let Some(preset) = PRESETS.iter().find(|&&preset| preset_id(preset) == id) {
-        return Some(MenuCommand::SetPreset(*preset));
+    if let Some(preset) = id.strip_prefix(PRESET_PREFIX) {
+        return Some(MenuCommand::SetPreset(PresetId(preset.to_string())));
     }
     match id {
         START => Some(MenuCommand::Start),
@@ -45,13 +43,10 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
     }
 }
 
-/// The start a *Start focus* (`quick: false`) or *Just 2 minutes* item runs: the saved
-/// preset or `quick`, never custom minutes.
-pub(crate) fn start_action(saved: Preset, quick: bool) -> Action {
-    Action::Start(StartRequest {
-        preset: if quick { Preset::Quick } else { saved },
-        custom: None,
-    })
+/// The start a *Start focus* (`quick: false`) or *Just 2 minutes* item runs: the service
+/// starts the selected preset or `quick`.
+pub(crate) fn start_action(quick: bool) -> Action {
+    Action::Start(StartRequest { quick })
 }
 
 /// Where in Settings a menu item opens, when not at the top.
@@ -89,16 +84,19 @@ pub(in crate::tray) fn on_menu_event(app: &AppHandle, id: &str) {
 }
 
 /// `current` with the chosen preset and nothing else changed.
-pub(crate) fn preset_choice(current: Settings, preset: Preset) -> Settings {
-    Settings { preset, ..current }
+pub(crate) fn preset_choice(current: Settings, preset_id: PresetId) -> Settings {
+    Settings {
+        preset_id,
+        ..current
+    }
 }
 
 /// On a blocking thread. `run_action` has already published the true view, so the tray shows it.
 fn run_command(app: &AppHandle, command: MenuCommand) {
     let action = match command {
         MenuCommand::Session(action) => action,
-        MenuCommand::Start => start_action(session::current_settings(app).preset, false),
-        MenuCommand::JustTwo => start_action(Preset::Quick, true),
+        MenuCommand::Start => start_action(false),
+        MenuCommand::JustTwo => start_action(true),
         MenuCommand::SetPreset(preset) => {
             // The same chain `settings_set` uses: it saves, then emits `settings-changed`.
             let settings = preset_choice(session::current_settings(app), preset);

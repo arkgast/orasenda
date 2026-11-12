@@ -5,17 +5,21 @@ import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
 import {
   argsOf,
+  DEEP,
   emitClock,
+  emitPresetsChanged,
   emitTimer,
+  GENTLE,
   mockBackend,
   PAUSED,
+  PRESETS,
   RUNNING,
   SETTINGS,
   settle,
 } from "../../test/fixtures";
 import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
-import { renderToday } from "./Today.support";
+import { renderToday, savedSettings } from "./Today.support";
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -36,24 +40,24 @@ test("summary_idle_text_name_tooltip", async () => {
   await renderToday();
   await emitClock({ idleFinish: "15:20" });
   const button = summary();
-  expect(button).toHaveAccessibleName("Preset Classic, 25 minutes, ends 15:20. Change preset");
+  expect(button).toHaveAccessibleName("Preset Steady Focus, 25 minutes, ends 15:20. Change preset");
   expect(button).toHaveAttribute("aria-haspopup", "menu");
   expect(button).toHaveAttribute("aria-expanded", "false");
   expect(button.querySelector('[data-slot="preset-summary-full"]')).toHaveTextContent(
-    "Classic · 25 min · ends 15:20",
+    "Steady Focus · 25 min · ends 15:20",
   );
 });
 
 test("summary_running_ends_from_view_finish", async () => {
   await renderToday();
   await emitTimer(RUNNING);
-  expect(summary()).toHaveAccessibleName("Preset Classic, ends 15:20. Preset details");
+  expect(summary()).toHaveAccessibleName("Preset Steady Focus, ends 15:20. Preset details");
 });
 
 test("summary_paused_uses_planned_min", async () => {
   await renderToday();
   await emitTimer({ ...PAUSED, plannedMin: 50 });
-  expect(summary()).toHaveAccessibleName("Preset Classic, 50 minutes, paused. Preset details");
+  expect(summary()).toHaveAccessibleName("Preset Steady Focus, 50 minutes, paused. Preset details");
 });
 
 test("summary_short_form_under_400", async () => {
@@ -77,7 +81,7 @@ test("summary_settings_unavailable_disabled", async () => {
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 });
 
-test("popover_idle_four_radios_metas", async () => {
+test("popover_lists_library_presets", async () => {
   await renderToday();
   fireEvent.click(summary());
   const menu = screen.getByRole("menu", { name: "Preset for the next session" });
@@ -86,50 +90,90 @@ test("popover_idle_four_radios_metas", async () => {
   expect(menu).toHaveAccessibleDescription("Choosing one applies it and closes.");
   const radios = within(menu).getAllByRole("menuitemradio");
   expect(radios.map((radio) => radio.textContent)).toEqual([
-    "Classic25 / 5",
-    "50/1050 / 10",
-    "Deep Block90 / 15",
-    "Custom45 / 10",
+    "Gentle Start15 / 5",
+    "Steady Focus25 / 5",
+    "Deep Work90 / 15",
   ]);
-  expect(radios[0]).toHaveAttribute("aria-checked", "true");
-  expect(within(menu).getByRole("menuitem", { name: /Edit times in Settings/ })).toHaveTextContent(
-    "⌘,",
-  );
+  expect(radios[1]).toHaveAttribute("aria-checked", "true");
+  expect(
+    within(menu).getByRole("menuitem", { name: /Edit presets in Settings/ }),
+  ).toHaveTextContent("⌘,");
+});
+
+test("popover_follows_presets_changed", async () => {
+  await renderToday();
+  await emitPresetsChanged([
+    ...PRESETS,
+    {
+      id: "user-1",
+      name: "50/10",
+      focusMin: 50,
+      breakMin: 10,
+      longBreakMin: 20,
+      rounds: 4,
+      isDefault: false,
+      isChanged: false,
+    },
+  ]);
+  fireEvent.click(summary());
+  const radios = within(screen.getByRole("menu")).getAllByRole("menuitemradio");
+  expect(radios.map((radio) => radio.textContent)).toContain("50/1050 / 10");
 });
 
 test("popover_choose_saves_and_closes", async () => {
   const { backend } = await renderToday();
   fireEvent.click(summary());
-  fireEvent.click(screen.getByRole("menuitemradio", { name: /50\/10/ }));
+  fireEvent.click(screen.getByRole("menuitemradio", { name: /Deep Work/ }));
   await settle();
   expect(argsOf(backend.calls, "settings_set")).toEqual([
-    { settings: { ...SETTINGS, preset: "fifty_ten" } },
+    { settings: { ...SETTINGS, presetId: DEEP } },
   ]);
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-  expect(summary()).toHaveAccessibleName(/^Preset 50\/10, 50 minutes/);
+  expect(summary()).toHaveAccessibleName(/^Preset Deep Work, 90 minutes/);
 });
 
-test("popover_running_read_only_heading", async () => {
+test("an_unknown_saved_preset_shows_the_first_one", async () => {
+  await renderToday(savedSettings({ presetId: "removed" }));
+  expect(summary()).toHaveAccessibleName(/^Preset Gentle Start, 15 minutes/);
+});
+
+test("popover_running_read_only_heading_from_the_snapshot", async () => {
   await renderToday();
   await emitTimer(RUNNING);
   fireEvent.click(summary());
-  const menu = screen.getByRole("menu", { name: "Classic · 25 min" });
+  const menu = screen.getByRole("menu", { name: "Steady Focus · 25 / 5" });
   expect(menu).toHaveAccessibleDescription("Presets can change between sessions.");
   for (const radio of within(menu).getAllByRole("menuitemradio")) {
     expect(radio).toHaveAttribute("aria-disabled", "true");
   }
-  expect(within(menu).getByRole("menuitemradio", { name: /Classic/ })).toHaveAttribute(
+  expect(within(menu).getByRole("menuitemradio", { name: /Steady Focus/ })).toHaveAttribute(
     "aria-checked",
     "true",
   );
   expect(
-    within(menu).getByRole("menuitem", { name: /Edit times in Settings/ }),
+    within(menu).getByRole("menuitem", { name: /Edit presets in Settings/ }),
   ).not.toHaveAttribute("aria-disabled");
+});
+
+test("a_session_keeps_its_snapshot_name_when_the_library_changes", async () => {
+  await renderToday();
+  await emitTimer({ ...RUNNING, presetId: GENTLE, presetName: "Old name", breakMin: 3 });
+  await emitPresetsChanged(PRESETS.slice(1));
+  expect(summary()).toHaveAccessibleName("Preset Old name, ends 15:20. Preset details");
+  fireEvent.click(summary());
+  expect(screen.getByRole("menu", { name: "Old name · 25 / 3" })).toBeInTheDocument();
 });
 
 test("popover_quick_no_checked_radio", async () => {
   await renderToday();
-  await emitTimer({ ...RUNNING, preset: "quick", plannedMin: 2 });
+  await emitTimer({
+    ...RUNNING,
+    presetId: null,
+    presetName: "Just 2 minutes",
+    quick: true,
+    breakMin: null,
+    plannedMin: 2,
+  });
   fireEvent.click(summary());
   const menu = screen.getByRole("menu", { name: "Just 2 minutes" });
   for (const radio of within(menu).getAllByRole("menuitemradio")) {
@@ -143,7 +187,7 @@ test("popover_settings_link_opens_timer", async () => {
   render(<Today onNavigate={onNavigate} />);
   await settle();
   fireEvent.click(summary());
-  fireEvent.click(screen.getByRole("menuitem", { name: /Edit times in Settings/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Edit presets in Settings/ }));
   expect(onNavigate).toHaveBeenCalledWith("settings", "timer");
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 });
@@ -156,7 +200,20 @@ test("popover_failed_save_rolls_summary_back", async () => {
     },
   });
   fireEvent.click(summary());
-  fireEvent.click(screen.getByRole("menuitemradio", { name: /50\/10/ }));
+  fireEvent.click(screen.getByRole("menuitemradio", { name: /Deep Work/ }));
   await settle();
-  expect(summary()).toHaveAccessibleName(/^Preset Classic, 25 minutes/);
+  expect(summary()).toHaveAccessibleName(/^Preset Steady Focus, 25 minutes/);
+});
+
+test("summary_presets_list_failure_shows_unavailable", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderToday({
+    presets_list: () => {
+      throw new Error("no library");
+    },
+  });
+  expect(screen.getByRole("button", { name: "Presets unavailable" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
 });

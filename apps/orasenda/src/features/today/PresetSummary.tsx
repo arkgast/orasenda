@@ -1,7 +1,7 @@
 import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
-import type { Preset, Settings } from "../../ipc/bindings";
-import { lengthOf, presetName, summaryText, usePresetLengths } from "./presets";
+import type { Settings } from "../../ipc/bindings";
+import { presetMeta, selectedPreset, summaryText, usePresets, usePresetsFailed } from "./presets";
 
 type Props = {
   state: "idle" | "running" | "paused";
@@ -9,16 +9,22 @@ type Props = {
   settings: Settings | null;
   /** The settings failed to load: the summary says so instead of waiting. */
   settingsFailed: boolean;
-  /** The running session's preset and planned length, from the view. */
-  session: { preset: Preset | null; plannedMin: number | null; finish: string | null } | null;
+  /** The running session's preset snapshot and planned length, from the view. */
+  session: {
+    presetId: string | null;
+    presetName: string | null;
+    quick: boolean;
+    breakMin: number | null;
+    plannedMin: number | null;
+    finish: string | null;
+  } | null;
   /** The next session's finish from the clock tick, while idle. */
   idleFinish: string | null;
   strip: boolean;
-  onChoose(preset: Preset): void;
+  onChoose(presetId: string): void;
   onOpenSettings(): void;
 };
 
-const CHOICES: readonly Preset[] = ["classic", "fifty_ten", "deep_block", "custom"];
 const SETTINGS_ID = "settings";
 
 /** The preset summary: a text button with a chevron that opens the preset popover. */
@@ -32,17 +38,18 @@ export function PresetSummary({
   onChoose,
   onOpenSettings,
 }: Props): ReactElement {
-  const lengths = usePresetLengths();
+  const presets = usePresets();
+  const presetsFailed = usePresetsFailed();
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const idle = state === "idle";
 
-  if (idle && !settings && !settingsFailed) {
+  if (idle && (!settings || presets.length === 0) && !settingsFailed && !presetsFailed) {
     // Still loading: the cell keeps its place and says nothing.
     return <div data-slot="preset-summary" className="today-preset-anchor" />;
   }
-  if (idle && !settings) {
+  if (idle && (!settings || presets.length === 0)) {
     return (
       <div data-slot="preset-summary" className="@container w-full">
         <span className="today-preset-anchor">
@@ -54,41 +61,35 @@ export function PresetSummary({
     );
   }
 
-  const preset: Preset = idle
-    ? (settings?.preset ?? "classic")
-    : (session?.preset ?? settings?.preset ?? "classic");
-  const minutes = idle
-    ? lengthOf(preset, settings, lengths)?.focusMin
-    : (session?.plannedMin ?? undefined);
+  // Idle names the selected library preset; a session names its snapshot, which an edit or a
+  // removal in the library never changes.
+  const selected = selectedPreset(presets, settings);
+  const name = idle ? (selected?.name ?? "") : (session?.presetName ?? selected?.name ?? "");
+  const minutes = idle ? selected?.focusMin : (session?.plannedMin ?? undefined);
   const text = summaryText({
     state,
-    name: presetName(preset),
+    name,
     minutes,
     finish: idle ? idleFinish : (session?.finish ?? null),
     strip,
   });
 
-  const checked: Preset | null = preset === "quick" ? null : preset;
+  const checked = idle ? selected?.id : (session?.presetId ?? null);
   const items: PopoverMenuItem[] = [
-    ...CHOICES.map((choice) => {
-      const length = lengthOf(choice, settings, lengths);
-      return {
-        id: choice,
-        label: presetName(choice),
-        meta: length ? `${length.focusMin} / ${length.breakMin}` : undefined,
-        kind: "radio" as const,
-        checked: choice === checked,
-      };
-    }),
-    { id: SETTINGS_ID, label: "Edit times in Settings", meta: "⌘,", kind: "link" },
+    ...presets.map((entry) => ({
+      id: entry.id,
+      label: entry.name,
+      meta: presetMeta(entry),
+      kind: "radio" as const,
+      checked: entry.id === checked,
+    })),
+    { id: SETTINGS_ID, label: "Edit presets in Settings", meta: "⌘,", kind: "link" },
   ];
   const heading = idle
     ? "Preset for the next session"
-    : preset === "quick"
-      ? presetName("quick")
-      : minutes === undefined
-        ? presetName(preset)
-        : `${presetName(preset)} · ${minutes} min`;
+    : session?.quick || session?.breakMin == null || minutes === undefined
+      ? name
+      : `${name} · ${minutes} / ${session.breakMin}`;
 
   return (
     <div data-slot="preset-summary" className="@container w-full">
@@ -131,7 +132,7 @@ export function PresetSummary({
           readOnly={!idle}
           onSelect={(id) => {
             if (id === SETTINGS_ID) onOpenSettings();
-            else onChoose(id as Preset);
+            else onChoose(id);
           }}
           onClose={() => setOpen(false)}
         />

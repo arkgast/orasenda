@@ -1,36 +1,57 @@
 import { useEffect, useState } from "react";
-import type { Preset, PresetLength, Settings } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
+import type { PresetEntry, Settings } from "../../ipc/bindings";
+import { commands, events } from "../../ipc/bindings";
+import { subscribe } from "../../ipc/subscribe";
 
-const NAMES: Readonly<Record<Preset, string>> = {
-  classic: "Classic",
-  fifty_ten: "50/10",
-  deep_block: "Deep Block",
-  custom: "Custom",
-  quick: "Just 2 minutes",
-};
-
-/** The name a person sees for a preset. */
-export function presetName(preset: Preset): string {
-  return NAMES[preset];
+/** The name a person sees for a library preset. */
+export function presetName(entry: Pick<PresetEntry, "name">): string {
+  return entry.name;
 }
 
-// presets_get is read once per launch: the three fixed presets never change. A failure is logged
-// once and leaves the list empty (the summary then shows no minutes).
-let cached: Promise<PresetLength[]> | null = null;
-// The value once it arrived, so a later mount starts with it instead of one empty frame.
-let resolved: PresetLength[] | null = null;
+/** "25 / 5": focus and break minutes, the meta of a preset in the popover and the tray. */
+export function presetMeta(entry: Pick<PresetEntry, "focusMin" | "breakMin">): string {
+  return `${entry.focusMin} / ${entry.breakMin}`;
+}
 
-export function presetLengths(): Promise<PresetLength[]> {
-  cached ??= commands.presetsGet().then(
+// presets_list is read once per launch; presets-changed then keeps it current. A failure is
+// logged once and leaves the list empty (the summary then shows no minutes).
+let cached: Promise<PresetEntry[]> | null = null;
+// The value once it arrived, so a later mount starts with it instead of one empty frame.
+let resolved: PresetEntry[] | null = null;
+// Bumped by every presets-changed event, so a presets_list reply that left before the event and
+// arrives after it cannot replace the newer list.
+let generation = 0;
+let failed = false;
+const watchers = new Set<(list: PresetEntry[]) => void>();
+let stopChanged: (() => void) | null = null;
+
+function ensureSubscribed(): void {
+  if (stopChanged) return;
+  stopChanged = subscribe("presets-changed", events.presetsChanged.listen, (list) => {
+    generation += 1;
+    failed = false;
+    resolved = list;
+    cached = Promise.resolve(list);
+    for (const watcher of watchers) watcher(list);
+  });
+}
+
+export function presetsList(): Promise<PresetEntry[]> {
+  ensureSubscribed();
+  if (cached) return cached;
+  const started = generation;
+  cached = commands.presetsList().then(
     (list) => {
+      if (started !== generation) return resolved ?? list;
       resolved = list;
       return list;
     },
     (error: unknown) => {
-      console.error("presets_get failed", error);
+      if (started !== generation) return resolved ?? [];
+      console.error("presets_list failed", error);
+      failed = true;
       resolved = [];
-      return [] as PresetLength[];
+      return [] as PresetEntry[];
     },
   );
   return cached;
@@ -40,31 +61,58 @@ export function presetLengths(): Promise<PresetLength[]> {
 export function resetPresetsForTests(): void {
   cached = null;
   resolved = null;
+  generation = 0;
+  failed = false;
+  stopChanged?.();
+  stopChanged = null;
+  watchers.clear();
 }
 
-/** The fixed presets' lengths, `[]` until they arrive. */
-export function usePresetLengths(): PresetLength[] {
-  const [lengths, setLengths] = useState<PresetLength[]>(() => resolved ?? []);
+/** True once presets_list failed and no presets-changed has followed. */
+export function usePresetsFailed(): boolean {
+  const [value, setValue] = useState(failed);
   useEffect(() => {
     let cancelled = false;
-    presetLengths().then((list) => {
-      if (!cancelled) setLengths(list);
+    presetsList().then(() => {
+      if (!cancelled) setValue(failed);
     });
+    const watcher = () => setValue(failed);
+    watchers.add(watcher);
     return () => {
       cancelled = true;
+      watchers.delete(watcher);
     };
   }, []);
-  return lengths;
+  return value;
 }
 
-/** The focus and break minutes of a preset; Custom comes from the saved settings. */
-export function lengthOf(
-  preset: Preset,
-  settings: Settings | null,
-  lengths: PresetLength[],
-): { focusMin: number; breakMin: number } | undefined {
-  if (preset === "custom") return settings?.custom;
-  return lengths.find((entry) => entry.preset === preset);
+/** The live presets in order, `[]` until they arrive; follows `presets-changed`. */
+export function usePresets(): PresetEntry[] {
+  const [presets, setPresets] = useState<PresetEntry[]>(() => resolved ?? []);
+  useEffect(() => {
+    let cancelled = false;
+    const watcher = (list: PresetEntry[]) => {
+      if (!cancelled) setPresets(list);
+    };
+    watchers.add(watcher);
+    presetsList().then(watcher);
+    return () => {
+      cancelled = true;
+      watchers.delete(watcher);
+    };
+  }, []);
+  return presets;
+}
+
+/**
+ * The preset the settings select: the one whose id matches, or the first live preset when the id
+ * is not in the list (Rust presents the same fallback). `undefined` for an empty list.
+ */
+export function selectedPreset(
+  presets: PresetEntry[],
+  settings: Pick<Settings, "presetId"> | null,
+): PresetEntry | undefined {
+  return presets.find((entry) => entry.id === settings?.presetId) ?? presets[0];
 }
 
 export type SummaryInput = {

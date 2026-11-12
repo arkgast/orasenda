@@ -30,7 +30,6 @@ async function ready(replies: Parameters<typeof mockBackend>[0]) {
   register({
     shown: () => {},
     accepted: () => {},
-    refused: () => {},
     loadFailed: () => {},
     saveFailed: () => {},
   });

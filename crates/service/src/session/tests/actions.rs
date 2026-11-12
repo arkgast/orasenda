@@ -1,21 +1,19 @@
 //! Transitions, views and keep-awake.
 
 use orasenda_core::{
-    CustomSpec, EndReason, EngineState, NotificationStatus, Preset, QUICK_START_MS, SessionId,
+    EndReason, EngineState, NotificationStatus, PresetId, QUICK_START_MS, SessionId, SessionPreset,
     format_clock, format_remaining, spoken_remaining,
 };
 use orasenda_store::OpenError;
 
 use super::super::test_support::*;
 use super::super::*;
-use crate::api::{
-    MilestoneKind, Mode, Settings, StartRequest, StoreStatus, Theme, TimerCommandErrorKind,
-};
+use crate::api::{MilestoneKind, Mode, Settings, StoreStatus, TimerCommandErrorKind};
 
 #[test]
 fn start_pause_resume_stop_transitions_and_milestone_order() {
     let mut s = service();
-    let started = s.apply(start(Preset::Classic), T0, id("a"));
+    let started = s.apply(start(), T0, id("a"));
     assert!(started.was_idle);
     assert_eq!(started.result, Ok(started.view.clone()));
     assert_eq!(started.view.state, EngineState::Running);
@@ -24,7 +22,7 @@ fn start_pause_resume_stop_transitions_and_milestone_order() {
         [milestone(MilestoneKind::Started, None, "a")]
     );
 
-    let again = s.apply(start(Preset::Classic), T0 + 1, id("b"));
+    let again = s.apply(start(), T0 + 1, id("b"));
     assert_eq!(kind(&again), Some(TimerCommandErrorKind::AlreadyRunning));
     assert!(again.milestones.is_empty());
     assert_eq!(again.view.session_id, Some(SessionId("a".into())));
@@ -83,90 +81,87 @@ fn start_pause_resume_stop_transitions_and_milestone_order() {
 #[test]
 fn quick_start_uses_quick_start_ms_and_records_quick() {
     let mut s = service();
-    let started = s.apply(start(Preset::Quick), T0, id("q"));
+    let started = s.apply(start_quick(), T0, id("q"));
     assert_eq!(started.view.remaining_ms, QUICK_START_MS);
-    assert_eq!(started.view.preset, Some(Preset::Quick));
+    assert_eq!(started.view.preset_name.as_deref(), Some("Just 2 minutes"));
     let ended = s.tick(T0 + QUICK_START_MS);
     let record = ended_record(&ended);
-    assert_eq!(record.preset, Preset::Quick);
+    assert_eq!(record.preset, SessionPreset::Quick);
     assert_eq!(record.planned_ms, QUICK_START_MS);
     assert_eq!(record.end_reason, EndReason::Completed);
     assert!(has_row(db(&s), &record));
 }
 
 #[test]
-fn custom_start_without_spec_uses_saved_custom() {
+fn start_snapshots_preset() {
     let mut s = service();
-    let saved = Settings {
-        theme: Theme::System,
-        preset: Preset::Custom,
-        custom: CustomSpec {
-            focus_min: 30,
-            break_min: 5,
-        },
-        notify_session_end: true,
-    };
-    s.set_settings(saved, T0).expect("settings save");
-    let started = s.apply(start(Preset::Custom), T0, id("c"));
-    assert_eq!(started.view.remaining_ms, 30 * MINUTE);
-    s.apply(Action::Stop, T0 + 1, id("x"));
-
-    let given = s.apply(
-        Action::Start(StartRequest {
-            preset: Preset::Custom,
-            custom: Some(CustomSpec {
-                focus_min: 20,
-                break_min: 5,
-            }),
-        }),
-        T0 + 2,
-        id("d"),
-    );
-    assert_eq!(given.view.remaining_ms, 20 * MINUTE);
-    s.apply(Action::Stop, T0 + 3, id("x"));
-
-    let out_of_range = s.apply(
-        Action::Start(StartRequest {
-            preset: Preset::Custom,
-            custom: Some(CustomSpec {
-                focus_min: 4,
-                break_min: 5,
-            }),
-        }),
-        T0 + 4,
-        id("e"),
-    );
-    assert_eq!(
-        kind(&out_of_range),
-        Some(TimerCommandErrorKind::InvalidSpec)
-    );
-    assert_eq!(out_of_range.view.state, EngineState::Idle);
+    s.set_settings(deep_work(), T0).expect("selects Deep Work");
+    let started = s.apply(start(), T0, id("d"));
+    assert_eq!(started.view.remaining_ms, 90 * MINUTE);
+    assert_eq!(started.view.preset_id, Some(default_id(2)));
+    assert_eq!(started.view.preset_name.as_deref(), Some("Deep Work"));
+    assert!(!started.view.quick);
+    assert_eq!(started.view.break_min, Some(15));
+    let ended = s.apply(Action::Stop, T0 + MINUTE, id("x"));
+    let record = ended_record(&ended);
+    assert_eq!(record.preset, library_preset(2));
+    assert!(has_row(db(&s), &record));
 }
 
 #[test]
-fn non_custom_start_ignores_given_custom() {
-    let given = Some(CustomSpec {
-        focus_min: 10,
-        break_min: 5,
-    });
-    for (preset, expected) in [
-        (Preset::Classic, CLASSIC_MS),
-        (Preset::FiftyTen, 50 * MINUTE),
-        (Preset::DeepBlock, 90 * MINUTE),
-        (Preset::Quick, QUICK_START_MS),
+fn edit_after_start_leaves_snapshot() {
+    let mut s = service();
+    s.apply(start(), T0, id("a"));
+    // The library changes under the running session (E5 adds the commands that do it).
+    s.presets[1].focus_min = 30;
+    s.presets[1].name = "Renamed".into();
+    let view = s.view(T0 + MINUTE);
+    assert_eq!(view.remaining_ms, CLASSIC_MS - MINUTE);
+    assert_eq!(view.preset_name.as_deref(), Some("Steady Focus"));
+    assert_eq!(view.break_min, Some(5));
+    let record = ended_record(&s.apply(Action::Stop, T0 + 2 * MINUTE, id("x")));
+    assert_eq!(record.preset, library_preset(1));
+    // The next start reads the library as it is now.
+    let next = s.apply(start(), T0 + 3 * MINUTE, id("b"));
+    assert_eq!(next.view.remaining_ms, 30 * MINUTE);
+    assert_eq!(next.view.preset_name.as_deref(), Some("Renamed"));
+}
+
+#[test]
+fn start_sends_quick_only() {
+    for (action, expected, quick) in [
+        (start(), CLASSIC_MS, false),
+        (start_quick(), QUICK_START_MS, true),
     ] {
         let mut s = service();
-        let started = s.apply(
-            Action::Start(StartRequest {
-                preset,
-                custom: given,
-            }),
-            T0,
-            id("a"),
-        );
-        assert_eq!(started.view.remaining_ms, expected, "{preset:?}");
-        assert_eq!(started.view.preset, Some(preset));
+        s.set_settings(Settings::default(), T0).expect("saves");
+        let started = s.apply(action, T0, id("a"));
+        assert_eq!(started.view.remaining_ms, expected);
+        assert_eq!(started.view.quick, quick);
     }
+}
+
+#[test]
+fn view_preset_name_quick() {
+    let mut s = service();
+    let started = s.apply(start_quick(), T0, id("q"));
+    assert_eq!(started.view.preset_id, None);
+    assert_eq!(started.view.preset_name.as_deref(), Some("Just 2 minutes"));
+    assert_eq!(started.view.break_min, None);
+    assert!(started.view.quick);
+    let idle = s.apply(Action::Stop, T0 + 1, id("x")).view;
+    assert_eq!(idle.preset_name, None);
+    assert!(!idle.quick);
+}
+
+#[test]
+fn start_uses_the_first_live_preset_when_the_selection_is_unknown() {
+    let mut s = service();
+    s.settings.preset_id = PresetId("gone".into());
+    assert_eq!(s.settings().preset_id, default_id(0));
+    let started = s.apply(start(), T0, id("a"));
+    assert_eq!(started.view.remaining_ms, 15 * MINUTE);
+    assert_eq!(started.view.preset_name.as_deref(), Some("Gentle Start"));
 }
 
 #[test]
@@ -177,7 +172,7 @@ fn view_mode_is_derived_from_engine_state() {
     assert_eq!(idle.remaining, "00:00");
     assert_eq!(idle.remaining_label, "0 seconds");
 
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let running = s.view(T0 + 1);
     assert_eq!(
         (running.state, running.mode),
@@ -202,7 +197,7 @@ fn view_mode_is_derived_from_engine_state() {
 fn finish_is_null_while_paused_and_formatted_while_running() {
     let mut s = service();
     assert_eq!(s.view(T0).finish, None);
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     assert_eq!(
         s.view(T0).finish,
         Some(format_clock(T0 + CLASSIC_MS, OFFSET_MIN, CYCLE))
@@ -222,7 +217,7 @@ fn idle_finish_null_while_running_and_formatted_while_idle() {
         idle.idle_finish,
         Some(format_clock(T0 + CLASSIC_MS, OFFSET_MIN, CYCLE))
     );
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     assert_eq!(s.clock_tick(T0 + 1).idle_finish, None);
     s.apply(Action::Pause, T0 + 2, id("x"));
     assert_eq!(s.clock_tick(T0 + 3).idle_finish, None);
@@ -240,7 +235,7 @@ fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running(
         T0,
     )
     .expect("turns notifications on");
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let late = s.apply(Action::Pause, T0 + CLASSIC_MS + 5_000, id("x"));
     assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
     assert!(!late.was_idle);
@@ -273,7 +268,7 @@ fn pause_after_planned_end_completes_at_planned_end_and_returns_nothing_running(
 #[test]
 fn stop_after_planned_end_records_completed() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let late = s.apply(Action::Stop, T0 + 2 * CLASSIC_MS, id("x"));
     assert_eq!(kind(&late), Some(TimerCommandErrorKind::NothingRunning));
     let record = ended_record(&late);
@@ -286,8 +281,8 @@ fn stop_after_planned_end_records_completed() {
 #[test]
 fn start_after_planned_end_publishes_ended_then_started() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
-    let late = s.apply(start(Preset::Classic), T0 + CLASSIC_MS, id("b"));
+    s.apply(start(), T0, id("a"));
+    let late = s.apply(start(), T0 + CLASSIC_MS, id("b"));
     assert_eq!(late.result, Ok(late.view.clone()));
     assert_eq!(
         late.milestones,
@@ -307,7 +302,7 @@ fn start_after_planned_end_publishes_ended_then_started() {
 #[test]
 fn state_after_planned_end_completes_and_reports_idle() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let (state, effects) = s.state(T0 + CLASSIC_MS + 1);
     assert_eq!(state.view.state, EngineState::Idle);
     assert!(state.pending.is_empty());
@@ -326,7 +321,7 @@ fn state_after_planned_end_completes_and_reports_idle() {
 #[test]
 fn timer_state_drains_pending() {
     let mut s = service();
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let mut back = relaunch(&mut s, T0 + 60 * MINUTE);
     let (first, effects) = back.state(T0 + 60 * MINUTE);
     assert_eq!(
@@ -346,7 +341,7 @@ fn timer_state_drains_pending() {
 fn start_with_failing_put_runs_and_marks_dirty() {
     let mut s = service();
     db(&s).fail_writes(true);
-    let started = s.apply(start(Preset::Classic), T0, id("a"));
+    let started = s.apply(start(), T0, id("a"));
     assert_eq!(started.result, Ok(started.view.clone()));
     assert_eq!(started.view.state, EngineState::Running);
     assert_eq!(started.view.store, StoreStatus::Unavailable);
@@ -361,7 +356,7 @@ fn degraded_service_runs_the_engine_in_memory() {
         fakes(NotificationStatus::NotDetermined, false).platform,
         T0,
     );
-    let started = s.apply(start(Preset::Classic), T0, id("a"));
+    let started = s.apply(start(), T0, id("a"));
     assert_eq!(started.view.state, EngineState::Running);
     assert_eq!(started.view.store, StoreStatus::Unavailable);
     let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
@@ -380,7 +375,7 @@ fn keep_awake_begun_on_start_and_guard_returned_on_end() {
         T0,
     )
     .expect("turns notifications on");
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     assert_eq!(log.count(|e| *e == Event::Begun), 1);
     assert!(s.keep_awake.is_some());
     let stopped = s.apply(Action::Stop, T0 + MINUTE, id("x"));
@@ -390,7 +385,7 @@ fn keep_awake_begun_on_start_and_guard_returned_on_end() {
     drop(stopped);
     assert_eq!(log.count(|e| *e == Event::Released), 1);
 
-    s.apply(start(Preset::Classic), T0 + 2 * MINUTE, id("b"));
+    s.apply(start(), T0 + 2 * MINUTE, id("b"));
     let ended = s.tick(T0 + 2 * MINUTE + CLASSIC_MS);
     assert!(ended.drop_after_unlock.is_some());
     assert!(ended.notify_session_end);
@@ -400,7 +395,7 @@ fn keep_awake_begun_on_start_and_guard_returned_on_end() {
 fn keep_awake_failure_is_logged_and_start_proceeds() {
     let Fakes { platform, log, .. } = fakes(NotificationStatus::Granted, true);
     let mut s = SessionService::new(Ok(memory_store()), platform, T0);
-    let started = s.apply(start(Preset::Classic), T0, id("a"));
+    let started = s.apply(start(), T0, id("a"));
     assert_eq!(started.result, Ok(started.view.clone()));
     assert_eq!(started.view.state, EngineState::Running);
     assert!(s.keep_awake.is_none());

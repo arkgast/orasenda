@@ -2,7 +2,7 @@
 
 use std::sync::atomic::Ordering;
 
-use orasenda_core::{NotificationStatus, Preset};
+use orasenda_core::{NotificationStatus, PresetId};
 use orasenda_store::settings;
 
 use super::super::test_support::*;
@@ -41,7 +41,7 @@ fn undecodable_theme_reads_as_system() {
         T0,
     );
     assert_eq!(s.settings(), Settings::default());
-    s.apply(start(Preset::Classic), T0, id("a"));
+    s.apply(start(), T0, id("a"));
     let raw: Option<serde_json::Value> = db(&s)
         .read(|txn| orasenda_store::settings::get(txn, "ui.theme"))
         .expect("reads");
@@ -79,7 +79,7 @@ fn theme_applied_after_unlock_only_when_changed() {
         &host,
         Settings {
             theme: Theme::Dark,
-            preset: Preset::FiftyTen,
+            preset_id: default_id(2),
             ..Settings::default()
         },
     )
@@ -169,7 +169,7 @@ fn recovered_theme_host(theme: Option<Theme>) -> TestHost {
 fn settings_set_adopting_stored_values_applies_the_stored_theme() {
     let echo = Settings {
         theme: Theme::System,
-        preset: Preset::FiftyTen,
+        preset_id: default_id(2),
         ..Settings::default()
     };
     let (mut s, _) = read_owed_service_with_theme(Theme::Dark);
@@ -202,7 +202,7 @@ fn settings_set_adopting_stored_values_applies_the_stored_theme() {
 fn settings_changed_after_save_and_after_recovered_read() {
     let host = TestHost::fresh(NotificationStatus::Granted);
     host.log().take();
-    run_set_settings(&host, fifty_ten()).expect("saves");
+    run_set_settings(&host, deep_work()).expect("saves");
     let events = host.log().take();
     let clock = events
         .iter()
@@ -210,7 +210,7 @@ fn settings_changed_after_save_and_after_recovered_read() {
         .expect("clock");
     let changed = events
         .iter()
-        .position(|e| *e == Event::SettingsChanged(fifty_ten()))
+        .position(|e| *e == Event::SettingsChanged(deep_work()))
         .expect("one settings-changed");
     assert!(clock < changed);
 
@@ -224,7 +224,7 @@ fn settings_changed_after_save_and_after_recovered_read() {
     scheduler::iterate(&host);
     let events = settings_events(&host);
     assert_eq!(events.len(), 1);
-    assert_eq!(events[0].preset, Preset::FiftyTen);
+    assert_eq!(events[0].preset_id, default_id(2));
     assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
     scheduler::iterate(&host);
     assert!(settings_events(&host).is_empty());
@@ -235,7 +235,7 @@ fn failed_settings_set_emits_no_settings_changed() {
     let host = TestHost::fresh(NotificationStatus::Granted);
     host.log().take();
     let quick = Settings {
-        preset: Preset::Quick,
+        preset_id: PresetId("missing".into()),
         ..Settings::default()
     };
     run_set_settings(&host, quick).expect_err("quick is invalid");
@@ -246,7 +246,7 @@ fn failed_settings_set_emits_no_settings_changed() {
         &host,
         Settings {
             theme: Theme::Dark,
-            preset: Preset::FiftyTen,
+            preset_id: default_id(2),
             ..Settings::default()
         },
     )

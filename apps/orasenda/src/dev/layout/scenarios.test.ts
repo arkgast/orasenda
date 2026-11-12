@@ -12,7 +12,7 @@ const NAMES = [
   "timerUnavailable",
   "starting",
   "settingsUnavailable",
-  "customChecked",
+  "deepWorkChecked",
 ];
 
 test("scenarios_name_every_state_of_the_issue", () => {

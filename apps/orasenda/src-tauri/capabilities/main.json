@@ -17,7 +17,7 @@
     "allow-notifications-request",
     "allow-notifications-open-settings",
     "allow-navigate-take",
-    "allow-presets-get",
+    "allow-presets-list",
     "allow-native-menu-popup"
   ]
 }
