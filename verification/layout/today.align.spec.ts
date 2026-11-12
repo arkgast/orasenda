@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
+import { SIZES as TODAY_SIZES } from "./support/today.ts";
 
 // #321: in the ring and stackedStrip layouts the controls, the time and the top row's summary
 // share one centre line, the centre of the page box Today fills (right of the nav rail).
@@ -13,7 +14,17 @@ const SIZES = [
 
 const STATES = ["idle", "running"] as const;
 
-type Centres = { layout: string; column: number; controls: number; time: number; summary: number };
+type Centres = {
+  layout: string;
+  column: number;
+  controls: number;
+  time: number;
+  summary: number;
+  controlsLeft: number;
+  controlsRight: number;
+  timeRight: number;
+  todayRight: number;
+};
 
 /** Horizontal centres in CSS px. The controls are the union of their buttons: what the eye sees. */
 async function centres(page: Page): Promise<Centres> {
@@ -26,38 +37,55 @@ async function centres(page: Page): Promise<Centres> {
     const left = Math.min(...buttons.map((b) => b.left));
     const right = Math.max(...buttons.map((b) => b.right));
     const column = q(".app-column").getBoundingClientRect();
+    const today = q(".today").getBoundingClientRect();
+    const timeBox = q(".today-time").firstElementChild?.getBoundingClientRect() as DOMRect;
     return {
+      controlsLeft: left,
+      controlsRight: right,
+      timeRight: timeBox.right,
+      todayRight: today.right,
       layout: q(".today").dataset.layout ?? "",
       column: mid(column),
       controls: (left + right) / 2,
       time: mid(q(".today-time").firstElementChild?.getBoundingClientRect() as DOMRect),
-      summary: mid(q('[data-slot="today-summary"]').getBoundingClientRect()),
+      summary: mid(q('[data-slot="preset-summary"] button').getBoundingClientRect()),
     };
   });
 }
+
+const expectedLayout = (size: { width: number; height: number }) =>
+  TODAY_SIZES.find((t) => t.width === size.width && t.height === size.height)?.layout;
 
 for (const size of SIZES) {
   for (const scenario of STATES) {
     test(`today_controls_centred_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
       await openApp(page, scenario, size);
       const c = await centres(page);
-      if (c.layout === "strip") {
-        // Unchanged: the controls column sits at the end of the window.
-        expect(c.controls, "strip controls stay at the end").toBeGreaterThan(c.column);
-        return;
-      }
-      expect(
-        Math.abs(c.controls - c.time),
-        `controls vs time ${JSON.stringify(c)}`,
-      ).toBeLessThanOrEqual(1);
-      expect(
-        Math.abs(c.controls - c.column),
-        `controls vs window ${JSON.stringify(c)}`,
-      ).toBeLessThanOrEqual(1);
-      expect(
-        Math.abs(c.summary - c.column),
-        `summary vs window ${JSON.stringify(c)}`,
-      ).toBeLessThanOrEqual(1);
+      expect(c.layout, "layout").toBe(expectedLayout(size));
+      expect(c.layout).not.toBe("strip");
+      const near = (a: number, b: number, what: string) =>
+        expect(Math.abs(a - b), `${what} ${JSON.stringify(c)}`).toBeLessThanOrEqual(1);
+      near(c.controls, c.time, "controls vs time");
+      near(c.controls, c.column, "controls vs window");
+      near(c.summary, c.column, "summary vs window");
+      near(c.summary, c.time, "summary vs time");
+    });
+  }
+}
+
+const STRIPS = [
+  { width: 800, height: 300 },
+  { width: 1024, height: 400 },
+] as const;
+
+for (const size of STRIPS) {
+  for (const scenario of STATES) {
+    test(`today_controls_at_end_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
+      await openApp(page, scenario, size);
+      const c = await centres(page);
+      expect(c.layout, "layout").toBe("strip");
+      expect(Math.abs(c.controlsRight - c.todayRight), JSON.stringify(c)).toBeLessThanOrEqual(1);
+      expect(c.controlsLeft, JSON.stringify(c)).toBeGreaterThanOrEqual(c.timeRight);
     });
   }
 }
