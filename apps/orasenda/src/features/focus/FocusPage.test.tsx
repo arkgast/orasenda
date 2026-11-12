@@ -2,7 +2,6 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { mockBackend, settle } from "../../test/fixtures";
-import { FloaterPage } from "../floater/FloaterPage";
 import { FocusPage } from "./FocusPage";
 
 afterEach(async () => {
@@ -18,11 +17,4 @@ test("focus_stub_renders_a_labelled_main_and_applies_the_theme", async () => {
   await settle();
   expect(screen.getByRole("main", { name: "Focus session" })).toBeEmptyDOMElement();
   expect(document.documentElement.dataset.theme).toBe("dark");
-});
-
-test("floater_stub_renders_a_labelled_main", async () => {
-  mockBackend();
-  render(<FloaterPage />);
-  await settle();
-  expect(screen.getByRole("main", { name: "Floating timer" })).toBeEmptyDOMElement();
 });
