@@ -13,6 +13,7 @@ mod local_time;
 mod notifier;
 mod overlay;
 mod status_item;
+pub mod windows;
 
 pub use bundle::is_app_bundle;
 pub use control::{MacAppControl, phone_bundle_id};
