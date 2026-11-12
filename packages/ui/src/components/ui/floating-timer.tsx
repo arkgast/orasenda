@@ -13,7 +13,12 @@ export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
   onOpen?: () => void;
   /** The session ended: shows as idle, says "Session ended." once and offers Start. */
   ended?: boolean;
-  /** With `mode="break"`, "Skip break" takes Pause's slot. */
+  /**
+   * The host's phase, which a break's last 2:00 (`mode="warning"`) cannot say. Defaults to "break" when `mode`
+   * is "break", else "focus".
+   */
+  phase?: "focus" | "break";
+  /** In a break, "Skip break" takes Pause's slot; while the break is paused, Resume keeps the slot. */
   onSkipBreak?: () => void;
   /** While idle, "Keep going" takes the Start pill's slot. */
   onKeepGoing?: () => void;
@@ -49,6 +54,7 @@ export function FloatingTimer({
   onSkipBreak,
   onKeepGoing,
   keepGoingName,
+  phase,
   remaining,
   remainingLabel,
   progress,
@@ -75,7 +81,9 @@ export function FloatingTimer({
   const shown = ended ? "idle" : mode;
   const quiet = shown === "idle";
   const keepGoing = quiet && onKeepGoing !== undefined;
-  const skipBreak = shown === "break" && onSkipBreak !== undefined;
+  const inBreak = (phase ?? (mode === "break" ? "break" : "focus")) === "break";
+  const skipBreak =
+    !ended && inBreak && shown !== "paused" && shown !== "idle" && onSkipBreak !== undefined;
   const state = ended ? "Session ended" : WORD[shown];
   return (
     // biome-ignore lint/a11y/useSemanticElements: the README names a group; a fieldset would add a legend and form semantics
@@ -153,7 +161,7 @@ export function FloatingTimer({
         </Button>
       ) : (
         <IconButton
-          label={shown === "paused" ? "Resume session" : "Pause session"}
+          label={`${shown === "paused" ? "Resume" : "Pause"} ${inBreak ? "break" : "session"}`}
           icon={shown === "paused" ? <Icon name="play" /> : <Icon name="pause" />}
           onClick={shown === "paused" ? onResume : onPause}
         />

@@ -168,7 +168,14 @@ test("focus_views_no_motion_when_reduced", async ({ page }, info) => {
   expect(await animatedElements(page)).toEqual([]);
 });
 
-const ACTION_MODES = ["plus-ten", "skip-break", "take-break", "keep-going"] as const;
+const ACTION_MODES = [
+  "plus-ten",
+  "skip-break",
+  "break-warning",
+  "break-paused",
+  "take-break",
+  "keep-going",
+] as const;
 
 test("full_screen_focus_break_actions_fit_every_frame_without_growing_the_track", async ({
   page,
@@ -221,4 +228,15 @@ test("full_screen_focus_break_actions_tab_after_end", async ({ page }) => {
   await expect(
     frame(page, "skip-break", 1280, 720).getByRole("button", { name: "End break" }),
   ).toBeVisible();
+  const warn = frame(page, "break-warning", 1280, 720);
+  await expect(warn.getByRole("button", { name: "End break" })).toBeVisible();
+  await expect(warn.getByRole("button", { name: "Pause break" })).toBeVisible();
+  await expect(
+    frame(page, "break-paused", 1280, 720).getByRole("button", { name: "Resume break" }),
+  ).toBeVisible();
+  // The offer's first action is the one primary.
+  await expect(offer.getByRole("button", { name: "Keep going with Steady Focus" })).toHaveAttribute(
+    "data-variant",
+    "primary",
+  );
 });

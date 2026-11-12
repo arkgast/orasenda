@@ -17,7 +17,7 @@ test("floating_timer_skip_break_in_pause_slot", () => {
   expect(names).toEqual(["Skip break", "Open Orasenda"]);
   // Without the prop, or outside a break, Pause keeps its slot.
   view.rerender(<FloatingTimer {...brk} onPause={onPause} />);
-  expect(screen.getByRole("button", { name: "Pause session" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Pause break" })).toBeTruthy();
   view.rerender(
     <FloatingTimer
       remaining="18:42"
@@ -50,4 +50,28 @@ test("floating_timer_keep_going_in_start_slot", () => {
   expect(screen.getByRole("button", { name: "Keep going" })).toBeTruthy();
   view.rerender(<FloatingTimer mode="idle" onStart={onStart} />);
   expect(screen.getByRole("button", { name: "Start focus" })).toBeTruthy();
+});
+
+test("floating_timer_skip_break_in_last_two_minutes_and_resume_when_paused", () => {
+  const onSkipBreak = vi.fn();
+  const onResume = vi.fn();
+  const view = render(
+    <FloatingTimer {...brk} mode="warning" phase="break" onSkipBreak={onSkipBreak} />,
+  );
+  expect(screen.getByRole("button", { name: "Skip break" })).toBeTruthy();
+  view.rerender(
+    <FloatingTimer
+      {...brk}
+      mode="paused"
+      phase="break"
+      onSkipBreak={onSkipBreak}
+      onResume={onResume}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: "Skip break" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Resume break" }));
+  expect(onResume).toHaveBeenCalledTimes(1);
+  // A focus warning keeps Pause even if the host passes the prop.
+  view.rerender(<FloatingTimer {...brk} mode="warning" onSkipBreak={onSkipBreak} />);
+  expect(screen.getByRole("button", { name: "Pause session" })).toBeTruthy();
 });

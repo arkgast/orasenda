@@ -36,9 +36,21 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
   ended?: boolean;
   /**
    * Zero to two quiet actions in the controls row, after End. Two only for the keep-going offer
-   * ("Keep going", "Stop here"): the first is quiet, the second ghost. Pause or Resume stays the only round primary.
+   * ("Keep going", "Stop here"). Only the first two render; a third is dropped, so the host passes at most two.
+   * Pause or Resume stays the only round primary.
    */
   secondaryActions?: ReadonlyArray<SecondaryAction>;
+  /**
+   * The host's phase, which a break's last 2:00 (`mode="warning"`) and a paused break (`mode="paused"`) cannot
+   * say. Defaults to "break" when `mode` is "break", else "focus". In a break, End reads "End break" and the
+   * round button "Pause break" or "Resume break".
+   */
+  phase?: "focus" | "break";
+  /**
+   * The keep-going offer is showing (idle). The first action then stands in for Start as the one primary, the
+   * second is ghost, and Start is not drawn. Without it, idle always shows Start.
+   */
+  offer?: boolean;
 }
 
 // Contract values from the README (the px of space-8, space-4, the fixed tracks and the intent line's
@@ -111,6 +123,8 @@ export function FullScreenFocus({
   singleKeys,
   ended,
   secondaryActions,
+  phase,
+  offer: offerProp,
   ...ring
 }: FullScreenFocusProps): JSX.Element {
   const [leaving, setLeaving] = useState(false);
@@ -152,9 +166,12 @@ export function FullScreenFocus({
     event.stopPropagation();
     setLeaving(true);
   };
-  // The keep-going offer (two actions while idle) stands in for Start: "Keep going" starts the next session, and
+  const isBreak = (phase ?? (mode === "break" ? "break" : "focus")) === "break";
+  const noun = isBreak ? "break" : "session";
+  // The keep-going offer stands in for Start: "Keep going" starts the next session and is the one primary, and
   // Start, "Keep going" and "Stop here" together would not fit the fixed track at the window minimum.
-  const offer = idle && (secondaryActions?.length ?? 0) >= 2;
+  const actions = secondaryActions?.slice(0, 2) ?? [];
+  const offer = idle && offerProp === true && actions.length > 0;
   const startKeys = singleKeys ? "Space Meta+Enter" : "Meta+Enter";
 
   return (
@@ -220,7 +237,7 @@ export function FullScreenFocus({
           className={cn(
             "flex h-control-lg w-full shrink-0 items-center justify-center",
             // Room for the host's actions without growing the fixed track: the gap tightens with each one.
-            gapByActions[Math.min(secondaryActions?.length ?? 0, 2)],
+            gapByActions[actions.length],
           )}
         >
           {offer ? null : idle ? (
@@ -238,24 +255,25 @@ export function FullScreenFocus({
             <>
               <IconButton
                 size="round"
-                label={paused ? "Resume session" : "Pause session"}
+                label={paused ? `Resume ${noun}` : `Pause ${noun}`}
                 icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
                 shortcut={singleKeys ? "Space" : undefined}
                 keyshortcuts={false}
                 onClick={paused ? onResume : onPause}
               />
               <IconButton
-                label={mode === "break" ? "End break" : "End session"}
+                label={`End ${noun}`}
                 icon={<Icon name="stop" />}
                 shortcut="⌘."
                 onClick={onEnd}
               />
             </>
           )}
-          {secondaryActions?.slice(0, 2).map((action, index) => (
+          {actions.map((action, index) => (
             <Button
               key={action.id}
-              variant={index === 0 ? "quiet" : "ghost"}
+              variant={index === 0 ? (offer ? "primary" : "quiet") : "ghost"}
+              size={offer && index === 0 ? "lg" : undefined}
               aria-label={action.name}
               onClick={action.onSelect}
               className="shrink-0"

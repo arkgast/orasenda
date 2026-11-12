@@ -61,6 +61,28 @@ const ACTION_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
     },
   ],
   [
+    "break-warning",
+    {
+      mode: "warning",
+      phase: "break",
+      remaining: "01:48",
+      remainingLabel: "1 minute 48 seconds",
+      progress: 0.9,
+      secondaryActions: [{ id: "skip", label: "Skip break", onSelect: noop }],
+    },
+  ],
+  [
+    "break-paused",
+    {
+      mode: "paused",
+      phase: "break",
+      remaining: "03:10",
+      remainingLabel: "3 minutes 10 seconds",
+      progress: 0.4,
+      secondaryActions: [{ id: "skip", label: "Skip break", onSelect: noop }],
+    },
+  ],
+  [
     "take-break",
     { mode: "focus", secondaryActions: [{ id: "break", label: "Take a break", onSelect: noop }] },
   ],
@@ -68,6 +90,7 @@ const ACTION_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
     "keep-going",
     {
       mode: "idle",
+      offer: true,
       summary: <p className="m-0 text-body-sm">Steady Focus · ends 15:20</p>,
       secondaryActions: [
         { id: "keep", label: "Keep going", name: "Keep going with Steady Focus", onSelect: noop },

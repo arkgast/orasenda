@@ -16,6 +16,8 @@ const STATES = [
   "deep",
   "break",
   "skip-break",
+  "break-warning",
+  "break-paused",
   "keep-going",
 ] as const;
 const SIZES = [
@@ -134,7 +136,7 @@ test("floating_timer_no_motion_when_reduced", async ({ page }, info) => {
 test("floating_timer_actions_fit_280x56", async ({ page }) => {
   await openSpecimen(page, "FloatingTimer");
   for (const wall of WALLPAPERS)
-    for (const state of ["skip-break", "keep-going"]) {
+    for (const state of ["skip-break", "break-warning", "break-paused", "keep-going"]) {
       const f = frame(page, wall, state, 280, 56);
       const body = f.locator("[data-slot=floating-timer]");
       const box = await body.boundingBox();
@@ -157,6 +159,11 @@ test("floating_timer_actions_fit_280x56", async ({ page }) => {
   const brk = frame(page, "light", "skip-break", 280, 56);
   await expect(brk.getByRole("button", { name: "Skip break" })).toBeVisible();
   await expect(brk.getByRole("button", { name: "Pause session" })).toHaveCount(0);
+  const warn = frame(page, "light", "break-warning", 280, 56);
+  await expect(warn.getByRole("button", { name: "Skip break" })).toBeVisible();
+  const paused = frame(page, "light", "break-paused", 280, 56);
+  await expect(paused.getByRole("button", { name: "Resume break" })).toBeVisible();
+  await expect(paused.getByRole("button", { name: "Skip break" })).toHaveCount(0);
   const keep = frame(page, "light", "keep-going", 280, 56);
   await expect(keep.getByRole("button", { name: "Keep going with Steady Focus" })).toBeVisible();
   await expect(keep.getByRole("button", { name: "Start focus" })).toHaveCount(0);

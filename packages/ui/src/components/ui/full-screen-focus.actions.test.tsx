@@ -43,6 +43,7 @@ test("full_screen_focus_two_actions_for_offer", () => {
     <FullScreenFocus
       {...base}
       mode="idle"
+      offer
       secondaryActions={[
         { id: "keep", label: "Keep going", name: "Keep going with Steady Focus", onSelect: keep },
         { id: "stop", label: "Stop here", onSelect: stop },
@@ -58,13 +59,43 @@ test("full_screen_focus_two_actions_for_offer", () => {
   );
 });
 
-test("full_screen_focus_no_actions_by_default_and_end_break_label", () => {
-  const view = render(<FullScreenFocus {...base} />);
+test("full_screen_focus_offer_first_action_is_the_primary", () => {
+  const actions = [
+    { id: "keep", label: "Keep going", onSelect: () => {} },
+    { id: "stop", label: "Stop here", onSelect: () => {} },
+  ];
+  const view = render(<FullScreenFocus {...base} mode="idle" offer secondaryActions={actions} />);
+  expect(screen.getByRole("button", { name: "Keep going" }).getAttribute("data-variant")).toBe(
+    "primary",
+  );
+  expect(screen.queryByRole("button", { name: "Start focus" })).toBeNull();
+  // Without `offer`, idle keeps Start and the actions stay quiet then ghost.
+  view.rerender(<FullScreenFocus {...base} mode="idle" secondaryActions={actions} />);
+  expect(screen.getByRole("button", { name: "Start focus" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Keep going" }).getAttribute("data-variant")).toBe(
+    "quiet",
+  );
+});
+
+test("full_screen_focus_no_actions_by_default", () => {
+  render(<FullScreenFocus {...base} />);
   expect(screen.getByRole("button", { name: "End session" })).toBeTruthy();
   expect(
     document.querySelectorAll("[data-slot=full-screen-focus-controls] [data-slot=button]"),
   ).toHaveLength(0);
-  view.rerender(<FullScreenFocus {...base} mode="break" />);
+});
+
+test("full_screen_focus_end_break_label", () => {
+  const view = render(<FullScreenFocus {...base} mode="break" />);
   expect(screen.getByRole("button", { name: "End break" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Pause break" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "End session" })).toBeNull();
+  // A break's last 2:00 and a paused break are told by `phase`, not by `mode`.
+  view.rerender(<FullScreenFocus {...base} mode="warning" phase="break" />);
+  expect(screen.getByRole("button", { name: "End break" })).toBeTruthy();
+  view.rerender(<FullScreenFocus {...base} mode="paused" phase="break" />);
+  expect(screen.getByRole("button", { name: "End break" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Resume break" })).toBeTruthy();
+  view.rerender(<FullScreenFocus {...base} mode="warning" />);
+  expect(screen.getByRole("button", { name: "End session" })).toBeTruthy();
 });
