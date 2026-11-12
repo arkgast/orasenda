@@ -1,6 +1,6 @@
 # Hotkeys and capture (P1 sub-project F) — Spec
 
-- Status: draft
+- Status: approved (owner, 2026-11-12)
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related:
@@ -284,4 +284,14 @@ It only writes. Keeping its capability to four commands follows ADR-016's "only 
 None.
 
 ## Implementation status
-- [ ] Plan: `docs/plans/2026-11-12-hotkeys-and-capture.md`
+- Plan: [docs/plans/2026-11-12-hotkeys-and-capture.md](../plans/2026-11-12-hotkeys-and-capture.md)
+- [ ] F1 (#386)
+- [ ] F2 (#387)
+- [ ] F3 (#389)
+- [ ] F4 (#388)
+- [ ] F5 (#390)
+- [ ] F6 (#392)
+- [ ] F7 (#393)
+- [ ] F8 (#391)
+- [ ] F9 (#394)
+- [ ] F10 (#395)
