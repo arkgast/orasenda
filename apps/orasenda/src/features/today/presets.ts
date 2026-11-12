@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { PresetEntry, Settings } from "../../ipc/bindings";
+import type { BreakKind, PresetEntry, Settings } from "../../ipc/bindings";
 import { commands, events } from "../../ipc/bindings";
 import { subscribe } from "../../ipc/subscribe";
 
@@ -138,6 +138,8 @@ export type SummaryInput = {
   finish: string | null;
   /** A strip layout: the visible text leaves the minutes out. */
   strip: boolean;
+  /** Which break is running; `null` outside a break. */
+  breakKind?: BreakKind | null;
 };
 
 export type SummaryText = { visible: string; short: string; name: string; tooltip: string };
@@ -145,14 +147,22 @@ export type SummaryText = { visible: string; short: string; name: string; toolti
 /** The summary's text in every form (spec C, "Top row"). */
 export function summaryText(input: SummaryInput): SummaryText {
   const { state, name, minutes, finish } = input;
-  const mins = minutes === undefined ? null : `${minutes} min`;
+  // In a break the summary names the break, not the focus's minutes.
+  const breakWord = input.breakKind ? (input.breakKind === "long" ? "long break" : "break") : null;
+  const mins = minutes === undefined || breakWord ? null : `${minutes} min`;
   const ends = finish ? `ends ${finish}` : null;
   const showMins = state === "paused" || (state === "idle" && !input.strip);
   const showEnds = state !== "paused";
-  const rest = [showMins ? mins : null, showEnds ? ends : null].filter(Boolean) as string[];
-  const words = minutes === undefined ? null : `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  const rest = [breakWord, showMins ? mins : null, showEnds ? ends : null].filter(
+    Boolean,
+  ) as string[];
+  const words =
+    minutes === undefined || breakWord
+      ? null
+      : `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
   const spoken = [
     `Preset ${name}`,
+    breakWord,
     state === "running" ? null : words,
     state === "paused" ? "paused" : null,
     state === "running" ? null : ends,

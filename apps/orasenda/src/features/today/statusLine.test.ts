@@ -22,7 +22,9 @@ test("status_line_priority_start_error_over_milestone", () => {
   expect(line).toEqual({
     text: "Focus didn't start. Orasenda's timer isn't responding.",
     tone: "attention",
-    action: "tryAgain",
+    actions: [
+      { id: "tryAgain", label: "Try again", name: "Try again starting focus", variant: "quiet" },
+    ],
   });
 });
 
@@ -30,6 +32,7 @@ test("status_line_control_error_has_no_action", () => {
   expect(statusLine({ ...NONE, controlError: true, notice: ENDED })).toEqual({
     text: "Orasenda's timer isn't responding.",
     tone: "attention",
+    actions: [],
   });
 });
 
@@ -37,17 +40,23 @@ test("status_line_timer_unavailable_has_no_try_again", () => {
   expect(statusLine({ ...NONE, timerUnavailable: true })).toEqual({
     text: "Timer unavailable. Restart Orasenda to try again.",
     tone: "attention",
+    actions: [],
   });
 });
 
 test("status_line_milestone_is_neutral", () => {
-  expect(statusLine({ ...NONE, notice: ENDED })).toEqual({ text: ENDED, tone: "neutral" });
+  expect(statusLine({ ...NONE, notice: ENDED })).toEqual({
+    text: ENDED,
+    tone: "neutral",
+    actions: [],
+  });
 });
 
 test("status_line_store_alone_is_attention", () => {
   expect(statusLine({ ...NONE, store: "unavailable" })).toEqual({
     text: "Orasenda can't save sessions right now.",
     tone: "attention",
+    actions: [],
   });
   expect(statusLine({ ...NONE, store: "newer" })?.text).toBe(
     "This data was saved by a newer Orasenda.",
@@ -59,6 +68,7 @@ test("status_line_joins_store_within_65", () => {
   expect(line).toEqual({
     text: "Session ended. Orasenda can't save sessions right now.",
     tone: "neutral",
+    actions: [],
   });
   expect(line?.text.length).toBeLessThanOrEqual(65);
 });
@@ -77,7 +87,7 @@ test("status_line_joins_at_exactly_65_and_not_at_66", () => {
 test("status_line_store_alone_when_joined_too_long", () => {
   // The milestone is rank 2 and the store line rank 3: the higher one shows alone.
   const line = statusLine({ ...NONE, notice: RECOVERED, store: "unavailable" });
-  expect(line).toEqual({ text: RECOVERED, tone: "neutral" });
+  expect(line).toEqual({ text: RECOVERED, tone: "neutral", actions: [] });
 });
 
 test("status_line_races_show_nothing", () => {

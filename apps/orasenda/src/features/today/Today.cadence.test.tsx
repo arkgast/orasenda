@@ -50,7 +50,9 @@ test("warning_row_extends_and_the_auto_step_row_takes_a_break", async () => {
 
   await emitTimer(AUTO);
   expect(statusNodes()[0]).toHaveTextContent("Still going · ends 15:40");
-  expect(screen.getByRole("button", { name: "Take a break now" })).toHaveTextContent("Take a break");
+  expect(screen.getByRole("button", { name: "Take a break now" })).toHaveTextContent(
+    "Take a break",
+  );
 });
 
 test("keep_going_offer_starts_the_saved_preset_and_stop_here_dismisses", async () => {
@@ -130,7 +132,7 @@ test("cap_notice_survives_the_break_start_and_names_the_hours", async () => {
   await emitTimer({ ...BREAK, sessionId: "b1" });
 
   expect(statusNodes()[0]).toHaveTextContent("You've focused 4 hours today. A good place to stop.");
-  expect(screen.getByRole("button", { name: "Skip break" })).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Skip break" })).toHaveLength(2);
 });
 
 test("rest_line_shows_the_cap_line_while_idle", async () => {

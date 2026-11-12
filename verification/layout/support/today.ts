@@ -30,12 +30,43 @@ export const STATES = [
   { scenario: "settingsUnavailable", primary: /Start focus/ },
   { scenario: "deepWorkChecked", primary: /Start focus/ },
   { scenario: "pauseError", primary: /Pause session/ },
+  // Session cadence: the rows and states Today adds (spec E, "Status row").
+  { scenario: "warning", primary: /Pause session/ },
+  { scenario: "warningAuto", primary: /Pause session/ },
+  { scenario: "autoStep", primary: /Pause session/ },
+  { scenario: "breakShort", primary: /Pause break/ },
+  { scenario: "breakLong", primary: /Pause break/ },
+  { scenario: "breakPaused", primary: /Resume break/ },
+  { scenario: "breakCap", primary: /Pause break/ },
+  { scenario: "keepGoing", primary: /Start focus/ },
+  { scenario: "breakOver", primary: /Start focus/ },
+  { scenario: "breakEnded", primary: /Start focus/ },
+  { scenario: "capLine", primary: /Start focus/ },
+  { scenario: "intentSet", primary: /Pause session/ },
+  { scenario: "intentPaused", primary: /Resume session/ },
+  { scenario: "intentOpen", primary: /Pause session/ },
 ] as const;
+
+/** Rows with a second action: at a narrow width the line may take a second line, so the row may grow. */
+export const TWO_ACTIONS = new Set([
+  "breakShort",
+  "breakLong",
+  "breakPaused",
+  "breakCap",
+  "keepGoing",
+]);
+
+/** The harness scenario behind a state: `intentOpen` is a running session whose field the test opens. */
+export const scenarioOf = (state: string): string => (state === "intentOpen" ? "running" : state);
 
 /** Scenarios whose line shows only after an action (the harness has no click in `openApp`). */
 export async function provoke(page: Page, scenario: string): Promise<void> {
   if (scenario === "startError") await page.getByRole("button", { name: "Start focus" }).click();
   if (scenario === "pauseError") await page.getByRole("button", { name: "Pause session" }).click();
+  if (scenario === "intentOpen") {
+    await page.getByRole("button", { name: "What will be done?" }).click();
+    await page.getByRole("textbox", { name: "What will be done?" }).waitFor();
+  }
   if (scenario === "starting") {
     await page.getByRole("button", { name: "Start focus" }).click();
     await page.getByRole("button", { name: "Starting…" }).waitFor();
@@ -53,6 +84,7 @@ export async function expectTodayFits(
   page: Page,
   size: { width: number; height: number; layout?: string },
   primary: RegExp,
+  grows = false,
 ): Promise<void> {
   const m = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -70,15 +102,25 @@ export async function expectTodayFits(
   expect(b.x + b.width, "primary right").toBeLessThanOrEqual(size.width);
   expect(b.y + b.height, "primary bottom").toBeLessThanOrEqual(size.height);
 
-  const row = await page.locator('[data-slot="inline-notice"]').boundingBox();
+  // The open intent field replaces the row; its input is a 44px target (checked below).
+  const rowBox = page.locator('[data-slot="inline-notice"]');
+  const row = (await rowBox.count()) > 0 ? await rowBox.first().boundingBox() : null;
   // A strip's status is a column beside the time, where a long line may take more height.
-  if (size.layout === "strip") expect(row?.height).toBeGreaterThanOrEqual(44);
-  else expect(row?.height, "the status row is 44px").toBe(44);
+  if (row && (size.layout === "strip" || grows)) expect(row.height).toBeGreaterThanOrEqual(44);
+  else if (row) expect(row.height, "the status row is 44px").toBe(44);
 
   expect(await smallTargets(page.locator("body")), "targets are 44px").toEqual([]);
   // The visually hidden h1 is a 1px box on purpose.
+  // The open intent field lies over the stacked strip's time on purpose (today.css).
+  const overlay =
+    size.layout === "stackedStrip" &&
+    (await page.locator('[data-slot="intent-field"]').count()) > 0;
   const spill = (await overflows(page.locator(".today"))).filter(
-    (line) => !line.includes("sr-only"),
+    // The task line is clamped to two lines on purpose (timer-ring and timer-strip READMEs).
+    (line) =>
+      !line.includes("sr-only") &&
+      !line.includes("line-clamp-2") &&
+      !(overlay && line.includes("today-status")),
   );
   expect(spill, "nothing overflows").toEqual([]);
 }

@@ -1,6 +1,6 @@
 import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
-import type { Settings } from "../../ipc/bindings";
+import type { BreakKind, Settings } from "../../ipc/bindings";
 import {
   presetChoices,
   presetMeta,
@@ -21,6 +21,7 @@ type Props = {
     presetId: string | null;
     presetName: string | null;
     quick: boolean;
+    breakKind?: BreakKind | null;
     breakMin: number | null;
     plannedMin: number | null;
     finish: string | null;
@@ -80,6 +81,7 @@ export function PresetSummary({
     minutes,
     finish: idle ? idleFinish : (session?.finish ?? null),
     strip,
+    breakKind: idle ? null : (session?.breakKind ?? null),
   });
 
   const checked = idle ? selected?.id : (session?.presetId ?? null);
@@ -107,7 +109,7 @@ export function PresetSummary({
   ];
   const heading = idle
     ? "Preset for the next session"
-    : session?.quick || session?.breakMin == null || minutes === undefined
+    : session?.quick || session?.breakKind || session?.breakMin == null || minutes === undefined
       ? name
       : `${name} · ${minutes} / ${session.breakMin}`;
 

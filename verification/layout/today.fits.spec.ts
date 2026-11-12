@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
-import { expectTodayFits, provoke, SIZES, STATES } from "./support/today.ts";
+import {
+  expectTodayFits,
+  provoke,
+  SIZES,
+  STATES,
+  scenarioOf,
+  TWO_ACTIONS,
+} from "./support/today.ts";
 
 // #119 and #120: at the default window, Start stays fully visible after an end and with Deep Work saved.
 for (const scenario of ["idle", "ended", "deepWorkChecked"]) {
@@ -27,10 +34,10 @@ test("today_has_no_radios_or_fields", async ({ page }) => {
 for (const size of SIZES) {
   for (const { scenario, primary } of STATES) {
     test(`today_fits_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
-      await openApp(page, scenario, size);
+      await openApp(page, scenarioOf(scenario), size);
       await provoke(page, scenario);
       await expect(page.locator(".today")).toHaveAttribute("data-layout", size.layout);
-      await expectTodayFits(page, size, primary);
+      await expectTodayFits(page, size, primary, TWO_ACTIONS.has(scenario));
     });
   }
 
@@ -45,3 +52,22 @@ for (const size of SIZES) {
     if (size.width >= 1280 && size.height >= 800) expect(ring?.width).toBe(560);
   });
 }
+
+// Session cadence: the break row names its two actions, and the stacked strip drops the suggestion.
+test("today_break_row_actions_and_stacked_strip", async ({ page }) => {
+  await openApp(page, "breakShort", { width: 900, height: 600 });
+  await expect(
+    page.getByRole("button", { name: "Back to focus for 10 more minutes" }),
+  ).toBeVisible();
+  await expect(page.getByText("Optional: look at something far away.")).toBeVisible();
+  await openApp(page, "breakShort", { width: 360, height: 240 });
+  await expect(page.getByText("Optional: look at something far away.")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Skip break" }).first()).toBeVisible();
+});
+
+test("today_intent_shows_in_the_ring_and_not_the_stacked_strip", async ({ page }) => {
+  await openApp(page, "intentSet", { width: 900, height: 600 });
+  await expect(page.locator('[data-slot="timer-ring-task"]')).toBeVisible();
+  await openApp(page, "intentSet", { width: 360, height: 240 });
+  await expect(page.locator('[data-slot="timer-strip-task"]')).toHaveCount(0);
+});

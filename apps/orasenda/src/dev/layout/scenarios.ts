@@ -99,6 +99,44 @@ const DEEP_RUNNING: TimerView_Serialize = {
   finish: "16:50",
 };
 
+// Session cadence (E): the states Today adds. Long texts are the longest the spec allows.
+const WARNING: TimerView_Serialize = {
+  ...RUNNING,
+  mode: "warning",
+  remainingMs: 119_000,
+  remaining: "1:59",
+  remainingLabel: "1 minute 59 seconds",
+  progress: 0.92,
+  canExtend: true,
+  extensions: 0,
+};
+const AUTO_STEP: TimerView_Serialize = { ...RUNNING, checkIn: "Still going · ends 15:40" };
+const BREAK: TimerView_Serialize = {
+  ...RUNNING,
+  phase: "break",
+  mode: "break",
+  remainingMs: 299_000,
+  remaining: "4:59",
+  remainingLabel: "4 minutes 59 seconds",
+  progress: 0.01,
+  breakKind: "short",
+  finish: "14:30",
+  canExtend: true,
+  suggestion: { text: "Look at something far away.", label: "optional" },
+};
+const LONG_BREAK: TimerView_Serialize = {
+  ...BREAK,
+  breakKind: "long",
+  suggestion: { text: "Sit quietly and let your mind wander.", label: "experimental" },
+};
+const INTENT = "Write the first draft of the chapter 3 outline and send it to Sam for a read";
+
+const ended = (phase: "focus" | "break", endReason: "completed" | "stopped") => ({
+  ...ENDED,
+  phase,
+  endReason,
+});
+
 const DISPLAY_NAMES = ["Built-in Retina Display", "DELL U2720Q", "LG UltraFine"];
 
 /** `count` connected displays (1 to 3), the main window's first: `layout.html?displays=<count>`. */
@@ -124,7 +162,7 @@ const ENDED: MilestoneEvent_Serialize = {
   kind: "ended",
   endReason: "completed",
   sessionId: "s1",
-  phase: "break",
+  phase: "focus",
   quick: false,
 };
 
@@ -147,6 +185,10 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     timer_pause: () => PAUSED,
     timer_resume: () => RUNNING,
     timer_stop: () => IDLE,
+    timer_extend: () => RUNNING,
+    timer_set_intent: () => RUNNING,
+    timer_dismiss_offer: () => IDLE,
+    timer_take_break: () => BREAK,
     presets_list: () => PRESETS,
     navigate_take: () => null,
     notifications_request: () => view.notifications,
@@ -185,6 +227,26 @@ const SCENARIOS: Record<string, Handler> = {
   // Pause answers an error, so the status row shows its line while the session still runs.
   pauseError: backend({ view: RUNNING, replies: { timer_pause: rejects("store", "no timer") } }),
   deepWorkChecked: backend({ settings: { ...SETTINGS, presetId: DEEP } }),
+  // Session cadence: Today's new rows and states.
+  warning: backend({ view: WARNING }),
+  warningAuto: backend({ view: { ...WARNING, canExtend: false, checkIn: AUTO_STEP.checkIn } }),
+  autoStep: backend({ view: AUTO_STEP }),
+  breakShort: backend({ view: BREAK }),
+  breakLong: backend({ view: LONG_BREAK }),
+  breakPaused: backend({ view: { ...BREAK, state: "paused", mode: "paused" } }),
+  breakCap: backend({
+    view: BREAK,
+    pending: [
+      { ...ended("focus", "completed"), kind: "capReached" },
+      { ...ended("break", "completed"), kind: "breakStarted" },
+    ],
+  }),
+  keepGoing: backend({ view: { ...IDLE, offer: "keepGoing" } }),
+  breakOver: backend({ pending: [ended("break", "completed")] }),
+  breakEnded: backend({ pending: [ended("break", "stopped")] }),
+  capLine: backend({ view: { ...IDLE, capLine: "4 hours of focus today." } }),
+  intentSet: backend({ view: { ...RUNNING, intent: INTENT } }),
+  intentPaused: backend({ view: { ...PAUSED, intent: "Reply to Sam" } }),
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: twelve presets, so Add preset is at its limit.

@@ -7,7 +7,17 @@ const SIZES = [
   { width: 900, height: 600 },
   { width: 1440, height: 900 },
 ];
-const SCENARIOS = ["idle", "running", "paused", "ended", "startError"];
+const SCENARIOS = [
+  "idle",
+  "running",
+  "paused",
+  "ended",
+  "startError",
+  "warning",
+  "breakShort",
+  "keepGoing",
+  "intentSet",
+];
 
 // The reduced-motion project only: under it nothing on Today animates or transitions.
 for (const size of SIZES) {

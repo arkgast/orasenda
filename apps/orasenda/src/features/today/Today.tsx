@@ -1,11 +1,10 @@
-import { InlineNotice, type NavPage } from "@orasenda/ui";
-import { useEffect, useState } from "react";
+import type { NavPage } from "@orasenda/ui";
+import { useEffect, useRef, useState } from "react";
 import { PagesButton } from "../../app/PagesButton";
 import { useShortcuts } from "../../app/useShortcuts";
 import { useWindowLayout } from "../../app/useWindowLayout";
 import type {
   MilestoneEvent_Serialize,
-  MilestoneKind,
   Settings,
   SettingsTarget,
   StartRequest,
@@ -17,21 +16,17 @@ import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useTimer } from "../timer/useTimer";
 import { Controls } from "./Controls";
+import { type IntentDone, IntentField } from "./IntentField";
+import { onIntentFieldRequest } from "./intentEvents";
+import { type Notice, noticeAfter } from "./notices";
 import { PresetSummary } from "./PresetSummary";
-import { commandFailure, statusLine } from "./statusLine";
+import { selectedPreset, usePresets } from "./presets";
+import { StatusRow } from "./StatusRow";
+import { commandFailure, type StatusActionId, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
 import { useControlFocus } from "./useControlFocus";
 import { useNextMinutes } from "./useNextMinutes";
 import "./today.css";
-
-/** One-shot notices; the other milestones (`started`, `paused`, `resumed`) dismiss them. */
-const MILESTONE_NOTICES: Partial<Record<MilestoneKind, string>> = {
-  ended: "Session ended.",
-  recovered: "Your last session ended while Orasenda was closed.",
-};
-
-/** A one-shot notice and the session it is about (`null` when the event named none). */
-type Notice = { text: string; sessionId: string | null };
 
 type CommandResult =
   | { status: "ok"; data: TimerView_Serialize }
@@ -57,8 +52,8 @@ export function Today({ onNavigate }: Props) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const timer = useTimer({
     onMilestone: (event: MilestoneEvent_Serialize) => {
-      const text = MILESTONE_NOTICES[event.kind];
-      setNotice(text ? { text, sessionId: event.sessionId } : null);
+      const hours = latest()?.deepCapHours ?? 4;
+      setNotice((previous) => noticeAfter(previous, event, hours));
     },
   });
   // `settings` is only the saved preset here; the save chain lives in ../settingsQueue.
@@ -93,7 +88,7 @@ export function Today({ onNavigate }: Props) {
   // A view of another session is a transition this page may not have seen as a milestone (it
   // started elsewhere): it ends the one-shot notice for good. The idle view after an end
   // (`sessionId: null`) keeps it.
-  if (notice && view?.sessionId != null && view.sessionId !== notice.sessionId) {
+  if (notice && !notice.persist && view?.sessionId != null && view.sessionId !== notice.sessionId) {
     setNotice(null);
   }
 
@@ -105,15 +100,41 @@ export function Today({ onNavigate }: Props) {
     setControlError(false);
   }
 
+  const presets = usePresets();
+  const inBreak = view !== null && view.state !== "idle" && view.phase === "break";
   const line = statusLine({
     startError: failedStart !== null,
     controlError,
     timerUnavailable: timer.status === "error",
     notice: notice?.text ?? null,
     store: view?.store ?? "ok",
+    cadence: view,
+    stacked: layout.timer === "stackedStrip",
+    keepGoingPreset: selectedPreset(presets, settings)?.name ?? null,
   });
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
+
+  // The intent field: only the person opens it, and only while a focus runs or is paused.
+  const canEditIntent = view !== null && view.state !== "idle" && view.phase === "focus";
+  const [editingIntent, setEditingIntent] = useState(false);
+  if (editingIntent && !canEditIntent) setEditingIntent(false);
+  const canEditRef = useRef(canEditIntent);
+  canEditRef.current = canEditIntent;
+  useEffect(
+    () =>
+      onIntentFieldRequest(() => {
+        if (canEditRef.current) setEditingIntent(true);
+      }),
+    [],
+  );
+  const statusBox = useRef<HTMLDivElement>(null);
+  const refocusStatus = useRef(false);
+  useEffect(() => {
+    if (editingIntent || !refocusStatus.current) return;
+    refocusStatus.current = false;
+    statusBox.current?.querySelector("button")?.focus();
+  }, [editingIntent]);
 
   const start = (request: StartRequest) => {
     setStarting(true);
@@ -175,6 +196,38 @@ export function Today({ onNavigate }: Props) {
       ? control("timer_resume", commands.timerResume)
       : control("timer_pause", commands.timerPause);
 
+  const intentDone = ({ save, refocus }: IntentDone) => {
+    refocusStatus.current = refocus;
+    setEditingIntent(false);
+    if (save !== undefined) control("timer_set_intent", () => commands.timerSetIntent(save));
+  };
+
+  const onAction = (id: StatusActionId) => {
+    switch (id) {
+      case "tryAgain":
+        if (failedStart) start(failedStart);
+        break;
+      case "extend":
+        control("timer_extend", commands.timerExtend);
+        break;
+      case "takeBreak":
+        control("timer_take_break", commands.timerTakeBreak);
+        break;
+      case "skipBreak":
+        end();
+        break;
+      case "keepGoing":
+        startSaved();
+        break;
+      case "stopHere":
+        control("timer_dismiss_offer", commands.timerDismissOffer);
+        break;
+      case "intent":
+        setEditingIntent(true);
+        break;
+    }
+  };
+
   const canStart = state === "idle" && !starting;
   const active = state === "running" || state === "paused";
   useShortcuts([
@@ -204,6 +257,7 @@ export function Today({ onNavigate }: Props) {
                     presetId: view.presetId,
                     presetName: view.presetName,
                     quick: view.quick,
+                    breakKind: view.state === "idle" ? null : view.breakKind,
                     breakMin: view.breakMin,
                     plannedMin: view.plannedMin,
                     finish: view.finish,
@@ -221,18 +275,12 @@ export function Today({ onNavigate }: Props) {
       </div>
 
       {/* One live region, always mounted; a new text is a new node, so each line is announced once. */}
-      <div className="today-status">
-        <InlineNotice
-          key={line?.text ?? ""}
-          variant="row"
-          tone={line?.tone ?? "neutral"}
-          actionVariant="quiet"
-          actionLabel={line?.action ? "Try again" : undefined}
-          actionName="Try again starting focus"
-          onAction={line?.action && failedStart ? () => start(failedStart) : undefined}
-        >
-          {line?.text}
-        </InlineNotice>
+      <div className="today-status" ref={statusBox}>
+        {editingIntent ? (
+          <IntentField value={view?.intent ?? null} onDone={intentDone} />
+        ) : (
+          <StatusRow line={line} onAction={onAction} />
+        )}
       </div>
 
       <div className="today-time">
@@ -248,6 +296,7 @@ export function Today({ onNavigate }: Props) {
         {view || timer.status === "error" ? (
           <Controls
             state={state ?? "idle"}
+            inBreak={inBreak}
             compactStart={layout.timer !== "strip"}
             starting={starting}
             unavailable={timer.status === "error"}

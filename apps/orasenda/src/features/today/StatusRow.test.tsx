@@ -40,6 +40,8 @@ test("status_row_empty_line_keeps_the_live_region_mounted", () => {
 test("status_row_a_new_text_is_a_new_live_node", () => {
   const { rerender } = render(<StatusRow line={BREAK_LINE} onAction={() => {}} />);
   const node = screen.getByRole("status");
-  rerender(<StatusRow line={{ ...BREAK_LINE, text: "Walk to another room." }} onAction={() => {}} />);
+  rerender(
+    <StatusRow line={{ ...BREAK_LINE, text: "Walk to another room." }} onAction={() => {}} />,
+  );
   expect(screen.getByRole("status")).not.toBe(node);
 });

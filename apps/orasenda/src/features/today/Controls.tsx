@@ -3,6 +3,8 @@ import type { ComponentProps, ReactElement } from "react";
 
 type Props = {
   state: "idle" | "running" | "paused";
+  /** A break replaces End session with Skip break and names Pause for what it pauses. */
+  inBreak?: boolean;
   /** Below 400px of width Start reads "Start": the strip's narrow column has no width to switch on. */
   compactStart: boolean;
   /** A start is in flight. */
@@ -19,10 +21,12 @@ type Props = {
 
 /**
  * Idle: Start focus and Just 2 minutes. Running or paused: the round Pause or Resume button (one
- * element, so focus stays on it when it flips) and End session, `space-6` apart.
+ * element, so focus stays on it when it flips, and when a break starts) and End session, or Skip
+ * break in a break (same command, same ⌘.), `space-6` apart.
  */
 export function Controls({
   state,
+  inBreak = false,
   compactStart,
   starting,
   unavailable,
@@ -33,6 +37,7 @@ export function Controls({
   boxProps,
 }: Props): ReactElement {
   const paused = state === "paused";
+  const what = inBreak ? "break" : "session";
   return (
     <div {...boxProps} className="flex items-center justify-center gap-6">
       {state === "idle" ? (
@@ -49,13 +54,13 @@ export function Controls({
           <IconButton
             id="today-pause"
             size="round"
-            label={paused ? "Resume session" : "Pause session"}
+            label={paused ? `Resume ${what}` : `Pause ${what}`}
             icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
             onClick={onPauseResume}
           />
           <IconButton
             size="md"
-            label="End session"
+            label={inBreak ? "Skip break" : "End session"}
             icon={<Icon name="stop" />}
             shortcut="⌘."
             onClick={onEnd}

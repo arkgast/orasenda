@@ -1,10 +1,5 @@
 import { expect, test } from "vitest";
-import {
-  type CadenceInput,
-  type StatusAction,
-  type StatusInput,
-  statusLine,
-} from "./statusLine";
+import { type CadenceInput, type StatusAction, type StatusInput, statusLine } from "./statusLine";
 
 const NONE: StatusInput = {
   startError: false,
@@ -54,7 +49,9 @@ test("status_line_rank_for_every_row", () => {
   expect(line({ ...WARNING, checkIn: "Still going · ends 15:40" })).toEqual({
     text: "Two minutes left. Finish the thought.",
     tone: "warning",
-    actions: [{ id: "takeBreak", label: "Take a break", name: "Take a break now", variant: "quiet" }],
+    actions: [
+      { id: "takeBreak", label: "Take a break", name: "Take a break now", variant: "quiet" },
+    ],
   });
   // The cap notice rides on the break's actions.
   const cap = "You've focused 4 hours today. A good place to stop.";
@@ -83,7 +80,9 @@ test("status_line_rank_for_every_row", () => {
   expect(line({ ...FOCUS, checkIn: "Still going · ends 15:40" }, { store: "newer" })).toEqual({
     text: "Still going · ends 15:40",
     tone: "neutral",
-    actions: [{ id: "takeBreak", label: "Take a break", name: "Take a break now", variant: "quiet" }],
+    actions: [
+      { id: "takeBreak", label: "Take a break", name: "Take a break now", variant: "quiet" },
+    ],
   });
   expect(line(IDLE, { notice: "Break over. Start when you're ready." })).toEqual({
     text: "Break over. Start when you're ready.",
@@ -126,7 +125,10 @@ test("status_line_keep_going_names_the_preset", () => {
 });
 
 test("status_line_break_labels_and_no_extend_at_the_cap", () => {
-  const experimental = { text: "Sit quietly and let your mind wander.", label: "experimental" as const };
+  const experimental = {
+    text: "Sit quietly and let your mind wander.",
+    label: "experimental" as const,
+  };
   expect(line({ ...BREAK, suggestion: experimental })?.text).toBe(
     "Experimental: sit quietly and let your mind wander.",
   );
