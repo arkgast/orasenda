@@ -35,6 +35,11 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
   /** The session ended: shows "Session ended." and idle, with Start and the summary back. */
   ended?: boolean;
   /**
+   * The host's one line for the status row (a failed command, an unreadable timer). It takes the place of
+   * "Session ended." while set, in the same live region.
+   */
+  status?: string;
+  /**
    * Zero to two quiet actions in the controls row, after End. Two only for the keep-going offer
    * ("Keep going", "Stop here"). Only the first two render; a third is dropped, so the host passes at most two.
    * Pause or Resume stays the only round primary.
@@ -122,6 +127,7 @@ export function FullScreenFocus({
   summary,
   singleKeys,
   ended,
+  status,
   secondaryActions,
   phase,
   offer: offerProp,
@@ -208,9 +214,9 @@ export function FullScreenFocus({
         <p
           role="status"
           data-slot="full-screen-focus-status"
-          className="m-0 shrink-0 text-body-sm text-ink"
+          className="m-0 w-full shrink-0 truncate text-center text-body-sm text-ink"
         >
-          {ended ? "Session ended." : <span aria-hidden="true">{" "}</span>}
+          {status ?? (ended ? "Session ended." : <span aria-hidden="true">{" "}</span>)}
         </p>
         <div
           data-slot="full-screen-focus-ring"

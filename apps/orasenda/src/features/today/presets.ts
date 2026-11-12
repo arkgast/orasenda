@@ -115,6 +115,22 @@ export function selectedPreset(
   return presets.find((entry) => entry.id === settings?.presetId) ?? presets[0];
 }
 
+export type PresetChoice = { presetId: string; label: string; meta: string; checked: boolean };
+
+/**
+ * The preset rows of the popover (Today and the Focus window): every live preset in order, the
+ * saved one checked (the first when the saved id is not in the list, as `selectedPreset`).
+ */
+export function presetChoices(settings: Settings, presets: PresetEntry[]): PresetChoice[] {
+  const saved = selectedPreset(presets, settings)?.id;
+  return presets.map((entry) => ({
+    presetId: entry.id,
+    label: presetName(entry),
+    meta: presetMeta(entry),
+    checked: entry.id === saved,
+  }));
+}
+
 export type SummaryInput = {
   state: "idle" | "running" | "paused";
   name: string;

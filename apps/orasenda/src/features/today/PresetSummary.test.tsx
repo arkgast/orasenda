@@ -17,6 +17,7 @@ import {
   SETTINGS,
   settle,
 } from "../../test/fixtures";
+import { PresetSummary } from "./PresetSummary";
 import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
 import { renderToday, savedSettings } from "./Today.support";
@@ -216,4 +217,29 @@ test("summary_presets_list_failure_shows_unavailable", async () => {
     "aria-disabled",
     "true",
   );
+});
+
+test("summary_focus_form_has_no_settings_row", async () => {
+  mockBackend();
+  const chosen: string[] = [];
+  render(
+    <PresetSummary
+      state="idle"
+      settings={SETTINGS}
+      settingsFailed={false}
+      session={null}
+      idleFinish="15:20"
+      strip={false}
+      onChoose={(id) => chosen.push(id)}
+    />,
+  );
+  await settle();
+  fireEvent.click(summary());
+  const menu = screen.getByRole("menu", { name: "Preset for the next session" });
+  expect(menu).toHaveAccessibleDescription("Choosing one applies it and closes.");
+  expect(within(menu).getAllByRole("menuitemradio")).toHaveLength(3);
+  expect(within(menu).queryByRole("menuitem")).toBeNull();
+  expect(within(menu).queryByText(/Settings/)).toBeNull();
+  fireEvent.click(within(menu).getByRole("menuitemradio", { name: /Gentle Start/ }));
+  expect(chosen).toEqual([GENTLE]);
 });

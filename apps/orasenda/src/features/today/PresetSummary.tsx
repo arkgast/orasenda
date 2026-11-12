@@ -1,7 +1,14 @@
 import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
 import type { Settings } from "../../ipc/bindings";
-import { presetMeta, selectedPreset, summaryText, usePresets, usePresetsFailed } from "./presets";
+import {
+  presetChoices,
+  presetMeta,
+  selectedPreset,
+  summaryText,
+  usePresets,
+  usePresetsFailed,
+} from "./presets";
 
 type Props = {
   state: "idle" | "running" | "paused";
@@ -22,7 +29,8 @@ type Props = {
   idleFinish: string | null;
   strip: boolean;
   onChoose(presetId: string): void;
-  onOpenSettings(): void;
+  /** Today's "Edit presets in Settings" row; without it (the Focus window) the menu has no such row. */
+  onOpenSettings?: () => void;
 };
 
 const SETTINGS_ID = "settings";
@@ -75,15 +83,27 @@ export function PresetSummary({
   });
 
   const checked = idle ? selected?.id : (session?.presetId ?? null);
+  // A session's snapshot may name a preset the library no longer has: then no radio is checked.
+  const rows =
+    settings && idle
+      ? presetChoices(settings, presets)
+      : presets.map((entry) => ({
+          presetId: entry.id,
+          label: entry.name,
+          meta: presetMeta(entry),
+          checked: entry.id === checked,
+        }));
   const items: PopoverMenuItem[] = [
-    ...presets.map((entry) => ({
-      id: entry.id,
-      label: entry.name,
-      meta: presetMeta(entry),
+    ...rows.map((row) => ({
+      id: row.presetId,
+      label: row.label,
+      meta: row.meta,
       kind: "radio" as const,
-      checked: entry.id === checked,
+      checked: row.checked,
     })),
-    { id: SETTINGS_ID, label: "Edit presets in Settings", meta: "⌘,", kind: "link" },
+    ...(onOpenSettings
+      ? [{ id: SETTINGS_ID, label: "Edit presets in Settings", meta: "⌘,", kind: "link" as const }]
+      : []),
   ];
   const heading = idle
     ? "Preset for the next session"
@@ -131,7 +151,7 @@ export function PresetSummary({
           items={items}
           readOnly={!idle}
           onSelect={(id) => {
-            if (id === SETTINGS_ID) onOpenSettings();
+            if (id === SETTINGS_ID) onOpenSettings?.();
             else onChoose(id);
           }}
           onClose={() => setOpen(false)}

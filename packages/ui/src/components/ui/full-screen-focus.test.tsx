@@ -266,3 +266,13 @@ test("full_screen_focus_task_whole_in_accessible_name_ring_and_strip", () => {
   act(() => fire(1280, 720));
   expect(screen.getByText(task, { selector: ".sr-only" })).toBeTruthy();
 });
+
+test("status_line_shows_the_hosts_text_in_the_same_live_region", () => {
+  const { rerender } = render(
+    <FullScreenFocus {...base} onExit={none} mode="focus" status="Nothing saved." />,
+  );
+  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.getByRole("status")).toHaveTextContent("Nothing saved.");
+  rerender(<FullScreenFocus {...base} onExit={none} mode="focus" />);
+  expect(screen.getByRole("status")).toHaveTextContent("");
+});

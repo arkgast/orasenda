@@ -240,3 +240,25 @@ test("full_screen_focus_break_actions_tab_after_end", async ({ page }) => {
     "primary",
   );
 });
+
+test("full_screen_focus_status_line_stays_one_row", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES) {
+    const f = frame(page, "status", w, h);
+    const line = f.locator("[data-slot=full-screen-focus-status]");
+    await expect(line, `${w}x${h}`).toContainText("can't reach the timer");
+    const box = await line.boundingBox();
+    expect(box?.height, `${w}x${h} one line`).toBeLessThanOrEqual(18.5);
+    const fb = await f.boundingBox();
+    expect(box && fb, `${w}x${h} boxes`).toBeTruthy();
+    expect(box!.x, `${w}x${h} left`).toBeGreaterThanOrEqual(fb!.x - 0.5);
+    expect(box!.x + box!.width, `${w}x${h} right`).toBeLessThanOrEqual(fb!.x + fb!.width + 0.5);
+    // The status paragraph's own ellipsis (scrollWidth > clientWidth) is expected; nothing else is.
+    const own = await line.evaluate(
+      (el) =>
+        `p.${el.className.split(" ")[0]} (${el.scrollWidth}x${el.scrollHeight} in ${el.clientWidth}x${el.clientHeight})`,
+    );
+    const over = (await overflows(f)).filter((l) => !l.includes("sr-only") && !l.includes(own));
+    expect(over, `${w}x${h}`).toEqual([]);
+  }
+});

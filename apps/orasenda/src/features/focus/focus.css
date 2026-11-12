@@ -1,0 +1,13 @@
+/* The Focus window: a borderless window the size of a display. The background fills all of it, the
+   content sits inside the visible-frame insets (the menu bar and the Dock stay drawn over the
+   window), and nothing scrolls. The insets come from useInsets as custom properties. */
+.app-focus-page {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  background: var(--surface);
+  padding-block-start: var(--focus-inset-top, 0);
+  padding-inline-end: var(--focus-inset-right, 0);
+  padding-block-end: var(--focus-inset-bottom, 0);
+  padding-inline-start: var(--focus-inset-left, 0);
+}
