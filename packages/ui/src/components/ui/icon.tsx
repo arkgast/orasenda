@@ -115,7 +115,7 @@ export function Icon({ name, size = "lg" }: IconProps): ReactElement {
       viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={size === "md" ? 15 / 7 : 1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

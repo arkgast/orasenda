@@ -63,3 +63,9 @@ test("icon_size_md_uses_the_md_token_and_default_is_lg", () => {
   expect(svgOf("alert", "md").classList.contains("size-icon-lg")).toBe(false);
   expect(svgOf("alert").classList.contains("size-icon-lg")).toBe(true);
 });
+
+test("icon_md_keeps_a_1_5_px_stroke", () => {
+  const { container } = render(<Icon name="alert" size="md" />);
+  const stroke = Number(container.querySelector("svg")?.getAttribute("stroke-width"));
+  expect(stroke * (14 / 20)).toBeCloseTo(1.5, 5);
+});

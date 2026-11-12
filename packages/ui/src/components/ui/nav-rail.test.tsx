@@ -68,7 +68,7 @@ test("nav_rail_tab_stop_follows_current_page", () => {
   expect(tabStops().map((b) => b.textContent)).toEqual(["Review"]);
 });
 
-test("nav_rail_arrows_move_and_return_navigates", () => {
+test("nav_rail_arrows_move_and_activation_navigates", () => {
   const onNavigate = vi.fn();
   render(<NavRail current="today" onNavigate={onNavigate} />);
   screen.getByRole("button", { name: "Today" }).focus();
