@@ -4,7 +4,6 @@ import { describeShortcut } from "../../lib/shortcuts";
 import { timerLayout } from "../../lib/timer-layout";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
-import { Dialog } from "./dialog";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Kbd } from "./kbd";
@@ -22,8 +21,8 @@ export interface SecondaryAction {
 }
 
 export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "stroke"> {
-  /** Fires only after the leave Dialog is confirmed. */
-  onExit: () => void;
+  /** Leaves full screen at once: the Leave button and Esc both call it, with no confirmation. */
+  onLeave: () => void;
   onPause?: () => void;
   onResume?: () => void;
   onEnd?: () => void;
@@ -56,6 +55,12 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
    * second is ghost, and Start is not drawn. Without it, idle always shows Start.
    */
   offer?: boolean;
+  /**
+   * The key hint under the controls. `visible` false fades it over `duration-slow` (at once under reduce
+   * motion) and hides it from readers, but its row keeps its height. Without `hint`, the row shows the
+   * static caption for the current keys.
+   */
+  hint?: { text: string; visible: boolean };
 }
 
 // Contract values from the README (the px of space-8, space-4 and the fixed tracks), as timer-layout.ts keeps the layout tokens: read here only to size the box for timerLayout.
@@ -106,10 +111,10 @@ function Caption({ keys, verb }: { keys: string; verb: string }): JSX.Element {
  * The Focus window: the time, one quiet way out, and the controls for the session. A page
  * component that fills its host (the host must have a definite height). It measures its own box with a
  * ResizeObserver and picks the ring or the strip from timerLayout there, never on a tick. The section takes
- * focus on mount so Escape works at once; `onExit` fires only after the Dialog is confirmed.
+ * focus on mount so Escape works at once; Esc and the Leave button call `onLeave` at once.
  */
 export function FullScreenFocus({
-  onExit,
+  onLeave,
   onPause,
   onResume,
   onEnd,
@@ -121,23 +126,17 @@ export function FullScreenFocus({
   secondaryActions,
   phase,
   offer: offerProp,
+  hint,
   ...ring
 }: FullScreenFocusProps): JSX.Element {
-  const [leaving, setLeaving] = useState(false);
   const [geometry, setGeometry] = useState<Geometry>({
     layout: "ring",
     roomy: true,
   });
   const root = useRef<HTMLElement>(null);
-  const wasLeaving = useRef(false);
   useEffect(() => {
     root.current?.focus();
   }, []);
-  // The Dialog unmounts on close, so hand focus back to the layout (Esc keeps working).
-  useEffect(() => {
-    if (wasLeaving.current && !leaving) root.current?.focus();
-    wasLeaving.current = leaving;
-  }, [leaving]);
   useEffect(() => {
     const el = root.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -154,12 +153,12 @@ export function FullScreenFocus({
   const paused = mode === "paused";
   const { layout, roomy } = geometry;
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Escape" || leaving) return;
+    if (event.key !== "Escape") return;
     // Esc inside the host's PopoverMenu closes only the menu.
     if ((event.target as Element).closest("[data-slot='popover-menu']")) return;
     event.preventDefault();
     event.stopPropagation();
-    setLeaving(true);
+    onLeave();
   };
   const isBreak = (phase ?? (mode === "break" ? "break" : "focus")) === "break";
   const noun = isBreak ? "break" : "session";
@@ -167,6 +166,8 @@ export function FullScreenFocus({
   // Start, "Keep going" and "Stop here" together would not fit the fixed track at the window minimum.
   const actions = secondaryActions?.slice(0, 2) ?? [];
   const offer = idle && offerProp === true && actions.length > 0;
+  const gapClass =
+    actions.length === 2 && !offer && !roomy ? "gap-1-5" : gapByActions[actions.length];
   const startKeys = singleKeys ? "Space Meta+Enter" : "Meta+Enter";
 
   return (
@@ -184,7 +185,7 @@ export function FullScreenFocus({
       <div
         className={cn(
           "flex size-full min-h-0 flex-col items-center",
-          roomy ? "gap-4 p-6" : "gap-1 p-2",
+          roomy ? "gap-4 px-6 pt-6 pb-0" : "gap-1 p-2",
         )}
       >
         <div className="relative flex h-hit-min w-full shrink-0 items-center justify-center">
@@ -194,7 +195,7 @@ export function FullScreenFocus({
               label="Leave full screen"
               icon={<Icon name="collapse" />}
               shortcut="Esc"
-              onClick={() => setLeaving(true)}
+              onClick={onLeave}
             />
           </div>
         </div>
@@ -207,7 +208,11 @@ export function FullScreenFocus({
         </p>
         <div
           data-slot="full-screen-focus-ring"
-          className="flex min-h-0 w-full flex-1 items-center justify-center"
+          className={cn(
+            "flex min-h-0 w-full items-center justify-center",
+            // Roomy: the ring stops at timer-full-size and the lower region takes the rest, so the controls stay centred below it.
+            roomy ? "max-h-timer-full-size shrink grow-0 basis-full" : "flex-1",
+          )}
         >
           {layout === "ring" ? (
             <TimerRing {...ring} mode={mode} size="fluid" />
@@ -222,86 +227,93 @@ export function FullScreenFocus({
           )}
         </div>
         <div
-          data-slot="full-screen-focus-controls"
+          data-slot="full-screen-focus-lower"
           className={cn(
-            "flex h-control-lg w-full shrink-0 items-center justify-center",
-            // Room for the host's actions without growing the fixed track: the gap tightens with each one.
-            // Two break actions beside Pause and End are 2px too wide for the specimen frame's 344px track at
-            // 360x240 (24px padding); the real window's 12px padding fits. A narrower gap, not padding, takes it up.
-            actions.length === 2 && !offer && !roomy ? "gap-1-5" : gapByActions[actions.length],
+            "relative w-full shrink-0",
+            roomy ? "flex grow flex-col justify-center py-6" : "flex flex-col gap-1",
           )}
         >
-          {offer ? null : idle ? (
-            <Button
-              variant="primary"
-              size="lg"
-              aria-label="Start focus"
-              aria-keyshortcuts={startKeys}
-              onClick={onStart}
-            >
-              <Icon name="play" />
-              <span aria-hidden="true">Start focus</span>
-            </Button>
-          ) : (
-            <>
-              <IconButton
-                size="round"
-                label={paused ? `Resume ${noun}` : `Pause ${noun}`}
-                icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
-                shortcut={singleKeys ? "Space" : undefined}
-                keyshortcuts={false}
-                onClick={paused ? onResume : onPause}
-              />
-              <IconButton
-                label={`End ${noun}`}
-                icon={<Icon name="stop" />}
-                shortcut="⌘."
-                onClick={onEnd}
-              />
-            </>
-          )}
-          {actions.map((action, index) => (
-            <Button
-              key={action.id}
-              variant={index === 0 ? (offer ? "primary" : "quiet") : "ghost"}
-              size={offer && index === 0 ? "lg" : undefined}
-              aria-label={action.name}
-              onClick={action.onSelect}
-              className="shrink-0"
-            >
-              {action.name ? <span aria-hidden="true">{action.label}</span> : action.label}
-            </Button>
-          ))}
+          <div
+            data-slot="full-screen-focus-controls"
+            className={cn(
+              "flex h-control-lg w-full shrink-0 items-center justify-center",
+              // Room for the host's actions without growing the fixed track: the gap tightens with each one.
+              // Two break actions beside Pause and End are 2px too wide for the specimen frame's 344px track at
+              // 360x240 (24px padding); the real window's 12px padding fits. A narrower gap, not padding, takes it up.
+              gapClass,
+            )}
+          >
+            {offer ? null : idle ? (
+              <Button
+                variant="primary"
+                size="lg"
+                aria-label="Start focus"
+                aria-keyshortcuts={startKeys}
+                onClick={onStart}
+              >
+                <Icon name="play" />
+                <span aria-hidden="true">Start focus</span>
+              </Button>
+            ) : (
+              <div className={cn("flex items-center", roomy ? "gap-8" : gapClass)}>
+                <IconButton
+                  size="round"
+                  label={paused ? `Resume ${noun}` : `Pause ${noun}`}
+                  icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
+                  shortcut={singleKeys ? "Space" : undefined}
+                  keyshortcuts={false}
+                  onClick={paused ? onResume : onPause}
+                />
+                <IconButton
+                  label={`End ${noun}`}
+                  icon={<Icon name="stop" />}
+                  shortcut="⌘."
+                  onClick={onEnd}
+                />
+              </div>
+            )}
+            {actions.map((action, index) => (
+              <Button
+                key={action.id}
+                variant={index === 0 ? (offer ? "primary" : "quiet") : "ghost"}
+                size={offer && index === 0 ? "lg" : undefined}
+                aria-label={action.name}
+                onClick={action.onSelect}
+                className="shrink-0"
+              >
+                {action.name ? <span aria-hidden="true">{action.label}</span> : action.label}
+              </Button>
+            ))}
+          </div>
+          <p
+            data-slot="full-screen-focus-caption"
+            aria-hidden={hint && !hint.visible ? "true" : undefined}
+            className={cn(
+              "m-0 text-center text-body-sm text-ink-muted",
+              // In the roomy ring the row sits in the bottom slack, so the controls stay centred between the ring and the view's bottom.
+              roomy ? "absolute inset-x-0 bottom-2" : "shrink-0",
+              hint && "transition-opacity duration-slow ease-calm motion-reduce:transition-none",
+              hint && !hint.visible && "opacity-0",
+            )}
+          >
+            {hint ? (
+              hint.text
+            ) : (
+              <>
+                {singleKeys ? (
+                  <Caption keys="Space" verb={idle ? "starts" : paused ? "resumes" : "pauses"} />
+                ) : idle ? (
+                  <Caption keys={"\u2318\u21a9"} verb="starts" />
+                ) : (
+                  <Caption keys="⌘." verb="ends" />
+                )}
+                {" · "}
+                <Caption keys="Esc" verb="leaves" />
+              </>
+            )}
+          </p>
         </div>
-        <p
-          data-slot="full-screen-focus-caption"
-          className="m-0 shrink-0 text-body-sm text-ink-muted"
-        >
-          {singleKeys ? (
-            <Caption keys="Space" verb={idle ? "starts" : paused ? "resumes" : "pauses"} />
-          ) : idle ? (
-            <Caption keys={"\u2318\u21a9"} verb="starts" />
-          ) : (
-            <Caption keys="⌘." verb="ends" />
-          )}
-          {" · "}
-          <Caption keys="Esc" verb="leaves" />
-        </p>
       </div>
-      {leaving ? (
-        <Dialog
-          title="Leave full screen?"
-          description={idle ? undefined : "Your focus session will keep running."}
-          confirmLabel="Leave full screen"
-          cancelLabel="Stay in full screen"
-          scrim
-          onCancel={() => setLeaving(false)}
-          onConfirm={() => {
-            setLeaving(false);
-            onExit();
-          }}
-        />
-      ) : null}
     </section>
   );
 }

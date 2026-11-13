@@ -131,7 +131,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   IntentPrompt: { open: true, app: "Safari", onReturn: noop },
   Dialog: { open: true, title: "Title", children: "Body" },
   FloatingTimer: { remaining: "25:00", progress: 0.4, mode: "focus" },
-  FullScreenFocus: { remaining: "25:00", onExit: noop },
+  FullScreenFocus: { remaining: "25:00", onLeave: noop },
   Input: { label: "Name" },
   Choice: { children: "Classic" },
   ChoiceGroup: { legend: "Preset", children: "Body" },

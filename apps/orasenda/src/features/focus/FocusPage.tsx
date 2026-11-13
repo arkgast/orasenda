@@ -206,7 +206,7 @@ export function FocusPage() {
         onPause={pause}
         onResume={resume}
         onEnd={end}
-        onExit={leave}
+        onLeave={leave}
       />
     </main>
   );

@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { FullScreenFocus, type FullScreenFocusProps } from "./full-screen-focus.tsx";
 
@@ -7,7 +7,7 @@ const RUN = {
   remainingLabel: "18 minutes 42 seconds",
   progress: 0.25,
   clock: "09:41",
-  onExit: () => {},
+  onLeave: () => {},
   onPause: () => {},
   onResume: () => {},
   onEnd: () => {},
@@ -27,6 +27,8 @@ const STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
     "status",
     { mode: "idle", status: "Orasenda can't reach the timer. Close this window and try again." },
   ],
+  ["hint-visible", { mode: "focus", hint: { text: "Space pauses · Esc leaves", visible: true } }],
+  ["hint-faded", { mode: "focus", hint: { text: "Space pauses · Esc leaves", visible: false } }],
   [
     "ended",
     {
@@ -130,6 +132,16 @@ const SIZES = [
   [1440, 900],
 ] as const;
 
+// Marks the frame when the view asks to leave, so a layout test can see that one Esc reached it.
+function Marked({ props }: { props: FullScreenFocusProps }): ReactElement {
+  const [left, setLeft] = useState(false);
+  return (
+    <div data-left={left ? "true" : undefined} className="contents">
+      <FullScreenFocus {...props} onLeave={() => setLeft(true)} />
+    </div>
+  );
+}
+
 export function FullScreenFocusSpecimen(): ReactElement {
   return (
     <>
@@ -141,7 +153,7 @@ export function FullScreenFocusSpecimen(): ReactElement {
             width={w}
             height={h}
           >
-            <FullScreenFocus {...RUN} singleKeys={name === "focus"} {...props} />
+            <Marked props={{ ...RUN, singleKeys: name === "focus", ...props }} />
           </Frame>
         )),
       )}

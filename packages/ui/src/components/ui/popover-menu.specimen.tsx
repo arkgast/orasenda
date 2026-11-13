@@ -138,10 +138,10 @@ export function PopoverMenuSpecimen(): ReactElement {
       </Frame>
       {dialog ? (
         <Dialog
-          title="Leave full screen?"
-          description="Your focus session will keep running."
-          confirmLabel="Leave full screen"
-          cancelLabel="Stay in full screen"
+          title="Delete your data?"
+          description="This removes every session on this device."
+          confirmLabel="Delete data"
+          cancelLabel="Keep data"
           onCancel={() => {
             close();
             setDialog(false);

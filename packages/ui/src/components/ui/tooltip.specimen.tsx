@@ -55,10 +55,10 @@ export function TooltipSpecimen(): ReactElement {
       </Frame>
       {open ? (
         <Dialog
-          title="Leave full screen"
-          description="Your focus session keeps running."
-          confirmLabel="Leave full screen"
-          cancelLabel="Stay in full screen"
+          title="Delete your data?"
+          description="This removes every session on this device."
+          confirmLabel="Delete data"
+          cancelLabel="Keep data"
           onCancel={() => setOpen(false)}
           onConfirm={() => setOpen(false)}
         >

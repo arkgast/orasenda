@@ -71,6 +71,7 @@
   --duration-quick: 160ms;
   --duration-calm: 320ms;
   --duration-slow: 1600ms;
+  --duration-hint: 4s;
   --duration-breath: 8s;
   --easing-calm: cubic-bezier(0.45, 0, 0.55, 1);
   --control-sm: 28px;

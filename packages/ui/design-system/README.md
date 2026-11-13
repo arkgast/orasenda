@@ -86,8 +86,8 @@ Keyboard focus is a 2px `focus-ring` outline with a 2px offset on links, buttons
 ## Dialogs, capture and notifications
 
 - `Dialog`, `IntentPrompt`, `CapturePad` and `CommandPalette` are native modal dialogs (`showModal()`): the background is inert, focus is contained, focus returns to the trigger. Mount one at a time and keep the trigger mounted. They use `useId`, so React 18 or later is required.
-- Escape always does the safe thing: back to focus in the intent prompt, keep the session in the exit confirmation, cancel a deletion, close the palette, save a non-empty capture. Clicking a backdrop never dismisses.
-- `scrim` sits only behind the intent prompt, the full-screen exit confirmation and the delete-data dialog. Capture and commands keep a clear backdrop.
+- Escape always does the safe thing: back to focus in the intent prompt, cancel a deletion, close the palette, save a non-empty capture. Clicking a backdrop never dismisses.
+- `scrim` sits only behind the intent prompt and the delete-data dialog. Capture and commands keep a clear backdrop.
 - One `Toast` at a time, bottom centre, until dismissed; if the host expires it, never under eight seconds and never while hovered or focused. Notices are `role="status"`.
 - macOS system notifications are used only for session end and the two-minute cue, never for stats.
 

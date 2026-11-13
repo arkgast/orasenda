@@ -11,7 +11,7 @@ import {
   settle,
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FocusPage } from "./FocusPage";
 
@@ -76,19 +76,11 @@ test("focus_cmd_period_ends_only_in_session", async () => {
   }
 });
 
-test("focus_exit_closes_only_after_confirm", async () => {
+test("focus_exit_closes_at_once_with_no_dialog", async () => {
   const backend = await open({ timer_view: () => RUNNING });
   fireEvent.keyDown(screen.getByRole("region", { name: "Full-screen focus" }), { key: "Escape" });
   await settle();
-  expect(screen.getByRole("dialog", { name: "Leave full screen?" })).toBeInTheDocument();
-  expect(argsOf(backend.calls, "focus_view_close")).toEqual([]);
-  fireEvent.click(screen.getByRole("button", { name: "Stay in full screen" }));
-  await settle();
-  expect(argsOf(backend.calls, "focus_view_close")).toEqual([]);
-  fireEvent.click(screen.getByRole("button", { name: "Leave full screen" }));
-  const dialog = await screen.findByRole("dialog", { name: "Leave full screen?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Leave full screen" }));
-  await settle();
+  expect(screen.queryByRole("dialog")).toBeNull();
   expect(argsOf(backend.calls, "focus_view_close")).toHaveLength(1);
 });
 
@@ -99,8 +91,6 @@ test("focus_close_failure_in_status_line", async () => {
     focus_view_close: () => Promise.reject({ kind: "unavailable", message: "no window" }),
   });
   fireEvent.click(screen.getByRole("button", { name: "Leave full screen" }));
-  const dialog = await screen.findByRole("dialog", { name: "Leave full screen?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Leave full screen" }));
   await settle();
   expect(screen.getByRole("status")).toHaveTextContent("This window didn't close.");
 });

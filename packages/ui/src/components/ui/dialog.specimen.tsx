@@ -45,10 +45,10 @@ export function DialogSpecimen(): ReactElement {
       {open === "scrim" ? (
         <Dialog
           scrim
-          title="Leave full screen?"
-          description="Your focus session will keep running."
-          confirmLabel="Leave full screen"
-          cancelLabel="Stay focused"
+          title="Delete your data?"
+          description="This removes every session on this device."
+          confirmLabel="Delete data"
+          cancelLabel="Keep data"
           onCancel={close}
           onConfirm={close}
         />
