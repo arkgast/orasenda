@@ -1,10 +1,12 @@
-//! The global shortcuts: parsing, registering before saving, and what a press does.
+//! The shortcut registry and the global shortcuts: parsing, registering before saving, and the
+//! changes to a binding (ADR-017, ADR-020).
 //!
-//! The service holds no plugin: a [`ShortcutRegistrar`] does the OS part (spec: Hotkeys and
-//! capture, ADR-017). `src-tauri` supplies the registrar and runs a press through `actions::run` (`on_pressed` is only kept for tests until H3b2 removes it).
+//! The service holds no plugin: a [`ShortcutRegistrar`] does the OS part. `src-tauri` supplies
+//! the registrar and runs a press through `actions::run`.
 
 mod accelerator;
 mod action;
+mod binding;
 pub mod conflicts;
 pub mod fold;
 mod registrar;
@@ -14,11 +16,12 @@ pub mod system_keys;
 #[cfg(any(test, feature = "test-support"))]
 #[path = "tests.rs"]
 pub mod test_support;
+mod view;
 
-pub use accelerator::{Accelerator, ParseError, is_menu_shortcut};
+pub use accelerator::{Accelerator, ParseError};
 pub use action::{ActionId, Slot, Source};
-pub use registrar::{RegisterError, ShortcutId, ShortcutRegistrar};
-pub use service::{CaptureOpener, KeyboardService, shortcut_view};
+pub use registrar::{RegisterError, ShortcutRegistrar};
+pub use service::{KeyboardService, default_view};
 
 #[cfg(test)]
 #[path = "cases_registry.rs"]

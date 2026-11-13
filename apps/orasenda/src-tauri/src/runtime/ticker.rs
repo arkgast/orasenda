@@ -90,6 +90,8 @@ impl Host for AppHost {
 
     fn emit_keyboard_changed(&self, view: &KeyboardView) {
         super::events::emit_keyboard_changed(&self.0, view);
+        #[cfg(target_os = "macos")]
+        crate::menu::apply_accelerators(&self.0, view);
     }
 
     fn emit_inbox_changed(&self, notes: &[NoteView]) {

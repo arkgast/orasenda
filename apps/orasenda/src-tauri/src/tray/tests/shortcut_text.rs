@@ -3,27 +3,31 @@
 
 use orasenda_core::default_presets;
 use orasenda_service::api::{KeyboardView, ShortcutStatus};
-use orasenda_service::keyboard::shortcut_view;
+use orasenda_service::keyboard::test_support::{keyboard_view, with_status};
+use orasenda_service::keyboard::{ActionId, Slot};
 
 use super::*;
 use crate::ipc::entries;
 
+fn view_of(id: ActionId, status: ShortcutStatus, keys: &str) -> KeyboardView {
+    let other = if id == ActionId::StartPause {
+        ActionId::Capture
+    } else {
+        ActionId::StartPause
+    };
+    let view = keyboard_view(&[
+        (id, Slot::Global, (keys != "off").then_some(keys)),
+        (other, Slot::Global, None),
+    ]);
+    with_status(view, id, status)
+}
+
 fn keyboard(status: ShortcutStatus, keys: &str) -> KeyboardView {
-    KeyboardView {
-        start_pause: shortcut_view(keys, status),
-        capture: shortcut_view("off", ShortcutStatus::Off),
-        single_key: true,
-        voice_over: false,
-    }
+    view_of(ActionId::StartPause, status, keys)
 }
 
 fn capture_keyboard(status: ShortcutStatus, keys: &str) -> KeyboardView {
-    KeyboardView {
-        start_pause: shortcut_view("off", ShortcutStatus::Off),
-        capture: shortcut_view(keys, status),
-        single_key: true,
-        voice_over: false,
-    }
+    view_of(ActionId::Capture, status, keys)
 }
 
 fn start_item(entries: &[MenuEntry]) -> (String, Option<&'static str>) {
@@ -196,4 +200,23 @@ fn keyboard_changed_follows_the_capture_keys_too() {
         capture_item(&idle_menu(&after)).0,
         "Capture a thought…  ⌃⌥N"
     );
+}
+
+#[test]
+fn tray_shows_everywhere_keys() {
+    // The registry's *Everywhere* defaults: ⌃⌥⌘Space starts, ⌃⌥⌘N captures. Text only.
+    let both = keyboard_view(&[]);
+    assert_eq!(start_keys(&both).as_deref(), Some("⌃⌥⌘Space"));
+    assert_eq!(capture_keys(&both).as_deref(), Some("⌃⌥⌘N"));
+    let next = NextSession::default()
+        .with_keys(start_keys(&both))
+        .with_capture_keys(capture_keys(&both));
+    let menu = idle_menu(&next);
+    assert_eq!(start_item(&menu).0, "Start focus · 25 min  ⌃⌥⌘Space");
+    assert_eq!(start_item(&menu).1, None, "inert: no live accelerator");
+    // A rebound key follows, and a failed one shows nothing.
+    let moved = keyboard_view(&[(ActionId::Capture, Slot::Global, Some("Control+Alt+KeyJ"))]);
+    assert_eq!(capture_keys(&moved).as_deref(), Some("⌃⌥J"));
+    let failed = with_status(moved, ActionId::Capture, ShortcutStatus::Failed);
+    assert_eq!(capture_keys(&failed), None);
 }

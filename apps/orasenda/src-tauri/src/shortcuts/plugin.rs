@@ -2,7 +2,6 @@
 
 use std::sync::Arc;
 
-use orasenda_service::api::ShortcutId;
 use orasenda_service::keyboard::{ActionId, Source};
 use tauri::plugin::TauriPlugin;
 use tauri::{AppHandle, Wry};
@@ -47,15 +46,7 @@ pub fn plugin(held: Arc<Held>) -> TauriPlugin<Wry> {
         .build()
 }
 
-/// The registry action a global shortcut stands for.
-pub(crate) fn action_of(id: ShortcutId) -> ActionId {
-    match id {
-        ShortcutId::StartPause => ActionId::StartPause,
-        ShortcutId::Capture => ActionId::Capture,
-    }
-}
-
-/// Both global keys go through `actions::run`, like every other route.
-fn dispatch(app: &AppHandle, id: ShortcutId) {
-    crate::actions::run(app, action_of(id), Source::Global);
+/// Every global key goes through `actions::run`, like every other route.
+fn dispatch(app: &AppHandle, id: ActionId) {
+    crate::actions::run(app, id, Source::Global);
 }

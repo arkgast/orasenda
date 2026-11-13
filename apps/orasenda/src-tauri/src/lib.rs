@@ -63,7 +63,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::preset_undo_remove,
             commands::presets_restore_defaults,
             commands::keyboard_state,
-            commands::keyboard_set_shortcut,
+            commands::keyboard_set_binding,
             commands::keyboard_restore_default,
             commands::keyboard_recording,
             commands::action_run,
@@ -163,7 +163,6 @@ pub fn run() {
             runtime::keyboard::manage(app);
             #[cfg(desktop)]
             runtime::recording::manage(app);
-            runtime::keyboard::wire_capture_opener(app.handle());
             runtime::keyboard::register_saved(app.handle());
             #[cfg(target_os = "macos")]
             runtime::keyboard::observe_voice_over(app.handle());

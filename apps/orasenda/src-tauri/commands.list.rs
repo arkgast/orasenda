@@ -31,7 +31,7 @@ pub const COMMANDS: &[&str] = &[
     "preset_undo_remove",
     "presets_restore_defaults",
     "keyboard_state",
-    "keyboard_set_shortcut",
+    "keyboard_set_binding",
     "keyboard_restore_default",
     "keyboard_recording",
     "action_run",

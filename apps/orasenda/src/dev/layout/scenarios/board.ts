@@ -1,22 +1,11 @@
 import type { KeyboardView_Serialize, NoteView } from "../../../shared/ipc/bindings";
 import type { Handler } from "./backend";
-import { backend } from "./backend";
+import { backend, KEYBOARD } from "./backend";
 
 export const BOARD: Record<string, Handler> = {};
 
 // Board's Inbox list: 0, 1 and 50 notes, a very long note, and a list that will not load.
-const BOARD_SHORTCUT = (display: string) => ({
-  keys: "Control+Alt+KeyN",
-  display,
-  spoken: "Control-Option-N",
-  status: "registered" as const,
-});
-const BOARD_KEYBOARD: KeyboardView_Serialize = {
-  startPause: BOARD_SHORTCUT("⌃⌥F"),
-  capture: BOARD_SHORTCUT("⌃⌥N"),
-  singleKey: true,
-  voiceOver: false,
-};
+const BOARD_KEYBOARD: KeyboardView_Serialize = KEYBOARD;
 const boardNote = (i: number, text: string): NoteView => ({
   id: `note-${i}`,
   text,

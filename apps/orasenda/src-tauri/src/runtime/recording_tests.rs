@@ -99,7 +99,7 @@ mod threads {
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
 
-    use orasenda_service::api::ShortcutId;
+    use orasenda_service::keyboard::ActionId;
     use tauri_plugin_global_shortcut::Shortcut;
 
     use super::super::recording::{Globals, Leave, Recording, Suspender};
@@ -153,7 +153,7 @@ mod threads {
     fn globals_unregister_every_held_shortcut_and_register_them_again() {
         let held = Arc::new(Held::default());
         let shortcut: Shortcut = "Control+Alt+G".parse().unwrap();
-        held.insert_for_test(ShortcutId::StartPause, shortcut);
+        held.insert_for_test(ActionId::StartPause, shortcut);
         let calls = Arc::new(Calls::default());
         let globals = Globals::new(Arc::clone(&calls), held);
         globals.suspend();
@@ -163,5 +163,18 @@ mod threads {
             *calls.0.lock().unwrap(),
             [format!("-{id}"), format!("+{id}")]
         );
+    }
+
+    /// A restore queued by a blur must not undo a recording that started after the blur.
+    #[test]
+    fn a_new_recording_wins_over_a_queued_restore() {
+        let recording = Arc::new(Recording::new(Slow(Mutex::new(channel().1))));
+        recording.set(true);
+        // The blur reads its turn, then a new `on` arrives before the restore task runs.
+        let turn = recording.turn_for_test();
+        recording.set(false);
+        recording.set(true);
+        recording.restore_if_turn_for_test(turn);
+        assert!(recording.is_on(), "the newer recording stays on");
     }
 }

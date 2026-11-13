@@ -26,7 +26,10 @@ pub use errors::{
 pub use events::{MilestoneEvent, MilestoneKind, NavigatePage};
 pub use hint::Hint;
 pub use inbox::{CaptureError, InboxError, NewCapture, NoteKind, NoteView};
-pub use keyboard::{KeyboardError, KeyboardView, ShortcutId, ShortcutStatus, ShortcutView};
+pub use keyboard::{
+    ActionView, BindingView, FixedKeyView, GlobalBindingView, KeyboardError, KeyboardView,
+    ShortcutStatus,
+};
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
 pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{

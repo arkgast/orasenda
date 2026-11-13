@@ -1,29 +1,8 @@
 import { act } from "@testing-library/react";
-import type {
-  FocusInsets,
-  KeyboardView_Serialize,
-  NavigatePage,
-  SettingsTarget,
-} from "../../ipc/bindings";
+import type { FocusInsets, NavigatePage, SettingsTarget } from "../../ipc/bindings";
 import { events } from "../../ipc/bindings";
 
-/** Both global shortcuts at their defaults, as `keyboard_state` answers on a fresh install. */
-export const KEYBOARD: KeyboardView_Serialize = {
-  startPause: {
-    keys: "Control+Alt+KeyF",
-    display: "⌃⌥F",
-    spoken: "Control-Option-F",
-    status: "registered",
-  },
-  capture: {
-    keys: "Control+Alt+KeyN",
-    display: "⌃⌥N",
-    spoken: "Control-Option-N",
-    status: "registered",
-  },
-  singleKey: true,
-  voiceOver: false,
-};
+export { KEYBOARD, withGlobal } from "./keyboardView";
 
 export async function emitNavigate(
   page: NavigatePage,

@@ -5,10 +5,12 @@
 
 use std::sync::Arc;
 
-use orasenda_service::api::{KeyboardError, KeyboardView, ShortcutId, ShortcutStatus};
+use orasenda_service::api::{KeyboardError, KeyboardView};
 #[cfg(not(desktop))]
 use orasenda_service::keyboard::{Accelerator, RegisterError};
-use orasenda_service::keyboard::{KeyboardService, ShortcutRegistrar, shortcut_view};
+use orasenda_service::keyboard::{
+    ActionId, KeyboardService, ShortcutRegistrar, Slot, default_view,
+};
 use tauri::{Manager, State};
 
 use crate::runtime::ticker::AppHost;
@@ -19,11 +21,11 @@ pub struct UnavailableRegistrar;
 
 #[cfg(not(desktop))]
 impl ShortcutRegistrar for UnavailableRegistrar {
-    fn register(&self, _id: ShortcutId, _acc: &Accelerator) -> Result<(), RegisterError> {
+    fn register(&self, _id: ActionId, _acc: &Accelerator) -> Result<(), RegisterError> {
         Err(RegisterError::new("global shortcuts are not available yet"))
     }
 
-    fn unregister(&self, _id: ShortcutId) {}
+    fn unregister(&self, _id: ActionId) {}
 }
 
 /// Manages the keyboard service. Called before the windows exist.
@@ -54,20 +56,6 @@ pub fn observe_voice_over(app: &tauri::AppHandle) {
     });
 }
 
-/// Points the capture key at the capture panel. Called once, before the shortcuts register.
-pub fn wire_capture_opener(app: &tauri::AppHandle) {
-    let Some(keyboard) = app.try_state::<KeyboardService>() else {
-        return;
-    };
-    let app = app.clone();
-    // The press arrives on a blocking thread, where a window may be created.
-    keyboard.set_capture_opener(Arc::new(move || {
-        if let Err(error) = crate::windows::open_capture(&app) {
-            eprintln!("keyboard: the capture panel didn't open: {}", error.message);
-        }
-    }));
-}
-
 /// Registers the saved shortcuts. Called once the store is open; it writes nothing.
 pub fn register_saved(app: &tauri::AppHandle) {
     if let Some(keyboard) = app.try_state::<KeyboardService>() {
@@ -79,37 +67,32 @@ fn service(app: &tauri::AppHandle) -> Option<State<'_, KeyboardService>> {
     app.try_state::<KeyboardService>()
 }
 
-/// `keyboard_state` on the app. Before setup: both shortcuts failed, nothing else known.
+/// `keyboard_state` on the app. Before setup: the defaults, nothing registered.
 pub fn state(app: &tauri::AppHandle) -> KeyboardView {
     match service(app) {
         Some(keyboard) => keyboard.view(&AppHost::new(app)),
-        None => {
-            let failed = |id: ShortcutId| shortcut_view(id.default_keys(), ShortcutStatus::Failed);
-            KeyboardView {
-                start_pause: failed(ShortcutId::StartPause),
-                capture: failed(ShortcutId::Capture),
-                single_key: true,
-                voice_over: false,
-            }
-        }
+        None => default_view(),
     }
 }
 
-/// `keyboard_set_shortcut` on the app.
-pub fn set_shortcut(
+/// `keyboard_set_binding` on the app.
+pub fn set_binding(
     app: &tauri::AppHandle,
-    id: ShortcutId,
+    id: ActionId,
+    slot: Slot,
     keys: Option<String>,
+    confirm_warning: bool,
 ) -> Result<KeyboardView, KeyboardError> {
     let keyboard = service(app).ok_or(KeyboardError::Unavailable)?;
-    keyboard.set_shortcut(&AppHost::new(app), id, keys)
+    keyboard.set_binding(&AppHost::new(app), id, slot, keys, confirm_warning)
 }
 
 /// `keyboard_restore_default` on the app.
 pub fn restore_default(
     app: &tauri::AppHandle,
-    id: ShortcutId,
+    id: ActionId,
+    slot: Slot,
 ) -> Result<KeyboardView, KeyboardError> {
     let keyboard = service(app).ok_or(KeyboardError::Unavailable)?;
-    keyboard.restore_default(&AppHost::new(app), id)
+    keyboard.restore_default(&AppHost::new(app), id, slot)
 }

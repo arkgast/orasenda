@@ -1,3 +1,4 @@
+import { everywhere } from "@domain/keyboard/everywhere";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { usePresets } from "@domain/presets/presets";
 import { tick, untick } from "@features/settings/notificationsToggle";
@@ -58,8 +59,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
     commands.keyboardState().then(
       (keyboard) => {
         // The current keys, only while the shortcut works: a failed one shows no text.
-        if (!cancelled && keyboard.capture.status === "registered") {
-          setCaptureKeys(keyboard.capture.display);
+        const capture = everywhere(keyboard, "capture");
+        if (!cancelled && capture?.status === "registered") {
+          setCaptureKeys(capture.display ?? null);
         }
       },
       (error: unknown) => console.error("keyboard_state failed", error),

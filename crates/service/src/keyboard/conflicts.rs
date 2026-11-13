@@ -2,8 +2,9 @@
 //!
 //! Import and sync write settings directly, so two bindings can meet that no single save would
 //! allow. [`repair`] walks the registry in order and gives every device the same answer: a fixed
-//! key always wins; between slots an explicit user-set row beats a default-valued slot; ties go
-//! by registry order, *In Orasenda* before *Everywhere*. The loser is written `"off"` and marked
+//! key always wins; between slots an explicit user-set row beats a default-valued slot (a row
+//! equal to the slot's default counts as default-valued); ties go by registry order, *In
+//! Orasenda* before *Everywhere*. The loser is written `"off"` and marked
 //! repaired in a device-only `meta` row, which a later change to that row clears.
 
 use std::collections::HashSet;
@@ -45,6 +46,9 @@ struct Entry {
     slot: Slot,
     row: Option<String>,
     chord: Option<String>,
+    /// A row the user (or an import) set to something other than the slot's default. A row that
+    /// holds the default, as *Restore default* writes, is not user-set.
+    user_set: bool,
 }
 
 /// Every binding, in registry order (*In Orasenda* before *Everywhere*). A value that is not an
@@ -59,11 +63,15 @@ fn load(txn: &Txn) -> Result<Vec<Entry>, StoreError> {
                 .filter(|text| *text != OFF)
                 .and_then(|text| Accelerator::parse(text).ok())
                 .map(|acc| acc.canonical());
+            let user_set = row
+                .as_deref()
+                .is_some_and(|text| Some(text) != action.default_for(slot));
             entries.push(Entry {
                 id: action.id,
                 slot,
                 row,
                 chord,
+                user_set,
             });
         }
     }
@@ -110,7 +118,7 @@ pub fn repair(txn: &mut Txn) -> Result<Vec<(ActionId, Slot)>, StoreError> {
             .iter()
             .filter(|o| o.chord.as_deref() == Some(chord) && !losers.contains(&(o.id, o.slot)))
             .collect();
-        let winner = group.iter().find(|o| o.row.is_some()).unwrap_or(&group[0]);
+        let winner = group.iter().find(|o| o.user_set).unwrap_or(&group[0]);
         for o in &group {
             if (o.id, o.slot) != (winner.id, winner.slot) {
                 losers.insert((o.id, o.slot));

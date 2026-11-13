@@ -98,8 +98,6 @@ export const SETTINGS: Settings = {
   deepCapHours: 4,
   notifySessionEnd: true,
   notifyTwoMinutes: false,
-  startPauseKeys: "Control+Alt+KeyF",
-  captureKeys: "Control+Alt+KeyN",
   singleKey: true,
 };
 

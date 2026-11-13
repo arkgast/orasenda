@@ -1,0 +1,9 @@
+# Default gitleaks rules, plus one allowlist: keyboard accelerator strings
+# ("Alt+Shift+KeyJ", "Control+Alt+Super+Space") trip generic-api-key because
+# they contain "Key". They are key chords, not secrets.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Keyboard accelerator strings"
+regexes = ['''^(?:(?:Alt|Shift|Control|Super|CmdOrCtrl|CommandOrControl|Meta)\+)+(?:Key[A-Z]|Digit[0-9]|Space|Escape|Backquote|Enter|Tab|F[0-9]{1,2}|Arrow(?:Up|Down|Left|Right))$''']

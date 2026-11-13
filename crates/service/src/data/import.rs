@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use super::{backups, cap};
 use crate::api::{BackupKind, DataCounts, DataError, DataErrorKind, ImportReport};
+use crate::keyboard::{conflicts::repair, fold};
 use crate::scheduler::{self, Host};
 use crate::session::{DB_FILE, lock};
 
@@ -22,7 +23,8 @@ use crate::session::{DB_FILE, lock};
 /// The service stays locked from the copy until the reload, so no session can start between
 /// the check and the write.
 ///
-/// The merge may change `keys.start_pause` and `keys.capture`. On `Ok` the caller must call
+/// The merge may change the `keys.*` rows. The same write folds the legacy keys of an old file
+/// and repairs clashes (ADR-020). On `Ok` the caller must call
 /// `KeyboardService::register_saved(host)`, so the OS shortcuts follow the imported keys.
 pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<ImportReport, DataError> {
     let service = host.service().ok_or_else(unavailable)?;
@@ -39,6 +41,10 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
             .write(now_ms, |txn| {
                 let counts = merge(txn, &incoming)?;
                 cap::enforce_preset_cap(txn)?;
+                // An old file carries the legacy keys: fold them, then settle any clash the
+                // merge made between bindings. `register_saved` follows in the caller.
+                fold::run_after_import(txn, &incoming)?;
+                repair(txn)?;
                 Ok(counts)
             })
             .map_err(|error| {

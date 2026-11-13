@@ -1,5 +1,5 @@
 //! The ids of the registry (ADR-020): the six actions, the two slots a key can sit in, and
-//! where a press can come from. `ActionId` replaces `ShortcutId` in H3b2; both exist until then.
+//! where a press can come from. `ActionId` replaced `ShortcutId` in H3b2.
 
 /// One action of the shortcut registry. The declaration order is the registry order.
 #[derive(
@@ -36,6 +36,11 @@ impl ActionId {
         ActionId::Capture,
     ];
 
+    /// The position in [`ActionId::ALL`].
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
     /// The name used in setting keys: `keys.app.<name>` and `keys.global.<name>`.
     pub fn name(self) -> &'static str {
         match self {
@@ -56,7 +61,20 @@ impl ActionId {
 
 /// Where an action is bound. `App` is *In Orasenda* (an app-menu accelerator), `Global` is
 /// *Everywhere* (a global shortcut). `App` comes first in registry order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+    specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
 pub enum Slot {
     App,
     Global,

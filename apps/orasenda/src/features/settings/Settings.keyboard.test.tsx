@@ -1,7 +1,7 @@
 import type { KeyboardView_Serialize } from "@shared/ipc/bindings";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
-import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle } from "@shared/test/fixtures";
+import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle, withGlobal } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -32,10 +32,8 @@ function press(name: string, init: KeyboardEventInit) {
 
 const G = { code: "KeyG", ctrlKey: true, altKey: true };
 
-const withStartPause = (patch: Partial<KeyboardView_Serialize["startPause"]>) => ({
-  ...KEYBOARD,
-  startPause: { ...KEYBOARD.startPause, ...patch },
-});
+const withStartPause = (patch: Parameters<typeof withGlobal>[2]) =>
+  withGlobal(KEYBOARD, "startPause", patch);
 
 const G_VIEW = withStartPause({
   keys: "Control+Alt+KeyG",
@@ -79,11 +77,11 @@ test("keyboard_rows_order_and_copy", async () => {
 });
 
 test("keyboard_record_saves_with_line", async () => {
-  const { backend } = await openSettings({ keyboard_set_shortcut: () => G_VIEW });
+  const { backend } = await openSettings({ keyboard_set_binding: () => G_VIEW });
   press("Start or pause focus", G);
   await settle();
-  expect(argsOf(backend.calls, "keyboard_set_shortcut")).toEqual([
-    { id: "startPause", keys: "Control+Alt+KeyG" },
+  expect(argsOf(backend.calls, "keyboard_set_binding")).toEqual([
+    { id: "startPause", slot: "global", keys: "Control+Alt+KeyG", confirmWarning: false },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥G.");
   expect(within(group("Start or pause focus")).getByText("⌃⌥G")).toBeInTheDocument();
@@ -91,34 +89,38 @@ test("keyboard_record_saves_with_line", async () => {
   // Command is Super in the canonical form, and Return is Enter.
   press("Capture a thought", { code: "Enter", metaKey: true, shiftKey: true });
   await settle();
-  expect(argsOf(backend.calls, "keyboard_set_shortcut")[1]).toEqual({
+  expect(argsOf(backend.calls, "keyboard_set_binding")[1]).toEqual({
     id: "capture",
+    slot: "global",
     keys: "Shift+Super+Enter",
+    confirmWarning: false,
   });
 });
 
 test("keyboard_delete_turns_off_and_restore_default", async () => {
-  const off = { ...KEYBOARD.startPause, keys: null, display: null, spoken: null, status: "off" };
+  const off = withStartPause({ keys: null, display: null, spoken: null, status: "off" });
   const { backend } = await openSettings({
-    keyboard_set_shortcut: () => ({ ...KEYBOARD, startPause: off }),
+    keyboard_set_binding: () => off,
     keyboard_restore_default: () => KEYBOARD,
   });
   press("Start or pause focus", { code: "Backspace" });
   await settle();
-  expect(argsOf(backend.calls, "keyboard_set_shortcut")).toEqual([
-    { id: "startPause", keys: null },
+  expect(argsOf(backend.calls, "keyboard_set_binding")).toEqual([
+    { id: "startPause", slot: "global", keys: null, confirmWarning: false },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: off.");
   fireEvent.click(
     within(group("Start or pause focus")).getByRole("button", { name: "Restore default" }),
   );
   await settle();
-  expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([{ id: "startPause" }]);
+  expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([
+    { id: "startPause", slot: "global" },
+  ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥F.");
 });
 
 test("keyboard_unavailable_keeps_old_and_shows_conflict", async () => {
-  await openSettings({ keyboard_set_shortcut: () => Promise.reject("unavailable") });
+  await openSettings({ keyboard_set_binding: () => Promise.reject("unavailable") });
   press("Start or pause focus", G);
   await settle();
   const row = group("Start or pause focus");
@@ -139,18 +141,20 @@ test("keyboard_failed_status_shows_the_same_line", async () => {
 });
 
 test("keyboard_in_use_by_orasenda_line", async () => {
-  await openSettings({ keyboard_set_shortcut: () => Promise.reject("inUseByOrasenda") });
+  await openSettings({
+    keyboard_set_binding: () => Promise.reject({ inUse: { action: "Commands" } }),
+  });
   press("Capture a thought", { code: "KeyK", metaKey: true });
   await settle();
   expect(
     within(group("Capture a thought")).getByText(
-      "Orasenda already uses this shortcut. Pick a different one.",
+      "Orasenda uses this for Commands. Pick a different one.",
     ),
   ).toBeVisible();
 });
 
 test("keyboard_other_errors_are_not_silent", async () => {
-  await openSettings({ keyboard_set_shortcut: () => Promise.reject("store") });
+  await openSettings({ keyboard_set_binding: () => Promise.reject("store") });
   press("Capture a thought", G);
   await settle();
   expect(
@@ -170,14 +174,8 @@ test("keyboard_voice_over_line_only_when_on", async () => {
   resetTimerQueueForTests();
   await openSettings({
     keyboard_state: () => ({
-      ...KEYBOARD,
+      ...withStartPause({ keys: "Super+Period", display: "⌘.", spoken: "Command-Period" }),
       voiceOver: true,
-      startPause: {
-        ...KEYBOARD.startPause,
-        keys: "Super+Period",
-        display: "⌘.",
-        spoken: "Command-Period",
-      },
     }),
   });
   expect(within(group("Start or pause focus")).queryByText(line)).toBeNull();
@@ -241,7 +239,7 @@ test("keyboard_newest_wins", async () => {
   const second = later();
   let calls = 0;
   await openSettings({
-    keyboard_set_shortcut: () => (++calls === 1 ? first.promise : second.promise),
+    keyboard_set_binding: () => (++calls === 1 ? first.promise : second.promise),
   });
   press("Start or pause focus", G);
   press("Start or pause focus", H);
@@ -260,7 +258,7 @@ test("keyboard_older_failure_after_newer_success_shows_no_conflict", async () =>
   const second = later();
   let calls = 0;
   await openSettings({
-    keyboard_set_shortcut: () => (++calls === 1 ? first.promise : second.promise),
+    keyboard_set_binding: () => (++calls === 1 ? first.promise : second.promise),
   });
   press("Start or pause focus", G);
   press("Start or pause focus", H);

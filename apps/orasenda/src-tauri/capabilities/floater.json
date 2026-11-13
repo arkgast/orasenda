@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "floater",
-  "description": "What the floating timer's webview may do: read the timer view, start, pause and resume, skip a break, drag itself, open its menu, close itself and bring Orasenda back.",
+  "description": "What the floating timer's webview may do: read the timer view and the shortcut registry, start, pause and resume, skip a break, drag itself, open its menu, close itself and bring Orasenda back.",
   "windows": ["floater"],
   "permissions": [
     "core:event:allow-listen",
@@ -17,6 +17,7 @@
     "allow-focus-view-close",
     "allow-main-show",
     "allow-action-run",
+    "allow-keyboard-state",
     "allow-capture-open"
   ]
 }

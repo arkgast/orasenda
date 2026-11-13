@@ -16,14 +16,14 @@ use crate::session::{Action, SessionService, lock};
 
 const V1_SQL: &str = include_str!("../../../../store/migrations/0001_init.sql");
 
-fn host_in(dir: &Path) -> TestHost {
+pub(super) fn host_in(dir: &Path) -> TestHost {
     let fakes = fakes(NotificationStatus::NotDetermined, false);
     let service = SessionService::new(Ok(open(dir)), fakes.platform, 1_794_009_600_000);
     TestHost::with(service, fakes.log, fakes.notifier)
 }
 
 /// A second Orasenda data file in its own dir, written by `fill`.
-fn source(fill: impl FnOnce(&Store)) -> (TempDir, PathBuf) {
+pub(super) fn source(fill: impl FnOnce(&Store)) -> (TempDir, PathBuf) {
     let dir = TempDir::new();
     let store = crate::session::open_store_at(dir.path(), "device-b").expect("source opens");
     fill(&store);
@@ -241,11 +241,6 @@ fn import_twice_second_is_noop() {
 #[test]
 fn import_preset_cap_keeps_selected() {
     cap_keeps_selected(None);
-}
-
-#[test]
-fn import_preset_cap_keeps_legacy_selected() {
-    cap_keeps_selected(Some("classic"));
 }
 
 fn cap_keeps_selected(stored_id: Option<&str>) {

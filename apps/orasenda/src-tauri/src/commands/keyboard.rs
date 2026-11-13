@@ -1,10 +1,13 @@
 //! The keyboard commands: the global shortcuts and their status.
 
 use super::on_blocking;
-use crate::ipc::{KeyboardError, KeyboardView, ShortcutId};
+use orasenda_service::keyboard::{ActionId, Slot};
+
+use crate::ipc::{KeyboardError, KeyboardView};
 use crate::runtime::keyboard;
 
-/// The global shortcuts, their status and the single-key setting.
+/// The shortcut registry: every action with both bindings, the fixed keys, the status of the
+/// *Everywhere* shortcuts and the single-key setting.
 #[tauri::command]
 #[specta::specta]
 pub async fn keyboard_state(app: tauri::AppHandle) -> KeyboardView {
@@ -26,27 +29,31 @@ pub async fn keyboard_recording(app: tauri::AppHandle, on: bool) {
     let _ = (app, on);
 }
 
-/// Changes a global shortcut; `null` turns it off. It is saved only after it registers.
+/// Changes one binding of an action; `null` empties the slot. An *Everywhere* binding is saved
+/// only after it registers. `confirmWarning` goes ahead past a well-known key's warning.
 #[tauri::command]
 #[specta::specta]
-pub async fn keyboard_set_shortcut(
+pub async fn keyboard_set_binding(
     app: tauri::AppHandle,
-    id: ShortcutId,
+    id: ActionId,
+    slot: Slot,
     keys: Option<String>,
+    confirm_warning: bool,
 ) -> Result<KeyboardView, KeyboardError> {
-    on_blocking(move || keyboard::set_shortcut(&app, id, keys))
+    on_blocking(move || keyboard::set_binding(&app, id, slot, keys, confirm_warning))
         .await
         .unwrap_or(Err(KeyboardError::Store))
 }
 
-/// Sets a global shortcut back to its default, by the same path as a change.
+/// Sets one binding back to its default, by the same path as a change.
 #[tauri::command]
 #[specta::specta]
 pub async fn keyboard_restore_default(
     app: tauri::AppHandle,
-    id: ShortcutId,
+    id: ActionId,
+    slot: Slot,
 ) -> Result<KeyboardView, KeyboardError> {
-    on_blocking(move || keyboard::restore_default(&app, id))
+    on_blocking(move || keyboard::restore_default(&app, id, slot))
         .await
         .unwrap_or(Err(KeyboardError::Store))
 }

@@ -74,6 +74,7 @@ fn fold_unparseable_legacy_no_row() {
     settings_raw(&store, "keys.start_pause", 5);
     assert!(launch(&store));
     assert_eq!(row_of(&store, "keys.global.capture"), None);
+    assert_eq!(row_of(&store, "keys.global.start_pause"), None);
     assert!(flagged(&store));
 }
 

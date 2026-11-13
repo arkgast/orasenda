@@ -95,3 +95,19 @@ fn well_known_alt_only() {
     assert_eq!(well_known(&acc("Control+Alt+KeyA")), None);
     assert_eq!(well_known(&acc("Alt+Super+KeyJ")), None);
 }
+
+#[test]
+fn escape_and_backquote_are_in_the_grammar() {
+    use super::Accelerator;
+    use super::system_keys::{never_delivered, well_known};
+    let esc = Accelerator::parse("Alt+Super+Escape").expect("parses");
+    assert_eq!(esc.describe(), "⌥⌘Esc");
+    assert!(
+        never_delivered(&esc).is_some(),
+        "the never-delivered entry matches"
+    );
+    let tick = Accelerator::parse("Super+Backquote").expect("parses");
+    assert_eq!(tick.describe(), "⌘`");
+    assert!(well_known(&tick).is_some(), "the well-known entry matches");
+    assert_eq!(Accelerator::parse(&tick.canonical()), Ok(tick));
+}

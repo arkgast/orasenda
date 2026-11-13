@@ -1,8 +1,12 @@
+import { everywhere } from "@domain/keyboard/everywhere";
 import { useKeyboardView } from "@domain/keyboard/useKeyboardView";
-import type { KeyboardError, ShortcutId } from "@shared/ipc/bindings";
+import type { KeyboardError } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { useRef, useState } from "react";
 import { toAccelerator } from "./shortcutKeys";
+
+/** Until H3c, Settings shows the two rows it always had, and only their *Everywhere* slot. */
+export type ShortcutId = "startPause" | "capture";
 
 export const SHORTCUT_NAME: Record<ShortcutId, string> = {
   startPause: "Start or pause focus",
@@ -13,7 +17,22 @@ type Errors = Record<ShortcutId, KeyboardError | null>;
 const NONE: Errors = { startPause: null, capture: null };
 
 function describe(error: unknown): KeyboardError {
-  if (error === "invalid" || error === "inUseByOrasenda" || error === "unavailable") return error;
+  if (error === "invalid" || error === "unavailable" || error === "systemKeeps") return error;
+  if (typeof error === "object" && error !== null) {
+    const e = error as Record<string, unknown>;
+    const inUse = e.inUse as Record<string, unknown> | undefined;
+    const warning = e.warning as Record<string, unknown> | undefined;
+    const needs = e.needsModifier as Record<string, unknown> | undefined;
+    if (inUse && typeof inUse === "object" && typeof inUse.action === "string") {
+      return error as KeyboardError;
+    }
+    if (warning && typeof warning === "object" && typeof warning.reason === "string") {
+      return error as KeyboardError;
+    }
+    if (needs && typeof needs === "object" && (needs.slot === "app" || needs.slot === "global")) {
+      return error as KeyboardError;
+    }
+  }
   return "store";
 }
 
@@ -31,7 +50,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
   const saved = useRef(onSaved);
   saved.current = onSaved;
 
-  function run(id: ShortcutId, call: () => ReturnType<typeof commands.keyboardSetShortcut>) {
+  function run(id: ShortcutId, call: () => ReturnType<typeof commands.keyboardSetBinding>) {
     calls.current += 1;
     const mine = calls.current;
     latest.current[id] = mine;
@@ -47,7 +66,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
         }
         if (calls.current === mine) setView(result.data);
         if (latest.current[id] === mine) {
-          saved.current(`${SHORTCUT_NAME[id]}: ${result.data[id].display ?? "off"}.`);
+          saved.current(`${SHORTCUT_NAME[id]}: ${everywhere(result.data, id)?.display ?? "off"}.`);
         }
       },
       (error: unknown) => {
@@ -69,10 +88,10 @@ export function useKeyboard(onSaved: (text: string) => void) {
         setErrors((current) => ({ ...current, [id]: "invalid" }));
         return;
       }
-      run(id, () => commands.keyboardSetShortcut(id, keys));
+      run(id, () => commands.keyboardSetBinding(id, "global", keys, false));
     },
     restore(id: ShortcutId) {
-      run(id, () => commands.keyboardRestoreDefault(id));
+      run(id, () => commands.keyboardRestoreDefault(id, "global"));
     },
   };
 }

@@ -5,6 +5,40 @@ use std::sync::{Mutex, PoisonError};
 
 use super::*;
 
+/// A registry view without a host: the defaults, with the saved text of some slots replaced
+/// (`None` empties one). An *Everywhere* slot with keys shows `Registered`, an empty one `Off`.
+pub fn keyboard_view(set: &[(ActionId, Slot, Option<&str>)]) -> crate::api::KeyboardView {
+    use super::view::{Rows, effective, view_from};
+    let mut rows = Rows::new();
+    for (id, slot, keys) in set {
+        let text = keys.map_or_else(|| "off".to_string(), str::to_string);
+        rows.insert((*id, *slot), (Some(text), false));
+    }
+    let statuses: Vec<_> = ActionId::ALL
+        .iter()
+        .map(|id| {
+            if effective(&rows, *id, Slot::Global).is_some() {
+                crate::api::ShortcutStatus::Registered
+            } else {
+                crate::api::ShortcutStatus::Off
+            }
+        })
+        .collect();
+    view_from(&rows, &statuses, true, false)
+}
+
+/// `view` with one *Everywhere* status replaced.
+pub fn with_status(
+    mut view: crate::api::KeyboardView,
+    id: ActionId,
+    status: crate::api::ShortcutStatus,
+) -> crate::api::KeyboardView {
+    if let Some(action) = view.actions.iter_mut().find(|a| a.id == id) {
+        action.global.status = status;
+    }
+    view
+}
+
 type Probe = Box<dyn Fn() -> String + Send + Sync>;
 
 /// A [`ShortcutRegistrar`] that records every call, fails on demand, and can read the stored
@@ -12,7 +46,7 @@ type Probe = Box<dyn Fn() -> String + Send + Sync>;
 #[derive(Default)]
 pub struct FakeRegistrar {
     calls: Mutex<Vec<String>>,
-    live: Mutex<Vec<(ShortcutId, String)>>,
+    live: Mutex<Vec<(ActionId, String)>>,
     failing: Mutex<bool>,
     probe: Mutex<Option<Probe>>,
     probed: Mutex<Vec<String>>,
@@ -44,7 +78,7 @@ impl FakeRegistrar {
     }
 
     /// The accelerators registered for `id`, oldest first.
-    pub fn live(&self, id: ShortcutId) -> Vec<String> {
+    pub fn live(&self, id: ActionId) -> Vec<String> {
         let live = self.live.lock().unwrap_or_else(PoisonError::into_inner);
         live.iter()
             .filter(|(i, _)| *i == id)
@@ -73,7 +107,7 @@ impl FakeRegistrar {
 }
 
 impl ShortcutRegistrar for FakeRegistrar {
-    fn register(&self, id: ShortcutId, acc: &Accelerator) -> Result<(), RegisterError> {
+    fn register(&self, id: ActionId, acc: &Accelerator) -> Result<(), RegisterError> {
         self.note(format!("register {id:?} {}", acc.canonical()));
         if *self.failing.lock().unwrap_or_else(PoisonError::into_inner) {
             return Err(RegisterError::new("another app holds it"));
@@ -85,7 +119,7 @@ impl ShortcutRegistrar for FakeRegistrar {
         Ok(())
     }
 
-    fn unregister(&self, id: ShortcutId) {
+    fn unregister(&self, id: ActionId) {
         self.note(format!("unregister {id:?}"));
         let mut live = self.live.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(at) = live.iter().position(|(i, _)| *i == id) {
@@ -97,6 +131,10 @@ impl ShortcutRegistrar for FakeRegistrar {
 #[cfg(test)]
 #[path = "cases.rs"]
 mod cases;
+
+#[cfg(test)]
+#[path = "cases_binding.rs"]
+mod cases_binding;
 
 #[cfg(test)]
 #[path = "tip_cases.rs"]

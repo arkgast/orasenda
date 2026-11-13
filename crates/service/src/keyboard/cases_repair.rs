@@ -150,3 +150,26 @@ fn repair_leaves_defaults_alone() {
     let store = mem_store();
     assert_eq!(run(&store), []);
 }
+
+#[test]
+fn repair_restore_default_row_loses_to_user_row() {
+    // A row that only holds the slot's default (what Restore default writes) is default-valued.
+    let store = mem_store();
+    put(
+        &store,
+        ActionId::Floater,
+        Slot::Global,
+        "Control+Alt+Super+KeyT",
+    );
+    put(
+        &store,
+        ActionId::Capture,
+        Slot::Global,
+        "Control+Alt+Super+KeyT",
+    );
+    assert_eq!(run(&store), [(ActionId::Floater, Slot::Global)]);
+    assert_eq!(
+        row(&store, ActionId::Capture, Slot::Global).as_deref(),
+        Some("Control+Alt+Super+KeyT")
+    );
+}
