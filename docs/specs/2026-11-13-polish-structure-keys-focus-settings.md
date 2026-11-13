@@ -234,7 +234,7 @@ ADR-020 records whichever route wins. Until then, every toggle path (menu, monit
 - **The view:** `main` hides `NavRail` and the page header and renders `FullScreenFocus`. Navigation keys (⌘1–6, ⌘,, palette pages) leave full screen first, then navigate. In a Split View tile the view gets a narrow width and uses its compact layout.
 - **Leaving:** Esc (by the rule above) and the Leave `IconButton` leave at once. The `Dialog` "Leave full screen?", its tests and its README text go (`full-screen-focus.md:21-22`). The `scrim` token's usage drops "the full-screen exit confirmation". ⌘W or closing `main` leaves full screen, waits for did-exit, then hides `main`. Quit in full screen quits; the next launch opens `main` normally.
 - **Hints:** the caption ("Space pauses · Esc leaves") is the hint. On entries 1 to 3 it shows for `duration-hint` (new token, 4 s, added in H4), then fades over `duration-slow`. Under reduce motion it disappears with no fade. Its row keeps its height after it fades, so nothing moves. From the 4th entry it doesn't show; Settings › Shortcuts is the reference. Tooltips on the buttons stay.
-- **Layout:** Pause or Resume and End sit centred, vertically, in the space between the ring's bottom and the view's bottom, with a wider gap between them. The gap token comes from the design gate's concept (lean `space-8`). `full-screen-focus.md` (Anatomy and fixed tracks, `:3-7`) and the FullScreenFocus layout spec (`verification/layout/fullScreenFocus.spec.ts`, scenarios in `dev/layout/`) follow; `focusWindow.spec.ts` goes with the window.
+- **Layout:** Pause or Resume and End sit centred, vertically, in the space between the ring's bottom and the view's bottom, with a wider gap between them. The gap token is `space-8` (owner pick 5A): round Pause or Resume and an End `IconButton`. `full-screen-focus.md` (Anatomy and fixed tracks, `:3-7`) and the FullScreenFocus layout spec (`verification/layout/fullScreenFocus.spec.ts`, scenarios in `dev/layout/`) follow; `focusWindow.spec.ts` goes with the window.
 - **Design rules for H4** (the pipeline's `designRules` argument for the task): "Full screen is `main` in native full screen with no nav rail or page header. Controls are centred between the ring's bottom and the view's bottom, with the gate's gap token between Pause and End. No leave dialog. Hints show on the first 3 entries only, keep their row height after fading, and never animate under reduce motion. Tokens only; both themes."
 - **Removed:** `focus.html`, `capabilities/focus.json`, `surfaces/focus/`, the `focus-<display>` window code in `src-tauri/src/windows/` and `crates/platform-macos/src/windows/focus_window.rs`.
 - **Tips:** F's Focus view tips (`statusLine.ts`, "F key opens Focus view…") read their keys from the registry and drop the F key.
@@ -243,7 +243,7 @@ ADR-020 records whichever route wins. Until then, every toggle path (menu, monit
 - **Shell:** master-detail. A sticky side list (`SettingsNav`, new, designed at the gate) of pane names; the selected pane fills the rest and scrolls inside its own `ScrollRegion` only if it must. The list never scrolls away.
 - **`SettingsNav` accessibility:** a `nav` landmark ("Settings") holding a list of buttons; ↑ and ↓ move between them, Home and End jump, Tab leaves the list; the current pane's item has `aria-current="page"`. The tab-strip option uses the same model with ← and →.
 - **Pane change:** with the pointer, focus stays on the nav item. With the keyboard (Enter or Space), focus moves to the pane's heading. The pane's scroll position resets to the top.
-- **Compact width:** (a) a sticky full-width pane button that opens a `PopoverMenu`, or (b) a horizontal tab strip. Both go to the design gate; the owner picks there (lean a).
+- **Compact width:** a sticky horizontal tab strip (owner pick 1B): `SettingsNav` with `orientation="horizontal"`, the current tab underlined in `focus` and marked `aria-current`, ← and → move. When the names don't fit, the strip scrolls sideways and shows edge buttons ("Earlier panes", "More panes") that are not tab stops. The pane title and the save line stay put; only the rows scroll.
 - **Opening:** Settings opens on General unless a target says otherwise *(author's call)*.
 - **Timer pane:** presets in `DataTable` (new): Name, Focus, Break, Long break, Rounds, then `IconButton` Edit and Remove with Tooltips ("Edit Steady Focus", "Remove Steady Focus"). No text Edit or Remove. *Add preset* and *Restore defaults* sit below. The editor and its rules stay as E built them. `DataTable` takes columns and row actions as props, so H7 reuses it.
 - **Shortcuts pane:** the single-key switch at the top, then every registry action grouped by `group`. Each row: description, the two recorders, the *Everywhere* status as a word ("Registered", "Off", "Not available"), the repaired line if any, Restore default. Fixed keys follow in a read-only `ShortcutList`.
@@ -266,6 +266,15 @@ As `docs/specs/2026-11-12-data-portability.md` (Webview, Behavior & edge cases, 
 As spec G: *Back up* frequency (Every month, Every 3 months), *Keep the newest* N (1–50, `NumberField`), *Last backup* with *Back up now*, then the backup list in `DataTable`: date, kind as a word, size, `IconButton` Restore and Delete with Tooltips, the count and total size. "From a newer Orasenda" rows have Restore disabled. The empty state, the Restore `Dialog` (not destructive, `loading`, the unreadable-store body) and the Delete-backup `Dialog` (destructive) are G's. `backups-changed` refreshes the pane.
 
 ### Design gate (before H4–H7 code; in parallel with H2 and H3)
+**Picked (owner, 2026-11-13): 5A, 4A, 3A, 2A, 1B** on the canvas https://claude.ai/artifact/JYkKXMP83i1PdK1RG16Fw3.
+- **Settings (1B):** wide: NavRail, sticky `SettingsNav` list, one pane whose title and save line stay put. Compact: the tab strip above.
+- **Table (2A):** `DataTable` as a ruled table: header row, hairline rows, `IconButton` row actions at the row end, a footer line with the count and size; the presets' selected preset is a radio in the Name cell. Backups reuse it (disabled Restore with its reason line on "From a newer Orasenda"; the empty state).
+- **Shortcuts (3A):** two columns: the name, description and one Restore default on the left; the *In Orasenda* and *Everywhere* recorders on the right; the status as a word ("Registered", "Not available", "Not saved yet"). Needs a `ShortcutRecorder` warning state (the reason plus Pick another and Use anyway), "None" for an empty slot, a per-slot accessible name, and Restore default optional per recorder.
+- **Your data (4A):** *Delete all data…* is the last row after a hairline, as a ghost button; `critical` only on the Dialog's confirm.
+- **Full screen (5A):** round Pause or Resume and an End `IconButton`, `space-8` between them, centred below the ring; the hint row keeps its 18px height after fading.
+- **New icons:** edit, delete (trash) and restore join `Icon`.
+- **Copy from the concepts** *(author's call; the owner did not object)*: "Everything Orasenda keeps is on this Mac.", "Shows only the timer, on the display Orasenda is on.", "Shortcuts are paused while you record.", "⌘T opens a new tab in most apps.".
+
 A hard block: no H4–H7 code starts before the owner picks (owner's brief). The controller runs Claude Design (Artifact quickstart, intent "design"); the picked concepts are recorded in this spec by amendment. *(author's call, builder check)* Two or three concepts each, light and dark, through Claude Design on the Orasenda design system: the Settings layout (regular and both compact options), the presets table (and the same table as the backup list), the Shortcuts pane (two bindings per row), the Your data pane, and the full-screen layout. New components or variants (`SettingsNav`, `DataTable`) are designed there, then built code-first in `packages/ui` with READMEs as their own tasks, ahead of H4 and H5 in Wave 2 *(author's call, builder check)*. The owner picks.
 
 ## Behavior & edge cases
@@ -313,7 +322,7 @@ A hard block: no H4–H7 code starts before the owner picks (owner's brief). The
   3. *Everywhere* defaults on ⌃⌥⌘ (avoids the plain ⌃⌥ VoiceOver keys; see 10); *In Orasenda* defaults ⌘F, ⇧⌘F, ⇧⌘T; start or pause on Space; capture none; Esc leaves full screen. Legacy values: old default → new default, custom → kept as *Everywhere*, `"off"` → empty, also on import.
   4. Native macOS full screen on `main`; choose display leaves, moves and enters; the floater shows over it.
   5. Full-screen hints: 4 s then fade, first 3 entries, counter stored by the app.
-  6. Settings compact width: two concepts at the design gate (lean a).
+  6. Settings compact width: the tab strip (pick 1B, 2026-11-13).
   7. Intent goes entirely; 0006 nulls the column and removes its `change_log` rows; export and import drop it.
   8. The `task` prop leaves `TimerRing`, `TimerStrip` and `FullScreenFocus` in H2; the board sub-project re-adds it with its own design.
   9. H5 drops the Apps and sites section and its `appsAndSites` target until P5.
@@ -359,7 +368,7 @@ Updated by the PRs that implement this spec.
 - [ ] H1 React structure (H1a, H1b move-only PRs)
 - [x] H2 Remove the session intent
 - [ ] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
-- [ ] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen)
+- [x] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen): 5A 4A 3A 2A 1B
 - [ ] H4 Full screen in the main window (Esc and floater spikes first)
 - [ ] H5 Settings shell, seven pane ids, first four panes
 - [ ] H6 About and Your data (supersedes #419)
