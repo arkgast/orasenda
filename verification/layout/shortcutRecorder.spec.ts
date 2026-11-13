@@ -70,3 +70,19 @@ test("shortcut_recorder_field_meets_hit_min_and_field_width", async ({ page }) =
   expect(box?.height).toBeGreaterThanOrEqual(44);
   expect(box?.width).toBeGreaterThanOrEqual(220);
 });
+
+test("shortcut_recorder_content_fits_each_frame", async ({ page }) => {
+  await openSpecimen(page, "ShortcutRecorder");
+  for (const name of ["live", "idle", "recording", "conflict", "off"]) {
+    const frame = page.locator(`[data-state="shortcut-recorder-${name}"]`);
+    const fit = await frame.evaluate((el) => {
+      const outer = el.getBoundingClientRect();
+      let bottom = 0;
+      for (const child of Array.from(el.children)) {
+        bottom = Math.max(bottom, child.getBoundingClientRect().bottom);
+      }
+      return outer.bottom - bottom;
+    });
+    expect(fit, name).toBeGreaterThanOrEqual(-0.5);
+  }
+});

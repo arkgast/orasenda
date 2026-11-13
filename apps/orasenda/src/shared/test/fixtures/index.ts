@@ -59,6 +59,7 @@ const DEFAULTS: Replies = {
   settings_get: () => SETTINGS,
   settings_set: () => null,
   keyboard_state: () => KEYBOARD,
+  keyboard_recording: () => undefined,
   timer_start: () => RUNNING,
   timer_pause: () => PAUSED,
   timer_resume: () => RUNNING,

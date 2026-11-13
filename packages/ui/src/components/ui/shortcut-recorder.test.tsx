@@ -152,3 +152,50 @@ test("shortcut_recorder_shift_tab_leaves_the_field", () => {
   expect(event.defaultPrevented).toBe(false);
   expect(onRecord).not.toHaveBeenCalled();
 });
+
+const ADD_MODIFIER = "Add ⌘, ⌃ or ⌥. A single key can't be a shortcut.";
+
+test("recorder_plain_f_says_add_modifier", () => {
+  const { onRecord, field } = setup({ recording: true });
+  expect(screen.queryByText(ADD_MODIFIER)).toBeNull();
+  press(field, "KeyF");
+  const message = screen.getByText(ADD_MODIFIER);
+  expect(message).toHaveAttribute("aria-live", "polite");
+  expect(field.getAttribute("aria-describedby")).toContain(message.id);
+  expect(onRecord).not.toHaveBeenCalled();
+  // Recording continues: a real chord still records, and the message goes.
+  press(field, "KeyF", { ctrlKey: true, altKey: true });
+  expect(onRecord).toHaveBeenCalledWith("⌃⌥F");
+  expect(screen.queryByText(ADD_MODIFIER)).toBeNull();
+});
+
+test("recorder_message_line_exists_before_it_has_text", () => {
+  const { field } = setup({ recording: true });
+  const live = document.querySelector('[aria-live="polite"]');
+  expect(live).not.toBeNull();
+  expect(live?.textContent).toBe("");
+  expect(field.getAttribute("aria-describedby")).toContain((live as HTMLElement).id);
+});
+
+test("recorder_reports_recording_changes", () => {
+  const onRecordingChange = vi.fn();
+  const { field } = setup({ onRecordingChange });
+  fireEvent.click(field);
+  expect(onRecordingChange).toHaveBeenLastCalledWith(true);
+  press(field, "Escape");
+  expect(onRecordingChange).toHaveBeenLastCalledWith(false);
+  fireEvent.click(field);
+  press(field, "KeyK", { ctrlKey: true });
+  expect(onRecordingChange).toHaveBeenLastCalledWith(false);
+  fireEvent.click(field);
+  fireEvent.blur(field);
+  expect(onRecordingChange).toHaveBeenLastCalledWith(false);
+  expect(onRecordingChange.mock.calls.map(([on]) => on)).toEqual([
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+  ]);
+});

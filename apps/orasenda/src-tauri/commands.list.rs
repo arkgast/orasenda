@@ -33,6 +33,7 @@ pub const COMMANDS: &[&str] = &[
     "keyboard_state",
     "keyboard_set_shortcut",
     "keyboard_restore_default",
+    "keyboard_recording",
     "capture_note",
     "capture_open",
     "capture_close",

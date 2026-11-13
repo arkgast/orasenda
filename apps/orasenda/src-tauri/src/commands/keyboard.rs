@@ -14,6 +14,18 @@ pub async fn keyboard_state(app: tauri::AppHandle) -> KeyboardView {
         .unwrap_or_else(|| keyboard::state(&fallback))
 }
 
+/// Suspends (`on`) or restores (`off`) every menu accelerator, global shortcut and single key while a
+/// shortcut recorder listens. In memory only; a repeat of the same state does nothing.
+#[tauri::command]
+#[specta::specta]
+pub async fn keyboard_recording(app: tauri::AppHandle, on: bool) {
+    // Taking the menu off and unregistering shortcuts wait on the main thread, so this is not run on it.
+    #[cfg(desktop)]
+    on_blocking(move || crate::runtime::recording::set(&app, on)).await;
+    #[cfg(not(desktop))]
+    let _ = (app, on);
+}
+
 /// Changes a global shortcut; `null` turns it off. It is saved only after it registers.
 #[tauri::command]
 #[specta::specta]

@@ -185,6 +185,7 @@ export function backend({
     // The capture panel and the palette's Capture row.
     capture_open: () => null,
     capture_close: () => null,
+    keyboard_recording: () => null,
     capture_note: () => NOTE,
     ...replies,
   };

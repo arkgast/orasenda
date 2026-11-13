@@ -72,6 +72,11 @@ export const commands = {
 	keyboardSetShortcut: (id: ShortcutId, keys: string | null) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_set_shortcut", { id, keys })),
 	/**  Sets a global shortcut back to its default, by the same path as a change. */
 	keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id })),
+	/**
+	 *  Suspends (`on`) or restores (`off`) every menu accelerator, global shortcut and single key while a
+	 *  shortcut recorder listens. In memory only; a repeat of the same state does nothing.
+	 */
+	keyboardRecording: (on: boolean) => __TAURI_INVOKE<void>("keyboard_recording", { on }),
 	/**  Saves a note to the Inbox; answers it. */
 	captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>(__TAURI_INVOKE("capture_note", { note })),
 	/**  Opens the capture panel on the display under the pointer, or focuses its text area. */
