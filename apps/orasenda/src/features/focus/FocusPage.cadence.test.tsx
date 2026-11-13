@@ -1,3 +1,4 @@
+import { resetPresetsForTests } from "@domain/presets/presets";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
@@ -12,7 +13,6 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetPresetsForTests } from "../today/presets";
 import { FocusPage } from "./FocusPage";
 
 beforeEach(() => {

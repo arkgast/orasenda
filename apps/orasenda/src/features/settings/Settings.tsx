@@ -1,11 +1,11 @@
+import { selectedPreset, usePresets, usePresetsFailed } from "@domain/presets/presets";
+import { useTimer } from "@domain/timer/useTimer";
 import { InlineNotice, type NavPage, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { Settings as SettingsValue, Theme } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useTimer } from "../timer/useTimer";
-import { selectedPreset, usePresets, usePresetsFailed } from "../today/presets";
 import {
   askingKey,
   askMacOS,

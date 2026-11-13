@@ -1,6 +1,7 @@
+import { commandFailure } from "@domain/timer/commandFailure";
 import type { TimerCommandErrorKind } from "@shared/ipc/bindings";
 import { expect, test } from "vitest";
-import { commandFailure, type StatusInput, statusLine } from "./statusLine";
+import { type StatusInput, statusLine } from "./statusLine";
 
 const NONE: StatusInput = {
   startError: false,

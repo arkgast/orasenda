@@ -1,5 +1,5 @@
+import { selectedPreset, usePresets } from "@domain/presets/presets";
 import type { Settings } from "@shared/ipc/bindings";
-import { selectedPreset, usePresets } from "./presets";
 
 /**
  * The next session's focus length ("25 min") for the strip while idle, from the selected library

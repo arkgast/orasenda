@@ -1,3 +1,5 @@
+import { PAGE_ORDER } from "@domain/navigation/PagesButton";
+import { presetChoices, presetMeta, presetName, selectedPreset } from "@domain/presets/presets";
 import type { Command } from "@orasenda/ui";
 import type {
   DisplayInfo,
@@ -7,13 +9,6 @@ import type {
   Theme,
   TimerView_Serialize,
 } from "@shared/ipc/bindings";
-import {
-  presetChoices,
-  presetMeta,
-  presetName,
-  selectedPreset,
-} from "../../features/today/presets";
-import { PAGE_ORDER } from "../PagesButton";
 
 export type PaletteInput = {
   view: TimerView_Serialize | null;

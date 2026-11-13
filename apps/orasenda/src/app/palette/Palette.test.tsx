@@ -1,3 +1,4 @@
+import { onIntentFieldRequest, resetIntentEventsForTests } from "@features/today/intentEvents";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
@@ -13,7 +14,6 @@ import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { Palette } from "./Palette";
 
 beforeEach(() => {

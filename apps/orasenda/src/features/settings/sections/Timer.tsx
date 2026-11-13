@@ -1,6 +1,6 @@
+import { selectedPreset } from "@domain/presets/presets";
 import { SettingsRow } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "@shared/ipc/bindings";
-import { selectedPreset } from "../../today/presets";
 import type { PresetEditing } from "../usePresets";
 import { type CadenceChange, CadenceRows } from "./CadenceRows";
 import { PresetList } from "./PresetList";

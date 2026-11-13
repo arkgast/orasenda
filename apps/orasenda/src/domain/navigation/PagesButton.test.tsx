@@ -3,7 +3,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { PagesButton } from "./PagesButton";
-import { onPaletteRequest } from "./palette/paletteRequest";
+import { onPaletteRequest } from "./paletteRequest";
 
 afterEach(async () => {
   cleanup();

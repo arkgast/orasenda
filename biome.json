@@ -26,7 +26,13 @@
   "overrides": [
     {
       "includes": ["packages/ui/src/index.ts"],
-      "assist": { "actions": { "source": { "organizeImports": "off" } } }
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": "off"
+          }
+        }
+      }
     },
     {
       "includes": ["apps/orasenda/src/shared/**"],
@@ -38,19 +44,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@surfaces/*"],
+                    "group": ["@surfaces/**"],
                     "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@app/*"],
+                    "group": ["@app/**"],
                     "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@features/*"],
+                    "group": ["@features/**"],
                     "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@domain/*"],
+                    "group": ["@domain/**"],
                     "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
                   }
                 ]
@@ -70,19 +76,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@surfaces/*"],
+                    "group": ["@surfaces/**"],
                     "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@app/*"],
+                    "group": ["@app/**"],
                     "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@features/*"],
+                    "group": ["@features/**"],
                     "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@domain/*"],
+                    "group": ["@domain/**"],
                     "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
                   },
                   {
@@ -106,19 +112,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@surfaces/*"],
+                    "group": ["@surfaces/**"],
                     "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@app/*"],
+                    "group": ["@app/**"],
                     "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@features/*"],
+                    "group": ["@features/**"],
                     "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@domain/*"],
+                    "group": ["@domain/**"],
                     "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
                   },
                   {
@@ -142,19 +148,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@surfaces/*"],
+                    "group": ["@surfaces/**"],
                     "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@app/*"],
+                    "group": ["@app/**"],
                     "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@features/*"],
+                    "group": ["@features/**"],
                     "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
                   },
                   {
-                    "group": ["@domain/*"],
+                    "group": ["@domain/**"],
                     "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
                   },
                   {
@@ -213,6 +219,527 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/orasenda/src/app/*.ts", "apps/orasenda/src/app/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/**"],
+                    "message": "app/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the app/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/app/*/*.ts", "apps/orasenda/src/app/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/**"],
+                    "message": "app/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the app/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/features/*/*.ts", "apps/orasenda/src/features/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/**"],
+                    "message": "features/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/**"],
+                    "message": "features/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/**"],
+                    "message": "features/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/features/*/*/*.ts", "apps/orasenda/src/features/*/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/**"],
+                    "message": "features/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/**"],
+                    "message": "features/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/**"],
+                    "message": "features/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/domain/*/*.ts", "apps/orasenda/src/domain/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/**"],
+                    "message": "domain/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/**"],
+                    "message": "domain/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/**"],
+                    "message": "domain/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the domain folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/domain/*/*.test.ts",
+        "apps/orasenda/src/domain/*/*.test.tsx",
+        "apps/orasenda/src/domain/*/*.support.ts",
+        "apps/orasenda/src/domain/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**"],
+                    "message": "domain/ imports no feature, tests included (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the domain folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/board/*.test.ts",
+        "apps/orasenda/src/features/board/*.test.tsx",
+        "apps/orasenda/src/features/board/*.support.ts",
+        "apps/orasenda/src/features/board/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/board/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than board (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/board/*/*.test.ts",
+        "apps/orasenda/src/features/board/*/*.test.tsx",
+        "apps/orasenda/src/features/board/*/*.support.ts",
+        "apps/orasenda/src/features/board/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/board/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than board (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/capture/*.test.ts",
+        "apps/orasenda/src/features/capture/*.test.tsx",
+        "apps/orasenda/src/features/capture/*.support.ts",
+        "apps/orasenda/src/features/capture/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/capture/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than capture (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/capture/*/*.test.ts",
+        "apps/orasenda/src/features/capture/*/*.test.tsx",
+        "apps/orasenda/src/features/capture/*/*.support.ts",
+        "apps/orasenda/src/features/capture/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/capture/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than capture (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/floater/*.test.ts",
+        "apps/orasenda/src/features/floater/*.test.tsx",
+        "apps/orasenda/src/features/floater/*.support.ts",
+        "apps/orasenda/src/features/floater/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/floater/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than floater (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/floater/*/*.test.ts",
+        "apps/orasenda/src/features/floater/*/*.test.tsx",
+        "apps/orasenda/src/features/floater/*/*.support.ts",
+        "apps/orasenda/src/features/floater/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/floater/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than floater (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/focus/*.test.ts",
+        "apps/orasenda/src/features/focus/*.test.tsx",
+        "apps/orasenda/src/features/focus/*.support.ts",
+        "apps/orasenda/src/features/focus/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/focus/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than focus (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/focus/*/*.test.ts",
+        "apps/orasenda/src/features/focus/*/*.test.tsx",
+        "apps/orasenda/src/features/focus/*/*.support.ts",
+        "apps/orasenda/src/features/focus/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/focus/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than focus (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/settings/*.test.ts",
+        "apps/orasenda/src/features/settings/*.test.tsx",
+        "apps/orasenda/src/features/settings/*.support.ts",
+        "apps/orasenda/src/features/settings/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/settings/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than settings (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/settings/*/*.test.ts",
+        "apps/orasenda/src/features/settings/*/*.test.tsx",
+        "apps/orasenda/src/features/settings/*/*.support.ts",
+        "apps/orasenda/src/features/settings/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/settings/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than settings (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/today/*.test.ts",
+        "apps/orasenda/src/features/today/*.test.tsx",
+        "apps/orasenda/src/features/today/*.support.ts",
+        "apps/orasenda/src/features/today/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/today/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than today (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/features/today/*/*.test.ts",
+        "apps/orasenda/src/features/today/*/*.test.tsx",
+        "apps/orasenda/src/features/today/*/*.support.ts",
+        "apps/orasenda/src/features/today/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@features/**", "!@features/today/**"],
+                    "message": "A test may import another layer to render a surface, but not another feature than today (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the feature folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "formatter": {
@@ -221,7 +748,11 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
-  "css": { "parser": { "tailwindDirectives": true } },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {

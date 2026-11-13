@@ -1,3 +1,4 @@
+import { App } from "@app/App";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import {
@@ -12,7 +13,6 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { App } from "../../app/App";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { h1, INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
 

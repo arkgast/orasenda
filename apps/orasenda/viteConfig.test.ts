@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 async function loadServer() {
   vi.resetModules();
-  return (await import("../vite.config")).default.server ?? {};
+  return (await import("./vite.config")).default.server ?? {};
 }
 
 describe("vite dev server", () => {
@@ -37,7 +37,7 @@ describe("vite dev server", () => {
 describe("vite build inputs", () => {
   it("builds one page per window, the Focus window, the floater and the capture panel included", async () => {
     vi.resetModules();
-    const config = (await import("../vite.config")).default;
+    const config = (await import("./vite.config")).default;
     const input = config.build?.rolldownOptions?.input as Record<string, string>;
     expect(Object.keys(input).sort()).toEqual([
       "capture",

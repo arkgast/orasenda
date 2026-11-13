@@ -10,7 +10,10 @@ const cssFiles = readdirSync(stylesDir, { recursive: true, encoding: "utf8" })
   .filter((name) => name.endsWith(".css"))
   .map((name) => ({ name, css: readFileSync(join(stylesDir, name), "utf8") }));
 const appCss = readFileSync(join(stylesDir, "app.css"), "utf8");
-const mainTsx = readFileSync(join(import.meta.dirname, "..", "main.tsx"), "utf8");
+const mainTsx = readFileSync(
+  join(import.meta.dirname, "..", "surfaces", "main", "main.tsx"),
+  "utf8",
+);
 const tokensCss = readFileSync(
   createRequire(import.meta.filename).resolve("@orasenda/tokens/tokens.css"),
   "utf8",

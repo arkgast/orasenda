@@ -308,7 +308,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-021: Frontend layers and import direction
 - **Date:** 2026-11-13
-- **Status:** proposed (spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Every later frontend spec follows it.
+- **Status:** accepted 2026-11-13 (H1a and H1b; spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Every later frontend spec follows it.
 - **Context:** `apps/orasenda/src` has `app/`, `features/*`, `ipc/`, `test/` and `dev/`, and nothing stops a feature importing another. Today `focus`, `floater` and `settings` import `features/timer` and `features/today` (presets, `PresetSummary`, `statusLine`, `cadenceOffers`), and `board`, `capture`, `floater`, `focus`, `settings` and `today` import from `app/` (for example `features/focus/FocusPage.tsx:3-13`, `features/settings/Settings.tsx:3-8`). Each screen task now has to read across features to know what it may change.
 - **Options considered:**
   1. **Five layers, imports only downward, enforced by Biome:** `surfaces → app → features → domain → shared` (order amended 2026-11-13 by the controller's plan-review ruling: the main entry mounts the `app/` shell, so surfaces sit above it). Shared domain code moves to `domain/`; features never import each other.

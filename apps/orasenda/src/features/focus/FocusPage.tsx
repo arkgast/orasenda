@@ -1,17 +1,17 @@
+import { cadenceActions } from "@domain/cadence/cadenceActions";
+import { useShortcuts } from "@domain/keyboard/useShortcuts";
+import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
+import { PresetSummary } from "@domain/presets/PresetSummary";
+import { selectedPreset, usePresets } from "@domain/presets/presets";
+import { commandFailure } from "@domain/timer/commandFailure";
+import { useClock } from "@domain/timer/useClock";
+import { useSurfaceTimer } from "@domain/timer/useSurfaceTimer";
 import { FullScreenFocus } from "@orasenda/ui";
 import { useTheme } from "@shared/hooks/useTheme";
 import type { Settings, TimerCommandError, TimerView_Serialize } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { watchSettingsChanged } from "@shared/ipc/settingsQueue";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { useShortcuts } from "../../app/useShortcuts";
-import { useSingleKeys } from "../../app/useSingleKeys";
-import { useClock } from "../timer/useClock";
-import { useSurfaceTimer } from "../timer/useSurfaceTimer";
-import { PresetSummary } from "../today/PresetSummary";
-import { selectedPreset, usePresets } from "../today/presets";
-import { commandFailure } from "../today/statusLine";
-import { cadenceActions } from "./cadenceActions";
 import { useInsets } from "./useInsets";
 import "./focus.css";
 

@@ -1,7 +1,7 @@
+import { useKeyboardView } from "@domain/keyboard/useKeyboardView";
 import type { KeyboardError, ShortcutId } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { useRef, useState } from "react";
-import { useKeyboardView } from "../../app/useKeyboardView";
 import { toAccelerator } from "./shortcutKeys";
 
 export const SHORTCUT_NAME: Record<ShortcutId, string> = {

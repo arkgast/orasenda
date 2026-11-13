@@ -1,3 +1,4 @@
+import { PagesButton } from "@domain/navigation/PagesButton";
 import {
   EmptyState,
   InboxRow,
@@ -9,7 +10,6 @@ import {
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { NoteView } from "@shared/ipc/bindings";
 import { useLayoutEffect, useRef } from "react";
-import { PagesButton } from "../../app/PagesButton";
 import { type Line, useCaptureKeys, useInbox } from "./useInbox";
 import "./board.css";
 

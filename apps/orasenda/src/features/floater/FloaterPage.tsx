@@ -1,8 +1,8 @@
+import { useSurfaceTimer } from "@domain/timer/useSurfaceTimer";
 import { FloatingTimer } from "@orasenda/ui";
 import { useTheme } from "@shared/hooks/useTheme";
 import { commands, type TimerView_Serialize } from "@shared/ipc/bindings";
 import { type MouseEvent, useCallback, useEffect, useRef } from "react";
-import { useSurfaceTimer } from "../timer/useSurfaceTimer";
 import "./floater.css";
 
 // The key route (windows/floater.rs `KEY_ROUTE`): with `Webview` this page hears Space, Return
