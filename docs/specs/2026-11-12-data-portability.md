@@ -82,7 +82,8 @@ One device, one user. Dates in the Backups list and *Last backup* are shown in t
 - **Data file:** a SQLite database with `user_version` between 1 and `SCHEMA_VERSION` (5, `crates/store/src/lib.rs:37`) and a `meta.device_id`. A file with `user_version` 0 or no `meta` table is "not Orasenda data".
 - **Syncable rows** (what import merges): `setting` (by `key`), `preset`, `focus_session` and `inbox_note` (by `id`). `Entity` already names them (`crates/store/src/txn.rs:9-14`).
 - **Left out of import:** `meta`, `active_session`, `window_frame` and `change_log`. They stay in exported and backup files (a whole copy), and import ignores them.
-- **Backup:** a file in `<app data dir>/Backups/` named `orasenda-<YYYYMMDD>T<HHMMSS>Z-<kind>.db`, where kind is `auto`, `manual`, `before-import` or `before-restore`. Its time and kind come from the name; its size from the file. Files that don't match the pattern are ignored (never listed, never pruned).
+- **Backup:** a file in `<app data dir>/Backups/` named `orasenda-<YYYYMMDD>T<HHMMSS>Z-<kind>.db`, where kind is `auto`, `manual`, `before-import` or `before-restore`. Its time and kind come from the name; its size from the file. Files that don't match the pattern are ignored (never listed, never pruned). Two backups in the same second get `-2`, `-3` before `.db`.
+- **Unrecognised backup** (owner, 2026-11-12: "if a backup is not recognizable we can drop it"): a backup-named file that `probe` can't read or that isn't Orasenda data is deleted when the folder is listed, and never shown. A backup from a newer Orasenda is recognised: it is listed with "From a newer Orasenda", *Restore…* disabled and *Delete…* available.
 - **Backup policy** (device-only `meta`, no migration, like F's flags):
   - `backup.frequency`: `"monthly"` (default) or `"quarterly"`; 30 or 91 days.
   - `backup.keep`: a whole number 1–50 as text, default `"12"`.
@@ -100,8 +101,8 @@ One device, one user. Dates in the Backups list and *Last backup* are shown in t
 - `stats::counts(txn) -> Counts` counts live rows (no tombstones).
 
 **Service (`crates/service/src/data/`).** No tauri. Each function takes the data dir and the clock:
-- `backups.rs`: `BackupPolicy`, `BackupKind`, `BackupEntry { file, kind, created_ms, bytes }`, `list(dir)`, `create(store, dir, kind, now_ms)` (snapshot, then prune to `keep`), `delete(dir, file)` (only a listed name; no path separators), `due(entries, policy, now_ms)`.
-- `import.rs`: `import(store, dir, source, now_ms) -> Result<ImportReport, DataError>`. Probes `source`; copies it to `<dir>/import-<uuid>.db`; opens the copy with `Store::open` (migrations run on the copy only); reads `export::rows`; takes a `before-import` backup; runs `merge::apply` in one write on the live store; enforces the preset cap; removes the copy (also on error).
+- `backups.rs`: `BackupPolicy`, `BackupKind`, `BackupEntry { file, kind, created_ms, bytes, newer }`, `list(dir)` (probes each file and drops unrecognised ones), `create(store, dir, kind, now_ms)` (snapshot, then prune to `keep`), `delete(dir, file)` (only a listed name; no path separators), `due(entries, policy, now_ms)`.
+- `import.rs`: `import(store, dir, source, now_ms) -> Result<ImportReport, DataError>`. Probes `source`; copies it to `<dir>/import-<uuid>.db`; opens the copy with `Store::open` (migrations run on the copy only); reads `export::rows`; takes a `before-import` backup (always, even when the merge turns out to add nothing: the backup must exist before the write); runs `merge::apply` in one write on the live store; enforces the preset cap; removes the copy (also on error).
 - `pending.rs`: `apply_pending(dir) -> PendingOutcome` runs inside `open_store_at` (`run.rs:31-35`) before `Store::open`. `orasenda.delete` wins over a restore file. Each removes `orasenda.db`, `-wal` and `-shm`; a restore then renames `orasenda.restore.db` to `orasenda.db`. After a restore, the service clears `active_session` before recovery runs.
 - `DataError` kinds: `Busy` (session running), `Newer`, `NotOrasenda`, `Unreadable`, `Write`, `Unavailable` (the live store isn't open).
 
@@ -116,7 +117,7 @@ One device, one user. Dates in the Backups list and *Last backup* are shown in t
 | `data_delete_all()` | `()` or `DataError` | Writes `orasenda.delete`, then `AppHandle::restart()` (`tauri-2.12.5/src/app.rs:606`). |
 | `backups_create()` | `BackupEntry` | Kind `manual`. |
 | `backups_delete(file)` | `()` | |
-| `backups_restore(file)` | `()` or `DataError` | Probe (refuse `Newer`) → copy to `orasenda.restore.db.partial` → rename → `before-restore` backup → restart. |
+| `backups_restore(file)` | `()` or `DataError` | Probe (refuse `Newer`) → copy to `orasenda.restore.db.partial` → rename → `before-restore` backup (skipped when the store isn't open) → restart. Needs no open store. |
 | `backups_set_policy(policy)` | `BackupPolicy` | Writes both `meta` keys in one write; prunes at once when `keep` drops. |
 
 The automatic check runs on a background thread after `setup` opens the store (`apps/orasenda/src-tauri/src/runtime/session.rs:29-45`) and on the main window's `Focused(true)` (`lifecycle.rs:57`). It lists the folder, and creates an `auto` backup when `due`. A check already running makes the next one return at once. Each change to the list emits `backups-changed`, so an open Settings page refreshes.
@@ -164,7 +165,9 @@ The automatic check runs on a background thread after `setup` opens the store (`
 
 **Other cases:**
 - **No backups yet:** *Last backup* reads "None yet" and the list reads "No backups yet. The first one is made automatically, or choose Back up now."
-- **Store unavailable or newer** (`StoreStatus`, `crates/service/src/api/timer.rs:26-30`): *Your data* and *Backups* buttons are disabled except *Show in Finder* and *Delete…* of a backup; the counts line reads "Unavailable until Orasenda can open its data."
+- **Store unavailable or newer** (`StoreStatus`, `crates/service/src/api/timer.rs:26-30`). Data and backups are separate (owner, 2026-11-12), so each section keeps what works without the store:
+  - *Your data:* the counts line reads "Unavailable until Orasenda can open its data."; *Show in Finder* and *Delete all data…* work (the delete marker needs no store); Export and Import are disabled.
+  - *Backups:* the list, *Restore…* and *Delete…* work (they act on files, and Restore at the next launch). *Back up now*, the automatic check and the policy fields are disabled, because they need the store. The Restore Dialog's body reads instead "Orasenda can't open your current data, so it can't back it up first. This backup replaces it and Orasenda restarts."
 - **Session running:** Export and backups work (`VACUUM INTO` copies a consistent state under the lock). Import, Restore and Delete all data refuse with `Busy` and never open a panel or Dialog.
 - **Exported file chosen as its own destination's neighbour, or overwriting:** the Save panel asks to replace; the `.partial` rename replaces atomically.
 - **Restart fails or the app is killed after the marker:** the next launch applies it. A crash between `.partial` and the rename leaves only `.partial` files, which launch deletes.
@@ -177,7 +180,7 @@ No migration and no new table: `SCHEMA_VERSION` stays 5. The two policy keys are
 
 ## Testing strategy
 - **Store** (temp dirs, as `setup_creates_app_data_dir` does in `crates/service/src/session/tests/run.rs:318`): snapshot round-trip equals source rows; `probe` on a v1 file, a v5 file, a `user_version` 99 file, an empty SQLite file and a text file; merge per table and rule (insert, later wins, earlier loses, tie keeps local, tombstone wins for notes, idempotence with zero log rows); `counts` skips tombstones.
-- **Service:** `due` boundaries (29/30 days, 90/91 days, no automatic backup yet, only manual backups present); prune across kinds keeps the newest N; `delete` refuses names with `/` or `..` or not listed; `import` from a v1 fixture built by running `0001_init.sql` only; `Newer` and `NotOrasenda` leave the live store and the backup folder unchanged; preset cap keeps the selected preset; `Busy` while a session runs; `apply_pending` for delete, restore, both, and leftover `.partial` files; a restore clears `active_session`.
+- **Service:** `list` drops a text file and an empty SQLite file named as backups, keeps and marks a newer one; same-second names get a suffix; Restore and Delete all data work with an unavailable store, and Restore then takes no safety backup; `due` boundaries (29/30 days, 90/91 days, no automatic backup yet, only manual backups present); prune across kinds keeps the newest N; `delete` refuses names with `/` or `..` or not listed; `import` from a v1 fixture built by running `0001_init.sql` only; `Newer` and `NotOrasenda` leave the live store and the backup folder unchanged; preset cap keeps the selected preset; `Busy` while a session runs; `apply_pending` for delete, restore, both, and leftover `.partial` files; a restore clears `active_session`.
 - **App crate:** manifest and capability tests list the new commands and no `dialog:` permission; `export_bindings` names the commands; the dialog is behind a `FilePicker` trait so tests run without a panel; restart behind `Host`.
 - **Webview:** the three sections render from a fake overview; each status line; the two delete Dialogs use `critical` only on confirm and return focus; the Restore Dialog; *Keep* range 1–50 with the field's error line; the index and navigation targets for `data` and `backups`; disabled states for unavailable or newer stores.
 - **WebKit layout and contrast:** the Settings specimen covers both themes, compact width, an empty list and a 12-item list.
