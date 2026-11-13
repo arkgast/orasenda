@@ -4,6 +4,7 @@
 //! crate supplies the host, the thread and the emits.
 
 pub mod api;
+pub mod inbox;
 pub mod keyboard;
 pub mod scheduler;
 pub mod session;

@@ -9,7 +9,7 @@ use std::time::SystemTime;
 use orasenda_core::Notifier;
 use orasenda_core::clock::delay_to_next_second;
 use orasenda_service::api::{
-    KeyboardView, MilestoneEvent, PresetEntry, Settings, Theme, TimerView,
+    KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme, TimerView,
 };
 use orasenda_service::session::{SessionService, Surfaces, ViewGate};
 use tauri::{AppHandle, Manager};
@@ -90,6 +90,10 @@ impl Host for AppHost {
 
     fn emit_keyboard_changed(&self, view: &KeyboardView) {
         super::events::emit_keyboard_changed(&self.0, view);
+    }
+
+    fn emit_inbox_changed(&self, notes: &[NoteView]) {
+        super::events::emit_inbox_changed(&self.0, notes);
     }
 
     fn apply_theme(&self, theme: Theme) {

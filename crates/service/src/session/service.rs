@@ -182,6 +182,16 @@ impl SessionService {
         service
     }
 
+    /// The store, `None` while it is unavailable. For the Inbox.
+    pub(crate) fn store(&self) -> Option<&Store> {
+        self.store.as_ref()
+    }
+
+    /// The user's local time zone and clock preference. For the Inbox.
+    pub(crate) fn local_time(&self) -> &dyn LocalTime {
+        self.platform.local_time.as_ref()
+    }
+
     /// The presented settings: the cache (defaults while degraded), except that an unknown
     /// `preset_id` is presented as the first live preset, and while a notify review is pending
     /// `notify_session_end` is the review's outcome under the status known now, and `false`

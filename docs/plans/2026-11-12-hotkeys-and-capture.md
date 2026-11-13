@@ -98,7 +98,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - Consumes: `inbox_notes::*` from F2 (#387).
   - Produces:
     - `capture_note(note: NewCapture { text: String, kind: NoteKind }) -> Result<NoteView, CaptureError>`;
-    - `inbox_list() -> Vec<NoteView>`;
+    - `inbox_list() -> Result<Vec<NoteView>, InboxError>` (a store read failure is `InboxError::Store`, logged, never an empty Inbox);
     - `inbox_remove(id: String) -> Result<(), InboxError>` and `inbox_restore(id: String) -> Result<(), InboxError>`;
     - event `inbox-changed: Vec<NoteView>`;
     - `NoteView { id, text, kind, createdAt: String, createdAtLabel: String }`;
@@ -235,7 +235,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - Consumes: `inbox_list`, `inbox_remove`, `inbox_restore` and `inbox-changed` from F3 (#389); `InboxRow` from F1 (#386); `PageFrame`, `ScrollRegion`, `EmptyState`, `InlineNotice`; `KeyboardView.capture` from F4 (#388) for the empty-state copy.
 - Acceptance:
   - [ ] Heading "Inbox" and live notes newest first. The list updates on `inbox-changed` with no reload.
-  - [ ] Remove hides the note at once and shows "Note removed." with Undo, until the next removal or 10 s. Undo restores it in place. Remove and restore failures show a plain line and are never silent.
+  - [ ] Remove hides the note at once and shows "Note removed." with Undo, until the next removal or 10 s. Undo restores it in place. Remove and restore failures show a plain line and are never silent. A load failure shows a plain line, never the empty state.
   - [ ] Empty states: "Nothing in your Inbox." plus "⌃⌥N captures a thought from anywhere." (the user's keys) or "Capture a thought from the menu bar." when that shortcut is off or failed.
   - [ ] After Remove, focus moves to the next row's Remove, or the previous one, or the heading.
   - [ ] Layout with 0, 1 and 50 notes at Today's size set: it scrolls inside `ScrollRegion`, 44px targets, both themes.

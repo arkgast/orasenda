@@ -72,6 +72,14 @@ export const commands = {
 	keyboardSetShortcut: (id: ShortcutId, keys: string | null) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_set_shortcut", { id, keys })),
 	/**  Sets a global shortcut back to its default, by the same path as a change. */
 	keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id })),
+	/**  Saves a note to the Inbox; answers it. */
+	captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>(__TAURI_INVOKE("capture_note", { note })),
+	/**  The live notes, newest first. */
+	inboxList: () => typedError<NoteView[], InboxError>(__TAURI_INVOKE("inbox_list")),
+	/**  Removes a note (it can be brought back). */
+	inboxRemove: (id: string) => typedError<null, InboxError>(__TAURI_INVOKE("inbox_remove", { id })),
+	/**  Brings a removed note back. */
+	inboxRestore: (id: string) => typedError<null, InboxError>(__TAURI_INVOKE("inbox_restore", { id })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -92,6 +100,7 @@ export const commands = {
 export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
+	inboxChanged: makeEvent<NoteView[], NoteView[]>("inbox-changed"),
 	keyboardChanged: makeEvent<KeyboardView_Serialize, KeyboardView_Deserialize>("keyboard-changed"),
 	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
@@ -143,6 +152,15 @@ export type BlockRule = {
 
 /**  Which break a [`Phase::Break`] is: the long one comes every `rounds` completed focus sessions. */
 export type BreakKind = "short" | "long";
+
+/**  Why a capture was not saved. */
+export type CaptureError = 
+/**  Nothing but whitespace. */
+"empty" | 
+/**  More than 1000 characters after trimming. */
+"tooLong" | 
+/**  The store is unavailable or the write failed. */
+"store";
 
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
 export type ClockTick = ClockTick_Serialize | ClockTick_Deserialize;
@@ -213,6 +231,13 @@ export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind
 export type Hint = 
 /**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
 "keepGoing";
+
+/**  Why removing or restoring a note failed. */
+export type InboxError = 
+/**  No such note, or it is already in the state asked for. */
+"notFound" | 
+/**  The store is unavailable or the write failed. */
+"store";
 
 /**  Why a shortcut change failed. */
 export type KeyboardError = 
@@ -363,6 +388,27 @@ export type Navigate_Serialize = {
 	page: NavigatePage,
 	/**  Where on the Settings page to land; `None` is the top. Ignored for other pages. */
 	target: SettingsTarget | null,
+};
+
+/**  A note to save, as typed. The service trims it. */
+export type NewCapture = {
+	text: string,
+	kind: NoteKind,
+};
+
+/**  Whether a note is about the user's own work or about something outside it. */
+export type NoteKind = "internal" | "external";
+
+/**  A live note, with its time already worded in the user's local time zone. */
+export type NoteView = {
+	/**  A UUIDv7. */
+	id: string,
+	text: string,
+	kind: NoteKind,
+	/**  The time as shown: "14:32" today, "Yesterday 14:32", "12 Nov 14:32". */
+	createdAt: string,
+	/**  The same time as VoiceOver should say it: "Today at 14:32", "12 November at 14:32". */
+	createdAtLabel: string,
 };
 
 /**  Whether the app may post notifications, serialized camelCase. */

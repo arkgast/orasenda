@@ -101,7 +101,7 @@ A single local user. No roles. The capture window's capability grants only `capt
 | `focus-*`, `floater` | unchanged, plus `capture_open` (⌘K is main-only; the menu items are Rust) | anything new beyond that |
 
 ## Tenancy & localization
-n/a for tenancy. Times on Board use the device's local time zone through the existing Rust clock formatting: "14:32" for today, "Yesterday 14:32", and otherwise "12 Nov 14:32" *(author's call)*. The copy is English only.
+n/a for tenancy. Times on Board use the device's local time zone through the existing Rust clock formatting: "14:32" for today, "Yesterday 14:32", and otherwise "12 Nov 14:32", and "12 Nov 2025 14:32" for another calendar year *(author's call)*. The copy is English only.
 
 ## Domain model
 - **Global shortcut:** one of `startPause` (default "Control+Alt+KeyF") or `capture` (default "Control+Alt+KeyN"). It is stored as a syncable setting: `keys.start_pause` and `keys.capture`, whose value is a canonical accelerator string or `"off"`. Canonical form: modifiers in the order Control, Alt, Shift, Super, then the `KeyboardEvent.code`, joined by `+`. Rust parses it into the plugin's `Shortcut`; `describeShortcut` renders it as "⌃⌥F".
@@ -139,7 +139,7 @@ n/a for tenancy. Times on Board use the device's local time zone through the exi
   - `capture_open()` opens or focuses the panel.
   - `capture_note({ text, kind }) -> Result<NoteView, CaptureError>`; `CaptureError` is `Empty | TooLong | Store`.
   - `capture_close()` closes the panel.
-  - `inbox_list() -> Vec<NoteView>` (live notes, newest first);
+  - `inbox_list() -> Result<Vec<NoteView>, InboxError>` (live notes, newest first; a store read failure is an error, never an empty list);
   - `inbox_remove(id) -> Result<(), InboxError>`;
   - `inbox_restore(id) -> Result<(), InboxError>`;
   - the event `inbox-changed` carries the list.

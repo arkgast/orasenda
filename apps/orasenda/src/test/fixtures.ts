@@ -7,6 +7,7 @@ import type {
   FocusInsets,
   MilestoneEvent_Serialize,
   NavigatePage,
+  NoteView,
   PresetEntry,
   Settings,
   SettingsTarget,
@@ -138,6 +139,24 @@ export const PRESETS: PresetEntry[] = [
   entry(DEEP, "Deep Work", 90, 15, 30, 2),
 ];
 
+/** Two Inbox notes, newest first, as `inbox_list` answers. */
+export const NOTES: NoteView[] = [
+  {
+    id: "note-2",
+    text: "Email the landlord about the lease",
+    kind: "external",
+    createdAt: "14:32",
+    createdAtLabel: "Today at 14:32",
+  },
+  {
+    id: "note-1",
+    text: "Try the smaller timer ring",
+    kind: "internal",
+    createdAt: "Yesterday 09:05",
+    createdAtLabel: "Yesterday at 09:05",
+  },
+];
+
 /** Two connected displays, the main window's first (`displays_list`). */
 export const DISPLAYS: DisplayInfo[] = [
   { id: "1", name: "Built-in Retina Display", hasMainWindow: true },
@@ -161,6 +180,10 @@ const DEFAULTS: Replies = {
   hint_shown: () => RUNNING,
   navigate_take: () => null,
   presets_list: () => PRESETS,
+  inbox_list: () => NOTES,
+  inbox_remove: () => null,
+  inbox_restore: () => null,
+  capture_note: (args) => ({ ...NOTES[0], text: (args as { note: { text: string } }).note.text }),
   notifications_request: () => "granted",
   notifications_open_settings: () => null,
   timer_view: () => IDLE,
@@ -279,6 +302,12 @@ export async function emitSettingsChanged(settings: Settings): Promise<void> {
 export async function emitPresetsChanged(presets: PresetEntry[]): Promise<void> {
   await act(async () => {
     await events.presetsChanged.emit(presets);
+  });
+}
+
+export async function emitInboxChanged(notes: NoteView[]): Promise<void> {
+  await act(async () => {
+    await events.inboxChanged.emit(notes);
   });
 }
 

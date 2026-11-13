@@ -75,6 +75,18 @@ impl Type for KeyboardChanged {
     }
 }
 
+/// `inbox-changed`: the live Inbox notes, newest first, after any write from any surface.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "inbox-changed")]
+pub struct InboxChangedEvent(pub Vec<NoteView>);
+
+impl Type for InboxChangedEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <Vec<NoteView> as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]

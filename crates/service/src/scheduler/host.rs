@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::Notifier;
 
 use crate::api::{
-    ClockTick, KeyboardView, MilestoneEvent, PresetEntry, Settings, Theme, TimerView,
+    ClockTick, KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme, TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 
@@ -33,6 +33,8 @@ pub trait Host: Clone + Send + Sync + 'static {
     fn emit_presets_changed(&self, presets: &[PresetEntry]);
     /// Emits `keyboard-changed`. An emit error is logged, never fatal.
     fn emit_keyboard_changed(&self, view: &KeyboardView);
+    /// Emits `inbox-changed`: the live notes, newest first. An emit error is logged, never fatal.
+    fn emit_inbox_changed(&self, notes: &[NoteView]);
     /// Applies the app-wide theme (`System` clears the override). Never called under the
     /// service lock.
     fn apply_theme(&self, theme: Theme);
