@@ -20,6 +20,7 @@ use objc2::runtime::AnyObject;
 use objc2_app_kit::NSWindow;
 use orasenda_core::platform::PlatformError;
 
+mod display_uuid;
 mod displays;
 mod floater;
 mod focus_window;

@@ -62,6 +62,7 @@ fn move_floater<O: Ops>(ops: &O, screens: &[Screen]) {
     else {
         return;
     };
+    ops.migrate_frames(screens);
     let frame = match ops
         .load_frame(&[target.id.as_str()])
         .filter(|(display, _)| display == &target.id)

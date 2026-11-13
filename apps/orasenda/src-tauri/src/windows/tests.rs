@@ -33,6 +33,7 @@ fn screen(id: &str, width: u32, height: u32) -> Screen {
     let visible = rect(0, 24, width, height - 24 - 60);
     Screen {
         id: id.into(),
+        legacy_id: id.into(),
         name: format!("Display {id}"),
         size: (width, height),
         visible,

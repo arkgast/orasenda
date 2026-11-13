@@ -63,6 +63,7 @@ fn start_frame<'a, O: Ops>(
     ops: &O,
     screens: &'a [Screen],
 ) -> Result<(&'a Screen, Frame), FocusViewError> {
+    ops.migrate_frames(screens);
     let ids: Vec<&str> = screens.iter().map(|screen| screen.id.as_str()).collect();
     if let Some((id, stored)) = ops.load_frame(&ids)
         && let Ok(screen) = screen_of(screens, &id)

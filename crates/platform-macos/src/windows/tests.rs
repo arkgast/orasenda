@@ -3,6 +3,7 @@
 
 use std::ptr::null_mut;
 
+use super::display_uuid::legacy_raw;
 use super::displays::{Display, Rect, display_key, to_appkit, to_top_left};
 use super::keys::{FloaterKey, Modifiers, floater_key};
 use super::*;
@@ -68,9 +69,27 @@ fn display_key_is_label_safe() {
 }
 
 #[test]
+fn display_key_from_uuid_is_label_safe() {
+    let uuid = "37D8832A-2D66-02CA-B9F7-8F30A301B230";
+    let key = display_key(uuid);
+    assert_eq!(
+        key, uuid,
+        "a UUID is already label-safe and is kept as it is"
+    );
+    assert!(key.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'));
+    // The legacy form stays as it was, and is never the UUID.
+    assert_eq!(
+        display_key(&legacy_raw(Some(69_733_248), 0, "Built-in Retina Display")),
+        "69733248-Built-in-Retina-Display"
+    );
+    assert_eq!(display_key(&legacy_raw(None, 2, "X")), "i2-X");
+}
+
+#[test]
 fn relative_frames_survive_a_round_trip_on_the_second_display() {
     let second = Display {
         id: "2".into(),
+        legacy_id: "2".into(),
         name: "Second".into(),
         frame: rect(-1280.0, 80.0, 1280.0, 720.0),
         visible: rect(-1280.0, 104.0, 1280.0, 696.0),
@@ -88,12 +107,14 @@ fn relative_frames_survive_a_round_trip_on_the_second_display() {
 fn display_containing_picks_the_display_under_the_window_centre() {
     let a = Display {
         id: "a".into(),
+        legacy_id: "a".into(),
         name: "A".into(),
         frame: rect(0.0, 0.0, 100.0, 100.0),
         visible: rect(0.0, 0.0, 100.0, 100.0),
     };
     let b = Display {
         id: "b".into(),
+        legacy_id: "b".into(),
         name: "B".into(),
         frame: rect(100.0, 0.0, 100.0, 100.0),
         visible: rect(100.0, 0.0, 100.0, 100.0),

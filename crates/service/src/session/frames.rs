@@ -83,6 +83,36 @@ impl SessionService {
         }
     }
 
+    /// Moves frames stored under legacy display keys to the display UUID keys. `keys` holds
+    /// `(legacy, new)` pairs of the connected displays. A frame already under the new key
+    /// (stored or this run's) wins and the legacy row is dropped. A failed write is logged
+    /// and the frame is kept in memory for this run under the new key.
+    pub fn frame_migrate(&mut self, window: &str, keys: &[(&str, &str)], now_ms: u64) {
+        let Some(store) = self.store.as_ref() else {
+            return;
+        };
+        for (legacy, new) in keys.iter().filter(|(legacy, new)| legacy != new) {
+            let found = store.read(|txn| window_frames::get(txn, window, legacy));
+            let stored = match found {
+                Ok(Some(stored)) => stored,
+                Ok(None) => continue,
+                Err(error) => {
+                    eprintln!("frames: {window} on {legacy} could not be read ({error})");
+                    continue;
+                }
+            };
+            let moved = store.write(now_ms, |txn| window_frames::rekey(txn, window, legacy, new));
+            if let Err(error) = moved {
+                eprintln!(
+                    "frames: {window} on {legacy} not moved to {new} ({error}); kept for this run"
+                );
+                if let Some(frame) = from_stored(stored) {
+                    self.frames.entry(key(window, new)).or_insert((frame, 0));
+                }
+            }
+        }
+    }
+
     /// Remembers a frame. A failed or impossible write is logged and kept in memory for this
     /// run; a successful one drops any older in-memory copy.
     pub fn frame_save(&mut self, window: &str, display: &str, frame: Frame, now_ms: u64) {
@@ -113,6 +143,14 @@ pub fn run_frame_load<H: Host>(
     displays: &[&str],
 ) -> Option<(String, Frame)> {
     lock(host.service()?).frame_load(window, displays)
+}
+
+/// Moves frames stored under legacy display keys to the new ones (see
+/// [`SessionService::frame_migrate`]). Before setup it does nothing.
+pub fn run_frame_migrate<H: Host>(host: &H, window: &str, keys: &[(&str, &str)]) {
+    if let Some(service) = host.service() {
+        lock(service).frame_migrate(window, keys, host.now_ms());
+    }
 }
 
 /// The frame of `window` on `display`. `None` before setup.

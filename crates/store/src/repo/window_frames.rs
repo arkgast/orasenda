@@ -70,6 +70,25 @@ pub fn put(
     Ok(())
 }
 
+/// Moves the frame of `window` from display key `from` to `to`, keeping its `updated_at`
+/// and deleting the `from` row. Does nothing (and answers `false`) when `from` has no frame
+/// or `to` already has one: the frame under `to` is newer and wins, and the `from` row is
+/// then deleted as stale. Answers `true` when a frame was moved.
+pub fn rekey(txn: &Txn, window: &str, from: &str, to: &str) -> Result<bool, StoreError> {
+    let moved = match (row(txn, window, from)?, row(txn, window, to)?) {
+        (Some((frame, at)), None) => {
+            put(txn, window, to, frame, u64::try_from(at).unwrap_or(0))?;
+            true
+        }
+        _ => false,
+    };
+    txn.conn().execute(
+        "DELETE FROM window_frame WHERE window = ?1 AND display = ?2",
+        (window, from),
+    )?;
+    Ok(moved)
+}
+
 fn row(txn: &Txn, window: &str, display: &str) -> Result<Option<(StoredFrame, i64)>, StoreError> {
     Ok(txn
         .conn()
@@ -104,6 +123,43 @@ mod tests {
         width: 280,
         height: 64,
     };
+
+    #[test]
+    fn store_rekey_moves_row() {
+        let store = store();
+        store
+            .write(9, |txn| {
+                put(txn, "floater", "old", FRAME, 5)?;
+                assert!(rekey(txn, "floater", "old", "new")?);
+                assert!(!rekey(txn, "floater", "old", "new")?, "moves once");
+                Ok(())
+            })
+            .expect("writes");
+        store
+            .read(|txn| {
+                assert_eq!(get(txn, "floater", "old")?, None);
+                assert_eq!(get(txn, "floater", "new")?, Some(FRAME));
+                assert_eq!(row(txn, "floater", "new")?.map(|r| r.1), Some(5));
+                Ok(())
+            })
+            .expect("reads");
+    }
+
+    #[test]
+    fn store_rekey_keeps_a_frame_already_under_the_new_key() {
+        let store = store();
+        let newer = StoredFrame { x: 1, ..FRAME };
+        store
+            .write(9, |txn| {
+                put(txn, "floater", "old", FRAME, 5)?;
+                put(txn, "floater", "new", newer, 6)?;
+                assert!(!rekey(txn, "floater", "old", "new")?);
+                assert_eq!(get(txn, "floater", "old")?, None);
+                assert_eq!(get(txn, "floater", "new")?, Some(newer));
+                Ok(())
+            })
+            .expect("writes");
+    }
 
     fn store() -> Store {
         Store::open_in_memory("device-a").expect("opens")
