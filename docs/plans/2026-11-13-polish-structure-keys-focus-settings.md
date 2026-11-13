@@ -219,7 +219,7 @@ Wave 3:  H5a ──> H6               H5a, HU2 ──> H7      (both may run bes
     - the alias rule;
     - naming (`PascalCase.tsx`, `camelCase.ts`, `<File>.<behaviour>.test.tsx`, `.support.tsx`);
     - a pointer to "Code structure and size".
-  - `docs/DECISIONS.md`: ADR-018 accepted.
+  - `docs/DECISIONS.md`: nothing (ADR-018 is already accepted in the spec PR).
   - Import lines in every importer of a moved file.
 - Interfaces:
   - Produces: the six aliases; `just lint-layers`; `@shared/test/fixtures/{timer,keyboard,data}`; `dev/layout/scenarios/<area>.ts`.
@@ -423,7 +423,7 @@ Wave 3:  H5a ──> H6               H5a, HU2 ──> H7      (both may run bes
   - test modules `keyboard/{cases_registry.rs,cases_system_keys.rs,cases_fold.rs,cases_repair.rs}` (new). `cases.rs` (427 lines) takes nothing.
 - Touches:
   - `keyboard/mod.rs` (module lines);
-  - `CONTEXT.md`: *In Orasenda binding*, *Everywhere binding*, *shortcut registry*, *fixed key*, *never-delivered key*, *well-known key*, *fold rule*, *repair pass*.
+  - `CONTEXT.md` (already holds these terms from the spec PR; update a row only if its meaning changes): *In Orasenda binding*, *Everywhere binding*, *shortcut registry*, *fixed key*, *never-delivered key*, *well-known key*, *fold rule*, *repair pass*.
 - Interfaces:
   - Produces:
     - `enum ActionId { FullScreen, FullScreenOther, LeaveFullScreen, Floater, StartPause, Capture }`;
@@ -699,7 +699,7 @@ Wave 3:  H5a ──> H6               H5a, HU2 ──> H7      (both may run bes
 - Touches:
   - `features/settings/{settingsTarget.ts,SettingsHeader.tsx,Settings.navigation.test.tsx}` (290 lines; new cases go in `Settings.panes.test.tsx`);
   - `app/App.tsx`: import lines only (`AboutInfo` from `panes/About`; `SettingsTarget`);
-  - `src-tauri/src/ipc.rs` (`SettingsTarget`), `bindings.ts`, `verification/layout/settings.spec.ts` and `CONTEXT.md` (*pane*);
+  - `src-tauri/src/ipc.rs` (`SettingsTarget`), `bindings.ts`, `verification/layout/settings.spec.ts` (CONTEXT.md already has *pane*);
   - `sections/{Timer,Keyboard}.tsx`: moved to `panes/Timer.tsx` and `panes/Shortcuts.tsx` (move only), so H5b and H5c own them.
 - Interfaces:
   - Consumes: `SettingsNav` (HU1); `data_overview` and `backups-changed` (G5).
@@ -865,8 +865,8 @@ Wave 3:  H5a ──> H6               H5a, HU2 ──> H7      (both may run bes
 | Apps and sites removed; `data` and `backups` targets | H5a |
 | `SettingsNav`, `DataTable` code-first | HU1, HU2 |
 | Design gate | HD |
-| CONTEXT.md terms | H3b1 (eight keyboard terms), H5a (*pane*) |
-| ADR-018 and ADR-021 accepted; ADR-020; ADR-019 | H1a, H1b, H3b2, H4c |
+| CONTEXT.md terms | done in the spec PR; H3b1 and H5a update rows only if meanings change |
+| ADR-021, ADR-020, ADR-019 accepted (ADR-018 done in the spec PR) | H1b, H3b2, H4c |
 | Implementation status boxes | each task's PR |
 | #438 and #439 | H3b2, H3a2 |
 | Board sub-project issue; close #419 and #420 | backlog (controller) |
