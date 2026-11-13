@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Why a backup was made. It is part of the file name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "camelCase")]
 pub enum BackupKind {
     Auto,
     Manual,

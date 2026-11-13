@@ -50,8 +50,9 @@ pub(super) fn unique(backups: &Path, now_ms: u64, kind: BackupKind) -> String {
         .unwrap_or(first)
 }
 
-/// The time (second precision) and kind a backup name carries, or `None` for any other name.
-pub(super) fn parse(name: &str) -> Option<(u64, BackupKind)> {
+/// The time (second precision), kind and clash number (1 when none) a backup name carries, or
+/// `None` for any other name.
+pub(super) fn parse(name: &str) -> Option<(u64, BackupKind, u32)> {
     let rest = name.strip_prefix("orasenda-")?.strip_suffix(".db")?;
     let (time, after) = rest.split_once('Z')?;
     let (date, clock) = time.split_once('T')?;
@@ -83,15 +84,17 @@ pub(super) fn parse(name: &str) -> Option<(u64, BackupKind)> {
     let ms =
         (days_from_civil(year, month, day) * 86_400 + hour * 3600 + minute * 60 + second) * 1000;
     let tail = after.strip_prefix('-')?;
-    let (kind, _) = KINDS.iter().find(|(_, text)| {
-        tail == *text
-            || tail
-                .strip_prefix(text)
-                .and_then(|s| s.strip_prefix('-'))
-                .is_some_and(|n| n.parse::<u32>().is_ok_and(|n| n >= 2) && !n.starts_with('0'))
+    let (kind, number) = KINDS.iter().find_map(|(kind, text)| {
+        if tail == *text {
+            return Some((*kind, 1));
+        }
+        let n = tail.strip_prefix(text)?.strip_prefix('-')?;
+        let value = n.parse::<u32>().ok()?;
+        (n.bytes().all(|b| b.is_ascii_digit()) && value >= 2 && !n.starts_with('0'))
+            .then_some((*kind, value))
     })?;
     // A date like 31 February parses digit by digit but names no day: it must round-trip.
-    (stem(ms, *kind)[..25] == name[..25]).then_some((ms, *kind))
+    (stem(ms, kind)[..25] == name[..25]).then_some((ms, kind, number))
 }
 
 /// Days since 1970-01-01 to (year, month, day) (Hinnant's algorithm).

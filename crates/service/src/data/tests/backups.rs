@@ -234,3 +234,21 @@ fn policy_keep_range() {
         );
     }
 }
+
+#[test]
+fn same_second_backups_list_latest_first() {
+    let dir = TempDir::new();
+    let store = open(dir.path());
+    keep(&store, 20);
+    let made: Vec<String> = (0..11)
+        .map(|_| {
+            create(&store, dir.path(), BackupKind::Manual, T0)
+                .unwrap()
+                .file
+        })
+        .collect();
+    let listed: Vec<String> = list(dir.path()).into_iter().map(|e| e.file).collect();
+    let mut expected = made;
+    expected.reverse();
+    assert_eq!(listed, expected);
+}

@@ -26,12 +26,12 @@ pub fn list(dir: &Path) -> Vec<BackupEntry> {
     let Ok(read) = std::fs::read_dir(&folder) else {
         return Vec::new();
     };
-    let mut entries = Vec::new();
+    let mut found = Vec::new();
     for item in read.flatten() {
         let Some(file) = item.file_name().to_str().map(str::to_owned) else {
             continue;
         };
-        let Some((created_ms, kind)) = names::parse(&file) else {
+        let Some((created_ms, kind, number)) = names::parse(&file) else {
             continue;
         };
         let path = item.path();
@@ -42,14 +42,17 @@ pub fn list(dir: &Path) -> Vec<BackupEntry> {
             continue;
         }
         match probe(&path) {
-            Ok(found) if found.has_device_id && found.user_version >= 1 => {
-                entries.push(BackupEntry {
-                    file,
-                    kind,
-                    created_ms,
-                    bytes: meta.len(),
-                    newer: found.user_version > SCHEMA_VERSION,
-                });
+            Ok(probed) if probed.has_device_id && probed.user_version >= 1 => {
+                found.push((
+                    number,
+                    BackupEntry {
+                        file,
+                        kind,
+                        created_ms,
+                        bytes: meta.len(),
+                        newer: probed.user_version > SCHEMA_VERSION,
+                    },
+                ));
             }
             Ok(_) | Err(ProbeError::NotSqlite) => {
                 if let Err(error) = std::fs::remove_file(&path) {
@@ -59,8 +62,9 @@ pub fn list(dir: &Path) -> Vec<BackupEntry> {
             Err(ProbeError::Io(error)) => eprintln!("backups: could not read {file} ({error})"),
         }
     }
-    entries.sort_by(|a, b| (b.created_ms, &b.file).cmp(&(a.created_ms, &a.file)));
-    entries
+    // Newest first; within one second the higher clash number was made later.
+    found.sort_by(|a, b| (b.1.created_ms, b.0).cmp(&(a.1.created_ms, a.0)));
+    found.into_iter().map(|(_, entry)| entry).collect()
 }
 
 /// Snapshots the store into `Backups/`, then prunes to the policy's `keep` across every kind.
@@ -77,7 +81,7 @@ pub fn create(
     let path = folder.join(&file);
     store.snapshot_to(&path).map_err(write_error)?;
     let bytes = std::fs::metadata(&path).map_err(write_error)?.len();
-    let created_ms = names::parse(&file).map_or(now_ms, |(ms, _)| ms);
+    let created_ms = names::parse(&file).map_or(now_ms, |(ms, _, _)| ms);
     prune_keeping(dir, policy::read(store).keep, Some(&file));
     Ok(BackupEntry {
         file,

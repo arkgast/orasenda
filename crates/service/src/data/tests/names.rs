@@ -14,7 +14,7 @@ fn names_round_trip_and_suffix() {
         BackupKind::BeforeRestore,
     ] {
         let name = unique(dir.path(), ms, kind);
-        assert_eq!(parse(&name), Some((ms, kind)), "{name}");
+        assert_eq!(parse(&name), Some((ms, kind, 1)), "{name}");
     }
     let first = unique(dir.path(), ms, BackupKind::Manual);
     assert_eq!(first, "orasenda-20261103T091205Z-manual.db");
@@ -24,7 +24,7 @@ fn names_round_trip_and_suffix() {
     std::fs::write(dir.path().join(&second), b"x").unwrap();
     let third = unique(dir.path(), ms, BackupKind::Manual);
     assert_eq!(third, "orasenda-20261103T091205Z-manual-3.db");
-    assert_eq!(parse(&third), Some((ms, BackupKind::Manual)));
+    assert_eq!(parse(&third), Some((ms, BackupKind::Manual, 3)));
     for other in [
         "notes.db",
         "orasenda.db",
@@ -32,6 +32,7 @@ fn names_round_trip_and_suffix() {
         "orasenda-20261103T091205Z-weekly.db",
         "orasenda-20261103T091205Z-manual-1.db",
         "orasenda-20261103T091205Z-manual-02.db",
+        "orasenda-20261103T091205Z-manual-+2.db",
         "orasenda-20261331T091205Z-manual.db",
         "orasenda-20260231T091205Z-manual.db",
         "orasenda-20261103T256205Z-manual.db",
