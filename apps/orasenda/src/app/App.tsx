@@ -44,12 +44,14 @@ function load<P>(importer: () => Promise<ComponentType<P>>) {
 
 const todayPage = load(() => import("../features/today/Today").then((m) => m.Today));
 const settingsPage = load(() => import("../features/settings/Settings").then((m) => m.Settings));
+const boardPage = load(() => import("../features/board/BoardPage").then((m) => m.BoardPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
 
 /** Settles when every page has loaded or failed; the test setup waits for it. */
 export const pagesReady = Promise.allSettled([
   todayPage.ready,
   settingsPage.ready,
+  boardPage.ready,
   placeholderPage.ready,
 ]);
 
@@ -59,6 +61,10 @@ function Today(props: ComponentProps<typeof import("../features/today/Today").To
 }
 function Settings(props: ComponentProps<typeof import("../features/settings/Settings").Settings>) {
   const Page = settingsPage.use();
+  return <Page {...props} />;
+}
+function Board(props: ComponentProps<typeof import("../features/board/BoardPage").BoardPage>) {
+  const Page = boardPage.use();
   return <Page {...props} />;
 }
 function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeholder>) {
@@ -158,7 +164,11 @@ export function App() {
 
   return (
     <div
-      className={["app", current === "settings" ? "app-bound" : "", compact ? "app-compact" : ""]
+      className={[
+        "app",
+        current === "settings" || current === "board" ? "app-bound" : "",
+        compact ? "app-compact" : "",
+      ]
         .filter(Boolean)
         .join(" ")}
     >
@@ -173,7 +183,8 @@ export function App() {
               {current === "settings" ? (
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}
-              {current !== "today" && current !== "settings" ? (
+              {current === "board" ? <Board onNavigate={(page) => navigate(page)} /> : null}
+              {current !== "today" && current !== "settings" && current !== "board" ? (
                 <Placeholder
                   title={TITLES[current]}
                   compact={compact}

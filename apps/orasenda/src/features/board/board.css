@@ -1,0 +1,16 @@
+/* Board: like Settings, the window is bounded so only the ScrollRegion scrolls. */
+.app-board-page {
+  flex: auto;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+/* The list keeps a readable measure and leaves space-1 at the inline end for the Remove focus ring. */
+.app-board-list {
+  max-inline-size: var(--content-width);
+  margin: 0;
+  padding: 0;
+  padding-inline-end: var(--space-1);
+}
