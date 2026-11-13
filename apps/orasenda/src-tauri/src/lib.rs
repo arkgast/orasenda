@@ -55,6 +55,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::preset_remove,
             commands::preset_undo_remove,
             commands::presets_restore_defaults,
+            commands::keyboard_state,
+            commands::keyboard_set_shortcut,
+            commands::keyboard_restore_default,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -69,6 +72,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::TimerMilestoneEvent,
             ipc::SettingsChanged,
             ipc::PresetsChangedEvent,
+            ipc::KeyboardChanged,
             ipc::Navigate,
             ipc::FocusInsets,
             ipc::PaletteOpen,
@@ -120,6 +124,8 @@ pub fn run() {
         .setup(move |app| {
             builder.mount_events(app);
             runtime::session::setup(app)?;
+            runtime::keyboard::manage(app);
+            runtime::keyboard::register_saved(app.handle());
             #[cfg(desktop)]
             tray::setup(app)?;
             runtime::ticker::spawn(runtime::ticker::AppHost::new(app.handle()))?;

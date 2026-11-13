@@ -36,6 +36,9 @@ const DEFAULT_SETTINGS: SettingsValue = {
   deepCapHours: 4,
   notifySessionEnd: false,
   notifyTwoMinutes: false,
+  startPauseKeys: "Control+Alt+KeyF",
+  captureKeys: "Control+Alt+KeyN",
+  singleKey: true,
 };
 
 const REST = "Changes save as you make them.";

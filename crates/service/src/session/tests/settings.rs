@@ -61,6 +61,8 @@ fn every_new_key_round_trips() {
         deep_cap_hours: 6,
         notify_session_end: true,
         notify_two_minutes: true,
+        single_key: false,
+        ..Settings::default()
     };
     s.set_settings(all.clone(), T0).expect("saves");
     assert_eq!(s.settings(), all);
@@ -302,7 +304,6 @@ fn settings_single_key_default_true() {
     };
     s.set_settings(off, T0).expect("saves");
     assert!(!s.settings().single_key);
-    assert!(!relaunch(&mut s, T0 + 1).settings().single_key);
     // The shortcut keys are not part of that chain: an echo with other keys changes nothing.
     let echo = Settings {
         start_pause_keys: "Control+Alt+KeyZ".into(),
@@ -312,4 +313,5 @@ fn settings_single_key_default_true() {
     s.set_settings(echo, T0 + 2).expect("saves");
     assert_eq!(s.settings().start_pause_keys, "Control+Alt+KeyF");
     assert_eq!(s.settings().capture_keys, "Control+Alt+KeyN");
+    assert!(!relaunch(&mut s, T0 + 1).settings().single_key);
 }

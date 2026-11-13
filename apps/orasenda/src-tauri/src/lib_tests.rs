@@ -119,6 +119,9 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-preset-remove",
         "allow-preset-undo-remove",
         "allow-presets-restore-defaults",
+        "allow-keyboard-state",
+        "allow-keyboard-set-shortcut",
+        "allow-keyboard-restore-default",
     ] {
         assert!(
             permissions.iter().any(|p| p == granted),
@@ -217,6 +220,9 @@ fn main_capability_exact() {
             "allow-preset-remove",
             "allow-preset-undo-remove",
             "allow-presets-restore-defaults",
+            "allow-keyboard-state",
+            "allow-keyboard-set-shortcut",
+            "allow-keyboard-restore-default",
         ],
     );
     let (_, main) = capability("main.json");
@@ -389,6 +395,10 @@ fn export_bindings() {
         "focusViewClose: () => typedError<null, FocusViewError>",
         "mainShow: () => typedError<null, FocusViewError>",
         "timerView: () => __TAURI_INVOKE<TimerView_Serialize>(\"timer_view\")",
+        "keyboardState: () => __TAURI_INVOKE<KeyboardView_Serialize>(\"keyboard_state\")",
+        "keyboardSetShortcut: (id: ShortcutId, keys: string | null) => typedError<KeyboardView_Serialize, KeyboardError>",
+        "keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>",
+        "keyboardChanged: makeEvent<",
         "presetSelect: (presetId: string) => typedError<null, TimerCommandError>",
         "focusInsets: makeEvent<",
         "paletteOpen: makeEvent<",

@@ -37,6 +37,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::PresetsChanged(_) => "presets",
             Event::ApplyTheme(_) => "theme",
             Event::OpenedSettings => "opened",
+            Event::KeyboardChanged(_) => "keyboard",
         })
         .collect();
     assert_eq!(

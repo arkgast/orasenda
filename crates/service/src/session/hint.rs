@@ -9,6 +9,9 @@ use crate::api::Hint;
 /// The `meta` key holding when the hint was shown (RFC 3339, UTC).
 pub(super) const META_HINT_KEEP_GOING: &str = "hint.keep_going";
 
+/// The `meta` key holding when the start or pause shortcut was first used (RFC 3339, UTC).
+pub(super) const META_USED_GLOBAL_SHORTCUT: &str = "used.global_shortcut";
+
 /// Whether the hint was shown before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(super) enum Seen {
@@ -24,6 +27,8 @@ pub(super) struct HintState {
     /// A manual extend happened in this focus and the hint has not been shown yet.
     pub(super) pending: bool,
     pub(super) seen: Seen,
+    /// Whether the global start or pause shortcut was used before.
+    pub(super) used_global: Seen,
 }
 
 impl SessionService {
@@ -33,6 +38,10 @@ impl SessionService {
             self.hint.seen = Seen::Unknown;
             return;
         };
+        self.hint.used_global = match store.read(|txn| meta::get(txn, META_USED_GLOBAL_SHORTCUT)) {
+            Ok(Some(_)) => Seen::Yes,
+            _ => Seen::No,
+        };
         self.hint.seen = match store.read(|txn| meta::get(txn, META_HINT_KEEP_GOING)) {
             Ok(None) => Seen::No,
             Ok(Some(_)) => Seen::Yes,
@@ -41,6 +50,23 @@ impl SessionService {
                 Seen::Unknown
             }
         };
+    }
+
+    /// ⌃⌥F did something: remember the first use, once. A failed write is logged and retried by
+    /// the next press.
+    pub(super) fn note_global_shortcut_used(&mut self, now_ms: u64) {
+        if self.hint.used_global == Seen::Yes {
+            return;
+        }
+        let stamp = rfc3339_utc(now_ms);
+        match self.write_owed(now_ms, |txn| {
+            meta::set(txn, META_USED_GLOBAL_SHORTCUT, &stamp)
+        }) {
+            Ok(()) => self.hint.used_global = Seen::Yes,
+            Err(error) => {
+                eprintln!("shortcut: could not remember {META_USED_GLOBAL_SHORTCUT} ({error})");
+            }
+        }
     }
 
     /// A manual "+10 min" went through.

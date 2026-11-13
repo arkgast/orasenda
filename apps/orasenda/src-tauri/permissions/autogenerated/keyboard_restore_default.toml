@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-keyboard-restore-default"
+description = "Enables the keyboard_restore_default command without any pre-configured scope."
+commands.allow = ["keyboard_restore_default"]
+
+[[permission]]
+identifier = "deny-keyboard-restore-default"
+description = "Denies the keyboard_restore_default command without any pre-configured scope."
+commands.deny = ["keyboard_restore_default"]

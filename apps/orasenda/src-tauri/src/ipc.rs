@@ -63,6 +63,18 @@ impl Type for PresetsChangedEvent {
     }
 }
 
+/// `keyboard-changed`: the global shortcuts and the single-key setting after a change.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "keyboard-changed")]
+pub struct KeyboardChanged(pub KeyboardView);
+
+impl Type for KeyboardChanged {
+    fn definition(types: &mut Types) -> DataType {
+        <KeyboardView as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]

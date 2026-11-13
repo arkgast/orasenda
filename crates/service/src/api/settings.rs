@@ -3,6 +3,8 @@
 use orasenda_core::{PresetId, default_presets};
 use serde::{Deserialize, Serialize};
 
+use super::ShortcutId;
+
 /// The colour theme the person chose.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
@@ -36,6 +38,13 @@ pub struct Settings {
     pub notify_session_end: bool,
     /// Notify two minutes before the end (`notify.two_minutes`).
     pub notify_two_minutes: bool,
+    /// The start or pause shortcut: a canonical accelerator or `"off"` (`keys.start_pause`).
+    /// Changed only through `keyboard_set_shortcut`; `settings_set` ignores it.
+    pub start_pause_keys: String,
+    /// The capture shortcut, the same (`keys.capture`).
+    pub capture_keys: String,
+    /// Space, F and P on Today and Space in Focus view act (`keys.single_key`).
+    pub single_key: bool,
 }
 
 impl Default for Settings {
@@ -50,6 +59,9 @@ impl Default for Settings {
             deep_cap_hours: 4,
             notify_session_end: false,
             notify_two_minutes: false,
+            start_pause_keys: ShortcutId::StartPause.default_keys().into(),
+            capture_keys: ShortcutId::Capture.default_keys().into(),
+            single_key: true,
         }
     }
 }
