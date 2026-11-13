@@ -63,7 +63,7 @@ pub fn list(dir: &Path) -> Vec<BackupEntry> {
         }
     }
     // Newest first; within one second the higher clash number was made later.
-    found.sort_by(|a, b| (b.1.created_ms, b.0).cmp(&(a.1.created_ms, a.0)));
+    found.sort_by_key(|a| std::cmp::Reverse((a.1.created_ms, a.0)));
     found.into_iter().map(|(_, entry)| entry).collect()
 }
 
