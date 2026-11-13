@@ -1,21 +1,20 @@
+import { KEY } from "@domain/keyboard/glyphs";
+
 // The ShortcutRecorder emits glyph strings ("⌃⌥F"); Rust accepts only the canonical accelerator
 // ("Control+Alt+KeyF": modifiers Control, Alt, Shift, Super, then the KeyboardEvent.code, joined by "+").
 // The recorder already emits modifiers in ⌃⌥⇧⌘ order, so the canonical order follows.
 
 const MODIFIERS: Readonly<Record<string, string>> = {
-  "⌃": "Control",
-  "⌥": "Alt",
-  "⇧": "Shift",
-  "⌘": "Super",
+  [KEY.control]: "Control",
+  [KEY.option]: "Alt",
+  [KEY.shift]: "Shift",
+  [KEY.command]: "Super",
 };
-
-// Built from its code point: the copy guard reads the return arrow as an emoji.
-const RETURN = String.fromCharCode(0x21a9);
 
 const NAMED: Readonly<Record<string, string>> = {
   ".": "Period",
   ",": "Comma",
-  [RETURN]: "Enter",
+  [KEY.enter]: "Enter",
   Space: "Space",
   Tab: "Tab",
   "⌫": "Backspace",

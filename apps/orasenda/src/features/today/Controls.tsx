@@ -1,3 +1,5 @@
+import { FIXED_KEYS } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { Icon, IconButton, StartButton } from "@orasenda/ui";
 import type { ComponentProps, ReactElement } from "react";
 
@@ -41,6 +43,7 @@ export function Controls({
 }: Props): ReactElement {
   const paused = state === "paused";
   const what = inBreak ? "break" : "session";
+  const { fixedHint } = useBindings();
   return (
     <div {...boxProps} className="flex items-center justify-center gap-6">
       {state === "idle" ? (
@@ -67,7 +70,7 @@ export function Controls({
             size="md"
             label={inBreak ? "Skip break" : "End session"}
             icon={<Icon name="stop" />}
-            shortcut="⌘."
+            shortcut={fixedHint(FIXED_KEYS.end) ?? undefined}
             onClick={onEnd}
           />
         </>

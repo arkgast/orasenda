@@ -39,6 +39,13 @@ const action = (
   singleKey: single ?? null,
 });
 
+const fixed = (label: string, keys: string, display: string, spoken: string) => ({
+  label,
+  keys,
+  display,
+  spoken,
+});
+
 /**
  * The registry as `keyboard_state` answers it. Start or pause and capture keep their pre-H3
  * *Everywhere* keys (⌃⌥F, ⌃⌥N), a valid saved choice, so the two Settings rows read as they did.
@@ -101,8 +108,17 @@ export const KEYBOARD: KeyboardView_Serialize = {
     ),
   ],
   fixed: [
-    { label: "Commands", keys: "Super+KeyK", display: "⌘K", spoken: "Command-K" },
-    { label: "Settings", keys: "Super+Comma", display: "⌘,", spoken: "Command-Comma" },
+    fixed("Commands", "Super+KeyK", "⌘K", "Command-K"),
+    fixed("Settings", "Super+Comma", "⌘,", "Command-Comma"),
+    fixed("Start focus", "Super+Enter", "⌘↩", "Command-Return"),
+    fixed("Just 2 minutes", "Shift+Super+Enter", "⇧⌘↩", "Shift-Command-Return"),
+    fixed("End session", "Super+Period", "⌘.", "Command-Period"),
+    ...["Today", "Board", "Calendar", "Routines", "Review", "Settings"].map((label, i) =>
+      fixed(label, `Super+Digit${i + 1}`, `⌘${i + 1}`, `Command-${i + 1}`),
+    ),
+    fixed("Leave full screen", "Escape", "Esc", "Escape"),
+    fixed("Quit Orasenda", "Super+KeyQ", "⌘Q", "Command-Q"),
+    fixed("Copy", "Super+KeyC", "⌘C", "Command-C"),
   ],
   singleKey: true,
   voiceOver: false,

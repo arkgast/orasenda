@@ -1,3 +1,5 @@
+import { singleKeyName } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
 import { useState } from "react";
 
@@ -23,6 +25,8 @@ export function useTodayKeys({ enabled, canStart, active, start, pauseResume }: 
   };
   const openView = () => setViewRequest((n) => n + 1);
   const openPreset = () => setPresetRequest((n) => n + 1);
-  useSingleKeys({ Space: toggle, f: openView, p: openPreset }, enabled);
+  // The start or pause key comes from the registry; F and P are Today's own until H4.
+  const space = singleKeyName(useBindings().byId("startPause"));
+  useSingleKeys({ ...(space ? { [space]: toggle } : {}), f: openView, p: openPreset }, enabled);
   return { viewRequest, presetRequest };
 }

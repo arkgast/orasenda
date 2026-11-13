@@ -1,4 +1,6 @@
 import { cadenceActions } from "@domain/cadence/cadenceActions";
+import { singleKeyName } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { useShortcuts } from "@domain/keyboard/useShortcuts";
 import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
 import { PresetSummary } from "@domain/presets/PresetSummary";
@@ -147,7 +149,8 @@ export function FocusPage() {
     else if (state === "running") pause();
     else if (state === "paused") resume();
   };
-  useSingleKeys({ Space: toggle }, singleKeys);
+  const space = singleKeyName(useBindings().byId("startPause"));
+  useSingleKeys(space ? { [space]: toggle } : {}, singleKeys);
 
   const choosePreset = (presetId: string) =>
     void run(

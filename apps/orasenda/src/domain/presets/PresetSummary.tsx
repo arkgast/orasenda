@@ -1,3 +1,5 @@
+import { FIXED_KEYS } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import {
   Button,
   describeShortcut,
@@ -62,6 +64,7 @@ export function PresetSummary({
 }: Props): ReactElement {
   const presets = usePresets();
   const presetsFailed = usePresetsFailed();
+  const { fixedHint } = useBindings();
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
@@ -123,7 +126,14 @@ export function PresetSummary({
       checked: row.checked,
     })),
     ...(onOpenSettings
-      ? [{ id: SETTINGS_ID, label: "Edit presets in Settings", meta: "⌘,", kind: "link" as const }]
+      ? [
+          {
+            id: SETTINGS_ID,
+            label: "Edit presets in Settings",
+            meta: fixedHint(FIXED_KEYS.settings) ?? undefined,
+            kind: "link" as const,
+          },
+        ]
       : []),
   ];
   const heading = idle

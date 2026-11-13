@@ -28,7 +28,7 @@ test("shortcut_recorder_keyboard_path", async ({ page }, info) => {
   await page.keyboard.press("Enter");
   await page.keyboard.press("Backspace");
   await expect(live).toContainText("Shortcut is off");
-  await expect(field).toHaveAccessibleName(/Off/);
+  await expect(field).toHaveAccessibleName(/None/);
   // Restore default.
   await live.getByRole("button", { name: "Restore default" }).click();
   await expect(live).toContainText("Keys ⌃⌥F");
@@ -73,7 +73,7 @@ test("shortcut_recorder_field_meets_hit_min_and_field_width", async ({ page }) =
 
 test("shortcut_recorder_content_fits_each_frame", async ({ page }) => {
   await openSpecimen(page, "ShortcutRecorder");
-  for (const name of ["live", "idle", "recording", "conflict", "off"]) {
+  for (const name of ["live", "idle", "recording", "conflict", "off", "warning"]) {
     const frame = page.locator(`[data-state="shortcut-recorder-${name}"]`);
     const fit = await frame.evaluate((el) => {
       const outer = el.getBoundingClientRect();
@@ -85,4 +85,19 @@ test("shortcut_recorder_content_fits_each_frame", async ({ page }) => {
     });
     expect(fit, name).toBeGreaterThanOrEqual(-0.5);
   }
+});
+
+test("shortcut_recorder_warning_orders_pick_another_first", async ({ page }, info) => {
+  await openSpecimen(page, "ShortcutRecorder");
+  const frame = page.locator('[data-state="shortcut-recorder-warning"]');
+  const pick = frame.getByRole("button", { name: "Pick another" });
+  const use = frame.getByRole("button", { name: "Use anyway" });
+  await expect(pick).toBeFocused();
+  const a = await pick.boundingBox();
+  const b = await use.boundingBox();
+  expect(a?.x ?? 0).toBeLessThan(b?.x ?? 0);
+  expect(a?.height).toBeGreaterThanOrEqual(44);
+  expect(b?.height).toBeGreaterThanOrEqual(44);
+  await expect(frame.getByText("Other apps use this. Use it everywhere anyway?")).toBeVisible();
+  await shoot(page, info, "shortcut-recorder-warning");
 });

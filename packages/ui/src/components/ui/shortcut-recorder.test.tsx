@@ -124,9 +124,17 @@ test("shortcut_recorder_name_composed_with_labelledby", () => {
   expect(keys).toHaveAttribute("aria-hidden", "true");
 });
 
-test("shortcut_recorder_spoken_keys_override_and_off_state", () => {
+test("recorder_none_for_empty_slot", () => {
   const { field } = setup({ keys: undefined });
-  expect(field).toHaveAccessibleName(`${LABEL} Off Change`);
+  expect(field).toHaveAccessibleName(`${LABEL} None Change`);
+  // Shown once for the eye (aria-hidden) and once in words for VoiceOver.
+  const shown = screen.getAllByText("None").filter((n) => n.getAttribute("aria-hidden") === "true");
+  expect(shown).toHaveLength(1);
+});
+
+test("recorder_empty_label_is_the_hosts", () => {
+  const { field } = setup({ keys: undefined, emptyLabel: "Not set" });
+  expect(field).toHaveAccessibleName(`${LABEL} Not set Change`);
 });
 
 test("shortcut_recorder_id_settable", () => {
@@ -198,4 +206,46 @@ test("recorder_reports_recording_changes", () => {
     true,
     false,
   ]);
+});
+
+function withWarning() {
+  const onUseAnyway = vi.fn();
+  const onPickAnother = vi.fn();
+  const view = setup({ warning: { reason: "Other apps use this.", onUseAnyway, onPickAnother } });
+  return { ...view, onUseAnyway, onPickAnother };
+}
+
+test("warning_pick_another_first", () => {
+  const { onUseAnyway, onPickAnother } = withWarning();
+  const buttons = screen.getAllByRole("button").map((b) => b.textContent);
+  expect(buttons.indexOf("Pick another")).toBeLessThan(buttons.indexOf("Use anyway"));
+  const pick = screen.getByRole("button", { name: "Pick another" });
+  expect(pick).toHaveFocus();
+  const line = screen.getByText("Other apps use this. Use it everywhere anyway?");
+  expect(line.closest("[aria-live]")).toHaveAttribute("aria-live", "polite");
+  expect(pick).toHaveAccessibleDescription("Other apps use this. Use it everywhere anyway?");
+  expect(screen.getByRole("button", { name: "Use anyway" })).toHaveAccessibleDescription(
+    "Other apps use this. Use it everywhere anyway?",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Use anyway" }));
+  expect(onUseAnyway).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: /Start or pause/ })).toHaveFocus();
+  fireEvent.click(pick);
+  expect(onPickAnother).toHaveBeenCalledTimes(1);
+});
+
+test("warning_is_described_by_the_field", () => {
+  const { field } = withWarning();
+  const text = screen.getByText("Other apps use this. Use it everywhere anyway?");
+  expect(field.getAttribute("aria-describedby")?.split(" ")).toContain(text.id);
+});
+
+test("app_only_slot_needs_command_or_control", () => {
+  const { onRecord, field } = setup({ appOnly: true, recording: true });
+  expect(screen.getByText(/needs Command or Control plus a key/)).toBeInTheDocument();
+  press(field, "KeyU", { altKey: true });
+  expect(onRecord).not.toHaveBeenCalled();
+  expect(screen.getByText("Add ⌘ or ⌃. A single key can't be a shortcut.")).toBeInTheDocument();
+  press(field, "KeyU", { metaKey: true });
+  expect(onRecord).toHaveBeenCalledWith("⌘U");
 });

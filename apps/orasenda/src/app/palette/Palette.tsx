@@ -1,4 +1,4 @@
-import { everywhere } from "@domain/keyboard/everywhere";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { usePresets } from "@domain/presets/presets";
 import { tick, untick } from "@features/settings/notificationsToggle";
@@ -39,7 +39,7 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(latest());
   const [status, setStatus] = useState<string | undefined>();
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
-  const [captureKeys, setCaptureKeys] = useState<string | null>(null);
+  const { actions, fixed } = useBindings();
 
   useEffect(() => {
     let cancelled = false;
@@ -55,16 +55,6 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         if (!cancelled) setDisplays(list);
       },
       (error: unknown) => console.error("displays_list failed", error),
-    );
-    commands.keyboardState().then(
-      (keyboard) => {
-        // The current keys, only while the shortcut works: a failed one shows no text.
-        const capture = everywhere(keyboard, "capture");
-        if (!cancelled && capture?.status === "registered") {
-          setCaptureKeys(capture.display ?? null);
-        }
-      },
-      (error: unknown) => console.error("keyboard_state failed", error),
     );
     commands.settingsGet().then(
       (saved) => {
@@ -90,9 +80,10 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         presets,
         displays,
         notifications: view?.notifications ?? "unavailable",
-        captureKeys,
+        actions,
+        fixed,
       }),
-    [view, settings, presets, displays, captureKeys],
+    [view, settings, presets, displays, actions, fixed],
   );
 
   const change = (patch: Partial<Settings>): Promise<boolean> => {

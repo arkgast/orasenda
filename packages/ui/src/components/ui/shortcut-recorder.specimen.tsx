@@ -41,6 +41,18 @@ export function ShortcutRecorderSpecimen(): ReactElement {
       <Frame state="shortcut-recorder-off" width={300} height={160}>
         <ShortcutRecorder label={LABEL} onRecord={() => {}} />
       </Frame>
+      <Frame state="shortcut-recorder-warning" width={420} height={260}>
+        <ShortcutRecorder
+          label={LABEL}
+          keys="⌃⌥⌘T"
+          warning={{
+            reason: "Other apps use this.",
+            onUseAnyway: () => {},
+            onPickAnother: () => {},
+          }}
+          onRecord={() => {}}
+        />
+      </Frame>
     </>
   );
 }

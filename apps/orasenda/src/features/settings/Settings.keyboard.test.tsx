@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 const group = (name: string) => screen.getByRole("group", { name });
-const field = (name: string) => within(group(name)).getByRole("button", { name: /from anywhere/ });
+const field = (name: string) => within(group(name)).getByRole("button", { name: /, everywhere/ });
 
 function press(name: string, init: KeyboardEventInit) {
   const button = field(name);
@@ -66,8 +66,8 @@ test("keyboard_rows_order_and_copy", async () => {
     "Start focus",
     "Just 2 minutes",
     "End session",
-    "Full screen",
-    "Floating timer",
+    "Full screen on this display",
+    "Floating timer, there and back",
     "Commands",
     "Settings",
   ]) {
@@ -109,8 +109,9 @@ test("keyboard_delete_turns_off_and_restore_default", async () => {
     { id: "startPause", slot: "global", keys: null, confirmWarning: false },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: off.");
+  // The first button is the In Orasenda slot's, the second the Everywhere slot's.
   fireEvent.click(
-    within(group("Start or pause focus")).getByRole("button", { name: "Restore default" }),
+    within(group("Start or pause focus")).getAllByRole("button", { name: "Restore default" })[1],
   );
   await settle();
   expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([
@@ -148,7 +149,7 @@ test("keyboard_in_use_by_orasenda_line", async () => {
   await settle();
   expect(
     within(group("Capture a thought")).getByText(
-      "Orasenda uses this for Commands. Pick a different one.",
+      "Orasenda uses this for commands. Pick a different one.",
     ),
   ).toBeVisible();
 });

@@ -1,3 +1,5 @@
+import { pageAccelerator, pagesRange } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { Icon, IconButton, type NavPage } from "@orasenda/ui";
 import { commands } from "@shared/ipc/bindings";
 import { type ReactElement, useRef, useState } from "react";
@@ -12,8 +14,6 @@ export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "settings", label: "Settings" },
 ];
 
-const CHORDS = PAGE_ORDER.map((_, index) => `⌘${index + 1}`);
-
 type Props = {
   current: NavPage;
   onNavigate(page: NavPage): void;
@@ -23,6 +23,8 @@ type Props = {
 export function PagesButton({ current, onNavigate }: Props): ReactElement {
   const box = useRef<HTMLSpanElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const { fixed, fixedHint } = useBindings();
+  const chords = PAGE_ORDER.flatMap((_, index) => fixedHint(pageAccelerator(index + 1)) ?? []);
 
   const open = () => {
     const rect = box.current?.querySelector("button")?.getBoundingClientRect();
@@ -64,8 +66,8 @@ export function PagesButton({ current, onNavigate }: Props): ReactElement {
       <IconButton
         label="Pages"
         icon={<Icon name="pages" />}
-        shortcut={CHORDS}
-        shortcutLabel="⌘1–6"
+        shortcut={chords}
+        shortcutLabel={pagesRange(fixed, PAGE_ORDER.length) ?? undefined}
         aria-haspopup="menu"
         aria-expanded={expanded}
         onClick={open}
