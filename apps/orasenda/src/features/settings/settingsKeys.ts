@@ -3,18 +3,8 @@ import type { SectionId } from "./SettingsHeader";
 import { themeLabel } from "./sections/General";
 import { presetLabel } from "./sections/Timer";
 
-export type Key = "theme" | "preset" | "cadence" | "notify" | "notifyTwo" | "singleKey";
-
-export const KEY_SECTION: Record<Key, SectionId> = {
-  theme: "general",
-  preset: "timer",
-  cadence: "timer",
-  notify: "notifications",
-  notifyTwo: "notifications",
-  singleKey: "keyboard",
-};
-
-const CADENCE_FIELDS = [
+/** The Timer cadence fields, each with its own failure line. */
+export const CADENCE_KEYS = [
   "extensionCap",
   "autoContinue",
   "longestFocusMin",
@@ -22,19 +12,36 @@ const CADENCE_FIELDS = [
   "deepCapHours",
 ] as const;
 
+export type CadenceKey = (typeof CADENCE_KEYS)[number];
+
+export type Key = "theme" | "preset" | CadenceKey | "notify" | "notifyTwo" | "singleKey";
+
+export const KEY_SECTION: Record<Key, SectionId> = {
+  theme: "general",
+  preset: "timer",
+  extensionCap: "timer",
+  autoContinue: "timer",
+  longestFocusMin: "timer",
+  deepCapOn: "timer",
+  deepCapHours: "timer",
+  notify: "notifications",
+  notifyTwo: "notifications",
+  singleKey: "keyboard",
+};
+
 export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
   const keys: Key[] = [];
   if (sent.theme !== restored.theme) keys.push("theme");
   if (sent.presetId !== restored.presetId) keys.push("preset");
-  if (CADENCE_FIELDS.some((field) => sent[field] !== restored[field])) keys.push("cadence");
+  for (const field of CADENCE_KEYS) if (sent[field] !== restored[field]) keys.push(field);
   if (sent.notifySessionEnd !== restored.notifySessionEnd) keys.push("notify");
   if (sent.notifyTwoMinutes !== restored.notifyTwoMinutes) keys.push("notifyTwo");
   if (sent.singleKey !== restored.singleKey) keys.push("singleKey");
   return keys;
 }
 
-function pick(from: SettingsValue): Partial<SettingsValue> {
-  return Object.fromEntries(CADENCE_FIELDS.map((field) => [field, from[field]]));
+function isCadence(key: Key): key is CadenceKey {
+  return (CADENCE_KEYS as readonly string[]).includes(key);
 }
 
 /** `base` with the `keys` taken from `from`. */
@@ -43,7 +50,7 @@ export function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]):
   for (const key of keys) {
     if (key === "theme") next.theme = from.theme;
     else if (key === "preset") next.presetId = from.presetId;
-    else if (key === "cadence") Object.assign(next, pick(from));
+    else if (isCadence(key)) Object.assign(next, { [key]: from[key] });
     else if (key === "singleKey") next.singleKey = from.singleKey;
     else if (key === "notifyTwo") next.notifyTwoMinutes = from.notifyTwoMinutes;
     else next.notifySessionEnd = from.notifySessionEnd;
@@ -54,16 +61,31 @@ export function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]):
 export const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: string }> = {
   theme: { subject: "Theme", verb: "wasn't", again: "theme" },
   preset: { subject: "Preset", verb: "wasn't", again: "preset" },
-  cadence: { subject: "Session options", verb: "weren't", again: "session options" },
+  extensionCap: { subject: "Extra 10 minutes", verb: "wasn't", again: "extra 10 minutes" },
+  autoContinue: {
+    subject: "Keep going automatically",
+    verb: "wasn't",
+    again: "keep going automatically",
+  },
+  longestFocusMin: { subject: "Longest focus", verb: "wasn't", again: "longest focus" },
+  deepCapOn: { subject: "Deep-hours note", verb: "wasn't", again: "the deep-hours note" },
+  deepCapHours: { subject: "Deep-hours cap", verb: "wasn't", again: "the deep-hours cap" },
   notify: { subject: "Notifications", verb: "weren't", again: "notifications" },
   singleKey: { subject: "Single-key shortcuts", verb: "weren't", again: "single-key shortcuts" },
   notifyTwo: { subject: "The two-minute note", verb: "wasn't", again: "the two-minute note" },
 };
 
+const CAP_SAID = ["off", "once", "twice", "3 times"];
+
 export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]): string {
   if (key === "theme") return themeLabel(restored.theme);
   if (key === "preset") return presetLabel(presets, restored);
-  if (key === "cadence") return "what was saved";
+  if (key === "extensionCap")
+    return CAP_SAID[restored.extensionCap] ?? String(restored.extensionCap);
+  if (key === "autoContinue") return restored.autoContinue ? "on" : "off";
+  if (key === "deepCapOn") return restored.deepCapOn ? "on" : "off";
+  if (key === "longestFocusMin") return `${restored.longestFocusMin} minutes`;
+  if (key === "deepCapHours") return `${restored.deepCapHours} hours`;
   if (key === "singleKey") return restored.singleKey ? "on" : "off";
   return (key === "notifyTwo" ? restored.notifyTwoMinutes : restored.notifySessionEnd)
     ? "on"

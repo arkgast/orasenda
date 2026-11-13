@@ -140,6 +140,8 @@ fn notice_for(outcome: &Outcome, presented: &Settings, view: &TimerView) -> Opti
     {
         return match (last.phase, outcome.quick_completed) {
             (Phase::Break, _) => end("Break over.", "Start focus when you're ready."),
+            // Under auto-continue the next session starts by itself: nothing to offer.
+            (_, true) if presented.auto_continue => None,
             (_, true) => end("Focus session complete.", "Keep going if you like."),
             _ => None,
         };

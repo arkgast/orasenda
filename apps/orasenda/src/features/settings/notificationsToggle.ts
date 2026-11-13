@@ -14,11 +14,18 @@ let request = 0;
 /** Boxes ticked during the one pending ask; all are saved when macOS says yes. */
 const pending = new Set<NotifyKey>();
 const listeners = new Set<() => void>();
+let pendingSnapshot: readonly NotifyKey[] = [];
+
+function emit(): void {
+  const next = [...pending].sort();
+  if (next.join() !== pendingSnapshot.join()) pendingSnapshot = next;
+  for (const listener of listeners) listener();
+}
 
 function setAsking(value: NotifyKey | null): void {
   if (asking === value) return;
   asking = value;
-  for (const listener of listeners) listener();
+  emit();
 }
 
 export function isAsking(): boolean {
@@ -28,6 +35,11 @@ export function isAsking(): boolean {
 /** Which box is waiting on the macOS prompt, for `useSyncExternalStore`. */
 export function askingKey(): NotifyKey | null {
   return asking;
+}
+
+/** Boxes ticked and waiting on the ask, for `useSyncExternalStore` (a new array on change). */
+export function pendingKeys(): readonly NotifyKey[] {
+  return pendingSnapshot;
 }
 
 /** For `useSyncExternalStore`. */
@@ -43,6 +55,7 @@ export function resetNotificationsToggleForTests(): void {
   asking = null;
   inFlight = null;
   pending.clear();
+  pendingSnapshot = [];
   listeners.clear();
 }
 
@@ -61,14 +74,17 @@ let inFlight: Promise<boolean> | null = null;
  */
 function ask(key: NotifyKey, saveOnGranted: boolean): Promise<boolean> {
   const mine = ++request;
-  pending.add(key);
-  setAsking(key);
+  // The quiet "Ask macOS" action is for a preference already on: only ticks that join it are held.
+  if (saveOnGranted) pending.add(key);
+  asking = key;
+  emit();
   const result = commands.notificationsRequest().then(
     (status) => {
       if (mine !== request) return true;
-      const keys = status === "granted" && saveOnGranted ? [...pending] : [];
+      const keys = status === "granted" ? [...pending] : [];
       pending.clear();
-      setAsking(null);
+      asking = null;
+      emit();
       return Promise.all(keys.map((each) => setPreference(each, true))).then((all) =>
         all.every(Boolean),
       );
@@ -77,7 +93,8 @@ function ask(key: NotifyKey, saveOnGranted: boolean): Promise<boolean> {
       console.error("notifications_request failed", error);
       if (mine !== request) return true;
       pending.clear();
-      setAsking(null);
+      asking = null;
+      emit();
       return false;
     },
   );
@@ -95,6 +112,7 @@ export function tick(
 ): Promise<boolean> {
   if (status === "notDetermined" && asking !== null) {
     pending.add(key);
+    emit();
     return inFlight ?? Promise.resolve(true);
   }
   if (status === "notDetermined") return ask(key, true);
@@ -104,10 +122,13 @@ export function tick(
 /** The box was unticked (also while asking). */
 export function untick(key: NotifyKey = "notifySessionEnd"): Promise<boolean> {
   pending.delete(key);
-  if (pending.size === 0) {
-    request += 1;
-    setAsking(null);
+  if (asking === key) {
+    // The box that was asking is off; a box that joined it keeps the ask alive.
+    const next = [...pending][0] ?? null;
+    if (next === null) request += 1;
+    asking = next;
   }
+  emit();
   return setPreference(key, false);
 }
 

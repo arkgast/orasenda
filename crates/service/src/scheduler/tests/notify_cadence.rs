@@ -154,7 +154,10 @@ fn auto_continue_roll_on_is_silent() {
     host.log().take();
     host.set_now(T0 + 2 * MINUTE + 1);
     iterate(&host);
-    assert!(posted(&host).is_empty(), "the next session starts by itself");
+    assert!(
+        posted(&host).is_empty(),
+        "the next session starts by itself"
+    );
 }
 
 #[test]
