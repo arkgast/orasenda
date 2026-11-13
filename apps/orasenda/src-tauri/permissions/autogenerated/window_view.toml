@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-window-view"
+description = "Enables the window_view command without any pre-configured scope."
+commands.allow = ["window_view"]
+
+[[permission]]
+identifier = "deny-window-view"
+description = "Denies the window_view command without any pre-configured scope."
+commands.deny = ["window_view"]

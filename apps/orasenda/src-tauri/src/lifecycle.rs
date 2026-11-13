@@ -88,6 +88,9 @@ fn handle_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
         tauri::WindowEvent::Destroyed if window.label() == crate::windows::FLOATER => {
             crate::windows::surfaces_changed(window.app_handle());
         }
+        // In full screen ⌘W leaves, waits for did-exit, then hides (it holds the close).
+        tauri::WindowEvent::CloseRequested { api, .. }
+            if window.label() == MAIN && crate::windows::full_screen::hold_close(window, api) => {}
         tauri::WindowEvent::CloseRequested { api, .. }
             if on_close_requested(window.label()) == CloseAction::Hide =>
         {

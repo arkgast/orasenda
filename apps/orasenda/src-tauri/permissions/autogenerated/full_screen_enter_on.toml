@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-full-screen-enter-on"
+description = "Enables the full_screen_enter_on command without any pre-configured scope."
+commands.allow = ["full_screen_enter_on"]
+
+[[permission]]
+identifier = "deny-full-screen-enter-on"
+description = "Denies the full_screen_enter_on command without any pre-configured scope."
+commands.deny = ["full_screen_enter_on"]

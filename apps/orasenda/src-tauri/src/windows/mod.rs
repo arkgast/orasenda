@@ -22,6 +22,7 @@ mod floater;
 mod floater_keys;
 pub(crate) mod focus;
 pub(crate) mod frames;
+pub(crate) mod full_screen;
 mod native;
 #[cfg(test)]
 mod tests;

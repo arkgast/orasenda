@@ -18,6 +18,10 @@
     "allow-main-show",
     "allow-action-run",
     "allow-keyboard-state",
-    "allow-capture-open"
+    "allow-capture-open",
+    "allow-full-screen-enter",
+    "allow-full-screen-enter-on",
+    "allow-full-screen-leave",
+    "allow-window-view"
   ]
 }

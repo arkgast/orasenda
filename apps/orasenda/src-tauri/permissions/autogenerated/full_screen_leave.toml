@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-full-screen-leave"
+description = "Enables the full_screen_leave command without any pre-configured scope."
+commands.allow = ["full_screen_leave"]
+
+[[permission]]
+identifier = "deny-full-screen-leave"
+description = "Denies the full_screen_leave command without any pre-configured scope."
+commands.deny = ["full_screen_leave"]

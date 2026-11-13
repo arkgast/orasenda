@@ -223,6 +223,11 @@ fn windows_fns_refuse_off_main_thread() {
         Err(WindowError::NotOnMainThread)
     );
     assert!(matches!(
+        // SAFETY: null is refused after the main-thread check, never dereferenced.
+        unsafe { observe_full_screen(null_mut(), Box::new(|_| {})) },
+        Err(WindowError::NotOnMainThread)
+    ));
+    assert!(matches!(
         observe_screen_changes(Box::new(|| {})),
         Err(WindowError::NotOnMainThread)
     ));

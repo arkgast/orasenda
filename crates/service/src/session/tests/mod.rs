@@ -6,6 +6,7 @@ mod cap;
 mod day_cache;
 mod extend;
 mod frames;
+mod full_screen_hint;
 mod hint;
 mod notifications;
 mod offer;

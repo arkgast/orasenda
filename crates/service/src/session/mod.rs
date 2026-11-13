@@ -10,6 +10,7 @@ mod cadence;
 mod day_cache;
 mod effects;
 mod frames;
+mod full_screen_hint;
 mod hint;
 mod persist;
 mod presets;
@@ -24,6 +25,9 @@ mod view;
 
 pub use effects::{Effects, Notice};
 pub use frames::{run_frame_get, run_frame_load, run_frame_migrate, run_frame_save};
+pub use full_screen_hint::{
+    FULL_SCREEN_HINT_ENTRIES, run_full_screen_entered, run_full_screen_hints_left,
+};
 pub(crate) use presets::edit::MAX_PRESETS;
 pub(crate) use presets::resolve;
 pub(crate) use run::DB_FILE;
