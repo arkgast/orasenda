@@ -1,12 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
-
-const SIZES = [
-  { width: 360, height: 240 },
-  { width: 360, height: 640 },
-  { width: 900, height: 600 },
-  { width: 1440, height: 900 },
-];
+import { SIZES } from "./support/today.ts";
 
 async function openBoard(page: Page, scenario: string, size: { width: number; height: number }) {
   await openApp(page, scenario, size);
@@ -35,6 +29,16 @@ for (const size of SIZES) {
     expect(box?.height).toBeGreaterThanOrEqual(44);
   });
 
+  test(`board_fifty_notes_targets_${at}`, async ({ page }) => {
+    await openBoard(page, "boardFifty", size);
+    const box = await page
+      .getByRole("button", { name: /^Remove note/ })
+      .first()
+      .boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  });
+
   test(`board_fifty_notes_scroll_inside_the_region_${at}`, async ({ page }) => {
     await openBoard(page, "boardFifty", size);
     // The page never scrolls; the one scrolling box is the Inbox region.
@@ -52,6 +56,16 @@ for (const size of SIZES) {
     const region = page.getByRole("region", { name: "Inbox" });
     // Nothing overflows sideways, so a long word breaks and the focus ring is not clipped.
     expect(await region.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    // The region stays inside the window and the text starts inside the region.
+    const inside = await region.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const text = el.querySelector("p")?.getBoundingClientRect();
+      return {
+        region: r.left >= 0 && r.right <= window.innerWidth,
+        text: text ? text.left >= r.left : false,
+      };
+    });
+    expect(inside).toEqual({ region: true, text: true });
   });
 }
 
@@ -59,11 +73,11 @@ test("board_remove_focus_ring_has_room_at_the_inline_end", async ({ page }) => {
   await openBoard(page, "boardFifty", { width: 900, height: 600 });
   const button = page.getByRole("button", { name: /^Remove note/ }).first();
   await button.focus();
-  const region = await page.getByRole("region", { name: "Inbox" }).boundingBox();
+  const edge = await page
+    .getByRole("region", { name: "Inbox" })
+    .evaluate((el) => el.getBoundingClientRect().left + el.clientLeft + el.clientWidth);
   const box = await button.boundingBox();
-  expect(region && box ? region.x + region.width - (box.x + box.width) : 0).toBeGreaterThanOrEqual(
-    4,
-  );
+  expect(box ? edge - (box.x + box.width) : 0).toBeGreaterThanOrEqual(4);
 });
 
 test("board_unreadable_shows_a_line_not_the_empty_state", async ({ page }) => {

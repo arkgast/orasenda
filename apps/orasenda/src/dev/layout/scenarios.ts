@@ -327,7 +327,7 @@ const boardNote = (i: number, text: string): NoteView => ({
 });
 const boardNotes = (count: number): NoteView[] =>
   Array.from({ length: count }, (_, i) =>
-    boardNote(count - i, `Note ${count - i}: email the landlord`),
+    boardNote(count - i, i === 1 ? "Wordy".repeat(200) : `Note ${count - i}: email the landlord`),
   );
 const boardBackend = (notes: () => unknown): Handler =>
   backend({
@@ -342,7 +342,10 @@ SCENARIOS.boardEmpty = boardBackend(() => []);
 SCENARIOS.boardOne = boardBackend(() => boardNotes(1));
 SCENARIOS.boardFifty = boardBackend(() => boardNotes(50));
 SCENARIOS.boardLong = boardBackend(() => [
-  boardNote(1, `${"A thought that goes on and on, ".repeat(30)}\nand has a second line.`),
+  boardNote(
+    1,
+    `${"A thought that goes on and on, ".repeat(30)}\nand has a second line.`.slice(0, 1000),
+  ),
   boardNote(2, "Supercalifragilisticexpialidocious".repeat(6)),
 ]);
 SCENARIOS.boardUnreadable = boardBackend(() => Promise.reject("store"));

@@ -17,7 +17,7 @@ const NAME_LENGTH = 40;
 
 /** "Remove note: " and the note's first 40 characters. */
 function removeName(text: string): string {
-  const chars = Array.from(text.trim());
+  const chars = Array.from(text.replace(/\s+/g, " ").trim());
   return `Remove note: ${chars.slice(0, NAME_LENGTH).join("")}${chars.length > NAME_LENGTH ? "…" : ""}`;
 }
 
@@ -54,10 +54,10 @@ export function BoardPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
     remove(id);
   };
 
-  const onUndo = async () => {
-    const index = await undo();
-    if (index !== null) focusRow.current = index;
-  };
+  const onUndo = () =>
+    undo((row) => {
+      focusRow.current = row;
+    });
 
   const failed = inbox.status === "error";
   const status = failed ? (
@@ -93,16 +93,20 @@ export function BoardPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
       >
         <ScrollRegion label="Inbox">
           {inbox.status === "ok" && notes.length === 0 ? (
-            <EmptyState
-              title="Nothing in your Inbox."
-              message={
-                keys
-                  ? `${keys} captures a thought from anywhere.`
-                  : "Capture a thought from the menu bar."
-              }
-            />
+            keys === undefined ? null : (
+              <EmptyState
+                title="Nothing in your Inbox."
+                message={
+                  keys
+                    ? `${keys} captures a thought from anywhere.`
+                    : "Capture a thought from the menu bar."
+                }
+              />
+            )
           ) : (
-            <ul className="app-board-list">
+            // list-style none makes WebKit drop the list role, so it is stated.
+            // biome-ignore lint/a11y/noRedundantRoles: keeps the list role for VoiceOver
+            <ul className="app-board-list" role="list">
               {notes.map((note) => (
                 <InboxRow
                   key={note.id}

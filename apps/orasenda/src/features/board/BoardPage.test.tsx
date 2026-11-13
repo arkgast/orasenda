@@ -170,3 +170,31 @@ test("board_focus_after_remove", async () => {
   fireEvent.click(removeButton("Call the dentist"));
   expect(screen.getByRole("heading", { name: "Inbox" })).toHaveFocus();
 });
+
+test("board_undo_waits_for_the_remove_and_keeps_focus", async () => {
+  const gate = deferred<null>();
+  const { backend } = await renderBoard({
+    inbox_list: () => THREE,
+    inbox_remove: () => gate.promise,
+  });
+  fireEvent.click(removeButton("Call the dentist"));
+  fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
+  await settle();
+  // The restore has not run: the remove is still in flight.
+  expect(argsOf(backend.calls, "inbox_restore")).toHaveLength(0);
+  gate.resolve(null);
+  await settle();
+  expect(rowTexts()).toContain("Call the dentist");
+});
+
+test("board_undo_failure_focuses_the_heading", async () => {
+  await renderBoard({
+    inbox_list: () => THREE,
+    inbox_restore: () => Promise.reject("store"),
+  });
+  fireEvent.click(removeButton("Call the dentist"));
+  fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
+  await settle();
+  expect(screen.getByText("Couldn't bring the note back.")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Inbox" })).toHaveFocus();
+});

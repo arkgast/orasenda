@@ -3,6 +3,7 @@
   flex: auto;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-block-size: 0;
 }
 

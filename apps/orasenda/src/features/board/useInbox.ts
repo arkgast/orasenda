@@ -28,7 +28,7 @@ function insertAt(notes: NoteView[], note: NoteView, index: number): NoteView[] 
 export function useInbox() {
   const [inbox, setInbox] = useState<Inbox>({ status: "loading" });
   const [line, setLine] = useState<Line>(null);
-  const removed = useRef<{ note: NoteView; index: number } | null>(null);
+  const removed = useRef<{ note: NoteView; index: number; done: Promise<void> } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fresh = useRef(false);
 
@@ -41,6 +41,7 @@ export function useInbox() {
       },
       (error: unknown) => {
         console.error("inbox_list failed", error);
+        if (fresh.current) return;
         setInbox({ status: "error" });
       },
     );
@@ -85,75 +86,94 @@ export function useInbox() {
       const index = inbox.notes.findIndex((n) => n.id === id);
       const note = inbox.notes[index];
       if (!note) return;
-      removed.current = { note, index };
+      const forget = () => {
+        if (removed.current?.note.id === note.id) removed.current = null;
+      };
+      const fail = (error: unknown) => {
+        console.error("inbox_remove failed", error);
+        forget();
+        put(note, index);
+        showLine("removeFailed");
+      };
+      const done = commands.inboxRemove(id).then((result) => {
+        if (result.status === "ok") return;
+        if (result.error === "notFound") {
+          // Already gone: the list is right, but there is nothing to undo.
+          forget();
+          if (removed.current === null) showLine(null);
+          return;
+        }
+        fail(result.error);
+      }, fail);
+      removed.current = { note, index, done };
       setInbox({ status: "ok", notes: inbox.notes.filter((n) => n.id !== id) });
       showLine("removed");
-      commands.inboxRemove(id).then(
-        (result) => {
-          if (result.status === "ok") return;
-          if (result.error === "notFound") {
-            // Already gone: the list is right, but there is nothing to undo.
-            removed.current = null;
-            showLine(null);
-            return;
-          }
-          console.error("inbox_remove failed", result.error);
-          removed.current = null;
-          put(note, index);
-          showLine("removeFailed");
-        },
-        (error: unknown) => {
-          console.error("inbox_remove failed", error);
-          removed.current = null;
-          put(note, index);
-          showLine("removeFailed");
-        },
-      );
     },
     [inbox, put, showLine],
   );
 
-  /** Brings the last removed note back in place; answers its row index, or null when it could not. */
-  const undo = useCallback(async (): Promise<number | null> => {
-    const last = removed.current;
-    if (!last) return null;
-    showLine(null);
-    const failed = (error: unknown) => {
-      console.error("inbox_restore failed", error);
-      showLine("restoreFailed");
-      return null;
-    };
-    try {
-      const result = await commands.inboxRestore(last.note.id);
-      if (result.status === "error" && result.error !== "notFound") return failed(result.error);
-      removed.current = null;
-      if (result.status === "error") return null;
-      put(last.note, last.index);
-      return last.index;
-    } catch (error) {
-      return failed(error);
-    }
-  }, [put, showLine]);
+  /**
+   * Brings the last removed note back in place. `focus` is told the row to focus (-1 for the heading)
+   * just before the render that follows, so focus never drops to the page.
+   */
+  const undo = useCallback(
+    async (focus: (row: number) => void): Promise<void> => {
+      const last = removed.current;
+      if (!last) return;
+      showLine(null);
+      // A restore must not overtake the remove it undoes.
+      await last.done;
+      if (removed.current !== last) {
+        // The remove failed (the note is back and said so) or a newer removal took over.
+        focus(-1);
+        return;
+      }
+      const failed = (error: unknown) => {
+        console.error("inbox_restore failed", error);
+        focus(-1);
+        showLine("restoreFailed");
+      };
+      try {
+        const result = await commands.inboxRestore(last.note.id);
+        if (result.status === "error" && result.error !== "notFound") return failed(result.error);
+        // notFound means the note is live already: show it.
+        if (removed.current === last) removed.current = null;
+        focus(last.index);
+        put(last.note, last.index);
+      } catch (error) {
+        failed(error);
+      }
+    },
+    [put, showLine],
+  );
 
   return { inbox, line, remove, undo, retry };
 }
 
-/** The capture shortcut's keys as shown, or null when it is off or failed. */
-export function useCaptureKeys(): string | null {
-  const [keys, setKeys] = useState<string | null>(null);
+/** The capture shortcut's keys as shown, null when it is off or failed, undefined until known. */
+export function useCaptureKeys(): string | null | undefined {
+  const [keys, setKeys] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     let cancelled = false;
+    let newer = false;
     const show = (view: KeyboardView) => {
       const { status, display } = view.capture;
       setKeys(status === "registered" && display ? display : null);
     };
     commands.keyboardState().then(
       (view) => {
-        if (!cancelled) show(view);
+        // An event is newer than an answer asked for before it arrived.
+        if (!cancelled && !newer) show(view);
       },
-      (error: unknown) => console.error("keyboard_state failed", error),
+      (error: unknown) => {
+        console.error("keyboard_state failed", error);
+        if (!cancelled && !newer) setKeys(null);
+      },
     );
-    const stop = subscribe("keyboard-changed", events.keyboardChanged.listen, show);
+    const stop = subscribe("keyboard-changed", events.keyboardChanged.listen, (view) => {
+      newer = true;
+      show(view);
+    });
     return () => {
       cancelled = true;
       stop();
