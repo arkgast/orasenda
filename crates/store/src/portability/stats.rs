@@ -13,6 +13,13 @@ pub struct Counts {
 
 /// Counts live rows: tombstones (`deleted_at` set) are skipped. `setting` has no tombstones.
 pub fn counts(txn: &Txn) -> Result<Counts, StoreError> {
-    let _ = txn;
-    todo!()
+    let conn = txn.conn();
+    let count =
+        |sql: &str| -> Result<u32, StoreError> { Ok(conn.query_row(sql, [], |row| row.get(0))?) };
+    Ok(Counts {
+        sessions: count("SELECT count(*) FROM focus_session WHERE deleted_at IS NULL")?,
+        presets: count("SELECT count(*) FROM preset WHERE deleted_at IS NULL")?,
+        notes: count("SELECT count(*) FROM inbox_note WHERE deleted_at IS NULL")?,
+        settings: count("SELECT count(*) FROM setting")?,
+    })
 }

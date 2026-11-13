@@ -46,8 +46,11 @@ fn probe_empty_sqlite_is_not_orasenda() {
 fn probe_text_file_not_sqlite() {
     let dir = TempDir::new("probe-text");
     let path = dir.path().join("notes.txt");
-    std::fs::write(&path, "just some words, long enough to not be a database header at all")
-        .expect("writes");
+    std::fs::write(
+        &path,
+        "just some words, long enough to not be a database header at all",
+    )
+    .expect("writes");
     assert_eq!(probe(&path), Err(ProbeError::NotSqlite));
 }
 

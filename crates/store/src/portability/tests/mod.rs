@@ -42,7 +42,10 @@ pub(super) fn rows(conn: &Connection, table: &str) -> Vec<Vec<String>> {
     let width = stmt.column_count();
     stmt.query_map([], |row| {
         (0..width)
-            .map(|i| row.get::<_, rusqlite::types::Value>(i).map(|v| format!("{v:?}")))
+            .map(|i| {
+                row.get::<_, rusqlite::types::Value>(i)
+                    .map(|v| format!("{v:?}"))
+            })
             .collect()
     })
     .expect("runs")
