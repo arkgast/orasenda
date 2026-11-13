@@ -81,6 +81,7 @@ mod other {
         fn load_frame(&self, _displays: &[&str]) -> Option<(String, Frame)> {
             None
         }
+        fn migrate_frames(&self, _screens: &[Screen]) {}
         fn emit_insets(&self, _label: &str, _insets: crate::ipc::FocusInsets) {}
         fn close(&self, _label: &str) {}
     }
@@ -228,6 +229,7 @@ mod mac {
                     let size = (frame.width, frame.height);
                     Screen {
                         id: display.id,
+                        legacy_id: display.legacy_id,
                         name: display.name,
                         size,
                         visible,
@@ -342,6 +344,14 @@ mod mac {
 
         fn hide_main(&self) -> Result<(), FocusViewError> {
             self.window(MAIN)?.hide().map_err(tauri_error)
+        }
+
+        fn migrate_frames(&self, screens: &[Screen]) {
+            let keys: Vec<(&str, &str)> = screens
+                .iter()
+                .map(|s| (s.legacy_id.as_str(), s.id.as_str()))
+                .collect();
+            crate::runtime::session::run_frame_migrate(&AppHost::new(&self.app), FLOATER, &keys);
         }
 
         fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)> {

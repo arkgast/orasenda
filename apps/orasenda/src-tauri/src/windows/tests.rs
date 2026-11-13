@@ -33,6 +33,7 @@ fn screen(id: &str, width: u32, height: u32) -> Screen {
     let visible = rect(0, 24, width, height - 24 - 60);
     Screen {
         id: id.into(),
+        legacy_id: id.into(),
         name: format!("Display {id}"),
         size: (width, height),
         visible,
@@ -143,6 +144,15 @@ impl Ops for Fake {
     }
     fn hide_main(&self) -> Result<(), FocusViewError> {
         self.step("hide_main")
+    }
+    fn migrate_frames(&self, screens: &[Screen]) {
+        let pairs: Vec<String> = screens
+            .iter()
+            .map(|s| format!("{}>{}", s.legacy_id, s.id))
+            .collect();
+        self.calls
+            .borrow_mut()
+            .push(format!("migrate {}", pairs.join(",")));
     }
     fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)> {
         self.calls
@@ -323,6 +333,7 @@ fn floater_opens_at_default_frame_on_the_main_display() {
     assert_eq!(
         ops.calls(),
         vec![
+            "migrate 1>1,2>2",
             "load_frame 1,2",
             "create floater",
             "make_floater floater",

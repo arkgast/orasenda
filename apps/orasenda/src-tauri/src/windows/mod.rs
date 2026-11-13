@@ -49,6 +49,8 @@ pub(crate) struct WindowSpec {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Screen {
     pub id: String,
+    /// The key before the display UUID; frames stored under it move to `id`.
+    pub legacy_id: String,
     pub name: String,
     /// The display's size.
     pub size: (u32, u32),
@@ -84,6 +86,8 @@ pub(crate) trait Ops {
     fn hide_main(&self) -> Result<(), FocusViewError>;
     /// The frame to reopen the floater at: `run_frame_load` over these display ids.
     fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)>;
+    /// Moves floater frames stored under each screen's `legacy_id` to its `id`, once.
+    fn migrate_frames(&self, screens: &[Screen]);
     fn emit_insets(&self, label: &str, insets: FocusInsets);
     fn close(&self, label: &str);
 }

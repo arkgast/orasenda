@@ -1,11 +1,10 @@
 //! The connected displays, display-relative window frames and screen-change observation.
 //!
-//! A display's key is `"<NSScreenNumber>-<localizedName>"` made label-safe (Open question 2
-//! of the Focus views spec: the fallback). `CGDisplayCreateUUIDFromDisplayID` is declared in
-//! ColorSync, which `objc2-core-graphics` does not bind, so it would need a new binding. The
-//! number is the `CGDirectDisplayID`: stable while the display stays connected, and it keeps
-//! two monitors with the same name apart. A key that no longer matches after a relaunch is
-//! accepted degradation (the floater opens at its default position).
+//! A display's key is its ColorSync UUID made label-safe (Open question 2 of the Focus
+//! views spec), read in `display_uuid.rs`. It is stable across relaunches and re-plugs, and
+//! keeps two same-named monitors apart. A screen without a UUID falls back (logged) to the
+//! legacy key `"<NSScreenNumber>-<localizedName>"`, which every [`Display`] also carries as
+//! `legacy_id` so frames stored under it can be moved to the new key.
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -20,6 +19,7 @@ use objc2_foundation::{
     NSString,
 };
 
+use super::display_uuid::raw_keys;
 use super::{WindowError, main_thread, window};
 
 /// A rectangle in points. Which corner is the origin depends on the function that returns it.
@@ -37,6 +37,8 @@ pub struct Rect {
 pub struct Display {
     /// The label-safe key ([`display_key`]); the Focus window is `focus-<id>`.
     pub id: String,
+    /// The key this display had before the UUID ([`display_key`] of the old form).
+    pub legacy_id: String,
     pub name: String,
     pub frame: Rect,
     /// `frame` without the menu bar and the Dock.
@@ -122,22 +124,23 @@ pub fn displays() -> Result<Vec<Display>, WindowError> {
 
 fn describe(screen: &NSScreen, index: usize, primary_height: f64) -> Display {
     let name = screen.localizedName().to_string();
+    let (raw, legacy) = raw_keys(screen_number(screen), index, &name);
     Display {
-        id: display_key(&format!("{}-{name}", screen_number(screen, index))),
+        id: display_key(&raw),
+        legacy_id: display_key(&legacy),
         name,
         frame: to_top_left(rect_of(screen.frame()), primary_height),
         visible: to_top_left(rect_of(screen.visibleFrame()), primary_height),
     }
 }
 
-/// `NSScreenNumber` (the `CGDirectDisplayID`). A screen that does not report one gets
-/// `i<index>`, which is valid in a label but only as stable as the screen order.
-fn screen_number(screen: &NSScreen, index: usize) -> String {
+/// `NSScreenNumber` (the `CGDirectDisplayID`), if the screen reports one.
+fn screen_number(screen: &NSScreen) -> Option<u32> {
     let description = screen.deviceDescription();
     description
         .objectForKey(&NSString::from_str("NSScreenNumber"))
         .and_then(|value| value.downcast::<NSNumber>().ok())
-        .map_or_else(|| format!("i{index}"), |n| n.unsignedIntValue().to_string())
+        .map(|n| n.unsignedIntValue())
 }
 
 fn rect_of(rect: NSRect) -> Rect {
