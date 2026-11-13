@@ -7,6 +7,7 @@
 
 mod actions;
 mod cadence;
+mod day_cache;
 mod effects;
 mod frames;
 mod hint;

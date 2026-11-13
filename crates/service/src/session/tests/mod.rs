@@ -3,6 +3,7 @@
 mod actions;
 mod cadence;
 mod cap;
+mod day_cache;
 mod extend;
 mod frames;
 mod hint;

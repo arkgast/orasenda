@@ -64,13 +64,19 @@ impl SessionService {
         let Some(store) = &self.store else {
             return Vec::new();
         };
-        match store.read(|txn| focus_sessions::started_between(txn, from, to)) {
+        let read = || {
+            store
+                .read(|txn| focus_sessions::started_between(txn, from, to))
+                .map(|rows| rows.iter().filter_map(from_row).collect())
+        };
+        match self.day_cache.get_or_read(from, read) {
             Ok(rows) => {
                 self.day_read_failed.set(false);
-                rows.iter().filter_map(from_row).collect()
+                rows
             }
             Err(error) => {
-                // Once per failure, not once per view: the store line already tells the person.
+                // Once per failure, not once per view. The view shows the store line until
+                // a read works again, and the next tick retries.
                 if !self.day_read_failed.replace(true) {
                     eprintln!("cadence: today's sessions could not be read ({error})");
                 }

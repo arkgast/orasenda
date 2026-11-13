@@ -84,7 +84,8 @@ impl Session {
             milestones.push(Milestone::Extended);
             return true;
         }
-        let break_live = live.start_break(end, live.planned_ms, live.paused_total_ms);
+        let break_id = live.take_break_id();
+        let break_live = live.start_break(break_id, end, live.planned_ms, live.paused_total_ms);
         *self = Session::Running { live: break_live };
         milestones.push(Milestone::BreakStarted);
         true

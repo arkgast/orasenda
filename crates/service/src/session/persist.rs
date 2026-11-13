@@ -72,6 +72,10 @@ impl SessionService {
             Ok(()) => {
                 self.unsaved.clear();
                 self.snapshot_dirty = false;
+                // Rows may have been added: read today's again, and let the read say whether
+                // the store works.
+                self.day_cache.bump();
+                self.day_read_failed.set(false);
                 self.refresh_status();
             }
             Err(error) => {

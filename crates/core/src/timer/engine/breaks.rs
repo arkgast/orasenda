@@ -4,10 +4,19 @@ use super::{Live, Session};
 use crate::timer::{BreakKind, EndReason, Milestone, Phase, SessionId, SessionPreset, TimerError};
 
 impl Live {
-    /// This focus completes with the given numbers and its break starts at `at_ms`. The break
-    /// is long when the round is a multiple of the preset's `rounds`.
+    /// The id the next break takes: the one the caller reserved, else one derived from this
+    /// focus (the engine alone; the service always reserves a UUIDv7). No I/O here.
+    pub(crate) fn take_break_id(&mut self) -> SessionId {
+        self.break_id
+            .take()
+            .unwrap_or_else(|| derived_break_id(&self.id, self.extensions))
+    }
+
+    /// This focus completes with the given numbers and its break, named `break_id`, starts at
+    /// `at_ms`. The break is long when the round is a multiple of the preset's `rounds`.
     pub(crate) fn start_break(
         &mut self,
+        break_id: SessionId,
         at_ms: u64,
         focused_ms: u64,
         paused_total_ms: u64,
@@ -16,11 +25,7 @@ impl Live {
         let rounds = self.preset.rounds().max(1);
         let long = self.round.is_multiple_of(rounds);
         Live {
-            id: self.break_id.take().unwrap_or_else(|| {
-                // The service always reserves a UUIDv7; this is for the engine alone.
-                eprintln!("timer: no break id was reserved; deriving one from the focus");
-                derived_break_id(&self.id, self.extensions)
-            }),
+            id: break_id,
             preset: self.preset.clone(),
             phase: Phase::Break,
             break_kind: Some(if long {
@@ -77,7 +82,8 @@ impl Session {
             return Err(TimerError::WrongState);
         }
         let focused_ms = live.elapsed_at(at_ms);
-        let break_live = live.start_break(now_ms, focused_ms, paused_total_ms);
+        let break_id = live.take_break_id();
+        let break_live = live.start_break(break_id, now_ms, focused_ms, paused_total_ms);
         *self = Session::Running { live: break_live };
         Ok(Milestone::BreakStarted)
     }
