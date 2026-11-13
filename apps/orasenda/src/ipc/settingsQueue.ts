@@ -193,9 +193,13 @@ function pump(): void {
 function sendSave(next: Settings): void {
   busy = true;
   const mine = generation;
+  // The callers whose intent this send covers; later callers wait for their own send.
+  const covered = waiters;
+  waiters = [];
   const failed = (error: unknown, kind: "write" | "unavailable" = "write") => {
     if (mine !== generation) return;
     console.error("settings_set failed", error);
+    for (const resolve of covered) resolve(false);
     settleWaiters(false);
     if (accepted) listener?.saveFailed(next, accepted, kind);
     rollBack();
@@ -207,6 +211,7 @@ function sendSave(next: Settings): void {
         if (mine !== generation) return;
         if (result.status === "ok") {
           accepted = next;
+          for (const resolve of covered) resolve(true);
           if (sameSettings(intended, next)) listener?.accepted();
         } else {
           // `invalidSpec` is a value Rust refused (a preset no longer in the library): it

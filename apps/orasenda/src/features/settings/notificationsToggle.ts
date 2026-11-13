@@ -41,57 +41,77 @@ export function subscribeAsking(listener: () => void): () => void {
 export function resetNotificationsToggleForTests(): void {
   request += 1;
   asking = null;
+  inFlight = null;
   pending.clear();
   listeners.clear();
 }
 
-function setPreference(key: NotifyKey, value: boolean): void {
+function setPreference(key: NotifyKey, value: boolean): Promise<boolean> {
   const current = latest();
-  if (current) save({ ...current, [key]: value });
+  return current ? save({ ...current, [key]: value }) : Promise.resolve(false);
 }
 
-/** Asks macOS; `saveOnGranted` is false for "Ask macOS" (the preference is already on). */
-function ask(key: NotifyKey, saveOnGranted: boolean): void {
+// The ask in flight, so a tick that joins it gets the same result.
+let inFlight: Promise<boolean> | null = null;
+
+/**
+ * Asks macOS. Resolves `true` when every save after a grant worked, when the person declined, or
+ * when a newer action replaced the ask (a decline is a choice, not a failure); `false` when the
+ * request failed or a save was rolled back.
+ */
+function ask(key: NotifyKey, saveOnGranted: boolean): Promise<boolean> {
   const mine = ++request;
   pending.add(key);
   setAsking(key);
-  commands.notificationsRequest().then(
+  const result = commands.notificationsRequest().then(
     (status) => {
-      if (mine !== request) return;
-      if (status === "granted" && saveOnGranted) {
-        for (const each of pending) setPreference(each, true);
-      }
+      if (mine !== request) return true;
+      const keys = status === "granted" && saveOnGranted ? [...pending] : [];
       pending.clear();
       setAsking(null);
+      return Promise.all(keys.map((each) => setPreference(each, true))).then((all) =>
+        all.every(Boolean),
+      );
     },
     (error: unknown) => {
       console.error("notifications_request failed", error);
-      if (mine === request) {
-        pending.clear();
-        setAsking(null);
-      }
+      if (mine !== request) return true;
+      pending.clear();
+      setAsking(null);
+      return false;
     },
   );
+  inFlight = result;
+  void result.then(() => {
+    if (inFlight === result) inFlight = null;
+  });
+  return result;
 }
 
-/** The box was ticked while the status is `status`. */
-export function tick(status: NotificationStatus, key: NotifyKey = "notifySessionEnd"): void {
-  if (status === "notDetermined" && asking !== null) pending.add(key);
-  else if (status === "notDetermined") ask(key, true);
-  else setPreference(key, true);
+/** The box was ticked while the status is `status`; see `ask` for what the result means. */
+export function tick(
+  status: NotificationStatus,
+  key: NotifyKey = "notifySessionEnd",
+): Promise<boolean> {
+  if (status === "notDetermined" && asking !== null) {
+    pending.add(key);
+    return inFlight ?? Promise.resolve(true);
+  }
+  if (status === "notDetermined") return ask(key, true);
+  return setPreference(key, true);
 }
 
 /** The box was unticked (also while asking). */
-export function untick(key: NotifyKey = "notifySessionEnd"): void {
+export function untick(key: NotifyKey = "notifySessionEnd"): Promise<boolean> {
   pending.delete(key);
   if (pending.size === 0) {
     request += 1;
     setAsking(null);
   }
-  setPreference(key, false);
+  return setPreference(key, false);
 }
 
 /** The quiet "Ask macOS" action: the preference is on, macOS hasn't been asked. */
 export function askMacOS(): void {
-  ask("notifySessionEnd", false);
+  void ask("notifySessionEnd", false);
 }

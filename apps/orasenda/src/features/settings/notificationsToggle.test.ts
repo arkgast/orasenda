@@ -153,7 +153,7 @@ test("untick_during_ask_resolves_true", async () => {
   await ready({ notifications_request: () => request.promise });
   const asked = tick("notDetermined");
   const off = untick();
-  await expect(asked).resolves.toBe(true);
   request.resolve("granted");
+  await expect(asked).resolves.toBe(true);
   await expect(off).resolves.toBe(true);
 });

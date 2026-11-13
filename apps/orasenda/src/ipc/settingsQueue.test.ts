@@ -231,12 +231,15 @@ test("superseded_save_resolves_with_the_newer_outcome", async () => {
 
   resetSettingsQueueForTests();
   clearMocks();
-  const second = deferred<null>();
+  let failSecond: (error: unknown) => void = () => {};
+  const second = new Promise<null>((_resolve, reject) => {
+    failSecond = reject;
+  });
   let n = 0;
   await loaded({
     settings_set: () => {
       n += 1;
-      return n === 1 ? null : second.promise;
+      return n === 1 ? null : second;
     },
   });
   const c = save(NEXT);
@@ -250,7 +253,7 @@ test("superseded_save_resolves_with_the_newer_outcome", async () => {
   // c was accepted on its own send, so it is true even though d fails later.
   await expect(c).resolves.toBe(true);
   expect(cDone).toBe(true);
-  second.reject({ kind: "write", message: "x" });
+  failSecond({ kind: "write", message: "x" });
   await expect(d).resolves.toBe(false);
 });
 

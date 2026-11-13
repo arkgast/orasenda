@@ -1,5 +1,6 @@
 import { CommandPalette, type NavPage } from "@orasenda/ui";
 import { type ReactElement, useEffect, useMemo, useState } from "react";
+import { tick, untick } from "../../features/settings/notificationsToggle";
 import { openFocusView } from "../../features/today/focusView";
 import { requestIntentField } from "../../features/today/intentEvents";
 import { usePresets } from "../../features/today/presets";
@@ -124,21 +125,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         return change({ theme: arg as Theme }).then(report("change the theme"));
       case "notifications": {
         if (!settings || !view) return;
-        if (settings.notifySessionEnd) {
-          return change({ notifySessionEnd: false }).then(report("turn off notifications"));
-        }
-        const turnOn = async () => {
-          if (view.notifications === "notDetermined") {
-            try {
-              if ((await commands.notificationsRequest()) !== "granted") return false;
-            } catch (error) {
-              console.error("notifications_request failed", error);
-              return false;
-            }
-          }
-          return change({ notifySessionEnd: true });
-        };
-        return turnOn().then(report("turn on notifications"));
+        return settings.notifySessionEnd
+          ? untick().then(report("turn off notifications"))
+          : tick(view.notifications).then(report("turn on notifications"));
       }
       case "page": {
         const page = PAGE_ORDER.find(({ id: pageId }) => pageId === arg);
