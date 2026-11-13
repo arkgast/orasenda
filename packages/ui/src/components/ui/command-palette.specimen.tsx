@@ -31,7 +31,9 @@ export function CommandPaletteSpecimen(): ReactElement {
         <CommandPalette
           compact={open === "compact"}
           commands={commands}
-          onSelect={setLast}
+          onSelect={(id) => {
+            setLast(id);
+          }}
           onClose={() => setOpen("")}
         />
       ) : null}

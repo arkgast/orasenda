@@ -73,7 +73,9 @@ test("arrows_wrap_through_results", () => {
 test("enter_runs_highlighted_command_then_closes", () => {
   const order: string[] = [];
   const { box } = setup({
-    onSelect: (id) => order.push(`select:${id}`),
+    onSelect: (id) => {
+      order.push(`select:${id}`);
+    },
     onClose: () => order.push("close"),
   });
   fireEvent.keyDown(box, { key: "ArrowDown" });
@@ -221,4 +223,68 @@ test("command_palette_current_props_unchanged", () => {
   expect(screen.getByRole("button", { name: "Close" })).toHaveAttribute("data-slot", "button");
   expect(document.querySelector("[data-slot=kbd]")).toBeNull();
   expect(document.querySelector("[data-slot=dialog-title]")?.className).not.toContain("sr-only");
+});
+
+test("command_palette_renders_status", () => {
+  setup({ status: "Couldn't pause. Please try again." });
+  const line = screen.getByRole("status");
+  expect(line).toHaveTextContent("Couldn't pause. Please try again.");
+  expect(line.className).not.toMatch(/critical|red/);
+});
+
+test("command_palette_keeps_open_when_select_returns_false", async () => {
+  const onSelect = vi.fn(() => false);
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  expect(onSelect).toHaveBeenCalledWith("start");
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test("command_palette_waits_for_a_promise_before_closing", async () => {
+  let settle: (keep: boolean) => void = () => {};
+  const onSelect = vi.fn(() => new Promise<boolean>((resolve) => (settle = resolve)));
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  expect(onClose).not.toHaveBeenCalled();
+  settle(false);
+  await Promise.resolve();
+  expect(onClose).not.toHaveBeenCalled();
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  settle(true);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(onClose).toHaveBeenCalled();
+});
+
+test("command_palette_reports_query_changes", () => {
+  const onQueryChange = vi.fn();
+  const { box } = setup({ onQueryChange });
+  fireEvent.change(box, { target: { value: "pa" } });
+  expect(onQueryChange).toHaveBeenCalledWith("pa");
+});
+
+test("command_palette_status_region_exists_before_any_failure", () => {
+  setup();
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
+test("command_palette_newest_choice_wins", async () => {
+  const settles: Array<(keep: boolean) => void> = [];
+  const onSelect = vi.fn(() => new Promise<boolean>((resolve) => settles.push(resolve)));
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  fireEvent.click(screen.getAllByRole("option")[1]);
+  settles[1](false);
+  settles[0](true);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test("command_palette_stays_open_when_the_promise_rejects", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const onSelect = vi.fn(() => Promise.reject(new Error("boom")));
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(onClose).not.toHaveBeenCalled();
+  expect(console.error).toHaveBeenCalled();
 });

@@ -36,7 +36,12 @@ if (typeof document !== "undefined") {
 export interface CommandPaletteProps {
   open?: boolean;
   commands: CommandEntry[];
-  onSelect: (id: string) => void;
+  /** Return `false` (or a promise of it) to keep the palette open, e.g. when the command failed. Anything else closes it. */
+  onSelect: (id: string) => boolean | undefined | Promise<boolean | undefined>;
+  /** A plain status line under the field (neutral tone, announced once), e.g. "Couldn't pause. Please try again." */
+  status?: string;
+  /** Called with the field's text on every change; the host clears a stale `status` here. */
+  onQueryChange?: (query: string) => void;
   onClose: () => void;
   /** The host sets it below layout-compact-height: the title and label are visually hidden and a Close IconButton sits beside the field. */
   compact?: boolean;
@@ -49,12 +54,14 @@ const focusRing =
 
 /**
  * The command palette: a search field over a list of commands. Mount a fresh instance per invocation so the
- * query starts empty. `onSelect(id)` runs before `onClose`; Escape and Close call `onClose`; backdrop clicks never dismiss.
+ * query starts empty. `onSelect(id)` runs before `onClose` (and may keep the palette open, see command-palette.md); Escape and Close call `onClose`; backdrop clicks never dismiss.
  */
 export function CommandPalette({
   open = true,
   commands,
   onSelect,
+  status,
+  onQueryChange,
   onClose,
   compact = false,
 }: CommandPaletteProps): JSX.Element {
@@ -81,9 +88,19 @@ export function CommandPalette({
     if (row) input.setAttribute("aria-activedescendant", row.id);
     else input.removeAttribute("aria-activedescendant");
   }, [selected]);
+  const newest = useRef(0);
   const choose = (id: string) => {
-    onSelect(id);
-    onClose();
+    const mine = ++newest.current;
+    const result = onSelect(id);
+    if (result instanceof Promise) {
+      result.then(
+        (keep) => {
+          // Only the newest choice decides: an older answer arriving late is ignored.
+          if (mine === newest.current && keep !== false) onClose();
+        },
+        (error: unknown) => console.error("command failed", error),
+      );
+    } else if (result !== false) onClose();
   };
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && onClose()}>
@@ -145,7 +162,10 @@ export function CommandPalette({
                   ref={inputRef}
                   data-slot="input"
                   value={query}
-                  onValueChange={setQuery}
+                  onValueChange={(next) => {
+                    setQuery(next);
+                    onQueryChange?.(next);
+                  }}
                   // cmdk jumps to the first or last row on Home and End; keep them moving the caret as in a plain field.
                   onKeyDown={(event) => {
                     if (event.key === "Home" || event.key === "End") event.stopPropagation();
@@ -160,6 +180,9 @@ export function CommandPalette({
                   <IconButton label="Close" icon={<Icon name="close" />} onClick={onClose} />
                 ) : null}
               </div>
+              <p role="status" className="m-0 text-body-sm text-ink-muted empty:sr-only">
+                {status ?? (results.length ? null : "No matching commands. Try a different word.")}
+              </p>
               <Command.List
                 label="Commands"
                 className="flex min-h-0 flex-col gap-1 overflow-auto p-1"
@@ -194,11 +217,6 @@ export function CommandPalette({
                 ))}
               </Command.List>
             </Command>
-            {results.length ? null : (
-              <p role="status" className="m-0 text-body text-ink-muted">
-                No matching commands. Try a different word.
-              </p>
-            )}
             {compact ? null : (
               <div data-slot="dialog-actions" className="flex justify-end">
                 <Button variant="ghost" onClick={onClose}>

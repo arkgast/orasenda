@@ -181,3 +181,99 @@ test("save_failed_reports_sent_restored_and_kind", async () => {
   expect(page.saveFailed).toHaveBeenCalledWith(CHANGED, SETTINGS, "write");
   expect(page.shown).toHaveBeenLastCalledWith(SETTINGS, true);
 });
+
+async function loaded(replies: Parameters<typeof mockBackend>[0] = {}) {
+  mockBackend({ settings_get: () => SETTINGS, ...replies });
+  load();
+  await settle();
+}
+
+const NEXT: Settings = { ...SETTINGS, presetId: DEEP };
+
+test("save_resolves_true_on_accept", async () => {
+  await loaded({ settings_set: () => null });
+  await expect(save(NEXT)).resolves.toBe(true);
+});
+
+test("save_resolves_true_when_same_as_accepted", async () => {
+  await loaded();
+  await expect(save({ ...SETTINGS })).resolves.toBe(true);
+});
+
+test("save_resolves_false_on_rollback", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  for (const error of [
+    { kind: "write", message: "disk" },
+    { kind: "unavailable", message: "x" },
+  ]) {
+    resetSettingsQueueForTests();
+    clearMocks();
+    await loaded({ settings_set: () => Promise.reject(error) });
+    await expect(save(NEXT)).resolves.toBe(false);
+  }
+});
+
+test("superseded_save_resolves_with_the_newer_outcome", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const first = deferred<null>();
+  let calls = 0;
+  await loaded({
+    settings_set: () => {
+      calls += 1;
+      return calls === 1 ? first.promise : null;
+    },
+  });
+  const a = save({ ...SETTINGS, presetId: DEEP });
+  const b = save({ ...SETTINGS, presetId: DEEP, theme: "dark" });
+  first.resolve(null);
+  await expect(a).resolves.toBe(true);
+  await expect(b).resolves.toBe(true);
+
+  resetSettingsQueueForTests();
+  clearMocks();
+  let failSecond: (error: unknown) => void = () => {};
+  const second = new Promise<null>((_resolve, reject) => {
+    failSecond = reject;
+  });
+  let n = 0;
+  await loaded({
+    settings_set: () => {
+      n += 1;
+      return n === 1 ? null : second;
+    },
+  });
+  const c = save(NEXT);
+  await settle();
+  const d = save({ ...NEXT, theme: "dark" });
+  let cDone = false;
+  void c.then(() => {
+    cDone = true;
+  });
+  await settle();
+  // c was accepted on its own send, so it is true even though d fails later.
+  await expect(c).resolves.toBe(true);
+  expect(cDone).toBe(true);
+  failSecond({ kind: "write", message: "x" });
+  await expect(d).resolves.toBe(false);
+});
+
+test("superseded_pending_save_waits_for_the_newer_outcome", async () => {
+  const first = deferred<null>();
+  let n = 0;
+  await loaded({
+    settings_set: () => {
+      n += 1;
+      return n === 1 ? first.promise : null;
+    },
+  });
+  let aDone = false;
+  const a = save(NEXT).then(() => {
+    aDone = true;
+  });
+  save({ ...NEXT, theme: "dark" });
+  await settle();
+  expect(aDone).toBe(false);
+  first.resolve(null);
+  await a;
+  expect(aDone).toBe(true);
+});

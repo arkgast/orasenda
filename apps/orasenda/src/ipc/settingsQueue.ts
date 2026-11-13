@@ -81,6 +81,14 @@ let getWanted = false;
 let getSentUnder: { intent: Settings | null } | null = null;
 // Bumped by the test reset: a reply from an earlier generation is dropped.
 let generation = 0;
+// Callers of save() still waiting for their intent to settle (accepted, or rolled back).
+let waiters: ((worked: boolean) => void)[] = [];
+
+function settleWaiters(worked: boolean): void {
+  const done = waiters;
+  waiters = [];
+  for (const resolve of done) resolve(worked);
+}
 // The one `settings-changed` subscription, made on first use (not at import, before any IPC
 // exists) and kept for the module's life; `watchers` share it.
 let stopChanged: (() => void) | null = null;
@@ -132,16 +140,25 @@ export function load(): void {
   pump();
 }
 
-/** Makes `next` the latest intent, tells the live page, and sends it when the lane is free. */
-export function save(next: Settings): void {
+/**
+ * Makes `next` the latest intent, tells the live page, and sends it when the lane is free.
+ * Resolves `true` when Rust accepted it, or a later intent that replaced it (or it already equals
+ * the accepted settings); `false` when the chain rolled back while it was pending. Callers may
+ * ignore the result.
+ */
+export function save(next: Settings): Promise<boolean> {
   intended = next;
   listener?.shown(next, false);
+  if (!busy && sameSettings(next, accepted)) return Promise.resolve(true);
+  const result = new Promise<boolean>((resolve) => waiters.push(resolve));
   pump();
+  return result;
 }
 
 /** Empties all state and drops replies still in flight (Vitest shares this module within a file). */
 export function resetSettingsQueueForTests(): void {
   generation += 1;
+  settleWaiters(false);
   stopChanged?.();
   stopChanged = null;
   watchers.clear();
@@ -165,6 +182,9 @@ function pump(): void {
   const next = intended;
   if (next && !sameSettings(next, accepted)) {
     sendSave(next);
+  } else if (next) {
+    settleWaiters(true);
+    if (getWanted) sendGet();
   } else if (getWanted) {
     sendGet();
   }
@@ -173,9 +193,14 @@ function pump(): void {
 function sendSave(next: Settings): void {
   busy = true;
   const mine = generation;
+  // The callers whose intent this send covers; later callers wait for their own send.
+  const covered = waiters;
+  waiters = [];
   const failed = (error: unknown, kind: "write" | "unavailable" = "write") => {
     if (mine !== generation) return;
     console.error("settings_set failed", error);
+    for (const resolve of covered) resolve(false);
+    settleWaiters(false);
     if (accepted) listener?.saveFailed(next, accepted, kind);
     rollBack();
   };
@@ -186,6 +211,7 @@ function sendSave(next: Settings): void {
         if (mine !== generation) return;
         if (result.status === "ok") {
           accepted = next;
+          for (const resolve of covered) resolve(true);
           if (sameSettings(intended, next)) listener?.accepted();
         } else {
           // `invalidSpec` is a value Rust refused (a preset no longer in the library): it
