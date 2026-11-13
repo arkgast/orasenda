@@ -75,6 +75,8 @@ impl SessionService {
                 // Rows may have been added: read today's again, and let the read say whether
                 // the store works.
                 self.day_cache.bump();
+                // Deliberately beyond the spec: a working write clears a failed read until the
+                // next read fails, so the store line does not stay up through a focus.
                 self.day_read_failed.set(false);
                 self.refresh_status();
             }

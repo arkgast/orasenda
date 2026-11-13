@@ -68,19 +68,43 @@ fn day_change_rereads() {
 
 #[test]
 fn failed_day_read_shows_store_unavailable_and_retries() {
-    let (s, at) = in_break();
-    assert_eq!(s.view(at).store, StoreStatus::Ok);
+    let (mut s, _) = in_break();
+    // Finish the break so the first session's rows are stored, then read them.
+    let done = T0 + CLASSIC_END_MS;
+    s.tick(done);
+    assert_eq!(s.view(done).store, StoreStatus::Ok);
+    assert!(row_count(db(&s)) > 0, "rows are stored");
+    assert_eq!(
+        s.round_for(&library_preset(0), done),
+        2,
+        "the stored rows count"
+    );
+    s.day_cache.bump();
+    db(&s).fail_reads(true);
+    assert_eq!(s.view(done).store, StoreStatus::Unavailable);
+    // Not kept: the next view reads again, and the round falls back to the first.
+    let reads = s.day_cache.reads();
+    assert_eq!(s.view(done + 1000).store, StoreStatus::Unavailable);
+    assert_eq!(s.day_cache.reads(), reads + 1);
+    assert_eq!(s.round_for(&library_preset(0), done), 1);
+    db(&s).fail_reads(false);
+    assert_eq!(s.view(done + 2000).store, StoreStatus::Ok);
+}
+
+#[test]
+fn successful_write_clears_a_failed_read_until_the_next_read() {
+    // A deliberate change from "only a read clears it": a focus runs without any view
+    // reading today's rows, so a working write must not leave the store line up.
+    let (mut s, at) = in_break();
     s.day_cache.bump();
     db(&s).fail_reads(true);
     assert_eq!(s.view(at).store, StoreStatus::Unavailable);
-    // Not kept: the next view reads again, and the round falls back to the first.
-    let reads = s.day_cache.reads();
-    assert_eq!(s.view(at + 1000).store, StoreStatus::Unavailable);
-    assert_eq!(s.day_cache.reads(), reads + 1);
-    // Stored rows read as none; the focus the engine holds in its break still counts.
-    assert_eq!(s.round_for(&library_preset(0), at), 2);
-    db(&s).fail_reads(false);
-    assert_eq!(s.view(at + 2000).store, StoreStatus::Ok);
+    s.tick(T0 + CLASSIC_END_MS);
+    assert_eq!(s.store_status, StoreStatus::Ok, "the write worked");
+    assert_eq!(
+        s.view(T0 + CLASSIC_END_MS + 1000).store,
+        StoreStatus::Unavailable
+    );
 }
 
 #[test]
