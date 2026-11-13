@@ -66,6 +66,12 @@ export const commands = {
 	presetUndoRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_undo_remove", { id })),
 	/**  Restores the default presets; answers the live list. */
 	presetsRestoreDefaults: () => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("presets_restore_defaults")),
+	/**  The global shortcuts, their status and the single-key setting. */
+	keyboardState: () => __TAURI_INVOKE<KeyboardView_Serialize>("keyboard_state"),
+	/**  Changes a global shortcut; `null` turns it off. It is saved only after it registers. */
+	keyboardSetShortcut: (id: ShortcutId, keys: string | null) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_set_shortcut", { id, keys })),
+	/**  Sets a global shortcut back to its default, by the same path as a change. */
+	keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -86,6 +92,7 @@ export const commands = {
 export const events = {
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
+	keyboardChanged: makeEvent<KeyboardView_Serialize, KeyboardView_Deserialize>("keyboard-changed"),
 	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
 	paletteOpen: makeEvent<PaletteOpen, PaletteOpen>("palette-open"),
@@ -206,6 +213,49 @@ export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind
 export type Hint = 
 /**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
 "keepGoing";
+
+/**  Why a shortcut change failed. */
+export type KeyboardError = 
+/**  The keys are not a shortcut. */
+"invalid" | 
+/**  Orasenda uses the keys already: the other global shortcut or an app menu shortcut. */
+"inUseByOrasenda" | 
+/**  The system would not register the keys (another app may hold them). Nothing was saved. */
+"unavailable" | 
+/**  The shortcut could not be saved; the settings did not change. */
+"store";
+
+/**
+ *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
+ *  `keyboard-changed` event.
+ */
+export type KeyboardView = KeyboardView_Serialize | KeyboardView_Deserialize;
+
+/**
+ *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
+ *  `keyboard-changed` event.
+ */
+export type KeyboardView_Deserialize = {
+	startPause: ShortcutView_Deserialize,
+	capture: ShortcutView_Deserialize,
+	/**  Space, F and P on Today and Space in Focus view work. */
+	singleKey: boolean,
+	/**  VoiceOver is on, so its ⌃⌥ keys may take the shortcuts. */
+	voiceOver: boolean,
+};
+
+/**
+ *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
+ *  `keyboard-changed` event.
+ */
+export type KeyboardView_Serialize = {
+	startPause: ShortcutView_Serialize,
+	capture: ShortcutView_Serialize,
+	/**  Space, F and P on Today and Space in Focus view work. */
+	singleKey: boolean,
+	/**  VoiceOver is on, so its ⌃⌥ keys may take the shortcuts. */
+	voiceOver: boolean,
+};
 
 /**  A session milestone, emitted as `timer-milestone`. */
 export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
@@ -446,6 +496,15 @@ export type Settings = {
 	notifySessionEnd: boolean,
 	/**  Notify two minutes before the end (`notify.two_minutes`). */
 	notifyTwoMinutes: boolean,
+	/**
+	 *  The start or pause shortcut: a canonical accelerator or `"off"` (`keys.start_pause`).
+	 *  Changed only through `keyboard_set_shortcut`; `settings_set` ignores it.
+	 */
+	startPauseKeys: string,
+	/**  The capture shortcut, the same (`keys.capture`). */
+	captureKeys: string,
+	/**  Space, F and P on Today and Space in Focus view act (`keys.single_key`). */
+	singleKey: boolean,
 };
 
 /**  The settings changed. */
@@ -463,6 +522,43 @@ export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
 export type SettingsTarget = "general" | "timer" | "notifications" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes" | 
 /**  The *Keep going automatically* row in Timer. */
 "keepGoing";
+
+/**  A global shortcut: it works from any app. */
+export type ShortcutId = 
+/**  Starts the selected preset, or pauses or resumes a running session. */
+"startPause" | 
+/**  Opens the capture panel. */
+"capture";
+
+/**  Whether a global shortcut is working now. Memory only: computed at launch and after each change. */
+export type ShortcutStatus = "registered" | "off" | 
+/**  Saved but not registered: another app holds it, or it could not be registered. */
+"failed";
+
+/**  One global shortcut as the webview shows it. */
+export type ShortcutView = ShortcutView_Serialize | ShortcutView_Deserialize;
+
+/**  One global shortcut as the webview shows it. */
+export type ShortcutView_Deserialize = {
+	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when it is off. */
+	keys?: string | null,
+	/**  The keys as glyphs ("⌃⌥F"). */
+	display?: string | null,
+	/**  The keys as words ("Control-Option-F"). */
+	spoken?: string | null,
+	status: ShortcutStatus,
+};
+
+/**  One global shortcut as the webview shows it. */
+export type ShortcutView_Serialize = {
+	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when it is off. */
+	keys: string | null,
+	/**  The keys as glyphs ("⌃⌥F"). */
+	display: string | null,
+	/**  The keys as words ("Control-Option-F"). */
+	spoken: string | null,
+	status: ShortcutStatus,
+};
 
 /**  Why a spike command failed, with a message for the log. */
 export type SpikeError = {

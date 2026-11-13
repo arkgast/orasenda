@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use orasenda_core::Notifier;
 
-use crate::api::{ClockTick, MilestoneEvent, PresetEntry, Settings, Theme, TimerView};
+use crate::api::{
+    ClockTick, KeyboardView, MilestoneEvent, PresetEntry, Settings, Theme, TimerView,
+};
 use crate::session::{SessionService, Surfaces, ViewGate};
 
 /// Where the publish steps send their output: the running app, or a recording fake in tests.
@@ -29,6 +31,8 @@ pub trait Host: Clone + Send + Sync + 'static {
     fn emit_settings_changed(&self, settings: &Settings);
     /// Emits `presets-changed` and tells the surfaces. An emit error is logged, never fatal.
     fn emit_presets_changed(&self, presets: &[PresetEntry]);
+    /// Emits `keyboard-changed`. An emit error is logged, never fatal.
+    fn emit_keyboard_changed(&self, view: &KeyboardView);
     /// Applies the app-wide theme (`System` clears the override). Never called under the
     /// service lock.
     fn apply_theme(&self, theme: Theme);

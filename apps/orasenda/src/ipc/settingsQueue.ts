@@ -38,6 +38,9 @@ export const SETTINGS_KEYS = [
   "deepCapHours",
   "notifySessionEnd",
   "notifyTwoMinutes",
+  "startPauseKeys",
+  "captureKeys",
+  "singleKey",
 ] as const satisfies readonly (keyof Settings)[];
 
 // Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field this list misses.

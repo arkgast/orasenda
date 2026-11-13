@@ -61,6 +61,8 @@ fn every_new_key_round_trips() {
         deep_cap_hours: 6,
         notify_session_end: true,
         notify_two_minutes: true,
+        single_key: false,
+        ..Settings::default()
     };
     s.set_settings(all.clone(), T0).expect("saves");
     assert_eq!(s.settings(), all);
@@ -285,4 +287,31 @@ fn unchanged_keys_log_no_change_log_row() {
     )
     .expect("an unchanged save succeeds");
     assert_eq!(db(&s).change_log_ids()[seeded..], ["ui.theme"]);
+}
+
+#[test]
+fn settings_single_key_default_true() {
+    let defaults = Settings::default();
+    assert!(defaults.single_key);
+    assert_eq!(defaults.start_pause_keys, "Control+Alt+KeyF");
+    assert_eq!(defaults.capture_keys, "Control+Alt+KeyN");
+    let mut s = service();
+    assert!(s.settings().single_key);
+    // It saves through the ordinary settings chain and survives a relaunch.
+    let off = Settings {
+        single_key: false,
+        ..s.settings()
+    };
+    s.set_settings(off, T0).expect("saves");
+    assert!(!s.settings().single_key);
+    // The shortcut keys are not part of that chain: an echo with other keys changes nothing.
+    let echo = Settings {
+        start_pause_keys: "Control+Alt+KeyZ".into(),
+        capture_keys: "off".into(),
+        ..s.settings()
+    };
+    s.set_settings(echo, T0 + 2).expect("saves");
+    assert_eq!(s.settings().start_pause_keys, "Control+Alt+KeyF");
+    assert_eq!(s.settings().capture_keys, "Control+Alt+KeyN");
+    assert!(!relaunch(&mut s, T0 + 1).settings().single_key);
 }

@@ -30,6 +30,9 @@
     "allow-preset-update",
     "allow-preset-remove",
     "allow-preset-undo-remove",
-    "allow-presets-restore-defaults"
+    "allow-presets-restore-defaults",
+    "allow-keyboard-state",
+    "allow-keyboard-set-shortcut",
+    "allow-keyboard-restore-default"
   ]
 }

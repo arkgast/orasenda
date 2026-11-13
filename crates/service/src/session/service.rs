@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use orasenda_core::{
-    KeepAwake, LocalTime, NotificationStatus, Notifier, PresetDef, Session, SessionId,
+    EngineState, KeepAwake, LocalTime, NotificationStatus, Notifier, PresetDef, Session, SessionId,
     SessionRecord, default_presets,
 };
 use orasenda_store::{OpenError, Store, active_session};
@@ -42,6 +42,9 @@ pub enum Action {
     TakeBreak,
     /// Today showed the hint: remember it, once and for all.
     HintShown(Hint),
+    /// The start or pause shortcut: starts the selected preset when idle, pauses a running
+    /// session (a focus or a break) and resumes a paused one.
+    StartPauseToggle,
 }
 
 /// A native view of the timer (T9's menu-bar item).
@@ -200,6 +203,20 @@ impl SessionService {
             .unwrap_or(NotificationStatus::Unavailable);
         self.notifications = Some(status);
         shown != status
+    }
+
+    /// Whether the store is working.
+    pub fn store_status(&self) -> StoreStatus {
+        self.store_status
+    }
+
+    /// What the start or pause shortcut does in the engine's state now (after it advanced).
+    pub(super) fn toggle_action(&self, now_ms: u64) -> Action {
+        match self.engine.view(now_ms).state {
+            EngineState::Idle => Action::Start(StartRequest { quick: false }),
+            EngineState::Running => Action::Pause,
+            EngineState::Paused => Action::Resume,
+        }
     }
 
     /// The notification status, `None` until it has been read.

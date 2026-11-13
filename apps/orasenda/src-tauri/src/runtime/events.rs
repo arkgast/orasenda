@@ -1,12 +1,14 @@
 //! The emits and the theme mapping on the app.
 
-use orasenda_service::api::{MilestoneEvent, PresetEntry, Settings, Theme, TimerView};
+use orasenda_service::api::{
+    KeyboardView, MilestoneEvent, PresetEntry, Settings, Theme, TimerView,
+};
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 use crate::ipc::{
-    ClockTick, ClockTickEvent, PresetsChangedEvent, SettingsChanged, TimerMilestoneEvent,
-    TimerTickEvent,
+    ClockTick, ClockTickEvent, KeyboardChanged, PresetsChangedEvent, SettingsChanged,
+    TimerMilestoneEvent, TimerTickEvent,
 };
 use crate::runtime::session::Surfaces;
 
@@ -34,6 +36,12 @@ pub(super) fn emit_milestone(app: &AppHandle, event: &MilestoneEvent) {
 pub(super) fn emit_clock_tick(app: &AppHandle, tick: &ClockTick) {
     if let Err(error) = ClockTickEvent(tick.clone()).emit(app) {
         eprintln!("session-scheduler: could not emit clock-tick: {error}");
+    }
+}
+
+pub(super) fn emit_keyboard_changed(app: &AppHandle, view: &KeyboardView) {
+    if let Err(error) = KeyboardChanged(view.clone()).emit(app) {
+        eprintln!("keyboard: could not emit keyboard-changed: {error}");
     }
 }
 

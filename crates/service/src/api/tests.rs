@@ -56,7 +56,10 @@ fn settings_json() -> serde_json::Value {
         "deepCapOn": true,
         "deepCapHours": 4,
         "notifySessionEnd": true,
-        "notifyTwoMinutes": false
+        "notifyTwoMinutes": false,
+        "startPauseKeys": "Control+Alt+KeyF",
+        "captureKeys": "Control+Alt+KeyN",
+        "singleKey": true
     })
 }
 

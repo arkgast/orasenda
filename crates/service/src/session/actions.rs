@@ -24,6 +24,11 @@ impl SessionService {
         let mut outcome = Outcome::default();
         self.advance(now_ms, &mut outcome);
         let clears_offer = !matches!(action, Action::DismissOffer | Action::HintShown(_));
+        let toggled = matches!(action, Action::StartPauseToggle);
+        let action = match action {
+            Action::StartPauseToggle => self.toggle_action(now_ms),
+            other => other,
+        };
         let result = match action {
             Action::Start(request) => self
                 .start(&request, now_ms, new_id, &mut outcome)
@@ -54,7 +59,12 @@ impl SessionService {
                 self.mark_shown(hint, now_ms);
                 Ok(())
             }
+            // Resolved above.
+            Action::StartPauseToggle => Ok(()),
         };
+        if toggled && result.is_ok() {
+            self.note_global_shortcut_used(now_ms);
+        }
         if result.is_ok() && clears_offer {
             self.offer = false;
         }

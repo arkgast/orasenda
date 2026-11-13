@@ -116,7 +116,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 - Depends on: none
 - Owns: `crates/service/src/keyboard/{mod.rs,accelerator.rs,registrar.rs,service.rs,tests.rs}` (new), `crates/service/src/api/keyboard.rs` (new), `apps/orasenda/src-tauri/src/commands/keyboard.rs` (new).
 - Touches:
-  - service: `session/settings.rs` (three keys and defaults; at 330 lines, put the key list in `session/settings/keys.rs` if it would pass 400), `api/settings.rs` (fields), `session/service.rs` (the ⌃⌥F entry `start_pause_toggle(now)`), `session/hint.rs` (the `meta` helper reused for `used.global_shortcut`);
+  - service: `session/settings.rs` (three keys and defaults; at 330 lines, put the key list in `session/settings/keys.rs` if it would pass 400), `api/settings.rs` (fields), `session/service.rs` (`toggle_action`; ⌃⌥F runs `run_action_on(Action::StartPauseToggle)`), `session/hint.rs` (the `meta` helper reused for `used.global_shortcut`);
   - append-only: `api/events.rs` (`keyboard-changed`), `commands/mod.rs`, `commands.list.rs`, `lib.rs`, `capabilities/main.json`, `lib_tests.rs`;
   - TS: `ipc/bindings.ts`, `ipc/settingsQueue.ts` (the key list), `test/fixtures.ts`, `dev/layout/layoutMain.tsx`.
 - Interfaces:
@@ -128,13 +128,13 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
     - `KeyboardView { startPause, capture, singleKey: bool, voiceOver: bool }`, `KeyboardError { Invalid, InUseByOrasenda, Unavailable, Store }`;
     - commands `keyboard_state() -> KeyboardView`, `keyboard_set_shortcut(id, keys: Option<String>) -> Result<KeyboardView, KeyboardError>`, `keyboard_restore_default(id) -> Result<KeyboardView, KeyboardError>`;
     - event `keyboard-changed: KeyboardView`;
-    - `KeyboardService::on_pressed(id, now)`, which dispatches ⌃⌥F to `start_pause_toggle` and ⌃⌥N to a `CaptureOpener` callback (set by F6; a no-op until then);
-    - `KeyboardService::set_voice_over(bool)` (fed by F5).
+    - `KeyboardService::on_pressed(host, id)` (as built; `now` comes from the host), which dispatches ⌃⌥F to `run_action_on(Action::StartPauseToggle)` and ⌃⌥N to a `CaptureOpener` callback (set by F6; a no-op until then);
+    - `KeyboardService::set_voice_over(host, bool)` (as built; fed by F5).
 - Acceptance:
   - [ ] Register before saving: on `Unavailable` nothing is written and the old shortcut stays registered. On success the setting is written, then the old one is unregistered, then `keyboard-changed` is emitted.
   - [ ] `InUseByOrasenda` for the other global's keys and for ⌘K, ⇧⌘F, ⇧⌘T, ⌘,, ⌘↩, ⇧⌘↩ and ⌘..
   - [ ] Launch: `register_saved()` gives `Registered`, `Off` or `Failed` with no store write.
-  - [ ] `start_pause_toggle`: idle or ended → start the selected preset; running focus or break → pause; paused → resume. It goes through the same lock and newest-wins as the commands. It sets `used.global_shortcut` once.
+  - [ ] ⌃⌥F (`Action::StartPauseToggle`): idle or ended → start the selected preset; running focus or break → pause; paused → resume. It goes through the same lock and newest-wins as the commands. It sets `used.global_shortcut` once.
   - [ ] `singleKey` saves through the existing settings chain (ADR-014).
   - [ ] Keys, defaults and the canonical form are as the spec says; parse/describe round-trip for every key code the recorder emits.
 - Tests first: `accelerator_round_trip`, `set_shortcut_registers_before_save`, `set_shortcut_unavailable_saves_nothing_keeps_old`, `set_shortcut_in_use_by_orasenda`, `restore_default_same_path`, `register_saved_failed_status`, `start_pause_toggle_each_state`, `start_pause_sets_used_flag_once`, `settings_single_key_default_true`.
