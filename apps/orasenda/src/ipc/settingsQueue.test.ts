@@ -231,17 +231,46 @@ test("superseded_save_resolves_with_the_newer_outcome", async () => {
 
   resetSettingsQueueForTests();
   clearMocks();
-  const held = deferred<null>();
+  const second = deferred<null>();
   let n = 0;
   await loaded({
     settings_set: () => {
       n += 1;
-      return n === 1 ? held.promise : Promise.reject({ kind: "write", message: "x" });
+      return n === 1 ? null : second.promise;
     },
   });
   const c = save(NEXT);
+  await settle();
   const d = save({ ...NEXT, theme: "dark" });
-  held.resolve(null);
-  await expect(c).resolves.toBe(false);
+  let cDone = false;
+  void c.then(() => {
+    cDone = true;
+  });
+  await settle();
+  // c was accepted on its own send, so it is true even though d fails later.
+  await expect(c).resolves.toBe(true);
+  expect(cDone).toBe(true);
+  second.reject({ kind: "write", message: "x" });
   await expect(d).resolves.toBe(false);
+});
+
+test("superseded_pending_save_waits_for_the_newer_outcome", async () => {
+  const first = deferred<null>();
+  let n = 0;
+  await loaded({
+    settings_set: () => {
+      n += 1;
+      return n === 1 ? first.promise : null;
+    },
+  });
+  let aDone = false;
+  const a = save(NEXT).then(() => {
+    aDone = true;
+  });
+  save({ ...NEXT, theme: "dark" });
+  await settle();
+  expect(aDone).toBe(false);
+  first.resolve(null);
+  await a;
+  expect(aDone).toBe(true);
 });

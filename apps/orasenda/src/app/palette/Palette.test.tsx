@@ -235,3 +235,15 @@ test("notifications_on_asks_macos_first_when_not_determined", async () => {
     '"notifySessionEnd":true',
   );
 });
+
+test("declined_notifications_prompt_closes_palette_with_no_line", async () => {
+  const { onClose } = await open({
+    timer_view: () => ({ ...RUNNING, notifications: "notDetermined" }),
+    settings_get: () => ({ ...SETTINGS, notifySessionEnd: false }),
+    notifications_request: () => "denied",
+  });
+  fireEvent.click(screen.getByRole("option", { name: /Turn notifications on/ }));
+  await settle();
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});

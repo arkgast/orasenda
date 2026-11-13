@@ -104,3 +104,56 @@ test("tick_granted_or_denied_saves_true", async () => {
     clearMocks();
   }
 });
+
+test("tick_resolves_per_outcome", async () => {
+  const request = deferred<NotificationStatus>();
+  await ready({ notifications_request: () => request.promise });
+  const result = tick("notDetermined");
+  request.resolve("granted");
+  await expect(result).resolves.toBe(true);
+
+  resetSettingsQueueForTests();
+  resetNotificationsToggleForTests();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await ready({ notifications_request: () => "denied" });
+  await expect(tick("notDetermined")).resolves.toBe(true);
+
+  resetSettingsQueueForTests();
+  resetNotificationsToggleForTests();
+  clearMocks();
+  await ready({
+    notifications_request: () => {
+      throw new Error("no");
+    },
+  });
+  await expect(tick("notDetermined")).resolves.toBe(false);
+});
+
+test("granted_with_failed_save_resolves_false", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await ready({
+    notifications_request: () => "granted",
+    settings_set: () => Promise.reject({ kind: "write", message: "x" }),
+  });
+  await expect(tick("notDetermined")).resolves.toBe(false);
+});
+
+test("joined_ask_shares_the_result", async () => {
+  const request = deferred<NotificationStatus>();
+  await ready({ notifications_request: () => request.promise });
+  const first = tick("notDetermined");
+  const second = tick("notDetermined", "notifyTwoMinutes");
+  request.resolve("denied");
+  await expect(first).resolves.toBe(true);
+  await expect(second).resolves.toBe(true);
+});
+
+test("untick_during_ask_resolves_true", async () => {
+  const request = deferred<NotificationStatus>();
+  await ready({ notifications_request: () => request.promise });
+  const asked = tick("notDetermined");
+  const off = untick();
+  await expect(asked).resolves.toBe(true);
+  request.resolve("granted");
+  await expect(off).resolves.toBe(true);
+});
