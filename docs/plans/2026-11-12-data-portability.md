@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-12-data-portability.md](../specs/2026-11-12-data-portability.md)
 - Date: 2026-11-12
-- Status: in backlog (#412–#420, in triage until approved)
+- Status: approved (owner, 2026-11-13); in backlog (#412–#420)
 
 ## Overview
 G is cut into nine tasks, built store → service → adapter → screens:
