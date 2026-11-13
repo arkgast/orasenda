@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-12-data-portability.md](../specs/2026-11-12-data-portability.md)
 - Date: 2026-11-12
-- Status: draft
+- Status: in backlog (#412–#420, in triage until approved)
 
 ## Overview
 G is cut into nine tasks, built store → service → adapter → screens:
@@ -54,7 +54,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 
 ## Tasks
 
-### G1: Store snapshot, probe and counts  (#issue)
+### G1: Store snapshot, probe and counts  (#412)
 - Priority: 0
 - Depends on: none
 - Owns: `crates/store/src/portability/{mod.rs,snapshot.rs,probe.rs,stats.rs}` and `crates/store/src/portability/tests/{snapshot.rs,probe.rs,stats.rs}` (new).
@@ -76,7 +76,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: `snapshot_round_trip_equal_rows`, `snapshot_replaces_existing_dest`, `snapshot_failure_leaves_no_partial`, `probe_reads_versions`, `probe_empty_sqlite_is_not_orasenda`, `probe_text_file_not_sqlite`, `probe_never_writes` (mtime and bytes unchanged), `counts_skip_tombstones`.
 - Notes: sonnet, rust. No rusqlite type crosses the module's public API (code-structure). Fixtures: build a v1 file by running only `0001_init.sql` through a test helper in `portability/tests/mod.rs`.
 
-### G2: Store row reader and merge  (#issue)
+### G2: Store row reader and merge  (#413)
 - Priority: 0
 - Depends on: none
 - Owns: `crates/store/src/portability/rows.rs`, `crates/store/src/portability/merge/{mod.rs,settings.rs,presets.rs,sessions.rs,notes.rs}` and `crates/store/src/portability/tests/{rows.rs,merge.rs}` (new).
@@ -96,7 +96,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: `merge_inserts_rows_only_in_file`, `merge_later_updated_at_wins`, `merge_earlier_loses`, `merge_tie_keeps_local`, `merge_preset_tombstone_carries`, `merge_note_tombstone_wins_either_side`, `merge_twice_is_noop_no_log_rows`, `merge_logs_each_field`, `rows_include_tombstones`.
 - Notes: sonnet, rust. Keep each table's merge in its own file (about 60–90 lines each). Tests go in `tests/merge.rs`; split by table into `tests/merge_*.rs` if it passes 400.
 
-### G3: Backups, policy and pending swap (service)  (#issue)
+### G3: Backups, policy and pending swap (service)  (#414)
 - Priority: 0
 - Depends on: G1
 - Owns: `crates/service/src/data/{mod.rs,names.rs,policy.rs,backups.rs,pending.rs}`, `crates/service/src/data/tests/{mod.rs,names.rs,backups.rs,pending.rs}`, `crates/service/src/api/data.rs` (all new).
@@ -123,7 +123,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: `names_round_trip_and_suffix`, `list_drops_unrecognised_keeps_newer`, `create_prunes_all_kinds_to_keep`, `create_never_prunes_new_backup`, `delete_refuses_traversal_and_unknown`, `due_boundaries_monthly_quarterly`, `due_ignores_manual_and_safety`, `policy_defaults_on_bad_values`, `policy_keep_range`, `pending_delete_wins`, `pending_restore_swaps_and_clears_active_session`, `pending_removes_partials`, `open_store_at_applies_pending`, `create_makes_backups_folder`.
 - Notes: sonnet, rust. Time for names comes from `now_ms` (UTC, no local calendar). Pruning and listing never touch files that don't match the pattern.
 
-### G4: Import (service)  (#issue)
+### G4: Import (service)  (#415)
 - Priority: 0
 - Depends on: G2, G3
 - Owns: `crates/service/src/data/{import.rs,cap.rs}` and `crates/service/src/data/tests/import.rs` (new).
@@ -147,7 +147,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: `import_busy_refused_no_backup`, `import_newer_refused_unchanged`, `import_not_orasenda`, `import_from_v1_fixture_migrates_copy_only`, `import_source_file_unchanged`, `import_takes_backup_first`, `import_twice_second_is_noop`, `import_preset_cap_keeps_selected`, `import_emits_changes_and_applies_theme`, `import_live_file_is_noop`.
 - Notes: sonnet, rust. The recording `Host` from `test-support` checks the emits.
 
-### G5: Data overview, backups and Delete all data (IPC)  (#issue)
+### G5: Data overview, backups and Delete all data (IPC)  (#416)
 - Priority: 1
 - Depends on: G3
 - Owns:
@@ -182,7 +182,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
   - `lifecycle.rs` stays under 345.
   - The macOS-only `reveal.rs` stays behind `#[cfg(target_os = "macos")]`; `platform.rs` gives other targets a no-op.
 
-### G6: Export and import through the dialog plugin (IPC)  (#issue)
+### G6: Export and import through the dialog plugin (IPC)  (#417)
 - Priority: 1
 - Depends on: G4
 - Owns: `apps/orasenda/src-tauri/src/commands/data_files.rs`, `apps/orasenda/src-tauri/src/file_picker.rs` (a `FilePicker` trait and the plugin implementation), `apps/orasenda/src-tauri/src/lib_tests/data_files.rs` (new).
@@ -205,7 +205,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: `no_dialog_permission_in_capabilities`, `export_cancelled_writes_nothing`, `export_saved_snapshot_opens`, `import_busy_before_panel`, `import_cancelled_noop`, `import_imported_returns_report`. All of them use a fake `FilePicker`.
 - Notes: sonnet, rust. Re-verify 2.8.4 with baton:deps at task start (latest stable on 2026-10-28).
 
-### G7: Move NumberField into its own file (refactor)  (#issue)
+### G7: Move NumberField into its own file (refactor)  (#418)
 - Priority: 2
 - Depends on: none
 - Owns: `apps/orasenda/src/features/settings/sections/NumberField.tsx` (new).
@@ -217,7 +217,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 - Tests first: none new; the existing `CadenceRows.test.tsx` is the guard.
 - Notes: haiku. A refactor PR moves code and never changes it (code-structure).
 
-### G8: Settings › About and Your data  (#issue)
+### G8: Settings › About and Your data  (#419)
 - Priority: 1
 - Depends on: G5, G6, F7 (#393)
 - Owns: `apps/orasenda/src/features/settings/sections/YourData.tsx`, `apps/orasenda/src/features/settings/useDataOverview.ts`, `apps/orasenda/src/features/settings/Settings.data.test.tsx`, `verification/layout/settings.data.spec.ts` (new).
@@ -243,7 +243,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
   - sonnet, then opus code review and design review.
   - `Settings.tsx` is at 384 lines (more after F7). If G8 would take it past 450, first move the section render list into `SettingsSections.tsx` in a move-only commit, then add `<YourData>` there.
 
-### G9: Settings › Backups  (#issue)
+### G9: Settings › Backups  (#420)
 - Priority: 1
 - Depends on: G8, G7
 - Owns: `apps/orasenda/src/features/settings/sections/{Backups.tsx,BackupList.tsx}`, `apps/orasenda/src/features/settings/backupFormat.ts` (dates and sizes through `Intl`), `apps/orasenda/src/features/settings/Settings.backups.test.tsx`, `verification/layout/settings.backups.spec.ts` (new).
