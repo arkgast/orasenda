@@ -67,6 +67,8 @@ declare global {
       describeShortcut: (glyphs: string) => { aria: string; spoken: string };
       PopoverMenu: typeof import("./components/ui/popover-menu").PopoverMenu;
       ShortcutRecorder: typeof import("./components/ui/shortcut-recorder").ShortcutRecorder;
+      ShortcutList: typeof import("./components/ui/shortcut-list").ShortcutList;
+      InboxRow: typeof import("./components/ui/inbox-row").InboxRow;
       /** Set by the host, before or after bundle.js runs. true: describeShortcut throws on an unknown glyph string (tests, specimens). Otherwise it passes the glyphs through and warns once per call. */
       strictShortcuts?: boolean;
     };

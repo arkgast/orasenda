@@ -127,6 +127,14 @@
     "group": "Settings",
     "height": 520
   },
+  "ShortcutList": {
+    "group": "Settings",
+    "height": 420
+  },
+  "InboxRow": {
+    "group": "Tasks",
+    "height": 360
+  },
   "ShortcutRecorder": {
     "group": "Settings",
     "height": 260

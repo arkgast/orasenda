@@ -7,11 +7,13 @@ import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.speci
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
 import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
+import { InboxRowSpecimen } from "../src/components/ui/inbox-row.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
+import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
 import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen";
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
@@ -37,4 +39,6 @@ export const specimens: Record<string, () => ReactElement> = {
   PopoverMenu: PopoverMenuSpecimen,
   Choice: ChoiceSpecimen,
   ShortcutRecorder: ShortcutRecorderSpecimen,
+  ShortcutList: ShortcutListSpecimen,
+  InboxRow: InboxRowSpecimen,
 };

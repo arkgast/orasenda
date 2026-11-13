@@ -41,6 +41,8 @@ test("shortcut_list_off_word", () => {
 });
 
 test("shortcut_list_one_kbd_per_key", () => {
-  render(<ShortcutList items={[{ action: "Today", keys: "Space F P", spokenKeys: "Space, F, P" }]} />);
+  render(
+    <ShortcutList items={[{ action: "Today", keys: "Space F P", spokenKeys: "Space, F, P" }]} />,
+  );
   expect(document.querySelectorAll("[data-slot=kbd]")).toHaveLength(3);
 });
