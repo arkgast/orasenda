@@ -40,7 +40,7 @@ test("set_intent_from_another_page_opens_the_field", async () => {
   await emitTimer(RUNNING);
   fireEvent.keyDown(document.body, { key: "2", metaKey: true });
   await settle();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
   await setIntentFromPalette();
   expect(screen.getByRole("textbox", { name: "What will be done?" })).toHaveFocus();
 });

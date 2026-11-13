@@ -46,7 +46,8 @@ async function renderBoard(replies: Replies = {}) {
   await settle();
   return { backend, ...view };
 }
-const rowTexts = () => screen.queryAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
+const rowTexts = () =>
+  screen.queryAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
 const removeButton = (text: string) => screen.getByRole("button", { name: `Remove note: ${text}` });
 
 test("board_lists_newest_first", async () => {
@@ -94,7 +95,9 @@ test("board_remove_failure_line", async () => {
   fireEvent.click(removeButton("Email the landlord about the lease"));
   await settle();
   expect(rowTexts()).toHaveLength(2);
-  expect(screen.getByText("Couldn't remove the note. It's still in your Inbox.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Couldn't remove the note. It's still in your Inbox."),
+  ).toBeInTheDocument();
   expect(screen.queryByText("Note removed.")).not.toBeInTheDocument();
 });
 
@@ -135,7 +138,10 @@ test("board_empty_copy_follows_shortcut_status", async () => {
   for (const status of ["off", "failed"] as const) {
     const { unmount: again } = await renderBoard({
       inbox_list: () => [],
-      keyboard_state: () => ({ ...KEYBOARD, capture: shortcut(status, status === "off" ? null : "⌃⌥N") }),
+      keyboard_state: () => ({
+        ...KEYBOARD,
+        capture: shortcut(status, status === "off" ? null : "⌃⌥N"),
+      }),
     });
     expect(screen.getByText("Capture a thought from the menu bar.")).toBeInTheDocument();
     again();

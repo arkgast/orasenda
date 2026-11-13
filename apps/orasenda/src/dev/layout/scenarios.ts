@@ -3,6 +3,7 @@ import type {
   DisplayInfo,
   KeyboardView_Serialize,
   MilestoneEvent_Serialize,
+  NoteView,
   PresetEntry,
   Settings,
   TimerView_Serialize,
@@ -303,6 +304,48 @@ const SCENARIOS: Record<string, Handler> = {
     replies: { focus_view_close: rejects("unavailable", "no window") },
   }),
 };
+
+// Board's Inbox list: 0, 1 and 50 notes, a very long note, and a list that will not load.
+const BOARD_SHORTCUT = (display: string) => ({
+  keys: "Control+Alt+KeyN",
+  display,
+  spoken: "Control-Option-N",
+  status: "registered" as const,
+});
+const BOARD_KEYBOARD: KeyboardView_Serialize = {
+  startPause: BOARD_SHORTCUT("⌃⌥F"),
+  capture: BOARD_SHORTCUT("⌃⌥N"),
+  singleKey: true,
+  voiceOver: false,
+};
+const boardNote = (i: number, text: string): NoteView => ({
+  id: `note-${i}`,
+  text,
+  kind: i % 2 === 0 ? "internal" : "external",
+  createdAt: i < 3 ? "14:32" : "Yesterday 09:05",
+  createdAtLabel: i < 3 ? "Today at 14:32" : "Yesterday at 09:05",
+});
+const boardNotes = (count: number): NoteView[] =>
+  Array.from({ length: count }, (_, i) =>
+    boardNote(count - i, `Note ${count - i}: email the landlord`),
+  );
+const boardBackend = (notes: () => unknown): Handler =>
+  backend({
+    replies: {
+      inbox_list: notes,
+      inbox_remove: () => null,
+      inbox_restore: () => null,
+      keyboard_state: () => BOARD_KEYBOARD,
+    },
+  });
+SCENARIOS.boardEmpty = boardBackend(() => []);
+SCENARIOS.boardOne = boardBackend(() => boardNotes(1));
+SCENARIOS.boardFifty = boardBackend(() => boardNotes(50));
+SCENARIOS.boardLong = boardBackend(() => [
+  boardNote(1, `${"A thought that goes on and on, ".repeat(30)}\nand has a second line.`),
+  boardNote(2, "Supercalifragilisticexpialidocious".repeat(6)),
+]);
+SCENARIOS.boardUnreadable = boardBackend(() => Promise.reject("store"));
 
 export const SCENARIO_NAMES: readonly string[] = Object.keys(SCENARIOS);
 

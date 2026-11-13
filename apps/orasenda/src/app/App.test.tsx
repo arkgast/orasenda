@@ -71,7 +71,7 @@ test("pages_choice_navigates_and_focuses_h1", async () => {
   // Today's own top row comes with C4; the Pages button on a placeholder is the way on from there.
   fireEvent.keyDown(document.body, { key: "2", metaKey: true });
   await settle();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toHaveFocus();
   fireEvent.click(screen.getByRole("button", { name: "Pages" }));
   await settle();
   expect(screen.getByRole("heading", { level: 1, name: "Calendar" })).toHaveFocus();
@@ -88,7 +88,7 @@ test("cmd_digit_works_on_a_radio", async () => {
   fireEvent.keyDown(radio, { key: "2", metaKey: true });
   await settle();
   radio.remove();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
 });
 
 test("cmd_digits_navigate_from_any_page", async () => {
@@ -112,12 +112,12 @@ test("rail_switches_pages_and_other_pages_render_empty_state", async () => {
   expect(screen.getByRole("button", { name: "Today" })).toHaveAttribute("aria-current", "page");
   expect(rail).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Board" }));
+  fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
   await settle();
 
-  const heading = screen.getByRole("heading", { level: 1, name: "Board" });
+  const heading = screen.getByRole("heading", { level: 1, name: "Calendar" });
   expect(heading).toHaveFocus();
-  expect(screen.getByRole("button", { name: "Board" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("button", { name: "Calendar" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("button", { name: "Today" })).not.toHaveAttribute("aria-current");
   expect(screen.getByRole("heading", { level: 2, name: "Nothing here yet." })).toBeInTheDocument();
   expect(screen.getByText("This comes in a later phase.")).toBeInTheDocument();
@@ -147,7 +147,8 @@ test("only_one_h1_per_page", async () => {
     await settle();
     const headings = container.querySelectorAll("h1");
     expect(headings, page).toHaveLength(1);
-    expect(headings[0], page).toHaveTextContent(page);
+    // The Board page's heading is its content: the Inbox.
+    expect(headings[0], page).toHaveTextContent(page === "Board" ? "Inbox" : page);
   }
 });
 
