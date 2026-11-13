@@ -54,7 +54,7 @@ export type StatusInput = {
   hint?: boolean;
   /** The side-by-side strip: the hint's text takes three lines beside its button, so it waits. */
   strip?: boolean;
-  /** A tip is due. It shares the row with "Session ended." and otherwise waits for an empty row. */
+  /** A tip is due. It shares the row with "Session ended." and otherwise waits for an empty row (and for the strip to widen). */
   tip?: TipInput | null;
   /** The first-run welcome line: it waits behind every other line and the intent button. */
   welcome?: boolean;
@@ -87,6 +87,8 @@ export type StatusLine = {
   actions: StatusAction[];
   /** What a screen reader says when it differs from `text` (the keys as words). */
   spoken?: string;
+  /** What keys the live region, when it is not `text`: dismissing a tip keeps the sentence before it. */
+  key?: string;
   /** The tip this line carries, so Today can report it once it is on screen. */
   tipId?: TipId;
 };
@@ -160,6 +162,7 @@ function tipLine(tip: TipInput, before = ""): StatusLine {
     actions: [GOT_IT],
     spoken: `${prefix}${tip.spoken}`,
     tipId: tip.id,
+    key: before || tip.text,
   };
 }
 
@@ -239,7 +242,8 @@ export function statusLine(input: StatusInput): StatusLine | null {
   }
   const store = input.store === "ok" ? null : STORE_LINES[input.store];
   if (input.notice) {
-    if (input.tip && input.notice === SESSION_ENDED && !store)
+    // In the side-by-side strip the tip's text would take three lines beside Got it, so it waits.
+    if (input.tip && !input.strip && input.notice === SESSION_ENDED && !store)
       return tipLine(input.tip, SESSION_ENDED);
     const joined = store ? `${input.notice} ${store}` : null;
     return line(joined && joined.length <= JOIN_LIMIT ? joined : input.notice, "neutral");
@@ -260,5 +264,5 @@ export function statusLine(input: StatusInput): StatusLine | null {
   if (intent) return line("", "neutral", [intent]);
   if (input.welcome) return line(WELCOME_TEXT, "neutral");
   if (cadence?.capLine) return line(cadence.capLine, "rest");
-  return input.tip ? tipLine(input.tip) : null;
+  return input.tip && !input.strip ? tipLine(input.tip) : null;
 }

@@ -170,3 +170,24 @@ fn no_tip_while_store_unavailable() {
     assert_eq!(tip_of(&s, at), None);
     assert_eq!(flag(&s, "tip.global_shortcut"), None);
 }
+
+#[test]
+fn idle_tip_changes_are_published() {
+    // A Focus view opening while idle takes the Focus-view tip away: the view goes out.
+    let mut s = service();
+    let at = ended(&mut s, 2);
+    shown(&mut s, TipId::GlobalShortcutMenu, TipSeen::GotIt, at);
+    assert_eq!(tip_of(&s, at), Some(TipId::FocusViewKeys));
+    let effects = s.apply(Action::FocusViewOpened, at, id("x"));
+    assert!(effects.idle_changed);
+    assert_eq!(effects.view.tip, None);
+
+    // The shortcut turning (un)usable while idle swaps the tip's variant on the next tick.
+    let mut t = service();
+    let at = ended(&mut t, 1);
+    t.tick(at);
+    t.set_shortcut_usable(true);
+    assert!(t.tick(at + 1000).idle_changed);
+    assert_eq!(tip_of(&t, at), Some(TipId::GlobalShortcut));
+    assert!(!t.tick(at + 2000).idle_changed, "nothing changed since");
+}

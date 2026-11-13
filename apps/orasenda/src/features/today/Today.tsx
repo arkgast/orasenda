@@ -31,7 +31,7 @@ import { useTodayKeys } from "./todayKeys";
 import { useControlFocus } from "./useControlFocus";
 import { useKeepGoingHint, usePageVisible } from "./useKeepGoingHint";
 import { useNextMinutes } from "./useNextMinutes";
-import { useTips } from "./useTips";
+import { useTipShown, useTips } from "./useTips";
 import "./today.css";
 
 type CommandResult =
@@ -139,7 +139,7 @@ export function Today({ onNavigate }: Props) {
   const hintOnScreen =
     visible && !editingIntent && (line?.actions.some((a) => a.id === "openSettings") ?? false);
   if (hintOnScreen !== hintShownLine) setHintShownLine(hintOnScreen);
-  tips.track(line, visible && !editingIntent);
+  useTipShown(line?.tipId ?? null, visible && !editingIntent);
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
 
@@ -268,6 +268,7 @@ export function Today({ onNavigate }: Props) {
         break;
       case "gotIt":
         tips.gotIt();
+        focus.focusStart();
         break;
       case "openSettings":
         onNavigate("settings", "keepGoing");

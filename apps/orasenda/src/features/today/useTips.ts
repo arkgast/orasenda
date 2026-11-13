@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useKeyboardView } from "../../app/useKeyboardView";
 import type { TimerView_Serialize, TipId } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
-import { useKeyboard } from "../settings/useKeyboard";
-import type { StatusLine, TipInput } from "./statusLine";
-
-const IGNORE = () => {};
+import type { TipInput } from "./statusLine";
 
 /** The tip's copy (spec: Welcome and tips), at most 65 characters, with the spoken keys for VoiceOver. */
 function tipInput(id: TipId, keys: { display: string; spoken: string } | null): TipInput | null {
@@ -48,47 +46,47 @@ function report(id: TipId, how: "gotIt" | "shown") {
 /**
  * The welcome line and the one-time tips on Today. A tip shows while the view carries it, and then
  * until the next start: the answer to its second showing is a view without it, and the line stays
- * up (Shown means rendered). `track` takes the line Today ended up with: the tip is reported once
- * per launch, when it is on screen. Got it hides the tip at once and is remembered for good.
+ * up (Shown means rendered). `useTipShown` reports it. Got it hides the tip at once and is remembered for good.
  */
 export function useTips(view: TimerView_Serialize | null) {
-  const keyboard = useKeyboard(IGNORE).view;
+  const keyboard = useKeyboardView().view;
   const [latched, setLatched] = useState<TipId | null>(null);
-  const [dismissed, setDismissed] = useState<TipId | null>(null);
+  // Got it keeps every tip off until the next start, so a tip published later never replaces it.
+  const [dismissed, setDismissed] = useState(false);
   const idle = view?.state === "idle";
   const due = view?.tip ?? null;
   if (due !== null && due !== latched) setLatched(due);
   if (view !== null && !idle) {
     if (latched !== null) setLatched(null);
-    if (dismissed !== null) setDismissed(null);
+    if (dismissed) setDismissed(false);
   }
   const current = idle ? (due ?? latched) : null;
-  const id = current !== null && current !== dismissed ? current : null;
-  const keys = keyboard?.startPause.display
-    ? { display: keyboard.startPause.display, spoken: keyboard.startPause.spoken ?? "" }
-    : null;
-
-  const onScreen = useRef<TipId | null>(null);
-  const reported = useRef(new Set<TipId>());
-  useEffect(() => {
-    const showing = onScreen.current;
-    if (showing === null || reported.current.has(showing)) return;
-    reported.current.add(showing);
-    report(showing, "shown");
-  });
+  const id = current !== null && !dismissed ? current : null;
+  // The keys wait for both forms, so VoiceOver never reads a gap.
+  const { display, spoken } = keyboard?.startPause ?? { display: null, spoken: null };
+  const keys = display && spoken ? { display, spoken } : null;
 
   return {
     tip: id === null ? null : tipInput(id, keys),
     welcome: view?.welcome === true,
     gotIt() {
       if (id === null) return;
-      setDismissed(id);
+      setDismissed(true);
       setLatched(null);
       report(id, "gotIt");
     },
-    /** Today's line after ranking, and whether the window is showing it. */
-    track(line: StatusLine | null, visible: boolean) {
-      onScreen.current = visible && line?.tipId ? line.tipId : null;
-    },
   };
+}
+
+/**
+ * Reports the tip once per launch, when it is on screen: `tipId` is the tip of the line Today ended
+ * up with, `onScreen` whether the window shows it.
+ */
+export function useTipShown(tipId: TipId | null, onScreen: boolean) {
+  const reported = useRef(new Set<TipId>());
+  useEffect(() => {
+    if (tipId === null || !onScreen || reported.current.has(tipId)) return;
+    reported.current.add(tipId);
+    report(tipId, "shown");
+  }, [tipId, onScreen]);
 }

@@ -75,8 +75,12 @@ test("got_it_keeps_session_ended", async () => {
   expect(statusNodes()[0]).toHaveTextContent(/^Session ended\.$/);
   expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
   expect(argsOf(backend.calls, "tip_seen")).toContainEqual({ tip: "globalShortcut", how: "gotIt" });
-  // The view that still carries the tip does not bring it back.
+  // Got it unmounted the focused button: focus goes to Start, not to the document.
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: /Start focus/ }));
+  // The view that still carries the tip does not bring it back, nor does another tip.
   await emitTimer(TIPPED);
+  expect(statusNodes()[0]).toHaveTextContent(/^Session ended\.$/);
+  await emitTimer({ ...IDLE, tip: "focusViewKeys" });
   expect(statusNodes()[0]).toHaveTextContent(/^Session ended\.$/);
 });
 
@@ -92,12 +96,15 @@ test("menu_and_focus_view_tips_use_the_spec_copy", async () => {
   await renderToday();
   await emitTimer({ ...IDLE, tip: "globalShortcutMenu" });
   expect(line().shown).toBe("Tip: The menu bar item starts focus from anywhere.");
+  expect(line().shown.length).toBeLessThanOrEqual(65);
   await emitTimer(RUNNING);
   await emitTimer({ ...IDLE, tip: "focusViewKeys" });
   expect(line().shown).toBe("Tip: F key opens Focus view, full screen or floating.");
+  expect(line().shown.length).toBeLessThanOrEqual(65);
   await emitTimer(RUNNING);
   await emitTimer({ ...IDLE, tip: "focusView" });
   expect(line().shown).toBe("Tip: ⇧⌘F opens full screen, ⇧⌘T the floating timer.");
+  expect(line().shown.length).toBeLessThanOrEqual(65);
   expect(line().spoken).toBe(
     "Tip: Shift-Command-F opens full screen, Shift-Command-T the floating timer.",
   );

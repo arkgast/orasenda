@@ -50,6 +50,7 @@ export const STATES = [
   // Hotkeys and capture: the welcome line and the tips joined to "Session ended.".
   { scenario: "welcome", primary: /Start focus/ },
   { scenario: "tipShortcut", primary: /Start focus/ },
+  { scenario: "tipFocusViewKeys", primary: /Start focus/ },
   { scenario: "tipFocusView", primary: /Start focus/ },
 ] as const;
 

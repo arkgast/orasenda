@@ -22,7 +22,7 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
       className="today-status-row"
     >
       <InlineNotice
-        key={line?.text ?? ""}
+        key={line?.key ?? line?.text ?? ""}
         variant="row"
         tone={line?.tone ?? "neutral"}
         actionVariant={first?.variant}

@@ -284,6 +284,7 @@ const SCENARIOS: Record<string, Handler> = {
   // Welcome and tips (spec: Hotkeys and capture): the first-run line, and each tip joined to "Session ended.".
   welcome: backend({ view: { ...IDLE, welcome: true } }),
   tipShortcut: backend({ view: { ...IDLE, tip: "globalShortcut" }, pending: [ENDED] }),
+  tipFocusViewKeys: backend({ view: { ...IDLE, tip: "focusViewKeys" }, pending: [ENDED] }),
   tipFocusView: backend({ view: { ...IDLE, tip: "focusView" }, pending: [ENDED] }),
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),

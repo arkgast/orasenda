@@ -116,8 +116,13 @@ pub struct SessionService {
     /// The focus whose effect on the deep-hours cap was last checked, with the focus time it had
     /// then (memory only); an extension from the break brings the same focus back with more.
     pub(super) cap_checked: Option<(SessionId, u64)>,
-    /// The cap line and offer of the last numbered view, so the tick can tell they changed.
-    pub(super) shown_idle: (Option<String>, Option<Offer>),
+    /// The cap line, offer, tip and welcome line of the last numbered view, so the tick can tell they changed.
+    pub(super) shown_idle: (
+        Option<String>,
+        Option<Offer>,
+        Option<crate::api::TipId>,
+        bool,
+    ),
     /// Today's rows could not be read; set so the failure is logged once.
     pub(super) day_read_failed: Cell<bool>,
     /// Today's stored sessions, read once per day and write generation.
@@ -166,7 +171,7 @@ impl SessionService {
             ids: Box::new(new_session_id),
             offer: false,
             cap_checked: None,
-            shown_idle: (None, None),
+            shown_idle: (None, None, None, false),
             day_read_failed: Cell::new(false),
             day_cache: day_cache::DayCache::default(),
             hint: hint::HintState::default(),
