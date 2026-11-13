@@ -39,6 +39,8 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::OpenedSettings => "opened",
             Event::KeyboardChanged(_) => "keyboard",
             Event::InboxChanged(_) => "inbox",
+            Event::BackupsChanged(_) => "backups",
+            Event::Restarted => "restarted",
         })
         .collect();
     assert_eq!(

@@ -115,3 +115,10 @@ pub fn stage_restore(dir: &Path, backup: &str) -> Result<(), DataError> {
 pub fn stage_delete(dir: &Path) -> Result<(), DataError> {
     std::fs::write(dir.join(DELETE), b"").map_err(backups::write_error)
 }
+
+/// Takes back a staged restore, when the safety backup that must precede it failed.
+pub fn unstage_restore(dir: &Path) {
+    if let Err(error) = remove_if_present(&dir.join(RESTORE)) {
+        eprintln!("pending: could not take back the staged restore ({error})");
+    }
+}

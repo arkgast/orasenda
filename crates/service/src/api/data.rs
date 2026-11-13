@@ -96,7 +96,7 @@ pub struct DataError {
 }
 
 impl DataError {
-    pub(crate) fn new(kind: DataErrorKind, message: impl Into<String>) -> Self {
+    pub fn new(kind: DataErrorKind, message: impl Into<String>) -> Self {
         DataError {
             kind,
             message: message.into(),
@@ -111,3 +111,33 @@ impl std::fmt::Display for DataError {
 }
 
 impl std::error::Error for DataError {}
+
+/// Everything the Settings data sections show, and the payload of `backups-changed`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DataOverview {
+    /// `None` while the store is unavailable.
+    pub counts: Option<DataCounts>,
+    /// The app data folder.
+    pub folder: String,
+    pub backups: Vec<BackupEntry>,
+    pub policy: BackupPolicy,
+    /// The size of every listed backup together.
+    #[specta(type = specta_typescript::Number)]
+    pub total_bytes: u64,
+    pub store: super::StoreStatus,
+}
+
+impl DataOverview {
+    /// What the webview shows when the overview could not be built at all.
+    pub fn unavailable() -> DataOverview {
+        DataOverview {
+            counts: None,
+            folder: String::new(),
+            backups: Vec::new(),
+            policy: BackupPolicy::default(),
+            total_bytes: 0,
+            store: super::StoreStatus::Unavailable,
+        }
+    }
+}

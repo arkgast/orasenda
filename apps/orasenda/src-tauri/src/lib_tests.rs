@@ -5,6 +5,7 @@ use tauri_specta::{BuilderConfiguration, Event, LanguageExt};
 use super::*;
 
 mod capture;
+mod data;
 
 /// A tauri-specta "language" that records the registered command names instead of
 /// writing a file: the builder's configuration is only reachable through an exporter.
@@ -234,6 +235,13 @@ fn main_capability_exact() {
             "allow-inbox-remove",
             "allow-inbox-restore",
             "allow-capture-open",
+            "allow-data-overview",
+            "allow-data-show-folder",
+            "allow-data-delete-all",
+            "allow-backups-create",
+            "allow-backups-delete",
+            "allow-backups-restore",
+            "allow-backups-set-policy",
         ],
     );
     let (_, main) = capability("main.json");

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-backups-delete"
+description = "Enables the backups_delete command without any pre-configured scope."
+commands.allow = ["backups_delete"]
+
+[[permission]]
+identifier = "deny-backups-delete"
+description = "Denies the backups_delete command without any pre-configured scope."
+commands.deny = ["backups_delete"]

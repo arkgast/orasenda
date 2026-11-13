@@ -4,6 +4,7 @@ use orasenda_core::AppInfo;
 use tauri::PackageInfo;
 
 mod capture;
+mod data;
 mod focus_views;
 mod hint;
 mod inbox;
@@ -17,6 +18,7 @@ mod timer;
 mod tips;
 
 pub use capture::*;
+pub use data::*;
 pub use focus_views::*;
 #[cfg(test)]
 pub(crate) use focus_views::{closable, display_infos};

@@ -13,6 +13,7 @@ mod keep_awake;
 mod local_time;
 mod notifier;
 mod overlay;
+mod reveal;
 mod status_item;
 mod voice_over;
 pub mod windows;
@@ -26,6 +27,7 @@ pub use keep_awake::{ActivityToken, MacKeepAwake};
 pub use local_time::MacLocalTime;
 pub use notifier::{MacNotifier, notification_settings_url};
 pub use overlay::{configure_overlay, cover_main_screen, focus_overlay};
+pub use reveal::reveal_in_finder;
 pub use status_item::set_status_item_accessibility_label;
 pub use voice_over::{is_voice_over_enabled, observe_voice_over};
 

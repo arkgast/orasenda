@@ -1,14 +1,14 @@
 //! The emits and the theme mapping on the app.
 
 use orasenda_service::api::{
-    KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme, TimerView,
+    DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme, TimerView,
 };
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 use crate::ipc::{
-    ClockTick, ClockTickEvent, InboxChangedEvent, KeyboardChanged, PresetsChangedEvent,
-    SettingsChanged, TimerMilestoneEvent, TimerTickEvent,
+    BackupsChangedEvent, ClockTick, ClockTickEvent, InboxChangedEvent, KeyboardChanged,
+    PresetsChangedEvent, SettingsChanged, TimerMilestoneEvent, TimerTickEvent,
 };
 use crate::runtime::session::Surfaces;
 
@@ -71,6 +71,13 @@ pub(super) fn emit_presets_changed(app: &AppHandle, presets: &[PresetEntry]) {
 pub(super) fn emit_inbox_changed(app: &AppHandle, notes: &[NoteView]) {
     if let Err(error) = InboxChangedEvent(notes.to_vec()).emit(app) {
         eprintln!("inbox: could not emit inbox-changed: {error}");
+    }
+}
+
+/// Emits `backups-changed`.
+pub(super) fn emit_backups_changed(app: &AppHandle, overview: &DataOverview) {
+    if let Err(error) = BackupsChangedEvent(overview.clone()).emit(app) {
+        eprintln!("backups: could not emit backups-changed: {error}");
     }
 }
 

@@ -205,6 +205,11 @@ impl SessionService {
         self.store.as_ref()
     }
 
+    /// True while a session exists, running or paused. For Restore and Delete all data.
+    pub(crate) fn session_active(&self, now_ms: u64) -> bool {
+        self.engine.view(now_ms).state != EngineState::Idle
+    }
+
     /// The user's local time zone and clock preference. For the Inbox.
     pub(crate) fn local_time(&self) -> &dyn LocalTime {
         self.platform.local_time.as_ref()

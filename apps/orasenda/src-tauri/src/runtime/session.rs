@@ -40,6 +40,7 @@ pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>> {
     thread::Builder::new()
         .name("notification-status".into())
         .spawn(move || scheduler::read_launch_status(&host))?;
+    crate::data_tasks::spawn_auto_check(app.handle());
     Ok(())
 }
 

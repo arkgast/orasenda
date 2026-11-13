@@ -1,6 +1,7 @@
 //! Fakes shared by the session and scheduler tests: a recording host, notifier, keep-awake
 //! and local time, all writing to one ordered [`Log`].
 
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -10,7 +11,7 @@ use orasenda_core::{
 };
 use orasenda_store::Store;
 
-use crate::api::ClockTick;
+use crate::api::{ClockTick, DataOverview};
 use crate::api::{
     KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, StartRequest, Theme, TimerView,
 };
@@ -44,6 +45,8 @@ pub enum Event {
     ApplyTheme(Theme),
     OpenedSettings,
     KeyboardChanged(KeyboardView),
+    BackupsChanged(DataOverview),
+    Restarted,
 }
 
 #[derive(Clone, Default)]
@@ -274,6 +277,8 @@ pub struct HostInner {
     pub under_lock: std::sync::atomic::AtomicUsize,
     /// What `Host::app_active` answers; false by default (Orasenda in the background).
     pub active: std::sync::atomic::AtomicBool,
+    /// What `Host::data_dir` answers; none by default.
+    pub data_dir: Mutex<Option<PathBuf>>,
 }
 
 /// A recording [`Host`]: emits and renders go to the log.
@@ -317,6 +322,7 @@ impl TestHost {
             log,
             under_lock: std::sync::atomic::AtomicUsize::new(0),
             active: std::sync::atomic::AtomicBool::new(false),
+            data_dir: Mutex::new(None),
         }))
     }
 
@@ -335,6 +341,15 @@ impl TestHost {
     /// Makes Orasenda the active app (or not).
     pub fn set_active(&self, active: bool) {
         self.0.active.store(active, Ordering::SeqCst);
+    }
+
+    /// Points the host at an app data dir.
+    pub fn set_data_dir(&self, dir: PathBuf) {
+        *self
+            .0
+            .data_dir
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(dir);
     }
 
     pub fn log(&self) -> &Log {
@@ -402,5 +417,23 @@ impl Host for TestHost {
     fn apply_theme(&self, theme: Theme) {
         self.note_unlocked();
         self.0.log.push(Event::ApplyTheme(theme));
+    }
+
+    fn data_dir(&self) -> Option<PathBuf> {
+        self.0
+            .data_dir
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    fn emit_backups_changed(&self, overview: &DataOverview) {
+        self.note_unlocked();
+        self.0.log.push(Event::BackupsChanged(overview.clone()));
+    }
+
+    fn restart(&self) {
+        self.note_unlocked();
+        self.0.log.push(Event::Restarted);
     }
 }

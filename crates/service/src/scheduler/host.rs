@@ -1,11 +1,13 @@
 //! The seam between the publish steps and the app.
 
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use orasenda_core::Notifier;
 
 use crate::api::{
-    ClockTick, KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme, TimerView,
+    ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme,
+    TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 
@@ -38,4 +40,12 @@ pub trait Host: Clone + Send + Sync + 'static {
     /// Applies the app-wide theme (`System` clears the override). Never called under the
     /// service lock.
     fn apply_theme(&self, theme: Theme);
+    /// The app data folder (`orasenda.db` and `Backups/` live in it), `None` when the OS
+    /// can't name it.
+    fn data_dir(&self) -> Option<PathBuf>;
+    /// Emits `backups-changed`. An emit error is logged, never fatal.
+    fn emit_backups_changed(&self, overview: &DataOverview);
+    /// Restarts the app so a staged Restore or Delete all data lands. In the app it does not
+    /// return; tests record it.
+    fn restart(&self);
 }
