@@ -43,9 +43,9 @@ fn inbox_insert_logs_change_log() {
         .expect("inserts");
     let rows: Vec<(String, String, String, String)> = store
         .read(|txn| {
-            let mut stmt = txn.conn().prepare(
-                "SELECT entity, entity_id, field, value FROM change_log ORDER BY seq",
-            )?;
+            let mut stmt = txn
+                .conn()
+                .prepare("SELECT entity, entity_id, field, value FROM change_log ORDER BY seq")?;
             let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?;
             Ok(rows.collect::<Result<_, _>>()?)
         })
@@ -94,14 +94,21 @@ fn inbox_list_live_newest_first_skips_removed() {
 #[test]
 fn inbox_remove_restore_idempotent() {
     let store = seeded();
-    let write = |f: fn(&mut Txn) -> Result<bool, StoreError>| {
-        store.write(3_000, f).expect("writes")
-    };
+    let write =
+        |f: fn(&mut Txn) -> Result<bool, StoreError>| store.write(3_000, f).expect("writes");
     assert!(write(|t| remove(t, "a", 3_000)));
-    assert!(!write(|t| remove(t, "a", 3_500)), "second remove changes nothing");
+    assert!(
+        !write(|t| remove(t, "a", 3_500)),
+        "second remove changes nothing"
+    );
     assert!(!write(|t| remove(t, "missing", 3_000)));
     let deleted: i64 = store
-        .read(|t| Ok(t.conn().query_row("SELECT deleted_at FROM inbox_note WHERE id='a'", [], |r| r.get(0))?))
+        .read(|t| {
+            Ok(t.conn()
+                .query_row("SELECT deleted_at FROM inbox_note WHERE id='a'", [], |r| {
+                    r.get(0)
+                })?)
+        })
         .expect("reads");
     assert_eq!(deleted, 3_000, "the first remove's time stays");
     let logged = |store: &Store| {
@@ -116,7 +123,10 @@ fn inbox_remove_restore_idempotent() {
     };
     assert_eq!(logged(&store), 1);
     assert!(write(|t| restore(t, "a")));
-    assert!(!write(|t| restore(t, "a")), "second restore changes nothing");
+    assert!(
+        !write(|t| restore(t, "a")),
+        "second restore changes nothing"
+    );
     assert!(!write(|t| restore(t, "missing")));
     assert_eq!(logged(&store), 2);
     assert_eq!(ids(&store), ["c", "b", "a"]);
@@ -126,7 +136,9 @@ fn inbox_remove_restore_idempotent() {
 fn inbox_text_check_rejects_1001() {
     let store = store();
     let try_insert = |text: String| {
-        store.write(1, move |txn| insert(txn, &note("x", &text, NoteKind::Internal, 1)))
+        store.write(1, move |txn| {
+            insert(txn, &note("x", &text, NoteKind::Internal, 1))
+        })
     };
     assert!(try_insert("a".repeat(1001)).is_err());
     assert!(try_insert(String::new()).is_err());
@@ -144,7 +156,12 @@ fn inbox_text_check_rejects_1001() {
         .expect("counts");
     assert_eq!(rows, 1);
     let logged = store
-        .read(|t| Ok(count(t.conn(), "SELECT count(*) FROM change_log WHERE entity_id = 'x'")))
+        .read(|t| {
+            Ok(count(
+                t.conn(),
+                "SELECT count(*) FROM change_log WHERE entity_id = 'x'",
+            ))
+        })
         .expect("counts");
     assert_eq!(logged, 3, "a refused insert logs nothing");
 }
@@ -153,7 +170,8 @@ fn inbox_text_check_rejects_1001() {
 fn migrate_4_to_5_keeps_rows() {
     let mut conn = rusqlite::Connection::open_in_memory().expect("opens");
     for (_, sql) in crate::migrate::MIGRATIONS.iter().filter(|(v, _)| *v <= 4) {
-        conn.execute_batch(sql).expect("an earlier migration applies");
+        conn.execute_batch(sql)
+            .expect("an earlier migration applies");
     }
     conn.pragma_update(None, "user_version", 4).expect("sets");
     conn.execute(
@@ -162,8 +180,11 @@ fn migrate_4_to_5_keeps_rows() {
         [],
     )
     .expect("a preset row");
-    conn.execute("INSERT INTO setting (key, value, updated_at) VALUES ('k', '1', 1)", [])
-        .expect("a setting row");
+    conn.execute(
+        "INSERT INTO setting (key, value, updated_at) VALUES ('k', '1', 1)",
+        [],
+    )
+    .expect("a setting row");
     crate::migrate::run(&mut conn).expect("migrates");
     for (table, want) in [("preset", 1), ("setting", 1), ("inbox_note", 0)] {
         assert_eq!(count(&conn, &format!("SELECT count(*) FROM {table}")), want);
@@ -173,7 +194,10 @@ fn migrate_4_to_5_keeps_rows() {
         .expect("version");
     assert_eq!(version, 5);
     assert_eq!(
-        count(&conn, "SELECT count(*) FROM sqlite_schema WHERE name = 'inbox_note_live'"),
+        count(
+            &conn,
+            "SELECT count(*) FROM sqlite_schema WHERE name = 'inbox_note_live'"
+        ),
         1
     );
 }

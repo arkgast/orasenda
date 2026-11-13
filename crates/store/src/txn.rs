@@ -10,6 +10,7 @@ pub enum Entity {
     Setting,
     FocusSession,
     Preset,
+    InboxNote,
 }
 
 impl Entity {
@@ -19,6 +20,7 @@ impl Entity {
             Entity::Setting => "setting",
             Entity::FocusSession => "focus_session",
             Entity::Preset => "preset",
+            Entity::InboxNote => "inbox_note",
         }
     }
 }
