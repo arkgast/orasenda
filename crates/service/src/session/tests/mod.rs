@@ -18,6 +18,7 @@ mod recovery_break;
 mod run;
 mod settings;
 mod theme;
+mod tips;
 mod two_row_end;
 mod view_modes;
 mod view_planned;

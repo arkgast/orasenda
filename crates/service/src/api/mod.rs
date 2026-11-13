@@ -12,6 +12,7 @@ mod settings;
 #[cfg(test)]
 mod tests;
 mod timer;
+mod tips;
 
 pub use errors::{
     NotificationsError, NotificationsErrorKind, SettingsError, SettingsErrorKind,
@@ -26,3 +27,4 @@ pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{
     ClockTick, Mode, Offer, StartRequest, StoreStatus, SuggestionView, TimerState, TimerView,
 };
+pub use tips::{TipId, TipSeen};
