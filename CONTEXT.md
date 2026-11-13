@@ -53,17 +53,26 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Two-minute warning | The one-time switch of every surface to `mode: warning` at 2:00 left in a focus session or break longer than 2 minutes. | The end notification |
 | Keep-going offer | "Keep going?" after a completed "Just 2 minutes": *Keep going* starts the selected preset at once, *Stop here* stays idle. Held in Rust. | A break (a quick session never starts one) |
 | Open focus | A completed focus session whose break is running; it can still be extended, and its row is written when the break ends. | An unsaved record (a failed write) |
-| Intent | The optional one line "What will be done?", set after Start from the status row; stored in `focus_session.intent`, NULL when not given and then named "Deep focus". | A task (P2) |
+| Intent | Removed in H2 (2026-11-13). `focus_session.intent` stays in the schema, always NULL; migration 0006 cleared it. A later session picks a Board task instead. | A task (P2) |
 | Deep-hours cap | The daily focus total (every focused minute, local day) past which Orasenda says one calm line; default 4 hours, never blocks Start. | A limit or a lock |
 | Break suggestion | One rotating line shown during a break, labelled *optional* or *experimental* when the evidence is thin; not medical advice. | A routine (P4) |
 | Auto-continue | The opt-in setting *Keep going automatically* (off by default): a running focus that reaches its end keeps going in 10-minute steps, each an extension, until *Longest focus* (default 90 minutes); then the break starts. Each step offers *Take a break*. | The extension cap (manual "+10 min") |
 | Keep-going hint | A one-time quiet status line on Today after the first manual extension while auto-continue is off: it points to *Keep going automatically* in Settings › Timer. Shown once per device (`meta` key `hint.keep_going`). | The keep-going offer (*Keep going* / *Stop here* after a `quick` session) |
-| Global shortcut | A system-wide key combination registered once in Rust: *start or pause* (⌃⌥F) and *capture* (⌃⌥N). Changeable or off in Settings › Keyboard (ADR-017). | A menu accelerator (⌘K, ⇧⌘F), which works only while Orasenda is active |
+| Global shortcut | Old name (spec F) for an *Everywhere binding*. | A menu accelerator |
 | Registration status | Whether a global shortcut is `registered`, `off` or `failed` on this device right now. In memory only. | The saved setting |
-| Single-key shortcut | A one-key binding inside one surface (Space, F, P on Today; Space in Focus view), honouring the *Single-key shortcuts* setting (WCAG 2.1.4). | A ⌘ combination, which always works |
+| Single-key shortcut | A one-key binding inside one surface (Space and P on Today; Space in Focus view), honouring the *Single-key shortcuts* setting (WCAG 2.1.4). Not rebindable. | A binding, which needs a modifier |
 | Capture panel | The small non-activating panel (⌃⌥N) that saves a thought to the Inbox without leaving the current app. | The floater |
 | Inbox note | One captured thought: text, Internal or External, a time. Syncable (`inbox_note`), removed by tombstone. Listed on Board. | A task card (Kanban, later) |
 | Tip | A one-time neutral status line on idle Today ("Tip: …" with Got it), seen on Got it, on use, or after its second showing. | The keep-going hint (running, once) |
+| Shortcut registry | The one table of actions (id, label, description, where it works, both defaults) that feeds the app menu, the global registrar, single-key handlers, palette hints and Settings › Shortcuts (ADR-020). | A hard-coded key in a component |
+| In Orasenda binding | An action's key as a native app-menu accelerator: works in any Orasenda window while Orasenda is frontmost. Needs ⌘ or ⌃. May be empty. | An Everywhere binding |
+| Everywhere binding | An action's key as a system-wide global shortcut (ADR-017), working from any app. Needs a modifier. May be empty. Has a registration status. | An In Orasenda binding |
+| Fixed key | A key that can't be rebound: Esc in full screen and the standard app-menu items (⌘Q, ⌘W, ⌘, and ⌘K). | A binding |
+| Never-delivered key | A chord macOS keeps for itself (⌘Tab, and similar), refused by the recorder. | A well-known key |
+| Well-known key | A chord other apps commonly use (⌘F, ⌘C and similar). The recorder warns once before it becomes an Everywhere binding. | A never-delivered key |
+| Fold rule | The one-time move of the spec-F keys `keys.start_pause` and `keys.capture` into the two-slot model, at launch and after importing an old file: the old default becomes the new default, a custom key becomes the Everywhere binding, and `"off"` becomes empty. | The repair pass |
+| Repair pass | The deterministic fix for two slots holding the same chord, after load, after the fold and after each import: a fixed key wins, then a user-set slot over a default, then registry order. The loser is turned off and marked *repaired*. | The recorder's conflict check |
+| Pane | One Settings view in the master-detail layout (General, Timer, Notifications, Shortcuts, About, Your data, Backups), picked from the sticky pane list. | A section of one long scroll |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
@@ -72,7 +81,7 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 - Syncable entities write change-log rows in the same transaction; device-only entities do not.
 
 ## Decisions
-ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings), ADR-015 (code-first design system).
+ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings), ADR-015 (code-first design system), ADR-019 (full screen in the main window), ADR-020 (two bindings, one registry), ADR-021 (frontend layers).
 | Data file | A SQLite database Orasenda can open: `user_version` 1 to the current schema and a `meta.device_id`. Export and every backup are data files (whole copies made with `VACUUM INTO`). | A JSON export (Orasenda has none) |
 | Backup | A data file in `<app data dir>/Backups/`, named `orasenda-<UTC time>-<kind>.db`; kinds `auto`, `manual`, `before-import`, `before-restore`. The newest N are kept, every kind counted. | An export (a data file the user saves anywhere) |
 | Safety backup | A backup taken by Orasenda just before an import or a restore (`before-import`, `before-restore`). Delete all data takes none. | An automatic backup (on the monthly or 3-monthly schedule) |

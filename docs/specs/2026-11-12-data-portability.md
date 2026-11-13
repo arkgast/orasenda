@@ -129,6 +129,7 @@ The automatic check runs on a background thread after `setup` opens the store (`
 - `sections/About.tsx` keeps the three lines; the privacy line becomes "Your data stays on this Mac. Orasenda doesn't use the network."
 - New `sections/YourData.tsx`, `sections/Backups.tsx`, `sections/BackupList.tsx` and `useDataOverview.ts`. The whole-number field moves out of `CadenceRows.tsx:32` into `NumberField.tsx` unchanged (a move-only commit) and *Keep* reuses it.
 - Buttons are `quiet`, except *Delete…* in the list and *Delete all data…*, which are `ghost`. `critical` appears only on the confirm of the two delete Dialogs (`button.md:3,8`). There is no `primary` in Settings.
+- *Amended 2026-11-13 by [Structure, keys, focus and Settings](2026-11-13-polish-structure-keys-focus-settings.md) (H6, H7):* Settings becomes master-detail, so the three sections become panes (About, Your data, Backups) in its pane registry, and the `about`, `data` and `backups` navigation targets open their pane. The backup list uses that spec's `DataTable` with `IconButton` Restore and Delete. The behaviour, copy, status lines, dialogs and store-unavailable rules in this spec are unchanged.
 
 ## Behavior & edge cases
 **Merge rules** (one write transaction; any error rolls back the whole import):
