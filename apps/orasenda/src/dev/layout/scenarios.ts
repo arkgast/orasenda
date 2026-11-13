@@ -235,7 +235,6 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     preset_select: () => null,
     native_menu_popup: () => null,
     // The capture panel and the palette's Capture row.
-    keyboard_state: () => KEYBOARD,
     capture_open: () => null,
     capture_close: () => null,
     capture_note: () => NOTE,

@@ -160,24 +160,6 @@ export const PRESETS: PresetEntry[] = [
   entry(DEEP, "Deep Work", 90, 15, 30, 2),
 ];
 
-/** Both global shortcuts registered, as `keyboard_state` answers on a fresh install. */
-export const KEYBOARD: KeyboardView_Serialize = {
-  startPause: {
-    keys: "Control+Alt+KeyF",
-    display: "⌃⌥F",
-    spoken: "Control-Option-F",
-    status: "registered",
-  },
-  capture: {
-    keys: "Control+Alt+KeyN",
-    display: "⌃⌥N",
-    spoken: "Control-Option-N",
-    status: "registered",
-  },
-  singleKey: true,
-  voiceOver: false,
-};
-
 /** Two Inbox notes, newest first, as `inbox_list` answers. */
 export const NOTES: NoteView[] = [
   {
@@ -224,7 +206,6 @@ const DEFAULTS: Replies = {
   inbox_list: () => NOTES,
   inbox_remove: () => null,
   inbox_restore: () => null,
-  keyboard_state: () => KEYBOARD,
   capture_open: () => null,
   capture_close: () => null,
   capture_note: (args) => ({ ...NOTES[0], text: (args as { note: { text: string } }).note.text }),
