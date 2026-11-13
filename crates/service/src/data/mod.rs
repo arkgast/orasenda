@@ -6,7 +6,12 @@ pub mod backups;
 mod names;
 pub mod pending;
 pub mod policy;
+mod run;
 #[cfg(test)]
 mod tests;
 
 pub use pending::PendingOutcome;
+pub use run::{
+    busy, run_auto_check, run_backups_create, run_backups_delete, run_backups_restore,
+    run_backups_set_policy, run_data_delete_all, run_overview,
+};

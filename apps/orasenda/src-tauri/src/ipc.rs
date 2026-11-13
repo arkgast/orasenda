@@ -87,6 +87,18 @@ impl Type for InboxChangedEvent {
     }
 }
 
+/// `backups-changed`: the data overview after the backup list or policy changed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "backups-changed")]
+pub struct BackupsChangedEvent(pub DataOverview);
+
+impl Type for BackupsChangedEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <DataOverview as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]

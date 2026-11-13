@@ -86,6 +86,23 @@ export const commands = {
 	inboxRemove: (id: string) => typedError<null, InboxError>(__TAURI_INVOKE("inbox_remove", { id })),
 	/**  Brings a removed note back. */
 	inboxRestore: (id: string) => typedError<null, InboxError>(__TAURI_INVOKE("inbox_restore", { id })),
+	/**  Counts, folder, backups, policy and their size. */
+	dataOverview: () => __TAURI_INVOKE<DataOverview_Serialize>("data_overview"),
+	/**  Shows `orasenda.db` in Finder. */
+	dataShowFolder: () => typedError<null, DataError>(__TAURI_INVOKE("data_show_folder")),
+	/**  Stages a fresh start and restarts. `Busy` during a session. */
+	dataDeleteAll: () => typedError<null, DataError>(__TAURI_INVOKE("data_delete_all")),
+	/**  A `manual` backup of the current data. */
+	backupsCreate: () => typedError<BackupEntry, DataError>(__TAURI_INVOKE("backups_create")),
+	/**  Deletes one backup file. */
+	backupsDelete: (file: string) => typedError<null, DataError>(__TAURI_INVOKE("backups_delete", { file })),
+	/**
+	 *  Stages a backup, backs up the current data and restarts. `Busy` during a session, `Newer`
+	 *  for a backup from a newer Orasenda.
+	 */
+	backupsRestore: (file: string) => typedError<null, DataError>(__TAURI_INVOKE("backups_restore", { file })),
+	/**  Saves the backup policy and prunes to its `keep` at once. */
+	backupsSetPolicy: (policy: BackupPolicy) => typedError<BackupPolicy, DataError>(__TAURI_INVOKE("backups_set_policy", { policy })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -104,6 +121,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	backupsChanged: makeEvent<DataOverview_Serialize, DataOverview_Deserialize>("backups-changed"),
 	captureFocus: makeEvent<CaptureFocus, CaptureFocus>("capture-focus"),
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
@@ -146,6 +164,30 @@ export type AppRef_Serialize = {
 	bundleId: string | null,
 	name: string,
 	pid: number,
+};
+
+/**  One backup file. Time and kind come from the name, the size from the file. */
+export type BackupEntry = {
+	file: string,
+	kind: BackupKind,
+	/**  UTC milliseconds since the Unix epoch. Exported as `number`: lossless below 2^53. */
+	createdMs: number,
+	bytes: number,
+	/**  Saved by a newer Orasenda: listed, but it can't be restored here. */
+	newer: boolean,
+};
+
+/**  How often the automatic backup is due. */
+export type BackupFrequency = "monthly" | "quarterly";
+
+/**  Why a backup was made. It is part of the file name. */
+export type BackupKind = "auto" | "manual" | "beforeImport" | "beforeRestore";
+
+/**  The backup settings, device-only (`meta`). */
+export type BackupPolicy = {
+	frequency: BackupFrequency,
+	/**  How many backups to keep, 1 to 50, across every kind. */
+	keep: number,
 };
 
 /**  What to do to an intercepted app, serialized lowercase. */
@@ -193,6 +235,51 @@ export type ClockTick_Serialize = {
 	clock: string,
 	/**  When the chosen preset would finish if started now, as text. Set only while idle. */
 	idleFinish: string | null,
+};
+
+/**  How many live rows each syncable table holds. */
+export type DataCounts = {
+	sessions: number,
+	presets: number,
+	notes: number,
+	settings: number,
+};
+
+export type DataError = {
+	kind: DataErrorKind,
+	message: string,
+};
+
+/**  What went wrong, for the line the webview shows. */
+export type DataErrorKind = "busy" | "newer" | "notOrasenda" | "unreadable" | "write" | "unavailable" | "notFound";
+
+/**  Everything the Settings data sections show, and the payload of `backups-changed`. */
+export type DataOverview = DataOverview_Serialize | DataOverview_Deserialize;
+
+/**  Everything the Settings data sections show, and the payload of `backups-changed`. */
+export type DataOverview_Deserialize = {
+	/**  `None` while the store is unavailable. */
+	counts?: DataCounts | null,
+	/**  The app data folder. */
+	folder: string,
+	backups: BackupEntry[],
+	policy: BackupPolicy,
+	/**  The size of every listed backup together. */
+	totalBytes: number,
+	store: StoreStatus,
+};
+
+/**  Everything the Settings data sections show, and the payload of `backups-changed`. */
+export type DataOverview_Serialize = {
+	/**  `None` while the store is unavailable. */
+	counts: DataCounts | null,
+	/**  The app data folder. */
+	folder: string,
+	backups: BackupEntry[],
+	policy: BackupPolicy,
+	/**  The size of every listed backup together. */
+	totalBytes: number,
+	store: StoreStatus,
 };
 
 /**  A connected display, as the Focus menu and the Focus view buttons list it. */

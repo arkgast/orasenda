@@ -2,6 +2,7 @@
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
 mod commands;
+mod data_tasks;
 mod ipc;
 mod lifecycle;
 // The app menu: the pure parts build on every desktop target, the menu itself on macOS.
@@ -67,6 +68,13 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::inbox_list,
             commands::inbox_remove,
             commands::inbox_restore,
+            commands::data_overview,
+            commands::data_show_folder,
+            commands::data_delete_all,
+            commands::backups_create,
+            commands::backups_delete,
+            commands::backups_restore,
+            commands::backups_set_policy,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -87,6 +95,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::FocusInsets,
             ipc::PaletteOpen,
             ipc::CaptureFocus,
+            ipc::BackupsChangedEvent,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])

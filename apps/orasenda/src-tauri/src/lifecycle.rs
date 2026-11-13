@@ -58,6 +58,7 @@ pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
             scheduler::publish_focus(window.app_handle());
             if window.label() == MAIN {
                 crate::notifications::on_main_focused(window.app_handle());
+                crate::data_tasks::spawn_auto_check(window.app_handle());
             }
         }
         // The floater's frame is read while the window still exists (not on `Destroyed`).

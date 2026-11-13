@@ -46,6 +46,19 @@ pub(crate) fn choose_notifier(in_bundle: bool) -> Arc<dyn Notifier> {
     }
 }
 
+/// Shows `path` in the file manager. A no-op off macOS, where there is no implementation yet.
+pub fn reveal(path: &std::path::Path) -> Result<(), orasenda_core::PlatformError> {
+    #[cfg(target_os = "macos")]
+    {
+        orasenda_platform_macos::reveal_in_finder(path)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = path;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_os = "macos")]

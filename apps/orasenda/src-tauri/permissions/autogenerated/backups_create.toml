@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-backups-create"
+description = "Enables the backups_create command without any pre-configured scope."
+commands.allow = ["backups_create"]
+
+[[permission]]
+identifier = "deny-backups-create"
+description = "Denies the backups_create command without any pre-configured scope."
+commands.deny = ["backups_create"]
