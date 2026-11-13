@@ -83,6 +83,12 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   );
 });
 
+test("design_system_bundle_builds_elements_through_the_host_react", () => {
+  const code = file("components", "bundle.js");
+  expect(code).not.toContain("react.transitional.element");
+  expect(code).not.toContain("react.element");
+});
+
 test("design_system_bundle_loads_as_classic_script", () => {
   for (const name of ["bundle.js", "lib/react.js", "lib/react-dom.js"]) {
     const code = file("components", name);
