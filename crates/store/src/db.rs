@@ -118,6 +118,17 @@ impl Store {
         Ok(value)
     }
 
+    /// Runs `f` on the connection under the store lock, with no transaction open. For statements
+    /// SQLite refuses inside one, such as `VACUUM INTO`. Not a way around [`Store::write`]:
+    /// repositories never use it.
+    pub(crate) fn with_conn<T>(
+        &self,
+        f: impl FnOnce(&Connection) -> Result<T, StoreError>,
+    ) -> Result<T, StoreError> {
+        let inner = self.lock();
+        f(&inner.conn)
+    }
+
     /// A panic inside a closure rolls its transaction back before the guard is released, so
     /// the connection is consistent and a poisoned mutex is safe to reuse.
     fn lock(&self) -> MutexGuard<'_, Inner> {

@@ -14,6 +14,7 @@ mod error;
 #[cfg(any(test, feature = "test-hooks"))]
 mod hooks;
 mod migrate;
+pub mod portability;
 mod repo;
 #[cfg(test)]
 pub(crate) mod test_support;
