@@ -1,6 +1,6 @@
 import { type TimerLayout, TimerRing, TimerStrip } from "@orasenda/ui";
+import type { TimerView_Serialize } from "@shared/ipc/bindings";
 import type { ReactElement } from "react";
-import type { TimerView_Serialize } from "../../ipc/bindings";
 
 type Props = {
   /** `null` before the first view, or when the timer is unavailable: the idle face. */

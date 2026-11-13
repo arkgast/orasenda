@@ -1,7 +1,7 @@
+import type { Settings, TimerView_Serialize } from "@shared/ipc/bindings";
+import { argsOf, IDLE, mockBackend, type Replies, settle } from "@shared/test/fixtures";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { App } from "../../app/App";
-import type { Settings, TimerView_Serialize } from "../../ipc/bindings";
-import { argsOf, IDLE, mockBackend, type Replies, settle } from "../../test/fixtures";
 
 export const WRITE = { kind: "write", message: "disk full" };
 export const INVALID = { kind: "invalidSpec", message: "that preset isn't in the library" };

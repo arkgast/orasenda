@@ -1,9 +1,5 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { App } from "../../app/App";
-import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { resetTimerQueueForTests } from "../../ipc/timerQueue";
+import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
+import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import {
   argsOf,
   DEEP,
@@ -12,7 +8,11 @@ import {
   mockBackend,
   SETTINGS,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { App } from "../../app/App";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { h1, INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
 

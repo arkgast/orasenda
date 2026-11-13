@@ -1,5 +1,5 @@
+import { BREAK, IDLE, RUNNING } from "@shared/test/fixtures";
 import { expect, test, vi } from "vitest";
-import { BREAK, IDLE, RUNNING } from "../../test/fixtures";
 import { statusLine } from "../today/statusLine";
 import { cadenceActions } from "./cadenceActions";
 

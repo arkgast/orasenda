@@ -1,5 +1,5 @@
 import { Choice, SettingsRow } from "@orasenda/ui";
-import type { NotificationStatus } from "../../../ipc/bindings";
+import type { NotificationStatus } from "@shared/ipc/bindings";
 
 export type NotificationsRow = {
   line: string | null;

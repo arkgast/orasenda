@@ -1,6 +1,6 @@
 import type { FullScreenFocus } from "@orasenda/ui";
+import type { TimerView_Serialize } from "@shared/ipc/bindings";
 import type { ComponentProps } from "react";
-import type { TimerView_Serialize } from "../../ipc/bindings";
 import { cadenceOffers } from "../today/cadenceOffers";
 
 type SecondaryAction = NonNullable<

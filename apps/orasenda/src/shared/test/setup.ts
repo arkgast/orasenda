@@ -8,7 +8,7 @@ afterEach(() => {
 
 // The app loads its pages as chunks; tests start once they are in, as they are a moment after launch.
 beforeAll(async () => {
-  await (await import("../app/App")).pagesReady;
+  await (await import("@app/App")).pagesReady;
 });
 
 // styles/app.css (through the tokens) defines these in the real app; jsdom loads no stylesheet.

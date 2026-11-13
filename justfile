@@ -19,7 +19,7 @@ dev:
 build:
     pnpm --filter orasenda tauri build
 
-# Regenerate apps/orasenda/src/ipc/bindings.ts from the Rust commands and events.
+# Regenerate apps/orasenda/src/shared/ipc/bindings.ts from the Rust commands and events.
 bindings:
     cargo test -p orasenda --locked export_bindings
 
@@ -33,6 +33,11 @@ lint:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     pnpm exec biome lint .
     "{{ just_executable() }}" tailwind-strict
+    "{{ just_executable() }}" lint-layers
+
+# Frontend layer rules: every lint fixture must be reported (or stay clean) as its header says.
+lint-layers:
+    ./scripts/lint-layers.sh
 
 # Run every test suite.
 test:
@@ -89,6 +94,8 @@ ci:
     cargo fmt --all --check
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
+    @echo "==> frontend layers (lint fixtures)"
+    "{{ just_executable() }}" lint-layers
     @echo "==> file size (500-line ceiling)"
     "{{ just_executable() }}" file-size
     @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
@@ -127,8 +134,8 @@ ci:
     @echo "==> layout (real-engine WebKit checks, macOS only)"
     "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
-    git ls-files --error-unmatch apps/orasenda/src/ipc/bindings.ts
-    git diff --exit-code -- apps/orasenda/src/ipc/bindings.ts
+    git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
+    git diff --exit-code -- apps/orasenda/src/shared/ipc/bindings.ts
     @echo "==> mobile (cargo check core, store and app for iOS and Android)"
     "{{ just_executable() }}" mobile
     @echo "==> app build (debug, no bundle)"

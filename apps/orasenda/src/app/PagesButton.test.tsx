@@ -1,7 +1,7 @@
+import { mockBackend, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { mockBackend, settle } from "../test/fixtures";
 import { PagesButton } from "./PagesButton";
 import { onPaletteRequest } from "./palette/paletteRequest";
 

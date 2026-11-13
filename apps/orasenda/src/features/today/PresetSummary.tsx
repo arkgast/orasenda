@@ -6,8 +6,8 @@ import {
   type PopoverMenuItem,
   Tooltip,
 } from "@orasenda/ui";
+import type { BreakKind, Settings } from "@shared/ipc/bindings";
 import { type ReactElement, useId, useRef, useState } from "react";
-import type { BreakKind, Settings } from "../../ipc/bindings";
 import {
   presetChoices,
   presetMeta,

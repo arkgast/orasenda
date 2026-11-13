@@ -1,6 +1,6 @@
+import { commands, events, type KeyboardView, type NoteView } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { commands, events, type KeyboardView, type NoteView } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 
 /** How long "Note removed." with Undo stays, unless the next removal replaces it. */
 export const UNDO_MS = 10_000;

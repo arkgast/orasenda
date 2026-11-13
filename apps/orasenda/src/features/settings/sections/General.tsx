@@ -1,6 +1,6 @@
 import { Choice, ChoiceGroup, SettingsRow } from "@orasenda/ui";
+import type { Theme } from "@shared/ipc/bindings";
 import { useId } from "react";
-import type { Theme } from "../../../ipc/bindings";
 
 export const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
   { theme: "system", label: "Match system" },

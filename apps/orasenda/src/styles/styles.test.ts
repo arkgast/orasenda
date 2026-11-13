@@ -5,12 +5,12 @@ import { expect, test } from "vitest";
 
 // Read as text: Vitest replaces CSS imports (even `?raw`) with an empty string. Paths, not
 // `URL`s: jsdom's global `URL` is not one `node:fs` accepts.
-const stylesDir = join(import.meta.dirname, "styles");
+const stylesDir = import.meta.dirname;
 const cssFiles = readdirSync(stylesDir, { recursive: true, encoding: "utf8" })
   .filter((name) => name.endsWith(".css"))
   .map((name) => ({ name, css: readFileSync(join(stylesDir, name), "utf8") }));
 const appCss = readFileSync(join(stylesDir, "app.css"), "utf8");
-const mainTsx = readFileSync(join(import.meta.dirname, "main.tsx"), "utf8");
+const mainTsx = readFileSync(join(import.meta.dirname, "..", "main.tsx"), "utf8");
 const tokensCss = readFileSync(
   createRequire(import.meta.filename).resolve("@orasenda/tokens/tokens.css"),
   "utf8",

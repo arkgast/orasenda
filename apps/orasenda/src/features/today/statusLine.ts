@@ -6,7 +6,7 @@ import type {
   SuggestionView_Serialize,
   TimerCommandError,
   TipId,
-} from "../../ipc/bindings";
+} from "@shared/ipc/bindings";
 import { type CadenceOffer, cadenceOffers } from "./cadenceOffers";
 
 /** What the cadence part of the timer view says (E: warning, break, offer, auto step, rest line). */

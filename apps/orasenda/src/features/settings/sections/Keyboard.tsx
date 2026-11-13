@@ -6,7 +6,7 @@ import {
   type ShortcutListItem,
   ShortcutRecorder,
 } from "@orasenda/ui";
-import type { KeyboardError, KeyboardView, ShortcutId } from "../../../ipc/bindings";
+import type { KeyboardError, KeyboardView, ShortcutId } from "@shared/ipc/bindings";
 import { SHORTCUT_NAME, useKeyboard } from "../useKeyboard";
 
 const ANOTHER_APP = "Another app uses this shortcut. Pick a different one.";

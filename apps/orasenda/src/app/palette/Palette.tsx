@@ -1,13 +1,13 @@
 import { CommandPalette, type NavPage } from "@orasenda/ui";
+import type { DisplayInfo, Settings, Theme, TimerView_Serialize } from "@shared/ipc/bindings";
+import { commands, events } from "@shared/ipc/bindings";
+import { latest, load, save, watchSettingsChanged } from "@shared/ipc/settingsQueue";
+import { subscribe } from "@shared/ipc/subscribe";
 import { type ReactElement, useEffect, useMemo, useState } from "react";
 import { tick, untick } from "../../features/settings/notificationsToggle";
 import { openFocusView } from "../../features/today/focusView";
 import { requestIntentField } from "../../features/today/intentEvents";
 import { usePresets } from "../../features/today/presets";
-import type { DisplayInfo, Settings, Theme, TimerView_Serialize } from "../../ipc/bindings";
-import { commands, events } from "../../ipc/bindings";
-import { latest, load, save, watchSettingsChanged } from "../../ipc/settingsQueue";
-import { subscribe } from "../../ipc/subscribe";
 import { PAGE_ORDER } from "../PagesButton";
 import { paletteCommands } from "./paletteCommands";
 

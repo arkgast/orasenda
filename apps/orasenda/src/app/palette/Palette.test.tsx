@@ -1,8 +1,4 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
-import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
+import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
   GENTLE,
@@ -12,8 +8,12 @@ import {
   RUNNING,
   SETTINGS,
   settle,
-} from "../../test/fixtures";
-import { stubPaletteDom } from "../../test/paletteDom";
+} from "@shared/test/fixtures";
+import { stubPaletteDom } from "@shared/test/paletteDom";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { Palette } from "./Palette";
 
 beforeEach(() => {

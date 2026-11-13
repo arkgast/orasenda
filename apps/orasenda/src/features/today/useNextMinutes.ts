@@ -1,4 +1,4 @@
-import type { Settings } from "../../ipc/bindings";
+import type { Settings } from "@shared/ipc/bindings";
 import { selectedPreset, usePresets } from "./presets";
 
 /**

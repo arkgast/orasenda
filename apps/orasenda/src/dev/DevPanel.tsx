@@ -1,7 +1,7 @@
 import { Button, Choice, ChoiceGroup } from "@orasenda/ui";
 import { useId, useState } from "react";
 import { formatClock } from "../features/timer/format";
-import type { BlockAction, UsageSegment } from "../ipc/bindings";
+import type { BlockAction, UsageSegment } from "../shared/ipc/bindings";
 import { type RuleChange, useSpike } from "./useSpike";
 import "@orasenda/ui/styles.css";
 import "./spike.css";

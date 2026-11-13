@@ -1,7 +1,4 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
+import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
   emitMilestone,
@@ -11,7 +8,10 @@ import {
   RUNNING,
   SETTINGS,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetPresetsForTests } from "../today/presets";
 import { FocusPage } from "./FocusPage";
 

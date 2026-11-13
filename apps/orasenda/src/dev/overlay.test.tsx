@@ -2,7 +2,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { events, type SpikeError } from "../ipc/bindings";
+import { events, type SpikeError } from "../shared/ipc/bindings";
 import { Overlay } from "./Overlay";
 import { argsOf, type Call, mockBackend } from "./testing";
 

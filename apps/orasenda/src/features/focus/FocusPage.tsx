@@ -1,11 +1,11 @@
 import { FullScreenFocus } from "@orasenda/ui";
+import { useTheme } from "@shared/hooks/useTheme";
+import type { Settings, TimerCommandError, TimerView_Serialize } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
+import { watchSettingsChanged } from "@shared/ipc/settingsQueue";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useShortcuts } from "../../app/useShortcuts";
 import { useSingleKeys } from "../../app/useSingleKeys";
-import { useTheme } from "../../app/useTheme";
-import type { Settings, TimerCommandError, TimerView_Serialize } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
-import { watchSettingsChanged } from "../../ipc/settingsQueue";
 import { useClock } from "../timer/useClock";
 import { useSurfaceTimer } from "../timer/useSurfaceTimer";
 import { PresetSummary } from "../today/PresetSummary";

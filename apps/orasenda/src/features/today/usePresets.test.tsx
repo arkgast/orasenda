@@ -1,7 +1,7 @@
+import { deferred, emitPresetsChanged, mockBackend, PRESETS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { deferred, emitPresetsChanged, mockBackend, PRESETS, settle } from "../../test/fixtures";
 import { presetName, resetPresetsForTests, usePresets } from "./presets";
 
 beforeEach(() => resetPresetsForTests());

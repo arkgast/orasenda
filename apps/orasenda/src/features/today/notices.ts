@@ -1,4 +1,4 @@
-import type { MilestoneEvent_Serialize } from "../../ipc/bindings";
+import type { MilestoneEvent_Serialize } from "@shared/ipc/bindings";
 
 /** A one-shot notice and the session it is about (`null` when the event named none). */
 export type Notice = {

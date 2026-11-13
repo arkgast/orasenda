@@ -1,5 +1,5 @@
 import { SettingsRow } from "@orasenda/ui";
-import type { AppInfo } from "../../../ipc/bindings";
+import type { AppInfo } from "@shared/ipc/bindings";
 import { osLabel } from "../../timer/format";
 
 export type AboutInfo =

@@ -1,4 +1,4 @@
-import type { PresetEntry, Settings as SettingsValue } from "../../ipc/bindings";
+import type { PresetEntry, Settings as SettingsValue } from "@shared/ipc/bindings";
 import type { SectionId } from "./SettingsHeader";
 import { CAPS } from "./sections/CadenceRows";
 import { themeLabel } from "./sections/General";

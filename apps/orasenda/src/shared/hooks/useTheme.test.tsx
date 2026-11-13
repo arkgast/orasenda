@@ -1,3 +1,4 @@
+import { App } from "@app/App";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -11,7 +12,6 @@ import {
   SETTINGS,
   settle,
 } from "../test/fixtures";
-import { App } from "./App";
 import { useTheme } from "./useTheme";
 
 function Probe() {

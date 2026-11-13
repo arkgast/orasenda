@@ -1,5 +1,5 @@
+import { DISPLAYS, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS, STEADY } from "@shared/test/fixtures";
 import { expect, test } from "vitest";
-import { DISPLAYS, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS, STEADY } from "../../test/fixtures";
 import { paletteCommands } from "./paletteCommands";
 
 const base = {

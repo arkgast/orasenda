@@ -1,9 +1,9 @@
 import { InlineNotice, type NavPage, PageFrame, ScrollRegion, SettingsIndex } from "@orasenda/ui";
+import { useWindowLayout } from "@shared/hooks/useWindowLayout";
+import type { Settings as SettingsValue, Theme } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
+import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useWindowLayout } from "../../app/useWindowLayout";
-import type { Settings as SettingsValue, Theme } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
-import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
 import { selectedPreset, usePresets, usePresetsFailed } from "../today/presets";
 import {

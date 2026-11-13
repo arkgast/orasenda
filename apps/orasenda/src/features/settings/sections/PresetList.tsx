@@ -1,6 +1,6 @@
 import { Button, Choice, ChoiceGroup } from "@orasenda/ui";
+import type { PresetEntry } from "@shared/ipc/bindings";
 import { useId } from "react";
-import type { PresetEntry } from "../../../ipc/bindings";
 import type { PresetEditing } from "../usePresets";
 import { PresetEditor } from "./PresetEditor";
 

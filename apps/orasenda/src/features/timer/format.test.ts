@@ -1,5 +1,5 @@
+import type { Os } from "@shared/ipc/bindings";
 import { expect, test } from "vitest";
-import type { Os } from "../../ipc/bindings";
 import { formatClock, osLabel } from "./format";
 
 test("os_label_maps_known_values", () => {

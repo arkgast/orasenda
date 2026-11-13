@@ -1,9 +1,5 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { StrictMode } from "react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { MilestoneEvent_Serialize, TimerState_Serialize } from "../../ipc/bindings";
-import { resetTimerQueueForTests } from "../../ipc/timerQueue";
+import type { MilestoneEvent_Serialize, TimerState_Serialize } from "@shared/ipc/bindings";
+import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import {
   argsOf,
   deferred,
@@ -13,7 +9,11 @@ import {
   mockBackend,
   RUNNING,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { act, cleanup, renderHook } from "@testing-library/react";
+import { StrictMode } from "react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { useTimer } from "./useTimer";
 
 const RECOVERED: MilestoneEvent_Serialize = {

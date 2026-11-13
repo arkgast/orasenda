@@ -1,8 +1,8 @@
 import { CapturePad, type InterruptionKind } from "@orasenda/ui";
+import { useTheme } from "@shared/hooks/useTheme";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import { useTheme } from "../../app/useTheme";
-import { commands, events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 import "./capture.css";
 
 const TOO_LONG = "This note is too long to save. Shorten it a little.";

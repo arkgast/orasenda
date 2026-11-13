@@ -1,5 +1,5 @@
 import { SettingsRow } from "@orasenda/ui";
-import type { PresetEntry, Settings } from "../../../ipc/bindings";
+import type { PresetEntry, Settings } from "@shared/ipc/bindings";
 import { selectedPreset } from "../../today/presets";
 import type { PresetEditing } from "../usePresets";
 import { type CadenceChange, CadenceRows } from "./CadenceRows";

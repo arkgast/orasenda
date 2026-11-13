@@ -1,7 +1,7 @@
 import { FloatingTimer } from "@orasenda/ui";
+import { useTheme } from "@shared/hooks/useTheme";
+import { commands, type TimerView_Serialize } from "@shared/ipc/bindings";
 import { type MouseEvent, useCallback, useEffect, useRef } from "react";
-import { useTheme } from "../../app/useTheme";
-import { commands, type TimerView_Serialize } from "../../ipc/bindings";
 import { useSurfaceTimer } from "../timer/useSurfaceTimer";
 import "./floater.css";
 

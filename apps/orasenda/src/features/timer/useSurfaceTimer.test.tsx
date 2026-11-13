@@ -1,7 +1,3 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, renderHook } from "@testing-library/react";
-import { StrictMode } from "react";
-import { afterEach, expect, test, vi } from "vitest";
 import {
   argsOf,
   deferred,
@@ -12,7 +8,11 @@ import {
   PAUSED,
   RUNNING,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { cleanup, renderHook } from "@testing-library/react";
+import { StrictMode } from "react";
+import { afterEach, expect, test, vi } from "vitest";
 import { useSurfaceTimer } from "./useSurfaceTimer";
 
 afterEach(async () => {

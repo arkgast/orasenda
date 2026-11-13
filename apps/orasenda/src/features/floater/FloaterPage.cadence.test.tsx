@@ -1,6 +1,3 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
 import {
   argsOf,
   BREAK,
@@ -10,7 +7,10 @@ import {
   RUNNING,
   SETTINGS,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import { resetPresetsForTests } from "../today/presets";
 import { FloaterPage } from "./FloaterPage";
 
