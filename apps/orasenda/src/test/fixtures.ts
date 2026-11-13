@@ -5,6 +5,7 @@ import type {
   ClockTick_Serialize,
   DisplayInfo,
   FocusInsets,
+  KeyboardView_Serialize,
   MilestoneEvent_Serialize,
   NavigatePage,
   NoteView,
@@ -132,6 +133,24 @@ export const SETTINGS: Settings = {
   singleKey: true,
 };
 
+/** Both global shortcuts at their defaults, as `keyboard_state` answers on a fresh install. */
+export const KEYBOARD: KeyboardView_Serialize = {
+  startPause: {
+    keys: "Control+Alt+KeyF",
+    display: "⌃⌥F",
+    spoken: "Control-Option-F",
+    status: "registered",
+  },
+  capture: {
+    keys: "Control+Alt+KeyN",
+    display: "⌃⌥N",
+    spoken: "Control-Option-N",
+    status: "registered",
+  },
+  singleKey: true,
+  voiceOver: false,
+};
+
 /** The three default presets, as `presets_list` answers on a fresh library. */
 export const PRESETS: PresetEntry[] = [
   entry(GENTLE, "Gentle Start", 15, 5, 15, 4),
@@ -169,6 +188,7 @@ const DEFAULTS: Replies = {
   timer_state: (): TimerState_Serialize => ({ view: IDLE, pending: [] }),
   settings_get: () => SETTINGS,
   settings_set: () => null,
+  keyboard_state: () => KEYBOARD,
   timer_start: () => RUNNING,
   timer_pause: () => PAUSED,
   timer_resume: () => RUNNING,
