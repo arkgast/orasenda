@@ -104,6 +104,8 @@ pub enum SettingsTarget {
     General,
     Timer,
     Notifications,
+    /// Settings › Keyboard.
+    Keyboard,
     AppsAndSites,
     About,
     FocusMinutes,
@@ -280,6 +282,10 @@ mod tests {
             })
             .unwrap(),
             json!({ "page": "settings", "target": "appsAndSites" })
+        );
+        assert_eq!(
+            serde_json::to_value(SettingsTarget::Keyboard).unwrap(),
+            json!("keyboard")
         );
         assert_eq!(Navigate::NAME, "navigate");
         for (page, name) in [

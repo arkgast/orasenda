@@ -565,7 +565,9 @@ export type SettingsError = {
 export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
 
 /**  A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`. */
-export type SettingsTarget = "general" | "timer" | "notifications" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes" | 
+export type SettingsTarget = "general" | "timer" | "notifications" | 
+/**  Settings › Keyboard. */
+"keyboard" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes" | 
 /**  The *Keep going automatically* row in Timer. */
 "keepGoing";
 

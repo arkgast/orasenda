@@ -3,7 +3,13 @@ import { type ReactElement, type ReactNode, useRef, useState } from "react";
 import { PagesButton } from "../../app/PagesButton";
 import { commands } from "../../ipc/bindings";
 
-export type SectionId = "general" | "timer" | "notifications" | "appsAndSites" | "about";
+export type SectionId =
+  | "general"
+  | "timer"
+  | "notifications"
+  | "keyboard"
+  | "appsAndSites"
+  | "about";
 export type SettingsTarget = SectionId | "focusMinutes" | "breakMinutes" | "keepGoing";
 
 /** A visit to the page: a new `seq` is a new arrival (focus moves); `target` says where. */
@@ -13,6 +19,7 @@ export const SECTIONS: ReadonlyArray<{ id: SectionId; name: string }> = [
   { id: "general", name: "General" },
   { id: "timer", name: "Timer" },
   { id: "notifications", name: "Notifications" },
+  { id: "keyboard", name: "Keyboard" },
   { id: "appsAndSites", name: "Apps and sites" },
   { id: "about", name: "About and data" },
 ];
