@@ -19,9 +19,9 @@ fn seeded() -> Store {
     let store = store();
     store
         .write(1_000, |txn| {
-            insert(txn, &note("a", "first", NoteKind::Internal, 100))?;
-            insert(txn, &note("b", "second", NoteKind::External, 200))?;
-            insert(txn, &note("c", "third", NoteKind::Internal, 300))
+            insert(txn, &note("a", "first", NoteKind::Internal, 300))?;
+            insert(txn, &note("c", "third", NoteKind::Internal, 100))?;
+            insert(txn, &note("b", "second", NoteKind::External, 200))
         })
         .expect("inserts");
     store
@@ -84,11 +84,11 @@ fn inbox_insert_logs_change_log() {
 #[test]
 fn inbox_list_live_newest_first_skips_removed() {
     let store = seeded();
-    assert_eq!(ids(&store), ["c", "b", "a"]);
+    assert_eq!(ids(&store), ["a", "b", "c"]);
     store
         .write(2_000, |txn| remove(txn, "b", 2_000).map(|_| ()))
         .expect("removes");
-    assert_eq!(ids(&store), ["c", "a"]);
+    assert_eq!(ids(&store), ["a", "c"]);
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn inbox_remove_restore_idempotent() {
     );
     assert!(!write(|t| restore(t, "missing")));
     assert_eq!(logged(&store), 2);
-    assert_eq!(ids(&store), ["c", "b", "a"]);
+    assert_eq!(ids(&store), ["a", "b", "c"]);
 }
 
 #[test]
@@ -155,6 +155,14 @@ fn inbox_text_check_rejects_1001() {
         .read(|t| Ok(count(t.conn(), "SELECT count(*) FROM inbox_note")))
         .expect("counts");
     assert_eq!(rows, 1);
+    store
+        .write(1, |txn| {
+            insert(
+                txn,
+                &note("y", &"\u{e9}".repeat(1000), NoteKind::Internal, 1),
+            )
+        })
+        .expect("1000 characters (2000 bytes) are allowed");
     let logged = store
         .read(|t| {
             Ok(count(
@@ -185,8 +193,24 @@ fn migrate_4_to_5_keeps_rows() {
         [],
     )
     .expect("a setting row");
+    conn.execute_batch(
+        "INSERT INTO focus_session (id, created_at, updated_at, preset, phase, planned_ms, started_at, ended_at, paused_total_ms, focused_ms, end_reason)
+         VALUES ('s', 1, 1, 'Pomodoro', 'focus', 1500000, 1, 2, 0, 1500000, 'completed');
+         INSERT INTO window_frame (window, display, x, y, width, height, updated_at)
+         VALUES ('main', 'd', 0, 0, 800, 600, 1);
+         INSERT INTO change_log (hlc, device_id, entity, entity_id, field, value)
+         VALUES ('h', 'dev', 'setting', 'k', 'value', '1');",
+    )
+    .expect("more rows");
     crate::migrate::run(&mut conn).expect("migrates");
-    for (table, want) in [("preset", 1), ("setting", 1), ("inbox_note", 0)] {
+    for (table, want) in [
+        ("preset", 1),
+        ("setting", 1),
+        ("focus_session", 1),
+        ("window_frame", 1),
+        ("change_log", 1),
+        ("inbox_note", 0),
+    ] {
         assert_eq!(count(&conn, &format!("SELECT count(*) FROM {table}")), want);
     }
     let version: u32 = conn
