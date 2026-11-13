@@ -247,3 +247,15 @@ fn a_break_without_a_reserved_id_is_derived_from_its_focus() {
         Some(SessionId("a-b0".into()))
     );
 }
+
+#[test]
+fn start_break_uses_given_id() {
+    let Session::Running { mut live } = classic_at(T0) else {
+        panic!("a classic session is running");
+    };
+    // A reserved id the caller never took is not the one used: the given id wins.
+    live.break_id = Some(SessionId("reserved".into()));
+    let brk = live.start_break(SessionId("given".into()), T0 + 25 * MIN, 25 * MIN, 0);
+    assert_eq!(brk.id, SessionId("given".into()));
+    assert_eq!(brk.phase, Phase::Break);
+}

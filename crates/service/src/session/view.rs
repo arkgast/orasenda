@@ -7,7 +7,7 @@ use orasenda_core::{
 };
 
 use super::*;
-use crate::api::{ClockTick, Mode, Offer, SuggestionView, TimerState, TimerView};
+use crate::api::{ClockTick, Mode, Offer, StoreStatus, SuggestionView, TimerState, TimerView};
 
 /// What a `quick` session is called.
 /// Two minutes: the warning comes this long before an end.
@@ -63,7 +63,7 @@ impl SessionService {
                 Some(u32::from(*break_min)),
             ),
         };
-        TimerView {
+        let mut view = TimerView {
             state: engine.state,
             phase: engine.phase,
             mode,
@@ -96,7 +96,12 @@ impl SessionService {
             }),
             cap_line: idle.then(|| self.cap_line(now_ms)).flatten(),
             hint: self.hint_due(),
+        };
+        // Read last: the reads above decide whether today's rows could be read.
+        if self.day_read_failed.get() {
+            view.store = StoreStatus::Unavailable;
         }
+        view
     }
 
     /// The line for the break running now: the next of today's rotation for its kind.

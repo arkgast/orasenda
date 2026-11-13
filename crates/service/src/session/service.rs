@@ -115,6 +115,8 @@ pub struct SessionService {
     pub(super) shown_idle: (Option<String>, Option<Offer>),
     /// Today's rows could not be read; set so the failure is logged once.
     pub(super) day_read_failed: Cell<bool>,
+    /// Today's stored sessions, read once per day and write generation.
+    pub(super) day_cache: day_cache::DayCache,
     /// The keep-going hint: due now, and whether it was shown before.
     pub(super) hint: hint::HintState,
 }
@@ -159,6 +161,7 @@ impl SessionService {
             cap_checked: None,
             shown_idle: (None, None),
             day_read_failed: Cell::new(false),
+            day_cache: day_cache::DayCache::default(),
             hint: hint::HintState::default(),
         };
         // The seed runs before the settings are read: it rewrites `timer.preset`.
