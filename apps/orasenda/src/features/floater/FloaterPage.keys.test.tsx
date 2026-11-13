@@ -1,7 +1,15 @@
+import {
+  argsOf,
+  emitTimer,
+  IDLE,
+  mockBackend,
+  PAUSED,
+  RUNNING,
+  settle,
+} from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { argsOf, emitTimer, IDLE, mockBackend, PAUSED, RUNNING, settle } from "../../test/fixtures";
 import { FloaterPage } from "./FloaterPage";
 
 afterEach(async () => {

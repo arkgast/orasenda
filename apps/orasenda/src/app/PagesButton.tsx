@@ -1,6 +1,6 @@
 import { Icon, IconButton, type NavPage } from "@orasenda/ui";
+import { commands } from "@shared/ipc/bindings";
 import { type ReactElement, useRef, useState } from "react";
-import { commands } from "../ipc/bindings";
 import { requestPalette } from "./palette/paletteRequest";
 
 export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [

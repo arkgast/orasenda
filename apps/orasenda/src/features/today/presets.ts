@@ -1,7 +1,7 @@
+import type { BreakKind, PresetEntry, Settings } from "@shared/ipc/bindings";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import type { BreakKind, PresetEntry, Settings } from "../../ipc/bindings";
-import { commands, events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 
 /** The name a person sees for a library preset. */
 export function presetName(entry: Pick<PresetEntry, "name">): string {

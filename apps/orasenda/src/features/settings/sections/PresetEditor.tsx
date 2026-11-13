@@ -1,6 +1,6 @@
 import { Button, Input } from "@orasenda/ui";
+import type { PresetEntry } from "@shared/ipc/bindings";
 import { useEffect, useState } from "react";
-import type { PresetEntry } from "../../../ipc/bindings";
 import type { EditField, FieldErrors } from "../usePresets";
 
 type FieldProps = {

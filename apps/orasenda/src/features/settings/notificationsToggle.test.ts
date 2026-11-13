@@ -1,8 +1,8 @@
+import type { NotificationStatus } from "@shared/ipc/bindings";
+import { load, register, resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
+import { argsOf, deferred, mockBackend, SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { NotificationStatus } from "../../ipc/bindings";
-import { load, register, resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { argsOf, deferred, mockBackend, SETTINGS, settle } from "../../test/fixtures";
 import {
   askMacOS,
   isAsking,

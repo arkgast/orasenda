@@ -1,6 +1,6 @@
+import { events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import { events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 
 /**
  * The wall clock from Rust: `waiting` before the first `clock-tick`, `ok` with the latest tick

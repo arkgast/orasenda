@@ -1,7 +1,7 @@
+import type { KeyboardView } from "@shared/ipc/bindings";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import type { KeyboardView } from "../ipc/bindings";
-import { commands, events } from "../ipc/bindings";
-import { subscribe } from "../ipc/subscribe";
 
 /**
  * The global shortcuts as the app sees them, read only: `keyboard_state`, kept current by

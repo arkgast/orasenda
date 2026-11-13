@@ -1,7 +1,7 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { type BlockRule, events, type UsageSegment_Serialize } from "../ipc/bindings";
+import { type BlockRule, events, type UsageSegment_Serialize } from "../shared/ipc/bindings";
 import { argsOf, mockBackend } from "./testing";
 import { useSpike } from "./useSpike";
 

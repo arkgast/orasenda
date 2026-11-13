@@ -1,6 +1,6 @@
+import { DEEP, mockBackend, PRESETS, SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { DEEP, mockBackend, PRESETS, SETTINGS, settle } from "../../test/fixtures";
 import {
   presetChoices,
   presetMeta,

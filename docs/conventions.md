@@ -38,7 +38,7 @@ File size and module layout rules are in [Code structure and size](#code-structu
   `cfg(target_os)`, and never calls `SystemTime::now()`: time is passed in.
 - Every new Rust dependency of core must `cargo check` for `aarch64-apple-ios` and
   `aarch64-linux-android`. `scripts/ci.sh` enforces it on macOS only.
-- `apps/orasenda/src/ipc/bindings.ts` and `packages/tokens/tokens.css` are generated. Never
+- `apps/orasenda/src/shared/ipc/bindings.ts` and `packages/tokens/tokens.css` are generated. Never
   edit them by hand; regenerate and commit.
 - Every new Tauri command is added to the `AppManifest` list in `build.rs` and granted in a
   capability. Commands not listed there are open to every window.
@@ -55,10 +55,39 @@ File size and module layout rules are in [Code structure and size](#code-structu
 - Device-only tables never write `change_log`; a repository says which it is in its module doc
   (ADR-012).
 
+## Frontend layers (ADR-021)
+The webview code in `apps/orasenda/src/` sits in layers. A layer imports only from the layers
+below it. The table runs top to bottom.
+
+| Layer | Holds | May import |
+|---|---|---|
+| `surfaces/<main\|focus\|floater\|capture>/` | each window's entry (`main.tsx`) only | everything below |
+| `app/` | shell, routing, providers, `PageBoundary`, palette | features, domain, shared |
+| `features/<name>/` | one screen or panel | domain, shared, its own files |
+| `domain/<name>/` | code two or more features need | other domain folders, shared |
+| `shared/` | `ipc/`, `hooks/`, `lib/`, `test/` (fixtures, builders, setup) | nothing above |
+| `styles/` | `app.css`, the global stylesheet | outside the layers; imported by surfaces only |
+
+- **Aliases.** A cross-layer import uses an alias: `@surfaces/`, `@app/`, `@features/`,
+  `@domain/`, `@shared/`, `@styles/`. A relative import stays inside one layer folder. The
+  aliases live in `apps/orasenda/tsconfig.json` (`paths`); Vite reads them from there.
+- **Tests** sit next to their code. A test, a `.support.tsx` file and anything under
+  `shared/test/` may import upward to render a surface; none may import sideways into another
+  feature. `dev/` stays outside the layers.
+- **Enforced by Biome** (`noRestrictedImports` overrides in `biome.json`, one set per layer and
+  per folder depth, each restating its full pattern list because a later override replaces the
+  options of an earlier one). `just lint-layers`, run by `just ci`, lints each file in
+  `apps/orasenda/lint-fixtures/` at the virtual path named in its header and fails if the
+  result differs from its `expect` line.
+- **Naming.** `PascalCase.tsx` for components, `camelCase.ts` for logic and hooks,
+  `<File>.<behaviour>.test.tsx` for a test split by behaviour, `.support.tsx` for test helpers.
+- **Size.** The 500-line rule in "Code structure and size" applies to every file here, tests
+  included.
+
 ## Code structure and size
 Rules from the [structure refactor spec](specs/2026-11-10-structure-refactor.md).
 1. **Size.** A tracked source file (`.rs`, `.ts`, `.tsx`, `.js`, `.css`) is at most 500 lines,
-   tests included. Generated files are exempt (`apps/orasenda/src/ipc/bindings.ts`,
+   tests included. Generated files are exempt (`apps/orasenda/src/shared/ipc/bindings.ts`,
    `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`) and the archived `design/reviews/`. `just file-size` runs in `ci`.
    Files that predate the rule sit in `scripts/file-size-allowlist.txt` with their line count.
    The guard fails when a listed file grows, when a listed file is back under 500 (remove its

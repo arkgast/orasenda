@@ -1,7 +1,7 @@
+import { argsOf, mockBackend, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { argsOf, mockBackend, settle } from "../../test/fixtures";
 import { JumpButton, SECTIONS } from "./SettingsHeader";
 
 afterEach(async () => {

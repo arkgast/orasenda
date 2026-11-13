@@ -104,10 +104,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         ])
 }
 
-/// Where the generated TypeScript contract lives: `apps/orasenda/src/ipc/bindings.ts`.
+/// Where the generated TypeScript contract lives: `apps/orasenda/src/shared/ipc/bindings.ts`.
 #[cfg(any(test, all(debug_assertions, desktop)))]
 fn bindings_path() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/ipc/bindings.ts")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/shared/ipc/bindings.ts")
 }
 
 #[cfg(any(test, all(debug_assertions, desktop)))]

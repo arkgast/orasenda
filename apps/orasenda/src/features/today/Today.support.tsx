@@ -1,6 +1,6 @@
+import type { Settings } from "@shared/ipc/bindings";
+import { mockBackend, type Replies, SETTINGS, settle } from "@shared/test/fixtures";
 import { render } from "@testing-library/react";
-import type { Settings } from "../../ipc/bindings";
-import { mockBackend, type Replies, SETTINGS, settle } from "../../test/fixtures";
 import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
 

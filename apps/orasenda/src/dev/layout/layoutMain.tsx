@@ -4,7 +4,7 @@ import { App } from "../../app/App";
 import { CapturePage } from "../../features/capture/CapturePage";
 import { FloaterPage } from "../../features/floater/FloaterPage";
 import { FocusPage } from "../../features/focus/FocusPage";
-import { events } from "../../ipc/bindings";
+import { events } from "../../shared/ipc/bindings";
 // The design system first, so the app's own rules can build on it.
 import "@orasenda/ui/styles.css";
 import "../../styles/app.css";

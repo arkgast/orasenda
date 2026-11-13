@@ -1,6 +1,6 @@
+import type { Settings } from "@shared/ipc/bindings";
+import { SETTINGS } from "@shared/test/fixtures";
 import { expect, test } from "vitest";
-import type { Settings } from "../../ipc/bindings";
-import { SETTINGS } from "../../test/fixtures";
 import { backTo, changedKeys, FAILURE_NAME, type Key, withKeys } from "./settingsKeys";
 
 const CASES: { patch: Partial<Settings>; key: Key; line: string }[] = [

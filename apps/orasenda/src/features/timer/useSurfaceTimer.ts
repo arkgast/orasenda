@@ -1,7 +1,7 @@
+import type { TimerView_Serialize } from "@shared/ipc/bindings";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import type { TimerView_Serialize } from "../../ipc/bindings";
-import { commands, events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 
 /** What a Focus window or the floater shows of the timer. */
 export type SurfaceTimer = {

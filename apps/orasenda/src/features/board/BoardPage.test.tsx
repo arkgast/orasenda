@@ -1,8 +1,5 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { KeyboardView_Serialize, NoteView } from "../../ipc/bindings";
-import { events } from "../../ipc/bindings";
+import type { KeyboardView_Serialize, NoteView } from "@shared/ipc/bindings";
+import { events } from "@shared/ipc/bindings";
 import {
   argsOf,
   deferred,
@@ -11,7 +8,10 @@ import {
   NOTES,
   type Replies,
   settle,
-} from "../../test/fixtures";
+} from "@shared/test/fixtures";
+import { clearMocks } from "@tauri-apps/api/mocks";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { BoardPage } from "./BoardPage";
 
 const shortcut = (status: "registered" | "off" | "failed", display: string | null) => ({

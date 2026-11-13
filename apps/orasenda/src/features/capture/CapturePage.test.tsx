@@ -1,9 +1,9 @@
+import { events } from "@shared/ipc/bindings";
+import { argsOf, deferred, mockBackend, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { events } from "../../ipc/bindings";
-import { argsOf, deferred, mockBackend, settle } from "../../test/fixtures";
 import { CapturePage } from "./CapturePage";
 
 afterEach(async () => {

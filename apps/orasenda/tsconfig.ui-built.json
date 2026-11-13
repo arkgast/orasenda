@@ -1,7 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "paths": { "@orasenda/ui": ["../../packages/ui/dist/system/components/index.d.ts"] }
+    "paths": {
+      "@orasenda/ui": ["../../packages/ui/dist/system/components/index.d.ts"],
+      "@surfaces/*": ["./src/surfaces/*"],
+      "@app/*": ["./src/app/*"],
+      "@features/*": ["./src/features/*"],
+      "@domain/*": ["./src/domain/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@styles/*": ["./src/styles/*"]
+    }
   },
-  "include": ["src/ui-types.test-d.tsx"]
+  "include": ["src/shared/test/ui-types.test-d.tsx"]
 }

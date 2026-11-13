@@ -1,10 +1,10 @@
+import type { KeyboardView_Serialize } from "@shared/ipc/bindings";
+import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
+import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { KeyboardView_Serialize } from "../../ipc/bindings";
-import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { resetTimerQueueForTests } from "../../ipc/timerQueue";
-import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle } from "../../test/fixtures";
 import { openSettings, saveLine, sets } from "./Settings.support";
 
 beforeEach(() => {

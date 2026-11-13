@@ -1,5 +1,5 @@
-import type { FocusViewTarget } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
+import type { FocusViewTarget } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
 
 /** Opens a focus view; resolves to whether it opened. Failures are logged here. */
 export async function openFocusView(target: FocusViewTarget): Promise<boolean> {

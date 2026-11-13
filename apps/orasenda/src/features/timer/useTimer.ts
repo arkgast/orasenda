@@ -1,8 +1,8 @@
+import type { MilestoneEvent_Serialize, TimerView_Serialize } from "@shared/ipc/bindings";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
+import { push, register } from "@shared/ipc/timerQueue";
 import { useEffect, useRef, useState } from "react";
-import type { MilestoneEvent_Serialize, TimerView_Serialize } from "../../ipc/bindings";
-import { commands, events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
-import { push, register } from "../../ipc/timerQueue";
 
 /**
  * The timer as Rust sees it: `waiting` before the first view, `ok` with the latest view, or

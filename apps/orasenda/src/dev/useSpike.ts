@@ -7,8 +7,8 @@ import {
   type SpikeError,
   type SpikeStatus,
   type UsageSegment,
-} from "../ipc/bindings";
-import { subscribe } from "../ipc/subscribe";
+} from "../shared/ipc/bindings";
+import { subscribe } from "../shared/ipc/subscribe";
 
 /** Which of the last requests failed; each resets on that request's next success. */
 export type SpikeErrors = { apps: boolean; usage: boolean; rule: boolean; ruleRead: boolean };

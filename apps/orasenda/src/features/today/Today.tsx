@@ -1,8 +1,5 @@
 import type { NavPage } from "@orasenda/ui";
-import { useEffect, useRef, useState } from "react";
-import { PagesButton } from "../../app/PagesButton";
-import { useShortcuts } from "../../app/useShortcuts";
-import { useWindowLayout } from "../../app/useWindowLayout";
+import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type {
   FocusViewTarget,
   MilestoneEvent_Serialize,
@@ -11,9 +8,12 @@ import type {
   StartRequest,
   TimerCommandError,
   TimerView_Serialize,
-} from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
-import { latest, load, register, save } from "../../ipc/settingsQueue";
+} from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
+import { latest, load, register, save } from "@shared/ipc/settingsQueue";
+import { useEffect, useRef, useState } from "react";
+import { PagesButton } from "../../app/PagesButton";
+import { useShortcuts } from "../../app/useShortcuts";
 import { useClock } from "../timer/useClock";
 import { useTimer } from "../timer/useTimer";
 import { Controls } from "./Controls";

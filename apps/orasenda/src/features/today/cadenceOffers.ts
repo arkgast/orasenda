@@ -1,4 +1,4 @@
-import type { Mode, Offer, Phase } from "../../ipc/bindings";
+import type { Mode, Offer, Phase } from "@shared/ipc/bindings";
 
 /** The view fields the cadence rule reads; Today's `CadenceInput` and the timer view both fit. */
 export type OfferInput = {

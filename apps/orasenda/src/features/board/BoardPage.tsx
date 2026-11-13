@@ -6,10 +6,10 @@ import {
   PageFrame,
   ScrollRegion,
 } from "@orasenda/ui";
+import { useWindowLayout } from "@shared/hooks/useWindowLayout";
+import type { NoteView } from "@shared/ipc/bindings";
 import { useLayoutEffect, useRef } from "react";
 import { PagesButton } from "../../app/PagesButton";
-import { useWindowLayout } from "../../app/useWindowLayout";
-import type { NoteView } from "../../ipc/bindings";
 import { type Line, useCaptureKeys, useInbox } from "./useInbox";
 import "./board.css";
 

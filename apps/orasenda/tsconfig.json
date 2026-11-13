@@ -10,6 +10,14 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    "paths": {
+      "@surfaces/*": ["./src/surfaces/*"],
+      "@app/*": ["./src/app/*"],
+      "@features/*": ["./src/features/*"],
+      "@domain/*": ["./src/domain/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@styles/*": ["./src/styles/*"]
+    },
     "types": ["vite/client", "@testing-library/jest-dom/vitest"]
   },
   "include": ["src", "vite.config.ts"]

@@ -1,6 +1,6 @@
-import type { NotificationStatus } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
-import { latest, save } from "../../ipc/settingsQueue";
+import type { NotificationStatus } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
+import { latest, save } from "@shared/ipc/settingsQueue";
 
 // The Notifications checkbox's behaviour (spec B, "notificationsToggle.ts"). Module-level so it
 // outlives the page, like the save chain. `request` numbers each ask: an answer that is not

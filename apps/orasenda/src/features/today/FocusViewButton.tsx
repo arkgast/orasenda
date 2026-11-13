@@ -1,7 +1,7 @@
 import { Icon, IconButton } from "@orasenda/ui";
+import type { DisplayInfo, FocusViewTarget } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import type { DisplayInfo, FocusViewTarget } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
 
 type Props = {
   onOpen(target: FocusViewTarget): void;

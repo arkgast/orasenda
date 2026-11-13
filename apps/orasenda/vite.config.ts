@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // The Tauri CLI sets TAURI_DEV_HOST for a physical iOS device or with `--host`; the device must reach the dev server over the network.
 const host = process.env.TAURI_DEV_HOST;
@@ -9,6 +9,8 @@ const host = process.env.TAURI_DEV_HOST;
 // Tauri expects a fixed dev port (tauri.conf.json `devUrl`) and a WebKit target (macOS 15.8.2 and later, iOS 16+).
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // The six layer aliases (@shared/*, @app/*, ...) come from tsconfig.json `paths`.
+  resolve: { tsconfigPaths: true },
   clearScreen: false,
   server: {
     port: 1420,
@@ -38,6 +40,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: ["./src/shared/test/setup.ts"],
+    // lint-fixtures/ hold forbidden imports on purpose; scripts/lint-layers.sh feeds them to Biome.
+    exclude: [...configDefaults.exclude, "lint-fixtures/**"],
   },
 });

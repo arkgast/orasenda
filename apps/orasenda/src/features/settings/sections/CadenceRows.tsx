@@ -1,5 +1,5 @@
 import { Choice, ChoiceGroup, SettingsRow, WellnessNote } from "@orasenda/ui";
-import type { PresetEntry, Settings } from "../../../ipc/bindings";
+import type { PresetEntry, Settings } from "@shared/ipc/bindings";
 import { NumberField } from "./NumberField";
 
 /** What a cadence row changes, and the save line that follows it. */

@@ -1,10 +1,4 @@
 import type { Command } from "@orasenda/ui";
-import {
-  presetChoices,
-  presetMeta,
-  presetName,
-  selectedPreset,
-} from "../../features/today/presets";
 import type {
   DisplayInfo,
   NotificationStatus,
@@ -12,7 +6,13 @@ import type {
   Settings,
   Theme,
   TimerView_Serialize,
-} from "../../ipc/bindings";
+} from "@shared/ipc/bindings";
+import {
+  presetChoices,
+  presetMeta,
+  presetName,
+  selectedPreset,
+} from "../../features/today/presets";
 import { PAGE_ORDER } from "../PagesButton";
 
 export type PaletteInput = {

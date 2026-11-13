@@ -1,5 +1,5 @@
+import { commands, type TimerView_Serialize } from "@shared/ipc/bindings";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { commands, type TimerView_Serialize } from "../../ipc/bindings";
 
 /**
  * The keep-going hint on Today. It shows while the view carries it, and then for the rest of that

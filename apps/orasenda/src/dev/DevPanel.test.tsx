@@ -1,7 +1,7 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import type { AppRef_Serialize, SpikeError, UsageSegment_Serialize } from "../ipc/bindings";
+import type { AppRef_Serialize, SpikeError, UsageSegment_Serialize } from "../shared/ipc/bindings";
 import { DevPanel } from "./DevPanel";
 import { argsOf, type Call, mockBackend, type Replies } from "./testing";
 

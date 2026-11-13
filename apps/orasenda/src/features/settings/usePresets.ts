@@ -1,6 +1,6 @@
+import type { PresetEntry, PresetError, PresetPatch } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
 import { useRef, useState } from "react";
-import type { PresetEntry, PresetError, PresetPatch } from "../../ipc/bindings";
-import { commands } from "../../ipc/bindings";
 import { BREAK_RANGE, FOCUS_RANGE } from "./customRange";
 
 /** The editor's fields, named as the patch names them. */

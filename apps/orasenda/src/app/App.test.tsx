@@ -1,11 +1,18 @@
+import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
+import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import {
+  emitPaletteOpen,
+  emitTimer,
+  IDLE,
+  mockBackend,
+  RUNNING,
+  settle,
+} from "@shared/test/fixtures";
+import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetSettingsQueueForTests } from "../ipc/settingsQueue";
-import { resetTimerQueueForTests } from "../ipc/timerQueue";
-import { emitPaletteOpen, emitTimer, IDLE, mockBackend, RUNNING, settle } from "../test/fixtures";
-import { stubPaletteDom } from "../test/paletteDom";
 import { App } from "./App";
 
 const PAGES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];

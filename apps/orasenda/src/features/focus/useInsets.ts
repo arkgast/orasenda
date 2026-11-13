@@ -1,7 +1,7 @@
+import type { FocusInsets } from "@shared/ipc/bindings";
+import { events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
-import type { FocusInsets } from "../../ipc/bindings";
-import { events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
 
 const NONE: FocusInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 

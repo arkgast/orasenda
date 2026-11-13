@@ -13,7 +13,7 @@
       "!design/system",
       "!design/reviews/05-v34",
       "!.baton",
-      "!apps/orasenda/src/ipc/bindings.ts",
+      "!apps/orasenda/src/shared/ipc/bindings.ts",
       "!packages/tokens/tokens.css",
       "!packages/tokens/tokens.json",
       "!packages/tokens/theme.css",
@@ -27,6 +27,192 @@
     {
       "includes": ["packages/ui/src/index.ts"],
       "assist": { "actions": { "source": { "organizeImports": "off" } } }
+    },
+    {
+      "includes": ["apps/orasenda/src/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/*"],
+                    "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/*"],
+                    "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/*"],
+                    "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@domain/*"],
+                    "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/shared/*.ts", "apps/orasenda/src/shared/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/*"],
+                    "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/*"],
+                    "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/*"],
+                    "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@domain/*"],
+                    "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../**"],
+                    "message": "A relative import must stay inside the shared/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/shared/*/*.ts", "apps/orasenda/src/shared/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/*"],
+                    "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/*"],
+                    "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/*"],
+                    "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@domain/*"],
+                    "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the shared/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/shared/*/*/*.ts", "apps/orasenda/src/shared/*/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@surfaces/*"],
+                    "message": "shared/ imports nothing above it; surfaces/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@app/*"],
+                    "message": "shared/ imports nothing above it; app/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@features/*"],
+                    "message": "shared/ imports nothing above it; features/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["@domain/*"],
+                    "message": "shared/ imports nothing above it; domain/ is a higher layer (ADR-021)."
+                  },
+                  {
+                    "group": ["../../../**"],
+                    "message": "A relative import must stay inside the shared/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/orasenda/src/shared/test/*.ts",
+        "apps/orasenda/src/shared/test/*.tsx",
+        "apps/orasenda/src/shared/*/*.test.ts",
+        "apps/orasenda/src/shared/*/*.test.tsx",
+        "apps/orasenda/src/shared/*/*.support.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../../**"],
+                    "message": "A relative import must stay inside the shared/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/orasenda/src/shared/test/*/*.ts", "apps/orasenda/src/shared/test/*/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../../../**"],
+                    "message": "A relative import must stay inside the shared/ folder; use an alias across layers (ADR-021)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "formatter": {

@@ -1,4 +1,4 @@
-import type { Os } from "../../ipc/bindings";
+import type { Os } from "@shared/ipc/bindings";
 
 const OS_LABELS: Readonly<Record<Exclude<Os, "other">, string>> = {
   macos: "macOS",

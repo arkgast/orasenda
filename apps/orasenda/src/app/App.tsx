@@ -1,4 +1,8 @@
 import { type NavPage, NavRail } from "@orasenda/ui";
+import { useTheme } from "@shared/hooks/useTheme";
+import { useWindowLayout } from "@shared/hooks/useWindowLayout";
+import { commands, events } from "@shared/ipc/bindings";
+import { subscribe } from "@shared/ipc/subscribe";
 import {
   type ComponentProps,
   type ComponentType,
@@ -12,15 +16,11 @@ import {
 import { flushSync } from "react-dom";
 import type { Arrival, SettingsTarget } from "../features/settings/Settings";
 import type { AboutInfo } from "../features/settings/sections/About";
-import { commands, events } from "../ipc/bindings";
-import { subscribe } from "../ipc/subscribe";
 import { PageBoundary } from "./PageBoundary";
 import { PAGE_ORDER } from "./PagesButton";
 import { Palette } from "./palette/Palette";
 import { onPaletteRequest } from "./palette/paletteRequest";
 import { useShortcuts } from "./useShortcuts";
-import { useTheme } from "./useTheme";
-import { useWindowLayout } from "./useWindowLayout";
 
 export type { SettingsTarget };
 
