@@ -79,3 +79,31 @@ fn probe_never_writes() {
         .expect("mtime");
     assert_eq!(after, mtime);
 }
+
+#[test]
+fn probe_wal_file_leaves_no_siblings() {
+    let dir = TempDir::new("probe-wal");
+    let path = dir.path().join("wal.db");
+    file_at_version(&path, 5);
+    rusqlite::Connection::open(&path)
+        .expect("opens")
+        .pragma_update(None, "journal_mode", "WAL")
+        .expect("wal");
+    for sibling in ["wal.db-wal", "wal.db-shm"] {
+        let _ = std::fs::remove_file(dir.path().join(sibling));
+    }
+    probe(&path).expect("probes");
+    assert!(!dir.path().join("wal.db-wal").exists());
+    assert!(!dir.path().join("wal.db-shm").exists());
+}
+
+#[test]
+fn probe_meta_without_key_column() {
+    let dir = TempDir::new("probe-nokey");
+    let path = dir.path().join("odd.db");
+    rusqlite::Connection::open(&path)
+        .expect("creates")
+        .execute_batch("CREATE TABLE meta (name TEXT, value TEXT)")
+        .expect("writes");
+    assert!(!probe(&path).expect("probes").has_device_id);
+}

@@ -28,9 +28,10 @@ impl Store {
         match std::fs::remove_file(partial) {
             Ok(()) => {}
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
-            Err(err) => return Err(StoreError::Sqlite(err.to_string())),
+            Err(err) => return Err(StoreError::Sqlite(format!("cannot write the copy: {err}"))),
         }
         self.with_conn(|conn| Ok(conn.execute("VACUUM INTO ?1", [target]).map(drop)?))?;
-        std::fs::rename(partial, dest).map_err(|err| StoreError::Sqlite(err.to_string()))
+        std::fs::rename(partial, dest)
+            .map_err(|err| StoreError::Sqlite(format!("cannot write the copy: {err}")))
     }
 }

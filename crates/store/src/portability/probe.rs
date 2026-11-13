@@ -33,9 +33,12 @@ impl std::error::Error for ProbeError {}
 /// Opens `path` read-only and reads `user_version` and whether `meta.device_id` exists.
 /// Never writes to the file.
 pub fn probe(path: &Path) -> Result<Probe, ProbeError> {
+    // immutable=1: a WAL file is read without creating -wal or -shm files beside it.
     let conn = Connection::open_with_flags(
-        path,
-        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        immutable_uri(path)?,
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_URI
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
     .map_err(map_error)?;
     let user_version: u32 = conn
@@ -48,14 +51,23 @@ pub fn probe(path: &Path) -> Result<Probe, ProbeError> {
             |row| row.get(0),
         )
         .map_err(map_error)?;
-    let has_device_id = has_meta
+    // A meta table without a key column is not ours; any other failure is reported, not guessed.
+    let has_key_column: bool = has_meta
+        && conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM pragma_table_info('meta') WHERE name = 'key')",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(map_error)?;
+    let has_device_id = has_key_column
         && conn
             .query_row(
                 "SELECT EXISTS (SELECT 1 FROM meta WHERE key = 'device_id')",
                 [],
                 |row| row.get(0),
             )
-            .unwrap_or(false);
+            .map_err(map_error)?;
     Ok(Probe {
         user_version,
         has_device_id,
@@ -67,4 +79,21 @@ fn map_error(err: rusqlite::Error) -> ProbeError {
         Some(ErrorCode::NotADatabase) => ProbeError::NotSqlite,
         _ => ProbeError::Io(err.to_string()),
     }
+}
+
+fn immutable_uri(path: &Path) -> Result<String, ProbeError> {
+    let text = path
+        .to_str()
+        .ok_or_else(|| ProbeError::Io("the path is not valid text".to_owned()))?;
+    let mut uri = String::from("file:");
+    for ch in text.chars() {
+        match ch {
+            '%' => uri.push_str("%25"),
+            '?' => uri.push_str("%3f"),
+            '#' => uri.push_str("%23"),
+            _ => uri.push(ch),
+        }
+    }
+    uri.push_str("?immutable=1");
+    Ok(uri)
 }
