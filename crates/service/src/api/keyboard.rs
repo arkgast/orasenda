@@ -76,6 +76,6 @@ pub enum KeyboardError {
     InUseByOrasenda,
     /// The system would not register the keys (another app may hold them). Nothing was saved.
     Unavailable,
-    /// The shortcut could not be saved. The old one still works.
+    /// The shortcut could not be saved; the settings did not change.
     Store,
 }

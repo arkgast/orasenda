@@ -5,10 +5,10 @@
 
 use std::sync::Arc;
 
-use orasenda_service::api::{
-    KeyboardError, KeyboardView, ShortcutId, ShortcutStatus, ShortcutView,
+use orasenda_service::api::{KeyboardError, KeyboardView, ShortcutId, ShortcutStatus};
+use orasenda_service::keyboard::{
+    Accelerator, KeyboardService, RegisterError, ShortcutRegistrar, shortcut_view,
 };
-use orasenda_service::keyboard::{Accelerator, KeyboardService, RegisterError, ShortcutRegistrar};
 use tauri::{Manager, State};
 
 use crate::runtime::ticker::AppHost;
@@ -45,12 +45,7 @@ pub fn state(app: &tauri::AppHandle) -> KeyboardView {
     match service(app) {
         Some(keyboard) => keyboard.view(&AppHost::new(app)),
         None => {
-            let failed = |id: ShortcutId| ShortcutView {
-                keys: Some(id.default_keys().into()),
-                display: None,
-                spoken: None,
-                status: ShortcutStatus::Failed,
-            };
+            let failed = |id: ShortcutId| shortcut_view(id.default_keys(), ShortcutStatus::Failed);
             KeyboardView {
                 start_pause: failed(ShortcutId::StartPause),
                 capture: failed(ShortcutId::Capture),

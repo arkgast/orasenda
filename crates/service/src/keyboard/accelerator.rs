@@ -39,35 +39,22 @@ const MODIFIERS: [(&str, &str, &str); 4] = [
     ("Super", "⌘", "Command"),
 ];
 
-/// Keys that are not letters, digits, F-keys or the keypad: code, glyph, spoken word.
-const NAMED_KEYS: [(&str, &str, &str); 24] = [
-    ("Space", "Space", "Space"),
-    ("Enter", "↩", "Return"),
-    ("Tab", "⇥", "Tab"),
-    ("Backspace", "⌫", "Delete"),
-    ("Delete", "⌦", "Forward delete"),
-    ("Home", "↖", "Home"),
-    ("End", "↘", "End"),
-    ("PageUp", "⇞", "Page up"),
-    ("PageDown", "⇟", "Page down"),
-    ("ArrowUp", "↑", "Up arrow"),
-    ("ArrowDown", "↓", "Down arrow"),
-    ("ArrowLeft", "←", "Left arrow"),
-    ("ArrowRight", "→", "Right arrow"),
-    ("Minus", "-", "Minus"),
-    ("Equal", "=", "Equals"),
-    ("BracketLeft", "[", "Left bracket"),
-    ("BracketRight", "]", "Right bracket"),
-    ("Backslash", "\\", "Backslash"),
-    ("Semicolon", ";", "Semicolon"),
-    ("Quote", "'", "Quote"),
-    ("Backquote", "`", "Backtick"),
-    ("Comma", ",", "Comma"),
+/// The keys beyond letters and digits, as the recorder and the Kbd key table have them: code,
+/// glyph, spoken word.
+const NAMED_KEYS: [(&str, &str, &str); 10] = [
     ("Period", ".", "Period"),
-    ("Slash", "/", "Slash"),
+    ("Comma", ",", "Comma"),
+    ("Enter", "↩", "Return"),
+    ("Space", "Space", "Space"),
+    ("Tab", "Tab", "Tab"),
+    ("Backspace", "⌫", "Delete"),
+    ("ArrowLeft", "←", "Left Arrow"),
+    ("ArrowUp", "↑", "Up Arrow"),
+    ("ArrowRight", "→", "Right Arrow"),
+    ("ArrowDown", "↓", "Down Arrow"),
 ];
 
-/// The glyph and the spoken word of a key code, or `None` for a code that is not a shortcut key.
+/// The glyph and the spoken word of a key code, or `None` for a code the recorder never emits.
 fn key_names(code: &str) -> Option<(String, String)> {
     if let Some(letter) = code.strip_prefix("Key")
         && letter.len() == 1
@@ -80,19 +67,6 @@ fn key_names(code: &str) -> Option<(String, String)> {
         && digit.as_bytes()[0].is_ascii_digit()
     {
         return Some((digit.into(), digit.into()));
-    }
-    if let Some(digit) = code.strip_prefix("Numpad")
-        && digit.len() == 1
-        && digit.as_bytes()[0].is_ascii_digit()
-    {
-        return Some((format!("{digit} (keypad)"), format!("Keypad {digit}")));
-    }
-    if let Some(number) = code.strip_prefix('F')
-        && let Ok(n) = number.parse::<u8>()
-        && (1..=20).contains(&n)
-        && number == n.to_string()
-    {
-        return Some((code.into(), code.into()));
     }
     NAMED_KEYS
         .iter()

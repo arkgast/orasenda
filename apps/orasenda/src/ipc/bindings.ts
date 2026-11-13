@@ -222,7 +222,7 @@ export type KeyboardError =
 "inUseByOrasenda" | 
 /**  The system would not register the keys (another app may hold them). Nothing was saved. */
 "unavailable" | 
-/**  The shortcut could not be saved. The old one still works. */
+/**  The shortcut could not be saved; the settings did not change. */
 "store";
 
 /**

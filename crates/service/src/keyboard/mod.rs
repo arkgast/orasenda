@@ -12,4 +12,4 @@ pub mod test_support;
 
 pub use accelerator::{Accelerator, ParseError, is_menu_shortcut};
 pub use registrar::{RegisterError, ShortcutId, ShortcutRegistrar};
-pub use service::{CaptureOpener, KeyboardService};
+pub use service::{CaptureOpener, KeyboardService, shortcut_view};

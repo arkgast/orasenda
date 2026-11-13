@@ -166,12 +166,14 @@ impl KeyboardService {
             eprintln!("keyboard: {id:?} {text} was not registered ({error})");
             return Err(KeyboardError::Unavailable);
         }
-        let saved = save(host, id, &text);
+        let (saved, changed) = save(host, id, &text);
         let presented = match saved {
             Ok(presented) => presented,
             Err(error) => {
                 eprintln!("keyboard: {id:?} could not be saved ({error})");
                 self.roll_back(&mut state, id, &settings, wanted.is_some(), old_live);
+                drop(state);
+                publish(host, changed);
                 return Err(KeyboardError::Store);
             }
         };
@@ -190,6 +192,8 @@ impl KeyboardService {
         };
         let view = view_of(&state, &presented);
         drop(state);
+        // After the state lock is released: rendering the tray reads the keyboard status.
+        publish(host, changed);
         host.emit_keyboard_changed(&view);
         host.emit_settings_changed(&presented);
         Ok(view)
@@ -211,7 +215,9 @@ impl KeyboardService {
         if !old_live {
             return;
         }
-        // Two were registered, the old one first: drop the new one, then the old, and put the old back.
+        // Two were registered and a second unregister drops the oldest: the first call dropped
+        // the old keys, this one drops the new keys, and the old keys are registered again (which
+        // can fail, and then the status is Failed).
         self.registrar.unregister(id);
         state.slots[index(id)] = self.register_one(id, saved_keys(settings, id));
     }
@@ -271,7 +277,7 @@ impl KeyboardService {
     }
 }
 
-fn shortcut_view(keys: &str, status: ShortcutStatus) -> ShortcutView {
+pub fn shortcut_view(keys: &str, status: ShortcutStatus) -> ShortcutView {
     let parsed = (keys != OFF)
         .then(|| Accelerator::parse(keys).ok())
         .flatten();
@@ -294,20 +300,25 @@ fn view_of(state: &State, settings: &Settings) -> KeyboardView {
     }
 }
 
-/// Saves the keys under the session lock, then publishes the view when the save moved the
-/// store status. Returns the presented settings.
-fn save<H: Host>(host: &H, id: ShortcutId, text: &str) -> Result<Settings, String> {
-    let service = host.service().ok_or("Orasenda is still starting")?;
-    let now_ms = host.now_ms();
-    let (result, changed) = {
-        let mut service = lock(service);
-        let before = service.store_status();
-        let result = service.save_shortcut_keys(id, text, now_ms);
-        let changed = (service.store_status() != before).then(|| service.snapshot(now_ms));
-        (result, changed)
+type Changed = Option<(u64, crate::api::TimerView)>;
+
+/// Saves the keys under the session lock. Returns the presented settings and, when the save
+/// moved the store status, the view to publish. The caller publishes it with no keyboard lock
+/// held, because rendering the tray reads the keyboard status.
+fn save<H: Host>(host: &H, id: ShortcutId, text: &str) -> (Result<Settings, String>, Changed) {
+    let Some(service) = host.service() else {
+        return (Err("Orasenda is still starting".into()), None);
     };
+    let now_ms = host.now_ms();
+    let mut service = lock(service);
+    let before = service.store_status();
+    let result = service.save_shortcut_keys(id, text, now_ms);
+    let changed = (service.store_status() != before).then(|| service.snapshot(now_ms));
+    (result.map_err(|error| error.to_string()), changed)
+}
+
+fn publish<H: Host>(host: &H, changed: Changed) {
     if let Some((seq, view)) = changed {
         scheduler::publish_view(host, seq, &view);
     }
-    result.map_err(|error| error.to_string())
 }
