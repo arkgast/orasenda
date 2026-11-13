@@ -17,6 +17,15 @@ fn keyboard(status: ShortcutStatus, keys: &str) -> KeyboardView {
     }
 }
 
+fn capture_keyboard(status: ShortcutStatus, keys: &str) -> KeyboardView {
+    KeyboardView {
+        start_pause: shortcut_view("off", ShortcutStatus::Off),
+        capture: shortcut_view(keys, status),
+        single_key: true,
+        voice_over: false,
+    }
+}
+
 fn start_item(entries: &[MenuEntry]) -> (String, Option<&'static str>) {
     entries
         .iter()
@@ -99,5 +108,92 @@ fn the_keys_survive_a_settings_or_library_change() {
     assert_eq!(
         start_item(&idle_menu(&after)).0,
         "Start focus · 25 min  ⌃⌥F"
+    );
+}
+
+fn capture_item(entries: &[MenuEntry]) -> (String, Option<&'static str>) {
+    entries
+        .iter()
+        .find_map(|entry| match entry {
+            MenuEntry::Item {
+                id,
+                label,
+                accelerator,
+                ..
+            } if id == CAPTURE => Some((label.clone(), *accelerator)),
+            _ => None,
+        })
+        .expect("every menu has a Capture item")
+}
+
+#[test]
+fn tray_capture_item_inert_text() {
+    let registered = |keys| {
+        NextSession::default().with_capture_keys(capture_keys(&capture_keyboard(
+            ShortcutStatus::Registered,
+            keys,
+        )))
+    };
+    assert_eq!(
+        capture_item(&idle_menu(&registered("Control+Alt+KeyN"))).0,
+        "Capture a thought…  ⌃⌥N"
+    );
+    // The user's keys, not a fixed pair.
+    assert_eq!(
+        capture_item(&idle_menu(&registered("Control+Shift+KeyY"))).0,
+        "Capture a thought…  ⌃⇧Y"
+    );
+    // No text when the shortcut is off or failed; never a live accelerator.
+    for (status, keys) in [
+        (ShortcutStatus::Off, "off"),
+        (ShortcutStatus::Failed, "Control+Alt+KeyN"),
+    ] {
+        let next =
+            NextSession::default().with_capture_keys(capture_keys(&capture_keyboard(status, keys)));
+        assert_eq!(
+            capture_item(&idle_menu(&next)),
+            ("Capture a thought…".into(), None)
+        );
+    }
+    assert_eq!(
+        capture_item(&idle_menu(&registered("Control+Alt+KeyN"))).1,
+        None
+    );
+    // It is in every state's menu and runs `capture_open`.
+    for view in [running(S59), paused(S59)] {
+        let entries = menu_items(
+            &view,
+            &NextSession::default(),
+            &FocusItems::default(),
+            false,
+        );
+        assert_eq!(capture_item(&entries).0, "Capture a thought…");
+    }
+    assert_eq!(menu_command(CAPTURE), Some(MenuCommand::Capture));
+}
+
+#[test]
+fn keyboard_changed_follows_the_capture_keys_too() {
+    let (tray, calls) = tray_with(Recorder::default());
+    tray.keyboard_changed(&capture_keyboard(
+        ShortcutStatus::Registered,
+        "Control+Alt+KeyN",
+    ));
+    let next = NextSession::default().with_capture_keys(Some("⌃⌥N".to_string()));
+    assert_eq!(calls.take(), [Call::Menu(idle_menu(&next), None)]);
+    tray.keyboard_changed(&capture_keyboard(
+        ShortcutStatus::Registered,
+        "Control+Alt+KeyN",
+    ));
+    assert_eq!(calls.take(), []);
+    tray.keyboard_changed(&capture_keyboard(ShortcutStatus::Off, "off"));
+    assert_eq!(
+        calls.take(),
+        [Call::Menu(idle_menu(&NextSession::default()), None)]
+    );
+    let after = next.with_settings(&crate::ipc::Settings::default());
+    assert_eq!(
+        capture_item(&idle_menu(&after)).0,
+        "Capture a thought…  ⌃⌥N"
     );
 }

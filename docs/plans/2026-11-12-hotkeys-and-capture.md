@@ -181,7 +181,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - `docs/DECISIONS.md` (the ADR-016 `capture` line).
 - Interfaces:
   - Consumes: `capture_note` from F3 (#389); the `CaptureOpener` hook from F4 (#388), wired to `capture_open`; the inert-text helper from F5 (#390).
-  - Produces: `capture_open() -> Result<(), WindowError>` and `capture_close()`.
+  - Produces: `capture_open() -> Result<(), FocusViewError>` (the existing IPC error for window commands) and `capture_close()`.
 - Acceptance:
   - [ ] **Step 0, a stop gate:** a test page in the real panel proves typing, IME composition (Japanese input) and focus in the text area while another app stays active. If it fails, stop and report; don't build around it.
   - [ ] ⌃⌥N, the tray item and ⌘K open the panel on the display under the pointer, upper third, at `panel-width`. A second open focuses its text area.

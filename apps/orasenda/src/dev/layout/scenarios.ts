@@ -6,6 +6,7 @@ import type {
   NoteView,
   PresetEntry,
   Settings,
+  ShortcutView_Serialize,
   TimerView_Serialize,
 } from "../../ipc/bindings";
 
@@ -166,21 +167,26 @@ const SETTINGS: Settings = {
   singleKey: true,
 };
 
+const shortcut = (keys: string, display: string, spoken: string): ShortcutView_Serialize => ({
+  keys,
+  display,
+  spoken,
+  status: "registered",
+});
+
 const KEYBOARD: KeyboardView_Serialize = {
-  startPause: {
-    keys: "Control+Alt+KeyF",
-    display: "⌃⌥F",
-    spoken: "Control-Option-F",
-    status: "registered",
-  },
-  capture: {
-    keys: "Control+Alt+KeyN",
-    display: "⌃⌥N",
-    spoken: "Control-Option-N",
-    status: "registered",
-  },
+  startPause: shortcut("Control+Alt+KeyF", "⌃⌥F", "Control-Option-F"),
+  capture: shortcut("Control+Alt+KeyN", "⌃⌥N", "Control-Option-N"),
   singleKey: true,
   voiceOver: false,
+};
+
+const NOTE: NoteView = {
+  id: "note-1",
+  text: "Call the dentist",
+  kind: "internal",
+  createdAt: "14:32",
+  createdAtLabel: "Today at 14:32",
 };
 
 const ENDED: MilestoneEvent_Serialize = {
@@ -228,6 +234,10 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     main_show: () => null,
     preset_select: () => null,
     native_menu_popup: () => null,
+    // The capture panel and the palette's Capture row.
+    capture_open: () => null,
+    capture_close: () => null,
+    capture_note: () => NOTE,
     ...replies,
   };
   return (cmd) => {
@@ -307,6 +317,9 @@ const SCENARIOS: Record<string, Handler> = {
   deepRunning: backend({ view: DEEP_RUNNING }),
   viewUnreadable: backend({ replies: { timer_view: rejects("store", "no timer") } }),
   presetSelectError: backend({ replies: { preset_select: rejects("store", "disk full") } }),
+  // The capture panel: a save that fails (the text stays), and one that never answers.
+  captureError: backend({ replies: { capture_note: rejects("store", "disk full") } }),
+  captureSaving: backend({ replies: { capture_note: () => new Promise(() => {}) } }),
   closeError: backend({
     view: RUNNING,
     replies: { focus_view_close: rejects("unavailable", "no window") },

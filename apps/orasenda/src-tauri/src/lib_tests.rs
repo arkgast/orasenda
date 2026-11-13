@@ -4,6 +4,8 @@ use tauri_specta::{BuilderConfiguration, Event, LanguageExt};
 
 use super::*;
 
+mod capture;
+
 /// A tauri-specta "language" that records the registered command names instead of
 /// writing a file: the builder's configuration is only reachable through an exporter.
 struct CommandNames<'a>(&'a mut Vec<String>);
@@ -228,10 +230,10 @@ fn main_capability_exact() {
             "allow-keyboard-state",
             "allow-keyboard-set-shortcut",
             "allow-keyboard-restore-default",
-            "allow-capture-note",
             "allow-inbox-list",
             "allow-inbox-remove",
             "allow-inbox-restore",
+            "allow-capture-open",
         ],
     );
     let (_, main) = capability("main.json");
@@ -240,6 +242,8 @@ fn main_capability_exact() {
         "allow-main-show",
         "allow-timer-view",
         "allow-preset-select",
+        "allow-capture-note",
+        "allow-capture-close",
     ] {
         assert!(!main.iter().any(|p| p == withheld), "main has {withheld}");
     }
@@ -265,6 +269,7 @@ fn focus_capability_exact_with_cadence() {
             "allow-presets-list",
             "allow-preset-select",
             "allow-focus-view-close",
+            "allow-capture-open",
         ],
     );
     let (_, focus) = capability("focus.json");
@@ -302,6 +307,7 @@ fn floater_capability_exact_with_cadence() {
             "allow-native-menu-popup",
             "allow-focus-view-close",
             "allow-main-show",
+            "allow-capture-open",
         ],
     );
     let (_, floater) = capability("floater.json");
@@ -365,6 +371,7 @@ fn every_manifest_command_is_granted_somewhere() {
         "main.json",
         "focus.json",
         "floater.json",
+        "capture.json",
         "dev.json",
         "overlay.json",
     ]
@@ -402,6 +409,9 @@ fn export_bindings() {
         "presetsList: () => __TAURI_INVOKE<PresetEntry[]>(\"presets_list\")",
         "nativeMenuPopup",
         "captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>",
+        "captureOpen: () => typedError<null, FocusViewError>",
+        "captureClose: () => __TAURI_INVOKE<void>(\"capture_close\")",
+        "captureFocus: makeEvent<",
         "inboxList: () => typedError<NoteView[], InboxError>",
         "inboxRemove: (id: string) => typedError<null, InboxError>",
         "inboxRestore: (id: string) => typedError<null, InboxError>",

@@ -62,6 +62,20 @@ pub fn observe_voice_over(app: &tauri::AppHandle) {
     });
 }
 
+/// Points the capture key at the capture panel. Called once, before the shortcuts register.
+pub fn wire_capture_opener(app: &tauri::AppHandle) {
+    let Some(keyboard) = app.try_state::<KeyboardService>() else {
+        return;
+    };
+    let app = app.clone();
+    // The press arrives on a blocking thread, where a window may be created.
+    keyboard.set_capture_opener(Arc::new(move || {
+        if let Err(error) = crate::windows::open_capture(&app) {
+            eprintln!("keyboard: the capture panel didn't open: {}", error.message);
+        }
+    }));
+}
+
 /// Registers the saved shortcuts. Called once the store is open; it writes nothing.
 pub fn register_saved(app: &tauri::AppHandle) {
     if let Some(keyboard) = app.try_state::<KeyboardService>() {

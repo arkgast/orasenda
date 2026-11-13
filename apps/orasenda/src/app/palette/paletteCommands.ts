@@ -21,6 +21,8 @@ export type PaletteInput = {
   presets: PresetEntry[];
   displays: DisplayInfo[];
   notifications: NotificationStatus;
+  /** The capture shortcut's keys as glyphs ("⌃⌥N"), only while it is registered. */
+  captureKeys?: string | null;
 };
 
 const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
@@ -51,6 +53,14 @@ function sessionCommands(input: PaletteInput): Command[] {
   // The intent names a focus: not in a break, not while idle (Today's field opens the same way).
   if (view.phase === "focus") rows.push({ id: "intent", label: "Set intent" });
   return rows;
+}
+
+function captureCommand(input: PaletteInput): Command {
+  return {
+    id: "capture",
+    label: "Capture a thought",
+    ...(input.captureKeys ? { shortcut: input.captureKeys } : {}),
+  };
 }
 
 function focusViewCommands(displays: DisplayInfo[]): Command[] {
@@ -108,6 +118,7 @@ export function paletteCommands(input: PaletteInput): Command[] {
   }));
   return [
     ...sessionCommands(input),
+    captureCommand(input),
     ...focusViewCommands(input.displays),
     ...settingsCommands(input),
     ...pages,

@@ -6,6 +6,8 @@ export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   label: string;
   helper?: string;
   error?: string;
+  /** False takes the vertical resize handle away, for a field that sits in a fixed-size window. */
+  resizable?: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ export function TextArea({
   id,
   className,
   rows = 4,
+  resizable = true,
   "aria-describedby": describedByProp,
   "aria-invalid": ariaInvalid,
   ...rest
@@ -42,7 +45,8 @@ export function TextArea({
         aria-invalid={error ? true : ariaInvalid}
         aria-describedby={describedBy}
         className={cn(
-          "block min-h-hit-min min-w-0 w-full resize-y rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
+          "block min-h-hit-min min-w-0 w-full rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 font-sans text-body text-ink",
+          resizable ? "resize-y" : "resize-none",
           "placeholder:text-ink-muted hover:border-focus",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
           "aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-line-strong",

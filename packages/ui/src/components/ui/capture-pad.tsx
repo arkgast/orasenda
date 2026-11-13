@@ -1,6 +1,7 @@
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { type JSX, useId, useRef, useState } from "react";
 import { isTopmostLayer } from "../../lib/layer";
+import { cn } from "../../lib/utils";
 import { Button } from "./button";
 import { Choice, ChoiceGroup } from "./choice";
 import { TextArea } from "./text-area";
@@ -15,6 +16,10 @@ export interface CapturePadProps {
   onKindChange: (kind: InterruptionKind) => void;
   onSave: (note: { text: string; kind: InterruptionKind }) => void | Promise<void>;
   onClose: () => void;
+  /** Words for a rejected save, from what `onSave` rejected with. Empty or absent keeps the default line. */
+  rejectionLine?: (reason: unknown) => string | undefined;
+  /** The pad is the whole window: no inset, border, radius or shadow, anchored to the top, fixed-size field. */
+  panel?: boolean;
 }
 
 const KINDS: { kind: InterruptionKind; label: string; line: string }[] = [
@@ -36,6 +41,8 @@ export function CapturePad({
   onKindChange,
   onSave,
   onClose,
+  rejectionLine,
+  panel = false,
 }: CapturePadProps): JSX.Element {
   const open = openProp !== false;
   const [busy, setBusy] = useState(false);
@@ -63,10 +70,10 @@ export function CapturePad({
           setBusy(false);
           onClose();
         },
-        () => {
+        (reason: unknown) => {
           saving.current = false;
           setBusy(false);
-          setError("Your note is still here. Try saving again.");
+          setError(rejectionLine?.(reason) || "Your note is still here. Try saving again.");
         },
       );
   }
@@ -80,14 +87,20 @@ export function CapturePad({
           <DialogPrimitive.Overlay
             data-slot="dialog-overlay"
             data-scrim="false"
-            className="fixed inset-0 z-overlay grid place-items-center bg-clear p-3"
+            className={cn(
+              "fixed inset-0 z-overlay grid bg-clear",
+              panel ? "place-items-stretch" : "place-items-center p-3",
+            )}
           >
             <DialogPrimitive.Content
               aria-modal="true"
               data-slot="dialog-content"
               data-capture-pad="true"
               ref={contentRef}
-              className="flex max-h-full w-full max-w-panel-width flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay"
+              className={cn(
+                "flex max-h-full w-full max-w-panel-width flex-col gap-5 overflow-auto bg-surface-overlay p-5 text-ink",
+                panel ? "self-start" : "rounded-lg border border-line-strong shadow-overlay",
+              )}
               onOpenAutoFocus={(event) => {
                 const active = document.activeElement as HTMLElement | null;
                 opener.current = active && active !== document.body ? active : null;
@@ -137,6 +150,7 @@ export function CapturePad({
                   // Written as an escape: the copy guard reads the return arrow as an emoji.
                   helper={"Esc saves to Inbox and closes. ⌘\u21a9 saves too."}
                   error={error}
+                  resizable={!panel}
                 />
                 <ChoiceGroup legend="Interruption source" disabled={busy}>
                   {KINDS.map((k) => (

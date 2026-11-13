@@ -39,6 +39,7 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(latest());
   const [status, setStatus] = useState<string | undefined>();
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
+  const [captureKeys, setCaptureKeys] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,15 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         if (!cancelled) setDisplays(list);
       },
       (error: unknown) => console.error("displays_list failed", error),
+    );
+    commands.keyboardState().then(
+      (keyboard) => {
+        // The current keys, only while the shortcut works: a failed one shows no text.
+        if (!cancelled && keyboard.capture.status === "registered") {
+          setCaptureKeys(keyboard.capture.display);
+        }
+      },
+      (error: unknown) => console.error("keyboard_state failed", error),
     );
     commands.settingsGet().then(
       (saved) => {
@@ -79,8 +89,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         presets,
         displays,
         notifications: view?.notifications ?? "unavailable",
+        captureKeys,
       }),
-    [view, settings, presets, displays],
+    [view, settings, presets, displays, captureKeys],
   );
 
   const change = (patch: Partial<Settings>): Promise<boolean> => {
@@ -113,6 +124,8 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         // restored focus would blur the new field and close it at once.
         setTimeout(requestIntentField, 0);
         return;
+      case "capture":
+        return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));
       case "fullScreen":
         return openFocusView({ kind: "fullScreen", displayId: arg }).then(
           report("open the Focus view"),

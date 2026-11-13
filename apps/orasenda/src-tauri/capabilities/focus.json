@@ -17,6 +17,7 @@
     "allow-settings-get",
     "allow-presets-list",
     "allow-preset-select",
-    "allow-focus-view-close"
+    "allow-focus-view-close",
+    "allow-capture-open"
   ]
 }

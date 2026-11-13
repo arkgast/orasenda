@@ -12,7 +12,7 @@ fn menu(view: &TimerView) -> Vec<String> {
     let entries = menu_items(view, &NextSession::default(), &FocusItems::default(), false);
     entries
         .iter()
-        .take_while(|entry| !matches!(entry, MenuEntry::Item { label, .. } if label == SHOW))
+        .take_while(|entry| !matches!(entry, MenuEntry::Item { id, .. } if id == CAPTURE))
         .map(|entry| match entry {
             MenuEntry::Item { label, .. } => label.clone(),
             MenuEntry::Header => "<header>".into(),

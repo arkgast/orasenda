@@ -30,6 +30,8 @@ const NAMES = [
   "capLine",
   "intentSet",
   "intentPaused",
+  "captureError",
+  "captureSaving",
 ];
 
 const NEW_COMMANDS = [
@@ -40,6 +42,10 @@ const NEW_COMMANDS = [
   "main_show",
   "preset_select",
   "native_menu_popup",
+  "keyboard_state",
+  "capture_open",
+  "capture_close",
+  "capture_note",
 ];
 
 test("scenarios_name_every_state_of_the_issue", () => {
@@ -60,7 +66,9 @@ test("scenarios_answer_core_commands", async () => {
         ),
         new Promise((done) => setTimeout(() => done("hung"), 50)),
       ]);
-      expect(["answered", "failed"], `${name} ${cmd}`).toContain(outcome);
+      // captureSaving holds capture_note open on purpose: the panel's saving state.
+      const holds = name === "captureSaving" && cmd === "capture_note";
+      expect(holds ? ["hung"] : ["answered", "failed"], `${name} ${cmd}`).toContain(outcome);
     }
   }
 });

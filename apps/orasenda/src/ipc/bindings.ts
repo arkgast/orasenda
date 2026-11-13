@@ -76,6 +76,10 @@ export const commands = {
 	keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id })),
 	/**  Saves a note to the Inbox; answers it. */
 	captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>(__TAURI_INVOKE("capture_note", { note })),
+	/**  Opens the capture panel on the display under the pointer, or focuses its text area. */
+	captureOpen: () => typedError<null, FocusViewError>(__TAURI_INVOKE("capture_open")),
+	/**  Closes the capture panel (its pad calls this after a save, or on Esc with nothing typed). */
+	captureClose: () => __TAURI_INVOKE<void>("capture_close"),
 	/**  The live notes, newest first. */
 	inboxList: () => typedError<NoteView[], InboxError>(__TAURI_INVOKE("inbox_list")),
 	/**  Removes a note (it can be brought back). */
@@ -100,6 +104,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	captureFocus: makeEvent<CaptureFocus, CaptureFocus>("capture-focus"),
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
 	inboxChanged: makeEvent<NoteView[], NoteView[]>("inbox-changed"),
@@ -163,6 +168,9 @@ export type CaptureError =
 "tooLong" | 
 /**  The store is unavailable or the write failed. */
 "store";
+
+/**  Sent to the capture panel when it is opened again: its page focuses the text area. */
+export type CaptureFocus = null;
 
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
 export type ClockTick = ClockTick_Serialize | ClockTick_Deserialize;

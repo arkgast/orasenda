@@ -20,6 +20,7 @@ use objc2::runtime::AnyObject;
 use objc2_app_kit::NSWindow;
 use orasenda_core::platform::PlatformError;
 
+mod capture;
 mod display_uuid;
 mod displays;
 mod floater;
@@ -28,6 +29,10 @@ mod keys;
 #[cfg(test)]
 mod tests;
 
+pub use capture::{
+    CaptureWindowSpec, announce, capture_frame, capture_window_spec, configure_capture, display_at,
+    place_on_pointer_display,
+};
 pub use displays::{
     Display, Rect, ScreenObserver, display_key, displays, frame_of, observe_screen_changes,
     set_frame, to_appkit, to_top_left,

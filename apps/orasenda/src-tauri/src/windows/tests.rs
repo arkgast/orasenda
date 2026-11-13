@@ -12,6 +12,7 @@ use super::focus::{self, focus_label, focus_window_spec, insets_of, open_focus_o
 use super::frames::{DEBOUNCE_MS, Trailing};
 use super::{FLOATER, Ops, Screen, WindowSpec};
 use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
+mod capture;
 mod displays;
 const NO_INSETS: FocusInsets = FocusInsets {
     top: 0,
@@ -126,6 +127,18 @@ impl Ops for Fake {
     }
     fn make_floater(&self, label: &str) -> Result<(), FocusViewError> {
         self.step(&format!("make_floater {label}"))
+    }
+    fn make_capture(&self, label: &str) -> Result<(), FocusViewError> {
+        self.step(&format!("make_capture {label}"))
+    }
+    fn place_at_pointer(&self, label: &str, size: (u32, u32)) -> Result<(), FocusViewError> {
+        self.step(&format!("place_at_pointer {label} {}x{}", size.0, size.1))
+    }
+    fn announce(&self, text: &str) -> Result<(), FocusViewError> {
+        self.step(&format!("announce {text}"))
+    }
+    fn emit_capture_focus(&self) {
+        self.calls.borrow_mut().push("capture_focus".to_owned());
     }
     fn place(&self, label: &str, display_id: &str, f: Frame) -> Result<(), FocusViewError> {
         self.step(&format!(

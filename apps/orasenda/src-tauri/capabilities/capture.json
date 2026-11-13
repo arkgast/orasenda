@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "capture",
+  "description": "What the capture panel's webview may do: save a note to the Inbox, close itself, read the settings (the theme) and listen to events. It cannot read or remove notes.",
+  "windows": ["capture"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-capture-note",
+    "allow-capture-close",
+    "allow-settings-get"
+  ]
+}

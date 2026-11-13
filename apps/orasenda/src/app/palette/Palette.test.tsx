@@ -6,6 +6,7 @@ import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import {
   argsOf,
   GENTLE,
+  KEYBOARD,
   mockBackend,
   PAUSED,
   RUNNING,
@@ -56,6 +57,39 @@ test("palette_row_runs_focus_view_and_navigation", async () => {
   const again = await open();
   fireEvent.click(screen.getByRole("option", { name: /Go to Settings/ }));
   expect(again.onNavigate).toHaveBeenCalledWith("settings");
+});
+
+test("palette_capture_row_opens_the_panel_and_shows_the_current_keys", async () => {
+  const { backend, onClose } = await open();
+  const row = screen.getByRole("option", { name: /Capture a thought/ });
+  expect(row).toHaveTextContent("⌃⌥N");
+  fireEvent.click(row);
+  await settle();
+  expect(argsOf(backend.calls, "capture_open")).toHaveLength(1);
+  expect(onClose).toHaveBeenCalled();
+});
+
+test("palette_capture_row_without_keys_when_the_shortcut_failed", async () => {
+  await open({
+    keyboard_state: () => ({
+      ...KEYBOARD,
+      capture: { keys: "Control+Alt+KeyN", display: "⌃⌥N", spoken: null, status: "failed" },
+    }),
+  });
+  expect(screen.getByRole("option", { name: /Capture a thought/ })).not.toHaveTextContent("⌃⌥N");
+});
+
+test("palette_capture_row_failure_is_shown_and_keeps_the_palette", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { onClose } = await open({
+    capture_open: () => {
+      throw { kind: "unavailable", message: "no" };
+    },
+  });
+  fireEvent.click(screen.getByRole("option", { name: /Capture a thought/ }));
+  await settle();
+  expect(screen.getByText("Couldn't open the capture pad. Please try again.")).toBeInTheDocument();
+  expect(onClose).not.toHaveBeenCalled();
 });
 
 test("palette_theme_and_preset_rows_save_settings", async () => {
