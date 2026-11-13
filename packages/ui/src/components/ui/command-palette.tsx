@@ -37,7 +37,7 @@ export interface CommandPaletteProps {
   open?: boolean;
   commands: CommandEntry[];
   /** Return `false` (or a promise of it) to keep the palette open, e.g. when the command failed. Anything else closes it. */
-  onSelect: (id: string) => unknown;
+  onSelect: (id: string) => boolean | undefined | Promise<boolean | undefined>;
   /** A plain status line under the field (neutral tone, announced once), e.g. "Couldn't pause. Please try again." */
   status?: string;
   /** Called with the field's text on every change; the host clears a stale `status` here. */
@@ -88,12 +88,18 @@ export function CommandPalette({
     if (row) input.setAttribute("aria-activedescendant", row.id);
     else input.removeAttribute("aria-activedescendant");
   }, [selected]);
+  const newest = useRef(0);
   const choose = (id: string) => {
-    const result: unknown = onSelect(id);
+    const mine = ++newest.current;
+    const result = onSelect(id);
     if (result instanceof Promise) {
-      void result.then((keep) => {
-        if (keep !== false) onClose();
-      });
+      result.then(
+        (keep) => {
+          // Only the newest choice decides: an older answer arriving late is ignored.
+          if (mine === newest.current && keep !== false) onClose();
+        },
+        (error: unknown) => console.error("command failed", error),
+      );
     } else if (result !== false) onClose();
   };
   return (
@@ -174,7 +180,7 @@ export function CommandPalette({
                   <IconButton label="Close" icon={<Icon name="close" />} onClick={onClose} />
                 ) : null}
               </div>
-              <p role="status" className="m-0 text-body-sm text-ink-muted empty:hidden">
+              <p role="status" className="m-0 text-body-sm text-ink-muted empty:sr-only">
                 {status ?? (results.length ? null : "No matching commands. Try a different word.")}
               </p>
               <Command.List

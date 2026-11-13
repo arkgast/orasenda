@@ -29,20 +29,6 @@ async function attempt<T>(name: string, promise: Promise<T>): Promise<boolean> {
   return false;
 }
 
-/** A settings change is queued, not awaited: it counts as done unless starting it throws. */
-function settled(
-  report: (worked: boolean) => Promise<boolean>,
-  change: () => void,
-): Promise<boolean> {
-  try {
-    change();
-  } catch (error) {
-    console.error("settings change failed", error);
-    return report(false);
-  }
-  return Promise.resolve(true);
-}
-
 /**
  * The ⌘K palette (main window). Mounted fresh per opening, so it reads its own snapshot of the
  * timer, settings, presets and displays; each row runs the command its twin button runs.
@@ -134,15 +120,19 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
       case "floater":
         return openFocusView({ kind: "floater" }).then(report("open the Focus view"));
       case "preset":
-        return settled(report("change the preset"), () => change({ presetId: arg }));
+        // Settings changes are queued and saved after the palette closes (settingsQueue rolls a
+        // refused save back and logs it), so these rows close at once and show no failure line.
+        change({ presetId: arg });
+        return;
       case "theme":
-        return settled(report("change the theme"), () => change({ theme: arg as Theme }));
+        change({ theme: arg as Theme });
+        return;
       case "notifications": {
         if (!settings || !view) return;
         const on = settings.notifySessionEnd;
-        return settled(report(`turn ${on ? "off" : "on"} notifications`), () =>
-          on ? untick() : tick(view.notifications),
-        );
+        if (on) untick();
+        else tick(view.notifications);
+        return;
       }
       case "page": {
         const page = PAGE_ORDER.find(({ id: pageId }) => pageId === arg);

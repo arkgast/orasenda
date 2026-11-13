@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { argsOf, mockBackend, PAUSED, RUNNING, settle } from "../../test/fixtures";
+import { argsOf, GENTLE, mockBackend, PAUSED, RUNNING, settle } from "../../test/fixtures";
 import { stubPaletteDom } from "../../test/paletteDom";
 import { Palette } from "./Palette";
 
@@ -75,6 +75,14 @@ test("palette_set_intent_opens_field", async () => {
 const FAIL = () => {
   throw new Error("boom");
 };
+// A plain object is what typedError turns into a { status: "error" } result.
+const REFUSE = () => {
+  throw { kind: "unavailable" };
+};
+const FAILURES = [
+  ["throws", FAIL],
+  ["refuses", REFUSE],
+] as const;
 
 test.each([
   ["Start focus", {}, "timer_start", { request: { quick: false } }],
@@ -82,7 +90,26 @@ test.each([
   ["Resume session", { timer_view: () => PAUSED }, "timer_resume", undefined],
   ["End session", { timer_view: () => RUNNING }, "timer_stop", undefined],
   ["Floating timer", {}, "focus_view_open", { target: { kind: "floater" } }],
-  ["Use preset: Gentle", {}, "settings_set", undefined],
+  ["Just 2 minutes", {}, "timer_start", { request: { quick: true } }],
+  [
+    "Full screen on Built-in",
+    {},
+    "focus_view_open",
+    { target: { kind: "fullScreen", displayId: "1" } },
+  ],
+  [
+    "Use preset: Gentle",
+    {},
+    "settings_set",
+    { settings: expect.objectContaining({ presetId: GENTLE }) },
+  ],
+  ["Theme: Dark", {}, "settings_set", { settings: expect.objectContaining({ theme: "dark" }) }],
+  [
+    "Turn notifications off",
+    {},
+    "settings_set",
+    { settings: expect.objectContaining({ notifySessionEnd: false }) },
+  ],
 ])("palette_row_calls_its_command: %s", async (label, replies, cmd, args) => {
   const { backend } = await open(replies);
   fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
@@ -113,24 +140,37 @@ test.each([
     "Couldn't end the session. Please try again.",
   ],
 ])("failed_row_keeps_palette_open_with_line: %s", async (label, cmd, replies, line) => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  const { onClose } = await open({ ...replies, [cmd]: FAIL });
-  fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
-  await settle();
-  expect(onClose).not.toHaveBeenCalled();
-  expect(screen.getByRole("status")).toHaveTextContent(line);
-  expect(console.error).toHaveBeenCalled();
+  for (const [, fail] of FAILURES) {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { onClose } = await open({ ...replies, [cmd]: fail });
+    fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+    await settle();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent(line);
+    expect(console.error).toHaveBeenCalled();
+    cleanup();
+  }
 });
 
-test("focus_view_open_false_shows_line", async () => {
+test.each(FAILURES)("focus_view_open_failure_shows_line: %s", async (_name, fail) => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  const { onClose } = await open({ focus_view_open: FAIL });
+  const { onClose } = await open({ focus_view_open: fail });
   fireEvent.click(screen.getByRole("option", { name: /Floating timer/ }));
   await settle();
   expect(onClose).not.toHaveBeenCalled();
   expect(screen.getByRole("status")).toHaveTextContent(
     "Couldn't open the Focus view. Please try again.",
   );
+});
+
+test("line_clears_when_another_row_is_chosen", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await open({ timer_start: FAIL });
+  fireEvent.click(screen.getByRole("option", { name: /Start focus/ }));
+  await settle();
+  expect(screen.getByRole("status")).toHaveTextContent("Couldn't");
+  fireEvent.click(screen.getByRole("option", { name: /Go to Settings/ }));
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
 test("line_clears_on_query_change", async () => {
