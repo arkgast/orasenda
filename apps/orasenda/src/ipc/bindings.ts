@@ -27,6 +27,8 @@ export const commands = {
 	timerTakeBreak: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_take_break")),
 	/**  Today showed `hint`: remember it for good and return the view without it. */
 	hintShown: (hint: Hint) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("hint_shown", { hint })),
+	/**  Today showed `tip`, or the person pressed Got it: remember it and return the view. */
+	tipSeen: (tip: TipId, how: TipSeen) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("tip_seen", { tip, how })),
 	/**  The saved settings. */
 	settingsGet: () => __TAURI_INVOKE<Settings>("settings_get"),
 	/**  Saves the settings. */
@@ -738,6 +740,10 @@ export type TimerView_Deserialize = {
 	capLine?: string | null,
 	/**  A one-time hint for the status line; `None` once shown and while none is due. */
 	hint?: Hint | null,
+	/**  A one-time tip for the status row, after a session end; `None` once seen and while none is due. */
+	tip?: TipId | null,
+	/**  The first-run welcome line shows: no session was ever started on this device. */
+	welcome: boolean,
 };
 
 /**  Everything the webview shows about the timer, emitted as `timer-tick`. */
@@ -784,7 +790,32 @@ export type TimerView_Serialize = {
 	capLine: string | null,
 	/**  A one-time hint for the status line; `None` once shown and while none is due. */
 	hint: Hint | null,
+	/**  A one-time tip for the status row, after a session end; `None` once seen and while none is due. */
+	tip: TipId | null,
+	/**  The first-run welcome line shows: no session was ever started on this device. */
+	welcome: boolean,
 };
+
+/**
+ *  A tip the timer view can carry. The copy lives in the webview; the variant follows the
+ *  shortcut's status, VoiceOver and the single-key setting.
+ */
+export type TipId = 
+/**  After the first session end: the start or pause shortcut works from anywhere. */
+"globalShortcut" | 
+/**  The same, when the shortcut is off, failed or VoiceOver is on: the menu bar item does. */
+"globalShortcutMenu" | 
+/**  After the second session end, with single keys off: the Focus view's own shortcuts. */
+"focusView" | 
+/**  The same, with single keys on: the F key. */
+"focusViewKeys";
+
+/**  How Today saw a tip. */
+export type TipSeen = 
+/**  The person pressed Got it: seen for good. */
+"gotIt" | 
+/**  The tip was rendered: the first showing is counted, the second one marks it seen. */
+"shown";
 
 /**  A stretch of time one app was in front. `end_ms` is `None` while open. */
 export type UsageSegment = UsageSegment_Serialize | UsageSegment_Deserialize;

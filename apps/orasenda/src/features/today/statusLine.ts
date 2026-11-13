@@ -5,6 +5,7 @@ import type {
   StoreStatus,
   SuggestionView_Serialize,
   TimerCommandError,
+  TipId,
 } from "../../ipc/bindings";
 
 /** What the cadence part of the timer view says (E: warning, break, offer, auto step, rest line). */
@@ -21,6 +22,9 @@ export type CadenceInput = {
   checkIn: string | null;
   capLine: string | null;
 };
+
+/** A one-time tip as Today shows it: the copy, and its spoken form for VoiceOver. */
+export type TipInput = { id: TipId; text: string; spoken: string };
 
 export type StatusInput = {
   /** `timer_start` answered an error that is not a race. */
@@ -50,6 +54,10 @@ export type StatusInput = {
   hint?: boolean;
   /** The side-by-side strip: the hint's text takes three lines beside its button, so it waits. */
   strip?: boolean;
+  /** A tip is due. It shares the row with "Session ended." and otherwise waits for an empty row. */
+  tip?: TipInput | null;
+  /** The first-run welcome line: it waits behind every other line and the intent button. */
+  welcome?: boolean;
 };
 
 export type StatusActionId =
@@ -61,6 +69,7 @@ export type StatusActionId =
   | "keepGoing"
   | "stopHere"
   | "openSettings"
+  | "gotIt"
   | "intent";
 
 export type StatusAction = {
@@ -76,6 +85,10 @@ export type StatusLine = {
   tone: "neutral" | "attention" | "warning" | "rest";
   /** At most two: the first is the notice's own action, the second a sibling button. */
   actions: StatusAction[];
+  /** What a screen reader says when it differs from `text` (the keys as words). */
+  spoken?: string;
+  /** The tip this line carries, so Today can report it once it is on screen. */
+  tipId?: TipId;
 };
 
 /** A rank 2 line and the store line share a row only up to this many characters (InlineNotice README). */
@@ -126,6 +139,9 @@ const OPEN_SETTINGS: StatusAction = {
   name: "Open settings for Timer",
   variant: "ghost",
 };
+const GOT_IT: StatusAction = { id: "gotIt", label: "Got it", variant: "ghost" };
+const WELCOME_TEXT = "Welcome. Nothing to set up.";
+const SESSION_ENDED = "Session ended.";
 const HINT_TEXT = "You can keep going automatically in Settings › Timer.";
 const SKIP_BREAK: StatusAction = { id: "skipBreak", label: "Skip break", variant: "ghost" };
 
@@ -134,6 +150,18 @@ const line = (
   tone: StatusLine["tone"],
   actions: StatusAction[] = [],
 ): StatusLine => ({ text, tone, actions });
+
+/** A tip line: "Session ended." first when it is joined to that, then the tip and its Got it. */
+function tipLine(tip: TipInput, before = ""): StatusLine {
+  const prefix = before ? `${before} ` : "";
+  return {
+    text: `${prefix}${tip.text}`,
+    tone: "neutral",
+    actions: [GOT_IT],
+    spoken: `${prefix}${tip.spoken}`,
+    tipId: tip.id,
+  };
+}
 
 /** The suggestion with its label as the first word: "Optional: look at something far away." */
 function suggestionText(suggestion: SuggestionView_Serialize): string {
@@ -211,6 +239,8 @@ export function statusLine(input: StatusInput): StatusLine | null {
   }
   const store = input.store === "ok" ? null : STORE_LINES[input.store];
   if (input.notice) {
+    if (input.tip && input.notice === SESSION_ENDED && !store)
+      return tipLine(input.tip, SESSION_ENDED);
     const joined = store ? `${input.notice} ${store}` : null;
     return line(joined && joined.length <= JOIN_LIMIT ? joined : input.notice, "neutral");
   }
@@ -228,5 +258,7 @@ export function statusLine(input: StatusInput): StatusLine | null {
   // away (intentEvents). In the strip it waits (the text would wrap past two lines).
   if (input.hint && !input.strip) return line(HINT_TEXT, "neutral", [OPEN_SETTINGS]);
   if (intent) return line("", "neutral", [intent]);
-  return cadence?.capLine ? line(cadence.capLine, "rest") : null;
+  if (input.welcome) return line(WELCOME_TEXT, "neutral");
+  if (cadence?.capLine) return line(cadence.capLine, "rest");
+  return input.tip ? tipLine(input.tip) : null;
 }

@@ -30,7 +30,14 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
         actionName={first?.name}
         onAction={first ? () => onAction(first.id) : undefined}
       >
-        {line?.text}
+        {line?.spoken ? (
+          <>
+            <span aria-hidden="true">{line.text}</span>
+            <span className="sr-only">{line.spoken}</span>
+          </>
+        ) : (
+          line?.text
+        )}
       </InlineNotice>
       {second ? (
         <Button

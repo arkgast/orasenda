@@ -13,7 +13,8 @@ use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
 use crate::api::{
-    Hint, MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
+    Hint, MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme,
+    TimerView, TipId, TipSeen,
 };
 use crate::windows::Frame;
 
@@ -42,6 +43,10 @@ pub enum Action {
     TakeBreak,
     /// Today showed the hint: remember it, once and for all.
     HintShown(Hint),
+    /// Today showed a tip or the person pressed Got it: remember it.
+    TipSeen(TipId, TipSeen),
+    /// A Focus window or the floater opened, from any surface.
+    FocusViewOpened,
     /// The start or pause shortcut: starts the selected preset when idle, pauses a running
     /// session (a focus or a break) and resumes a paused one.
     StartPauseToggle,
@@ -119,6 +124,8 @@ pub struct SessionService {
     pub(super) day_cache: day_cache::DayCache,
     /// The keep-going hint: due now, and whether it was shown before.
     pub(super) hint: hint::HintState,
+    /// The welcome line and the one-time tips.
+    pub(super) tips: tips::TipState,
 }
 
 impl SessionService {
@@ -163,6 +170,7 @@ impl SessionService {
             day_read_failed: Cell::new(false),
             day_cache: day_cache::DayCache::default(),
             hint: hint::HintState::default(),
+            tips: tips::TipState::default(),
         };
         // The seed runs before the settings are read: it rewrites `timer.preset`.
         service.load_presets(now_ms);
@@ -182,6 +190,8 @@ impl SessionService {
         {
             service.recover(read, now_ms);
         }
+        // After the recovery: it may have written the rows of a session that ended while closed.
+        service.load_tips();
         service
     }
 

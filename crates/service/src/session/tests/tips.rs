@@ -87,7 +87,11 @@ fn tip2_after_second_end_variants() {
     let at = ended(&mut s, 2);
     // Seen tip 1 first: tip 2 is the next one.
     shown(&mut s, TipId::GlobalShortcut, TipSeen::GotIt, at);
-    assert_eq!(tip_of(&s, at), Some(TipId::FocusViewKeys), "single keys are on");
+    assert_eq!(
+        tip_of(&s, at),
+        Some(TipId::FocusViewKeys),
+        "single keys are on"
+    );
     change_settings(&mut s, |settings| settings.single_key = false);
     assert_eq!(tip_of(&s, at), Some(TipId::FocusView));
 }
@@ -118,7 +122,12 @@ fn tip_seen_on_got_it_use_or_second_showing() {
     let at = ended(&mut u, 1);
     u.apply(Action::StartPauseToggle, at, id("k"));
     u.apply(Action::Stop, at + MINUTE, id("x"));
-    assert_eq!(tip_of(&u, at + 2 * MINUTE), None, "⌃⌥F was used");
+    // That Stop was the second end: the shortcut tip is gone, so the Focus-view tip is next.
+    assert_eq!(
+        tip_of(&u, at + 2 * MINUTE),
+        Some(TipId::FocusViewKeys),
+        "⌃⌥F was used"
+    );
     assert_eq!(flag(&u, "tip.global_shortcut").as_deref(), Some("seen"));
 
     // Use: a Focus view opened.

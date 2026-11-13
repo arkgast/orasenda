@@ -234,6 +234,8 @@ mod tests {
                 "checkIn": null,
                 "capLine": null,
                 "hint": null,
+                "tip": null,
+                "welcome": false,
             })
         );
         assert_eq!(TimerTickEvent::NAME, "timer-tick");

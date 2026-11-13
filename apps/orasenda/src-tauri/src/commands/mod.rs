@@ -13,6 +13,7 @@ mod notifications;
 mod presets;
 mod settings;
 mod timer;
+mod tips;
 
 pub use focus_views::*;
 #[cfg(test)]
@@ -26,6 +27,7 @@ pub use notifications::*;
 pub use presets::*;
 pub use settings::*;
 pub use timer::*;
+pub use tips::*;
 
 /// Name, version and platform of the running app.
 #[tauri::command]

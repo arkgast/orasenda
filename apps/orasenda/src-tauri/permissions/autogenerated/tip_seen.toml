@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-tip-seen"
+description = "Enables the tip_seen command without any pre-configured scope."
+commands.allow = ["tip_seen"]
+
+[[permission]]
+identifier = "deny-tip-seen"
+description = "Denies the tip_seen command without any pre-configured scope."
+commands.deny = ["tip_seen"]

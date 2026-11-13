@@ -19,6 +19,7 @@ mod service;
 mod settings;
 #[cfg(test)]
 mod tests;
+mod tips;
 mod view;
 
 pub use effects::{Effects, Notice};

@@ -87,7 +87,7 @@ impl KeyboardService {
     /// `Failed` (and shown so), one that is off is `Off`. Emits `keyboard-changed`.
     pub fn register_saved<H: Host>(&self, host: &H) {
         let settings = current_settings(host);
-        let view = {
+        let (view, now_usable) = {
             let mut state = self.state();
             for id in [ShortcutId::StartPause, ShortcutId::Capture] {
                 let slot = &mut state.slots[index(id)];
@@ -96,8 +96,9 @@ impl KeyboardService {
                 }
                 *slot = self.register_one(id, saved_keys(&settings, id));
             }
-            view_of(&state, &settings)
+            (view_of(&state, &settings), usable(&state))
         };
+        sync_tips(host, now_usable);
         host.emit_keyboard_changed(&view);
     }
 
@@ -172,7 +173,9 @@ impl KeyboardService {
             Err(error) => {
                 eprintln!("keyboard: {id:?} could not be saved ({error})");
                 self.roll_back(&mut state, id, &settings, wanted.is_some(), old_live);
+                let now_usable = usable(&state);
                 drop(state);
+                sync_tips(host, now_usable);
                 publish(host, changed);
                 return Err(KeyboardError::Store);
             }
@@ -191,7 +194,9 @@ impl KeyboardService {
             },
         };
         let view = view_of(&state, &presented);
+        let now_usable = usable(&state);
         drop(state);
+        sync_tips(host, now_usable);
         // After the state lock is released: rendering the tray reads the keyboard status.
         publish(host, changed);
         host.emit_keyboard_changed(&view);
@@ -265,14 +270,15 @@ impl KeyboardService {
     /// Whether VoiceOver is on (fed by the platform); emits `keyboard-changed` when it changed.
     pub fn set_voice_over<H: Host>(&self, host: &H, on: bool) {
         let settings = current_settings(host);
-        let view = {
+        let (view, now_usable) = {
             let mut state = self.state();
             if state.voice_over == on {
                 return;
             }
             state.voice_over = on;
-            view_of(&state, &settings)
+            (view_of(&state, &settings), usable(&state))
         };
+        sync_tips(host, now_usable);
         host.emit_keyboard_changed(&view);
     }
 }
@@ -286,6 +292,19 @@ pub fn shortcut_view(keys: &str, status: ShortcutStatus) -> ShortcutView {
         display: parsed.as_ref().map(Accelerator::describe),
         spoken: parsed.as_ref().map(Accelerator::spoken),
         status,
+    }
+}
+
+/// The start or pause shortcut works now: registered, and VoiceOver is not taking ⌃⌥ keys.
+fn usable(state: &State) -> bool {
+    state.slots[index(ShortcutId::StartPause)].status == ShortcutStatus::Registered
+        && !state.voice_over
+}
+
+/// Tells the session whether the shortcut tip may name the keys (it picks the tip's variant).
+fn sync_tips<H: Host>(host: &H, usable: bool) {
+    if let Some(service) = host.service() {
+        lock(service).set_shortcut_usable(usable);
     }
 }
 

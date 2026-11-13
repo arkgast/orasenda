@@ -119,3 +119,17 @@ test("today_running_deep_digits_inside_ring", async ({ page }) => {
     if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
   }
 });
+
+// Welcome and tips: the longest tip joined to "Session ended." keeps the 44px row at the smallest window.
+test("today_tip_fits_360x240", async ({ page }) => {
+  const size = { width: 360, height: 240, layout: "stackedStrip" };
+  for (const scenario of ["welcome", "tipShortcut", "tipFocusView"]) {
+    await openApp(page, scenario, size);
+    if (scenario !== "welcome") {
+      await expect(page.getByText(/Session ended\. Tip: /).first()).toBeVisible();
+      await expect(page.getByRole("button", { name: "Got it" })).toBeVisible();
+    }
+    await expectTodayFits(page, size, /Start focus/);
+    await expectTodayGaps(page, size, scenario);
+  }
+});

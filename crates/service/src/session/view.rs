@@ -96,6 +96,8 @@ impl SessionService {
             }),
             cap_line: idle.then(|| self.cap_line(now_ms)).flatten(),
             hint: self.hint_due(),
+            tip: self.tip_due(idle),
+            welcome: self.welcome_due(idle),
         };
         // Read last: the reads above decide whether today's rows could be read.
         if self.day_read_failed.get() {

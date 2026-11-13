@@ -12,6 +12,8 @@
 use orasenda_service::windows::Frame;
 use tauri::AppHandle;
 
+use crate::runtime::session::Action;
+
 use crate::ipc::{FocusInsets, FocusViewError};
 
 pub(crate) mod displays;
@@ -102,12 +104,29 @@ pub(crate) fn screen_of<'a>(screens: &'a [Screen], id: &str) -> Result<&'a Scree
 
 /// Opens (or focuses) the Focus window of a display.
 pub(crate) fn open_focus(app: &AppHandle, display_id: &str) -> Result<(), FocusViewError> {
-    focus::open_focus_on(&AppOps::new(app), display_id)
+    let result = focus::open_focus_on(&AppOps::new(app), display_id);
+    if result.is_ok() {
+        note_opened(app);
+    }
+    result
+}
+
+/// A Focus view opened: the session remembers it (`used.focus_view`, which ends the tip about it).
+fn note_opened(app: &AppHandle) {
+    if let Err(error) = crate::runtime::session::run_action(app, Action::FocusViewOpened) {
+        eprintln!(
+            "focus view: could not remember the first open ({})",
+            error.message
+        );
+    }
 }
 
 /// Opens the floater at its remembered frame, or focuses it when shown; then hides `main`.
 pub(crate) fn open_floater(app: &AppHandle) -> Result<(), FocusViewError> {
     let result = floater::open_floater_on(&AppOps::new(app));
+    if result.is_ok() {
+        note_opened(app);
+    }
     surfaces_changed(app);
     result
 }
