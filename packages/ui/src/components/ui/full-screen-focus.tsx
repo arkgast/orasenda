@@ -282,7 +282,8 @@ export function FullScreenFocus({
               size={offer && index === 0 ? "lg" : undefined}
               aria-label={action.name}
               onClick={action.onSelect}
-              className="shrink-0"
+              // Two actions in a break at the minimum window need 2px more than the track has: tighten their padding.
+              className={cn("shrink-0", actions.length === 2 && !offer && !roomy && "px-2")}
             >
               {action.name ? <span aria-hidden="true">{action.label}</span> : action.label}
             </Button>

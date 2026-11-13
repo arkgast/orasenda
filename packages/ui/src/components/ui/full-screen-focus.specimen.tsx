@@ -65,6 +65,24 @@ const ACTION_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
     },
   ],
   [
+    "break-two",
+    {
+      mode: "break",
+      remaining: "05:00",
+      remainingLabel: "5 minutes",
+      progress: 0.1,
+      secondaryActions: [
+        {
+          id: "extend",
+          label: "+10 min",
+          name: "Back to focus for 10 more minutes",
+          onSelect: noop,
+        },
+        { id: "skip", label: "Skip break", onSelect: noop },
+      ],
+    },
+  ],
+  [
     "break-warning",
     {
       mode: "warning",

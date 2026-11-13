@@ -171,6 +171,7 @@ test("focus_views_no_motion_when_reduced", async ({ page }, info) => {
 const ACTION_MODES = [
   "plus-ten",
   "skip-break",
+  "break-two",
   "break-warning",
   "break-paused",
   "take-break",
@@ -228,6 +229,20 @@ test("full_screen_focus_break_actions_tab_after_end", async ({ page }) => {
   await expect(
     frame(page, "skip-break", 1280, 720).getByRole("button", { name: "End break" }),
   ).toBeVisible();
+  const two = frame(page, "break-two", 1280, 720);
+  await section(two).focus();
+  for (const name of [
+    "Leave full screen",
+    "Pause break",
+    "End break",
+    "Back to focus for 10 more minutes",
+    "Skip break",
+  ]) {
+    await pressTab(page);
+    const button = two.getByRole("button", { name });
+    await expect(button).toBeFocused();
+    await expectFocusRingVisible(button);
+  }
   const warn = frame(page, "break-warning", 1280, 720);
   await expect(warn.getByRole("button", { name: "End break" })).toBeVisible();
   await expect(warn.getByRole("button", { name: "Pause break" })).toBeVisible();

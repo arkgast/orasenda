@@ -7,6 +7,7 @@ import type {
   TimerCommandError,
   TipId,
 } from "../../ipc/bindings";
+import { type CadenceOffer, cadenceOffers } from "./cadenceOffers";
 
 /** What the cadence part of the timer view says (E: warning, break, offer, auto step, rest line). */
 export type CadenceInput = {
@@ -129,12 +130,6 @@ const TRY_AGAIN_OPEN: StatusAction = {
   name: "Try again opening the focus view",
   variant: "ghost",
 };
-const TAKE_BREAK: StatusAction = {
-  id: "takeBreak",
-  label: "Take a break",
-  name: "Take a break now",
-  variant: "quiet",
-};
 const OPEN_SETTINGS: StatusAction = {
   id: "openSettings",
   label: "Open settings",
@@ -145,7 +140,6 @@ const GOT_IT: StatusAction = { id: "gotIt", label: "Got it", variant: "ghost" };
 const WELCOME_TEXT = "Welcome. Nothing to set up.";
 const SESSION_ENDED = "Session ended.";
 const HINT_TEXT = "You can keep going automatically in Settings › Timer.";
-const SKIP_BREAK: StatusAction = { id: "skipBreak", label: "Skip break", variant: "ghost" };
 
 const line = (
   text: string,
@@ -174,35 +168,21 @@ function suggestionText(suggestion: SuggestionView_Serialize): string {
   return `${word}: ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
 }
 
-function breakRow(cadence: CadenceInput, input: StatusInput): StatusLine {
-  const extend: StatusAction[] = cadence.canExtend
-    ? [
-        {
-          id: "extend",
-          label: "+10 min",
-          name: "Back to focus for 10 more minutes",
-          variant: "quiet",
-        },
-      ]
-    : [];
+function breakRow(offers: CadenceOffer[], cadence: CadenceInput, input: StatusInput): StatusLine {
   // A notice (the deep-hours line) replaces the suggestion; the stacked strip has room for neither (the cap note does not fit 360x240).
   const text = input.stacked
     ? ""
     : (input.notice ?? (cadence.suggestion ? suggestionText(cadence.suggestion) : ""));
-  return line(text, "neutral", [...extend, SKIP_BREAK]);
+  return line(text, "neutral", offers);
 }
 
 /** Rank 2 rows that come from the view. */
 function viewRow(cadence: CadenceInput, input: StatusInput): StatusLine | null {
   const { state, phase } = cadence;
-  if (state !== "idle" && phase === "break") return breakRow(cadence, input);
-  if (cadence.mode === "warning" && phase === "focus") {
-    const actions: StatusAction[] = cadence.checkIn
-      ? [TAKE_BREAK]
-      : cadence.canExtend
-        ? [{ id: "extend", label: "+10 min", name: "Add 10 minutes of focus", variant: "quiet" }]
-        : [];
-    return line("Two minutes left. Finish the thought.", "warning", actions);
+  const offers = cadenceOffers(cadence);
+  if (offers && state !== "idle" && phase === "break") return breakRow(offers, cadence, input);
+  if (offers && cadence.mode === "warning" && phase === "focus") {
+    return line("Two minutes left. Finish the thought.", "warning", offers);
   }
   if (cadence.offer === "keepGoing") {
     const name = input.keepGoingPreset ? `Keep going with ${input.keepGoingPreset}` : undefined;
@@ -212,9 +192,7 @@ function viewRow(cadence: CadenceInput, input: StatusInput): StatusLine | null {
       { id: "stopHere", label: "Stop here", variant: "ghost" },
     ]);
   }
-  if (cadence.checkIn && state === "running" && phase === "focus") {
-    return line(cadence.checkIn, "neutral", [TAKE_BREAK]);
-  }
+  if (offers && cadence.checkIn) return line(cadence.checkIn, "neutral", offers);
   return null;
 }
 

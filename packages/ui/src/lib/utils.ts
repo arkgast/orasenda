@@ -6,6 +6,8 @@ import { extendTailwindMerge } from "tailwind-merge";
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
+      // The fluid paddings are px utilities too, so a later px-2 replaces them.
+      px: [{ px: ["fluid-stack", "fluid-gutter"] }],
       "font-size": [
         {
           text: [
