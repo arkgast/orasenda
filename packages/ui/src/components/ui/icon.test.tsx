@@ -23,6 +23,9 @@ const APPROVED: readonly IconName[] = [
   "routines",
   "review",
   "settings",
+  "edit",
+  "delete",
+  "restore",
 ];
 
 function svgOf(name: IconName, size?: "md" | "lg"): SVGSVGElement {
@@ -45,7 +48,7 @@ test("icon_every_name_renders_aria_hidden_svg", () => {
 
 test("icon_name_union_matches_runtime_table", () => {
   expect([...ICON_NAMES].sort()).toEqual([...APPROVED].sort());
-  expect(ICON_NAMES.length).toBe(20);
+  expect(ICON_NAMES.length).toBe(23);
   expectTypeOf<IconName>().toEqualTypeOf<(typeof ICON_NAMES)[number]>();
 });
 
