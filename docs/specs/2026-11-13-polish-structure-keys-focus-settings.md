@@ -11,7 +11,7 @@
   - Components: `ShortcutRecorder`, `ShortcutList`, `SettingsIndex`, `SettingsRow`, `FullScreenFocus`, `TimerRing`, `TimerStrip`, `IconButton`, `Tooltip`, `Dialog`, `PopoverMenu`; new `SettingsNav` and `DataTable` (design gate).
 
 ## TL;DR
-- **H1 moves the frontend into five layers** (`app → surfaces → features → domain → shared`), imports only downward, enforced by Biome. Moves only; every test stays green with the same totals (ADR-021).
+- **H1 moves the frontend into five layers** (`surfaces → app → features → domain → shared`), imports only downward, enforced by Biome. Moves only; every test stays green with the same totals (ADR-021).
 - **H2 removes the session intent** everywhere: the field after Start, the command, the engine field, the UI. A migration clears `focus_session.intent` and its `change_log` rows; the column stays unused.
 - **H3 gives every action two bindings**, *In Orasenda* (an app-menu accelerator) and *Everywhere* (a global shortcut), from one registry in Rust (ADR-020). It first fixes three bugs: a new binding that silently doesn't take, a capture shortcut that does nothing, and a floater that can't go back.
 - **H4 makes full screen the main window in native macOS full screen** (ADR-019). It enters at once, Esc leaves at once, and the "Leave full screen?" dialog goes.
@@ -93,12 +93,12 @@ n/a for tenancy. English only. Key glyphs and spoken names come from Rust (`Acce
 ### H1: frontend layers (ADR-021)
 | Layer | Holds | May import |
 |---|---|---|
-| `app/` | shell, routing, providers, `PageBoundary`, palette | everything below |
-| `surfaces/<main\|focus\|floater\|capture>/` | each window's entry (`main.tsx`) and root; the `.html` files point here | features, domain, shared |
+| `surfaces/<main\|focus\|floater\|capture>/` | each window's entry (`main.tsx`) only; the `.html` files point here; `*Page.tsx` roots stay in their features | everything below (the main entry mounts the `app/` shell) |
+| `app/` | shell, routing, providers, `PageBoundary`, palette | features, domain, shared |
 | `features/<name>/` | one screen or panel | domain, shared, its own files |
 | `domain/<name>/` | code two or more features need | other domain folders, shared |
 | `shared/` | `ipc/` (client, bindings, queues, subscribe), `hooks/`, `lib/`, `test/` (fixtures, builders, setup) | nothing above |
-| `styles/` | `app.css`, the global stylesheet | outside the layers; imported by surfaces only |
+| `styles/` | `app.css`, the global stylesheet | outside the layers; imported by surfaces only, through `@styles/*` |
 
 - Planned homes for today's shared code (H1 confirms by reading each import):
   - `domain/timer/`: `useTimer`, `useClock`, `useSurfaceTimer`, `format`, `commandFailure` (now in `today/statusLine.ts:109`; FocusPage uses only this from it).
@@ -109,9 +109,9 @@ n/a for tenancy. English only. Key glyphs and spoken names come from Rust (`Acce
   - `shared/hooks/`: `useTheme`, `useWindowLayout`.
   - `statusLine.ts` stays in `features/today/` (only Today uses its main export).
 - Features get `components/`, `hooks/`, `model/` or `api/` only when they have 3 or more files of that kind. Small features stay flat.
-- Tests sit next to their code. Tests and their `.support.tsx` files may import upward to render a surface, never sideways into another feature.
+- Tests sit next to their code. Tests, their `.support.tsx` files and everything under `shared/test/` (setup, fixtures) may import upward to render a surface, never sideways into another feature.
 - `dev/` (spikes, `dev/layout/` scenarios) stays outside the layers and keeps its paths.
-- Cross-layer imports use aliases (`@app/`, `@surfaces/`, `@features/`, `@domain/`, `@shared/`); relative imports stay inside one layer folder.
+- Cross-layer imports use aliases (`@surfaces/`, `@app/`, `@features/`, `@domain/`, `@shared/`, `@styles/`); relative imports stay inside one layer folder.
 
 ### H2: no intent
 `FocusSession` has no intent in core, service, IPC or UI. The SQLite column `focus_session.intent` stays, always NULL.
@@ -141,8 +141,8 @@ n/a for tenancy. English only. Key glyphs and spoken names come from Rust (`Acce
 - **Status** per *Everywhere* binding: `registered | off | failed`, in memory only (ADR-017). *In Orasenda* bindings have no status. A slot the repair pass turned off carries `repaired: true`, kept in a device-only `meta` row (not synced) and shown on the row until the user changes that row. *(author's call, builder check)*
 
 ### H4: full screen (ADR-019)
-- **Full-screen state:** `main`'s native full-screen state, read from AppKit's did-enter, did-exit and did-fail notifications. A `WindowView { fullScreen, display }` event carries it to the webview.
-- **Hint counter:** `hint.full_screen_keys`, a device-only `meta` row holding the number of full-screen entries that showed the hints, `"0"` to `"3"`. An entry counts when the hint first shows, even if the user leaves before 4 s. Device-only, like F's tip flags (`crates/service/src/session/tips.rs:14-20`): learning the keys happens on one Mac, and a count that changes on every entry would fill `change_log` for nothing *(author's call)*.
+- **Full-screen state:** `main`'s native full-screen state, read from AppKit's did-enter, did-exit and did-fail notifications. A `WindowView { fullScreen, display, hintsLeft }` event carries it to the webview, and a `window_view()` getter returns it on mount or reload.
+- **Hint counter:** `hint.full_screen_keys`, a device-only `meta` row holding the number of full-screen entries that showed the hints, `"0"` to `"3"`. Rust bumps it on did-enter while it is under 3, so an entry counts even if the user leaves before 4 s; the webview never writes it. Device-only, like F's tip flags (`crates/service/src/session/tips.rs:14-20`): learning the keys happens on one Mac, and a count that changes on every entry would fill `change_log` for nothing *(author's call)*.
 
 ### H5: pane registry
 - `features/settings/panes.ts` lists all seven panes in order: `{ id, name, file, targets }`. Ids: `general`, `timer`, `notifications`, `keyboard` (named "Shortcuts"), `about`, `data`, `backups`. H5 also adds the `data` and `backups` navigation targets.
@@ -151,14 +151,14 @@ n/a for tenancy. English only. Key glyphs and spoken names come from Rust (`Acce
 ## Interfaces
 
 ### H1: React structure (first, alone)
-- Moves only (`docs/conventions.md` rule 5). It may be split into a few mechanical PRs landed back to back (for example shared, then domain, then surfaces and app).
+- Moves only (`docs/conventions.md` rule 5), in two PRs landed back to back: H1a (aliases, Biome, lint fixtures, `shared/`, and the move-only splits of `test/fixtures.ts` and `dev/layout/scenarios.ts`), then H1b (`domain/`, features, `surfaces/` and `app/`). *(Amended by the controller's rulings on the plan review, 2026-11-13.)*
 - **Allowed non-move edits:** the aliases (`tsconfig.json`, `vite.config.ts`, the vitest config) and rewriting imports to use them; splitting `commandFailure` out of `statusLine.ts` into `domain/timer/`; the `.html` entry paths; `biome.json`; `scripts/file-size-allowlist.txt` paths. Nothing else changes.
 - `capture.html`, `floater.html`, `focus.html` and `index.html` point at `src/surfaces/<name>/main.tsx`.
 - **Biome** (`noRestrictedImports` with `patterns`, Biome 2.6.6):
   - one `override` per layer banning the aliases above it and `@features/*` inside features;
-  - a pattern banning relative imports that climb out of a layer folder (`../../*` from `features/<name>/` and deeper equivalents per layer);
+  - depth-specific overrides banning relative imports that climb out of a layer folder (`features/*/*` bans `../**`, `features/*/*/*` bans `../../**`, and so on per layer). Patterns match the import string, and a later matching override replaces the options, so each override restates its full pattern list;
   - separate overrides for `**/*.test.ts(x)` and `**/*.support.tsx` (upward allowed, sideways into another feature still banned) and for `dev/` (free);
-  - a `lint-fixtures/` folder (excluded from the build), one forbidden import per rule, relative crossings included. `ci.sh` asserts Biome reports each fixture.
+  - a `lint-fixtures/` folder (excluded from the build and from vitest), one forbidden import per rule, relative crossings included. `just lint-layers` (run by `just ci`) feeds each fixture to `biome lint --stdin-file-path=<its virtual path under src/>` and asserts Biome reports it.
 - `docs/conventions.md` gains "Frontend layers": the table above, the alias rule, naming (`PascalCase.tsx` for components, `camelCase.ts` for logic and hooks, `<File>.<behaviour>.test.tsx` splits, `.support.tsx` for test helpers), and a pointer to the 500-line rule ("Code structure and size").
 
 ### H2: remove the session intent
@@ -180,7 +180,7 @@ Merges before H3; H3 rebases on it. Shared files: `features/today/Today.tsx`, `a
 - **(b) The capture shortcut does nothing.** Find the key in use (default ⌃⌥N, `api/keyboard.rs:20`) and why. Candidates: VoiceOver holding ⌃⌥ keys; a `failed` status not shown; window creation from the blocking press thread (`shortcuts/plugin.rs:43-46`).
 - **(c) Going back from the floater does nothing or crashes.** Known so far: ⇧⌘T "opens the floater or gives it key focus, and never hides it" (`menu/focus_menu.rs:53-55`), and the floater's webview hears only Space, Return and Esc (`windows/floater.rs:20-34`, `KEY_ROUTE = Webview`). The crash is not yet reproduced.
 
-**Step 2, key-route spike:** does a menu accelerator reach the app while the non-activating floater is key? The answer picks exactly one route for the floater's chords:
+**Step 2, key-route spike** (task HS: a non-code controller task run before H3's action work; results written into the issues): does a menu accelerator reach the app while the non-activating floater is key? The answer picks exactly one route for the floater's chords:
 - *Menu:* accelerators reach the app; the floater's webview binds no chord (ADR-016's "never also bound in a webview" holds).
 - *Monitor:* they don't; the local `NSEvent` monitor (`crates/platform-macos/src/windows/keys.rs`, `KEY_ROUTE = Monitor`) handles the registry's *In Orasenda* chords while the floater is key, driven by the registry instead of its fixed table. The webview still binds no chord.
 
@@ -188,7 +188,7 @@ ADR-020 records whichever route wins. Until then, every toggle path (menu, monit
 
 **Rust service (`crates/service/src/keyboard/`):**
 - `registry.rs` (the table and fixed keys), `system_keys.rs`, `conflicts.rs` (uniqueness and repair) and `fold.rs` (legacy keys), so `service.rs` (343 lines) stays under 500.
-- `ShortcutId` grows to the six actions. `Slot` is `app | global`.
+- `ActionId` (the six actions) replaces `ShortcutId` (plan review, 2026-11-13). `Slot` is `app | global`.
 - `keyboard_set_binding(id, slot, keys: string | null, confirmWarning: bool) -> Result<KeyboardView, KeyboardError>`. Order: parse → slot modifier rule → never-delivered list → clash → if `global` and on the warning list and not confirmed, return `Warning { reason }` → for `global`, register first (ADR-017) → save → unregister the old one or rebuild the menu item → emit `keyboard-changed`.
 - `keyboard_restore_default(id, slot)` uses the same path. If another action now holds the default, it is refused with `InUse { action }`.
 - `keyboard_recording(on: bool)`: `on` suspends every menu accelerator, standard items included (⌘Q, ⌘W, ⌘, and ⌘K), every global shortcut and the single keys, so any chord pressed reaches the recorder and gets its `InUse` or refusal line. `off` restores them. The webview calls `on` when a recorder starts and `off` on record, Esc, blur and unmount. Rust also restores them when `main` loses focus or closes, or its webview reloads. The suspension lives in memory only, so a relaunch always starts with shortcuts on. *(author's call, builder check)*
@@ -223,11 +223,11 @@ ADR-020 records whichever route wins. Until then, every toggle path (menu, monit
 **Single keys:** Space and P on Today, Space in full screen, behind `keys.single_key` (WCAG 2.1.4). Today's F single key goes with the display menu in H4.
 
 ### H4: full screen in the main window
-- **Step 1, spikes** (hands-on, before the view work):
+- **Step 1, spikes** (task HS, with the key-route spike; a throwaway instrumented build driven by `osascript`, the owner by hand only if automation can't decide; results written into the issues before H4 starts):
   - Esc in native full screen: AppKit's `cancelOperation:`, which responder gets Esc after an *Everywhere* entry from another app, and whether an open palette or popover gets Esc first.
   - The floater over `main`'s native full-screen Space (`fullScreenAuxiliary`, ADR-016).
 - **Rule for Esc:** an open overlay (palette, popover, dialog) consumes Esc first. Otherwise Esc leaves full screen.
-- **Commands** (main and floater): `full_screen_enter()` (this display), `full_screen_enter_on(displayId)`, `full_screen_leave()`. They use Tauri's `set_fullscreen`. `crates/platform-macos` only observes did-enter, did-exit and did-fail.
+- **Commands** (main and floater): `full_screen_enter()` (this display), `full_screen_enter_on(displayId)`, `full_screen_leave()`, `window_view()`. Webview toggles call `action_run`; only the palette's display commands call `full_screen_enter_on`. They use Tauri's `set_fullscreen`. `crates/platform-macos` only observes did-enter, did-exit and did-fail.
 - **Sequencing:** one transition at a time. A request during a transition waits for it. A did-fail, or no notification within 3 s, ends the transition and keeps the state AppKit reports *(author's call for the timeout)*. Entering while `main` is hidden shows it first. Moving to another display waits for did-exit, moves, then enters.
 - **Choose display:** with 2+ displays the binding, from anywhere (another app, the floater), shows and activates `main`, leaves the floater as it is, and opens the palette with only the "Full screen on <display>" commands. If `main` is already full screen, the palette opens over it. *(author's call, builder check)* With one display it acts as "this display".
 - **Today:** the Focus view button and its native menu go (`FocusViewButton.tsx`, `focusView.ts`). Today shows two `IconButton`s with Tooltips naming their keys: *Full screen* (enters at once) and *Floating timer* *(author's call: the floater keeps a one-click path once the menu is gone)*. `Today.tsx` is split if it grows toward 500 (the start flow to `useStartFlow.ts`, the focus-view buttons to `FocusButtons.tsx`).
@@ -308,7 +308,7 @@ A hard block: no H4–H7 code starts before the owner picks (owner's brief). The
 
 ## Decisions
 - **Owner, 2026-11-13 (spec gate):**
-  1. Layers `app → surfaces → features → domain → shared`; subfolders only on demand; tests beside code; fixtures in `shared/test/`; layout scenarios stay in `dev/layout/`.
+  1. Layers `surfaces → app → features → domain → shared` (order amended by the controller, 2026-11-13: the main entry mounts the shell); subfolders only on demand; tests beside code; fixtures in `shared/test/`; layout scenarios stay in `dev/layout/`.
   2. A `domain/` layer for shared domain code; features never import each other; enforced in Biome.
   3. *Everywhere* defaults on ⌃⌥⌘ (avoids the plain ⌃⌥ VoiceOver keys; see 10); *In Orasenda* defaults ⌘F, ⇧⌘F, ⇧⌘T; start or pause on Space; capture none; Esc leaves full screen. Legacy values: old default → new default, custom → kept as *Everywhere*, `"off"` → empty, also on import.
   4. Native macOS full screen on `main`; choose display leaves, moves and enters; the floater shows over it.
@@ -321,10 +321,11 @@ A hard block: no H4–H7 code starts before the owner picks (owner's brief). The
 - **Controller rulings on the Fable review, 2026-11-13:** the table name `focus_session`; the fold flag and import rule; one repair pass in registry order; the floater key-route spike with one route and a de-duplicating entry point; the Esc spike and overlay-first rule; shortcuts suspended while recording; menu handlers target `main` and ignore `capture`; `set_fullscreen` with observe-only platform code; the full-screen sequencing cases; never-delivered keys refused; *In Orasenda* needs ⌘ or ⌃; relative-import bans and test, support and `dev/` overrides; the wave and file-ownership rules below; the accessibility rules for `SettingsNav`, the recorder and hints; design rules as the pipeline's `designRules`.
 - **ADR-019** (new): full screen is `main` in native full screen. Amends ADR-016.
 - **ADR-020** (new): two bindings per action, one registry. Amends ADR-016 (Keys) and ADR-017.
+- **Controller rulings on the plan review, 2026-11-13:** surfaces sit above `app/`; `shared/test/**` is under the test override; H1 is two PRs; the three spikes are one non-code task (HS); the hint counter is bumped by Rust on did-enter and read through `WindowView.hintsLeft` and `window_view()`.
 - **ADR-021** (new): frontend layers and import direction.
 - **ADR-018** is marked accepted (G is built).
 - **Order and ownership:**
-  - Wave 0: H1 alone.
+  - Wave 0: H1 (H1a, H1b) alone. Whether HD, HS and Rust-only or `packages/ui`-only tasks may run during Wave 0 is pending the owner (plan).
   - Wave 1: H2, H3 and the design gate. H2 merges first; H3 rebases on it (shared files listed under H2).
   - Wave 2: first the `packages/ui` tasks for the gate's new components (`SettingsNav`, `DataTable`, variants); then H4 and H5 in parallel. H4 owns `Today`, the full-screen view and `duration-hint` in `tokens.json`; H5 owns `features/settings/` and any other `tokens.json` additions. Both touch `packages/ui/src/index.ts` (append-only exports). H4 merges first when both add tokens; the other rebases. The artifact is republished after each merge.
   - Wave 3: H6 and H7 in parallel, each owning only its pane files.
@@ -355,7 +356,7 @@ Learning the keys happens on one Mac, and syncing a count that changes on every 
 ## Implementation status
 Updated by the PRs that implement this spec.
 - [ ] Plan and backlog
-- [ ] H1 React structure (one to three move-only PRs)
+- [ ] H1 React structure (H1a, H1b move-only PRs)
 - [ ] H2 Remove the session intent
 - [ ] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
 - [ ] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen)

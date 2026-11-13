@@ -311,15 +311,15 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 - **Status:** proposed (spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Every later frontend spec follows it.
 - **Context:** `apps/orasenda/src` has `app/`, `features/*`, `ipc/`, `test/` and `dev/`, and nothing stops a feature importing another. Today `focus`, `floater` and `settings` import `features/timer` and `features/today` (presets, `PresetSummary`, `statusLine`, `cadenceOffers`), and `board`, `capture`, `floater`, `focus`, `settings` and `today` import from `app/` (for example `features/focus/FocusPage.tsx:3-13`, `features/settings/Settings.tsx:3-8`). Each screen task now has to read across features to know what it may change.
 - **Options considered:**
-  1. **Five layers, imports only downward, enforced by Biome:** `app → surfaces → features → domain → shared`. Shared domain code moves to `domain/`; features never import each other.
+  1. **Five layers, imports only downward, enforced by Biome:** `surfaces → app → features → domain → shared` (order amended 2026-11-13 by the controller's plan-review ruling: the main entry mounts the `app/` shell, so surfaces sit above it). Shared domain code moves to `domain/`; features never import each other.
   2. **Feature folders with an index file as the public face:** fewer moves; nothing stops deep imports, and shared code still sits inside one feature.
   3. **A convention in `docs/conventions.md` only:** no lint work; drifts at the first rushed PR.
 - **Decision:** Option 1 (owner, 2026-11-13).
-  - `app/`: shell, routing, providers, `PageBoundary`, the palette.
-  - `surfaces/<main|focus|floater|capture>/`: each window's entry and root only; the `.html` files point here. `focus` goes with ADR-019. `dev/` (spikes and layout scenarios) stays outside the layers.
+  - `surfaces/<main|focus|floater|capture>/`: each window's `main.tsx` entry only; the `.html` files point here, and `*Page.tsx` roots stay in their features. Surfaces may import every layer below, `app/` included.
+  - `app/`: shell, routing, providers, `PageBoundary`, the palette. `focus` goes with ADR-019. `dev/` (spikes and layout scenarios) stays outside the layers.
   - `features/<name>/`: one screen or panel each. Subfolders `components/`, `hooks/`, `model/` (pure logic) and `api/` (IPC adapters) appear only when a feature has three or more files of that kind.
   - `domain/<name>/`: code more than one feature needs (timer, presets, cadence, keyboard).
   - `shared/`: the IPC client and bindings, generic hooks, lib, and test fixtures and builders. It imports nothing above it.
-  - Imports go only downward. Features never import each other. Tests and their support files may import upward to render a whole surface, never sideways into another feature.
-  - Cross-layer imports use aliases (`@app/`, `@surfaces/`, `@features/`, `@domain/`, `@shared/`). Biome `noRestrictedImports` (Biome 2.6.6, `patterns`) in per-layer `overrides` bans aliases above a layer and relative `../` imports that cross a layer, with separate overrides for tests, `*.support.tsx` and `dev/`. A lint fixture per rule must fail in CI.
+  - Imports go only downward. Features never import each other. Tests, their support files and `shared/test/**` may import upward to render a whole surface, never sideways into another feature.
+  - Cross-layer imports use aliases (`@surfaces/`, `@app/`, `@features/`, `@domain/`, `@shared/`, `@styles/`). Biome `noRestrictedImports` (Biome 2.6.6, `patterns`) in per-layer, depth-specific `overrides` (each restating its full pattern list) bans aliases above a layer and relative `../` imports that cross a layer, with separate overrides for tests, `*.support.tsx` and `dev/`. A lint fixture per rule must fail in CI.
 - **Consequences:** a one-time move (H1), done as move-only PRs with unchanged test totals. `docs/conventions.md` gains the rules, naming and the 500-line ceiling in one place. A later piece of code needed by two features moves to `domain/` in the PR that needs it.
