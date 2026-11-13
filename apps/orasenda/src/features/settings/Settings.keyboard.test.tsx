@@ -1,10 +1,10 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { KeyboardView_Serialize } from "../../ipc/bindings";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
-import { argsOf, KEYBOARD, SETTINGS, settle } from "../../test/fixtures";
+import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle } from "../../test/fixtures";
 import { openSettings, saveLine, sets } from "./Settings.support";
 
 beforeEach(() => {
@@ -61,9 +61,7 @@ test("keyboard_rows_order_and_copy", async () => {
   expect(within(group("Start or pause focus")).getByText("⌃⌥F")).toBeInTheDocument();
   expect(within(group("Capture a thought")).getByText("⌃⌥N")).toBeInTheDocument();
   expect(
-    screen.getByText(
-      "Space, F and P on Today, Space in Focus view. Shortcuts with ⌘ always work.",
-    ),
+    screen.getByText("Space, F and P on Today, Space in Focus view. Shortcuts with ⌘ always work."),
   ).toBeInTheDocument();
   const table = screen.getByRole("table", { name: "All shortcuts" });
   for (const action of [
@@ -111,7 +109,9 @@ test("keyboard_delete_turns_off_and_restore_default", async () => {
     { id: "startPause", keys: null },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: off.");
-  fireEvent.click(within(group("Start or pause focus")).getByRole("button", { name: "Restore default" }));
+  fireEvent.click(
+    within(group("Start or pause focus")).getByRole("button", { name: "Restore default" }),
+  );
   await settle();
   expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([{ id: "startPause" }]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥F.");
@@ -123,7 +123,9 @@ test("keyboard_unavailable_keeps_old_and_shows_conflict", async () => {
   await settle();
   const row = group("Start or pause focus");
   expect(within(row).getByText("⌃⌥F")).toBeInTheDocument();
-  expect(within(row).getByText("Another app uses this shortcut. Pick a different one.")).toBeVisible();
+  expect(
+    within(row).getByText("Another app uses this shortcut. Pick a different one."),
+  ).toBeVisible();
   expect(saveLine()).not.toHaveTextContent("Start or pause focus: ⌃⌥G.");
 });
 
@@ -151,7 +153,9 @@ test("keyboard_other_errors_are_not_silent", async () => {
   await openSettings({ keyboard_set_shortcut: () => Promise.reject("store") });
   press("Capture a thought", G);
   await settle();
-  expect(within(group("Capture a thought")).getByText(/Orasenda can't save this shortcut/)).toBeVisible();
+  expect(
+    within(group("Capture a thought")).getByText(/Orasenda can't save this shortcut/),
+  ).toBeVisible();
 });
 
 test("keyboard_voice_over_line_only_when_on", async () => {
@@ -168,7 +172,12 @@ test("keyboard_voice_over_line_only_when_on", async () => {
     keyboard_state: () => ({
       ...KEYBOARD,
       voiceOver: true,
-      startPause: { ...KEYBOARD.startPause, keys: "Super+Period", display: "⌘.", spoken: "Command-Period" },
+      startPause: {
+        ...KEYBOARD.startPause,
+        keys: "Super+Period",
+        display: "⌘.",
+        spoken: "Command-Period",
+      },
     }),
   });
   expect(within(group("Start or pause focus")).queryByText(line)).toBeNull();
@@ -187,11 +196,25 @@ test("keyboard_single_key_toggle_saves", async () => {
 test("keyboard_list_marks_single_keys_off", async () => {
   await openSettings({ settings_get: () => ({ ...SETTINGS, singleKey: false }) });
   const table = screen.getByRole("table", { name: "All shortcuts" });
-  const today = within(table).getByRole("rowheader", { name: "Start, pause or open menus on Today" });
+  const today = within(table).getByRole("rowheader", { name: "On Today" });
   expect(today.closest("tr")).toHaveAttribute("data-off", "true");
-  const focus = within(table).getByRole("rowheader", { name: "Pause or resume in Focus view" });
+  const focus = within(table).getByRole("rowheader", { name: "In Focus view" });
   expect(focus.closest("tr")).toHaveAttribute("data-off", "true");
-  expect(within(table).getByRole("rowheader", { name: "Commands" }).closest("tr")).not.toHaveAttribute(
-    "data-off",
+  expect(
+    within(table).getByRole("rowheader", { name: "Commands" }).closest("tr"),
+  ).not.toHaveAttribute("data-off");
+});
+
+test("keyboard_target_focuses_the_section", async () => {
+  const { Settings: Page } = await import("./Settings");
+  mockBackend();
+  render(
+    <Page
+      info={{ status: "loading" }}
+      arrival={{ seq: 1, target: "keyboard" }}
+      onNavigate={() => {}}
+    />,
   );
+  await settle();
+  expect(screen.getByRole("heading", { level: 2, name: "Keyboard" })).toHaveFocus();
 });

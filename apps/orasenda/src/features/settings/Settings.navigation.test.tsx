@@ -201,7 +201,14 @@ test("load_failure_says_so", async () => {
 
 // ---- Compact windows ----
 
-const SECTION_NAMES = ["General", "Timer", "Notifications", "Apps and sites", "About and data"];
+const SECTION_NAMES = [
+  "General",
+  "Timer",
+  "Notifications",
+  "Keyboard",
+  "Apps and sites",
+  "About and data",
+];
 
 type MenuRequest = {
   items: Array<{ id: string; label: string; checked?: boolean }>;
@@ -253,7 +260,14 @@ test("jump_menu_lists_sections_current_checked", async () => {
   await settle();
   const [request] = menuRequests(backend);
   expect(request?.items.map((item) => item.label)).toEqual(SECTION_NAMES);
-  expect(request?.items.map((item) => item.checked)).toEqual([true, false, false, false, false]);
+  expect(request?.items.map((item) => item.checked)).toEqual([
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 });
 
 test("jump_choice_focuses_section_heading", async () => {

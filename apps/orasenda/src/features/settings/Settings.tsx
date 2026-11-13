@@ -17,6 +17,7 @@ import {
 import { About, type AboutInfo } from "./sections/About";
 import { AppsAndSites } from "./sections/AppsAndSites";
 import { General, themeLabel } from "./sections/General";
+import { Keyboard } from "./sections/Keyboard";
 import { Notifications, notificationsRow } from "./sections/Notifications";
 import { presetLabel, Timer } from "./sections/Timer";
 import { backTo, changedKeys, FAILURE_NAME, KEY_SECTION, type Key, withKeys } from "./settingsKeys";
@@ -277,6 +278,7 @@ export function Settings({
     general: themeLabel(shown.theme),
     timer: presetLabel(presets, shown),
     notifications: row.value,
+    keyboard: shown.singleKey ? "Single keys on" : "Single keys off",
     appsAndSites: "Nothing recorded",
     about:
       info.status === "ok"
@@ -372,6 +374,18 @@ export function Settings({
                 }}
                 onAsk={askMacOS}
                 onOpen={openSystemSettings}
+              />
+              <Keyboard
+                singleKey={shown.singleKey}
+                disabled={readOnly}
+                disabledReason={reason}
+                onSingleKey={(singleKey) =>
+                  changeCadence({ singleKey }, `Single-key shortcuts: ${singleKey ? "on" : "off"}.`)
+                }
+                onSaved={(text) => {
+                  setLine({ kind: "rest" });
+                  setSavedLine(text);
+                }}
               />
               <AppsAndSites />
               <About info={info} />

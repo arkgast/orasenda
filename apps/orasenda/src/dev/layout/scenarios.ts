@@ -1,6 +1,7 @@
 import type {
   AppInfo,
   DisplayInfo,
+  KeyboardView_Serialize,
   MilestoneEvent_Serialize,
   PresetEntry,
   Settings,
@@ -162,6 +163,23 @@ const SETTINGS: Settings = {
   singleKey: true,
 };
 
+const KEYBOARD: KeyboardView_Serialize = {
+  startPause: {
+    keys: "Control+Alt+KeyF",
+    display: "⌃⌥F",
+    spoken: "Control-Option-F",
+    status: "registered",
+  },
+  capture: {
+    keys: "Control+Alt+KeyN",
+    display: "⌃⌥N",
+    spoken: "Control-Option-N",
+    status: "registered",
+  },
+  singleKey: true,
+  voiceOver: false,
+};
+
 const ENDED: MilestoneEvent_Serialize = {
   kind: "ended",
   endReason: "completed",
@@ -185,6 +203,7 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     timer_state: () => ({ view, pending }),
     settings_get: () => settings,
     settings_set: () => null,
+    keyboard_state: () => KEYBOARD,
     timer_start: () => RUNNING,
     timer_pause: () => PAUSED,
     timer_resume: () => RUNNING,
@@ -264,6 +283,17 @@ const SCENARIOS: Record<string, Handler> = {
   presetsTwelve: backend({ replies: { presets_list: () => TWELVE } }),
   // Settings: macOS has notifications off while the preference is on (the longest status line).
   notificationsDenied: backend({ view: { ...IDLE, notifications: "denied" } }),
+  // Settings › Keyboard: the longest lines (another app holds the shortcut, VoiceOver is on) and single keys off.
+  keyboardLongest: backend({
+    replies: {
+      keyboard_state: () => ({
+        ...KEYBOARD,
+        startPause: { ...KEYBOARD.startPause, status: "failed" },
+        voiceOver: true,
+      }),
+    },
+  }),
+  keyboardSingleOff: backend({ settings: { ...SETTINGS, singleKey: false } }),
   // Focus window and floater: the longest running case, and the failures their status lines show.
   deepRunning: backend({ view: DEEP_RUNNING }),
   viewUnreadable: backend({ replies: { timer_view: rejects("store", "no timer") } }),
