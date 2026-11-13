@@ -14,6 +14,7 @@ import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specim
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
+import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.tsx";
 import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
 import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen";
@@ -32,6 +33,7 @@ export const specimens: Record<string, () => ReactElement> = {
   Dialog: DialogSpecimen,
   CapturePad: CapturePadSpecimen,
   NavRail: NavRailSpecimen,
+  SettingsNav: SettingsNavSpecimen,
   PageFrame: PageFrameSpecimen,
   MenuBarTimer: MenuBarTimerSpecimen,
   TimerRing: TimerRingSpecimen,
