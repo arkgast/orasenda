@@ -1,6 +1,5 @@
 import { CommandPalette, type NavPage } from "@orasenda/ui";
 import { type ReactElement, useEffect, useMemo, useState } from "react";
-import { tick, untick } from "../../features/settings/notificationsToggle";
 import { openFocusView } from "../../features/today/focusView";
 import { requestIntentField } from "../../features/today/intentEvents";
 import { usePresets } from "../../features/today/presets";
@@ -83,9 +82,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
     [view, settings, presets, displays],
   );
 
-  const change = (patch: Partial<Settings>) => {
+  const change = (patch: Partial<Settings>): Promise<boolean> => {
     const current = latest() ?? settings;
-    if (current) save({ ...current, ...patch });
+    return current ? save({ ...current, ...patch }) : Promise.resolve(false);
   };
 
   const run = (id: string): boolean | Promise<boolean> | undefined => {
@@ -120,19 +119,26 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
       case "floater":
         return openFocusView({ kind: "floater" }).then(report("open the Focus view"));
       case "preset":
-        // Settings changes are queued and saved after the palette closes (settingsQueue rolls a
-        // refused save back and logs it), so these rows close at once and show no failure line.
-        change({ presetId: arg });
-        return;
+        return change({ presetId: arg }).then(report("change the preset"));
       case "theme":
-        change({ theme: arg as Theme });
-        return;
+        return change({ theme: arg as Theme }).then(report("change the theme"));
       case "notifications": {
         if (!settings || !view) return;
-        const on = settings.notifySessionEnd;
-        if (on) untick();
-        else tick(view.notifications);
-        return;
+        if (settings.notifySessionEnd) {
+          return change({ notifySessionEnd: false }).then(report("turn off notifications"));
+        }
+        const turnOn = async () => {
+          if (view.notifications === "notDetermined") {
+            try {
+              if ((await commands.notificationsRequest()) !== "granted") return false;
+            } catch (error) {
+              console.error("notifications_request failed", error);
+              return false;
+            }
+          }
+          return change({ notifySessionEnd: true });
+        };
+        return turnOn().then(report("turn on notifications"));
       }
       case "page": {
         const page = PAGE_ORDER.find(({ id: pageId }) => pageId === arg);

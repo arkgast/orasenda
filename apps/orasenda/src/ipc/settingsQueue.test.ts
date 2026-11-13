@@ -202,7 +202,10 @@ test("save_resolves_true_when_same_as_accepted", async () => {
 
 test("save_resolves_false_on_rollback", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  for (const error of [{ kind: "write", message: "disk" }, { kind: "unavailable", message: "x" }]) {
+  for (const error of [
+    { kind: "write", message: "disk" },
+    { kind: "unavailable", message: "x" },
+  ]) {
     resetSettingsQueueForTests();
     clearMocks();
     await loaded({ settings_set: () => Promise.reject(error) });

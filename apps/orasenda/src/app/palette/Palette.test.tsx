@@ -3,7 +3,15 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { argsOf, GENTLE, mockBackend, PAUSED, RUNNING, SETTINGS, settle } from "../../test/fixtures";
+import {
+  argsOf,
+  GENTLE,
+  mockBackend,
+  PAUSED,
+  RUNNING,
+  SETTINGS,
+  settle,
+} from "../../test/fixtures";
 import { stubPaletteDom } from "../../test/paletteDom";
 import { Palette } from "./Palette";
 
