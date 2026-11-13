@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 const group = (name: string) => screen.getByRole("group", { name });
-const field = (name: string) => within(group(name)).getByRole("button", { name: /^From any app/ });
+const field = (name: string) => within(group(name)).getByRole("button", { name: /from anywhere/ });
 
 function press(name: string, init: KeyboardEventInit) {
   const button = field(name);
@@ -217,4 +217,74 @@ test("keyboard_target_focuses_the_section", async () => {
   );
   await settle();
   expect(screen.getByRole("heading", { level: 2, name: "Keyboard" })).toHaveFocus();
+});
+
+function later() {
+  let resolve: (value: KeyboardView_Serialize) => void = () => {};
+  let reject: (reason: string) => void = () => {};
+  const promise = new Promise<KeyboardView_Serialize>((ok, no) => {
+    resolve = ok;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+
+const H_VIEW = withStartPause({
+  keys: "Control+Alt+KeyH",
+  display: "⌃⌥H",
+  spoken: "Control-Option-H",
+});
+const H = { code: "KeyH", ctrlKey: true, altKey: true };
+
+test("keyboard_newest_wins", async () => {
+  const first = later();
+  const second = later();
+  let calls = 0;
+  await openSettings({
+    keyboard_set_shortcut: () => (++calls === 1 ? first.promise : second.promise),
+  });
+  press("Start or pause focus", G);
+  press("Start or pause focus", H);
+  second.resolve(H_VIEW);
+  await settle();
+  first.resolve(G_VIEW);
+  await settle();
+  const row = group("Start or pause focus");
+  expect(within(row).getByText("⌃⌥H")).toBeInTheDocument();
+  expect(within(row).queryByText("⌃⌥G")).toBeNull();
+  expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥H.");
+});
+
+test("keyboard_older_failure_after_newer_success_shows_no_conflict", async () => {
+  const first = later();
+  const second = later();
+  let calls = 0;
+  await openSettings({
+    keyboard_set_shortcut: () => (++calls === 1 ? first.promise : second.promise),
+  });
+  press("Start or pause focus", G);
+  press("Start or pause focus", H);
+  second.resolve(H_VIEW);
+  await settle();
+  first.reject("unavailable");
+  await settle();
+  expect(screen.queryByText("Another app uses this shortcut. Pick a different one.")).toBeNull();
+  expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥H.");
+});
+
+test("keyboard_single_key_failure_rolls_back_and_try_again_resends", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let fail = true;
+  const { backend } = await openSettings({
+    settings_set: () => (fail ? Promise.reject("write failed") : null),
+  });
+  const box = within(group("Single-key shortcuts")).getByRole("checkbox");
+  fireEvent.click(box);
+  await settle();
+  expect(box).toBeChecked();
+  expect(saveLine()).toHaveTextContent("Single-key shortcuts weren't saved. Back to on.");
+  fail = false;
+  fireEvent.click(screen.getByRole("button", { name: "Try again saving single-key shortcuts" }));
+  await settle();
+  expect(sets(backend).at(-1)?.settings.singleKey).toBe(false);
 });

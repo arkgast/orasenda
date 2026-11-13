@@ -66,12 +66,20 @@ type Props = {
   singleKey: boolean;
   disabled: boolean;
   disabledReason?: string;
+  status?: string;
   onSingleKey: (checked: boolean) => void;
   /** The save line ("Start or pause focus: ⌃⌥G."). */
   onSaved: (text: string) => void;
 };
 
-export function Keyboard({ singleKey, disabled, disabledReason, onSingleKey, onSaved }: Props) {
+export function Keyboard({
+  singleKey,
+  disabled,
+  disabledReason,
+  status,
+  onSingleKey,
+  onSaved,
+}: Props) {
   const keyboard = useKeyboard(onSaved);
   const { view } = keyboard;
   return (
@@ -85,12 +93,12 @@ export function Keyboard({ singleKey, disabled, disabledReason, onSingleKey, onS
             key={id}
             id={`keyboard-${id}`}
             label={SHORTCUT_NAME[id]}
-            helper="Works from any app."
+            helper="Works while another app is in front."
             disabledReason={disabledReason}
           >
             <ShortcutRecorder
               id={`keyboard-${id}-field`}
-              label="From any app"
+              label={`${SHORTCUT_NAME[id]} from anywhere`}
               keys={view[id].display ?? undefined}
               spokenKeys={view[id].spoken ?? undefined}
               conflict={lineFor(id, view, keyboard.errors[id])}
@@ -106,6 +114,7 @@ export function Keyboard({ singleKey, disabled, disabledReason, onSingleKey, onS
         id="keyboard-single"
         label="Single-key shortcuts"
         helper={SINGLE_KEY_HELP}
+        status={status}
         disabledReason={disabledReason}
       >
         <Choice
@@ -115,7 +124,7 @@ export function Keyboard({ singleKey, disabled, disabledReason, onSingleKey, onS
           aria-describedby="keyboard-single-help"
           onChange={(event) => onSingleKey(event.target.checked)}
         >
-          Single-key shortcuts
+          Use single keys (Space, F, P)
         </Choice>
       </SettingsRow>
       <div className="flex flex-col gap-2 py-4">

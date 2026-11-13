@@ -379,10 +379,12 @@ export function Settings({
                 singleKey={shown.singleKey}
                 disabled={readOnly}
                 disabledReason={reason}
+                status={reasonIf("singleKey")}
                 onSingleKey={(singleKey) =>
                   changeCadence({ singleKey }, `Single-key shortcuts: ${singleKey ? "on" : "off"}.`)
                 }
                 onSaved={(text) => {
+                  editor.clearLine();
                   setLine({ kind: "rest" });
                   setSavedLine(text);
                 }}
