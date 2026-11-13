@@ -73,3 +73,8 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 
 ## Decisions
 ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings), ADR-015 (code-first design system).
+| Data file | A SQLite database Orasenda can open: `user_version` 1 to the current schema and a `meta.device_id`. Export and every backup are data files (whole copies made with `VACUUM INTO`). | A JSON export (Orasenda has none) |
+| Backup | A data file in `<app data dir>/Backups/`, named `orasenda-<UTC time>-<kind>.db`; kinds `auto`, `manual`, `before-import`, `before-restore`. The newest N are kept, every kind counted. | An export (a data file the user saves anywhere) |
+| Safety backup | A backup taken by Orasenda just before an import or a restore (`before-import`, `before-restore`). Delete all data takes none. | An automatic backup (on the monthly or 3-monthly schedule) |
+| Merge import | Import's rule: syncable rows only in the file are added; on both sides the later `updated_at` wins and a tombstone counts as a change; device-only tables are ignored. | Restore (replaces the whole database) |
+| Pending swap | `orasenda.restore.db` or the `orasenda.delete` marker in the app data dir, applied at the next launch before the store opens. | A migration |
