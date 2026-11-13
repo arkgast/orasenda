@@ -15,8 +15,7 @@ function press(target: Element, init: KeyboardEventInit): boolean {
 test("single_key_fires_on_body_and_heading_only", () => {
   const run = vi.fn();
   renderHook(() => useSingleKeys({ f: run }, true));
-  document.body.innerHTML =
-    '<h1 tabindex="-1">Today</h1><button>b</button><input /><div role="menu"><button>m</button></div>';
+  document.body.innerHTML = '<h1 tabindex="-1">Today</h1><button>b</button><input />';
   press(document.body, { key: "f" });
   press(document.querySelector("h1") as Element, { key: "F" });
   expect(run).toHaveBeenCalledTimes(2);

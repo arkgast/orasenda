@@ -37,7 +37,7 @@ test("focus_view_button_one_display_items", async () => {
   });
   const button = screen.getByRole("button", { name: "Focus view" });
   expect(button).toHaveAttribute("aria-haspopup", "menu");
-  expect(button).not.toHaveAttribute("aria-keyshortcuts");
+  expect(button).toHaveAttribute("aria-keyshortcuts", "F");
   await press();
 
   expect(popupItems(backend.calls)).toEqual([

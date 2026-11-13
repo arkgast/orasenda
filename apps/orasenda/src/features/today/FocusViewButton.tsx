@@ -5,6 +5,10 @@ import { commands } from "../../ipc/bindings";
 
 type Props = {
   onOpen(target: FocusViewTarget): void;
+  /** Single keys are on: F opens the menu, and the button says so. */
+  singleKeys?: boolean;
+  /** Counts F presses from the page; each new count opens the menu. */
+  openRequest?: number;
 };
 
 async function listDisplays(): Promise<DisplayInfo[]> {
@@ -34,7 +38,11 @@ function menuItems(displays: DisplayInfo[]) {
 }
 
 /** Today's Focus view button: a native menu of the full-screen and floating-timer choices. */
-export function FocusViewButton({ onOpen }: Props): ReactElement | null {
+export function FocusViewButton({
+  onOpen,
+  singleKeys = false,
+  openRequest = 0,
+}: Props): ReactElement | null {
   const box = useRef<HTMLSpanElement>(null);
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -48,8 +56,6 @@ export function FocusViewButton({ onOpen }: Props): ReactElement | null {
       cancelled = true;
     };
   }, []);
-
-  if (displays.length === 0) return null;
 
   const open = async () => {
     const rect = box.current?.querySelector("button")?.getBoundingClientRect();
@@ -74,10 +80,22 @@ export function FocusViewButton({ onOpen }: Props): ReactElement | null {
     }
   };
 
+  const seenRequest = useRef(openRequest);
+  const openRef = useRef(open);
+  openRef.current = open;
+  useEffect(() => {
+    if (openRequest === seenRequest.current) return;
+    seenRequest.current = openRequest;
+    void openRef.current();
+  }, [openRequest]);
+
+  if (displays.length === 0) return null;
+
   return (
     <span ref={box} className="inline-flex">
       <IconButton
         label="Focus view"
+        shortcut={singleKeys ? "F" : undefined}
         icon={<Icon name="expand" />}
         aria-haspopup="menu"
         aria-expanded={expanded}
