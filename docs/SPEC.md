@@ -38,7 +38,7 @@ Orasenda is one calm, minimal app for planning time, managing tasks and protecti
 - **Menu-bar timer and floating mini timer:** time is always visible, which helps with time blindness.
 - **"Just start for 2 minutes" button:** lowers the cost of starting (the 2-minute rule).
 - **Flow extension:** at the end of a session, offer "+10 min" instead of a forced break. Capped at 2 by default.
-- **Session intent:** one line answering "What will be done?", linked to a kanban task.
+- **Session intent:** one line answering "What will be done?", linked to a kanban task. *Removed in H2 (2026-11-13, [spec](specs/2026-11-13-polish-structure-keys-focus-settings.md)); a session will pick a Board task instead, in the board sub-project.*
 - **Capture pad:** a hotkey jots down a thought without leaving focus. This offloads open loops (Masicampo & Baumeister, 2011). Each note is tagged as an **internal or external interruption**, following the Pomodoro interruption protocol, and lands in the Inbox.
 - **2-minute warning** before a session or block ends, using a gentle cue.
 - **Break suggestions:** stand, rest your eyes on a distant point, hydrate, take a physiological sigh, walk. Breaks steer away from the phone.
@@ -190,7 +190,7 @@ To be refined later in Claude Design.
 ## 4. Data Model (conceptual)
 - `Task`, `Project`, `Tag`
 - `TimeBlock` (type includes overflow)
-- `FocusSession` (preset, extensions, intent, interruptions[internal|external], appSwitches)
+- `FocusSession` (preset, extensions, interruptions[internal|external], appSwitches; the intent was removed in H2, 2026-11-13)
 - `Habit` (intention, anchor, twoMinute, identity) → `HabitCheck`
 - `Routine` (ordered habits, time of day) → `RoutineRun`
 - `BlockProfile` (strictness, apps, domains, triggers)
