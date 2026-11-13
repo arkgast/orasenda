@@ -13,10 +13,24 @@ use super::*;
 struct FakeBackend {
     calls: Mutex<Vec<String>>,
     refuse: Mutex<bool>,
+    /// The table the registrar shares: it must be free during every backend call.
+    held: Mutex<Option<Arc<Held>>>,
+}
+
+impl FakeBackend {
+    fn assert_held_free(&self) {
+        if let Some(held) = self.held.lock().unwrap().as_ref() {
+            assert!(
+                held.0.try_lock().is_ok(),
+                "Held is locked across a backend call"
+            );
+        }
+    }
 }
 
 impl Backend for Arc<FakeBackend> {
     fn register(&self, shortcut: Shortcut) -> Result<(), String> {
+        self.assert_held_free();
         if *self.refuse.lock().unwrap() {
             return Err("HotKey already registered".to_string());
         }
@@ -28,6 +42,7 @@ impl Backend for Arc<FakeBackend> {
     }
 
     fn unregister(&self, shortcut: Shortcut) -> Result<(), String> {
+        self.assert_held_free();
         self.calls
             .lock()
             .unwrap()
@@ -51,6 +66,7 @@ fn registrar() -> (
 ) {
     let backend = Arc::new(FakeBackend::default());
     let held = Arc::new(Held::default());
+    *backend.held.lock().unwrap() = Some(Arc::clone(&held));
     let registrar = Arc::new(PluginRegistrar::new(
         Arc::clone(&backend),
         Arc::clone(&held),

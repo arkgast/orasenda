@@ -51,9 +51,14 @@ pub fn pressed(app: &tauri::AppHandle, id: ShortcutId) {
 pub fn observe_voice_over(app: &tauri::AppHandle) {
     let app = app.clone();
     orasenda_platform_macos::observe_voice_over(move |on| {
-        if let Some(keyboard) = service(&app) {
-            keyboard.set_voice_over(&AppHost::new(&app), on);
-        }
+        // This runs on the main thread. No main-thread callback may take the keyboard lock,
+        // because registering a shortcut holds it while waiting on the main thread.
+        let app = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Some(keyboard) = service(&app) {
+                keyboard.set_voice_over(&AppHost::new(&app), on);
+            }
+        });
     });
 }
 

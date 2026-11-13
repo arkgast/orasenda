@@ -68,23 +68,32 @@ impl<B: Backend> PluginRegistrar<B> {
 impl<B: Backend> ShortcutRegistrar for PluginRegistrar<B> {
     fn register(&self, id: ShortcutId, acc: &Accelerator) -> Result<(), RegisterError> {
         let shortcut = shortcut_of(acc).map_err(RegisterError::new)?;
-        let mut held = self.held.lock();
-        if held.iter().any(|(i, s)| *i == id && *s == shortcut) {
+        // Never hold the table across a backend call: the plugin waits on the main thread,
+        // and the press handler on the main thread takes this lock. The keyboard service
+        // serialises registrar calls, so the check and the push do not race.
+        if self
+            .held
+            .lock()
+            .iter()
+            .any(|(i, s)| *i == id && *s == shortcut)
+        {
             return Ok(());
         }
         self.backend
             .register(shortcut)
             .map_err(RegisterError::new)?;
-        held.push((id, shortcut));
+        self.held.lock().push((id, shortcut));
         Ok(())
     }
 
     fn unregister(&self, id: ShortcutId) {
-        let mut held = self.held.lock();
-        let Some(at) = held.iter().position(|(i, _)| *i == id) else {
-            return;
+        let shortcut = {
+            let mut held = self.held.lock();
+            let Some(at) = held.iter().position(|(i, _)| *i == id) else {
+                return;
+            };
+            held.remove(at).1
         };
-        let (_, shortcut) = held.remove(at);
         if let Err(error) = self.backend.unregister(shortcut) {
             eprintln!("shortcuts: could not unregister {id:?} ({error})");
         }
