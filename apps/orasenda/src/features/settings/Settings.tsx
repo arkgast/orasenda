@@ -6,7 +6,14 @@ import { commands } from "../../ipc/bindings";
 import { latest, load, register, save } from "../../ipc/settingsQueue";
 import { useTimer } from "../timer/useTimer";
 import { selectedPreset, usePresets, usePresetsFailed } from "../today/presets";
-import { askingKey, askMacOS, subscribeAsking, tick, untick } from "./notificationsToggle";
+import {
+  askingKey,
+  askMacOS,
+  pendingKeys,
+  subscribeAsking,
+  tick,
+  untick,
+} from "./notificationsToggle";
 import {
   type Arrival,
   SECTIONS,
@@ -20,7 +27,15 @@ import { General, themeLabel } from "./sections/General";
 import { Keyboard } from "./sections/Keyboard";
 import { Notifications, notificationsRow } from "./sections/Notifications";
 import { presetLabel, Timer } from "./sections/Timer";
-import { backTo, changedKeys, FAILURE_NAME, KEY_SECTION, type Key, withKeys } from "./settingsKeys";
+import {
+  backTo,
+  CADENCE_KEYS,
+  changedKeys,
+  FAILURE_NAME,
+  KEY_SECTION,
+  type Key,
+  withKeys,
+} from "./settingsKeys";
 import { focusKeepGoing } from "./settingsTarget";
 import { usePresetEditing } from "./usePresets";
 
@@ -82,6 +97,7 @@ export function Settings({
   const [openFailed, setOpenFailed] = useState(false);
   const [current, setCurrent] = useState<SectionId>("general");
   const askingFor = useSyncExternalStore(subscribeAsking, askingKey);
+  const ticked = useSyncExternalStore(subscribeAsking, pendingKeys);
   const asking = askingFor === "notifySessionEnd";
   const [savedLine, setSavedLine] = useState<string | null>(null);
 
@@ -346,13 +362,13 @@ export function Settings({
                 editLocked={readOnly || store === "unavailable"}
                 disabledReason={reason}
                 presetStatus={reasonIf("preset")}
-                cadenceStatus={reasonIf("cadence")}
+                cadenceStatus={reasonIf(...CADENCE_KEYS)}
                 editor={editor}
                 onPreset={(presetId: string) => withLatest({ presetId })}
                 onCadence={changeCadence}
               />
               <Notifications
-                checked={asking || shown.notifySessionEnd}
+                checked={ticked.includes("notifySessionEnd") || shown.notifySessionEnd}
                 asking={asking}
                 disabled={readOnly || status === "unavailable"}
                 disabledReason={reason}
@@ -364,7 +380,7 @@ export function Settings({
                   if (checked) tick(status);
                   else untick();
                 }}
-                twoMinutes={askingFor === "notifyTwoMinutes" || shown.notifyTwoMinutes}
+                twoMinutes={ticked.includes("notifyTwoMinutes") || shown.notifyTwoMinutes}
                 twoMinutesAsking={askingFor === "notifyTwoMinutes"}
                 onTwoMinutes={(checked) => {
                   setLine({ kind: "rest" });

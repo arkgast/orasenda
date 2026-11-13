@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use orasenda_core::{BreakKind, EndReason, Phase, SessionRecord};
+use orasenda_core::{BreakKind, EndReason, EngineState, Phase, SessionRecord};
 
 use super::*;
 use crate::api::{MilestoneEvent, PresetEntry, Settings, Theme, TimerCommandError, TimerView};
@@ -140,6 +140,8 @@ fn notice_for(outcome: &Outcome, presented: &Settings, view: &TimerView) -> Opti
     {
         return match (last.phase, outcome.quick_completed) {
             (Phase::Break, _) => end("Break over.", "Start focus when you're ready."),
+            // Under auto-continue the next session starts by itself: nothing to offer.
+            (_, true) if presented.auto_continue && view.state != EngineState::Idle => None,
             (_, true) => end("Focus session complete.", "Keep going if you like."),
             _ => None,
         };

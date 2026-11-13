@@ -6,7 +6,7 @@ import { parseMinutes } from "../customRange";
 /** What a cadence row changes, and the save line that follows it. */
 export type CadenceChange = (patch: Partial<Settings>, saved: string) => void;
 
-const CAPS = [
+export const CAPS = [
   { value: 0, label: "Off", said: "off" },
   { value: 1, label: "Once", said: "once" },
   { value: 2, label: "Twice", said: "twice" },

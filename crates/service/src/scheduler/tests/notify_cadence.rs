@@ -137,3 +137,44 @@ fn notify_quick_completed_body() {
         vec![pair("Focus session complete.", "Keep going if you like.")]
     );
 }
+
+#[test]
+fn auto_continue_roll_on_is_silent() {
+    let host = launched(NotificationStatus::Granted);
+    {
+        let mut service = lock(&host.0.service);
+        let settings = crate::api::Settings {
+            notify_session_end: true,
+            auto_continue: true,
+            ..service.settings()
+        };
+        service.set_settings(settings, T0).expect("saves");
+    }
+    run_action_on(&host, start_quick()).expect("starts");
+    host.log().take();
+    host.set_now(T0 + 2 * MINUTE + 1);
+    iterate(&host);
+    assert!(
+        posted(&host).is_empty(),
+        "the next session starts by itself"
+    );
+    assert_ne!(
+        lock(&host.0.service).view(T0 + 2 * MINUTE + 1).state,
+        orasenda_core::EngineState::Idle,
+        "the roll-on is running"
+    );
+}
+
+#[test]
+fn normal_end_still_notifies() {
+    let host = launched(NotificationStatus::Granted);
+    run_action_on(&host, start_quick()).expect("starts");
+    host.log().take();
+    host.set_now(T0 + 2 * MINUTE + 1);
+    iterate(&host);
+    assert_eq!(
+        posted(&host),
+        vec![pair(END, "Keep going if you like.")],
+        "auto-continue off"
+    );
+}
