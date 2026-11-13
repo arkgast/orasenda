@@ -22,7 +22,7 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
       className="today-status-row"
     >
       <InlineNotice
-        key={line?.text ?? ""}
+        key={line?.key ?? line?.text ?? ""}
         variant="row"
         tone={line?.tone ?? "neutral"}
         actionVariant={first?.variant}
@@ -30,7 +30,14 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
         actionName={first?.name}
         onAction={first ? () => onAction(first.id) : undefined}
       >
-        {line?.text}
+        {line?.spoken ? (
+          <>
+            <span aria-hidden="true">{line.text}</span>
+            <span className="sr-only">{line.spoken}</span>
+          </>
+        ) : (
+          line?.text
+        )}
       </InlineNotice>
       {second ? (
         <Button

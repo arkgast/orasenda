@@ -97,3 +97,7 @@ impl ShortcutRegistrar for FakeRegistrar {
 #[cfg(test)]
 #[path = "cases.rs"]
 mod cases;
+
+#[cfg(test)]
+#[path = "tip_cases.rs"]
+mod tip_cases;

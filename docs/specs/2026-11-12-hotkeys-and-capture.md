@@ -211,6 +211,11 @@ Tips follow the InlineNotice rules:
 - none while the store can't write;
 - never marked seen on Start (e-onboarding-4).
 
+As built in #426 (controller ruling on #395, 2026-11-13):
+- In the side-by-side strip layout (800×300, 1024×400) a tip waits and is not shown, as the keep-going hint does (ruling on #380). It shows once the window is stacked or the ring layout returns. Joined to "Session ended." it would wrap to three lines in the strip's narrow column.
+- Which tip shows: once 2 or more sessions have ended, the Focus view tip comes first while it is unseen. Otherwise the shortcut tip shows while it is unseen and ⌃⌥F was never used.
+- Got it keeps every tip hidden until the next Start, and moves focus to Start focus.
+
 ## Behavior & edge cases
 - **Clashes:** ⌃⌥F pressed while a ⌘. or Start is in flight goes through the same newest-wins service lock, so it never double-starts. Recording the other global shortcut's keys gives `InUseByOrasenda`.
 - **Launch:** Rust registers the saved shortcuts after the store opens. If that fails, the status is `failed` and is shown on the next Settings open and in the tray. There is no notification.

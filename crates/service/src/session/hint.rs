@@ -60,9 +60,13 @@ impl SessionService {
         }
         let stamp = rfc3339_utc(now_ms);
         match self.write_owed(now_ms, |txn| {
-            meta::set(txn, META_USED_GLOBAL_SHORTCUT, &stamp)
+            meta::set(txn, META_USED_GLOBAL_SHORTCUT, &stamp)?;
+            meta::set(txn, super::tips::META_TIP_GLOBAL, "seen")
         }) {
-            Ok(()) => self.hint.used_global = Seen::Yes,
+            Ok(()) => {
+                self.hint.used_global = Seen::Yes;
+                self.global_shortcut_used();
+            }
             Err(error) => {
                 eprintln!("shortcut: could not remember {META_USED_GLOBAL_SHORTCUT} ({error})");
             }
@@ -101,7 +105,7 @@ impl SessionService {
 }
 
 /// `epoch_ms` as `YYYY-MM-DDTHH:MM:SSZ`.
-fn rfc3339_utc(epoch_ms: u64) -> String {
+pub(super) fn rfc3339_utc(epoch_ms: u64) -> String {
     let secs = epoch_ms / 1000;
     let (days, rem) = (secs / 86_400, secs % 86_400);
     // Days since 1970-01-01 to a civil date (Hinnant's algorithm).

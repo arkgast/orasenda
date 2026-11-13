@@ -105,7 +105,7 @@ impl SessionService {
     pub fn snapshot(&mut self, now_ms: u64) -> (u64, TimerView) {
         self.view_seq += 1;
         let view = self.view(now_ms);
-        self.shown_idle = (view.cap_line.clone(), view.offer);
+        self.shown_idle = (view.cap_line.clone(), view.offer, view.tip, view.welcome);
         (self.view_seq, view)
     }
 }

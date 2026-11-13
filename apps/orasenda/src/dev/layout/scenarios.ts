@@ -69,6 +69,8 @@ const IDLE: TimerView_Serialize = {
   checkIn: null,
   capLine: null,
   hint: null,
+  tip: null,
+  welcome: false,
 };
 
 const RUNNING: TimerView_Serialize = {
@@ -213,6 +215,7 @@ function backend({ view = IDLE, pending = [], settings = SETTINGS, replies = {} 
     timer_set_intent: () => RUNNING,
     timer_dismiss_offer: () => IDLE,
     timer_take_break: () => BREAK,
+    tip_seen: () => IDLE,
     presets_list: () => PRESETS,
     navigate_take: () => null,
     notifications_request: () => view.notifications,
@@ -278,6 +281,11 @@ const SCENARIOS: Record<string, Handler> = {
     view: { ...RUNNING, hint: "keepGoing" },
     replies: { hint_shown: () => RUNNING },
   }),
+  // Welcome and tips (spec: Hotkeys and capture): the first-run line, and each tip joined to "Session ended.".
+  welcome: backend({ view: { ...IDLE, welcome: true } }),
+  tipShortcut: backend({ view: { ...IDLE, tip: "globalShortcut" }, pending: [ENDED] }),
+  tipFocusViewKeys: backend({ view: { ...IDLE, tip: "focusViewKeys" }, pending: [ENDED] }),
+  tipFocusView: backend({ view: { ...IDLE, tip: "focusView" }, pending: [ENDED] }),
   // Settings: a refused save (a preset no longer in the library) gives the preset's failure line.
   settingsInvalid: backend({ replies: { settings_set: rejects("invalidSpec", "out of range") } }),
   // Settings: twelve presets, so Add preset is at its limit.

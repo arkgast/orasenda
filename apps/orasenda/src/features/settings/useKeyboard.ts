@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import type { KeyboardError, KeyboardView, ShortcutId } from "../../ipc/bindings";
-import { commands, events } from "../../ipc/bindings";
-import { subscribe } from "../../ipc/subscribe";
+import { useRef, useState } from "react";
+import { useKeyboardView } from "../../app/useKeyboardView";
+import type { KeyboardError, ShortcutId } from "../../ipc/bindings";
+import { commands } from "../../ipc/bindings";
 import { toAccelerator } from "./shortcutKeys";
 
 export const SHORTCUT_NAME: Record<ShortcutId, string> = {
@@ -24,35 +24,12 @@ function describe(error: unknown): KeyboardError {
  * `onSaved` gets the save line ("Start or pause focus: ⌃⌥G.").
  */
 export function useKeyboard(onSaved: (text: string) => void) {
-  const [view, setView] = useState<KeyboardView | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const { view, setView, loadFailed } = useKeyboardView();
   const [errors, setErrors] = useState<Errors>(NONE);
   const calls = useRef(0);
   const latest = useRef<Record<ShortcutId, number>>({ startPause: 0, capture: 0 });
   const saved = useRef(onSaved);
   saved.current = onSaved;
-
-  useEffect(() => {
-    let live = true;
-    const stop = subscribe("keyboard-changed", events.keyboardChanged.listen, (next) => {
-      setLoadFailed(false);
-      setView(next);
-    });
-    commands.keyboardState().then(
-      (first) => {
-        // An event that already arrived is newer than this first read.
-        if (live) setView((current) => current ?? first);
-      },
-      (error: unknown) => {
-        console.error("keyboard_state failed", error);
-        if (live) setLoadFailed(true);
-      },
-    );
-    return () => {
-      live = false;
-      stop();
-    };
-  }, []);
 
   function run(id: ShortcutId, call: () => ReturnType<typeof commands.keyboardSetShortcut>) {
     calls.current += 1;

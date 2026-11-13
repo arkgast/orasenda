@@ -80,6 +80,8 @@ export const IDLE: TimerView_Serialize = {
   checkIn: null,
   capLine: null,
   hint: null,
+  tip: null,
+  welcome: false,
 };
 
 export const RUNNING: TimerView_Serialize = {
@@ -198,6 +200,7 @@ const DEFAULTS: Replies = {
   timer_dismiss_offer: () => IDLE,
   timer_take_break: () => BREAK,
   hint_shown: () => RUNNING,
+  tip_seen: () => IDLE,
   navigate_take: () => null,
   presets_list: () => PRESETS,
   inbox_list: () => NOTES,

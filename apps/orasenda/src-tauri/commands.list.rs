@@ -12,6 +12,7 @@ pub const COMMANDS: &[&str] = &[
     "timer_dismiss_offer",
     "timer_take_break",
     "hint_shown",
+    "tip_seen",
     "settings_get",
     "settings_set",
     "notifications_request",

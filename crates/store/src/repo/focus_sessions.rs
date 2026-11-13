@@ -137,6 +137,21 @@ pub fn started_between(txn: &Txn, from_ms: u64, to_ms: u64) -> Result<Vec<Sessio
     Ok(rows.collect::<Result<_, _>>()?)
 }
 
+/// How many sessions this device has recorded: every non-deleted row, and the focus rows among
+/// them (one per session that began a focus).
+pub fn counts(txn: &Txn) -> Result<(u64, u64), StoreError> {
+    let (rows, focus): (i64, i64) = txn.conn().query_row(
+        "SELECT COUNT(*), COALESCE(SUM(phase = 'focus'), 0)
+         FROM focus_session WHERE deleted_at IS NULL",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    Ok((
+        u64::try_from(rows).unwrap_or(0),
+        u64::try_from(focus).unwrap_or(0),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -429,5 +444,18 @@ mod tests {
         assert_eq!(rows[2].preset, "fifty_ten", "old preset names still read");
         assert_eq!(rows[0].ended_ms, 110);
         assert_eq!(rows[0].break_kind, None);
+    }
+
+    #[test]
+    fn counts_rows_and_focus_rows() {
+        let store = Store::open_in_memory("device-a").expect("opens");
+        assert_eq!(store.read(counts).expect("reads"), (0, 0));
+        store
+            .write(1, |txn| insert(txn, &record("0193-one")))
+            .expect("writes");
+        let mut rest = record("0193-two");
+        rest.phase = Phase::Break;
+        store.write(2, |txn| insert(txn, &rest)).expect("writes");
+        assert_eq!(store.read(counts).expect("reads"), (2, 1));
     }
 }

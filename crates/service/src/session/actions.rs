@@ -23,7 +23,13 @@ impl SessionService {
         let shown = self.shown_idle.clone();
         let mut outcome = Outcome::default();
         self.advance(now_ms, &mut outcome);
-        let clears_offer = !matches!(action, Action::DismissOffer | Action::HintShown(_));
+        let clears_offer = !matches!(
+            action,
+            Action::DismissOffer
+                | Action::HintShown(_)
+                | Action::TipSeen(..)
+                | Action::FocusViewOpened
+        );
         let toggled = matches!(action, Action::StartPauseToggle);
         let action = match action {
             Action::StartPauseToggle => self.toggle_action(now_ms),
@@ -57,6 +63,14 @@ impl SessionService {
             Action::TakeBreak => self.take_break(now_ms, &mut outcome),
             Action::HintShown(hint) => {
                 self.mark_shown(hint, now_ms);
+                Ok(())
+            }
+            Action::TipSeen(tip, how) => {
+                self.mark_tip(tip, how, now_ms);
+                Ok(())
+            }
+            Action::FocusViewOpened => {
+                self.note_focus_view_opened(now_ms);
                 Ok(())
             }
             // Resolved above.
@@ -171,6 +185,7 @@ impl SessionService {
         self.engine.start(new_id(), preset, round, now_ms)?;
         self.keep_awake = self.begin_keep_awake();
         self.changed(now_ms, MilestoneKind::Started, outcome);
+        self.note_started(now_ms);
         Ok(())
     }
 
@@ -260,6 +275,7 @@ impl SessionService {
             return;
         };
         self.hint.pending = false;
+        self.note_session_ended(&records);
         let quick = first.preset == SessionPreset::Quick;
         outcome.milestones.push(MilestoneEvent {
             kind: MilestoneKind::Ended,

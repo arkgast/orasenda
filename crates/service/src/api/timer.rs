@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::events::MilestoneEvent;
 use super::hint::Hint;
+use super::tips::TipId;
 
 /// The wall clock, emitted as `clock-tick` on every whole second.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
@@ -105,6 +106,10 @@ pub struct TimerView {
     pub cap_line: Option<String>,
     /// A one-time hint for the status line; `None` once shown and while none is due.
     pub hint: Option<Hint>,
+    /// A one-time tip for the status row, after a session end; `None` once seen and while none is due.
+    pub tip: Option<TipId>,
+    /// The first-run welcome line shows: no session was ever started on this device.
+    pub welcome: bool,
 }
 
 impl TimerView {
@@ -136,6 +141,8 @@ impl TimerView {
             check_in: None,
             cap_line: None,
             hint: None,
+            tip: None,
+            welcome: false,
         }
     }
 }

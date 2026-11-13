@@ -13,7 +13,8 @@ use orasenda_store::{OpenError, Store, active_session};
 
 use super::*;
 use crate::api::{
-    Hint, MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme, TimerView,
+    Hint, MilestoneEvent, Offer, PresetEntry, Settings, StartRequest, StoreStatus, Theme,
+    TimerView, TipId, TipSeen,
 };
 use crate::windows::Frame;
 
@@ -42,6 +43,10 @@ pub enum Action {
     TakeBreak,
     /// Today showed the hint: remember it, once and for all.
     HintShown(Hint),
+    /// Today showed a tip or the person pressed Got it: remember it.
+    TipSeen(TipId, TipSeen),
+    /// A Focus window or the floater opened, from any surface.
+    FocusViewOpened,
     /// The start or pause shortcut: starts the selected preset when idle, pauses a running
     /// session (a focus or a break) and resumes a paused one.
     StartPauseToggle,
@@ -111,14 +116,21 @@ pub struct SessionService {
     /// The focus whose effect on the deep-hours cap was last checked, with the focus time it had
     /// then (memory only); an extension from the break brings the same focus back with more.
     pub(super) cap_checked: Option<(SessionId, u64)>,
-    /// The cap line and offer of the last numbered view, so the tick can tell they changed.
-    pub(super) shown_idle: (Option<String>, Option<Offer>),
+    /// The cap line, offer, tip and welcome line of the last numbered view, so the tick can tell they changed.
+    pub(super) shown_idle: (
+        Option<String>,
+        Option<Offer>,
+        Option<crate::api::TipId>,
+        bool,
+    ),
     /// Today's rows could not be read; set so the failure is logged once.
     pub(super) day_read_failed: Cell<bool>,
     /// Today's stored sessions, read once per day and write generation.
     pub(super) day_cache: day_cache::DayCache,
     /// The keep-going hint: due now, and whether it was shown before.
     pub(super) hint: hint::HintState,
+    /// The welcome line and the one-time tips.
+    pub(super) tips: tips::TipState,
 }
 
 impl SessionService {
@@ -159,10 +171,11 @@ impl SessionService {
             ids: Box::new(new_session_id),
             offer: false,
             cap_checked: None,
-            shown_idle: (None, None),
+            shown_idle: (None, None, None, false),
             day_read_failed: Cell::new(false),
             day_cache: day_cache::DayCache::default(),
             hint: hint::HintState::default(),
+            tips: tips::TipState::default(),
         };
         // The seed runs before the settings are read: it rewrites `timer.preset`.
         service.load_presets(now_ms);
@@ -182,6 +195,8 @@ impl SessionService {
         {
             service.recover(read, now_ms);
         }
+        // After the recovery: it may have written the rows of a session that ended while closed.
+        service.load_tips();
         service
     }
 

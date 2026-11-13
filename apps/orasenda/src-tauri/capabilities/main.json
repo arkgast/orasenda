@@ -17,6 +17,7 @@
     "allow-timer-dismiss-offer",
     "allow-timer-take-break",
     "allow-hint-shown",
+    "allow-tip-seen",
     "allow-settings-get",
     "allow-settings-set",
     "allow-notifications-request",

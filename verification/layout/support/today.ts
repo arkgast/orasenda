@@ -47,6 +47,11 @@ export const STATES = [
   { scenario: "intentOpen", primary: /Pause session/ },
   { scenario: "hintKeepGoing", primary: /Pause session/ },
   { scenario: "runningDeep", primary: /Pause session/ },
+  // Hotkeys and capture: the welcome line and the tips joined to "Session ended.".
+  { scenario: "welcome", primary: /Start focus/ },
+  { scenario: "tipShortcut", primary: /Start focus/ },
+  { scenario: "tipFocusViewKeys", primary: /Start focus/ },
+  { scenario: "tipFocusView", primary: /Start focus/ },
 ] as const;
 
 /** Rows with a second action: at a narrow width the line may take a second line, so the row may grow. */
@@ -149,7 +154,7 @@ interface Box {
 export async function expectTodayGaps(page: Page, size: TodaySize, state: string): Promise<void> {
   const m = await page.evaluate(() => {
     type B = { top: number; bottom: number; left: number; right: number };
-    const union = (rects: DOMRect[]): B | null => {
+    const union = (rects: Array<B & { width: number; height: number }>): B | null => {
       const seen = rects.filter((r) => r.width > 0 || r.height > 0);
       if (seen.length === 0) return null;
       return {
@@ -164,10 +169,18 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
     const rectOf = (el: Element) => el.getBoundingClientRect();
     // The visible boxes: the buttons and fields a person sees, and the text itself (a range), never a container.
     const controls = (root: string) => all(`${root} :is(button, input)`);
+    // A tip's spoken twin is sr-only (a 1px clip of the same words): its text is not on screen, so it is not measured.
     const textRect = (el: Element) => {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      return range.getBoundingClientRect();
+      const rects: DOMRect[] = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (node.parentElement?.closest(".sr-only")) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        rects.push(range.getBoundingClientRect());
+      }
+      const joined = union(rects);
+      return joined ? { ...joined, width: 1, height: 1 } : new DOMRect();
     };
     const messages = all('.today-status [data-slot="inline-notice-message"]').filter(
       (el) => (el.textContent ?? "").trim() !== "",
