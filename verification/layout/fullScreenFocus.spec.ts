@@ -41,6 +41,45 @@ test("full_screen_focus_ring_at_phone_desktop_and_big_frames", async ({ page }, 
   await shoot(page, info, "full-screen-focus");
 });
 
+test("controls_centred_below_ring", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES.filter((s) => s.w >= 1280 && s.layout === "ring")) {
+    const f = frame(page, "focus", w, h);
+    const ring = await f.locator("[data-slot=timer-ring]").boundingBox();
+    const view = await section(f).boundingBox();
+    const pause = await f.getByRole("button", { name: "Pause session" }).boundingBox();
+    const end = await f.getByRole("button", { name: "End session" }).boundingBox();
+    if (!(ring && view && pause && end)) throw new Error(`${w}x${h}: missing box`);
+    const middle = (ring.y + ring.height + view.y + view.height) / 2;
+    expect(Math.abs(pause.y + pause.height / 2 - middle), `${w}x${h} centred`).toBeLessThanOrEqual(
+      8,
+    );
+    // space-8 (64px) between the two.
+    expect(end.x - (pause.x + pause.width), `${w}x${h} gap`).toBeCloseTo(64, 0);
+  }
+});
+
+test("hint_row_keeps_height", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await openSpecimen(page, "FullScreenFocus");
+  for (const { w, h } of SIZES) {
+    const shown = await frame(page, "hint-visible", w, h)
+      .locator("[data-slot=full-screen-focus-caption]")
+      .boundingBox();
+    const faded = frame(page, "hint-faded", w, h).locator("[data-slot=full-screen-focus-caption]");
+    const box = await faded.boundingBox();
+    expect(box?.height, `${w}x${h} height`).toBeCloseTo(shown?.height ?? -1, 0);
+    expect(box?.height, `${w}x${h} 18px`).toBeCloseTo(18, 0);
+    await expect(faded).toHaveCSS("opacity", "0");
+    await expect(faded).toHaveCSS("transition-duration", "1.6s");
+  }
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const calm = frame(page, "hint-faded", 1280, 720).locator(
+    "[data-slot=full-screen-focus-caption]",
+  );
+  await expect(calm).toHaveCSS("transition-duration", "0s");
+});
+
 test("full_screen_focus_strip_in_strip_frame", async ({ page }) => {
   await openSpecimen(page, "FullScreenFocus");
   for (const { w, h, layout } of SIZES.filter((s) => s.layout !== "ring")) {
@@ -79,11 +118,7 @@ test("full_screen_focus_keyboard_path", async ({ page }) => {
   const f = frame(page, "focus", 1280, 720);
   await section(f).focus();
   await page.keyboard.press("Escape");
-  const dialog = page.getByRole("dialog", { name: "Leave full screen?" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Stay in full screen" })).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(section(f)).toBeFocused();
   for (const name of ["Leave full screen", "Pause session", "End session"]) {
     await pressTab(page);
@@ -109,7 +144,7 @@ test("full_screen_focus_focus_ring_is_not_clipped", async ({ page }) => {
   }
 });
 
-test("full_screen_focus_esc_opens_the_dialog_while_the_leave_tooltip_shows", async ({ page }) => {
+test("full_screen_focus_esc_hides_the_leave_tooltip_and_opens_no_dialog", async ({ page }) => {
   await openSpecimen(page, "FullScreenFocus");
   const f = frame(page, "focus", 1280, 720);
   await section(f).focus();
@@ -117,7 +152,10 @@ test("full_screen_focus_esc_opens_the_dialog_while_the_leave_tooltip_shows", asy
   await expect(f.getByRole("button", { name: "Leave full screen" })).toBeFocused();
   await expect(page.locator("[data-slot=tooltip]")).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Leave full screen?" })).toBeVisible();
+  await expect(page.locator("[data-slot=tooltip]")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The single Esc reached the view: it left.
+  await expect(f.locator("[data-left=true]")).toHaveCount(1);
 });
 
 test("focus_views_aria_snapshot", async ({ page }) => {

@@ -7,7 +7,7 @@ const base = {
   remainingLabel: "18 minutes 42 seconds",
   progress: 0.25,
   mode: "focus" as const,
-  onExit: () => {},
+  onLeave: () => {},
 };
 
 test("full_screen_focus_secondary_action_slot", () => {
