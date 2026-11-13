@@ -105,8 +105,9 @@ test("focus_close_failure_in_status_line", async () => {
   expect(screen.getByRole("status")).toHaveTextContent("This window didn't close.");
 });
 
-function space(init: KeyboardEventInit = {}, target: Element = document.body): boolean {
-  return fireEvent.keyDown(target, { key: " ", ...init });
+function space(init: KeyboardEventInit = {}, target?: Element): boolean {
+  const region = screen.getByRole("region", { name: "Full-screen focus" });
+  return fireEvent.keyDown(target ?? region, { key: " ", ...init });
 }
 
 test("focus_page_space_toggles", async () => {

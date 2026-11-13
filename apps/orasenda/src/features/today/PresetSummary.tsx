@@ -66,11 +66,12 @@ export function PresetSummary({
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const [seenRequest, setSeenRequest] = useState(openRequest);
+  const idle = state === "idle";
+  const ready = !(idle && (!settings || presets.length === 0));
   if (seenRequest !== openRequest) {
     setSeenRequest(openRequest);
-    setOpen(true);
+    if (ready) setOpen(true);
   }
-  const idle = state === "idle";
 
   if (idle && (!settings || presets.length === 0) && !settingsFailed && !presetsFailed) {
     // Still loading: the cell keeps its place and says nothing.

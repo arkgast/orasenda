@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
 import { resetTimerQueueForTests } from "../../ipc/timerQueue";
-import { argsOf, emitTimer, RUNNING, settle } from "../../test/fixtures";
+import { argsOf, emitTimer, PAUSED, RUNNING, settle } from "../../test/fixtures";
 import { renderToday, savedSettings } from "./Today.support";
 
 beforeEach(() => {
@@ -31,6 +31,10 @@ test("space_toggles_on_body", async () => {
   key(" ");
   await settle();
   expect(argsOf(backend.calls, "timer_pause")).toHaveLength(1);
+  await emitTimer(PAUSED);
+  key(" ");
+  await settle();
+  expect(backend.calls.filter((c) => c.cmd === "timer_resume")).toHaveLength(1);
 });
 
 test("space_ignored_in_field_and_on_button", async () => {

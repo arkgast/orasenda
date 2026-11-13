@@ -5,14 +5,21 @@ export type SingleKeyMap = Record<string, () => void>;
 
 const HEADING = /^H[1-6]$/;
 
-/** Focus is "at rest": on the page itself or on a heading, not in a field, a control or a popup. */
+const CONTROL =
+  'input, textarea, select, button, a[href], [contenteditable], [role="button"], [role="textbox"], [role="menuitem"], [role="option"], [role="combobox"]';
+const POPUP = '[role="menu"], [role="dialog"], [role="alertdialog"]';
+
+/**
+ * Focus is "at rest": on the page itself, on a heading, or on a page container that only holds
+ * focus programmatically (tabindex below zero, not a control). Never in a field, a control or a popup.
+ */
 function atRest(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
-  if (target === document.body || target === document.documentElement) {
-    return document.querySelector('[role="menu"], [role="dialog"], [role="alertdialog"]') === null;
-  }
-  if (!(HEADING.test(target.tagName) || target.getAttribute("role") === "heading")) return false;
-  return document.querySelector('[role="menu"], [role="dialog"], [role="alertdialog"]') === null;
+  const page = target === document.body || target === document.documentElement;
+  const heading = HEADING.test(target.tagName) || target.getAttribute("role") === "heading";
+  const holder = target.tabIndex < 0 && target.hasAttribute("tabindex") && !target.matches(CONTROL);
+  if (!(page || heading || holder)) return false;
+  return document.querySelector(POPUP) === null;
 }
 
 /**

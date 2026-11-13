@@ -58,6 +58,7 @@ export function FocusViewButton({
   }, []);
 
   const open = async () => {
+    if (displays.length === 0) return;
     const rect = box.current?.querySelector("button")?.getBoundingClientRect();
     const fresh = await listDisplays();
     setDisplays(fresh);

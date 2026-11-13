@@ -48,3 +48,14 @@ test("single_key_space_is_prevented_and_off_does_nothing", () => {
   expect(press(document.body, { key: " " })).toBe(true);
   expect(run).toHaveBeenCalledTimes(1);
 });
+
+test("single_key_fires_on_a_focus_holder_but_not_a_tab_stop_control", () => {
+  const run = vi.fn();
+  renderHook(() => useSingleKeys({ f: run }, true));
+  document.body.innerHTML =
+    '<section tabindex="-1">x</section><div tabindex="0" role="button">c</div>';
+  press(document.querySelector("section") as Element, { key: "f" });
+  expect(run).toHaveBeenCalledTimes(1);
+  press(document.querySelector("div") as Element, { key: "f" });
+  expect(run).toHaveBeenCalledTimes(1);
+});
