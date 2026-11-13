@@ -56,7 +56,7 @@ impl Default for BackupPolicy {
 }
 
 /// How many live rows each syncable table holds.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DataCounts {
     pub sessions: u32,
@@ -74,6 +74,14 @@ impl From<Counts> for DataCounts {
             settings: counts.settings,
         }
     }
+}
+
+/// What an import wrote: rows only in the file, and rows the file replaced.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportReport {
+    pub added: DataCounts,
+    pub updated: DataCounts,
 }
 
 /// What went wrong, for the line the webview shows.

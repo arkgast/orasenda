@@ -161,7 +161,7 @@ pub(super) fn snapshot_of(def: &PresetDef) -> SessionPreset {
 
 /// The preset `id` names among `live` (non-empty); the old names resolve to their defaults,
 /// and anything unknown to the first live preset.
-pub(super) fn resolve<'a>(live: &'a [PresetDef], id: &PresetId) -> &'a PresetDef {
+pub(crate) fn resolve<'a>(live: &'a [PresetDef], id: &PresetId) -> &'a PresetDef {
     let defaults = default_presets();
     let legacy = match id.0.as_str() {
         "classic" => Some(&defaults[1].id),

@@ -17,7 +17,7 @@ mod tips;
 
 pub use data::{
     BackupEntry, BackupFrequency, BackupKind, BackupPolicy, DataCounts, DataError, DataErrorKind,
-    DataOverview,
+    DataOverview, ImportReport,
 };
 pub use errors::{
     NotificationsError, NotificationsErrorKind, SettingsError, SettingsErrorKind,

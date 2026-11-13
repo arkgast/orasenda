@@ -177,15 +177,7 @@ impl SessionService {
             hint: hint::HintState::default(),
             tips: tips::TipState::default(),
         };
-        // The seed runs before the settings are read: it rewrites `timer.preset`.
-        service.load_presets(now_ms);
-        if let Some(read) = service
-            .store
-            .as_ref()
-            .map(|store| store.read(read_settings))
-        {
-            service.load_settings(read);
-        }
+        service.load_stored(now_ms);
         service.load_hint();
         service.log_unknown_selection();
         if let Some(read) = service
@@ -198,6 +190,23 @@ impl SessionService {
         // After the recovery: it may have written the rows of a session that ended while closed.
         service.load_tips();
         service
+    }
+
+    /// The launch read of the presets and the settings. The seed runs before the settings are
+    /// read: it rewrites `timer.preset`.
+    fn load_stored(&mut self, now_ms: u64) {
+        self.load_presets(now_ms);
+        if let Some(read) = self.store.as_ref().map(|store| store.read(read_settings)) {
+            self.load_settings(read);
+        }
+    }
+
+    /// Re-reads the presets and the settings the way a launch does, after an import wrote
+    /// rows, and drops today's cached sessions. The caller publishes the result.
+    pub(crate) fn reload_after_import(&mut self, now_ms: u64) {
+        self.load_stored(now_ms);
+        self.log_unknown_selection();
+        self.day_cache.bump();
     }
 
     /// The store, `None` while it is unavailable. For the Inbox.
