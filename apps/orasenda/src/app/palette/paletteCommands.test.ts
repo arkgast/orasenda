@@ -91,3 +91,24 @@ test("palette_set_intent_only_in_focus", () => {
     label: "Set intent",
   });
 });
+
+test("palette_has_capture_command", () => {
+  // In every state, with the user's current keys when the shortcut is registered.
+  for (const view of [IDLE, RUNNING, PAUSED]) {
+    const capture = paletteCommands({ ...base, view, captureKeys: "⌃⌥N" }).find(
+      (c) => c.id === "capture",
+    );
+    expect(capture).toMatchObject({ label: "Capture a thought", shortcut: "⌃⌥N" });
+  }
+  // Not a fixed pair: the keys come from the shortcut, and are absent when it is off or failed.
+  expect(
+    paletteCommands({ ...base, captureKeys: "⌃⇧Y" }).find((c) => c.id === "capture")?.shortcut,
+  ).toBe("⌃⇧Y");
+  const without = paletteCommands(base).find((c) => c.id === "capture");
+  expect(without?.label).toBe("Capture a thought");
+  expect(without?.shortcut).toBeUndefined();
+  // Before the settings load the palette still offers it.
+  expect(
+    paletteCommands({ ...base, settings: null, view: null }).some((c) => c.id === "capture"),
+  ).toBe(true);
+});

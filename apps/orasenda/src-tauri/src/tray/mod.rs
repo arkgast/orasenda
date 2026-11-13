@@ -44,8 +44,8 @@ use crate::runtime::session::{NativeSurface, Surfaces};
 
 #[cfg(test)]
 pub(crate) use menu::{
-    ADD_TEN, BACK_TO_FOCUS, EDIT_TIMES, END_SESSION, JUST_TWO, KEEP_GOING, MenuCommand, PAUSE,
-    PAUSE_BREAK, QUIT, RESUME, RESUME_BREAK, SETTINGS, SHOW, SKIP_BREAK, START, STOP_HERE,
+    ADD_TEN, BACK_TO_FOCUS, CAPTURE, EDIT_TIMES, END_SESSION, JUST_TWO, KEEP_GOING, MenuCommand,
+    PAUSE, PAUSE_BREAK, QUIT, RESUME, RESUME_BREAK, SETTINGS, SHOW, SKIP_BREAK, START, STOP_HERE,
     TAKE_BREAK, menu_command, settings_target, start_action,
 };
 #[cfg(test)]
@@ -53,7 +53,9 @@ pub(crate) use render::header_text;
 pub(crate) use render::{Glyph, Tray, TrayHandle, tray_label, tray_title_and_icon};
 
 pub(crate) use menu::FocusItems;
-use menu::{MenuEntry, NextSession, build_menu, menu_items, on_menu_event, start_keys};
+use menu::{
+    MenuEntry, NextSession, build_menu, capture_keys, menu_items, on_menu_event, start_keys,
+};
 use render::report;
 use state::{RETRY_DELAY, lock_state};
 
@@ -185,11 +187,13 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         orasenda_core::NotificationStatus::Unavailable,
     );
     let (_, glyph) = tray_title_and_icon(&idle);
+    let keyboard = crate::runtime::keyboard::state(handle);
     let next = NextSession::new(
         &crate::runtime::session::current_settings(handle),
         crate::runtime::session::run_presets_list(handle),
     )
-    .with_keys(start_keys(&crate::runtime::keyboard::state(handle)));
+    .with_keys(start_keys(&keyboard))
+    .with_capture_keys(capture_keys(&keyboard));
     let (menu, header) = build_menu(
         handle,
         &menu_items(

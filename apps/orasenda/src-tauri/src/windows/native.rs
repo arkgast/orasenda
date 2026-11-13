@@ -63,6 +63,16 @@ mod other {
         fn make_floater(&self, _label: &str) -> Result<(), FocusViewError> {
             Err(unavailable())
         }
+        fn make_capture(&self, _label: &str) -> Result<(), FocusViewError> {
+            Err(unavailable())
+        }
+        fn place_at_pointer(&self, _l: &str, _size: (u32, u32)) -> Result<(), FocusViewError> {
+            Err(unavailable())
+        }
+        fn announce(&self, _text: &str) -> Result<(), FocusViewError> {
+            Err(unavailable())
+        }
+        fn emit_capture_focus(&self) {}
         fn place(&self, _l: &str, _d: &str, _f: Frame) -> Result<(), FocusViewError> {
             Err(unavailable())
         }
@@ -104,7 +114,7 @@ mod mac {
     use crate::windows::floater_keys;
     use crate::windows::focus::insets_of;
     use crate::windows::frames::Frames;
-    use crate::windows::{FLOATER, Ops, Screen, WindowSpec};
+    use crate::windows::{CAPTURE, FLOATER, Ops, Screen, WindowSpec};
 
     /// The app's windows, driven from a thread that is not the main thread.
     pub(crate) struct AppOps {
@@ -310,6 +320,32 @@ mod mac {
                 appkit::configure_floater(pointer)?;
                 floater_keys::install(&app, pointer)
             })
+        }
+
+        fn make_capture(&self, label: &str) -> Result<(), FocusViewError> {
+            // SAFETY: as above.
+            self.with_window(label, |pointer| unsafe {
+                appkit::configure_capture(pointer)
+            })
+        }
+
+        fn place_at_pointer(&self, label: &str, size: (u32, u32)) -> Result<(), FocusViewError> {
+            // SAFETY: as above.
+            self.with_window(label, move |pointer| unsafe {
+                appkit::place_on_pointer_display(pointer, f64::from(size.0), f64::from(size.1))
+            })
+        }
+
+        fn announce(&self, text: &str) -> Result<(), FocusViewError> {
+            let text = text.to_owned();
+            self.on_main(move || appkit::announce(&text))?
+                .map_err(window_error)
+        }
+
+        fn emit_capture_focus(&self) {
+            if let Err(error) = crate::ipc::CaptureFocus.emit_to(&self.app, CAPTURE) {
+                eprintln!("windows: could not emit capture-focus: {error}");
+            }
         }
 
         fn place(&self, label: &str, display_id: &str, frame: Frame) -> Result<(), FocusViewError> {

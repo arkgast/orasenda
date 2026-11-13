@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::BreakKind;
 use tauri::image::Image;
 
-use super::menu::{FocusItems, MenuEntry, NextSession, start_keys};
+use super::menu::{FocusItems, MenuEntry, NextSession, capture_keys, start_keys};
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
 use crate::ipc::{Mode, TimerView};
 use crate::ipc::{PresetEntry, Settings};
@@ -157,16 +157,21 @@ impl Tray {
 }
 
 impl Tray {
-    /// The Start shortcut's status or keys changed: the Start item's inert text follows. Does
+    /// A shortcut's status or keys changed: the Start and Capture items' inert text follows. Does
     /// nothing when the text is the same, so an unrelated keyboard change rebuilds nothing.
     pub(crate) fn keyboard_changed(&self, view: &KeyboardView) {
         let keys = start_keys(view);
+        let capture = capture_keys(view);
         {
             let mut state = lock_state(&self.state);
-            if state.next.keys == keys {
+            if state.next.keys == keys && state.next.capture_keys == capture {
                 return;
             }
-            state.next = state.next.clone().with_keys(keys);
+            state.next = state
+                .next
+                .clone()
+                .with_keys(keys)
+                .with_capture_keys(capture);
             state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
             state.retries = 0;
             state.render_seq += 1;

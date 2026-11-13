@@ -15,6 +15,7 @@
     "allow-settings-get",
     "allow-native-menu-popup",
     "allow-focus-view-close",
-    "allow-main-show"
+    "allow-main-show",
+    "allow-capture-open"
   ]
 }

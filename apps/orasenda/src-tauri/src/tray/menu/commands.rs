@@ -21,6 +21,8 @@ pub(crate) enum MenuCommand {
     FullScreen(String),
     ShowFloater,
     HideFloater,
+    /// *Capture a thought…*: opens the capture panel.
+    Capture,
     Show,
     Settings,
     DevPanel,
@@ -38,6 +40,7 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
     match id {
         SHOW_FLOATER => Some(MenuCommand::ShowFloater),
         HIDE_FLOATER => Some(MenuCommand::HideFloater),
+        CAPTURE => Some(MenuCommand::Capture),
         START => Some(MenuCommand::Start),
         JUST_TWO => Some(MenuCommand::JustTwo),
         EDIT_TIMES => Some(MenuCommand::EditTimes),
@@ -126,6 +129,12 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
         }
         MenuCommand::HideFloater => {
             crate::windows::close_floater(app);
+            return;
+        }
+        MenuCommand::Capture => {
+            if let Err(error) = crate::windows::open_capture(app) {
+                eprintln!("tray: the capture panel didn't open: {}", error.message);
+            }
             return;
         }
         MenuCommand::SetPreset(preset) => {

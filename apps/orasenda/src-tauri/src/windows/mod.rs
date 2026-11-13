@@ -16,6 +16,7 @@ use crate::runtime::session::Action;
 
 use crate::ipc::{FocusInsets, FocusViewError};
 
+mod capture;
 pub(crate) mod displays;
 mod floater;
 mod floater_keys;
@@ -25,6 +26,8 @@ mod native;
 #[cfg(test)]
 mod tests;
 
+#[cfg(desktop)]
+pub(crate) use capture::CAPTURE;
 pub(crate) use floater::FLOATER;
 pub(crate) use native::AppOps;
 
@@ -83,6 +86,14 @@ pub(crate) trait Ops {
     fn show(&self, label: &str) -> Result<(), FocusViewError>;
     /// Brings an ordinary window forward and focuses it.
     fn focus(&self, label: &str) -> Result<(), FocusViewError>;
+    /// Turns the window into the capture panel (once, before it is shown).
+    fn make_capture(&self, label: &str) -> Result<(), FocusViewError>;
+    /// Sizes the window and puts it on the display under the pointer, in the upper third.
+    fn place_at_pointer(&self, label: &str, size: (u32, u32)) -> Result<(), FocusViewError>;
+    /// Tells VoiceOver `text`.
+    fn announce(&self, text: &str) -> Result<(), FocusViewError>;
+    /// Asks the capture page to focus its text area.
+    fn emit_capture_focus(&self);
     /// Gives the panel key focus without activating Orasenda.
     fn key(&self, label: &str) -> Result<(), FocusViewError>;
     fn hide_main(&self) -> Result<(), FocusViewError>;
@@ -134,6 +145,21 @@ pub(crate) fn open_floater(app: &AppHandle) -> Result<(), FocusViewError> {
 /// Closes the floater, if any; its `CloseRequested` saves the frame.
 pub(crate) fn close_floater(app: &AppHandle) {
     floater::close_floater_on(&AppOps::new(app));
+}
+
+/// Opens the capture panel on the display under the pointer, or focuses its text.
+pub(crate) fn open_capture(app: &AppHandle) -> Result<(), FocusViewError> {
+    capture::open_capture_on(&AppOps::new(app))
+}
+
+/// Announces "Saved to Inbox." when the save succeeded, and returns the save's result.
+pub(crate) fn saved_then_announced<T, E>(app: &AppHandle, saved: Result<T, E>) -> Result<T, E> {
+    capture::saved_then_announced(&AppOps::new(app), saved)
+}
+
+/// Closes the capture panel, if any.
+pub(crate) fn close_capture(app: &AppHandle) {
+    capture::close_capture_on(&AppOps::new(app));
 }
 
 /// Whether the floater window exists.

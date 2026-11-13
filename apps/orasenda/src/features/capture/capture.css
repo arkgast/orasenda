@@ -1,0 +1,8 @@
+/* The capture panel's page. The window is the panel and the pad fills it (`panel`), so the page
+   takes the pad's fill (the webview is opaque). Tokens only. */
+html,
+body {
+  background: var(--surface-overlay);
+  block-size: 100%;
+  overflow: hidden;
+}

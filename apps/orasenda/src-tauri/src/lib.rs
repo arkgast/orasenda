@@ -62,6 +62,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::keyboard_set_shortcut,
             commands::keyboard_restore_default,
             commands::capture_note,
+            commands::capture_open,
+            commands::capture_close,
             commands::inbox_list,
             commands::inbox_remove,
             commands::inbox_restore,
@@ -84,6 +86,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::Navigate,
             ipc::FocusInsets,
             ipc::PaletteOpen,
+            ipc::CaptureFocus,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])
@@ -140,6 +143,7 @@ pub fn run() {
             builder.mount_events(app);
             runtime::session::setup(app)?;
             runtime::keyboard::manage(app);
+            runtime::keyboard::wire_capture_opener(app.handle());
             runtime::keyboard::register_saved(app.handle());
             #[cfg(target_os = "macos")]
             runtime::keyboard::observe_voice_over(app.handle());

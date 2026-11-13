@@ -159,3 +159,18 @@ test("capture_pad_redesign_copy", () => {
   fireEvent.click(screen.getByRole("radio", { name: "External" }));
   expect(screen.getByText("This came from around you.")).toBeTruthy();
 });
+
+test("capture_pad_rejection_line_replaces_the_default", async () => {
+  const onClose = vi.fn();
+  render(
+    <Host
+      initial="note"
+      onClose={onClose}
+      onSave={() => Promise.reject(new Error("long"))}
+      rejectionLine={() => "A more specific line."}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Save to Inbox" }));
+  expect(await screen.findByText("A more specific line.")).toBeInTheDocument();
+  expect(onClose).not.toHaveBeenCalled();
+});

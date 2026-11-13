@@ -32,6 +32,7 @@ export default defineConfig({
         dev: resolve(import.meta.dirname, "dev.html"),
         focus: resolve(import.meta.dirname, "focus.html"),
         floater: resolve(import.meta.dirname, "floater.html"),
+        capture: resolve(import.meta.dirname, "capture.html"),
       },
     },
   },

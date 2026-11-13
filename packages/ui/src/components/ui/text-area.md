@@ -1,6 +1,6 @@
 A labelled multi-line field with the same helper and error behaviour as `Input`.
 
-- `rows` defaults to 4; vertical resize stays available.
+- `rows` defaults to 4; vertical resize stays available unless `resizable={false}` (for a field inside a fixed-size window).
 - The control never shrinks below the minimum hit height, even with `rows=1` or after resizing.
 - Pass `disabled` while a save is pending rather than dimming the field.
 

@@ -195,6 +195,13 @@ pub struct FocusInsets {
 #[tauri_specta(event_name = "palette-open")]
 pub struct PaletteOpen;
 
+/// Sent to the capture panel when it is opened again: its page focuses the text area.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,
+)]
+#[tauri_specta(event_name = "capture-focus")]
+pub struct CaptureFocus;
+
 #[cfg(test)]
 mod tests {
     use orasenda_core::NotificationStatus;

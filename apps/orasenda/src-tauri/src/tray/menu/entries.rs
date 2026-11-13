@@ -37,11 +37,15 @@ fn preset_label(preset: &PresetEntry) -> String {
 
 /// "Start focus · 25 min", then the user's keys as inert text when the shortcut is registered.
 fn start_label(next: &NextSession) -> String {
-    let label = format!("Start focus · {} min", next.focus_min());
-    match &next.keys {
-        Some(keys) => format!("{label}  {keys}"),
-        None => label,
-    }
+    label_with_keys(
+        &format!("Start focus · {} min", next.focus_min()),
+        next.keys.as_deref(),
+    )
+}
+
+/// "Capture a thought…", then the user's keys as inert text when the shortcut is registered.
+fn capture_label(next: &NextSession) -> String {
+    label_with_keys(CAPTURE_LABEL, next.capture_keys.as_deref())
 }
 
 /// Full screen (one item per display when several, the main window's first) and
@@ -122,6 +126,7 @@ pub(crate) fn menu_items(
     entries.extend(focus_entries(focus));
     entries.extend([
         MenuEntry::Separator,
+        item(CAPTURE, &capture_label(next)),
         item(SHOW, SHOW),
         with_accelerator(SETTINGS, SETTINGS, "CmdOrCtrl+,"),
         MenuEntry::Separator,

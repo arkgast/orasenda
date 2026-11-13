@@ -151,7 +151,7 @@ n/a for tenancy. Times on Board use the device's local time zone through the exi
 ### Capture panel window (ADR-016 line)
 - Label `capture`, HTML entry `capture.html`, capability `capture.json`.
 - A key-capable `NSPanel` through D3's class swap: `nonactivatingPanel`, `NSFloatingWindowLevel`, `canJoinAllSpaces | fullScreenAuxiliary | transient | ignoresCycle`, `hidesOnDeactivate` off.
-- `panel-width` (420px) × auto height, centred horizontally, in the upper third of the target display's visible frame *(author's call)*. No frame memory.
+- `panel-width` (420px) × a fixed 520 height (the page has no window permission to resize itself, and 520 fits the pad's longest state), centred horizontally, in the upper third of the target display's visible frame *(author's call)*. No frame memory.
 - Its content is `CapturePad`, with the host doing the following:
   - `onSave` → `capture_note`. On success the host posts an accessibility announcement "Saved to Inbox." through `platform-macos`, then closes the panel. On failure it rejects, so the pad shows its own error line.
   - `onClose` → `capture_close`.
