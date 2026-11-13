@@ -26,6 +26,9 @@ export const ICON_NAMES = [
   "routines",
   "review",
   "settings",
+  "edit",
+  "delete",
+  "restore",
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -100,6 +103,11 @@ const GLYPHS: Record<IconName, ReactElement> = {
       <circle cx="10" cy="10" r="2.5" />
     </>
   ),
+  edit: (
+    <path d="M3.5 16.5l.9-3.7 9.4-9.4a1.5 1.5 0 0 1 2.1 0l.7.7a1.5 1.5 0 0 1 0 2.1l-9.4 9.4zM12 5.5l2.5 2.5" />
+  ),
+  delete: <path d="M3.5 5.5h13M7.5 5.5v-2h5v2M5 5.5l.7 11h8.6l.7-11M8.5 9v4.5M11.5 9v4.5" />,
+  restore: <path d="M3.5 3.5v4h4M3.8 7.5A6.5 6.5 0 1 1 3.5 10" />,
 };
 
 export interface IconProps {

@@ -5,6 +5,7 @@ export { CapturePad } from "./components/ui/capture-pad";
 export { Choice } from "./components/ui/choice";
 export { ChoiceGroup } from "./components/ui/choice";
 export { CommandPalette } from "./components/ui/command-palette";
+export { DataTable } from "./components/ui/data-table";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
@@ -45,6 +46,11 @@ export { Tooltip } from "./components/ui/tooltip";
 export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-pad";
 export type { ChoiceGroupProps, ChoiceProps } from "./components/ui/choice";
 export type { CommandPaletteProps } from "./components/ui/command-palette";
+export type {
+  DataTableAction,
+  DataTableColumn,
+  DataTableProps,
+} from "./components/ui/data-table";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";
 export type { FloatingTimerProps } from "./components/ui/floating-timer";

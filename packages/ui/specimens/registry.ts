@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
 import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
+import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
@@ -41,4 +42,5 @@ export const specimens: Record<string, () => ReactElement> = {
   ShortcutRecorder: ShortcutRecorderSpecimen,
   ShortcutList: ShortcutListSpecimen,
   InboxRow: InboxRowSpecimen,
+  DataTable: DataTableSpecimen,
 };
