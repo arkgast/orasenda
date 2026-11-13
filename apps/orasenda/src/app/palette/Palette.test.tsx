@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { argsOf, mockBackend, RUNNING, settle } from "../../test/fixtures";
+import { argsOf, mockBackend, PAUSED, RUNNING, settle } from "../../test/fixtures";
 import { stubPaletteDom } from "../../test/paletteDom";
 import { Palette } from "./Palette";
 
@@ -70,4 +70,82 @@ test("palette_set_intent_opens_field", async () => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(asked).toHaveBeenCalled();
   stop();
+});
+
+const FAIL = () => {
+  throw new Error("boom");
+};
+
+test.each([
+  ["Start focus", {}, "timer_start", { request: { quick: false } }],
+  ["Pause session", { timer_view: () => RUNNING }, "timer_pause", undefined],
+  ["Resume session", { timer_view: () => PAUSED }, "timer_resume", undefined],
+  ["End session", { timer_view: () => RUNNING }, "timer_stop", undefined],
+  ["Floating timer", {}, "focus_view_open", { target: { kind: "floater" } }],
+  ["Use preset: Gentle", {}, "settings_set", undefined],
+])("palette_row_calls_its_command: %s", async (label, replies, cmd, args) => {
+  const { backend } = await open(replies);
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+  await settle();
+  const calls = argsOf(backend.calls, cmd);
+  expect(calls.length).toBeGreaterThan(0);
+  if (args) expect(calls).toEqual([args]);
+});
+
+test.each([
+  ["Start focus", "timer_start", {}, "Couldn't start focus. Please try again."],
+  [
+    "Pause session",
+    "timer_pause",
+    { timer_view: () => RUNNING },
+    "Couldn't pause. Please try again.",
+  ],
+  [
+    "Resume session",
+    "timer_resume",
+    { timer_view: () => PAUSED },
+    "Couldn't resume. Please try again.",
+  ],
+  [
+    "End session",
+    "timer_stop",
+    { timer_view: () => RUNNING },
+    "Couldn't end the session. Please try again.",
+  ],
+])("failed_row_keeps_palette_open_with_line: %s", async (label, cmd, replies, line) => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { onClose } = await open({ ...replies, [cmd]: FAIL });
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+  await settle();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole("status")).toHaveTextContent(line);
+  expect(console.error).toHaveBeenCalled();
+});
+
+test("focus_view_open_false_shows_line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { onClose } = await open({ focus_view_open: FAIL });
+  fireEvent.click(screen.getByRole("option", { name: /Floating timer/ }));
+  await settle();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Couldn't open the Focus view. Please try again.",
+  );
+});
+
+test("line_clears_on_query_change", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await open({ timer_start: FAIL });
+  fireEvent.click(screen.getByRole("option", { name: /Start focus/ }));
+  await settle();
+  expect(screen.getByRole("status")).toHaveTextContent("Couldn't");
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "pa" } });
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
+test("success_closes_palette", async () => {
+  const { onClose } = await open();
+  fireEvent.click(screen.getByRole("option", { name: /Start focus/ }));
+  await settle();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

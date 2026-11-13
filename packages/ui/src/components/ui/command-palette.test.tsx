@@ -222,3 +222,40 @@ test("command_palette_current_props_unchanged", () => {
   expect(document.querySelector("[data-slot=kbd]")).toBeNull();
   expect(document.querySelector("[data-slot=dialog-title]")?.className).not.toContain("sr-only");
 });
+
+test("command_palette_renders_status", () => {
+  setup({ status: "Couldn't pause. Please try again." });
+  const line = screen.getByRole("status");
+  expect(line).toHaveTextContent("Couldn't pause. Please try again.");
+  expect(line.className).not.toMatch(/critical|red/);
+});
+
+test("command_palette_keeps_open_when_select_returns_false", async () => {
+  const onSelect = vi.fn(() => false);
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  expect(onSelect).toHaveBeenCalledWith("start");
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test("command_palette_waits_for_a_promise_before_closing", async () => {
+  let settle: (keep: boolean) => void = () => {};
+  const onSelect = vi.fn(() => new Promise<boolean>((resolve) => (settle = resolve)));
+  const { onClose } = setup({ onSelect });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  expect(onClose).not.toHaveBeenCalled();
+  settle(false);
+  await Promise.resolve();
+  expect(onClose).not.toHaveBeenCalled();
+  fireEvent.click(screen.getAllByRole("option")[0]);
+  settle(true);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(onClose).toHaveBeenCalled();
+});
+
+test("command_palette_reports_query_changes", () => {
+  const onQueryChange = vi.fn();
+  const { box } = setup({ onQueryChange });
+  fireEvent.change(box, { target: { value: "pa" } });
+  expect(onQueryChange).toHaveBeenCalledWith("pa");
+});
