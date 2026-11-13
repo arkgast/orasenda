@@ -181,3 +181,64 @@ test("save_failed_reports_sent_restored_and_kind", async () => {
   expect(page.saveFailed).toHaveBeenCalledWith(CHANGED, SETTINGS, "write");
   expect(page.shown).toHaveBeenLastCalledWith(SETTINGS, true);
 });
+
+async function loaded(replies: Parameters<typeof mockBackend>[0] = {}) {
+  mockBackend({ settings_get: () => SETTINGS, ...replies });
+  load();
+  await settle();
+}
+
+const NEXT: Settings = { ...SETTINGS, presetId: DEEP };
+
+test("save_resolves_true_on_accept", async () => {
+  await loaded({ settings_set: () => null });
+  await expect(save(NEXT)).resolves.toBe(true);
+});
+
+test("save_resolves_true_when_same_as_accepted", async () => {
+  await loaded();
+  await expect(save({ ...SETTINGS })).resolves.toBe(true);
+});
+
+test("save_resolves_false_on_rollback", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  for (const error of [{ kind: "write", message: "disk" }, { kind: "unavailable", message: "x" }]) {
+    resetSettingsQueueForTests();
+    clearMocks();
+    await loaded({ settings_set: () => Promise.reject(error) });
+    await expect(save(NEXT)).resolves.toBe(false);
+  }
+});
+
+test("superseded_save_resolves_with_the_newer_outcome", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const first = deferred<null>();
+  let calls = 0;
+  await loaded({
+    settings_set: () => {
+      calls += 1;
+      return calls === 1 ? first.promise : null;
+    },
+  });
+  const a = save({ ...SETTINGS, presetId: DEEP });
+  const b = save({ ...SETTINGS, presetId: DEEP, theme: "dark" });
+  first.resolve(null);
+  await expect(a).resolves.toBe(true);
+  await expect(b).resolves.toBe(true);
+
+  resetSettingsQueueForTests();
+  clearMocks();
+  const held = deferred<null>();
+  let n = 0;
+  await loaded({
+    settings_set: () => {
+      n += 1;
+      return n === 1 ? held.promise : Promise.reject({ kind: "write", message: "x" });
+    },
+  });
+  const c = save(NEXT);
+  const d = save({ ...NEXT, theme: "dark" });
+  held.resolve(null);
+  await expect(c).resolves.toBe(false);
+  await expect(d).resolves.toBe(false);
+});

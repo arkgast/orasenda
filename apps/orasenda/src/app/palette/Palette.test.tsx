@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { onIntentFieldRequest, resetIntentEventsForTests } from "../../features/today/intentEvents";
 import { resetSettingsQueueForTests } from "../../ipc/settingsQueue";
-import { argsOf, GENTLE, mockBackend, PAUSED, RUNNING, settle } from "../../test/fixtures";
+import { argsOf, GENTLE, mockBackend, PAUSED, RUNNING, SETTINGS, settle } from "../../test/fixtures";
 import { stubPaletteDom } from "../../test/paletteDom";
 import { Palette } from "./Palette";
 
@@ -141,7 +141,9 @@ test.each([
   ],
 ])("failed_row_keeps_palette_open_with_line: %s", async (label, cmd, replies, line) => {
   for (const [, fail] of FAILURES) {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error")
+      .mockImplementation(() => {})
+      .mockClear();
     const { onClose } = await open({ ...replies, [cmd]: fail });
     fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
     await settle();
@@ -188,4 +190,40 @@ test("success_closes_palette", async () => {
   fireEvent.click(screen.getByRole("option", { name: /Start focus/ }));
   await settle();
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  ["Use preset: Gentle", "Couldn't change the preset. Please try again."],
+  ["Theme: Dark", "Couldn't change the theme. Please try again."],
+  ["Turn notifications off", "Couldn't turn off notifications. Please try again."],
+])("failed_settings_row_keeps_palette_open_with_line: %s", async (label, line) => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { onClose } = await open({ settings_set: FAIL });
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+  await settle();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole("status")).toHaveTextContent(line);
+});
+
+test.each([["Use preset: Gentle"], ["Theme: Dark"], ["Turn notifications off"]])(
+  "settings_row_success_closes_palette: %s",
+  async (label) => {
+    const { onClose } = await open();
+    fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+    await settle();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  },
+);
+
+test("notifications_on_asks_macos_first_when_not_determined", async () => {
+  const { backend } = await open({
+    timer_view: () => ({ ...RUNNING, notifications: "notDetermined" }),
+    settings_get: () => ({ ...SETTINGS, notifySessionEnd: false }),
+  });
+  fireEvent.click(screen.getByRole("option", { name: /Turn notifications on/ }));
+  await settle();
+  expect(argsOf(backend.calls, "notifications_request").length).toBe(1);
+  expect(JSON.stringify(argsOf(backend.calls, "settings_set"))).toContain(
+    '"notifySessionEnd":true',
+  );
 });
