@@ -30,7 +30,7 @@ export function InboxRow({
     <li
       data-slot="inbox-row"
       data-kind={kind}
-      className="flex min-h-hit-min max-w-panel-width list-none items-start justify-between gap-3 border-b border-line py-2"
+      className="flex min-h-hit-min list-none items-start justify-between gap-3 border-b border-line py-2 pe-1"
     >
       <div className="flex min-w-0 flex-col gap-1">
         <p className="m-0 whitespace-pre-wrap break-words text-body text-ink">{text}</p>

@@ -23,10 +23,14 @@ export function ShortcutList({ items }: ShortcutListProps): JSX.Element {
       className="w-full max-w-panel-width border-collapse text-start text-body"
     >
       <caption className="sr-only">All shortcuts</caption>
-      <thead className="sr-only">
+      <thead>
         <tr>
-          <th scope="col">Action</th>
-          <th scope="col">Keys</th>
+          <th scope="col" className="p-0">
+            <span className="sr-only">Action</span>
+          </th>
+          <th scope="col" className="p-0">
+            <span className="sr-only">Keys</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -41,13 +45,18 @@ export function ShortcutList({ items }: ShortcutListProps): JSX.Element {
               {item.action}
             </th>
             <td className="py-2 text-end">
-              <span className="inline-flex flex-wrap items-baseline justify-end gap-1">
+              <span className="inline-flex items-baseline justify-end gap-1 whitespace-nowrap">
                 {item.keys.split(" ").map((key, index) => (
+                  // inTooltip only drops the per-key spoken span: the row's sr-only span below speaks all the keys once.
                   // biome-ignore lint/suspicious/noArrayIndexKey: a fixed, ordered chord list
                   <Kbd key={`${key}-${index}`} keys={key} inTooltip />
                 ))}
                 {item.off ? (
-                  <span data-slot="shortcut-list-off" className="ms-1 text-body-sm text-ink-muted">
+                  <span
+                    data-slot="shortcut-list-off"
+                    aria-hidden="true"
+                    className="ms-1 text-body-sm text-ink-muted"
+                  >
                     Off
                   </span>
                 ) : null}

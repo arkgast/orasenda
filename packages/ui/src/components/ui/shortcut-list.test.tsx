@@ -37,6 +37,8 @@ test("shortcut_list_off_word", () => {
   const off = screen.getByRole("row", { name: /Open Focus view/ });
   expect(within(off).getByText("Off")).toBeVisible();
   expect(off).toHaveTextContent("F key");
+  expect(off.querySelector("[data-slot=shortcut-list-off]")).toHaveAttribute("aria-hidden", "true");
+  expect(off.querySelector(".sr-only")?.textContent).toBe("F key, Off");
   expect(within(screen.getByRole("row", { name: /Start focus/ })).queryByText("Off")).toBeNull();
 });
 

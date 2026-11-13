@@ -30,6 +30,11 @@ for (const theme of ["light", "dark"] as const) {
       const target = await button.boundingBox();
       expect(target?.width, state).toBeGreaterThanOrEqual(44);
       expect(target?.height, state).toBeGreaterThanOrEqual(44);
+      const textColumn = await text.locator("xpath=..").boundingBox();
+      expect(
+        (target?.x ?? 0) - ((textColumn?.x ?? 0) + (textColumn?.width ?? 0)),
+        `${state} text-to-button gap`,
+      ).toBeGreaterThanOrEqual(8);
       const rowBox = await row.boundingBox();
       expect((target?.x ?? 0) + (target?.width ?? 0), state).toBeLessThanOrEqual(
         (rowBox?.x ?? 0) + (rowBox?.width ?? 0) + 0.5,

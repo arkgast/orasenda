@@ -1,7 +1,7 @@
 A key name inline in a tip, a tooltip or a caption.
 
 - **Anatomy:** the `kbd` type style (mono 12/16), `ink` text on `surface-raised`, a 1px `line-strong` edge, `radius-sm`, padding `0 space-1`. It never wraps.
-- **Props:** `keys` (the canonical glyph string, "⌃⌥F"), `spoken` (required in running text: "Control-Option-F", "Command-Return", "F key") and `inTooltip` (inside a `Tooltip`; then `spoken` is optional). Fill `spoken` with `describeShortcut(keys).spoken`.
+- **Props:** `keys` (the canonical glyph string, "⌃⌥F"), `spoken` (required in running text: "Control-Option-F", "Command-Return", "F key") and `inTooltip` (inside a `Tooltip`, or where a parent speaks the whole chord once, as `ShortcutList` does; then `spoken` is optional). Fill `spoken` with `describeShortcut(keys).spoken`.
 - **States:** none; it is never a control.
 - **VoiceOver:** the glyph is `aria-hidden`. In running text a visually hidden sibling carries `spoken`; in a tooltip the trigger's `aria-keyshortcuts` speaks it. No live region.
 - **Single keys:** a `Kbd` for Space, F or P appears only while the Single-key shortcuts setting is on.

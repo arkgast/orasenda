@@ -23,6 +23,16 @@ for (const theme of ["light", "dark"] as const) {
       expect(box?.width, state).toBeLessThanOrEqual((frameBox?.width ?? 0) + 0.5);
       const overflow = await table.evaluate((el) => el.scrollWidth - el.clientWidth);
       expect(overflow, state).toBeLessThanOrEqual(0);
+      for (const cell of await frame.locator("tbody td").all()) {
+        const cellBox = await cell.boundingBox();
+        for (const kbd of await cell.locator('[data-slot="kbd"]').all()) {
+          const kb = await kbd.boundingBox();
+          expect(kb?.x ?? 0, state).toBeGreaterThanOrEqual((cellBox?.x ?? 0) - 0.5);
+          expect((kb?.x ?? 0) + (kb?.width ?? 0), state).toBeLessThanOrEqual(
+            (cellBox?.x ?? 0) + (cellBox?.width ?? 0) + 0.5,
+          );
+        }
+      }
       const rows = frame.locator('[data-slot="shortcut-list-row"]');
       await expect(rows.first()).toBeVisible();
       expect(await rows.count()).toBeGreaterThan(5);
