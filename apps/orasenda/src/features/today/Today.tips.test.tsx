@@ -103,9 +103,9 @@ test("menu_and_focus_view_tips_use_the_spec_copy", async () => {
   expect(line().shown.length).toBeLessThanOrEqual(65);
   await emitTimer(RUNNING);
   await emitTimer({ ...IDLE, tip: "focusView" });
-  expect(line().shown).toBe("Tip: ⇧⌘F opens full screen, ⇧⌘T the floating timer.");
+  expect(line().shown).toBe("Tip: ⌘F opens full screen, ⇧⌘T the floating timer.");
   expect(line().shown.length).toBeLessThanOrEqual(65);
   expect(line().spoken).toBe(
-    "Tip: Shift-Command-F opens full screen, Shift-Command-T the floating timer.",
+    "Tip: Command-F opens full screen, Shift-Command-T the floating timer.",
   );
 });

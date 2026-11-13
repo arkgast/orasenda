@@ -51,7 +51,7 @@ test("palette_row_runs_focus_view_and_navigation", async () => {
   const { backend } = await open();
   fireEvent.click(screen.getByRole("option", { name: /Floating timer/ }));
   await settle();
-  expect(argsOf(backend.calls, "focus_view_open")).toEqual([{ target: { kind: "floater" } }]);
+  expect(argsOf(backend.calls, "action_run")).toEqual([{ id: "floater" }]);
   cleanup();
   const again = await open();
   fireEvent.click(screen.getByRole("option", { name: /Go to Settings/ }));
@@ -114,7 +114,7 @@ test.each([
   ["Pause session", { timer_view: () => RUNNING }, "timer_pause", undefined],
   ["Resume session", { timer_view: () => PAUSED }, "timer_resume", undefined],
   ["End session", { timer_view: () => RUNNING }, "timer_stop", undefined],
-  ["Floating timer", {}, "focus_view_open", { target: { kind: "floater" } }],
+  ["Floating timer", {}, "action_run", { id: "floater" }],
   ["Just 2 minutes", {}, "timer_start", { request: { quick: true } }],
   [
     "Full screen on Built-in",
@@ -182,6 +182,17 @@ test.each([
 test.each(FAILURES)("focus_view_open_failure_shows_line: %s", async (_name, fail) => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { onClose } = await open({ focus_view_open: fail });
+  fireEvent.click(screen.getByRole("option", { name: /Full screen on Built-in/ }));
+  await settle();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Couldn't open the Focus view. Please try again.",
+  );
+});
+
+test("floater_failure_shows_line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { onClose } = await open({ action_run: FAIL });
   fireEvent.click(screen.getByRole("option", { name: /Floating timer/ }));
   await settle();
   expect(onClose).not.toHaveBeenCalled();

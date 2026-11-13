@@ -1,8 +1,11 @@
+import { FIXED_KEYS, fixedDisplay, hintFor, pageAccelerator } from "@domain/keyboard/bindings";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { presetChoices, presetMeta, presetName, selectedPreset } from "@domain/presets/presets";
 import type { Command } from "@orasenda/ui";
 import type {
+  ActionView,
   DisplayInfo,
+  FixedKeyView,
   NotificationStatus,
   PresetEntry,
   Settings,
@@ -16,8 +19,10 @@ export type PaletteInput = {
   presets: PresetEntry[];
   displays: DisplayInfo[];
   notifications: NotificationStatus;
-  /** The capture shortcut's keys as glyphs ("⌃⌥N"), only while it is registered. */
-  captureKeys?: string | null;
+  /** The registry's actions (`keyboard_state`): the palette's hints read them. */
+  actions?: ReadonlyArray<ActionView>;
+  /** The registry's fixed keys: the hints of Start focus, End session and the pages. */
+  fixed?: ReadonlyArray<FixedKeyView>;
 };
 
 const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
@@ -25,6 +30,15 @@ const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
   { theme: "light", label: "Light" },
   { theme: "dark", label: "Dark" },
 ];
+
+/** `{ shortcut }` for a fixed key, or nothing before the registry answers. */
+function fixedHint(
+  input: PaletteInput,
+  keys: string,
+): { shortcut: string } | Record<string, never> {
+  const shortcut = fixedDisplay(input.fixed ?? [], keys);
+  return shortcut ? { shortcut } : {};
+}
 
 function sessionCommands(input: PaletteInput): Command[] {
   const { view, settings, presets } = input;
@@ -35,37 +49,43 @@ function sessionCommands(input: PaletteInput): Command[] {
       ? `Start focus · ${presetName(preset)} ${preset.focusMin} min`
       : "Start focus";
     return [
-      { id: "start", label: start, shortcut: "⌘↩" },
-      { id: "quick", label: "Just 2 minutes", shortcut: "⇧⌘↩" },
+      { id: "start", label: start, ...fixedHint(input, FIXED_KEYS.start) },
+      { id: "quick", label: "Just 2 minutes", ...fixedHint(input, FIXED_KEYS.quick) },
     ];
   }
   return [
     view.state === "paused"
       ? { id: "resume", label: "Resume session" }
       : { id: "pause", label: "Pause session" },
-    { id: "end", label: "End session", shortcut: "⌘." },
+    { id: "end", label: "End session", ...fixedHint(input, FIXED_KEYS.end) },
   ];
 }
 
-function captureCommand(input: PaletteInput): Command {
-  return {
-    id: "capture",
-    label: "Capture a thought",
-    ...(input.captureKeys ? { shortcut: input.captureKeys } : {}),
-  };
+/** The hint for a registry action, when it has keys to show. */
+function hint(
+  input: PaletteInput,
+  id: ActionView["id"],
+): { shortcut: string } | Record<string, never> {
+  const keys = hintFor(input.actions?.find((action) => action.id === id));
+  return keys ? { shortcut: keys } : {};
 }
 
-function focusViewCommands(displays: DisplayInfo[]): Command[] {
+function captureCommand(input: PaletteInput): Command {
+  return { id: "capture", label: "Capture a thought", ...hint(input, "capture") };
+}
+
+function focusViewCommands(input: PaletteInput): Command[] {
+  const { displays } = input;
   if (displays.length === 0) return [];
   const full = displays.map((display, index): Command => {
     const label = displays.length === 1 ? "Full screen" : `Full screen on ${display.name}`;
     return {
       id: `fullScreen:${display.id}`,
       label,
-      ...(index === 0 ? { shortcut: "⇧⌘F" } : {}),
+      ...(index === 0 ? hint(input, "fullScreen") : {}),
     };
   });
-  return [...full, { id: "floater", label: "Floating timer", shortcut: "⇧⌘T" }];
+  return [...full, { id: "floater", label: "Floating timer", ...hint(input, "floater") }];
 }
 
 function settingsCommands(input: PaletteInput): Command[] {
@@ -106,12 +126,12 @@ export function paletteCommands(input: PaletteInput): Command[] {
   const pages = PAGE_ORDER.map(({ id, label }, index) => ({
     id: `page:${id}`,
     label: `Go to ${label}`,
-    shortcut: `⌘${index + 1}`,
+    ...fixedHint(input, pageAccelerator(index + 1)),
   }));
   return [
     ...sessionCommands(input),
     captureCommand(input),
-    ...focusViewCommands(input.displays),
+    ...focusViewCommands(input),
     ...settingsCommands(input),
     ...pages,
     ...preferenceCommands(input),

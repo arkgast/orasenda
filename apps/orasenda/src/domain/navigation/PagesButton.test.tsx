@@ -69,11 +69,14 @@ test("pages_button_sends_six_items_current_checked", async () => {
   expect({ x: request.x, y: request.y }).toEqual({ x: 12, y: 56 });
 });
 
-test("pages_button_is_a_menu_trigger_with_shortcuts", () => {
+test("pages_button_is_a_menu_trigger_with_shortcuts", async () => {
   mockBackend();
   render(<PagesButton current="today" onNavigate={() => {}} />);
   const button = screen.getByRole("button", { name: "Pages" });
   expect(button).toHaveAttribute("aria-haspopup", "menu");
+  // The chords come from the registry's fixed keys, so none show before keyboard_state answers.
+  expect(button).not.toHaveAttribute("aria-keyshortcuts");
+  await settle();
   expect(button).toHaveAttribute("aria-keyshortcuts", "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6");
 });
 

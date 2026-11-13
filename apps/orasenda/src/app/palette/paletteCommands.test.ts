@@ -1,4 +1,14 @@
-import { DISPLAYS, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS, STEADY } from "@shared/test/fixtures";
+import {
+  DISPLAYS,
+  IDLE,
+  KEYBOARD,
+  PAUSED,
+  PRESETS,
+  RUNNING,
+  SETTINGS,
+  STEADY,
+  withGlobal,
+} from "@shared/test/fixtures";
 import { expect, test } from "vitest";
 import { paletteCommands } from "./paletteCommands";
 
@@ -14,7 +24,11 @@ const labels = (input: Parameters<typeof paletteCommands>[0]) =>
   paletteCommands(input).map((c) => c.label);
 
 test("palette_commands_idle_order", () => {
-  const commands = paletteCommands(base);
+  const commands = paletteCommands({
+    ...base,
+    actions: KEYBOARD.actions,
+    fixed: KEYBOARD.fixed,
+  });
   expect(commands[0]).toMatchObject({
     id: "start",
     label: "Start focus · Steady Focus 25 min",
@@ -23,7 +37,7 @@ test("palette_commands_idle_order", () => {
   expect(commands[1]).toMatchObject({ id: "quick", label: "Just 2 minutes", shortcut: "⇧⌘↩" });
   const names = commands.map((c) => c.label);
   expect(names).toContain("Full screen on Built-in Retina Display");
-  expect(commands.find((c) => c.id === "fullScreen:1")?.shortcut).toBe("⇧⌘F");
+  expect(commands.find((c) => c.id === "fullScreen:1")?.shortcut).toBe("⌘F");
   expect(commands.find((c) => c.id === "fullScreen:2")?.shortcut).toBeUndefined();
   expect(commands.find((c) => c.id === "floater")?.shortcut).toBe("⇧⌘T");
   expect(commands.find((c) => c.id === "page:today")).toMatchObject({
@@ -32,6 +46,16 @@ test("palette_commands_idle_order", () => {
   });
   expect(names).not.toContain("Pause session");
   expect(names).not.toContain("End session");
+});
+
+test("palette_hints_come_from_the_fixed_keys", () => {
+  const fixed = KEYBOARD.fixed.map((f) =>
+    f.keys === "Super+Period" ? { ...f, display: "Z1" } : f,
+  );
+  expect(
+    paletteCommands({ ...base, view: RUNNING, fixed }).find((c) => c.id === "end")?.shortcut,
+  ).toBe("Z1");
+  expect(paletteCommands(base).find((c) => c.id === "start")?.shortcut).toBeUndefined();
 });
 
 test("palette_commands_running_pause_end_first", () => {
@@ -89,15 +113,20 @@ test("palette_session_commands_are_pause_and_end", () => {
 test("palette_has_capture_command", () => {
   // In every state, with the user's current keys when the shortcut is registered.
   for (const view of [IDLE, RUNNING, PAUSED]) {
-    const capture = paletteCommands({ ...base, view, captureKeys: "⌃⌥N" }).find(
+    const capture = paletteCommands({ ...base, view, actions: KEYBOARD.actions }).find(
       (c) => c.id === "capture",
     );
     expect(capture).toMatchObject({ label: "Capture a thought", shortcut: "⌃⌥N" });
   }
   // Not a fixed pair: the keys come from the shortcut, and are absent when it is off or failed.
+  const other = withGlobal(KEYBOARD, "capture", { display: "⌃⇧Y" });
   expect(
-    paletteCommands({ ...base, captureKeys: "⌃⇧Y" }).find((c) => c.id === "capture")?.shortcut,
+    paletteCommands({ ...base, actions: other.actions }).find((c) => c.id === "capture")?.shortcut,
   ).toBe("⌃⇧Y");
+  const failed = withGlobal(KEYBOARD, "capture", { status: "failed" });
+  expect(
+    paletteCommands({ ...base, actions: failed.actions }).find((c) => c.id === "capture")?.shortcut,
+  ).toBeUndefined();
   const without = paletteCommands(base).find((c) => c.id === "capture");
   expect(without?.label).toBe("Capture a thought");
   expect(without?.shortcut).toBeUndefined();

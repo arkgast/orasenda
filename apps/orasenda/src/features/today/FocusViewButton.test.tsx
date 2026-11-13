@@ -81,8 +81,9 @@ test("focus_view_choice_calls_open", async () => {
 
   expect(argsOf(backend.calls, "focus_view_open")).toEqual([
     { target: { kind: "fullScreen", displayId: "2" } },
-    { target: { kind: "floater" } },
   ]);
+  // The floater goes through the one entry point, so its de-duplication applies.
+  expect(argsOf(backend.calls, "action_run")).toEqual([{ id: "floater" }]);
   expect(statusNodes()).toHaveLength(0);
 });
 
@@ -106,9 +107,9 @@ function failingOpen() {
   const answers = [false, true];
   return {
     native_menu_popup: () => "floater",
-    focus_view_open: () => {
+    action_run: () => {
       if (answers.shift() === false) {
-        throw { kind: "unavailable", message: "no window" };
+        throw "no window";
       }
       return null;
     },
@@ -132,10 +133,7 @@ test("focus_view_try_again_repeats_open", async () => {
   fireEvent.click(screen.getByRole("button", { name: /try again/i }));
   await settle();
 
-  expect(argsOf(backend.calls, "focus_view_open")).toEqual([
-    { target: { kind: "floater" } },
-    { target: { kind: "floater" } },
-  ]);
+  expect(argsOf(backend.calls, "action_run")).toEqual([{ id: "floater" }, { id: "floater" }]);
   expect(statusNodes()).toHaveLength(0);
 });
 

@@ -1,12 +1,22 @@
 import { everywhere } from "@domain/keyboard/everywhere";
 import { useKeyboardView } from "@domain/keyboard/useKeyboardView";
-import type { TimerView_Serialize, TipId } from "@shared/ipc/bindings";
+import type { ActionId, KeyboardView, TimerView_Serialize, TipId } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { useEffect, useRef, useState } from "react";
 import type { TipInput } from "./statusLine";
 
+type Keys = { display: string; spoken: string };
+
+/** The in-Orasenda keys of an action, both forms, or null while either is missing. */
+function appKeys(view: KeyboardView | null, id: ActionId): Keys | null {
+  const binding = view?.actions.find((action) => action.id === id)?.app;
+  return binding?.display && binding.spoken
+    ? { display: binding.display, spoken: binding.spoken }
+    : null;
+}
+
 /** The tip's copy (spec: Welcome and tips), at most 65 characters, with the spoken keys for VoiceOver. */
-function tipInput(id: TipId, keys: { display: string; spoken: string } | null): TipInput | null {
+function tipInput(id: TipId, keys: Keys | null, view: KeyboardView | null): TipInput | null {
   switch (id) {
     case "globalShortcut":
       // The keys come from `keyboard_state`; until they are known the tip waits.
@@ -25,12 +35,17 @@ function tipInput(id: TipId, keys: { display: string; spoken: string } | null): 
       const text = "Tip: F key opens Focus view, full screen or floating.";
       return { id, text, spoken: text };
     }
-    case "focusView":
+    case "focusView": {
+      // Both keys come from the registry; until they are known, or if either is cleared, the tip waits.
+      const full = appKeys(view, "fullScreen");
+      const floater = appKeys(view, "floater");
+      if (!full || !floater) return null;
       return {
         id,
-        text: "Tip: ⇧⌘F opens full screen, ⇧⌘T the floating timer.",
-        spoken: "Tip: Shift-Command-F opens full screen, Shift-Command-T the floating timer.",
+        text: `Tip: ${full.display} opens full screen, ${floater.display} the floating timer.`,
+        spoken: `Tip: ${full.spoken} opens full screen, ${floater.spoken} the floating timer.`,
       };
+    }
   }
 }
 
@@ -71,7 +86,7 @@ export function useTips(view: TimerView_Serialize | null) {
   const keys = display && spoken ? { display, spoken } : null;
 
   return {
-    tip: id === null ? null : tipInput(id, keys),
+    tip: id === null ? null : tipInput(id, keys, keyboard),
     welcome: view?.welcome === true,
     gotIt() {
       if (id === null) return;

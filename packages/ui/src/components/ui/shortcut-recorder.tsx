@@ -16,6 +16,15 @@ export interface ShortcutRecorderProps {
   recording?: boolean;
   /** The host's line when the keys clash ("Orasenda uses ⌘K for Commands. Pick a different one."). The host decides; the recorder never does. */
   conflict?: string;
+  /** Shown (and spoken) when `keys` is omitted. Defaults to "None". */
+  emptyLabel?: string;
+  /**
+   * A well-known key the host wants confirmed. The recorder shows "<reason> Use it everywhere anyway?"
+   * with "Pick another" first (it has focus) and "Use anyway".
+   */
+  warning?: { reason: string; onUseAnyway: () => void; onPickAnother: () => void };
+  /** The In Orasenda slot: only ⌘ or ⌃ count as a modifier (⌥ alone is a typing key there), and the lines say so. */
+  appOnly?: boolean;
   /** A canonical glyph string, or null when the person turned the shortcut off (Delete). */
   onRecord: (keys: string | null) => void;
   onRestoreDefault?: () => void;
@@ -26,6 +35,8 @@ export interface ShortcutRecorderProps {
 
 /** Shown, politely, when a key without ⌘, ⌃ or ⌥ is pressed. Recording continues. */
 export const NEEDS_MODIFIER = "Add ⌘, ⌃ or ⌥. A single key can't be a shortcut.";
+/** The same for the In Orasenda slot. */
+export const NEEDS_MODIFIER_APP = "Add ⌘ or ⌃. A single key can't be a shortcut.";
 
 // Built from its code point: the copy guard reads the return arrow as an emoji, and the formatter rewrites an escape.
 const RETURN = String.fromCharCode(0x21a9);
@@ -53,19 +64,19 @@ function keyFor(code: string): string | null {
 }
 
 /** True for a press of a key a shortcut could use, when it has no ⌘, ⌃ or ⌥. */
-function missingModifier(event: KeyboardEvent): boolean {
+function missingModifier(event: KeyboardEvent, appOnly: boolean): boolean {
   return (
     !MODIFIER_CODES.test(event.code) &&
     keyFor(event.code) !== null &&
-    !(event.metaKey || event.ctrlKey || event.altKey)
+    !(event.metaKey || event.ctrlKey || (!appOnly && event.altKey))
   );
 }
 
 /** The glyph string for a press, or null when it is not a shortcut yet (a modifier alone, an unknown key, or no ⌘, ⌃ or ⌥). Modifiers come out in the order ⌃⌥⇧⌘. */
-function recorded(event: KeyboardEvent): string | null {
+function recorded(event: KeyboardEvent, appOnly: boolean): string | null {
   if (MODIFIER_CODES.test(event.code)) return null;
   const key = keyFor(event.code);
-  if (!key || !(event.metaKey || event.ctrlKey || event.altKey)) return null;
+  if (!key || !(event.metaKey || event.ctrlKey || (!appOnly && event.altKey))) return null;
   return `${event.ctrlKey ? "⌃" : ""}${event.altKey ? "⌥" : ""}${event.shiftKey ? "⇧" : ""}${event.metaKey ? "⌘" : ""}${key}`;
 }
 
@@ -82,6 +93,9 @@ export function ShortcutRecorder({
   spokenKeys,
   recording = false,
   conflict,
+  emptyLabel = "None",
+  warning,
+  appOnly = false,
   onRecord,
   onRestoreDefault,
   onRecordingChange,
@@ -115,7 +129,14 @@ export function ShortcutRecorder({
     report(false);
     setActive(false);
   }
-  const spoken = keys ? (spokenKeys ?? describeShortcut(keys).spoken) : "Off";
+  const spoken = keys ? (spokenKeys ?? describeShortcut(keys).spoken) : emptyLabel;
+  const field = useRef<HTMLButtonElement>(null);
+  const choices = useRef<HTMLDivElement>(null);
+  // The safe choice has focus when the question appears.
+  const asking = warning !== undefined;
+  useEffect(() => {
+    if (asking) choices.current?.querySelector("button")?.focus({ preventScroll: true });
+  }, [asking]);
   const hint = active ? "Type the new keys, Esc cancels" : "Change";
   const describedBy = [
     conflict ? `${fieldId}-conflict` : "",
@@ -152,9 +173,11 @@ export function ShortcutRecorder({
       onRecord(null);
       return;
     }
-    const glyphs = recorded(event);
+    const glyphs = recorded(event, appOnly);
     if (glyphs === null) {
-      setMessage(missingModifier(event) ? NEEDS_MODIFIER : "");
+      setMessage(
+        missingModifier(event, appOnly) ? (appOnly ? NEEDS_MODIFIER_APP : NEEDS_MODIFIER) : "",
+      );
       return;
     }
     stop();
@@ -169,6 +192,7 @@ export function ShortcutRecorder({
       <button
         type="button"
         id={fieldId}
+        ref={field}
         data-slot="shortcut-recorder-field"
         data-recording={active ? "true" : undefined}
         data-conflict={conflict ? "true" : undefined}
@@ -187,7 +211,7 @@ export function ShortcutRecorder({
       >
         <span id={`${fieldId}-keys`} className="min-w-0">
           <span aria-hidden="true" className="font-mono text-kbd tabular-nums">
-            {keys ?? "Off"}
+            {keys ?? emptyLabel}
           </span>
           <span className="sr-only">{spoken}</span>
         </span>
@@ -215,15 +239,41 @@ export function ShortcutRecorder({
           aria-live="polite"
           className="col-start-1 row-start-1 m-0 text-body-sm text-ink"
         >
-          {active ? message : ""}
+          {warning ? `${warning.reason} Use it everywhere anyway?` : active ? message : ""}
         </p>
       </div>
+      {warning ? (
+        <div ref={choices} data-slot="shortcut-recorder-warning" className="flex flex-wrap gap-2">
+          <Button
+            variant="quiet"
+            aria-describedby={`${fieldId}-message`}
+            onClick={() => {
+              warning.onPickAnother();
+              field.current?.focus();
+            }}
+          >
+            Pick another
+          </Button>
+          <Button
+            variant="ghost"
+            aria-describedby={`${fieldId}-message`}
+            onClick={() => {
+              warning.onUseAnyway();
+              field.current?.focus();
+            }}
+          >
+            Use anyway
+          </Button>
+        </div>
+      ) : null}
       <p
         id={`${fieldId}-helper`}
         data-slot="field-helper"
         className="m-0 text-body-sm text-ink-muted"
       >
-        A shortcut needs Command, Control or Option plus a key. Delete turns it off.
+        {appOnly
+          ? "A shortcut needs Command or Control plus a key. Delete turns it off."
+          : "A shortcut needs Command, Control or Option plus a key. Delete turns it off."}
       </p>
       {onRestoreDefault ? (
         <div>
