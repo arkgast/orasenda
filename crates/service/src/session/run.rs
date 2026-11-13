@@ -14,6 +14,7 @@ use crate::api::{
     SettingsErrorKind, StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerState,
     TimerView, entries,
 };
+use crate::data::PendingOutcome;
 use crate::scheduler::{self, Host};
 
 const DB_FILE: &str = "orasenda.db";
@@ -31,7 +32,17 @@ pub(super) fn new_session_id() -> SessionId {
 /// Creates `dir` (SQLite does not create parent directories) and opens `orasenda.db` in it.
 pub fn open_store_at(dir: &Path, new_device_id: &str) -> Result<Store, OpenError> {
     std::fs::create_dir_all(dir).map_err(|error| OpenError::Io(error.to_string()))?;
-    Store::open(&dir.join(DB_FILE), new_device_id)
+    // A staged Restore or Delete all data lands before the store opens.
+    let outcome = crate::data::pending::apply_pending(dir);
+    let store = Store::open(&dir.join(DB_FILE), new_device_id)?;
+    if outcome == PendingOutcome::Restored {
+        // The backup may hold a live session of another run; none resumes. Clearing writes no
+        // change_log row, so the clock (0 here) is never ticked.
+        store
+            .write(0, orasenda_store::active_session::clear)
+            .map_err(|error| OpenError::Sqlite(error.to_string()))?;
+    }
+    Ok(store)
 }
 
 /// Runs `action` for a surface: lock, apply, unlock, publish (always, success or error),

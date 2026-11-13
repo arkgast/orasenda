@@ -2,6 +2,7 @@
 //! types them for the webview with tauri-specta (ADR-007); `src/ipc/bindings.ts` is generated
 //! from these.
 
+mod data;
 mod errors;
 mod events;
 mod hint;
@@ -14,6 +15,9 @@ mod tests;
 mod timer;
 mod tips;
 
+pub use data::{
+    BackupEntry, BackupFrequency, BackupKind, BackupPolicy, DataCounts, DataError, DataErrorKind,
+};
 pub use errors::{
     NotificationsError, NotificationsErrorKind, SettingsError, SettingsErrorKind,
     TimerCommandError, TimerCommandErrorKind,
