@@ -344,7 +344,9 @@ SCENARIOS.boardFifty = boardBackend(() => boardNotes(50));
 SCENARIOS.boardLong = boardBackend(() => [
   boardNote(
     1,
-    `${"A thought that goes on and on, ".repeat(30)}\nand has a second line.`.slice(0, 1000),
+    `${"A thought that goes on and on, ".repeat(30)}\nand has a second line.`
+      .padEnd(1000, " words")
+      .slice(0, 1000),
   ),
   boardNote(2, "Supercalifragilisticexpialidocious".repeat(6)),
 ]);
