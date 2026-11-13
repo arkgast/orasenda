@@ -122,6 +122,9 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-keyboard-state",
         "allow-keyboard-set-shortcut",
         "allow-keyboard-restore-default",
+        "allow-inbox-list",
+        "allow-inbox-remove",
+        "allow-inbox-restore",
     ] {
         assert!(
             permissions.iter().any(|p| p == granted),
@@ -223,6 +226,10 @@ fn main_capability_exact() {
             "allow-keyboard-state",
             "allow-keyboard-set-shortcut",
             "allow-keyboard-restore-default",
+            "allow-capture-note",
+            "allow-inbox-list",
+            "allow-inbox-remove",
+            "allow-inbox-restore",
         ],
     );
     let (_, main) = capability("main.json");
@@ -390,6 +397,11 @@ fn export_bindings() {
         "plannedMin: number | null",
         "presetsList: () => __TAURI_INVOKE<PresetEntry[]>(\"presets_list\")",
         "nativeMenuPopup",
+        "captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>",
+        "inboxList: () => typedError<NoteView[], InboxError>",
+        "inboxRemove: (id: string) => typedError<null, InboxError>",
+        "inboxRestore: (id: string) => typedError<null, InboxError>",
+        "inboxChanged: makeEvent<",
         "displaysList: () => __TAURI_INVOKE<DisplayInfo[]>(\"displays_list\")",
         "focusViewOpen: (target: FocusViewTarget) => typedError<null, FocusViewError>",
         "focusViewClose: () => typedError<null, FocusViewError>",

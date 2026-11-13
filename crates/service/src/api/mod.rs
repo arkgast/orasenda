@@ -5,6 +5,7 @@
 mod errors;
 mod events;
 mod hint;
+mod inbox;
 mod keyboard;
 mod presets;
 mod settings;
@@ -18,6 +19,7 @@ pub use errors::{
 };
 pub use events::{MilestoneEvent, MilestoneKind, NavigatePage};
 pub use hint::Hint;
+pub use inbox::{CaptureError, InboxError, NewCapture, NoteKind, NoteView};
 pub use keyboard::{KeyboardError, KeyboardView, ShortcutId, ShortcutStatus, ShortcutView};
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
 pub use settings::{Settings, Theme, default_selected_id};

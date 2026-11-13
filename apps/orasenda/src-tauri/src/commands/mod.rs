@@ -5,6 +5,7 @@ use tauri::PackageInfo;
 
 mod focus_views;
 mod hint;
+mod inbox;
 mod keyboard;
 mod menu_popup;
 mod navigation;
@@ -17,6 +18,7 @@ pub use focus_views::*;
 #[cfg(test)]
 pub(crate) use focus_views::{closable, display_infos};
 pub use hint::*;
+pub use inbox::*;
 pub use keyboard::*;
 pub use menu_popup::*;
 pub use navigation::*;

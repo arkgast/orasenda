@@ -33,6 +33,10 @@
     "allow-presets-restore-defaults",
     "allow-keyboard-state",
     "allow-keyboard-set-shortcut",
-    "allow-keyboard-restore-default"
+    "allow-keyboard-restore-default",
+    "allow-capture-note",
+    "allow-inbox-list",
+    "allow-inbox-remove",
+    "allow-inbox-restore"
   ]
 }

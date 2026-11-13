@@ -38,6 +38,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::ApplyTheme(_) => "theme",
             Event::OpenedSettings => "opened",
             Event::KeyboardChanged(_) => "keyboard",
+            Event::InboxChanged(_) => "inbox",
         })
         .collect();
     assert_eq!(

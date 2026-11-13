@@ -12,7 +12,7 @@ use orasenda_store::Store;
 
 use crate::api::ClockTick;
 use crate::api::{
-    KeyboardView, MilestoneEvent, PresetEntry, Settings, StartRequest, Theme, TimerView,
+    KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, StartRequest, Theme, TimerView,
 };
 use crate::scheduler::Host;
 use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
@@ -40,6 +40,7 @@ pub enum Event {
     Released,
     SettingsChanged(Settings),
     PresetsChanged(Vec<PresetEntry>),
+    InboxChanged(Vec<NoteView>),
     ApplyTheme(Theme),
     OpenedSettings,
     KeyboardChanged(KeyboardView),
@@ -391,6 +392,11 @@ impl Host for TestHost {
     fn emit_keyboard_changed(&self, view: &KeyboardView) {
         self.note_unlocked();
         self.0.log.push(Event::KeyboardChanged(view.clone()));
+    }
+
+    fn emit_inbox_changed(&self, notes: &[NoteView]) {
+        self.note_unlocked();
+        self.0.log.push(Event::InboxChanged(notes.to_vec()));
     }
 
     fn apply_theme(&self, theme: Theme) {
