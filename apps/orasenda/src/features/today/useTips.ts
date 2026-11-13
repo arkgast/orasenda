@@ -1,3 +1,4 @@
+import { everywhere } from "@domain/keyboard/everywhere";
 import { useKeyboardView } from "@domain/keyboard/useKeyboardView";
 import type { TimerView_Serialize, TipId } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
@@ -63,7 +64,10 @@ export function useTips(view: TimerView_Serialize | null) {
   const current = idle ? (due ?? latched) : null;
   const id = current !== null && !dismissed ? current : null;
   // The keys wait for both forms, so VoiceOver never reads a gap.
-  const { display, spoken } = keyboard?.startPause ?? { display: null, spoken: null };
+  const { display, spoken } = (keyboard ? everywhere(keyboard, "startPause") : null) ?? {
+    display: null,
+    spoken: null,
+  };
   const keys = display && spoken ? { display, spoken } : null;
 
   return {

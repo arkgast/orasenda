@@ -1,3 +1,4 @@
+import { everywhere } from "@domain/keyboard/everywhere";
 import { commands, events, type KeyboardView, type NoteView } from "@shared/ipc/bindings";
 import { subscribe } from "@shared/ipc/subscribe";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -157,8 +158,8 @@ export function useCaptureKeys(): string | null | undefined {
     let cancelled = false;
     let newer = false;
     const show = (view: KeyboardView) => {
-      const { status, display } = view.capture;
-      setKeys(status === "registered" && display ? display : null);
+      const capture = everywhere(view, "capture");
+      setKeys(capture?.status === "registered" && capture.display ? capture.display : null);
     };
     commands.keyboardState().then(
       (view) => {

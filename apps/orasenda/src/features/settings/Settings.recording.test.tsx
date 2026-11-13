@@ -30,7 +30,7 @@ const recordingCalls = (backend: { calls: { cmd: string; args: unknown }[] }) =>
 test("bound_chord_while_recording_reaches_recorder", async () => {
   const { backend } = await openSettings({
     keyboard_recording: () => undefined,
-    keyboard_set_shortcut: () => KEYBOARD,
+    keyboard_set_binding: () => KEYBOARD,
   });
   fireEvent.click(field());
   await settle();
@@ -38,15 +38,15 @@ test("bound_chord_while_recording_reaches_recorder", async () => {
   expect(recordingCalls(backend)).toEqual([{ on: true }]);
   fireEvent.keyDown(field(), { code: "KeyK", metaKey: true });
   await settle();
-  expect(argsOf(backend.calls, "keyboard_set_shortcut")).toEqual([
-    { id: "startPause", keys: "Super+KeyK" },
+  expect(argsOf(backend.calls, "keyboard_set_binding")).toEqual([
+    { id: "startPause", slot: "global", keys: "Super+KeyK", confirmWarning: false },
   ]);
 });
 
 test("recorder_off_on_record", async () => {
   const { backend } = await openSettings({
     keyboard_recording: () => undefined,
-    keyboard_set_shortcut: () => KEYBOARD,
+    keyboard_set_binding: () => KEYBOARD,
   });
   fireEvent.click(field());
   fireEvent.keyDown(field(), { code: "KeyG", ctrlKey: true, altKey: true });

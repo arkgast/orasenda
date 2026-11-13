@@ -5,7 +5,8 @@ mod entries;
 mod native;
 
 use orasenda_core::{PresetId, default_presets};
-use orasenda_service::api::{KeyboardView, ShortcutStatus, ShortcutView};
+use orasenda_service::api::{GlobalBindingView, KeyboardView, ShortcutStatus};
+use orasenda_service::keyboard::ActionId;
 
 use crate::ipc::{DisplayInfo, PresetEntry, Settings, entries};
 
@@ -74,22 +75,27 @@ pub(crate) struct NextSession {
     pub(crate) capture_keys: Option<String>,
 }
 
-/// The inert keys text for a shortcut item: the user's keys while the shortcut is registered.
-fn inert_keys(shortcut: &ShortcutView) -> Option<String> {
+/// The inert keys text for a shortcut item: the user's *Everywhere* keys while the shortcut is
+/// registered (ADR-017: never a live accelerator).
+fn inert_keys(shortcut: &GlobalBindingView) -> Option<String> {
     match shortcut.status {
-        ShortcutStatus::Registered => shortcut.display.clone(),
+        ShortcutStatus::Registered => shortcut.binding.display.clone(),
         ShortcutStatus::Off | ShortcutStatus::Failed => None,
     }
 }
 
+fn keys_of(view: &KeyboardView, id: ActionId) -> Option<String> {
+    view.action(id).and_then(|a| inert_keys(&a.global))
+}
+
 /// The inert keys text for the Start item.
 pub(crate) fn start_keys(view: &KeyboardView) -> Option<String> {
-    inert_keys(&view.start_pause)
+    keys_of(view, ActionId::StartPause)
 }
 
 /// The inert keys text for the Capture item.
 pub(crate) fn capture_keys(view: &KeyboardView) -> Option<String> {
-    inert_keys(&view.capture)
+    keys_of(view, ActionId::Capture)
 }
 
 /// A menu label followed by its inert keys text, when there is any.

@@ -32,7 +32,7 @@
     "allow-preset-undo-remove",
     "allow-presets-restore-defaults",
     "allow-keyboard-state",
-    "allow-keyboard-set-shortcut",
+    "allow-keyboard-set-binding",
     "allow-keyboard-restore-default",
     "allow-keyboard-recording",
     "allow-action-run",

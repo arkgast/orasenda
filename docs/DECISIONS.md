@@ -287,7 +287,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-020: Two bindings per action and one shortcut registry
 - **Date:** 2026-11-13
-- **Status:** proposed (spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Amends ADR-016 (Keys) and ADR-017.
+- **Status:** accepted (2026-11-13; built by H3b1 and H3b2, #449 and #451; spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Amends ADR-016 (Keys) and ADR-017.
 - **Context:** Keys are defined in at least five places today: the menu accelerators (`apps/orasenda/src-tauri/src/menu/focus_menu.rs:22-24`), the menu-key clash list (`crates/service/src/keyboard/accelerator.rs` `MENU_KEYS`), the two global shortcuts (`crates/service/src/api/keyboard.rs:17-22`), the palette's hints (`apps/orasenda/src/app/palette/paletteCommands.ts:43-76`) and the floater's key table (`crates/platform-macos/src/windows/keys.rs`). Only start or pause and capture can be changed, and only system-wide. The owner wants every action to be reachable both inside Orasenda and from any app, each binding editable (sub-project H, 2026-11-13).
 - **Options considered:**
   1. **Two bindings per action, one registry in Rust:** *In Orasenda* is a native app-menu item with an accelerator (works in every Orasenda window, shows in the menu bar); *Everywhere* is a global shortcut through `tauri-plugin-global-shortcut` (ADR-017). One table feeds the menu, the registrar, the single-key handlers, the palette hints and Settings.

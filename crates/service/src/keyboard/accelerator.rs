@@ -41,7 +41,9 @@ const MODIFIERS: [(&str, &str, &str); 4] = [
 
 /// The keys beyond letters and digits, as the recorder and the Kbd key table have them: code,
 /// glyph, spoken word.
-const NAMED_KEYS: [(&str, &str, &str); 10] = [
+const NAMED_KEYS: [(&str, &str, &str); 12] = [
+    ("Escape", "Esc", "Escape"),
+    ("Backquote", "`", "Backtick"),
     ("Period", ".", "Period"),
     ("Comma", ",", "Comma"),
     ("Enter", "↩", "Return"),
@@ -156,21 +158,4 @@ impl Accelerator {
     pub fn modifiers(&self) -> [bool; 4] {
         self.mods
     }
-}
-
-/// Shortcuts the app menu and the command palette already use: ⌘K, ⇧⌘F, ⇧⌘T, ⌘,, ⌘↩, ⇧⌘↩ and ⌘..
-const MENU_KEYS: [&str; 7] = [
-    "Super+KeyK",
-    "Shift+Super+KeyF",
-    "Shift+Super+KeyT",
-    "Super+Comma",
-    "Super+Enter",
-    "Shift+Super+Enter",
-    "Super+Period",
-];
-
-/// Whether an app menu shortcut uses these keys.
-pub fn is_menu_shortcut(acc: &Accelerator) -> bool {
-    let canonical = acc.canonical();
-    MENU_KEYS.contains(&canonical.as_str())
 }

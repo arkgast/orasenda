@@ -39,7 +39,7 @@ fn tip_variant_follows_status_and_voice_over() {
     kb.set_voice_over(&host, false);
     assert_eq!(tip(&host), Some(TipId::GlobalShortcut), "VoiceOver off");
 
-    kb.set_shortcut(&host, ShortcutId::StartPause, None)
+    kb.set_binding(&host, ActionId::StartPause, Slot::Global, None, false)
         .expect("off");
     assert_eq!(tip(&host), Some(TipId::GlobalShortcutMenu), "shortcut off");
 }

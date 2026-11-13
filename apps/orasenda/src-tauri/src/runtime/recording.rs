@@ -5,12 +5,16 @@
 //! boolean in memory: `on` twice then `off` once restores, and a relaunch starts unsuspended.
 //! The single keys live in the webview, whose recorder already takes every key it hears.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
+
+use orasenda_service::keyboard::{ActionId, KeyboardService};
 
 use tauri::menu::Menu;
 use tauri::{AppHandle, Manager, Wry};
 
 use crate::lifecycle::MAIN;
+use crate::runtime::ticker::AppHost;
 use crate::shortcuts::{AppBackend, Backend, Held};
 
 /// What suspending and restoring does to the app. Real on desktop ([`AppSuspender`]), a fake in tests.
@@ -30,10 +34,12 @@ pub enum Leave {
     Reload,
 }
 
-/// The suspension: one boolean, held across the work so two calls never interleave.
+/// The suspension: one boolean, held across the work so two calls never interleave. `turn` counts
+/// every `set`, so a restore queued by `left_detached` is dropped when a newer `set` came after it.
 pub struct Recording<H: Suspender> {
     host: H,
     on: Mutex<bool>,
+    turn: AtomicU64,
 }
 
 impl<H: Suspender> Recording<H> {
@@ -41,12 +47,23 @@ impl<H: Suspender> Recording<H> {
         Recording {
             host,
             on: Mutex::new(false),
+            turn: AtomicU64::new(0),
         }
     }
 
     /// `keyboard_recording(on)`. A repeated `on` or `off` does nothing.
     pub fn set(&self, on: bool) {
+        self.turn.fetch_add(1, Ordering::SeqCst);
+        self.set_in_turn(on, None);
+    }
+
+    /// Applies `on`. With `only_turn`, does nothing when a `set` has come since that turn: the
+    /// check runs under the lock, so a restore never undoes a newer recording.
+    fn set_in_turn(&self, on: bool, only_turn: Option<u64>) {
         let mut state = self.on.lock().unwrap_or_else(PoisonError::into_inner);
+        if only_turn.is_some_and(|turn| turn != self.turn.load(Ordering::SeqCst)) {
+            return;
+        }
         if *state == on {
             return;
         }
@@ -58,20 +75,32 @@ impl<H: Suspender> Recording<H> {
         *state = on;
     }
 
-    /// Restores when `main` is left by any route Rust sees.
+    /// Restores when `main` is left by any route Rust sees (the tests; the app queues it).
+    #[cfg(test)]
     pub fn left(&self, _how: Leave) {
-        self.set(false);
+        self.set_in_turn(false, None);
     }
 
-    /// Like [`Recording::left`], but on its own thread. The main thread must never wait on the lock:
-    /// a suspend or restore in flight waits for the main thread (the plugin hops to it), so waiting
-    /// here would deadlock.
-    pub fn left_detached(self: &Arc<Self>, how: Leave)
+    /// Like [`Recording::left`], but on a blocking task. The main thread must never wait on the
+    /// lock: a suspend or restore in flight waits for the main thread (the plugin hops to it), so
+    /// waiting here would deadlock. A `set` that arrives after this call wins over the restore.
+    pub fn left_detached(self: &Arc<Self>, _how: Leave)
     where
         H: Send + Sync + 'static,
     {
+        let turn = self.turn.load(Ordering::SeqCst);
         let recording = Arc::clone(self);
-        std::thread::spawn(move || recording.left(how));
+        tauri::async_runtime::spawn_blocking(move || recording.set_in_turn(false, Some(turn)));
+    }
+
+    #[cfg(test)]
+    pub fn turn_for_test(&self) -> u64 {
+        self.turn.load(Ordering::SeqCst)
+    }
+
+    #[cfg(test)]
+    pub fn restore_if_turn_for_test(&self, turn: u64) {
+        self.set_in_turn(false, Some(turn));
     }
 
     #[cfg(test)]
@@ -80,7 +109,7 @@ impl<H: Suspender> Recording<H> {
     }
 }
 
-/// The global-shortcut half of the suspension: every held shortcut is unregistered, then registered again.
+/// The global-shortcut half of the suspension: every live shortcut is let go, then taken again.
 pub struct Globals<B: Backend> {
     backend: B,
     held: Arc<Held>,
@@ -92,19 +121,26 @@ impl<B: Backend> Globals<B> {
     }
 
     pub fn suspend(&self) {
-        for shortcut in self.held.shortcuts() {
+        for shortcut in self.held.begin_suspension() {
             if let Err(error) = self.backend.unregister(shortcut) {
                 eprintln!("recording: could not suspend a shortcut: {error}");
             }
         }
     }
 
-    pub fn restore(&self) {
-        for shortcut in self.held.shortcuts() {
-            if let Err(error) = self.backend.register(shortcut) {
+    /// Takes the shortcuts again. Returns the actions whose shortcut the OS no longer lets us
+    /// have (another app took it meanwhile); they are dropped from the held table.
+    pub fn restore(&self) -> Vec<ActionId> {
+        let mut failed = Vec::new();
+        for entry in self.held.end_suspension() {
+            let result = self.backend.register(entry.shortcut);
+            if let Err(error) = &result {
                 eprintln!("recording: could not restore a shortcut: {error}");
+                failed.push(entry.id);
             }
+            self.held.settle(entry, result.is_ok());
         }
+        failed
     }
 }
 
@@ -146,7 +182,18 @@ impl Suspender for AppSuspender {
         {
             eprintln!("recording: could not put the menu back: {error}");
         }
-        self.globals.restore();
+        // The menu came back with the accelerators it had when it was taken off.
+        #[cfg(target_os = "macos")]
+        if let Some(keyboard) = self.app.try_state::<KeyboardService>() {
+            crate::menu::apply_accelerators(&self.app, &keyboard.view(&AppHost::new(&self.app)));
+        }
+        let failed = self.globals.restore();
+        if !failed.is_empty()
+            && let Some(keyboard) = self.app.try_state::<KeyboardService>()
+        {
+            // Settings shows these as not available, and the tray drops their keys.
+            keyboard.mark_failed(&AppHost::new(&self.app), &failed);
+        }
     }
 }
 

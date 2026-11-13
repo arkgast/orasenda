@@ -8,6 +8,7 @@ import {
   RUNNING,
   SETTINGS,
   settle,
+  withGlobal,
 } from "@shared/test/fixtures";
 import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
@@ -69,10 +70,7 @@ test("palette_capture_row_opens_the_panel_and_shows_the_current_keys", async () 
 
 test("palette_capture_row_without_keys_when_the_shortcut_failed", async () => {
   await open({
-    keyboard_state: () => ({
-      ...KEYBOARD,
-      capture: { keys: "Control+Alt+KeyN", display: "⌃⌥N", spoken: null, status: "failed" },
-    }),
+    keyboard_state: () => withGlobal(KEYBOARD, "capture", { status: "failed" }),
   });
   expect(screen.getByRole("option", { name: /Capture a thought/ })).not.toHaveTextContent("⌃⌥N");
 });

@@ -1,3 +1,4 @@
+import { KEYBOARD } from "@shared/test/fixtures/keyboardView";
 import type {
   AppInfo,
   DisplayInfo,
@@ -6,7 +7,6 @@ import type {
   NoteView,
   PresetEntry,
   Settings,
-  ShortcutView_Serialize,
   TimerView_Serialize,
 } from "../../../shared/ipc/bindings";
 
@@ -114,24 +114,10 @@ export const SETTINGS: Settings = {
   deepCapHours: 4,
   notifySessionEnd: true,
   notifyTwoMinutes: false,
-  startPauseKeys: "Control+Alt+KeyF",
-  captureKeys: "Control+Alt+KeyN",
   singleKey: true,
 };
 
-const shortcut = (keys: string, display: string, spoken: string): ShortcutView_Serialize => ({
-  keys,
-  display,
-  spoken,
-  status: "registered",
-});
-
-export const KEYBOARD: KeyboardView_Serialize = {
-  startPause: shortcut("Control+Alt+KeyF", "⌃⌥F", "Control-Option-F"),
-  capture: shortcut("Control+Alt+KeyN", "⌃⌥N", "Control-Option-N"),
-  singleKey: true,
-  voiceOver: false,
-};
+export { KEYBOARD };
 
 export const NOTE: NoteView = {
   id: "note-1",

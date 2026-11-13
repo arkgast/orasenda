@@ -1,3 +1,4 @@
+import { withGlobal } from "@shared/test/fixtures/keyboardView";
 import type { Handler } from "./backend";
 import { backend, KEYBOARD, SETTINGS } from "./backend";
 
@@ -6,8 +7,7 @@ export const KEYBOARD_SCENARIOS: Record<string, Handler> = {
   keyboardLongest: backend({
     replies: {
       keyboard_state: () => ({
-        ...KEYBOARD,
-        startPause: { ...KEYBOARD.startPause, status: "failed" },
+        ...withGlobal(KEYBOARD, "startPause", { status: "failed" }),
         voiceOver: true,
       }),
     },

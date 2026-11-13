@@ -66,12 +66,18 @@ export const commands = {
 	presetUndoRemove: (id: PresetId) => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("preset_undo_remove", { id })),
 	/**  Restores the default presets; answers the live list. */
 	presetsRestoreDefaults: () => typedError<PresetEntry[], PresetError_Serialize>(__TAURI_INVOKE("presets_restore_defaults")),
-	/**  The global shortcuts, their status and the single-key setting. */
+	/**
+	 *  The shortcut registry: every action with both bindings, the fixed keys, the status of the
+	 *  *Everywhere* shortcuts and the single-key setting.
+	 */
 	keyboardState: () => __TAURI_INVOKE<KeyboardView_Serialize>("keyboard_state"),
-	/**  Changes a global shortcut; `null` turns it off. It is saved only after it registers. */
-	keyboardSetShortcut: (id: ShortcutId, keys: string | null) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_set_shortcut", { id, keys })),
-	/**  Sets a global shortcut back to its default, by the same path as a change. */
-	keyboardRestoreDefault: (id: ShortcutId) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id })),
+	/**
+	 *  Changes one binding of an action; `null` empties the slot. An *Everywhere* binding is saved
+	 *  only after it registers. `confirmWarning` goes ahead past a well-known key's warning.
+	 */
+	keyboardSetBinding: (id: ActionId, slot: Slot, keys: string | null, confirmWarning: boolean) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_set_binding", { id, slot, keys, confirmWarning })),
+	/**  Sets one binding back to its default, by the same path as a change. */
+	keyboardRestoreDefault: (id: ActionId, slot: Slot) => typedError<KeyboardView_Serialize, KeyboardError>(__TAURI_INVOKE("keyboard_restore_default", { id, slot })),
 	/**
 	 *  Suspends (`on`) or restores (`off`) every menu accelerator, global shortcut and single key while a
 	 *  shortcut recorder listens. In memory only; a repeat of the same state does nothing.
@@ -153,6 +159,37 @@ export const events = {
 /**  One action of the shortcut registry. The declaration order is the registry order. */
 export type ActionId = "fullScreen" | "fullScreenOther" | "leaveFullScreen" | "floater" | "startPause" | "capture";
 
+/**  One registry action with both of its bindings. */
+export type ActionView = ActionView_Serialize | ActionView_Deserialize;
+
+/**  One registry action with both of its bindings. */
+export type ActionView_Deserialize = {
+	id: ActionId,
+	label: string,
+	description: string,
+	group: Group,
+	/**  *In Orasenda*: an app-menu accelerator. */
+	app: BindingView_Deserialize,
+	/**  *Everywhere*: a global shortcut. */
+	global: GlobalBindingView_Deserialize,
+	/**  A key that works on its own in the main window (Space), or none. */
+	singleKey?: string | null,
+};
+
+/**  One registry action with both of its bindings. */
+export type ActionView_Serialize = {
+	id: ActionId,
+	label: string,
+	description: string,
+	group: Group,
+	/**  *In Orasenda*: an app-menu accelerator. */
+	app: BindingView_Serialize,
+	/**  *Everywhere*: a global shortcut. */
+	global: GlobalBindingView_Serialize,
+	/**  A key that works on its own in the main window (Space), or none. */
+	singleKey: string | null,
+};
+
 /**
  *  App name and version (from the caller, never from core's own Cargo metadata) and the
  *  platform it runs on.
@@ -203,6 +240,37 @@ export type BackupPolicy = {
 	frequency: BackupFrequency,
 	/**  How many backups to keep, 1 to 50, across every kind. */
 	keep: number,
+};
+
+/**  One binding of an action, in one slot. */
+export type BindingView = BindingView_Serialize | BindingView_Deserialize;
+
+/**  One binding of an action, in one slot. */
+export type BindingView_Deserialize = {
+	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when the slot is empty. */
+	keys?: string | null,
+	/**  The keys as glyphs ("⌃⌥F"). */
+	display?: string | null,
+	/**  The keys as words ("Control-Option-F"). */
+	spoken?: string | null,
+	/**  The binding is the registry's default for this slot. */
+	isDefault: boolean,
+	/**  The repair pass turned this binding off, and its row has not changed since. */
+	repaired: boolean,
+};
+
+/**  One binding of an action, in one slot. */
+export type BindingView_Serialize = {
+	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when the slot is empty. */
+	keys: string | null,
+	/**  The keys as glyphs ("⌃⌥F"). */
+	display: string | null,
+	/**  The keys as words ("Control-Option-F"). */
+	spoken: string | null,
+	/**  The binding is the registry's default for this slot. */
+	isDefault: boolean,
+	/**  The repair pass turned this binding off, and its row has not changed since. */
+	repaired: boolean,
 };
 
 /**  What to do to an intercepted app, serialized lowercase. */
@@ -315,6 +383,14 @@ export type EngineState = "idle" | "running" | "paused";
 /**  What `data_export` did: the file it saved (its name), or nothing when the panel was cancelled. */
 export type ExportOutcome = { kind: "saved"; file: string } | { kind: "cancelled" };
 
+/**  A key that can't be rebound, listed so Settings can show it and conflicts can name it. */
+export type FixedKeyView = {
+	label: string,
+	keys: string,
+	display: string,
+	spoken: string,
+};
+
 /**
  *  The part of a Focus window's display that the menu bar and the Dock cover, in points.
  *  Sent to that one window, which pads its body by it.
@@ -342,6 +418,22 @@ export type FocusViewErrorKind =
 /**  Which Focus view to open. */
 export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind: "floater" };
 
+/**  An *Everywhere* binding with its status. */
+export type GlobalBindingView = GlobalBindingView_Serialize | GlobalBindingView_Deserialize;
+
+/**  An *Everywhere* binding with its status. */
+export type GlobalBindingView_Deserialize = {
+	status: ShortcutStatus,
+} & BindingView_Deserialize;
+
+/**  An *Everywhere* binding with its status. */
+export type GlobalBindingView_Serialize = {
+	status: ShortcutStatus,
+} & BindingView_Serialize;
+
+/**  Where an action works. */
+export type Group = "fullScreen" | "timer" | "capture";
+
 /**  A hint the timer view can carry. Each is shown once, ever. */
 export type Hint = 
 /**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
@@ -363,44 +455,56 @@ export type InboxError =
 /**  The store is unavailable or the write failed. */
 "store";
 
-/**  Why a shortcut change failed. */
+/**  Why a binding change failed. */
 export type KeyboardError = 
 /**  The keys are not a shortcut. */
 "invalid" | 
-/**  Orasenda uses the keys already: the other global shortcut or an app menu shortcut. */
-"inUseByOrasenda" | 
+/**  The slot needs a modifier: ⌘ or ⌃ *In Orasenda*; ⌘, ⌃ or ⌥ *Everywhere*. */
+({ needsModifier: {
+	slot: Slot,
+} }) & { inUse?: never; warning?: never } | 
+/**  macOS keeps this key, so it never reaches Orasenda. */
+"systemKeeps" | 
+/**  Orasenda uses the keys already; `action` names the holder (an action or a fixed key). */
+({ inUse: {
+	action: string,
+} }) & { needsModifier?: never; warning?: never } | 
+/**  A key other apps use; ask again with the warning confirmed to go ahead. */
+({ warning: {
+	reason: string,
+} }) & { inUse?: never; needsModifier?: never } | 
 /**  The system would not register the keys (another app may hold them). Nothing was saved. */
 "unavailable" | 
-/**  The shortcut could not be saved; the settings did not change. */
+/**  The binding could not be saved; the settings did not change. */
 "store";
 
 /**
- *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
- *  `keyboard-changed` event.
+ *  The registry and the status of the global shortcuts: `keyboard_state`, `keyboard-changed`
+ *  and the result of a binding change.
  */
 export type KeyboardView = KeyboardView_Serialize | KeyboardView_Deserialize;
 
 /**
- *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
- *  `keyboard-changed` event.
+ *  The registry and the status of the global shortcuts: `keyboard_state`, `keyboard-changed`
+ *  and the result of a binding change.
  */
 export type KeyboardView_Deserialize = {
-	startPause: ShortcutView_Deserialize,
-	capture: ShortcutView_Deserialize,
-	/**  Space, F and P on Today and Space in Focus view work. */
+	actions: ActionView_Deserialize[],
+	fixed: FixedKeyView[],
+	/**  Space and P on Today and Space in full screen act. */
 	singleKey: boolean,
 	/**  VoiceOver is on, so its ⌃⌥ keys may take the shortcuts. */
 	voiceOver: boolean,
 };
 
 /**
- *  The keyboard settings and the status of both global shortcuts: `keyboard_state` and the
- *  `keyboard-changed` event.
+ *  The registry and the status of the global shortcuts: `keyboard_state`, `keyboard-changed`
+ *  and the result of a binding change.
  */
 export type KeyboardView_Serialize = {
-	startPause: ShortcutView_Serialize,
-	capture: ShortcutView_Serialize,
-	/**  Space, F and P on Today and Space in Focus view work. */
+	actions: ActionView_Serialize[],
+	fixed: FixedKeyView[],
+	/**  Space and P on Today and Space in full screen act. */
 	singleKey: boolean,
 	/**  VoiceOver is on, so its ⌃⌥ keys may take the shortcuts. */
 	voiceOver: boolean,
@@ -666,14 +770,7 @@ export type Settings = {
 	notifySessionEnd: boolean,
 	/**  Notify two minutes before the end (`notify.two_minutes`). */
 	notifyTwoMinutes: boolean,
-	/**
-	 *  The start or pause shortcut: a canonical accelerator or `"off"` (`keys.start_pause`).
-	 *  Changed only through `keyboard_set_shortcut`; `settings_set` ignores it.
-	 */
-	startPauseKeys: string,
-	/**  The capture shortcut, the same (`keys.capture`). */
-	captureKeys: string,
-	/**  Space, F and P on Today and Space in Focus view act (`keys.single_key`). */
+	/**  Space and P on Today and Space in full screen act (`keys.single_key`). */
 	singleKey: boolean,
 };
 
@@ -695,42 +792,16 @@ export type SettingsTarget = "general" | "timer" | "notifications" |
 /**  The *Keep going automatically* row in Timer. */
 "keepGoing";
 
-/**  A global shortcut: it works from any app. */
-export type ShortcutId = 
-/**  Starts the selected preset, or pauses or resumes a running session. */
-"startPause" | 
-/**  Opens the capture panel. */
-"capture";
-
-/**  Whether a global shortcut is working now. Memory only: computed at launch and after each change. */
+/**  Whether an *Everywhere* binding is working now. Memory only: computed at launch and after each change. */
 export type ShortcutStatus = "registered" | "off" | 
 /**  Saved but not registered: another app holds it, or it could not be registered. */
 "failed";
 
-/**  One global shortcut as the webview shows it. */
-export type ShortcutView = ShortcutView_Serialize | ShortcutView_Deserialize;
-
-/**  One global shortcut as the webview shows it. */
-export type ShortcutView_Deserialize = {
-	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when it is off. */
-	keys?: string | null,
-	/**  The keys as glyphs ("⌃⌥F"). */
-	display?: string | null,
-	/**  The keys as words ("Control-Option-F"). */
-	spoken?: string | null,
-	status: ShortcutStatus,
-};
-
-/**  One global shortcut as the webview shows it. */
-export type ShortcutView_Serialize = {
-	/**  The canonical accelerator ("Control+Alt+KeyF"); `None` when it is off. */
-	keys: string | null,
-	/**  The keys as glyphs ("⌃⌥F"). */
-	display: string | null,
-	/**  The keys as words ("Control-Option-F"). */
-	spoken: string | null,
-	status: ShortcutStatus,
-};
+/**
+ *  Where an action is bound. `App` is *In Orasenda* (an app-menu accelerator), `Global` is
+ *  *Everywhere* (a global shortcut). `App` comes first in registry order.
+ */
+export type Slot = "app" | "global";
 
 /**  Why a spike command failed, with a message for the log. */
 export type SpikeError = {

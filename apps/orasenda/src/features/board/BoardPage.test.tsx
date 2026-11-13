@@ -1,31 +1,21 @@
-import type { KeyboardView_Serialize, NoteView } from "@shared/ipc/bindings";
+import type { NoteView } from "@shared/ipc/bindings";
 import { events } from "@shared/ipc/bindings";
 import {
   argsOf,
   deferred,
   emitInboxChanged,
+  KEYBOARD,
   mockBackend,
   NOTES,
   type Replies,
   settle,
+  withGlobal,
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { BoardPage } from "./BoardPage";
 
-const shortcut = (status: "registered" | "off" | "failed", display: string | null) => ({
-  keys: display ? "Control+Alt+KeyN" : null,
-  display,
-  spoken: display ? "Control-Option-N" : null,
-  status,
-});
-const KEYBOARD: KeyboardView_Serialize = {
-  startPause: shortcut("registered", "⌃⌥F"),
-  capture: shortcut("registered", "⌃⌥N"),
-  singleKey: true,
-  voiceOver: false,
-};
 const THREE: NoteView[] = [
   ...NOTES.slice(0, 1),
   { ...NOTES[0], id: "note-3", text: "Call the dentist" },
@@ -138,10 +128,12 @@ test("board_empty_copy_follows_shortcut_status", async () => {
   for (const status of ["off", "failed"] as const) {
     const { unmount: again } = await renderBoard({
       inbox_list: () => [],
-      keyboard_state: () => ({
-        ...KEYBOARD,
-        capture: shortcut(status, status === "off" ? null : "⌃⌥N"),
-      }),
+      keyboard_state: () =>
+        withGlobal(
+          KEYBOARD,
+          "capture",
+          status === "off" ? { keys: null, display: null, spoken: null, status } : { status },
+        ),
     });
     expect(screen.getByText("Capture a thought from the menu bar.")).toBeInTheDocument();
     again();
@@ -153,7 +145,9 @@ test("board_empty_copy_follows_shortcut_status", async () => {
 test("board_empty_copy_follows_keyboard_changed", async () => {
   await renderBoard({ inbox_list: () => [] });
   await act(async () => {
-    await events.keyboardChanged.emit({ ...KEYBOARD, capture: shortcut("off", null) });
+    await events.keyboardChanged.emit(
+      withGlobal(KEYBOARD, "capture", { keys: null, display: null, spoken: null, status: "off" }),
+    );
   });
   expect(screen.getByText("Capture a thought from the menu bar.")).toBeInTheDocument();
 });

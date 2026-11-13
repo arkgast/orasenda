@@ -5,7 +5,8 @@ use orasenda_store::{StoreError, Txn, meta, settings};
 use serde::de::DeserializeOwned;
 
 use super::*;
-use crate::api::{Settings, SettingsError, SettingsErrorKind, ShortcutId, StoreStatus, Theme};
+use crate::api::{Settings, SettingsError, SettingsErrorKind, StoreStatus, Theme};
+use crate::keyboard::{ActionId, Slot, conflicts, fold};
 
 /// What a successful settings save tells the caller, for the side effects after unlock.
 #[derive(Debug, Clone, PartialEq)]
@@ -28,8 +29,6 @@ pub(super) const KEY_DEEP_CAP_HOURS: &str = "timer.deep_cap_hours";
 pub(super) const KEY_NOTIFY: &str = "notify.session_end";
 pub(super) const KEY_NOTIFY_TWO: &str = "notify.two_minutes";
 pub(super) const KEY_THEME: &str = "ui.theme";
-pub(super) const KEY_START_PAUSE: &str = "keys.start_pause";
-pub(super) const KEY_CAPTURE: &str = "keys.capture";
 pub(super) const KEY_SINGLE_KEY: &str = "keys.single_key";
 pub(super) const META_NOTIFY_REVIEW: &str = "notify_review";
 
@@ -215,8 +214,6 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         deep_cap_hours: read_ranged(txn, KEY_DEEP_CAP_HOURS, defaults.deep_cap_hours, 2..=8)?,
         notify_session_end: read_setting(txn, KEY_NOTIFY, notify_default)?,
         notify_two_minutes: read_setting(txn, KEY_NOTIFY_TWO, defaults.notify_two_minutes)?,
-        start_pause_keys: read_setting(txn, KEY_START_PAUSE, defaults.start_pause_keys)?,
-        capture_keys: read_setting(txn, KEY_CAPTURE, defaults.capture_keys)?,
         single_key: read_setting(txn, KEY_SINGLE_KEY, defaults.single_key)?,
     };
     Ok((settings, pending))
@@ -310,26 +307,29 @@ fn merge_changed(
 }
 
 impl SessionService {
-    /// Saves a global shortcut's keys (`"off"` or a canonical accelerator) and updates the cache.
-    /// This is the only way they change: `set_settings` ignores them, because a shortcut is saved
-    /// only after it registered (`KeyboardService::set_shortcut`). Returns the presented settings.
-    pub fn save_shortcut_keys(
+    /// Saves the row of a binding (`"off"` or a canonical accelerator) and clears its repaired
+    /// mark. This is the only way a binding changes: a global shortcut is saved only after it
+    /// registered (`KeyboardService::set_binding`).
+    pub fn save_binding(
         &mut self,
-        id: ShortcutId,
+        id: ActionId,
+        slot: Slot,
         keys: &str,
         now_ms: u64,
-    ) -> Result<Settings, StoreError> {
-        let key = match id {
-            ShortcutId::StartPause => KEY_START_PAUSE,
-            ShortcutId::Capture => KEY_CAPTURE,
-        };
-        self.write_owed(now_ms, |txn| settings::set(txn, key, &keys))?;
-        match id {
-            ShortcutId::StartPause => self.settings.start_pause_keys = keys.into(),
-            ShortcutId::Capture => self.settings.capture_keys = keys.into(),
-        }
+    ) -> Result<(), StoreError> {
+        self.write_owed(now_ms, |txn| conflicts::write_row(txn, id, slot, keys))?;
         self.refresh_status();
-        Ok(self.settings())
+        Ok(())
+    }
+
+    /// The launch pass over the saved keys: the legacy fold (once per device), then the repair.
+    pub fn fold_and_repair_keys(&mut self, now_ms: u64) -> Result<(), StoreError> {
+        self.write_owed(now_ms, |txn| {
+            fold::run_at_launch(txn)?;
+            conflicts::repair(txn).map(|_| ())
+        })?;
+        self.refresh_status();
+        Ok(())
     }
 
     /// Why `settings` can't be saved, if it can't: a preset that is not in the library, or a

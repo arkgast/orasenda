@@ -24,7 +24,7 @@ pub(crate) const DEDUP: Duration = Duration::from_millis(300);
 #[derive(Default)]
 pub struct Recent {
     seen: Mutex<Vec<(ActionId, Instant)>>,
-    /// Held while a window route runs, so two admitted runs never overlap (newest wins by order).
+    /// Held while a window route runs, so two admitted runs never overlap.
     windows: Mutex<()>,
 }
 

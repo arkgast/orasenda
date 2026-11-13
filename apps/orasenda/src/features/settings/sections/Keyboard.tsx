@@ -1,3 +1,4 @@
+import { everywhere } from "@domain/keyboard/everywhere";
 import {
   Choice,
   describeShortcut,
@@ -6,18 +7,29 @@ import {
   type ShortcutListItem,
   ShortcutRecorder,
 } from "@orasenda/ui";
-import type { KeyboardError, KeyboardView, ShortcutId } from "@shared/ipc/bindings";
+import type { KeyboardError, KeyboardView } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { useRef } from "react";
-import { SHORTCUT_NAME, useKeyboard } from "../useKeyboard";
+import { SHORTCUT_NAME, type ShortcutId, useKeyboard } from "../useKeyboard";
 
 const ANOTHER_APP = "Another app uses this shortcut. Pick a different one.";
-const ERROR_LINE: Record<KeyboardError, string> = {
+const FIXED_LINES = {
   unavailable: ANOTHER_APP,
-  inUseByOrasenda: "Orasenda already uses this shortcut. Pick a different one.",
   invalid: "That isn't a shortcut Orasenda can use. Pick a different one.",
   store: "Orasenda can't save this shortcut right now.",
-};
+  systemKeeps: "macOS keeps this key, so it won't reach Orasenda.",
+} as const;
+
+function errorLine(error: KeyboardError): string {
+  if (typeof error === "string") return FIXED_LINES[error];
+  if (error.needsModifier) {
+    return error.needsModifier.slot === "app"
+      ? "Add ⌘ or ⌃. A single key can't be a shortcut."
+      : "Add ⌘, ⌃ or ⌥. A single key can't be a shortcut.";
+  }
+  if (error.inUse) return `Orasenda uses this for ${error.inUse.action}. Pick a different one.`;
+  return `${error.warning?.reason ?? ""} Pick a different one.`.trim();
+}
 const VOICE_OVER = "VoiceOver uses Control-Option keys. You may want a different shortcut.";
 const SINGLE_KEY_HELP =
   "Space, F and P on Today, Space in Focus view. Shortcuts with ⌘ always work.";
@@ -56,9 +68,10 @@ function lineFor(
   view: KeyboardView,
   error: KeyboardError | null,
 ): string | undefined {
-  if (error) return ERROR_LINE[error];
-  if (view[id].status === "failed") return ANOTHER_APP;
-  const parts = view[id].keys?.split("+") ?? [];
+  if (error) return errorLine(error);
+  const binding = everywhere(view, id);
+  if (binding?.status === "failed") return ANOTHER_APP;
+  const parts = binding?.keys?.split("+") ?? [];
   return view.voiceOver && parts.includes("Control") && parts.includes("Alt")
     ? VOICE_OVER
     : undefined;
@@ -111,8 +124,8 @@ export function Keyboard({
             <ShortcutRecorder
               id={`keyboard-${id}-field`}
               label={`${SHORTCUT_NAME[id]} from anywhere`}
-              keys={view[id].display ?? undefined}
-              spokenKeys={view[id].spoken ?? undefined}
+              keys={everywhere(view, id)?.display ?? undefined}
+              spokenKeys={everywhere(view, id)?.spoken ?? undefined}
               conflict={lineFor(id, view, keyboard.errors[id])}
               onRecordingChange={suspend}
               onRecord={(glyphs) => void suspension.current.then(() => keyboard.set(id, glyphs))}

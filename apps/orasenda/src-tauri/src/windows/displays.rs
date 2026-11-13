@@ -106,7 +106,7 @@ pub(crate) fn serialized<R>(lock: &std::sync::Mutex<()>, step: impl FnOnce() -> 
 
 /// Tells the Focus menu and the menu-bar item the displays and whether the floater is
 /// shown. Reading the displays waits on the main thread, so this runs on a blocking one.
-/// The Focus menu is rebuilt only when the displays changed.
+/// The View menu is rebuilt only when the displays changed.
 #[cfg(desktop)]
 pub(crate) fn refresh_surfaces(app: &AppHandle) {
     let app = app.clone();
@@ -115,7 +115,7 @@ pub(crate) fn refresh_surfaces(app: &AppHandle) {
             let displays = crate::commands::display_infos(&AppOps::new(&app));
             let floater_shown = super::floater_shown(&app);
             #[cfg(target_os = "macos")]
-            rebuild_focus_menu(&app, &displays, floater_shown);
+            rebuild_focus_menu(&app, &displays);
             crate::tray::focus_changed(
                 &app,
                 crate::tray::FocusItems {
@@ -128,7 +128,7 @@ pub(crate) fn refresh_surfaces(app: &AppHandle) {
 }
 
 #[cfg(all(desktop, target_os = "macos"))]
-fn rebuild_focus_menu(app: &AppHandle, displays: &[crate::ipc::DisplayInfo], floater_shown: bool) {
+fn rebuild_focus_menu(app: &AppHandle, displays: &[crate::ipc::DisplayInfo]) {
     fn last() -> std::sync::MutexGuard<'static, Option<Vec<crate::ipc::DisplayInfo>>> {
         MENU_DISPLAYS
             .lock()
@@ -141,11 +141,12 @@ fn rebuild_focus_menu(app: &AppHandle, displays: &[crate::ipc::DisplayInfo], flo
         }
         *known = Some(displays.to_vec());
     }
+    let view = crate::runtime::keyboard::state(app);
     let on_main = app.clone();
     let owned = displays.to_vec();
     let queued = app.run_on_main_thread(move || {
-        if let Err(error) = crate::menu::focus_menu::rebuild(&on_main, &owned, floater_shown) {
-            eprintln!("displays: the Focus menu didn't follow: {error}");
+        if let Err(error) = crate::menu::rebuild_view(&on_main, &view, owned.len()) {
+            eprintln!("displays: the View menu didn't follow: {error}");
             *last() = None;
         }
     });

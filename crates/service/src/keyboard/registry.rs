@@ -5,7 +5,8 @@
 use super::{ActionId, Slot};
 
 /// Where an action works.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub enum Group {
     FullScreen,
     Timer,
