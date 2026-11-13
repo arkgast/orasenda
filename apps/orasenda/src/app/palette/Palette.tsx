@@ -17,14 +17,30 @@ type Props = {
   onNavigate(page: NavPage): void;
 };
 
-function logged<T>(name: string, promise: Promise<T>): void {
-  promise.then(
-    (result) => {
-      const failed = result as { status?: string; error?: unknown };
-      if (failed?.status === "error") console.error(`${name} failed`, failed.error);
-    },
-    (error: unknown) => console.error(`${name} failed`, error),
-  );
+/** Runs a command; resolves to whether it worked. Failures are logged here, shown by the caller. */
+async function attempt<T>(name: string, promise: Promise<T>): Promise<boolean> {
+  try {
+    const result = (await promise) as { status?: string; error?: unknown } | null;
+    if (result?.status !== "error") return true;
+    console.error(`${name} failed`, result.error);
+  } catch (error) {
+    console.error(`${name} failed`, error);
+  }
+  return false;
+}
+
+/** A settings change is queued, not awaited: it counts as done unless starting it throws. */
+function settled(
+  report: (worked: boolean) => Promise<boolean>,
+  change: () => void,
+): Promise<boolean> {
+  try {
+    change();
+  } catch (error) {
+    console.error("settings change failed", error);
+    return report(false);
+  }
+  return Promise.resolve(true);
 }
 
 /**
@@ -35,6 +51,7 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
   const presets = usePresets();
   const [view, setView] = useState<TimerView_Serialize | null>(null);
   const [settings, setSettings] = useState<Settings | null>(latest());
+  const [status, setStatus] = useState<string | undefined>();
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
 
   useEffect(() => {
@@ -85,35 +102,48 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
     if (current) save({ ...current, ...patch });
   };
 
-  const run = (id: string) => {
+  const run = (id: string): boolean | Promise<boolean> | undefined => {
     const [kind, arg] = id.split(/:(.*)/s);
+    const report = (action: string) => async (worked: boolean) => {
+      if (!worked) setStatus(`Couldn't ${action}. Please try again.`);
+      return worked;
+    };
+    const start = (quick: boolean) =>
+      attempt("timer_start", commands.timerStart({ quick })).then(report("start focus"));
     switch (kind) {
       case "start":
-        return logged("timer_start", commands.timerStart({ quick: false }));
+        return start(false);
       case "quick":
-        return logged("timer_start", commands.timerStart({ quick: true }));
+        return start(true);
       case "pause":
-        return logged("timer_pause", commands.timerPause());
+        return attempt("timer_pause", commands.timerPause()).then(report("pause"));
       case "resume":
-        return logged("timer_resume", commands.timerResume());
+        return attempt("timer_resume", commands.timerResume()).then(report("resume"));
       case "end":
-        return logged("timer_stop", commands.timerStop());
+        return attempt("timer_stop", commands.timerStop()).then(report("end the session"));
       case "intent":
         onNavigate("today");
         // After the palette has unmounted and handed focus back to its opener; asked sooner, the
         // restored focus would blur the new field and close it at once.
-        return void setTimeout(requestIntentField, 0);
+        setTimeout(requestIntentField, 0);
+        return;
       case "fullScreen":
-        return void openFocusView({ kind: "fullScreen", displayId: arg });
+        return openFocusView({ kind: "fullScreen", displayId: arg }).then(
+          report("open the Focus view"),
+        );
       case "floater":
-        return void openFocusView({ kind: "floater" });
+        return openFocusView({ kind: "floater" }).then(report("open the Focus view"));
       case "preset":
-        return change({ presetId: arg });
+        return settled(report("change the preset"), () => change({ presetId: arg }));
       case "theme":
-        return change({ theme: arg as Theme });
-      case "notifications":
+        return settled(report("change the theme"), () => change({ theme: arg as Theme }));
+      case "notifications": {
         if (!settings || !view) return;
-        return settings.notifySessionEnd ? untick() : tick(view.notifications);
+        const on = settings.notifySessionEnd;
+        return settled(report(`turn ${on ? "off" : "on"} notifications`), () =>
+          on ? untick() : tick(view.notifications),
+        );
+      }
       case "page": {
         const page = PAGE_ORDER.find(({ id: pageId }) => pageId === arg);
         if (page) onNavigate(page.id);
@@ -121,5 +151,19 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
     }
   };
 
-  return <CommandPalette commands={entries} compact={compact} onSelect={run} onClose={onClose} />;
+  const select = (id: string) => {
+    setStatus(undefined);
+    return run(id);
+  };
+
+  return (
+    <CommandPalette
+      commands={entries}
+      compact={compact}
+      onSelect={select}
+      onQueryChange={() => setStatus(undefined)}
+      status={status}
+      onClose={onClose}
+    />
+  );
 }

@@ -139,7 +139,7 @@ test("line_clears_on_query_change", async () => {
   fireEvent.click(screen.getByRole("option", { name: /Start focus/ }));
   await settle();
   expect(screen.getByRole("status")).toHaveTextContent("Couldn't");
-  fireEvent.change(screen.getByRole("combobox"), { target: { value: "pa" } });
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "Go to" } });
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
