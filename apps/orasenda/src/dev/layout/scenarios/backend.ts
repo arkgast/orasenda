@@ -184,6 +184,7 @@ export function backend({
     native_menu_popup: () => null,
     // The capture panel and the palette's Capture row.
     capture_open: () => null,
+    action_run: () => null,
     capture_close: () => null,
     keyboard_recording: () => null,
     capture_note: () => NOTE,

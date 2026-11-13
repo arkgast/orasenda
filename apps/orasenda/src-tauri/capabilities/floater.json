@@ -16,6 +16,7 @@
     "allow-native-menu-popup",
     "allow-focus-view-close",
     "allow-main-show",
+    "allow-action-run",
     "allow-capture-open"
   ]
 }

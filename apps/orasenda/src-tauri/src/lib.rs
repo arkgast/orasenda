@@ -1,6 +1,9 @@
 //! Orasenda app shell: Tauri glue around `orasenda-core`. Logic and time live in Rust; the
 //! webview renders (ADR-001). The IPC contract is typed by tauri-specta (ADR-007).
 
+mod actions;
+#[cfg(test)]
+mod actions_tests;
 mod commands;
 mod data_tasks;
 mod file_picker;
@@ -63,6 +66,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::keyboard_set_shortcut,
             commands::keyboard_restore_default,
             commands::keyboard_recording,
+            commands::action_run,
             commands::capture_note,
             commands::capture_open,
             commands::capture_close,
@@ -149,6 +153,7 @@ pub fn run() {
         .manage(runtime::session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
         .manage(commands::PopupSlot::default())
+        .manage(actions::Recent::default())
         .manage(windows::frames::Frames::default())
         .manage(notifications::Notifications::default())
         .invoke_handler(builder.invoke_handler())

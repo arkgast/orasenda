@@ -10,6 +10,7 @@
 #![cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 
 use crate::ipc::DisplayInfo;
+use orasenda_service::keyboard::ActionId;
 
 /// The submenu's id, to find it again when the displays change.
 pub(crate) const FOCUS_MENU_ID: &str = "focus:menu";
@@ -51,8 +52,8 @@ fn item(id: String, label: String, accelerator: Option<&'static str>) -> FocusMe
 /// One display gives *Full Screen*; several give a *Full Screen* submenu with one
 /// "Full screen on <name>" item each, and only the first (the main window's display)
 /// carries ⇧⌘F. No displays gives no Full Screen item. *Floating Timer* reads the same
-/// whether the floater is shown or not: it opens the floater or gives it key focus, and never
-/// hides it (the tray and Esc close it). The flag is here so the menu follows the floater.
+/// whether the floater is shown or not: it toggles the floater (`actions::run`). The flag is
+/// here so the menu follows the floater.
 pub(crate) fn focus_menu_entries(
     displays: &[DisplayInfo],
     _floater_shown: bool,
@@ -101,7 +102,7 @@ pub(crate) fn focus_menu_entries(
 pub(crate) enum FocusCommand {
     /// Open (or focus) the Focus window of the display with this id.
     FullScreen(String),
-    /// Open the floater, or give it key focus.
+    /// Toggle the floater: open it, or close it and go back to `main`.
     Floater,
     /// Bring `main` forward and ask it to open the command palette.
     Commands,
@@ -119,6 +120,14 @@ pub(crate) fn focus_command(id: &str) -> Option<FocusCommand> {
     }
 }
 
+/// The registry action a Focus command runs through `actions::run`, if it is one.
+pub(crate) fn action_of(command: &FocusCommand) -> Option<ActionId> {
+    match command {
+        FocusCommand::Floater => Some(ActionId::Floater),
+        FocusCommand::FullScreen(_) | FocusCommand::Commands => None,
+    }
+}
+
 /// Whether `id` belongs to the Focus menu.
 pub(crate) fn is_focus_id(id: &str) -> bool {
     id.starts_with(ID_PREFIX)
@@ -129,6 +138,7 @@ pub(crate) use native::{build_submenu, on_menu_event, rebuild};
 
 #[cfg(target_os = "macos")]
 mod native {
+    use orasenda_service::keyboard::Source;
     use tauri::menu::{IsMenuItem, Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu};
     use tauri::{AppHandle, Wry};
 
@@ -209,15 +219,9 @@ mod native {
                 });
             }
             Some(FocusCommand::Floater) => {
-                let app = app.clone();
-                tauri::async_runtime::spawn_blocking(move || {
-                    if let Err(error) = crate::windows::open_floater(&app) {
-                        eprintln!(
-                            "focus_menu: the floating timer didn't open: {}",
-                            error.message
-                        );
-                    }
-                });
+                if let Some(id) = super::action_of(&FocusCommand::Floater) {
+                    crate::actions::run(app, id, Source::Menu);
+                }
             }
             Some(FocusCommand::Commands) => crate::windows::open_palette(app),
             None => {}
@@ -228,6 +232,13 @@ mod native {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn floater_menu_item_runs_the_floater_action() {
+        let command = focus_command(FLOATER_ID).unwrap();
+        assert_eq!(action_of(&command), Some(ActionId::Floater));
+        assert_eq!(action_of(&FocusCommand::Commands), None);
+    }
     use crate::menu::app_menu::{SETTINGS_ID, app_menu_ids, is_app_menu_command};
     use crate::tray::{END_SESSION, PAUSE, QUIT, RESUME, SETTINGS, SHOW, menu_command};
 

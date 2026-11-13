@@ -77,6 +77,11 @@ export const commands = {
 	 *  shortcut recorder listens. In memory only; a repeat of the same state does nothing.
 	 */
 	keyboardRecording: (on: boolean) => __TAURI_INVOKE<void>("keyboard_recording", { on }),
+	/**
+	 *  Runs an action by its id, the same way a menu, a global shortcut or the tray would (`actions::run`).
+	 *  A repeat within 300 ms is dropped. The work runs on its own thread; a failure is logged.
+	 */
+	actionRun: (id: ActionId) => __TAURI_INVOKE<void>("action_run", { id }),
 	/**  Saves a note to the Inbox; answers it. */
 	captureNote: (note: NewCapture) => typedError<NoteView, CaptureError>(__TAURI_INVOKE("capture_note", { note })),
 	/**  Opens the capture panel on the display under the pointer, or focuses its text area. */
@@ -145,6 +150,9 @@ export const events = {
 };
 
 /* Types */
+/**  One action of the shortcut registry. The declaration order is the registry order. */
+export type ActionId = "fullScreen" | "fullScreenOther" | "leaveFullScreen" | "floater" | "startPause" | "capture";
+
 /**
  *  App name and version (from the caller, never from core's own Cargo metadata) and the
  *  platform it runs on.

@@ -34,6 +34,7 @@ pub const COMMANDS: &[&str] = &[
     "keyboard_set_shortcut",
     "keyboard_restore_default",
     "keyboard_recording",
+    "action_run",
     "capture_note",
     "capture_open",
     "capture_close",

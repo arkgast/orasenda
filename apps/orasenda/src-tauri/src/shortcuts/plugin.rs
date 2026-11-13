@@ -3,9 +3,10 @@
 use std::sync::Arc;
 
 use orasenda_service::api::ShortcutId;
+use orasenda_service::keyboard::{ActionId, Source};
 use tauri::plugin::TauriPlugin;
 use tauri::{AppHandle, Wry};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use super::{Backend, Held, pressed};
 
@@ -33,14 +34,28 @@ impl Backend for AppBackend {
 pub fn plugin(held: Arc<Held>) -> TauriPlugin<Wry> {
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(move |app, shortcut, event| {
-            if let Some(id) = pressed(&held, shortcut.id(), event.state()) {
-                dispatch(app, id);
+            match pressed(&held, shortcut.id(), event.state()) {
+                Some(id) => dispatch(app, id),
+                // A key-down the plugin heard that no held shortcut owns: it says which key a
+                // dead capture press was (bug (b) hands-on check).
+                None if event.state() == ShortcutState::Pressed => {
+                    eprintln!("shortcuts: key-down {} is not held", shortcut.id());
+                }
+                None => {}
             }
         })
         .build()
 }
 
+/// The registry action a global shortcut stands for.
+pub(crate) fn action_of(id: ShortcutId) -> ActionId {
+    match id {
+        ShortcutId::StartPause => ActionId::StartPause,
+        ShortcutId::Capture => ActionId::Capture,
+    }
+}
+
+/// Both global keys go through `actions::run`, like every other route.
 fn dispatch(app: &AppHandle, id: ShortcutId) {
-    let app = app.clone();
-    tauri::async_runtime::spawn_blocking(move || crate::runtime::keyboard::pressed(&app, id));
+    crate::actions::run(app, action_of(id), Source::Global);
 }

@@ -1,7 +1,7 @@
 //! The global shortcuts: parsing, registering before saving, and what a press does.
 //!
 //! The service holds no plugin: a [`ShortcutRegistrar`] does the OS part (spec: Hotkeys and
-//! capture, ADR-017). `src-tauri` supplies the registrar and calls [`KeyboardService::on_pressed`].
+//! capture, ADR-017). `src-tauri` supplies the registrar and runs a press through `actions::run` (`on_pressed` is only kept for tests until H3b2 removes it).
 
 mod accelerator;
 mod action;

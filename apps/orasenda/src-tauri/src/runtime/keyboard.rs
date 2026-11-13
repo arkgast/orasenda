@@ -38,14 +38,6 @@ pub fn manage(app: &tauri::App) {
     app.manage(KeyboardService::new(registrar));
 }
 
-/// A registered shortcut was pressed (key-down). Runs on a blocking thread.
-#[cfg(desktop)]
-pub fn pressed(app: &tauri::AppHandle, id: ShortcutId) {
-    if let Some(keyboard) = service(app) {
-        keyboard.on_pressed(&AppHost::new(app), id);
-    }
-}
-
 /// Tells the service whether VoiceOver is on (at launch and on change).
 #[cfg(target_os = "macos")]
 pub fn observe_voice_over(app: &tauri::AppHandle) {
