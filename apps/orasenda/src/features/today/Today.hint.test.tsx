@@ -1,10 +1,10 @@
+import { resetPresetsForTests } from "@domain/presets/presets";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import { argsOf, emitTimer, mockBackend, RUNNING, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
 import { statusNodes } from "./Today.support";
 

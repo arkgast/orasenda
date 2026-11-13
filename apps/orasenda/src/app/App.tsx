@@ -1,3 +1,8 @@
+import { useShortcuts } from "@domain/keyboard/useShortcuts";
+import { PAGE_ORDER } from "@domain/navigation/PagesButton";
+import { onPaletteRequest } from "@domain/navigation/paletteRequest";
+import type { Arrival, SettingsTarget } from "@features/settings/Settings";
+import type { AboutInfo } from "@features/settings/sections/About";
 import { type NavPage, NavRail } from "@orasenda/ui";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
@@ -14,13 +19,8 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
-import type { Arrival, SettingsTarget } from "../features/settings/Settings";
-import type { AboutInfo } from "../features/settings/sections/About";
 import { PageBoundary } from "./PageBoundary";
-import { PAGE_ORDER } from "./PagesButton";
 import { Palette } from "./palette/Palette";
-import { onPaletteRequest } from "./palette/paletteRequest";
-import { useShortcuts } from "./useShortcuts";
 
 export type { SettingsTarget };
 
@@ -42,9 +42,9 @@ function load<P>(importer: () => Promise<ComponentType<P>>) {
   return { ready: promise, use: () => use(promise as Parameters<typeof use<ComponentType<P>>>[0]) };
 }
 
-const todayPage = load(() => import("../features/today/Today").then((m) => m.Today));
-const settingsPage = load(() => import("../features/settings/Settings").then((m) => m.Settings));
-const boardPage = load(() => import("../features/board/BoardPage").then((m) => m.BoardPage));
+const todayPage = load(() => import("@features/today/Today").then((m) => m.Today));
+const settingsPage = load(() => import("@features/settings/Settings").then((m) => m.Settings));
+const boardPage = load(() => import("@features/board/BoardPage").then((m) => m.BoardPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
 
 /** Settles when every page has loaded or failed; the test setup waits for it. */
@@ -55,15 +55,15 @@ export const pagesReady = Promise.allSettled([
   placeholderPage.ready,
 ]);
 
-function Today(props: ComponentProps<typeof import("../features/today/Today").Today>) {
+function Today(props: ComponentProps<typeof import("@features/today/Today").Today>) {
   const Page = todayPage.use();
   return <Page {...props} />;
 }
-function Settings(props: ComponentProps<typeof import("../features/settings/Settings").Settings>) {
+function Settings(props: ComponentProps<typeof import("@features/settings/Settings").Settings>) {
   const Page = settingsPage.use();
   return <Page {...props} />;
 }
-function Board(props: ComponentProps<typeof import("../features/board/BoardPage").BoardPage>) {
+function Board(props: ComponentProps<typeof import("@features/board/BoardPage").BoardPage>) {
   const Page = boardPage.use();
   return <Page {...props} />;
 }

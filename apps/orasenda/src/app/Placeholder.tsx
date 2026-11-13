@@ -1,5 +1,5 @@
+import { PagesButton } from "@domain/navigation/PagesButton";
 import { EmptyState, type NavPage } from "@orasenda/ui";
-import { PagesButton } from "./PagesButton";
 
 type Props = {
   /** The page's name, its only `h1`. */

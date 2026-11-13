@@ -1,3 +1,10 @@
+import { useShortcuts } from "@domain/keyboard/useShortcuts";
+import { PagesButton } from "@domain/navigation/PagesButton";
+import { PresetSummary } from "@domain/presets/PresetSummary";
+import { selectedPreset, usePresets } from "@domain/presets/presets";
+import { commandFailure } from "@domain/timer/commandFailure";
+import { useClock } from "@domain/timer/useClock";
+import { useTimer } from "@domain/timer/useTimer";
 import type { NavPage } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type {
@@ -12,20 +19,14 @@ import type {
 import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useRef, useState } from "react";
-import { PagesButton } from "../../app/PagesButton";
-import { useShortcuts } from "../../app/useShortcuts";
-import { useClock } from "../timer/useClock";
-import { useTimer } from "../timer/useTimer";
 import { Controls } from "./Controls";
 import { FocusViewButton } from "./FocusViewButton";
 import { openFocusView } from "./focusView";
 import { type IntentDone, IntentField } from "./IntentField";
 import { claimIntentRequest, onIntentFieldRequest } from "./intentEvents";
 import { type Notice, noticeAfter } from "./notices";
-import { PresetSummary } from "./PresetSummary";
-import { selectedPreset, usePresets } from "./presets";
 import { StatusRow } from "./StatusRow";
-import { commandFailure, type StatusActionId, statusLine } from "./statusLine";
+import { type StatusActionId, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
 import { useTodayKeys } from "./todayKeys";
 import { useControlFocus } from "./useControlFocus";

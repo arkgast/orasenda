@@ -1,7 +1,7 @@
+import { PagesButton } from "@domain/navigation/PagesButton";
 import { Icon, IconButton, type NavPage } from "@orasenda/ui";
 import { commands } from "@shared/ipc/bindings";
 import { type ReactElement, type ReactNode, useRef, useState } from "react";
-import { PagesButton } from "../../app/PagesButton";
 
 export type SectionId =
   | "general"

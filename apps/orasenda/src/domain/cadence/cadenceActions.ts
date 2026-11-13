@@ -1,7 +1,7 @@
 import type { FullScreenFocus } from "@orasenda/ui";
 import type { TimerView_Serialize } from "@shared/ipc/bindings";
 import type { ComponentProps } from "react";
-import { cadenceOffers } from "../today/cadenceOffers";
+import { cadenceOffers } from "./cadenceOffers";
 
 type SecondaryAction = NonNullable<
   ComponentProps<typeof FullScreenFocus>["secondaryActions"]

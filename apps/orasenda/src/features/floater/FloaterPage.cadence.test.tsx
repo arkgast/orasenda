@@ -1,3 +1,4 @@
+import { resetPresetsForTests } from "@domain/presets/presets";
 import {
   argsOf,
   BREAK,
@@ -11,7 +12,6 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { resetPresetsForTests } from "../today/presets";
 import { FloaterPage } from "./FloaterPage";
 
 afterEach(async () => {

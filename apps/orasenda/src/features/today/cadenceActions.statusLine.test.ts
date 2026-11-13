@@ -1,7 +1,7 @@
+import { cadenceActions } from "@domain/cadence/cadenceActions";
 import { BREAK, IDLE, RUNNING } from "@shared/test/fixtures";
 import { expect, test, vi } from "vitest";
-import { statusLine } from "../today/statusLine";
-import { cadenceActions } from "./cadenceActions";
+import { statusLine } from "./statusLine";
 
 const handlers = {
   extend: vi.fn(),

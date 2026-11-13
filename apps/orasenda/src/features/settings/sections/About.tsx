@@ -1,6 +1,6 @@
+import { osLabel } from "@domain/timer/format";
 import { SettingsRow } from "@orasenda/ui";
 import type { AppInfo } from "@shared/ipc/bindings";
-import { osLabel } from "../../timer/format";
 
 export type AboutInfo =
   | { status: "loading" }

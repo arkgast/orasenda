@@ -1,5 +1,5 @@
+import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
 import { useState } from "react";
-import { useSingleKeys } from "../../app/useSingleKeys";
 
 type Args = {
   /** `Settings.singleKey`. */

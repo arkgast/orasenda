@@ -1,7 +1,7 @@
+import { useKeyboardView } from "@domain/keyboard/useKeyboardView";
 import type { TimerView_Serialize, TipId } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { useEffect, useRef, useState } from "react";
-import { useKeyboardView } from "../../app/useKeyboardView";
 import type { TipInput } from "./statusLine";
 
 /** The tip's copy (spec: Welcome and tips), at most 65 characters, with the spoken keys for VoiceOver. */

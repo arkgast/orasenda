@@ -1,13 +1,12 @@
+import { type CadenceOffer, cadenceOffers } from "@domain/cadence/cadenceOffers";
 import type {
   Mode,
   Offer,
   Phase,
   StoreStatus,
   SuggestionView_Serialize,
-  TimerCommandError,
   TipId,
 } from "@shared/ipc/bindings";
-import { type CadenceOffer, cadenceOffers } from "./cadenceOffers";
 
 /** What the cadence part of the timer view says (E: warning, break, offer, auto step, rest line). */
 export type CadenceInput = {
@@ -101,22 +100,6 @@ const STORE_LINES: Readonly<Record<Exclude<StoreStatus, "ok">, string>> = {
   unavailable: "Orasenda can't save sessions right now.",
   newer: "This data was saved by a newer Orasenda.",
 };
-
-/**
- * Races between surfaces (ADR-013): another surface got there first, so the next view is the truth
- * and nothing is shown. Any other error, `invalidSpec` included, is a failure.
- */
-export function commandFailure(error: TimerCommandError): "race" | "failure" {
-  switch (error.kind) {
-    case "alreadyRunning":
-    case "nothingRunning":
-    case "wrongState":
-    case "extensionCap":
-      return "race";
-    default:
-      return "failure";
-  }
-}
 
 const TRY_AGAIN: StatusAction = {
   id: "tryAgain",

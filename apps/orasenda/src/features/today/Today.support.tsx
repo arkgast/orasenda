@@ -1,7 +1,7 @@
+import { resetPresetsForTests } from "@domain/presets/presets";
 import type { Settings } from "@shared/ipc/bindings";
 import { mockBackend, type Replies, SETTINGS, settle } from "@shared/test/fixtures";
 import { render } from "@testing-library/react";
-import { resetPresetsForTests } from "./presets";
 import { Today } from "./Today";
 
 export async function renderToday(replies: Replies = {}) {
