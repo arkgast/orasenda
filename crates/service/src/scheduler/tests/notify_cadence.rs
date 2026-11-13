@@ -158,6 +158,11 @@ fn auto_continue_roll_on_is_silent() {
         posted(&host).is_empty(),
         "the next session starts by itself"
     );
+    assert_ne!(
+        lock(&host.0.service).view(T0 + 2 * MINUTE + 1).state,
+        orasenda_core::EngineState::Idle,
+        "the roll-on is running"
+    );
 }
 
 #[test]

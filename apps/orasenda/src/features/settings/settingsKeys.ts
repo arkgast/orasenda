@@ -1,5 +1,6 @@
 import type { PresetEntry, Settings as SettingsValue } from "../../ipc/bindings";
 import type { SectionId } from "./SettingsHeader";
+import { CAPS } from "./sections/CadenceRows";
 import { themeLabel } from "./sections/General";
 import { presetLabel } from "./sections/Timer";
 
@@ -75,13 +76,13 @@ export const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: s
   notifyTwo: { subject: "The two-minute note", verb: "wasn't", again: "the two-minute note" },
 };
 
-const CAP_SAID = ["off", "once", "twice", "3 times"];
-
 export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]): string {
   if (key === "theme") return themeLabel(restored.theme);
   if (key === "preset") return presetLabel(presets, restored);
   if (key === "extensionCap")
-    return CAP_SAID[restored.extensionCap] ?? String(restored.extensionCap);
+    return (
+      CAPS.find((cap) => cap.value === restored.extensionCap)?.said ?? String(restored.extensionCap)
+    );
   if (key === "autoContinue") return restored.autoContinue ? "on" : "off";
   if (key === "deepCapOn") return restored.deepCapOn ? "on" : "off";
   if (key === "longestFocusMin") return `${restored.longestFocusMin} minutes`;

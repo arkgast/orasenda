@@ -22,12 +22,6 @@ function emit(): void {
   for (const listener of listeners) listener();
 }
 
-function setAsking(value: NotifyKey | null): void {
-  if (asking === value) return;
-  asking = value;
-  emit();
-}
-
 export function isAsking(): boolean {
   return asking !== null;
 }
