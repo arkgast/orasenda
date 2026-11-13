@@ -140,7 +140,15 @@ fn no_dialog_permission_in_capabilities() {
 fn export_cancelled_writes_nothing() {
     let dir = TempDir::new();
     let host = host_in(&dir.0);
-    let dest = TempDir::new();
+    let listing = |d: &Path| {
+        let mut names: Vec<_> = std::fs::read_dir(d)
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        names.sort();
+        names
+    };
+    let before = listing(&dir.0);
     let picker = FakePicker::new(Ok(None));
     let outcome = export_with(&host, &picker).unwrap();
     assert_eq!(outcome, ExportOutcome::Cancelled);
@@ -149,7 +157,13 @@ fn export_cancelled_writes_nothing() {
         picker.name.lock().unwrap().as_deref(),
         Some("Orasenda data 2026-11-07.db")
     );
-    assert_eq!(std::fs::read_dir(&dest.0).unwrap().count(), 0);
+    let after = listing(&dir.0);
+    assert_eq!(before, after);
+    assert!(
+        after
+            .iter()
+            .all(|n| !n.to_string_lossy().ends_with(".partial"))
+    );
 }
 
 #[test]
@@ -201,6 +215,26 @@ fn import_busy_before_panel() {
 }
 
 #[test]
+fn import_without_a_store_is_unavailable_before_the_panel() {
+    let dir = TempDir::new();
+    let f = fakes(NotificationStatus::NotDetermined, false);
+    let broken = orasenda_store::OpenError::Io("no store".into());
+    let host = TestHost::with(
+        SessionService::new(Err(broken), f.platform, NOW),
+        f.log,
+        f.notifier,
+    );
+    host.set_data_dir(dir.0.clone());
+    host.set_now(NOW);
+    let (_other, file) = other_file();
+    let picker = FakePicker::new(Ok(Some(file)));
+    let (kb, _registrar) = keyboard();
+    let error = import_with(&host, &kb, &picker).unwrap_err();
+    assert_eq!(error.kind, DataErrorKind::Unavailable);
+    assert_eq!(picker.asked(), 0);
+}
+
+#[test]
 fn import_cancelled_noop() {
     let dir = TempDir::new();
     let host = host_in(&dir.0);
@@ -216,26 +250,35 @@ fn import_cancelled_noop() {
 }
 
 #[test]
-fn import_imported_returns_report_and_registers_shortcuts() {
+fn import_imported_returns_report() {
     let dir = TempDir::new();
     let host = host_in(&dir.0);
     let (_other, file) = other_file();
     host.log().take();
-    let (kb, registrar) = keyboard();
+    let (kb, _registrar) = keyboard();
     let outcome = import_with(&host, &kb, &FakePicker::new(Ok(Some(file)))).unwrap();
     let ImportOutcome::Imported { report } = outcome else {
         panic!("expected an import, got {outcome:?}");
     };
     assert_eq!(report.added.notes, 1);
     assert!(
-        !registrar.calls().is_empty(),
-        "shortcuts were not registered"
-    );
-    assert!(
         host.log()
             .take()
             .iter()
             .any(|e| matches!(e, Event::KeyboardChanged(_)))
+    );
+}
+
+#[test]
+fn import_registers_shortcuts() {
+    let dir = TempDir::new();
+    let host = host_in(&dir.0);
+    let (_other, file) = other_file();
+    let (kb, registrar) = keyboard();
+    import_with(&host, &kb, &FakePicker::new(Ok(Some(file)))).unwrap();
+    assert!(
+        !registrar.calls().is_empty(),
+        "shortcuts were not registered"
     );
 }
 

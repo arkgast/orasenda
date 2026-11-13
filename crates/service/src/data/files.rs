@@ -62,7 +62,7 @@ pub fn run_export<H: Host>(
     Ok(ExportOutcome::Saved { file })
 }
 
-/// `data_import`: `Busy` before any panel opens, then asks `pick` for a file and merges it.
+/// `data_import`: `Busy` or `Unavailable` (no store) before any panel opens, then asks `pick` for a file and merges it.
 /// `None` from `pick` means cancelled and changes nothing. After a merge the OS shortcuts are
 /// registered again, because the file may have carried other `keys.*` settings.
 pub fn run_import_file<H: Host>(
@@ -74,6 +74,10 @@ pub fn run_import_file<H: Host>(
         return Err(run::busy_error());
     }
     let dir = run::dir_of(host)?;
+    let service = host.service().ok_or_else(run::no_store)?;
+    if lock(service).store().is_none() {
+        return Err(run::no_store());
+    }
     let Some(source) = pick()? else {
         return Ok(ImportOutcome::Cancelled);
     };
