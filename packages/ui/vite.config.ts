@@ -9,6 +9,11 @@ import { defineConfig, type InlineConfig, type Plugin, type UserConfig } from "v
 const root = import.meta.dirname;
 const src = resolve(root, "src");
 const alias = { "@": src };
+/** bundle.js makes its elements through the host's React (see design-system/host-jsx-runtime.ts). */
+const hostJsx = {
+  "react/jsx-runtime": resolve(root, "design-system/host-jsx-runtime.ts"),
+  "react/jsx-dev-runtime": resolve(root, "design-system/host-jsx-runtime.ts"),
+};
 
 /** The runtime names index.ts exports, one `export { Name } from "…";` line each, in file order. */
 export function runtimeExports(): string[] {
@@ -106,7 +111,7 @@ window.Orasenda = Object.assign(window.Orasenda || {}, { ${names.map((n) => `${n
     configFile: false,
     root,
     logLevel: "warn",
-    resolve: { alias },
+    resolve: { alias: { ...alias, ...hostJsx } },
     define: productionReact,
     plugins: [tailwindcss(), safe, banner("bundle.js", bundleHeader(names))],
     build: {
