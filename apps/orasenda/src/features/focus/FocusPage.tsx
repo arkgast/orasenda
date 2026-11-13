@@ -1,6 +1,7 @@
 import { FullScreenFocus } from "@orasenda/ui";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useShortcuts } from "../../app/useShortcuts";
+import { useSingleKeys } from "../../app/useSingleKeys";
 import { useTheme } from "../../app/useTheme";
 import type { Settings, TimerCommandError, TimerView_Serialize } from "../../ipc/bindings";
 import { commands } from "../../ipc/bindings";
@@ -54,7 +55,7 @@ function useSavedSettings(): { settings: Settings | null; failed: boolean } {
  * The full-screen Focus window's page (`focus.html?display=<id>&insets=t,r,b,l`). It only
  * displays the timer (`useSurfaceTimer`: `timer_view`, ticks and the end milestone, never
  * `timer_state`) and sends the commands a person gives it. ⌘↩ starts the saved preset while idle
- * or ended and ⌘. ends a session; Esc opens the leave dialog and only its confirm closes the
+ * or ended and ⌘. ends a session, and Space starts, pauses or resumes while the single-key setting is on; Esc opens the leave dialog and only its confirm closes the
  * window. A failed command shows one line in the status row, cleared by the next change of state.
  */
 export function FocusPage() {
@@ -140,6 +141,14 @@ export function FocusPage() {
     { key: ".", meta: true, when: () => active, run: end },
   ]);
 
+  const singleKeys = settings?.singleKey === true;
+  const toggle = () => {
+    if (idle && view !== null) start();
+    else if (state === "running") pause();
+    else if (state === "paused") resume();
+  };
+  useSingleKeys({ Space: toggle }, singleKeys);
+
   const choosePreset = (presetId: string) =>
     void run(
       "preset_select",
@@ -177,7 +186,7 @@ export function FocusPage() {
         clock={clock.status === "ok" ? clock.clock : undefined}
         ended={ended}
         status={failed && !view ? UNREADABLE : (problem ?? undefined)}
-        singleKeys={false}
+        singleKeys={singleKeys}
         summary={
           idle ? (
             <PresetSummary

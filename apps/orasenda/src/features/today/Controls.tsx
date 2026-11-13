@@ -9,6 +9,8 @@ type Props = {
   compactStart: boolean;
   /** A start is in flight. */
   starting: boolean;
+  /** Single-key shortcuts are on: Start and Pause advertise Space. */
+  singleKeys: boolean;
   /** The timer never answered: Start keeps its name and the status row says why. */
   unavailable: boolean;
   onStart(): void;
@@ -30,6 +32,7 @@ export function Controls({
   compactStart,
   starting,
   unavailable,
+  singleKeys,
   onStart,
   onQuickStart,
   onPauseResume,
@@ -45,7 +48,7 @@ export function Controls({
           onStart={onStart}
           onQuickStart={onQuickStart}
           compactLabel={compactStart ? "Start" : undefined}
-          singleKeys={starting || unavailable ? undefined : false}
+          singleKeys={starting || unavailable ? undefined : singleKeys}
           loading={starting}
           unavailable={unavailable}
         />
@@ -56,6 +59,8 @@ export function Controls({
             size="round"
             label={paused ? `Resume ${what}` : `Pause ${what}`}
             icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
+            shortcut={singleKeys ? "Space" : undefined}
+            keyshortcuts={false}
             onClick={onPauseResume}
           />
           <IconButton

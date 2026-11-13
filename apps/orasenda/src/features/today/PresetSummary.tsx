@@ -1,4 +1,11 @@
-import { Button, Icon, PopoverMenu, type PopoverMenuItem, Tooltip } from "@orasenda/ui";
+import {
+  Button,
+  describeShortcut,
+  Icon,
+  PopoverMenu,
+  type PopoverMenuItem,
+  Tooltip,
+} from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
 import type { BreakKind, Settings } from "../../ipc/bindings";
 import {
@@ -32,6 +39,10 @@ type Props = {
   onChoose(presetId: string): void;
   /** Today's "Edit presets in Settings" row; without it (the Focus window) the menu has no such row. */
   onOpenSettings?: () => void;
+  /** Single keys are on: P opens the popover, and the button and menu say so. */
+  singleKeys?: boolean;
+  /** Counts P presses from the page; each new count opens the popover. */
+  openRequest?: number;
 };
 
 const SETTINGS_ID = "settings";
@@ -46,13 +57,21 @@ export function PresetSummary({
   strip,
   onChoose,
   onOpenSettings,
+  singleKeys = false,
+  openRequest = 0,
 }: Props): ReactElement {
   const presets = usePresets();
   const presetsFailed = usePresetsFailed();
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
+  const [seenRequest, setSeenRequest] = useState(openRequest);
   const idle = state === "idle";
+  const ready = !(idle && (!settings || presets.length === 0));
+  if (seenRequest !== openRequest) {
+    setSeenRequest(openRequest);
+    if (ready) setOpen(true);
+  }
 
   if (idle && (!settings || presets.length === 0) && !settingsFailed && !presetsFailed) {
     // Still loading: the cell keeps its place and says nothing.
@@ -116,13 +135,14 @@ export function PresetSummary({
   return (
     <div data-slot="preset-summary" className="@container w-full">
       <span ref={anchor} className="today-preset-anchor">
-        <Tooltip label={text.tooltip}>
+        <Tooltip label={text.tooltip} shortcut={singleKeys ? "P" : undefined}>
           <Button
             variant="ghost"
             className="max-w-full whitespace-nowrap"
             aria-label={text.name}
             aria-haspopup="menu"
             aria-expanded={open}
+            aria-keyshortcuts={singleKeys ? describeShortcut("P").aria : undefined}
             aria-controls={open ? menuId : undefined}
             onClick={() => setOpen((was) => !was)}
           >
@@ -152,6 +172,7 @@ export function PresetSummary({
           }
           items={items}
           readOnly={!idle}
+          singleKeys={singleKeys}
           onSelect={(id) => {
             if (id === SETTINGS_ID) onOpenSettings?.();
             else onChoose(id);

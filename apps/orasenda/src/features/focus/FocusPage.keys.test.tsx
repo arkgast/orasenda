@@ -9,6 +9,7 @@ import {
   PAUSED,
   type Replies,
   RUNNING,
+  SETTINGS,
   settle,
 } from "../../test/fixtures";
 import { resetPresetsForTests } from "../today/presets";
@@ -102,4 +103,44 @@ test("focus_close_failure_in_status_line", async () => {
   fireEvent.click(within(dialog).getByRole("button", { name: "Leave full screen" }));
   await settle();
   expect(screen.getByRole("status")).toHaveTextContent("This window didn't close.");
+});
+
+function space(init: KeyboardEventInit = {}, target?: Element): boolean {
+  const region = screen.getByRole("region", { name: "Full-screen focus" });
+  return fireEvent.keyDown(target ?? region, { key: " ", ...init });
+}
+
+test("focus_page_space_toggles", async () => {
+  const idle = await open();
+  expect(space()).toBe(false);
+  await settle();
+  expect(argsOf(idle.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
+  cleanup();
+  const running = await open({ timer_view: () => RUNNING });
+  space();
+  await settle();
+  expect(argsOf(running.calls, "timer_pause")).toHaveLength(1);
+  cleanup();
+  const paused = await open({ timer_view: () => PAUSED });
+  space();
+  await settle();
+  expect(argsOf(paused.calls, "timer_resume")).toHaveLength(1);
+});
+
+test("focus_page_space_ignored_on_a_button_with_a_modifier_or_off", async () => {
+  const backend = await open({ timer_view: () => RUNNING });
+  space({}, screen.getByRole("button", { name: "End session" }));
+  space({ shiftKey: true });
+  space({ repeat: true });
+  await settle();
+  expect(argsOf(backend.calls, "timer_pause")).toEqual([]);
+  cleanup();
+  const off = await open({
+    timer_view: () => RUNNING,
+    settings_get: () => ({ ...SETTINGS, singleKey: false }),
+  });
+  expect(space()).toBe(true);
+  await settle();
+  expect(argsOf(off.calls, "timer_pause")).toEqual([]);
+  expect(screen.queryByText("Space")).not.toBeInTheDocument();
 });

@@ -27,6 +27,7 @@ import { selectedPreset, usePresets } from "./presets";
 import { StatusRow } from "./StatusRow";
 import { commandFailure, type StatusActionId, statusLine } from "./statusLine";
 import { TimeView } from "./TimeView";
+import { useTodayKeys } from "./todayKeys";
 import { useControlFocus } from "./useControlFocus";
 import { useKeepGoingHint, usePageVisible } from "./useKeepGoingHint";
 import { useNextMinutes } from "./useNextMinutes";
@@ -268,6 +269,14 @@ export function Today({ onNavigate }: Props) {
 
   const canStart = state === "idle" && !starting;
   const active = state === "running" || state === "paused";
+  const singleKeys = settings?.singleKey === true;
+  const keys = useTodayKeys({
+    enabled: singleKeys,
+    canStart,
+    active,
+    start: startSaved,
+    pauseResume,
+  });
   useShortcuts([
     { key: "Enter", meta: true, when: () => canStart, run: startSaved },
     { key: "Enter", meta: true, shift: true, when: () => canStart, run: startQuick },
@@ -304,12 +313,18 @@ export function Today({ onNavigate }: Props) {
             }
             idleFinish={clock.status === "ok" ? clock.idleFinish : null}
             strip={layout.timer !== "ring"}
+            singleKeys={singleKeys}
+            openRequest={keys.presetRequest}
             onChoose={choosePreset}
             onOpenSettings={() => onNavigate("settings", "timer")}
           />
         </div>
         <div className="today-top-end">
-          <FocusViewButton onOpen={openView} />
+          <FocusViewButton
+            onOpen={openView}
+            singleKeys={singleKeys}
+            openRequest={keys.viewRequest}
+          />
         </div>
       </div>
 
@@ -339,6 +354,7 @@ export function Today({ onNavigate }: Props) {
             compactStart={layout.timer !== "strip"}
             starting={starting}
             unavailable={timer.status === "error"}
+            singleKeys={singleKeys}
             onStart={startSaved}
             onQuickStart={startQuick}
             onPauseResume={pauseResume}

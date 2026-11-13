@@ -76,7 +76,7 @@ test("start_has_no_finish_time_line_and_advertises_cmd_enter", async () => {
 
   expect(container).not.toHaveTextContent("Realistic finish");
   const start = screen.getByRole("button", { name: "Start focus" });
-  expect(start).toHaveAttribute("aria-keyshortcuts", "Meta+Enter");
+  expect(start).toHaveAttribute("aria-keyshortcuts", "Space Meta+Enter");
 });
 
 test("cmd_enter_starts_only_idle", async () => {
