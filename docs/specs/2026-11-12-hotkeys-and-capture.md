@@ -174,6 +174,12 @@ A new section, `keyboard`, between Notifications and Apps and sites (brief §3.1
 
 The save line confirms each change: "Start or pause focus: ⌃⌥G." (b-settings-6). `SettingsTarget` gains `"keyboard"`.
 
+As built in #409 (controller ruling on #393, 2026-11-12):
+- Each recorder's label is "<row name> from anywhere" (for example "Start or pause focus from anywhere"), so the two fields have different names. The row helper reads "Works while another app is in front."
+- Two more error lines: "That isn't a shortcut Orasenda can use. Pick a different one." on `Invalid`, and "Orasenda can't save this shortcut right now." on `Store`. If the keyboard state can't be read, the section shows "Orasenda can't read keyboard settings right now."
+- The checkbox reads "Use single keys (Space, F, P)". Its save line is "Single-key shortcuts: on." or "Single-key shortcuts: off.", and the Settings index value is "Single keys on" or "Single keys off". A failed save shows the row's reason and Try again, as on other settings.
+- In the All shortcuts list, the single-key rows are "On Today" (Space F P) and "In Focus view" (Space).
+
 ### Single keys
 - **Today:** while focus is on the page body or heading, not on a control or field (spec C's rule):
   - Space starts, pauses or resumes;
