@@ -94,8 +94,6 @@ pub struct TimerView {
     pub extensions: u8,
     /// "+10 min" is on offer now: under the cap, and not while paused or for `quick`.
     pub can_extend: bool,
-    /// What the focus is for; `None` when not given and in a break.
-    pub intent: Option<String>,
     /// The break's line, during a break only.
     pub suggestion: Option<SuggestionView>,
     /// "Keep going?", while idle after a `quick` session and auto-continue is off.
@@ -135,7 +133,6 @@ impl TimerView {
             break_kind: None,
             extensions: 0,
             can_extend: false,
-            intent: None,
             suggestion: None,
             offer: None,
             check_in: None,

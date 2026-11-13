@@ -57,7 +57,6 @@ fn recovers_running_snapshot_past_end_as_completed_with_pending_recovered() {
         end_reason: EndReason::Completed,
         extensions: 0,
         break_kind: None,
-        intent: None,
     };
     assert!(has_row(db(&back), &record));
     assert_eq!(snapshot(db(&back)), None);

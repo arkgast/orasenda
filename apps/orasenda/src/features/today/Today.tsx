@@ -18,12 +18,10 @@ import type {
 } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Controls } from "./Controls";
 import { FocusViewButton } from "./FocusViewButton";
 import { openFocusView } from "./focusView";
-import { type IntentDone, IntentField } from "./IntentField";
-import { claimIntentRequest, onIntentFieldRequest } from "./intentEvents";
 import { type Notice, noticeAfter } from "./notices";
 import { StatusRow } from "./StatusRow";
 import { type StatusActionId, statusLine } from "./statusLine";
@@ -114,9 +112,6 @@ export function Today({ onNavigate }: Props) {
 
   const presets = usePresets();
   const inBreak = view !== null && view.state !== "idle" && view.phase === "break";
-  const canEditIntent = view !== null && view.state !== "idle" && view.phase === "focus";
-  const [editingIntent, setEditingIntent] = useState(false);
-  if (editingIntent && !canEditIntent) setEditingIntent(false);
   const visible = usePageVisible();
   const [hintShownLine, setHintShownLine] = useState(false);
   const hintDue = useKeepGoingHint(view, hintShownLine);
@@ -137,36 +132,11 @@ export function Today({ onNavigate }: Props) {
     strip: layout.timer === "strip",
     keepGoingPreset: selectedPreset(presets, settings)?.name ?? null,
   });
-  const hintOnScreen =
-    visible && !editingIntent && (line?.actions.some((a) => a.id === "openSettings") ?? false);
+  const hintOnScreen = visible && (line?.actions.some((a) => a.id === "openSettings") ?? false);
   if (hintOnScreen !== hintShownLine) setHintShownLine(hintOnScreen);
-  useTipShown(line?.tipId ?? null, visible && !editingIntent);
+  useTipShown(line?.tipId ?? null, visible);
   const focus = useControlFocus(state, line?.text);
   const nextMinutes = useNextMinutes(settings);
-
-  // The intent field: only the person opens it, and only while a focus runs or is paused.
-  const canEditRef = useRef(canEditIntent);
-  canEditRef.current = canEditIntent;
-  useEffect(
-    () =>
-      onIntentFieldRequest(() => {
-        if (!canEditRef.current) return false;
-        setEditingIntent(true);
-        return true;
-      }),
-    [],
-  );
-  // A request that arrived before the timer's first reply is held; take it once editing is possible.
-  useEffect(() => {
-    if (canEditIntent && claimIntentRequest()) setEditingIntent(true);
-  }, [canEditIntent]);
-  const statusBox = useRef<HTMLDivElement>(null);
-  const refocusStatus = useRef(false);
-  useEffect(() => {
-    if (editingIntent || !refocusStatus.current) return;
-    refocusStatus.current = false;
-    statusBox.current?.querySelector("button")?.focus();
-  }, [editingIntent]);
 
   const start = (request: StartRequest) => {
     setStarting(true);
@@ -233,12 +203,6 @@ export function Today({ onNavigate }: Props) {
       ? control("timer_resume", commands.timerResume)
       : control("timer_pause", commands.timerPause);
 
-  const intentDone = ({ save, refocus }: IntentDone) => {
-    refocusStatus.current = refocus;
-    setEditingIntent(false);
-    if (save !== undefined) control("timer_set_intent", () => commands.timerSetIntent(save));
-  };
-
   const onAction = (id: StatusActionId) => {
     switch (id) {
       case "tryAgain":
@@ -263,9 +227,6 @@ export function Today({ onNavigate }: Props) {
         break;
       case "stopHere":
         control("timer_dismiss_offer", commands.timerDismissOffer, focus.focusStart);
-        break;
-      case "intent":
-        setEditingIntent(true);
         break;
       case "gotIt":
         tips.gotIt();
@@ -339,12 +300,8 @@ export function Today({ onNavigate }: Props) {
       </div>
 
       {/* One live region, always mounted; a new text is a new node, so each line is announced once. */}
-      <div className="today-status" ref={statusBox}>
-        {editingIntent ? (
-          <IntentField value={view?.intent ?? null} onDone={intentDone} />
-        ) : (
-          <StatusRow line={line} onAction={onAction} />
-        )}
+      <div className="today-status">
+        <StatusRow line={line} onAction={onAction} />
       </div>
 
       <div className="today-time">

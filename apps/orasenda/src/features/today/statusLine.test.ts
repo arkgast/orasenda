@@ -129,7 +129,6 @@ test("status_line_failed_open_does_not_hide_cadence_rows", () => {
     phase: "focus",
     mode: "warning",
     canExtend: true,
-    intent: null,
     suggestion: null,
     offer: null,
     checkIn: null,

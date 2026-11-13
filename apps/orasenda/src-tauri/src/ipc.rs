@@ -247,7 +247,6 @@ mod tests {
                 "breakKind": null,
                 "extensions": 0,
                 "canExtend": false,
-                "intent": null,
                 "suggestion": null,
                 "offer": null,
                 "checkIn": null,

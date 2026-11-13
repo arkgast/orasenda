@@ -15,7 +15,6 @@ export type CadenceInput = {
   mode: Mode;
   /** "+10 min" is on offer now. */
   canExtend: boolean;
-  intent: string | null;
   suggestion: SuggestionView_Serialize | null;
   offer: Offer | null;
   /** "Still going · ends 15:40", while running in an automatic step. */
@@ -48,15 +47,14 @@ export type StatusInput = {
   keepGoingPreset?: string | null;
   /**
    * The keep-going hint is due. It waits while any other line shows, and it is shown in place of
-   * the intent button (a deliberate deviation from the spec's table: otherwise a running focus
-   * would always hide it).
+   * the quiet lines.
    */
   hint?: boolean;
   /** The side-by-side strip: the hint's text takes three lines beside its button, so it waits. */
   strip?: boolean;
   /** A tip is due. It shares the row with "Session ended." and otherwise waits for an empty row (and for the strip to widen). */
   tip?: TipInput | null;
-  /** The first-run welcome line: it waits behind every other line and the intent button. */
+  /** The first-run welcome line: it waits behind every other line. */
   welcome?: boolean;
 };
 
@@ -69,8 +67,7 @@ export type StatusActionId =
   | "keepGoing"
   | "stopHere"
   | "openSettings"
-  | "gotIt"
-  | "intent";
+  | "gotIt";
 
 export type StatusAction = {
   id: StatusActionId;
@@ -182,7 +179,7 @@ function viewRow(cadence: CadenceInput, input: StatusInput): StatusLine | null {
 /**
  * The one line Today's status row shows, by priority: the answer to the last action (rank 1);
  * the cadence rows and one-shot milestones (rank 2, in the spec's table order); the standing store
- * line (rank 3); the intent button (rank 4) and the quiet rest line (rank 5). A milestone and the
+ * line (rank 3); the quiet lines (rank 4). A milestone and the
  * store line join in one row when together they fit `JOIN_LIMIT`; a joined row takes the first
  * sentence's tone. Otherwise the higher line shows alone.
  */
@@ -210,19 +207,9 @@ export function statusLine(input: StatusInput): StatusLine | null {
     return line(joined && joined.length <= JOIN_LIMIT ? joined : input.notice, "neutral");
   }
   if (store) return line(store, "attention");
-  const intent: StatusAction | null =
-    cadence && cadence.state !== "idle" && cadence.phase === "focus"
-      ? {
-          id: "intent",
-          label: cadence.intent ? "Edit intent" : "What will be done?",
-          variant: "quiet",
-        }
-      : null;
-  // Above the intent button, below every other line. One action only: with the intent button
-  // beside it the text takes three lines at the narrow sizes. The intent field stays one shortcut
-  // away (intentEvents). In the strip it waits (the text would wrap past two lines).
+  // Above every other quiet line. One action only: with a second action beside it the text
+  // takes three lines at the narrow sizes. In the strip it waits (the text would wrap past two lines).
   if (input.hint && !input.strip) return line(HINT_TEXT, "neutral", [OPEN_SETTINGS]);
-  if (intent) return line("", "neutral", [intent]);
   if (input.welcome) return line(WELCOME_TEXT, "neutral");
   if (cadence?.capLine) return line(cadence.capLine, "rest");
   return input.tip && !input.strip ? tipLine(input.tip) : null;

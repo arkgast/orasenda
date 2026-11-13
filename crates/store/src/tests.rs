@@ -6,6 +6,8 @@ use rusqlite::Connection;
 use std::path::Path;
 use std::sync::Arc;
 
+mod migration_0006;
+
 const DEVICE: &str = "device-a";
 
 fn raw(path: &Path) -> Connection {

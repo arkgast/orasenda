@@ -55,37 +55,14 @@ test("full_screen_focus_strip_in_strip_frame", async ({ page }) => {
   }
 });
 
-test("full_screen_focus_two_line_intent_fits_every_frame", async ({ page }) => {
+test("full_screen_focus_has_no_task_slot_in_any_frame", async ({ page }) => {
   await openSpecimen(page, "FullScreenFocus");
-  for (const { w, h, layout } of SIZES) {
+  for (const { w, h } of SIZES) {
     for (const mode of MODES) {
       const f = frame(page, mode, w, h);
-      // The ring's idle name is "No session" without the intent: the intent is a hidden line after the ring.
-      const quiet = layout === "ring" && (mode === "idle" || mode === "ended");
-      const name = quiet
-        ? await f.locator("[data-slot=full-screen-focus-ring] > .sr-only").first().textContent()
-        : await f.locator("[role=timer]").getAttribute("aria-label");
-      expect(name, `${mode} ${w}x${h} name`).toContain("Finish the chapter 3 outline");
-      const task = f.locator("[data-slot=timer-ring-task], [data-slot=timer-strip-task]");
-      if (layout === "stackedStrip") {
-        // The window minimum has no room for the line: it is hidden, and still whole in the name.
-        await expect(task, `${mode} ${w}x${h}`).toBeHidden();
-        continue;
-      }
-      await expect(task, `${mode} ${w}x${h}`).toBeVisible();
-      const lines = await task.evaluate((el) => {
-        const lh = Number.parseFloat(getComputedStyle(el).lineHeight);
-        return el.getBoundingClientRect().height / lh;
-      });
-      expect(lines, `${mode} ${w}x${h} lines`).toBeLessThanOrEqual(2.01);
-      const inside = await task.evaluate((el) => {
-        const t = el.getBoundingClientRect();
-        const p = el.closest("[data-slot=full-screen-focus]")?.getBoundingClientRect();
-        return (
-          !!p && t.top >= p.top && t.bottom <= p.bottom && t.left >= p.left && t.right <= p.right
-        );
-      });
-      expect(inside, `${mode} ${w}x${h} inside`).toBe(true);
+      await expect(f.locator("[data-slot$=-task]"), `${mode} ${w}x${h}`).toHaveCount(0);
+      const name = await f.locator("[role=timer]").getAttribute("aria-label");
+      expect(name, `${mode} ${w}x${h} name`).not.toContain("Finish the chapter");
     }
   }
 });
@@ -149,7 +126,7 @@ test("focus_views_aria_snapshot", async ({ page }) => {
     - region "Full-screen focus":
       - button "Leave full screen"
       - status
-      - timer "Focus, 18 minutes 42 seconds remaining, Finish the chapter 3 outline and send the draft to Maya, Wall clock, 09:41"
+      - timer "Focus, 18 minutes 42 seconds remaining, Wall clock, 09:41"
       - button "Pause session"
       - button "End session"
   `);
@@ -157,7 +134,7 @@ test("focus_views_aria_snapshot", async ({ page }) => {
     - region "Full-screen focus":
       - button "Leave full screen"
       - status: Session ended.
-      - timer "No session, Finish the chapter 3 outline and send the draft to Maya"
+      - timer "No session"
       - button "Start focus"
   `);
 });

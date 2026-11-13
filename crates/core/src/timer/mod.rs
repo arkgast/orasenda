@@ -64,8 +64,6 @@ pub struct SessionRecord {
     pub extensions: u8,
     /// Set on a break row only.
     pub break_kind: Option<BreakKind>,
-    /// What the focus session was for; `None` when not given, and always on a break row.
-    pub intent: Option<String>,
 }
 
 /// Whether the timer is idle, counting or paused.
@@ -93,7 +91,6 @@ pub struct EngineView {
     pub break_kind: Option<BreakKind>,
     /// Extensions taken so far, manual and automatic.
     pub extensions: u8,
-    pub intent: Option<String>,
     /// The two-minute warning has fired for the current end.
     pub warned: bool,
     /// The focus is running in an automatic 10-minute step.

@@ -216,7 +216,7 @@ fn migrate_4_to_5_keeps_rows() {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .expect("version");
-    assert_eq!(version, 5);
+    assert_eq!(version, crate::SCHEMA_VERSION);
     assert_eq!(
         count(
             &conn,

@@ -1,4 +1,4 @@
-//! `+10 min`, take a break and the intent.
+//! `+10 min` and take a break.
 
 use orasenda_core::{BreakKind, EndReason, Phase};
 
@@ -72,70 +72,5 @@ fn take_break_completes_the_focus_and_starts_the_break() {
         skipped
             .ended
             .is_some_and(|r| r.end_reason == EndReason::Stopped)
-    );
-}
-
-fn intent_of(
-    s: &mut SessionService,
-    intent: Option<&str>,
-) -> Result<Option<String>, TimerCommandErrorKind> {
-    let effects = s.apply(
-        Action::SetIntent(intent.map(str::to_owned)),
-        T0 + MINUTE,
-        id("x"),
-    );
-    match kind(&effects) {
-        Some(error) => Err(error),
-        None => Ok(effects.view.intent),
-    }
-}
-
-#[test]
-fn set_intent_trims_and_limits() {
-    let mut s = service();
-    assert_eq!(
-        intent_of(&mut s, Some("x")),
-        Err(TimerCommandErrorKind::WrongState),
-        "idle"
-    );
-    s.apply(start(), T0, id("a"));
-    assert_eq!(
-        intent_of(&mut s, Some("  Write \t the\n chapter  ")),
-        Ok(Some("Write the chapter".into()))
-    );
-    let max = "é".repeat(120);
-    assert_eq!(intent_of(&mut s, Some(&max)), Ok(Some(max.clone())));
-    let over = "é".repeat(121);
-    assert_eq!(
-        intent_of(&mut s, Some(&over)),
-        Err(TimerCommandErrorKind::InvalidIntent)
-    );
-    assert_eq!(
-        s.view(T0 + MINUTE).intent,
-        Some(max),
-        "a refused intent changes nothing"
-    );
-    assert_eq!(intent_of(&mut s, Some("   ")), Ok(None));
-    assert_eq!(intent_of(&mut s, None), Ok(None));
-    intent_of(&mut s, Some("Outline chapter 3")).expect("sets");
-
-    // It survives a pause, a relaunch and the end, where it lands on the focus row only.
-    s.apply(Action::Pause, T0 + 2 * MINUTE, id("x"));
-    assert_eq!(
-        intent_of(&mut s, Some("Outline chapter 3 again")),
-        Ok(Some("Outline chapter 3 again".into()))
-    );
-    let mut back = relaunch(&mut s, T0 + 3 * MINUTE);
-    assert_eq!(
-        back.view(T0 + 3 * MINUTE).intent.as_deref(),
-        Some("Outline chapter 3 again")
-    );
-    back.apply(Action::Resume, T0 + 3 * MINUTE, id("x"));
-    let on_break = back.apply(Action::TakeBreak, T0 + 4 * MINUTE, id("x"));
-    assert_eq!(on_break.view.intent, None, "a break has no intent");
-    assert_eq!(
-        intent_of(&mut back, Some("late")),
-        Err(TimerCommandErrorKind::WrongState),
-        "break"
     );
 }

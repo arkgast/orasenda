@@ -2,14 +2,7 @@ import type { ReactElement } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { TimerStrip } from "./timer-strip.tsx";
 
-const SHORT = "Finish the chapter 3 outline and send the draft to Maya before the review";
-const MEDIUM = `${SHORT} meeting on Thursday afternoon, then list the open questions for the editor`;
-const LONG = `${MEDIUM} and note which figures still need a source before the next draft goes out to the whole group for comments and a second read by the editor in the morning`;
-
-// Each width gets an intent that runs to two lines, never one, never three.
-const INTENT: Record<number, string> = { 360: SHORT, 640: MEDIUM, 1440: LONG };
-
-// Today's time track on the timer-surfaces canvas (a-timer) at 360 x 240; the stacked strip takes no task.
+// Today's time track on the timer-surfaces canvas (a-timer) at 360 x 240.
 const TODAY_TIME_TRACK = 52;
 
 const STATES = [
@@ -25,16 +18,11 @@ export function TimerStripSpecimen(): ReactElement {
     <>
       {[360, 640, 1440].flatMap((w) =>
         STATES.map((s) => (
-          <Frame key={`${w}-${s.mode}`} state={`timer-strip-${w}-${s.mode}`} width={w} height={150}>
-            <TimerStrip {...s} task={INTENT[w]} />
+          <Frame key={`${w}-${s.mode}`} state={`timer-strip-${w}-${s.mode}`} width={w} height={64}>
+            <TimerStrip {...s} />
           </Frame>
         )),
       )}
-      {[360, 640, 1440].map((w) => (
-        <Frame key={`long-${w}`} state={`timer-strip-long-${w}`} width={w} height={150}>
-          <TimerStrip {...STATES[0]} task={`${INTENT[w]} ${LONG} ${LONG}`} />
-        </Frame>
-      ))}
       {STATES.map((s) => (
         <Frame
           key={s.mode}

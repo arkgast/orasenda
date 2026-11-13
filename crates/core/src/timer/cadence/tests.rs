@@ -166,7 +166,6 @@ fn local_day_never_panics_at_the_extremes() {
 }
 
 #[test]
-fn session_name_fallback() {
-    assert_eq!(session_name(None), "Deep focus");
-    assert_eq!(session_name(Some("Outline chapter 3")), "Outline chapter 3");
+fn session_name_without_intent() {
+    assert_eq!(session_name(), "Deep focus");
 }

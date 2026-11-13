@@ -14,7 +14,6 @@ const FOCUS: CadenceInput = {
   phase: "focus",
   mode: "focus",
   canExtend: false,
-  intent: null,
   suggestion: null,
   offer: null,
   checkIn: null,
@@ -37,7 +36,7 @@ test("status_hint_lowest_rank", () => {
     HINT,
   );
   // Off when it is not due.
-  expect(statusLine({ ...NONE, hint: false, cadence: FOCUS })?.text).toBe("");
+  expect(statusLine({ ...NONE, hint: false, cadence: FOCUS })).toBeNull();
 });
 
 test("status_hint_outranked_by_warning", () => {
@@ -56,7 +55,5 @@ test("status_hint_outranked_by_warning", () => {
 });
 
 test("status_hint_waits_in_the_side_by_side_strip", () => {
-  expect(statusLine({ ...NONE, strip: true, cadence: FOCUS })?.actions.map((a) => a.id)).toEqual([
-    "intent",
-  ]);
+  expect(statusLine({ ...NONE, strip: true, cadence: FOCUS })).toBeNull();
 });

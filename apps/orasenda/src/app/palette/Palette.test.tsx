@@ -1,4 +1,3 @@
-import { onIntentFieldRequest, resetIntentEventsForTests } from "@features/today/intentEvents";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
@@ -21,7 +20,6 @@ beforeEach(() => {
   resetSettingsQueueForTests();
 });
 afterEach(async () => {
-  resetIntentEventsForTests();
   cleanup();
   await settle();
   resetSettingsQueueForTests();
@@ -99,19 +97,6 @@ test("palette_theme_and_preset_rows_save_settings", async () => {
   const saved = argsOf(backend.calls, "settings_set") as { settings?: { theme?: string } }[];
   expect(saved.length).toBeGreaterThan(0);
   expect(JSON.stringify(saved)).toContain('"theme":"dark"');
-});
-
-test("palette_set_intent_opens_field", async () => {
-  const asked = vi.fn(() => true);
-  const stop = onIntentFieldRequest(asked);
-  const { onNavigate, onClose } = await open({ timer_view: () => RUNNING });
-  fireEvent.click(screen.getByRole("option", { name: /Set intent/ }));
-  expect(onNavigate).toHaveBeenCalledWith("today");
-  expect(onClose).toHaveBeenCalled();
-  expect(asked).not.toHaveBeenCalled();
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  expect(asked).toHaveBeenCalled();
-  stop();
 });
 
 const FAIL = () => {

@@ -58,16 +58,13 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
   offer?: boolean;
 }
 
-// Contract values from the README (the px of space-8, space-4, the fixed tracks and the intent line's
-// room), as timer-layout.ts keeps the layout tokens: read here only to size the box for timerLayout.
+// Contract values from the README (the px of space-8, space-4 and the fixed tracks), as timer-layout.ts keeps the layout tokens: read here only to size the box for timerLayout.
 // Exported so a test can hold them against tokens.json.
 export const FOCUS_PX = {
   leaveRow: 44,
   statusRow: 18,
   controlsRow: 52,
   captionRow: 18,
-  // A free contract value from the README (the intent line's minimum track), not a token.
-  intentMinTrack: 128,
   insetCompact: 16,
   inset: 64,
   gapRoomy: 16,
@@ -75,14 +72,10 @@ export const FOCUS_PX = {
   padRoomy: 32,
   padTight: 8,
 } as const;
-const FIXED_TRACKS =
-  FOCUS_PX.leaveRow + FOCUS_PX.statusRow + FOCUS_PX.controlsRow + FOCUS_PX.captionRow;
-const INTENT_MIN_TRACK = FOCUS_PX.intentMinTrack;
 
 interface Geometry {
   layout: ReturnType<typeof timerLayout>;
   roomy: boolean;
-  intent: boolean;
 }
 
 // Runs from the ResizeObserver only, never on a tick. The box is the section's width and height minus
@@ -96,10 +89,7 @@ function measure(width: number, height: number): Geometry {
     windowWidth: width,
   });
   const roomy = layout === "ring" && !compact;
-  const gap = roomy ? FOCUS_PX.gapRoomy : FOCUS_PX.gapTight;
-  const pad = roomy ? FOCUS_PX.padRoomy : FOCUS_PX.padTight;
-  const track = height - FIXED_TRACKS - 4 * gap - 2 * pad;
-  return { layout, roomy, intent: layout === "ring" || track >= INTENT_MIN_TRACK };
+  return { layout, roomy };
 }
 
 const gapByActions = ["gap-6", "gap-4", "gap-2"] as const;
@@ -113,7 +103,7 @@ function Caption({ keys, verb }: { keys: string; verb: string }): JSX.Element {
 }
 
 /**
- * The Focus window: the time and the intent, one quiet way out, and the controls for the session. A page
+ * The Focus window: the time, one quiet way out, and the controls for the session. A page
  * component that fills its host (the host must have a definite height). It measures its own box with a
  * ResizeObserver and picks the ring or the strip from timerLayout there, never on a tick. The section takes
  * focus on mount so Escape works at once; `onExit` fires only after the Dialog is confirmed.
@@ -137,7 +127,6 @@ export function FullScreenFocus({
   const [geometry, setGeometry] = useState<Geometry>({
     layout: "ring",
     roomy: true,
-    intent: true,
   });
   const root = useRef<HTMLElement>(null);
   const wasLeaving = useRef(false);
@@ -163,7 +152,7 @@ export function FullScreenFocus({
   const mode = ended ? "idle" : (ring.mode ?? "focus");
   const idle = mode === "idle";
   const paused = mode === "paused";
-  const { layout, roomy, intent } = geometry;
+  const { layout, roomy } = geometry;
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== "Escape" || leaving) return;
     // Esc inside the host's PopoverMenu closes only the menu.
@@ -186,7 +175,6 @@ export function FullScreenFocus({
       ref={root}
       data-slot="full-screen-focus"
       data-layout={layout}
-      data-intent={intent ? "shown" : "hidden"}
       data-os-esc=""
       tabIndex={-1}
       aria-label="Full-screen focus"
@@ -197,7 +185,6 @@ export function FullScreenFocus({
         className={cn(
           "flex size-full min-h-0 flex-col items-center",
           roomy ? "gap-4 p-6" : "gap-1 p-2",
-          !intent && "**:data-[slot=timer-strip-task]:hidden",
         )}
       >
         <div className="relative flex h-hit-min w-full shrink-0 items-center justify-center">
@@ -223,17 +210,13 @@ export function FullScreenFocus({
           className="flex min-h-0 w-full flex-1 items-center justify-center"
         >
           {layout === "ring" ? (
-            <>
-              <TimerRing {...ring} mode={mode} size="fluid" />
-              {idle && ring.task ? <span className="sr-only">{ring.task}</span> : null}
-            </>
+            <TimerRing {...ring} mode={mode} size="fluid" />
           ) : (
             <TimerStrip
               remaining={ring.remaining}
               remainingLabel={ring.remainingLabel}
               progress={ring.progress}
               mode={mode}
-              task={ring.task}
               stacked={layout === "stackedStrip"}
             />
           )}

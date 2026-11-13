@@ -1,6 +1,6 @@
 import type { TimerView_Serialize } from "../../../shared/ipc/bindings";
 import type { Handler } from "./backend";
-import { BREAK, backend, DEEP, IDLE, PAUSED, RUNNING } from "./backend";
+import { BREAK, backend, DEEP, IDLE, RUNNING } from "./backend";
 import { ENDED } from "./timer";
 
 // The floater's longest case: a Deep Work session of 1:30:00.
@@ -33,7 +33,6 @@ const LONG_BREAK: TimerView_Serialize = {
   breakKind: "long",
   suggestion: { text: "Sit quietly and let your mind wander.", label: "experimental" },
 };
-const INTENT = "Write the first draft of the chapter 3 outline and send it to Sam for a read";
 
 const ended = (phase: "focus" | "break", endReason: "completed" | "stopped") => ({
   ...ENDED,
@@ -62,8 +61,6 @@ export const TODAY: Record<string, Handler> = {
   capLine: backend({ view: { ...IDLE, capLine: "4 hours of focus today." } }),
   // Today polish: Deep Work at its longest face. The twin of deepRunning (the plan's name for Today), the same view.
   runningDeep: backend({ view: DEEP_RUNNING }),
-  intentSet: backend({ view: { ...RUNNING, intent: INTENT } }),
-  intentPaused: backend({ view: { ...PAUSED, intent: "Reply to Sam" } }),
   // The one-time keep-going hint after a first "+10 min" (a running focus).
   hintKeepGoing: backend({
     view: { ...RUNNING, hint: "keepGoing" },

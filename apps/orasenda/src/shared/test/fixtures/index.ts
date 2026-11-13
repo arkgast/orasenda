@@ -64,7 +64,6 @@ const DEFAULTS: Replies = {
   timer_resume: () => RUNNING,
   timer_stop: () => IDLE,
   timer_extend: () => RUNNING,
-  timer_set_intent: () => RUNNING,
   timer_dismiss_offer: () => IDLE,
   timer_take_break: () => BREAK,
   hint_shown: () => RUNNING,

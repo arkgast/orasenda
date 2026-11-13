@@ -43,7 +43,6 @@ export const IDLE: TimerView_Serialize = {
   breakKind: null,
   extensions: 0,
   canExtend: false,
-  intent: null,
   suggestion: null,
   offer: null,
   checkIn: null,

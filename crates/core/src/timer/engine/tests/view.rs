@@ -72,7 +72,7 @@ fn adversarial_instants_never_panic() {
     let mut s: Session = serde_json::from_value(serde_json::json!({
         "state": "paused", "id": "x", "preset": steady(), "phase": "focus", "break_kind": null,
         "started_ms": u64::MAX, "planned_ms": u64::MAX, "paused_total_ms": u64::MAX,
-        "gap_ms": u64::MAX, "extensions": 255, "round": 255, "intent": null, "warned": false,
+        "gap_ms": u64::MAX, "extensions": 255, "round": 255, "warned": false,
         "auto_step": false, "open_focus": null, "cut_breaks": [], "pause_started_ms": 0,
     }))
     .unwrap();

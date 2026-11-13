@@ -70,14 +70,6 @@ test("today_calls_hint_shown_once_when_the_view_arrives_with_the_hint", async ()
   expect(argsOf(backend.calls, "hint_shown")).toHaveLength(1);
 });
 
-test("hint_shown_not_called_while_the_intent_field_is_open", async () => {
-  const { backend } = await renderWith();
-  await emitTimer(RUNNING);
-  fireEvent.click(screen.getByRole("button", { name: "What will be done?" }));
-  await emitTimer(HINTED);
-  expect(argsOf(backend.calls, "hint_shown")).toHaveLength(0);
-});
-
 test("hint_shown_waits_while_the_window_is_hidden", async () => {
   let state: DocumentVisibilityState = "hidden";
   vi.spyOn(document, "visibilityState", "get").mockImplementation(() => state);

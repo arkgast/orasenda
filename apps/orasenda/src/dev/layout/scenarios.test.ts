@@ -28,8 +28,6 @@ const NAMES = [
   "breakOver",
   "breakEnded",
   "capLine",
-  "intentSet",
-  "intentPaused",
   "captureError",
   "captureSaving",
 ];

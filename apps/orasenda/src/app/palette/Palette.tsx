@@ -2,7 +2,6 @@ import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { usePresets } from "@domain/presets/presets";
 import { tick, untick } from "@features/settings/notificationsToggle";
 import { openFocusView } from "@features/today/focusView";
-import { requestIntentField } from "@features/today/intentEvents";
 import { CommandPalette, type NavPage } from "@orasenda/ui";
 import type { DisplayInfo, Settings, Theme, TimerView_Serialize } from "@shared/ipc/bindings";
 import { commands, events } from "@shared/ipc/bindings";
@@ -118,12 +117,6 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         return attempt("timer_resume", commands.timerResume()).then(report("resume"));
       case "end":
         return attempt("timer_stop", commands.timerStop()).then(report("end the session"));
-      case "intent":
-        onNavigate("today");
-        // After the palette has unmounted and handed focus back to its opener; asked sooner, the
-        // restored focus would blur the new field and close it at once.
-        setTimeout(requestIntentField, 0);
-        return;
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));
       case "fullScreen":

@@ -45,7 +45,6 @@ fn extend_is_refused_outside_the_last_two_minutes() {
 #[test]
 fn extend_from_break_records_stopped_break() {
     let mut s = classic_at(T0);
-    s.set_intent(Some("Outline".into()), T0).unwrap();
     s.advance(T0 + 25 * MIN, None);
     assert_eq!(s.extend(T0 + 27 * MIN), Ok(Milestone::Extended));
     let v = s.view(T0 + 27 * MIN);
@@ -54,7 +53,6 @@ fn extend_from_break_records_stopped_break() {
         (Phase::Focus, EngineState::Running, None)
     );
     assert_eq!((v.extensions, v.open_focus), (1, false));
-    assert_eq!(v.intent.as_deref(), Some("Outline"));
     assert_eq!(v.session_id, Some(id("a")));
     assert_eq!(v.remaining_ms, 10 * MIN);
     assert_eq!(v.planned_end_ms, Some(T0 + 37 * MIN));
@@ -68,7 +66,6 @@ fn extend_from_break_records_stopped_break() {
         (EndReason::Stopped, 1)
     );
     assert_eq!(focus.focused_ms, 28 * MIN);
-    assert_eq!(focus.intent.as_deref(), Some("Outline"));
     assert_span(focus, 2 * MIN);
     assert_eq!(
         (brk.phase, brk.end_reason),

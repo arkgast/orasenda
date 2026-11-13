@@ -19,8 +19,6 @@ export const commands = {
 	timerStop: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_stop")),
 	/**  Adds ten minutes to the session: from the last two minutes of a focus, or from a break. */
 	timerExtend: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_extend")),
-	/**  Names the running focus, or clears its name with `null`. */
-	timerSetIntent: (intent: string | null) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_set_intent", { intent })),
 	/**  Clears the "Keep going?" offer. Safe to call twice. */
 	timerDismissOffer: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_dismiss_offer")),
 	/**  Ends the focus now as completed and starts its break. */
@@ -785,9 +783,7 @@ export type TimerCommandError = {
 /**  Why a timer command failed. */
 export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store" | 
 /**  "+10 min" was asked past the extension cap. */
-"extensionCap" | 
-/**  The intent is longer than 120 characters. */
-"invalidIntent";
+"extensionCap";
 
 /**  The view plus milestones the webview has not seen yet. */
 export type TimerState = TimerState_Serialize | TimerState_Deserialize;
@@ -839,8 +835,6 @@ export type TimerView_Deserialize = {
 	extensions: number,
 	/**  "+10 min" is on offer now: under the cap, and not while paused or for `quick`. */
 	canExtend: boolean,
-	/**  What the focus is for; `None` when not given and in a break. */
-	intent?: string | null,
 	/**  The break's line, during a break only. */
 	suggestion?: SuggestionView_Deserialize | null,
 	/**  "Keep going?", while idle after a `quick` session and auto-continue is off. */
@@ -889,8 +883,6 @@ export type TimerView_Serialize = {
 	extensions: number,
 	/**  "+10 min" is on offer now: under the cap, and not while paused or for `quick`. */
 	canExtend: boolean,
-	/**  What the focus is for; `None` when not given and in a break. */
-	intent: string | null,
 	/**  The break's line, during a break only. */
 	suggestion: SuggestionView_Serialize | null,
 	/**  "Keep going?", while idle after a `quick` session and auto-continue is off. */

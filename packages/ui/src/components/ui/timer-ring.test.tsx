@@ -3,8 +3,6 @@ import { expect, test } from "vitest";
 import { TimerRing } from "./timer-ring";
 
 const RUN = { remaining: "18:42", remainingLabel: "18 minutes 42 seconds", progress: 0.25 };
-const TASK =
-  "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";
 
 // Changed from the Version 28 markup snapshots (os-* classes): the same facts, asserted through
 // the role, the accessible name, the geometry attributes and data-slot.
@@ -44,11 +42,12 @@ test("timer_ring_fluid_uses_container_sizing", () => {
   expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 400 400");
 });
 
-test("timer_ring_task_whole_in_accessible_name", () => {
-  const { container } = render(<TimerRing mode="focus" {...RUN} task={TASK} />);
-  const name = screen.getByRole("timer").getAttribute("aria-label") ?? "";
-  expect(name.endsWith(TASK)).toBe(true);
-  expect(container.querySelector("[data-slot=timer-ring-task]")?.textContent).toBe(TASK);
+test("timer_ring_has_no_task_slot", () => {
+  const { container } = render(<TimerRing mode="focus" {...RUN} />);
+  expect(screen.getByRole("timer").getAttribute("aria-label")).toBe(
+    "Focus, 18 minutes 42 seconds remaining",
+  );
+  expect(container.querySelector("[data-slot=timer-ring-task]")).toBeNull();
 });
 
 test("timer_ring_clock_in_name_and_shown_small", () => {

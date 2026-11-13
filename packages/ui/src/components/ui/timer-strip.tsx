@@ -12,8 +12,6 @@ export interface TimerStripProps {
   mode?: StripMode;
   /** Shown when idle ("25 min"), never fake digits. */
   idleLength?: string;
-  /** E's intent line: clamped to two lines, whole in the accessible name. */
-  task?: string;
   /** The narrow form (stackedStrip). */
   stacked?: boolean;
 }
@@ -50,7 +48,6 @@ function label(p: TimerStripProps, mode: StripMode): string {
     mode === "idle"
       ? ["No session", p.idleLength]
       : [`${WORD[mode]}, ${p.remainingLabel || p.remaining || "25:00"} remaining`];
-  if (p.task) parts.push(p.task);
   return parts.filter(Boolean).join(", ");
 }
 
@@ -60,7 +57,7 @@ function label(p: TimerStripProps, mode: StripMode): string {
  * control and no live region.
  */
 export function TimerStrip(props: TimerStripProps): ReactElement {
-  const { remaining, idleLength, task, stacked = false } = props;
+  const { remaining, idleLength, stacked = false } = props;
   const mode = props.mode ?? "focus";
   const left = `${(1 - clamp(props.progress)) * 100}%`;
   return (
@@ -143,15 +140,6 @@ export function TimerStrip(props: TimerStripProps): ReactElement {
               <path d="M5 0.5 9.6 9.5H0.4z" />
             </svg>
           ) : null}
-        </div>
-      ) : null}
-      {task ? (
-        <div
-          data-slot="timer-strip-task"
-          aria-hidden="true"
-          className="line-clamp-2 overflow-hidden break-words text-body-sm text-ink-muted"
-        >
-          {task}
         </div>
       ) : null}
     </div>

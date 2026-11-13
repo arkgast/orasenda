@@ -87,7 +87,6 @@ impl SessionService {
             break_kind: engine.break_kind,
             extensions: engine.extensions,
             can_extend: self.can_extend(&engine),
-            intent: engine.intent.clone(),
             suggestion: engine.break_kind.map(|kind| self.suggestion(kind, now_ms)),
             offer: (idle && self.offer && !self.settings.auto_continue).then_some(Offer::KeepGoing),
             check_in: (running && engine.auto_step && engine.phase == Phase::Focus).then(|| {

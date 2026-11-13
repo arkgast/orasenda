@@ -42,9 +42,6 @@ export const STATES = [
   { scenario: "breakOver", primary: /Start focus/ },
   { scenario: "breakEnded", primary: /Start focus/ },
   { scenario: "capLine", primary: /Start focus/ },
-  { scenario: "intentSet", primary: /Pause session/ },
-  { scenario: "intentPaused", primary: /Resume session/ },
-  { scenario: "intentOpen", primary: /Pause session/ },
   { scenario: "hintKeepGoing", primary: /Pause session/ },
   { scenario: "runningDeep", primary: /Pause session/ },
   // Hotkeys and capture: the welcome line and the tips joined to "Session ended.".
@@ -63,17 +60,10 @@ export const TWO_ACTIONS = new Set([
   "keepGoing",
 ]);
 
-/** The harness scenario behind a state: `intentOpen` is a running session whose field the test opens. */
-export const scenarioOf = (state: string): string => (state === "intentOpen" ? "running" : state);
-
 /** Scenarios whose line shows only after an action (the harness has no click in `openApp`). */
 export async function provoke(page: Page, scenario: string): Promise<void> {
   if (scenario === "startError") await page.getByRole("button", { name: "Start focus" }).click();
   if (scenario === "pauseError") await page.getByRole("button", { name: "Pause session" }).click();
-  if (scenario === "intentOpen") {
-    await page.getByRole("button", { name: "What will be done?" }).click();
-    await page.getByRole("textbox", { name: "What will be done?" }).waitFor();
-  }
   if (scenario === "starting") {
     await page.getByRole("button", { name: "Start focus" }).click();
     await page.getByRole("button", { name: "Starting…" }).waitFor();
@@ -109,7 +99,6 @@ export async function expectTodayFits(
   expect(b.x + b.width, "primary right").toBeLessThanOrEqual(size.width);
   expect(b.y + b.height, "primary bottom").toBeLessThanOrEqual(size.height);
 
-  // The open intent field replaces the row; its input is a 44px target (checked below).
   const rowBox = page.locator('[data-slot="inline-notice"]');
   const row = (await rowBox.count()) > 0 ? await rowBox.first().boundingBox() : null;
   // A strip's status is a column beside the time, where a long line may take more height.
@@ -121,18 +110,8 @@ export async function expectTodayFits(
 
   expect(await smallTargets(page.locator("body")), "targets are 44px").toEqual([]);
   // The visually hidden h1 is a 1px box on purpose.
-  // The open intent field lies over the stacked strip's time on purpose (today.css).
-  const overlay =
-    size.layout === "stackedStrip" &&
-    (await page.locator('[data-slot="intent-field"]').count()) > 0;
-  // Only the intent line is clamped on purpose; without a task slot nothing may be.
-  const taskSlots = (await page.locator('[data-slot$="-task"]').count()) > 0;
   const spill = (await overflows(page.locator(".today"))).filter(
-    // The task line is clamped to two lines on purpose (timer-ring and timer-strip READMEs).
-    (line) =>
-      !line.includes("sr-only") &&
-      !(taskSlots && line.includes("line-clamp-2")) &&
-      !(overlay && line.includes("today-status")),
+    (line) => !line.includes("sr-only"),
   );
   expect(spill, "nothing overflows").toEqual([]);
 }
@@ -199,7 +178,6 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
         union(controls(".today-controls").map(rectOf)) ?? union(all(".today-controls").map(rectOf)),
     };
   });
-  const overlay = (await page.locator('[data-slot="intent-field"]').count()) > 0;
   const found: string[] = [];
   const log: string[] = [];
   const check = (name: string, gap: number, min: number) => {
@@ -232,8 +210,7 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
   } else {
     const rows: Array<[string, Box | null]> = [
       ["top", m.top],
-      // The open intent field overlays the time in a stacked strip on purpose, so it has no gap to keep.
-      ["status", overlay ? null : m.status],
+      ["status", m.status],
       ["time", m.time],
       ["controls", m.controls],
     ];

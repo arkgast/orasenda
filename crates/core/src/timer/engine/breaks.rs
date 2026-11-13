@@ -39,7 +39,6 @@ impl Live {
             gap_ms: 0,
             extensions: 0,
             round: self.round,
-            intent: None,
             warned: false,
             auto_step: false,
             open_focus: Some(Box::new(focus)),

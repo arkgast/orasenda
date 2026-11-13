@@ -8,7 +8,6 @@ pub const COMMANDS: &[&str] = &[
     "timer_resume",
     "timer_stop",
     "timer_extend",
-    "timer_set_intent",
     "timer_dismiss_offer",
     "timer_take_break",
     "hint_shown",

@@ -1,17 +1,15 @@
-The Focus window (`full-screen-focus.tsx`): the time and the intent, one quiet way out, and the controls for the session, nothing else.
+The Focus window (`full-screen-focus.tsx`): the time, one quiet way out, and the controls for the session, nothing else.
 
 - **Anatomy:** four fixed tracks and one flexible time track, top to bottom: the top row (the host's `summary`, centred, while idle or ended; Leave full screen, an `IconButton` with the Esc `Kbd`, at the end), the status line, the time track, the controls row and the caption. Timer surfaces never scroll.
-- **Props:** `TimerRing` props (`remaining`, `remainingLabel`, `progress`, `mode`, `task`, `clock`) plus `onExit`, `onPause`, `onResume`, `onEnd`, `onStart`, `summary`, `singleKeys`, `ended`, `status`, `secondaryActions`, `phase` and `offer`. `task` is E's intent line ("What will be done?").
-- **Layout:** it fills its host (the Focus window's body, which the host sizes to the window) and measures its own box with a `ResizeObserver`. In that callback, and nowhere else, it calls `timerLayout` with the box from TimerStrip's README: `contentWidth` and `contentHeight` are its width and height minus `space-8` (minus `space-4` below `layout-compact-width`), `windowWidth` is its width. A tick never re-runs it. `ring` shows `TimerRing size="fluid"` with `task` and `clock`; `strip` and `stackedStrip` show `TimerStrip` (`stacked` for the second) with `task` and no clock. The section carries the result as `data-layout`.
+- **Props:** `TimerRing` props (`remaining`, `remainingLabel`, `progress`, `mode`, `clock`) plus `onExit`, `onPause`, `onResume`, `onEnd`, `onStart`, `summary`, `singleKeys`, `ended`, `status`, `secondaryActions`, `phase` and `offer`.
+- **Layout:** it fills its host (the Focus window's body, which the host sizes to the window) and measures its own box with a `ResizeObserver`. In that callback, and nowhere else, it calls `timerLayout` with the box from TimerStrip's README: `contentWidth` and `contentHeight` are its width and height minus `space-8` (minus `space-4` below `layout-compact-width`), `windowWidth` is its width. A tick never re-runs it. `ring` shows `TimerRing size="fluid"` with `clock`; `strip` and `stackedStrip` show `TimerStrip` (`stacked` for the second) and no clock. The section carries the result as `data-layout`.
 - **Margins and gaps:** the ring from `layout-compact-width` wide: `space-6` on each side (the `space-8` of the box) and `space-4` between tracks. Below `layout-compact-width`, and in both strips: `space-2` on each side and `space-1` between tracks, so short windows keep their time track.
 - **Fixed tracks:** top `hit-min` (44), status 18 (one `body-sm` line, reserved even when empty, so nothing moves when a session ends), controls `control-lg` (52), caption 18: 132 plus the four gaps. In strips, the digits follow the time track's height as well as its width (never below `timer-md`).
 
-## The intent line
+## The cases the harness checks
 
-- Two lines, clamped, in the ring's `task` slot or the strip's `task` line, in every state: focus, paused, break, warning, idle and ended. It stays whole in the timer's accessible name in every layout, because `FullScreenFocus` passes `task` in all of them. One exception, kept for compatibility: `TimerRing`'s idle name is "No session" without the task, so in the ring while idle or ended `FullScreenFocus` adds the intent as a visually hidden line right after the ring.
-- **Where it shows in a strip:** the time track's height, worked out from the window's box in the same resize callback (`data-intent` on the section; the line stays in the DOM and the name). The strip's intent line shows when the track is at least 128px tall (the tallest strip with its intent is 126: 64px digits, `space-2`, the 10px bar, `space-2`, two 18px lines) and is hidden below that. The ring always has room for it.
-- **At the minimum window (360 × 240):** the box is 344 × 224 and the result is `stackedStrip`. The fixed tracks and gaps take 148, which leaves a 76px time track. The stacked strip shows its head (the chip and the digits, about 30px here), `space-1` and the 10px bar, and no intent line, as Today's stacked strip does at the minimum (TimerStrip README, "Today's stacked strip", ruling (a)). Unlike Today, the intent stays in the strip's accessible name. At 360 × 360 the track is 196px and the intent shows.
-- **Cases the harness checks:** 1280 × 720 (ring, 460px track), 1920 × 1080 (ring 560), the phone 390 × 844 and xl 1440 × 900 (both ring), the strip frame 1000 × 440 (strip, 276px track) and the minimum 360 × 240 (stacked strip, no intent line), each in focus, paused, idle, break, warning and ended.
+- 1280 × 720 (ring, 460px track), 1920 × 1080 (ring 560), the phone 390 × 844 and xl 1440 × 900 (both ring), the strip frame 1000 × 440 (strip, 276px track) and the minimum 360 × 240 (stacked strip), each in focus, paused, idle, break, warning and ended.
+- At the minimum window (360 × 240) the box is 344 × 224 and the result is `stackedStrip`. The fixed tracks and gaps take 148, which leaves a 76px time track for the stacked strip's head (the chip and the digits, about 30px here), `space-1` and the 10px bar.
 
 ## Controls and keys
 
@@ -25,7 +23,7 @@ The Focus window (`full-screen-focus.tsx`): the time and the intent, one quiet w
 
 ## States and announcements
 
-- **`ended`:** the status line says "Session ended.", the timer shows idle (and the intent), Start and the summary return, and the window stays open.
+- **`ended`:** the status line says "Session ended.", the timer shows idle, Start and the summary return, and the window stays open.
 - **Live region:** one, the status line: an always-mounted `role="status"` paragraph that holds "Session ended." while `ended` and otherwise only an `aria-hidden` non-breaking space (it keeps the line's height), so the end is announced once. The host may pass `status` (a failed command, an unreadable timer): that one line takes the place of "Session ended." in the same region, and nothing else changes. The status stays on one line (it truncates with an ellipsis rather than wrapping, so the time track never loses height); the live region still reads the full text. The Focus window is its own window and has no page status to announce through. The timer stays `role="timer"`, `aria-live="off"`.
 - It is a borderless window per display, not macOS native full screen.
 

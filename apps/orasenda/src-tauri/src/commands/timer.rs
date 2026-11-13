@@ -72,16 +72,6 @@ pub async fn timer_extend(app: tauri::AppHandle) -> Result<TimerView, TimerComma
     run(app, Action::Extend).await
 }
 
-/// Names the running focus, or clears its name with `null`.
-#[tauri::command]
-#[specta::specta]
-pub async fn timer_set_intent(
-    app: tauri::AppHandle,
-    intent: Option<String>,
-) -> Result<TimerView, TimerCommandError> {
-    run(app, Action::SetIntent(intent)).await
-}
-
 /// Clears the "Keep going?" offer. Safe to call twice.
 #[tauri::command]
 #[specta::specta]

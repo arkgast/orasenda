@@ -4,7 +4,7 @@
 //! Every method takes `now_ms`; the engine never reads the clock. Arithmetic saturates, so a
 //! clock set back, a snapshot from the future or an instant near `u64::MAX` never panics.
 //!
-//! Layout: this file holds the state and the plain transitions (start, pause, resume, intent);
+//! Layout: this file holds the state and the plain transitions (start, pause, resume);
 //! `advance` the clock-driven ones, `breaks` the break and the end of a session, `extend` the
 //! `+10 min` actions, `auto` the automatic steps and `view` the numbers for the surfaces.
 
@@ -37,7 +37,6 @@ pub struct Live {
     pub(crate) extensions: u8,
     /// Fixed at start; decides which break comes.
     pub(crate) round: u8,
-    pub(crate) intent: Option<String>,
     pub(crate) warned: bool,
     pub(crate) auto_step: bool,
     pub(crate) open_focus: Option<Box<SessionRecord>>,
@@ -91,7 +90,6 @@ impl Session {
                         gap_ms: 0,
                         extensions: 0,
                         round,
-                        intent: None,
                         warned: false,
                         auto_step: false,
                         open_focus: None,
@@ -175,21 +173,6 @@ impl Session {
             && live.break_id.is_none()
         {
             live.break_id = Some(id);
-        }
-    }
-
-    /// Names the focus session (or clears the name with `None`). A running or paused focus,
-    /// extensions included; refused in a break (`WrongState`) or idle.
-    pub fn set_intent(&mut self, intent: Option<String>, _now_ms: u64) -> Result<(), TimerError> {
-        match self {
-            Session::Idle => Err(TimerError::NothingRunning),
-            Session::Running { live } | Session::Paused { live, .. } => {
-                if live.phase != Phase::Focus {
-                    return Err(TimerError::WrongState);
-                }
-                live.intent = intent;
-                Ok(())
-            }
         }
     }
 }

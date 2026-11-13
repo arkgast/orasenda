@@ -79,17 +79,11 @@ test("palette_notifications_row_follows_preference", () => {
   ).toBe(false);
 });
 
-test("palette_set_intent_only_in_focus", () => {
-  const has = (view: Parameters<typeof paletteCommands>[0]["view"]) =>
-    labels({ ...base, view }).includes("Set intent");
-  expect(has(RUNNING)).toBe(true);
-  expect(has(PAUSED)).toBe(true);
-  expect(has(IDLE)).toBe(false);
-  expect(has(null)).toBe(false);
-  expect(has({ ...RUNNING, phase: "break", mode: "break" })).toBe(false);
-  expect(paletteCommands({ ...base, view: RUNNING }).find((c) => c.id === "intent")).toMatchObject({
-    label: "Set intent",
-  });
+test("palette_session_commands_are_pause_and_end", () => {
+  expect(labels({ ...base, view: RUNNING })).toEqual(
+    expect.arrayContaining(["Pause session", "End session"]),
+  );
+  expect(labels({ ...base, view: PAUSED })).toContain("Resume session");
 });
 
 test("palette_has_capture_command", () => {
