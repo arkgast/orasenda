@@ -106,7 +106,12 @@ impl SessionService {
                 eprintln!(
                     "frames: {window} on {legacy} not moved to {new} ({error}); kept for this run"
                 );
-                if let Some(frame) = from_stored(stored) {
+                // A frame already under the new key (this run's or stored) wins.
+                let newer_stored = !matches!(
+                    store.read(|txn| window_frames::get(txn, window, new)),
+                    Ok(None)
+                );
+                if !newer_stored && let Some(frame) = from_stored(stored) {
                     self.frames.entry(key(window, new)).or_insert((frame, 0));
                 }
             }

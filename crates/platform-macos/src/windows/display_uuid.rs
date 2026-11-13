@@ -6,6 +6,7 @@
 //! monitors of the same model.
 
 use std::ffi::c_void;
+use std::sync::Mutex;
 
 use objc2_foundation::NSString;
 
@@ -50,11 +51,27 @@ pub(super) fn display_uuid(number: u32) -> Option<String> {
 /// The raw (not yet label-safe) key and the legacy raw key of a screen. The UUID wins; when
 /// there is none (or the screen has no number) the legacy form is used and logged.
 pub(super) fn raw_keys(number: Option<u32>, index: usize, name: &str) -> (String, String) {
+    choose_keys(number.and_then(display_uuid), number, index, name)
+}
+
+/// The UUID when there is one, else the legacy key (logged once per display per process).
+pub(super) fn choose_keys(
+    uuid: Option<String>,
+    number: Option<u32>,
+    index: usize,
+    name: &str,
+) -> (String, String) {
     let legacy = legacy_raw(number, index, name);
-    match number.and_then(display_uuid) {
+    match uuid {
         Some(uuid) => (uuid, legacy),
         None => {
-            eprintln!("displays: no ColorSync UUID for {name:?}; keyed by its screen number");
+            static LOGGED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+            if let Ok(mut logged) = LOGGED.lock()
+                && !logged.contains(&legacy)
+            {
+                eprintln!("displays: no ColorSync UUID for {name:?}; keyed by its screen number");
+                logged.push(legacy.clone());
+            }
             (legacy.clone(), legacy)
         }
     }

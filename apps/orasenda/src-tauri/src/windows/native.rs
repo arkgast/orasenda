@@ -81,6 +81,7 @@ mod other {
         fn load_frame(&self, _displays: &[&str]) -> Option<(String, Frame)> {
             None
         }
+        fn migrate_frames(&self, _screens: &[Screen]) {}
         fn emit_insets(&self, _label: &str, _insets: crate::ipc::FocusInsets) {}
         fn close(&self, _label: &str) {}
     }

@@ -152,3 +152,15 @@ fn legacy_move_write_failure_keeps_frame_for_run() {
         "the legacy row stays for a retry"
     );
 }
+
+#[test]
+fn legacy_move_write_failure_keeps_new_key_frame() {
+    let mut s = service();
+    s.frame_save("floater", "1-Dell", FRAME, T0);
+    let newer = Frame { x: 5, ..FRAME };
+    s.frame_save("floater", "UUID-A", newer, T0 + 1);
+    db(&s).fail_writes(true);
+    s.frame_migrate("floater", &[("1-Dell", "UUID-A")], T0 + 2);
+    db(&s).fail_writes(false);
+    assert_eq!(s.frame_get("floater", "UUID-A"), Some(newer));
+}

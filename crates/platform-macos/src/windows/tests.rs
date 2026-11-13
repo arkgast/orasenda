@@ -3,7 +3,7 @@
 
 use std::ptr::null_mut;
 
-use super::display_uuid::legacy_raw;
+use super::display_uuid::{choose_keys, legacy_raw};
 use super::displays::{Display, Rect, display_key, to_appkit, to_top_left};
 use super::keys::{FloaterKey, Modifiers, floater_key};
 use super::*;
@@ -226,4 +226,18 @@ fn windows_fns_refuse_off_main_thread() {
         observe_screen_changes(Box::new(|| {})),
         Err(WindowError::NotOnMainThread)
     ));
+}
+
+#[test]
+fn choose_keys_prefers_the_uuid() {
+    let keys = choose_keys(Some("U-1".into()), Some(7), 0, "Dell");
+    assert_eq!(keys, ("U-1".to_owned(), "7-Dell".to_owned()));
+}
+
+#[test]
+fn choose_keys_falls_back_to_the_legacy_key() {
+    let keys = choose_keys(None, Some(7), 0, "Dell");
+    assert_eq!(keys, ("7-Dell".to_owned(), "7-Dell".to_owned()));
+    let no_number = choose_keys(None, None, 2, "Dell");
+    assert_eq!(no_number, ("i2-Dell".to_owned(), "i2-Dell".to_owned()));
 }
