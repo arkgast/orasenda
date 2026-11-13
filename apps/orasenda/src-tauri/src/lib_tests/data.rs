@@ -103,6 +103,8 @@ fn data_commands_in_main_capability_only() {
         "allow-backups-delete",
         "allow-backups-restore",
         "allow-backups-set-policy",
+        "allow-data-export",
+        "allow-data-import",
     ];
     for file in [
         "main.json",

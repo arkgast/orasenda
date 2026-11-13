@@ -4,6 +4,7 @@
 
 pub mod backups;
 mod cap;
+mod files;
 pub mod import;
 mod names;
 pub mod pending;
@@ -12,6 +13,7 @@ mod run;
 #[cfg(test)]
 mod tests;
 
+pub use files::{run_export, run_import_file};
 pub use pending::PendingOutcome;
 pub use run::{
     busy, run_auto_check, run_backups_create, run_backups_delete, run_backups_restore,

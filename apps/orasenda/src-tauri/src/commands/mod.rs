@@ -5,6 +5,7 @@ use tauri::PackageInfo;
 
 mod capture;
 mod data;
+mod data_files;
 mod focus_views;
 mod hint;
 mod inbox;
@@ -19,6 +20,7 @@ mod tips;
 
 pub use capture::*;
 pub use data::*;
+pub use data_files::*;
 pub use focus_views::*;
 #[cfg(test)]
 pub(crate) use focus_views::{closable, display_infos};

@@ -141,7 +141,7 @@ fn check(path: &Path) -> Result<(), DataError> {
     Ok(())
 }
 
-fn is_live_file(dir: &Path, source: &Path) -> bool {
+pub(super) fn is_live_file(dir: &Path, source: &Path) -> bool {
     match (
         std::fs::canonicalize(source),
         std::fs::canonicalize(dir.join(DB_FILE)),

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-data-import"
+description = "Enables the data_import command without any pre-configured scope."
+commands.allow = ["data_import"]
+
+[[permission]]
+identifier = "deny-data-import"
+description = "Denies the data_import command without any pre-configured scope."
+commands.deny = ["data_import"]

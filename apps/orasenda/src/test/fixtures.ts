@@ -272,6 +272,8 @@ const DEFAULTS: Replies = {
   backups_delete: () => null,
   backups_restore: () => null,
   backups_set_policy: (args) => (args as { policy: unknown }).policy,
+  data_export: () => ({ kind: "cancelled" }),
+  data_import: () => ({ kind: "cancelled" }),
 };
 
 /**

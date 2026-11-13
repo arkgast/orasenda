@@ -21,7 +21,7 @@ pub fn busy<H: Host>(host: &H) -> bool {
         .is_some_and(|service| lock(service).session_active(host.now_ms()))
 }
 
-fn dir_of<H: Host>(host: &H) -> Result<PathBuf, DataError> {
+pub(super) fn dir_of<H: Host>(host: &H) -> Result<PathBuf, DataError> {
     host.data_dir().ok_or_else(|| {
         DataError::new(
             DataErrorKind::Unavailable,
@@ -30,14 +30,14 @@ fn dir_of<H: Host>(host: &H) -> Result<PathBuf, DataError> {
     })
 }
 
-fn no_store() -> DataError {
+pub(super) fn no_store() -> DataError {
     DataError::new(
         DataErrorKind::Unavailable,
         "Orasenda can't open its data right now",
     )
 }
 
-fn busy_error() -> DataError {
+pub(super) fn busy_error() -> DataError {
     DataError::new(DataErrorKind::Busy, "End the session first.")
 }
 

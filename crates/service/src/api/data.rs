@@ -84,6 +84,22 @@ pub struct ImportReport {
     pub updated: DataCounts,
 }
 
+/// What `data_export` did: the file it saved (its name), or nothing when the panel was cancelled.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum ExportOutcome {
+    Saved { file: String },
+    Cancelled,
+}
+
+/// What `data_import` did: what it merged, or nothing when the panel was cancelled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum ImportOutcome {
+    Imported { report: ImportReport },
+    Cancelled,
+}
+
 /// What went wrong, for the line the webview shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

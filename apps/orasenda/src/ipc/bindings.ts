@@ -103,6 +103,10 @@ export const commands = {
 	backupsRestore: (file: string) => typedError<null, DataError>(__TAURI_INVOKE("backups_restore", { file })),
 	/**  Saves the backup policy and prunes to its `keep` at once. */
 	backupsSetPolicy: (policy: BackupPolicy) => typedError<BackupPolicy, DataError>(__TAURI_INVOKE("backups_set_policy", { policy })),
+	/**  Saves a copy of the data where the user chooses. Works during a session. */
+	dataExport: () => typedError<ExportOutcome, DataError>(__TAURI_INVOKE("data_export")),
+	/**  Merges a data file the user chooses. `Busy` during a session, before any panel opens. */
+	dataImport: () => typedError<ImportOutcome, DataError>(__TAURI_INVOKE("data_import")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -297,6 +301,9 @@ export type EndReason = "completed" | "stopped";
 /**  Whether the timer is idle, counting or paused. */
 export type EngineState = "idle" | "running" | "paused";
 
+/**  What `data_export` did: the file it saved (its name), or nothing when the panel was cancelled. */
+export type ExportOutcome = { kind: "saved"; file: string } | { kind: "cancelled" };
+
 /**
  *  The part of a Focus window's display that the menu bar and the Dock cover, in points.
  *  Sent to that one window, which pads its body by it.
@@ -328,6 +335,15 @@ export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind
 export type Hint = 
 /**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
 "keepGoing";
+
+/**  What `data_import` did: what it merged, or nothing when the panel was cancelled. */
+export type ImportOutcome = { kind: "imported"; report: ImportReport } | { kind: "cancelled" };
+
+/**  What an import wrote: rows only in the file, and rows the file replaced. */
+export type ImportReport = {
+	added: DataCounts,
+	updated: DataCounts,
+};
 
 /**  Why removing or restoring a note failed. */
 export type InboxError = 
