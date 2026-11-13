@@ -53,7 +53,7 @@ for (const size of SIZES) {
   test(`app_shell_board_${label}`, async ({ page }) => {
     await openApp(page, "idle", size);
     await page.keyboard.press("Meta+2");
-    await expect(page.getByRole("heading", { level: 1, name: "Board" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeFocused();
     await expectNoDocumentScroll(page);
     const rail = page.getByRole("navigation", { name: "Main navigation" });
     const pages = page.getByRole("button", { name: "Pages", exact: true });
