@@ -58,6 +58,12 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Break suggestion | One rotating line shown during a break, labelled *optional* or *experimental* when the evidence is thin; not medical advice. | A routine (P4) |
 | Auto-continue | The opt-in setting *Keep going automatically* (off by default): a running focus that reaches its end keeps going in 10-minute steps, each an extension, until *Longest focus* (default 90 minutes); then the break starts. Each step offers *Take a break*. | The extension cap (manual "+10 min") |
 | Keep-going hint | A one-time quiet status line on Today after the first manual extension while auto-continue is off: it points to *Keep going automatically* in Settings › Timer. Shown once per device (`meta` key `hint.keep_going`). | The keep-going offer (*Keep going* / *Stop here* after a `quick` session) |
+| Global shortcut | A system-wide key combination registered once in Rust: *start or pause* (⌃⌥F) and *capture* (⌃⌥N). Changeable or off in Settings › Keyboard (ADR-017). | A menu accelerator (⌘K, ⇧⌘F), which works only while Orasenda is active |
+| Registration status | Whether a global shortcut is `registered`, `off` or `failed` on this device right now. In memory only. | The saved setting |
+| Single-key shortcut | A one-key binding inside one surface (Space, F, P on Today; Space in Focus view), honouring the *Single-key shortcuts* setting (WCAG 2.1.4). | A ⌘ combination, which always works |
+| Capture panel | The small non-activating panel (⌃⌥N) that saves a thought to the Inbox without leaving the current app. | The floater |
+| Inbox note | One captured thought: text, Internal or External, a time. Syncable (`inbox_note`), removed by tombstone. Listed on Board. | A task card (Kanban, later) |
+| Tip | A one-time neutral status line on idle Today ("Tip: …" with Got it), seen on Got it, on use, or after its second showing. | The keep-going hint (running, once) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
