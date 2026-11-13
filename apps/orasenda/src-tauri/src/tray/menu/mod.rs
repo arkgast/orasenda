@@ -5,6 +5,7 @@ mod entries;
 mod native;
 
 use orasenda_core::{PresetId, default_presets};
+use orasenda_service::api::{KeyboardView, ShortcutStatus};
 
 use crate::ipc::{DisplayInfo, PresetEntry, Settings, entries};
 
@@ -62,6 +63,18 @@ pub(crate) struct NextSession {
     pub(crate) presets: Vec<PresetEntry>,
     /// The selected preset (the first when the id is not in `presets`).
     pub(crate) selected: PresetId,
+    /// The Start shortcut's keys as glyphs ("⌃⌥F"), shown as inert text on the Start item. `None`
+    /// unless the shortcut is registered. Never a live accelerator: the global shortcut is the
+    /// only thing that starts a session from the keys.
+    pub(crate) keys: Option<String>,
+}
+
+/// The inert keys text for the Start item: the user's keys while the shortcut is registered.
+pub(crate) fn start_keys(view: &KeyboardView) -> Option<String> {
+    match view.start_pause.status {
+        ShortcutStatus::Registered => view.start_pause.display.clone(),
+        ShortcutStatus::Off | ShortcutStatus::Failed => None,
+    }
 }
 
 impl Default for NextSession {
@@ -78,12 +91,22 @@ impl NextSession {
                 .first()
                 .map_or_else(|| settings.preset_id.clone(), |p| p.id.clone()),
         };
-        NextSession { presets, selected }
+        NextSession {
+            presets,
+            selected,
+            keys: None,
+        }
     }
 
     /// The same library with the selection of `settings`.
     pub(crate) fn with_settings(&self, settings: &Settings) -> NextSession {
-        NextSession::new(settings, self.presets.clone())
+        NextSession::new(settings, self.presets.clone()).with_keys(self.keys.clone())
+    }
+
+    /// The same session with the Start item's keys text.
+    pub(crate) fn with_keys(mut self, keys: Option<String>) -> NextSession {
+        self.keys = keys;
+        self
     }
 
     /// The same selection over a changed library.
@@ -92,7 +115,7 @@ impl NextSession {
             preset_id: self.selected.clone(),
             ..Settings::default()
         };
-        NextSession::new(&settings, presets)
+        NextSession::new(&settings, presets).with_keys(self.keys.clone())
     }
 
     /// The selected preset's focus minutes; 25 when the library is empty.

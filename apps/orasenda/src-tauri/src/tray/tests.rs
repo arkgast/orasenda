@@ -15,6 +15,7 @@ mod header;
 mod menu_items;
 mod presets;
 mod retry;
+mod shortcut_text;
 
 /// 24:59, 24:58 and 24:57 left.
 const S59: u64 = 1_499_000;

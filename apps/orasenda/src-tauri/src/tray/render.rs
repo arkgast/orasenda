@@ -5,11 +5,12 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::BreakKind;
 use tauri::image::Image;
 
-use super::menu::{FocusItems, MenuEntry, NextSession};
+use super::menu::{FocusItems, MenuEntry, NextSession, start_keys};
 use super::state::{DRAW_RETRIES, Drawn, TrayState, lock_state};
 use crate::ipc::{Mode, TimerView};
 use crate::ipc::{PresetEntry, Settings};
 use crate::runtime::session::NativeSurface;
+use orasenda_service::api::KeyboardView;
 
 const FOCUS_ICON: Image<'static> = tauri::include_image!("src/tray/icons/focus.png");
 const PAUSED_ICON: Image<'static> = tauri::include_image!("src/tray/icons/paused.png");
@@ -147,6 +148,25 @@ impl Tray {
                 return;
             }
             state.focus = focus;
+            state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
+            state.retries = 0;
+            state.render_seq += 1;
+        }
+        post_draw(&self.handle, &self.state);
+    }
+}
+
+impl Tray {
+    /// The Start shortcut's status or keys changed: the Start item's inert text follows. Does
+    /// nothing when the text is the same, so an unrelated keyboard change rebuilds nothing.
+    pub(crate) fn keyboard_changed(&self, view: &KeyboardView) {
+        let keys = start_keys(view);
+        {
+            let mut state = lock_state(&self.state);
+            if state.next.keys == keys {
+                return;
+            }
+            state.next = state.next.clone().with_keys(keys);
             state.wanted = Some(Drawn::of(&state.view, &state.next, &state.focus));
             state.retries = 0;
             state.render_seq += 1;

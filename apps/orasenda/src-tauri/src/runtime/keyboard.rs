@@ -1,21 +1,23 @@
 //! The global shortcuts in the app: the keyboard service in managed state and the registrar it
-//! uses. The real registrar (the global-shortcut plugin) arrives with F5 (#390); until then
+//! uses. On desktop that is the global-shortcut plugin ([`crate::shortcuts`]). Elsewhere
 //! [`UnavailableRegistrar`] refuses every registration, so a shortcut reports `failed` and a
 //! change reports `unavailable`, never a success that did nothing.
 
 use std::sync::Arc;
 
 use orasenda_service::api::{KeyboardError, KeyboardView, ShortcutId, ShortcutStatus};
-use orasenda_service::keyboard::{
-    Accelerator, KeyboardService, RegisterError, ShortcutRegistrar, shortcut_view,
-};
+#[cfg(not(desktop))]
+use orasenda_service::keyboard::{Accelerator, RegisterError};
+use orasenda_service::keyboard::{KeyboardService, ShortcutRegistrar, shortcut_view};
 use tauri::{Manager, State};
 
 use crate::runtime::ticker::AppHost;
 
-/// Registers nothing and says so. F5 replaces it.
+/// Registers nothing and says so. Used where there is no global-shortcut plugin (mobile).
+#[cfg(not(desktop))]
 pub struct UnavailableRegistrar;
 
+#[cfg(not(desktop))]
 impl ShortcutRegistrar for UnavailableRegistrar {
     fn register(&self, _id: ShortcutId, _acc: &Accelerator) -> Result<(), RegisterError> {
         Err(RegisterError::new("global shortcuts are not available yet"))
@@ -26,7 +28,33 @@ impl ShortcutRegistrar for UnavailableRegistrar {
 
 /// Manages the keyboard service. Called before the windows exist.
 pub fn manage(app: &tauri::App) {
-    app.manage(KeyboardService::new(Arc::new(UnavailableRegistrar)));
+    #[cfg(desktop)]
+    let registrar: Arc<dyn ShortcutRegistrar> = Arc::new(crate::shortcuts::PluginRegistrar::new(
+        crate::shortcuts::AppBackend(app.handle().clone()),
+        Arc::clone(&app.state::<Arc<crate::shortcuts::Held>>()),
+    ));
+    #[cfg(not(desktop))]
+    let registrar: Arc<dyn ShortcutRegistrar> = Arc::new(UnavailableRegistrar);
+    app.manage(KeyboardService::new(registrar));
+}
+
+/// A registered shortcut was pressed (key-down). Runs on a blocking thread.
+#[cfg(desktop)]
+pub fn pressed(app: &tauri::AppHandle, id: ShortcutId) {
+    if let Some(keyboard) = service(app) {
+        keyboard.on_pressed(&AppHost::new(app), id);
+    }
+}
+
+/// Tells the service whether VoiceOver is on (at launch and on change).
+#[cfg(target_os = "macos")]
+pub fn observe_voice_over(app: &tauri::AppHandle) {
+    let app = app.clone();
+    orasenda_platform_macos::observe_voice_over(move |on| {
+        if let Some(keyboard) = service(&app) {
+            keyboard.set_voice_over(&AppHost::new(&app), on);
+        }
+    });
 }
 
 /// Registers the saved shortcuts. Called once the store is open; it writes nothing.
