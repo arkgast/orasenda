@@ -143,6 +143,59 @@ fn overview_counts_null_when_unavailable() {
 }
 
 #[test]
+fn overview_and_create_when_store_is_newer() {
+    let (dir, host, _) = {
+        let (dir, _, file) = without_store();
+        let host = host_on(
+            Err(OpenError::Newer {
+                found: 99,
+                supported: 1,
+            }),
+            &dir.0,
+        );
+        (dir, host, file)
+    };
+    let overview = data::run_overview(&host);
+    assert_eq!(overview.counts, None);
+    assert_eq!(overview.store, StoreStatus::Newer);
+    assert_eq!(overview.backups.len(), 1);
+    let error = data::run_backups_create(&host).unwrap_err();
+    assert_eq!(error.kind, DataErrorKind::Unavailable);
+    assert_eq!(kinds(&dir.0), [BackupKind::Manual]);
+}
+
+#[cfg(unix)]
+#[test]
+fn restore_rolls_back_when_safety_backup_fails() {
+    use std::os::unix::fs::PermissionsExt;
+    let (dir, host) = live();
+    let chosen = data::run_backups_create(&host).unwrap();
+    host.log().take();
+    let backups_dir = dir.0.join("Backups");
+    std::fs::set_permissions(&backups_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let result = data::run_backups_restore(&host, &chosen.file);
+    std::fs::set_permissions(&backups_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(result.unwrap_err().kind, DataErrorKind::Write);
+    assert!(!dir.0.join("orasenda.restore.db").exists());
+    assert_eq!(restarts(&host), 0);
+}
+
+#[test]
+fn overview_keeps_store_state_without_data_dir() {
+    let f = fakes(NotificationStatus::NotDetermined, false);
+    let dir = TempDir::new();
+    let host = TestHost::with(
+        SessionService::new(Ok(open(&dir.0)), f.platform, NOW),
+        f.log,
+        f.notifier,
+    );
+    let overview = data::run_overview(&host);
+    assert_eq!(overview.store, StoreStatus::Ok);
+    assert!(overview.counts.is_some());
+    assert!(overview.backups.is_empty());
+}
+
+#[test]
 fn delete_all_busy_refused() {
     let (dir, host) = live();
     run_action_on(&host, Action::Start(StartRequest { quick: false })).unwrap();

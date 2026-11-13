@@ -43,9 +43,6 @@ fn busy_error() -> DataError {
 
 /// `data_overview`: counts (none without a store), folder, backups, policy and their size.
 pub fn run_overview<H: Host>(host: &H) -> DataOverview {
-    let Some(dir) = host.data_dir() else {
-        return DataOverview::unavailable();
-    };
     let (counts, policy, store) = match host.service() {
         Some(service) => {
             let guard = lock(service);
@@ -65,10 +62,12 @@ pub fn run_overview<H: Host>(host: &H) -> DataOverview {
         }
         None => (None, BackupPolicy::default(), StoreStatus::Unavailable),
     };
-    let backups = backups::list(&dir);
+    // Only the folder and the backup list depend on the data dir; the store's state does not.
+    let dir = host.data_dir();
+    let backups = dir.as_deref().map(backups::list).unwrap_or_default();
     DataOverview {
         counts,
-        folder: dir.to_string_lossy().into_owned(),
+        folder: dir.map_or_else(String::new, |dir| dir.to_string_lossy().into_owned()),
         total_bytes: backups.iter().map(|entry| entry.bytes).sum(),
         backups,
         policy,
