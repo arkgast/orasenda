@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-capture-close"
+description = "Enables the capture_close command without any pre-configured scope."
+commands.allow = ["capture_close"]
+
+[[permission]]
+identifier = "deny-capture-close"
+description = "Denies the capture_close command without any pre-configured scope."
+commands.deny = ["capture_close"]

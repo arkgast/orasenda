@@ -175,3 +175,13 @@ fn every_saved_form_parses_for_the_plugin() {
         assert!(shortcut_of(&acc(text)).is_ok(), "{text}");
     }
 }
+
+#[test]
+fn global_keys_map_to_their_actions() {
+    use orasenda_service::keyboard::ActionId;
+    assert_eq!(
+        plugin::action_of(ShortcutId::StartPause),
+        ActionId::StartPause
+    );
+    assert_eq!(plugin::action_of(ShortcutId::Capture), ActionId::Capture);
+}

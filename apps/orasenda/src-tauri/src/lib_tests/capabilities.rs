@@ -66,6 +66,7 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-keyboard-set-shortcut",
         "allow-keyboard-restore-default",
         "allow-keyboard-recording",
+        "allow-action-run",
         "allow-inbox-list",
         "allow-inbox-remove",
         "allow-inbox-restore",
@@ -171,6 +172,7 @@ fn main_capability_exact() {
             "allow-keyboard-set-shortcut",
             "allow-keyboard-restore-default",
             "allow-keyboard-recording",
+            "allow-action-run",
             "allow-inbox-list",
             "allow-inbox-remove",
             "allow-inbox-restore",
@@ -257,6 +259,7 @@ fn floater_capability_exact_with_cadence() {
             "allow-native-menu-popup",
             "allow-focus-view-close",
             "allow-main-show",
+            "allow-action-run",
             "allow-capture-open",
         ],
     );

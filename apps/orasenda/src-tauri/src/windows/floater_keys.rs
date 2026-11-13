@@ -68,6 +68,7 @@ mod mac {
     use std::ffi::c_void;
 
     use orasenda_platform_macos::windows::{self as appkit, FloaterKey, KeyMonitor};
+    use orasenda_service::keyboard::{ActionId, Source};
     use tauri::{AppHandle, Manager};
 
     use super::{KeyAction, install_for, toggle_action};
@@ -147,12 +148,7 @@ mod mac {
         match action {
             KeyAction::Close => windows::close_floater(app),
             KeyAction::FloatingTimer => {
-                if let Err(error) = windows::open_floater(app) {
-                    eprintln!(
-                        "floater keys: could not refocus the floater: {}",
-                        error.message
-                    );
-                }
+                crate::actions::run(app, ActionId::Floater, Source::Monitor);
             }
             KeyAction::FullScreen => match windows::main_display(app) {
                 Some(display) => {

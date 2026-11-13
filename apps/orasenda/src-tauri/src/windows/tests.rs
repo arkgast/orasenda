@@ -14,6 +14,7 @@ use super::{FLOATER, Ops, Screen, WindowSpec};
 use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
 mod capture;
 mod displays;
+mod floater_toggle;
 const NO_INSETS: FocusInsets = FocusInsets {
     top: 0,
     right: 0,

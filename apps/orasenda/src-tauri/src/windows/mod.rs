@@ -28,7 +28,8 @@ mod tests;
 
 #[cfg(desktop)]
 pub(crate) use capture::CAPTURE;
-pub(crate) use floater::FLOATER;
+pub(crate) use capture::open_capture_on;
+pub(crate) use floater::{FLOATER, Toggled, toggle_floater_on};
 pub(crate) use native::AppOps;
 
 /// How a window looks and where it loads, apart from its frame.
@@ -123,7 +124,7 @@ pub(crate) fn open_focus(app: &AppHandle, display_id: &str) -> Result<(), FocusV
 }
 
 /// A Focus view opened: the session remembers it (`used.focus_view`, which ends the tip about it).
-fn note_opened(app: &AppHandle) {
+pub(crate) fn note_opened(app: &AppHandle) {
     if let Err(error) = crate::runtime::session::run_action(app, Action::FocusViewOpened) {
         eprintln!(
             "focus view: could not remember the first open ({})",

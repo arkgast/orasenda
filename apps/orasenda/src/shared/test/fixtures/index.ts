@@ -75,6 +75,7 @@ const DEFAULTS: Replies = {
   inbox_remove: () => null,
   inbox_restore: () => null,
   capture_open: () => null,
+  action_run: () => undefined,
   capture_close: () => null,
   capture_note: (args) => ({ ...NOTES[0], text: (args as { note: { text: string } }).note.text }),
   notifications_request: () => "granted",

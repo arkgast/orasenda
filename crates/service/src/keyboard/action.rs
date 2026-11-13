@@ -2,7 +2,20 @@
 //! where a press can come from. `ActionId` replaces `ShortcutId` in H3b2; both exist until then.
 
 /// One action of the shortcut registry. The declaration order is the registry order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+    specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
 pub enum ActionId {
     FullScreen,
     FullScreenOther,

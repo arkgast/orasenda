@@ -5,6 +5,7 @@ use crate::ipc::StartRequest;
 use crate::lifecycle;
 use crate::runtime::session::{self, Action};
 use orasenda_core::PresetId;
+use orasenda_service::keyboard::{ActionId, Source};
 use tauri::AppHandle;
 
 /// What a menu item does.
@@ -27,6 +28,16 @@ pub(crate) enum MenuCommand {
     Settings,
     DevPanel,
     Quit,
+}
+
+/// The registry action a tray command runs through `actions::run`, if it is one. Show and Hide
+/// are both the floater toggle: the label follows the floater, the action flips it.
+pub(crate) fn action_of(command: &MenuCommand) -> Option<ActionId> {
+    match command {
+        MenuCommand::ShowFloater | MenuCommand::HideFloater => Some(ActionId::Floater),
+        MenuCommand::Capture => Some(ActionId::Capture),
+        _ => None,
+    }
 }
 
 /// The command for a menu item id; `None` for ids that are not the tray's.
@@ -111,6 +122,11 @@ pub(crate) fn preset_choice(current: Settings, preset_id: PresetId) -> Settings 
 
 /// On a blocking thread. `run_action` has already published the true view, so the tray shows it.
 fn run_command(app: &AppHandle, command: MenuCommand) {
+    // The floater toggle and capture are registry actions, run like every other route.
+    if let Some(id) = action_of(&command) {
+        crate::actions::run(app, id, Source::Tray);
+        return;
+    }
     let action = match command {
         MenuCommand::Session(action) => action,
         MenuCommand::Start => start_action(false),
@@ -118,22 +134,6 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
         MenuCommand::FullScreen(display) => {
             if let Err(error) = crate::windows::open_focus(app, &display) {
                 eprintln!("tray: Full screen didn't open: {}", error.message);
-            }
-            return;
-        }
-        MenuCommand::ShowFloater => {
-            if let Err(error) = crate::windows::open_floater(app) {
-                eprintln!("tray: the floating timer didn't open: {}", error.message);
-            }
-            return;
-        }
-        MenuCommand::HideFloater => {
-            crate::windows::close_floater(app);
-            return;
-        }
-        MenuCommand::Capture => {
-            if let Err(error) = crate::windows::open_capture(app) {
-                eprintln!("tray: the capture panel didn't open: {}", error.message);
             }
             return;
         }
@@ -152,7 +152,10 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
             }
             return;
         }
-        MenuCommand::Show
+        MenuCommand::ShowFloater
+        | MenuCommand::HideFloater
+        | MenuCommand::Capture
+        | MenuCommand::Show
         | MenuCommand::Settings
         | MenuCommand::EditTimes
         | MenuCommand::DevPanel
@@ -162,5 +165,24 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
     };
     if let Err(error) = session::run_action(app, action) {
         eprintln!("tray: menu action refused: {}", error.message);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tray_floater_and_capture_items_run_actions() {
+        assert_eq!(
+            action_of(&MenuCommand::ShowFloater),
+            Some(ActionId::Floater)
+        );
+        assert_eq!(
+            action_of(&MenuCommand::HideFloater),
+            Some(ActionId::Floater)
+        );
+        assert_eq!(action_of(&MenuCommand::Capture), Some(ActionId::Capture));
+        assert_eq!(action_of(&MenuCommand::Quit), None);
     }
 }

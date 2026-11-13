@@ -4,6 +4,7 @@ use orasenda_service::windows::{Frame, Limits, default_frame, frame_within};
 
 use super::{Ops, Screen, WindowSpec, screen_of};
 use crate::ipc::FocusViewError;
+use crate::lifecycle::MAIN;
 
 /// The floater's window label (granted by `capabilities/floater.json`).
 pub(crate) const FLOATER: &str = "floater";
@@ -121,4 +122,23 @@ pub(crate) fn close_floater_on<O: Ops>(ops: &O) {
     if ops.exists(FLOATER) {
         ops.close(FLOATER);
     }
+}
+
+/// What a toggle did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Toggled {
+    Opened,
+    Closed,
+}
+
+/// The floater's one binding (ADR-016): hidden, it opens and `main` hides; shown, it closes
+/// and `main` shows and takes focus again.
+pub(crate) fn toggle_floater_on<O: Ops>(ops: &O) -> Result<Toggled, FocusViewError> {
+    if !ops.exists(FLOATER) {
+        return open_floater_on(ops).map(|()| Toggled::Opened);
+    }
+    // `main` first, so the user is never left with no window; then the floater closes.
+    let back = ops.show(MAIN).and_then(|()| ops.focus(MAIN));
+    close_floater_on(ops);
+    back.map(|()| Toggled::Closed)
 }

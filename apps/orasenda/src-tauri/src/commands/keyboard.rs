@@ -50,3 +50,11 @@ pub async fn keyboard_restore_default(
         .await
         .unwrap_or(Err(KeyboardError::Store))
 }
+
+/// Runs an action by its id, the same way a menu, a global shortcut or the tray would (`actions::run`).
+/// A repeat within 300 ms is dropped. The work runs on its own thread; a failure is logged.
+#[tauri::command]
+#[specta::specta]
+pub async fn action_run(app: tauri::AppHandle, id: orasenda_service::keyboard::ActionId) {
+    crate::actions::run(&app, id, orasenda_service::keyboard::Source::Webview);
+}

@@ -26,7 +26,7 @@ impl fmt::Display for RegisterError {
     }
 }
 
-/// Registers global shortcuts with the OS. A press reaches [`KeyboardService::on_pressed`](super::KeyboardService::on_pressed).
+/// Registers global shortcuts with the OS. A press reaches `actions::run` in `src-tauri`; `KeyboardService::on_pressed` is kept for tests until H3b2.
 ///
 /// An id may hold two accelerators at once, only while a change is being made: the service
 /// registers the new one before it saves, so the old one keeps working until then.
