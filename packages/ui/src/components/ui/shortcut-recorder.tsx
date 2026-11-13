@@ -8,6 +8,8 @@ import { Icon } from "./icon";
 export interface ShortcutRecorderProps {
   /** The row's label, drawn above the field and the first part of its name ("Start or pause focus from anywhere"). */
   label: string;
+  /** The name a screen reader hears in place of `label` ("Full screen, In Orasenda"), for a row whose slots share a visible label. */
+  accessibleName?: string;
   /** One canonical glyph string ("⌃⌥F"). Omit it for off. */
   keys?: string;
   /** The keys in words. Defaults to describeShortcut(keys).spoken. */
@@ -89,6 +91,7 @@ function recorded(event: KeyboardEvent, appOnly: boolean): string | null {
  */
 export function ShortcutRecorder({
   label,
+  accessibleName,
   keys,
   spokenKeys,
   recording = false,
@@ -137,7 +140,7 @@ export function ShortcutRecorder({
   useEffect(() => {
     if (asking) choices.current?.querySelector("button")?.focus({ preventScroll: true });
   }, [asking]);
-  const hint = active ? "Type the new keys, Esc cancels" : "Change";
+  const hint = active ? "Type keys, Esc cancels" : "Change";
   const describedBy = [
     conflict ? `${fieldId}-conflict` : "",
     `${fieldId}-message`,
@@ -189,6 +192,11 @@ export function ShortcutRecorder({
       <span id={`${fieldId}-label`} data-slot="field-label" className="text-body-sm text-ink">
         {label}
       </span>
+      {accessibleName ? (
+        <span id={`${fieldId}-name`} hidden>
+          {accessibleName}
+        </span>
+      ) : null}
       <button
         type="button"
         id={fieldId}
@@ -196,7 +204,7 @@ export function ShortcutRecorder({
         data-slot="shortcut-recorder-field"
         data-recording={active ? "true" : undefined}
         data-conflict={conflict ? "true" : undefined}
-        aria-labelledby={`${fieldId}-label ${fieldId}-keys ${fieldId}-hint`}
+        aria-labelledby={`${fieldId}-${accessibleName ? "name" : "label"} ${fieldId}-keys ${fieldId}-hint`}
         aria-describedby={describedBy}
         onClick={start}
         onBlur={stop}
@@ -215,7 +223,10 @@ export function ShortcutRecorder({
           </span>
           <span className="sr-only">{spoken}</span>
         </span>
-        <span id={`${fieldId}-hint`} className="text-body-sm text-ink-muted">
+        <span
+          id={`${fieldId}-hint`}
+          className="shrink-0 whitespace-nowrap text-body-sm text-ink-muted"
+        >
           {hint}
         </span>
       </button>
@@ -231,6 +242,8 @@ export function ShortcutRecorder({
       ) : null}
       <div className="grid">
         <span aria-hidden="true" className="invisible col-start-1 row-start-1 text-body-sm">
+          &nbsp;
+          <br />
           &nbsp;
         </span>
         <p
