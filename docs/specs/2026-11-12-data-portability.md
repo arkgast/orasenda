@@ -1,6 +1,6 @@
 # Data portability (P1 sub-project G) — Spec
 
-- Status: draft
+- Status: approved (owner, 2026-11-12)
 - Date: 2026-11-12
 - Owner: Arnold Gandarillas Castillo
 - Related:
