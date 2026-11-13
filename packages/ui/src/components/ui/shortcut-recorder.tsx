@@ -1,5 +1,5 @@
 import type { JSX, KeyboardEvent } from "react";
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { describeShortcut } from "../../lib/shortcuts";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -19,8 +19,13 @@ export interface ShortcutRecorderProps {
   /** A canonical glyph string, or null when the person turned the shortcut off (Delete). */
   onRecord: (keys: string | null) => void;
   onRestoreDefault?: () => void;
+  /** Called with true when recording starts and false when it ends in any way (record, Esc, blur, unmount), so the host can suspend its shortcuts while the field listens. */
+  onRecordingChange?: (on: boolean) => void;
   id?: string;
 }
+
+/** Shown, politely, when a key without ⌘, ⌃ or ⌥ is pressed. Recording continues. */
+export const NEEDS_MODIFIER = "Add ⌘, ⌃ or ⌥. A single key can't be a shortcut.";
 
 // Built from its code point: the copy guard reads the return arrow as an emoji, and the formatter rewrites an escape.
 const RETURN = String.fromCharCode(0x21a9);
@@ -47,6 +52,15 @@ function keyFor(code: string): string | null {
   return Object.hasOwn(NAMED, code) ? NAMED[code] : null;
 }
 
+/** True for a press of a key a shortcut could use, when it has no ⌘, ⌃ or ⌥. */
+function missingModifier(event: KeyboardEvent): boolean {
+  return (
+    !MODIFIER_CODES.test(event.code) &&
+    keyFor(event.code) !== null &&
+    !(event.metaKey || event.ctrlKey || event.altKey)
+  );
+}
+
 /** The glyph string for a press, or null when it is not a shortcut yet (a modifier alone, an unknown key, or no ⌘, ⌃ or ⌥). Modifiers come out in the order ⌃⌥⇧⌘. */
 function recorded(event: KeyboardEvent): string | null {
   if (MODIFIER_CODES.test(event.code)) return null;
@@ -59,7 +73,8 @@ function recorded(event: KeyboardEvent): string | null {
  * Records the global shortcut that starts or pauses focus. A field-like button: Return, Space or a click
  * starts recording; a press with ⌘, ⌃ or ⌥ plus a key calls `onRecord` with its canonical glyph string; Esc
  * cancels; Delete alone calls `onRecord(null)`. The name is composed with aria-labelledby (label, spoken
- * keys, hint); the conflict line is linked with aria-describedby and is not live.
+ * keys, hint); the conflict line is linked with aria-describedby and is not live. A plain key (no ⌘, ⌃ or ⌥)
+ * shows a polite message line and recording continues.
  */
 export function ShortcutRecorder({
   label,
@@ -69,15 +84,44 @@ export function ShortcutRecorder({
   conflict,
   onRecord,
   onRestoreDefault,
+  onRecordingChange,
   id,
 }: ShortcutRecorderProps): JSX.Element {
   const generated = useId();
   const fieldId = id || generated;
   const [active, setActive] = useState(recording);
+  const [message, setMessage] = useState("");
   useEffect(() => setActive(recording), [recording]);
+  // The host hears true once per recording and false once, sent before the result is handed on.
+  const reported = useRef(false);
+  const notify = useRef(onRecordingChange);
+  useLayoutEffect(() => {
+    notify.current = onRecordingChange;
+  });
+  const report = useCallback((on: boolean) => {
+    if (reported.current === on) return;
+    reported.current = on;
+    notify.current?.(on);
+  }, []);
+  useEffect(() => {
+    report(active);
+  }, [active, report]);
+  useEffect(() => () => report(false), [report]);
+  function start() {
+    setMessage("");
+    setActive(true);
+  }
+  function stop() {
+    report(false);
+    setActive(false);
+  }
   const spoken = keys ? (spokenKeys ?? describeShortcut(keys).spoken) : "Off";
   const hint = active ? "Type the new keys, Esc cancels" : "Change";
-  const describedBy = [conflict ? `${fieldId}-conflict` : "", `${fieldId}-helper`]
+  const describedBy = [
+    conflict ? `${fieldId}-conflict` : "",
+    `${fieldId}-message`,
+    `${fieldId}-helper`,
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -90,7 +134,7 @@ export function ShortcutRecorder({
         event.key === " "
       ) {
         event.preventDefault();
-        setActive(true);
+        start();
       }
       return;
     }
@@ -100,17 +144,20 @@ export function ShortcutRecorder({
     event.preventDefault();
     event.stopPropagation();
     if (event.code === "Escape") {
-      setActive(false);
+      stop();
       return;
     }
     if (event.code === "Backspace" && plain) {
-      setActive(false);
+      stop();
       onRecord(null);
       return;
     }
     const glyphs = recorded(event);
-    if (glyphs === null) return;
-    setActive(false);
+    if (glyphs === null) {
+      setMessage(missingModifier(event) ? NEEDS_MODIFIER : "");
+      return;
+    }
+    stop();
     onRecord(glyphs);
   }
 
@@ -127,8 +174,8 @@ export function ShortcutRecorder({
         data-conflict={conflict ? "true" : undefined}
         aria-labelledby={`${fieldId}-label ${fieldId}-keys ${fieldId}-hint`}
         aria-describedby={describedBy}
-        onClick={() => setActive(true)}
-        onBlur={() => setActive(false)}
+        onClick={start}
+        onBlur={stop}
         onKeyDown={onKeyDown}
         className={cn(
           "flex min-h-hit-min w-full min-w-field-width cursor-pointer items-center justify-between gap-3 rounded-sm border border-line-strong bg-surface-sunken px-3 py-2 text-start text-body text-ink",
@@ -158,6 +205,19 @@ export function ShortcutRecorder({
           {conflict}
         </p>
       ) : null}
+      <div className="grid">
+        <span aria-hidden="true" className="invisible col-start-1 row-start-1 text-body-sm">
+          &nbsp;
+        </span>
+        <p
+          id={`${fieldId}-message`}
+          data-slot="shortcut-recorder-message"
+          aria-live="polite"
+          className="col-start-1 row-start-1 m-0 text-body-sm text-ink"
+        >
+          {active ? message : ""}
+        </p>
+      </div>
       <p
         id={`${fieldId}-helper`}
         data-slot="field-helper"

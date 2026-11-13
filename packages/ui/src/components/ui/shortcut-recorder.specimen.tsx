@@ -8,7 +8,7 @@ const LABEL = "Start or pause focus from anywhere";
 function Live(): ReactElement {
   const [keys, setKeys] = useState<string | undefined>("⌃⌥F");
   return (
-    <Frame state="shortcut-recorder-live" width={300} height={160}>
+    <Frame state="shortcut-recorder-live" width={300} height={300}>
       <ShortcutRecorder
         label={LABEL}
         keys={keys}
@@ -24,13 +24,13 @@ export function ShortcutRecorderSpecimen(): ReactElement {
   return (
     <>
       <Live />
-      <Frame state="shortcut-recorder-idle" width={300} height={120}>
+      <Frame state="shortcut-recorder-idle" width={300} height={160}>
         <ShortcutRecorder label={LABEL} keys="⌃⌥F" onRecord={() => {}} />
       </Frame>
-      <Frame state="shortcut-recorder-recording" width={300} height={120}>
+      <Frame state="shortcut-recorder-recording" width={300} height={160}>
         <ShortcutRecorder label={LABEL} keys="⌃⌥F" recording onRecord={() => {}} />
       </Frame>
-      <Frame state="shortcut-recorder-conflict" width={420} height={160}>
+      <Frame state="shortcut-recorder-conflict" width={420} height={200}>
         <ShortcutRecorder
           label={LABEL}
           keys="⌘K"
@@ -38,7 +38,7 @@ export function ShortcutRecorderSpecimen(): ReactElement {
           onRecord={() => {}}
         />
       </Frame>
-      <Frame state="shortcut-recorder-off" width={300} height={120}>
+      <Frame state="shortcut-recorder-off" width={300} height={160}>
         <ShortcutRecorder label={LABEL} onRecord={() => {}} />
       </Frame>
     </>

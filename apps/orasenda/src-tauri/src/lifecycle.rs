@@ -53,7 +53,22 @@ pub(crate) fn on_close_requested(label: &str) -> CloseAction {
 /// Adds the window-event handler: `Focused(true)` publishes the clock and the session
 /// (T7), and `CloseRequested` on `main` hides it instead of closing.
 pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
-    builder.on_window_event(|window, event| match event {
+    builder
+        .on_page_load(|webview, payload| {
+            #[cfg(desktop)]
+            crate::runtime::recording::on_page_load(webview, payload);
+            #[cfg(not(desktop))]
+            let _ = (webview, payload);
+        })
+        .on_window_event(|window, event| {
+            #[cfg(desktop)]
+            crate::runtime::recording::on_window_event(window, event);
+            handle_window_event(window, event);
+        })
+}
+
+fn handle_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    match event {
         tauri::WindowEvent::Focused(true) => {
             scheduler::publish_focus(window.app_handle());
             if window.label() == MAIN {
@@ -86,7 +101,7 @@ pub fn install(builder: tauri::Builder<Wry>) -> tauri::Builder<Wry> {
             }
         }
         _ => {}
-    })
+    }
 }
 
 /// Shows, unminimizes and focuses `main`. Runs on the main thread (a menu event or

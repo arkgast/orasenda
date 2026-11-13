@@ -62,6 +62,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::keyboard_state,
             commands::keyboard_set_shortcut,
             commands::keyboard_restore_default,
+            commands::keyboard_recording,
             commands::capture_note,
             commands::capture_open,
             commands::capture_close,
@@ -155,6 +156,8 @@ pub fn run() {
             builder.mount_events(app);
             runtime::session::setup(app)?;
             runtime::keyboard::manage(app);
+            #[cfg(desktop)]
+            runtime::recording::manage(app);
             runtime::keyboard::wire_capture_opener(app.handle());
             runtime::keyboard::register_saved(app.handle());
             #[cfg(target_os = "macos")]

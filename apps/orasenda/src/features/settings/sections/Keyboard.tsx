@@ -7,6 +7,8 @@ import {
   ShortcutRecorder,
 } from "@orasenda/ui";
 import type { KeyboardError, KeyboardView, ShortcutId } from "@shared/ipc/bindings";
+import { commands } from "@shared/ipc/bindings";
+import { useRef } from "react";
 import { SHORTCUT_NAME, useKeyboard } from "../useKeyboard";
 
 const ANOTHER_APP = "Another app uses this shortcut. Pick a different one.";
@@ -82,6 +84,16 @@ export function Keyboard({
 }: Props) {
   const keyboard = useKeyboard(onSaved);
   const { view } = keyboard;
+  // Shortcuts are suspended while a recorder listens. A record waits for the `off` that precedes it, so
+  // the suspension is over before the change registers.
+  const suspension = useRef<Promise<unknown>>(Promise.resolve());
+  function suspend(on: boolean) {
+    suspension.current = suspension.current
+      .then(() => commands.keyboardRecording(on))
+      .catch((error: unknown) => {
+        console.error("keyboard recording failed", error);
+      });
+  }
   return (
     <section id="settings-keyboard" aria-labelledby="settings-keyboard-heading">
       <h2 id="settings-keyboard-heading" tabIndex={-1} className="settings-heading">
@@ -102,7 +114,8 @@ export function Keyboard({
               keys={view[id].display ?? undefined}
               spokenKeys={view[id].spoken ?? undefined}
               conflict={lineFor(id, view, keyboard.errors[id])}
-              onRecord={(glyphs) => keyboard.set(id, glyphs)}
+              onRecordingChange={suspend}
+              onRecord={(glyphs) => void suspension.current.then(() => keyboard.set(id, glyphs))}
               onRestoreDefault={() => keyboard.restore(id)}
             />
           </SettingsRow>

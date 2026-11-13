@@ -36,6 +36,18 @@ impl Held {
     }
 }
 
+impl Held {
+    /// Every shortcut held now, for suspending and restoring them while a recorder listens.
+    pub(crate) fn shortcuts(&self) -> Vec<Shortcut> {
+        self.lock().iter().map(|(_, shortcut)| *shortcut).collect()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn insert_for_test(&self, id: ShortcutId, shortcut: Shortcut) {
+        self.lock().push((id, shortcut));
+    }
+}
+
 /// The plugin's shortcut for `acc`, or the plugin's complaint.
 pub(crate) fn shortcut_of(acc: &Accelerator) -> Result<Shortcut, String> {
     Shortcut::from_str(&acc.canonical()).map_err(|error| error.to_string())
