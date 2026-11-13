@@ -46,6 +46,8 @@ const PREVIOUS_SURFACE = [
   "describeShortcut",
   "PopoverMenu",
   "ShortcutRecorder",
+  "ShortcutList",
+  "InboxRow",
   "Choice",
   "ChoiceGroup",
 ];
@@ -74,7 +76,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(37);
+  expect(components).toHaveLength(39);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -168,6 +170,15 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     anchor: { current: null },
   },
   ShortcutRecorder: { label: "Start or pause focus", keys: "⌃⌥F", onRecord: noop },
+  ShortcutList: { items: [{ action: "Start focus", keys: "⌘↩", spokenKeys: "Command-Return" }] },
+  InboxRow: {
+    text: "A note",
+    kind: "internal",
+    time: "09:41",
+    timeLabel: "Captured at 9:41 AM",
+    onRemove: noop,
+    removeName: "Remove note: A note",
+  },
 };
 
 /** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */
