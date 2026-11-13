@@ -16,7 +16,7 @@ export type OfferId = "extend" | "takeBreak" | "skipBreak";
 export type CadenceOffer = {
   id: OfferId;
   label: string;
-  /** The accessible name when it differs from the label; it always contains the label. */
+  /** The accessible name when it says more than the label. */
   name?: string;
   variant: "quiet" | "ghost";
 };

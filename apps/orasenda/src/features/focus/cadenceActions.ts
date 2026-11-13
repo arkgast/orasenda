@@ -18,7 +18,7 @@ export type CadenceHandlers = {
 
 /**
  * The Focus window's secondary actions for one view, the same rows Today's status line offers
- * (spec, "Shared with D"): "Keep going" and "Stop here" with the offer; "Skip break" in a break;
+ * (spec, "Shared with D"): "Keep going" and "Stop here" with the offer;
  * the break, warning and check-in actions come from `cadenceOffers`, the rule Today shares ("+10 min"
  * only from the two-minute warning, and in a break before "Skip break"). The component shows at
  * most two and decides nothing itself.
