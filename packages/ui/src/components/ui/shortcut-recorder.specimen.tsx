@@ -53,6 +53,81 @@ export function ShortcutRecorderSpecimen(): ReactElement {
           onRecord={() => {}}
         />
       </Frame>
+      <Frame state="shortcut-recorder-row" width={488} height={300}>
+        <div className="grid grid-cols-2 gap-4">
+          <ShortcutRecorder
+            label="In Orasenda"
+            accessibleName="Full screen, In Orasenda"
+            keys="⇧⌘F"
+            appOnly
+            recording
+            onRecord={() => {}}
+          />
+          <ShortcutRecorder
+            label="Everywhere"
+            accessibleName="Full screen, Everywhere"
+            onRecord={() => {}}
+          />
+        </div>
+      </Frame>
+      <Frame state="shortcut-recorder-row-failed" width={488} height={300}>
+        <div className="grid grid-cols-2 gap-4">
+          <ShortcutRecorder
+            label="In Orasenda"
+            accessibleName="Full screen, In Orasenda"
+            keys="⇧⌘F"
+            appOnly
+            onRecord={() => {}}
+          />
+          <ShortcutRecorder
+            label="Everywhere"
+            accessibleName="Full screen, Everywhere"
+            keys="⌃⌥⌘T"
+            onRecord={() => {}}
+          />
+        </div>
+        <p className="m-0 mt-2 text-body-sm text-ink-muted">Not available</p>
+      </Frame>
+      <Frame state="shortcut-recorder-row-voiceover" width={488} height={360}>
+        <div className="grid grid-cols-2 gap-4">
+          <ShortcutRecorder
+            label="In Orasenda"
+            accessibleName="Full screen, In Orasenda"
+            keys="⇧⌘F"
+            appOnly
+            onRecord={() => {}}
+          />
+          <ShortcutRecorder
+            label="Everywhere"
+            accessibleName="Full screen, Everywhere"
+            keys="⌃⌥⌘F"
+            conflict="VoiceOver uses this key while it's on. Pick another to use both."
+            onRecord={() => {}}
+          />
+        </div>
+      </Frame>
+      <Frame state="shortcut-recorder-row-warning" width={488} height={360}>
+        <div className="grid grid-cols-2 gap-4">
+          <ShortcutRecorder
+            label="In Orasenda"
+            accessibleName="Full screen, In Orasenda"
+            keys="⇧⌘F"
+            appOnly
+            onRecord={() => {}}
+          />
+          <ShortcutRecorder
+            label="Everywhere"
+            accessibleName="Full screen, Everywhere"
+            keys="⌃⌥⌘T"
+            warning={{
+              reason: "Other apps use this.",
+              onUseAnyway: () => {},
+              onPickAnother: () => {},
+            }}
+            onRecord={() => {}}
+          />
+        </div>
+      </Frame>
     </>
   );
 }

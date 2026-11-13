@@ -67,7 +67,7 @@ test("shortcut_recorder_return_emits_the_return_glyph", () => {
 test("shortcut_recorder_esc_cancels", () => {
   const { onRecord, field } = setup();
   fireEvent.click(field);
-  expect(field).toHaveAccessibleName(/Type the new keys, Esc cancels/);
+  expect(field).toHaveAccessibleName(/Type keys, Esc cancels/);
   press(field, "Escape");
   expect(onRecord).not.toHaveBeenCalled();
   expect(field).toHaveAccessibleName(/Change/);
@@ -101,10 +101,10 @@ test("shortcut_recorder_needs_a_modifier_plus_a_key", () => {
 test("shortcut_recorder_return_and_space_start_recording", () => {
   const { field } = setup();
   press(field, "Enter");
-  expect(field).toHaveAccessibleName(/Type the new keys/);
+  expect(field).toHaveAccessibleName(/Type keys/);
   press(field, "Escape");
   press(field, "Space");
-  expect(field).toHaveAccessibleName(/Type the new keys/);
+  expect(field).toHaveAccessibleName(/Type keys/);
 });
 
 test("shortcut_recorder_restore_default", () => {
@@ -248,4 +248,30 @@ test("app_only_slot_needs_command_or_control", () => {
   expect(screen.getByText("Add ⌘ or ⌃. A single key can't be a shortcut.")).toBeInTheDocument();
   press(field, "KeyU", { metaKey: true });
   expect(onRecord).toHaveBeenCalledWith("⌘U");
+});
+
+test("shortcut_recorder_accessible_name_replaces_label_in_the_name", () => {
+  render(
+    <ShortcutRecorder
+      label="In Orasenda"
+      accessibleName="Full screen, In Orasenda"
+      keys="⌃⌥F"
+      onRecord={() => {}}
+    />,
+  );
+  const field = screen.getByRole("button", { name: /Full screen, In Orasenda/ });
+  expect(field).toHaveAccessibleName("Full screen, In Orasenda Control-Option-F Change");
+  // The visible label stays as drawn.
+  expect(screen.getAllByText("In Orasenda").length).toBeGreaterThan(0);
+});
+
+test("shortcut_recorder_without_accessible_name_uses_label", () => {
+  const { field } = setup();
+  expect(field).toHaveAccessibleName(/^Start or pause focus from anywhere /);
+});
+
+test("shortcut_recorder_empty_slot_reads_none_and_restore_is_per_recorder", () => {
+  render(<ShortcutRecorder label="Everywhere" onRecord={() => {}} />);
+  expect(screen.getByRole("button", { name: /Everywhere None Change/ })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Restore default" })).toBeNull();
 });
