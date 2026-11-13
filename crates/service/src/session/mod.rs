@@ -24,12 +24,16 @@ mod view;
 
 pub use effects::{Effects, Notice};
 pub use frames::{run_frame_get, run_frame_load, run_frame_migrate, run_frame_save};
+pub(crate) use presets::edit::MAX_PRESETS;
+pub(crate) use presets::resolve;
+pub(crate) use run::DB_FILE;
 pub use run::{
     current_settings, flush_on_exit, lock, open_store_at, run_action_on, run_preset_add,
     run_preset_remove, run_preset_undo_remove, run_preset_update, run_presets_list,
     run_presets_restore_defaults, run_select_preset, run_set_settings, run_state, run_view,
 };
 pub use service::{Action, NativeSurface, Platform, SessionService, Surfaces, ViewGate};
+pub(crate) use settings::KEY_PRESET;
 pub use settings::SettingsSaved;
 /// Fakes shared by the session, scheduler and app tests.
 #[cfg(any(test, feature = "test-support"))]
@@ -42,4 +46,4 @@ use recovery::{RecoverOwed, RowFound, recovered, unread_row};
 use run::new_session_id;
 use settings::read_settings;
 #[cfg(test)]
-use settings::{KEY_NOTIFY, KEY_PRESET, KEY_THEME, META_NOTIFY_REVIEW};
+use settings::{KEY_NOTIFY, KEY_THEME, META_NOTIFY_REVIEW};

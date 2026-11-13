@@ -73,7 +73,7 @@ impl SessionService {
     }
 
     /// The live notes, newest first.
-    pub(super) fn inbox_live(&self, now_ms: u64) -> Result<Vec<NoteView>, StoreError> {
+    pub(crate) fn inbox_live(&self, now_ms: u64) -> Result<Vec<NoteView>, StoreError> {
         self.views(self.store().ok_or_else(unavailable)?, now_ms)
     }
 

@@ -19,7 +19,7 @@ pub struct SettingsSaved {
 }
 
 /// Settings keys (spec: Store).
-pub(super) const KEY_PRESET: &str = "timer.preset";
+pub(crate) const KEY_PRESET: &str = "timer.preset";
 pub(super) const KEY_EXTENSION_CAP: &str = "timer.extension_cap";
 pub(super) const KEY_AUTO_CONTINUE: &str = "timer.auto_continue";
 pub(super) const KEY_LONGEST_FOCUS: &str = "timer.longest_focus_min";

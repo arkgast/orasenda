@@ -3,6 +3,8 @@
 //! `dir` is always the app data dir; backups live in its `Backups/` folder.
 
 pub mod backups;
+mod cap;
+pub mod import;
 mod names;
 pub mod pending;
 pub mod policy;

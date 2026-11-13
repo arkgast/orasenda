@@ -17,7 +17,8 @@ use crate::api::{
 use crate::data::PendingOutcome;
 use crate::scheduler::{self, Host};
 
-const DB_FILE: &str = "orasenda.db";
+/// The data file in the app data dir.
+pub(crate) const DB_FILE: &str = "orasenda.db";
 
 /// Locks the service. A poisoned lock is recovered: every write is one transaction, so the
 /// service is consistent even after a panic in another holder.

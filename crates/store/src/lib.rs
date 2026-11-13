@@ -15,6 +15,8 @@ mod error;
 mod hooks;
 mod migrate;
 pub mod portability;
+#[cfg(any(test, feature = "test-hooks"))]
+mod raw;
 mod repo;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -29,6 +31,8 @@ pub(crate) use db::sql_int;
 pub use error::{OpenError, StoreError};
 #[cfg(any(test, feature = "test-hooks"))]
 pub use hooks::WriteGate;
+#[cfg(any(test, feature = "test-hooks"))]
+pub use raw::RawDb;
 pub use repo::{
     active_session, focus_sessions, inbox_notes, meta, presets, settings, window_frames,
 };
