@@ -1,6 +1,7 @@
 //! Shared fixtures for the data tests: a temp app data dir and stores in it.
 
 mod backups;
+mod files;
 mod import;
 mod names;
 mod pending;

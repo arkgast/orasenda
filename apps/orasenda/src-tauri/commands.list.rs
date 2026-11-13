@@ -47,6 +47,8 @@ pub const COMMANDS: &[&str] = &[
     "backups_delete",
     "backups_restore",
     "backups_set_policy",
+    "data_export",
+    "data_import",
     "spike_status",
     "spike_running_apps",
     "spike_rule",

@@ -45,6 +45,8 @@
     "allow-backups-create",
     "allow-backups-delete",
     "allow-backups-restore",
-    "allow-backups-set-policy"
+    "allow-backups-set-policy",
+    "allow-data-export",
+    "allow-data-import"
   ]
 }

@@ -98,7 +98,7 @@ pub(super) fn parse(name: &str) -> Option<(u64, BackupKind, u32)> {
 }
 
 /// Days since 1970-01-01 to (year, month, day) (Hinnant's algorithm).
-fn civil_from_days(days: u64) -> (u64, u64, u64) {
+pub(super) fn civil_from_days(days: u64) -> (u64, u64, u64) {
     let z = days + 719_468;
     let era = z / 146_097;
     let doe = z % 146_097;
