@@ -1,6 +1,8 @@
 //! Shared fixtures for the portability tests.
 
+mod merge;
 mod probe;
+mod rows;
 mod snapshot;
 mod stats;
 
