@@ -2,12 +2,10 @@ import type { ReactElement } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { FullScreenFocus, type FullScreenFocusProps } from "./full-screen-focus.tsx";
 
-const TASK = "Finish the chapter 3 outline and send the draft to Maya";
 const RUN = {
   remaining: "18:42",
   remainingLabel: "18 minutes 42 seconds",
   progress: 0.25,
-  task: TASK,
   clock: "09:41",
   onExit: () => {},
   onPause: () => {},

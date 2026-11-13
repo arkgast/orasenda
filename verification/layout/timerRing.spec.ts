@@ -1,8 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { expectClampedFits } from "./support/clampedFits.ts";
 import { expectFits, overflows } from "./support/fits.ts";
+import { expectVisibleFits } from "./support/fitsVisible.ts";
 import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { expectBundledFontsLoaded } from "./support/fonts.ts";
 import { smallTargets } from "./support/hitTargets.ts";
@@ -65,7 +65,7 @@ test("timer_ring_frames_fit", async ({ page }) => {
     const frame = all.nth(i);
     const state = (await frame.getAttribute("data-state")) ?? "";
     if (!state.startsWith("timer-ring-")) continue;
-    await expectClampedFits(frame, "[data-slot=timer-ring-task]", 2);
+    await expectVisibleFits(frame);
   }
 });
 
@@ -106,7 +106,6 @@ test("warning_fade_uses_duration_slow", async ({ page }, info) => {
 
 test("timer_faces_aria_snapshot (TimerRing)", async ({ page }) => {
   await openSpecimen(page, "TimerRing");
-  const task = "Finish the chapter 3 outline and send the draft to Maya before the review";
   await expect(page.locator("[data-state='timer-ring-numeric-idle']")).toMatchAriaSnapshot(`
     - timer "No session"
   `);
@@ -114,20 +113,21 @@ test("timer_faces_aria_snapshot (TimerRing)", async ({ page }) => {
     - timer "Focus, 18 minutes 42 seconds remaining"
   `);
   await expect(page.locator("[data-state='timer-ring-fluid-focus']")).toMatchAriaSnapshot(`
-    - timer "Focus, 18 minutes 42 seconds remaining, ${task}"
+    - timer "Focus, 18 minutes 42 seconds remaining"
   `);
   await expect(page.locator("[data-state='timer-ring-fluid-break']")).toMatchAriaSnapshot(`
-    - timer "Break, 4 minutes 10 seconds remaining, ${task}"
+    - timer "Break, 4 minutes 10 seconds remaining"
   `);
   await expect(page.locator("[data-state='timer-ring-fluid-paused']")).toMatchAriaSnapshot(`
-    - timer "Paused, 12 minutes 16 seconds remaining, ${task}"
+    - timer "Paused, 12 minutes 16 seconds remaining"
   `);
   await expect(page.locator("[data-state='timer-ring-fluid-warning']")).toMatchAriaSnapshot(`
-    - timer "Almost up, 1 minute 48 seconds remaining, ${task}"
+    - timer "Almost up, 1 minute 48 seconds remaining"
   `);
   await expect(page.locator("[data-state='timer-ring-fluid-idle']")).toMatchAriaSnapshot(`
     - timer "No session"
   `);
+  await expect(page.locator("[data-slot=timer-ring-task]")).toHaveCount(0);
 });
 
 test("timer_faces_no_motion_when_reduced (TimerRing)", async ({ page }, info) => {
@@ -150,9 +150,9 @@ test("seed_states_fit_their_frames", async ({ page }, info) => {
     const frame = all.nth(i);
     const state = await frame.getAttribute("data-state");
     if (state === "seeded-overflow") continue;
-    // Frames with a clamped task line or the visually hidden clock span use the clamp-aware check.
+    // Frames with the visually hidden clock span use the visible-box check.
     if (state?.startsWith("timer-ring-fluid") || state === "timer-ring-viewport") {
-      await expectClampedFits(frame, "[data-slot=timer-ring-task]", 2);
+      await expectVisibleFits(frame);
       continue;
     }
     await expectFits(frame);
@@ -259,7 +259,7 @@ test.describe("viewport slot", () => {
       const want = Math.min(Math.max(Math.min(m.fw, m.fh), min), max);
       expect(Math.abs(m.w - m.h), "round").toBeLessThanOrEqual(1);
       expect(Math.abs(m.w - want), "diameter").toBeLessThanOrEqual(1);
-      await expectClampedFits(slot, "[data-slot=timer-ring-task]", 2);
+      await expectVisibleFits(slot);
       const clockSize = await slot.evaluate(
         (el) =>
           getComputedStyle(el.querySelector("[data-slot=timer-ring-clock]") as HTMLElement)

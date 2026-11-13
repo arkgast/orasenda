@@ -7,9 +7,6 @@ use crate::api::{
     MilestoneEvent, MilestoneKind, StartRequest, TimerCommandError, TimerCommandErrorKind,
 };
 
-/// The longest intent, in characters.
-const INTENT_MAX_CHARS: usize = 120;
-
 impl SessionService {
     /// Advances first (a command after the planned end completes the session), then acts
     /// on the engine. Always returns [`Effects`]; the command's outcome is `result`.
@@ -55,7 +52,6 @@ impl SessionService {
                 .map(|records| self.end(records, now_ms, &mut outcome))
                 .map_err(TimerCommandError::from),
             Action::Extend => self.extend(now_ms, &mut outcome),
-            Action::SetIntent(intent) => self.set_intent(intent, now_ms),
             Action::DismissOffer => {
                 self.offer = false;
                 Ok(())
@@ -233,15 +229,6 @@ impl SessionService {
         }
     }
 
-    fn set_intent(&mut self, intent: Option<String>, now_ms: u64) -> Result<(), TimerCommandError> {
-        let intent = clean_intent(intent.as_deref())?;
-        self.engine
-            .set_intent(intent, now_ms)
-            .map_err(wrong_state)?;
-        self.persist(now_ms, Vec::new());
-        Ok(())
-    }
-
     /// A start, pause or resume: write the snapshot and add the milestone.
     pub(super) fn changed(&mut self, now_ms: u64, kind: MilestoneKind, outcome: &mut Outcome) {
         self.persist(now_ms, Vec::new());
@@ -301,18 +288,4 @@ fn wrong_state(error: TimerError) -> TimerCommandError {
         TimerError::NothingRunning => TimerError::WrongState,
         other => other,
     })
-}
-
-/// The intent as stored: trimmed, inner whitespace collapsed, at most 120 characters; empty
-/// means none.
-fn clean_intent(intent: Option<&str>) -> Result<Option<String>, TimerCommandError> {
-    let words: Vec<&str> = intent.unwrap_or_default().split_whitespace().collect();
-    let text = words.join(" ");
-    if text.chars().count() > INTENT_MAX_CHARS {
-        return Err(TimerCommandError {
-            kind: TimerCommandErrorKind::InvalidIntent,
-            message: format!("a name can be up to {INTENT_MAX_CHARS} characters"),
-        });
-    }
-    Ok((!text.is_empty()).then_some(text))
 }

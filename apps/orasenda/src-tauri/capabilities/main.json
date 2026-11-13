@@ -13,7 +13,6 @@
     "allow-timer-resume",
     "allow-timer-stop",
     "allow-timer-extend",
-    "allow-timer-set-intent",
     "allow-timer-dismiss-offer",
     "allow-timer-take-break",
     "allow-hint-shown",

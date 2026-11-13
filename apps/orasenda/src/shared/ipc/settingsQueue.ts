@@ -61,7 +61,7 @@ function sameSettings(a: Settings | null, b: Settings | null): boolean {
 export type SettingsListener = {
   /** The settings to show. `resetDraft`: a field being typed in must show the saved value. */
   shown: (settings: Settings, resetDraft: boolean) => void;
-  /** The latest intent was written. */
+  /** The latest wanted value was written. */
   accepted: () => void;
   /** settings_get failed and there is nothing to show. */
   loadFailed: () => void;
@@ -77,11 +77,11 @@ let intended: Settings | null = null;
 let accepted: Settings | null = null;
 let busy = false;
 let getWanted = false;
-// The intent a get in flight was sent under; `null` when no get is in flight.
-let getSentUnder: { intent: Settings | null } | null = null;
+// The wanted value a get in flight was sent under; `null` when no get is in flight.
+let getSentUnder: { wanted: Settings | null } | null = null;
 // Bumped by the test reset: a reply from an earlier generation is dropped.
 let generation = 0;
-// Callers of save() still waiting for their intent to settle (accepted, or rolled back).
+// Callers of save() still waiting for their change to settle (accepted, or rolled back).
 let waiters: ((worked: boolean) => void)[] = [];
 
 function settleWaiters(worked: boolean): void {
@@ -112,7 +112,7 @@ export function watchSettingsChanged(watcher: (settings: Settings) => void): () 
 }
 
 /**
- * Makes `next` the live listener and shows it the current intent, if there is one. The returned
+ * Makes `next` the live listener and shows it the current wanted value, if there is one. The returned
  * cleanup empties the slot only if `next` still holds it.
  */
 export function register(next: SettingsListener): () => void {
@@ -124,7 +124,7 @@ export function register(next: SettingsListener): () => void {
   };
 }
 
-/** The latest intent (what a change builds on), or `null` before the first load. */
+/** The latest wanted value (what a change builds on), or `null` before the first load. */
 export function latest(): Settings | null {
   return intended;
 }
@@ -135,14 +135,14 @@ export function latest(): Settings | null {
  */
 export function load(): void {
   ensureSubscribed();
-  if (getSentUnder && getSentUnder.intent === intended) return;
+  if (getSentUnder && getSentUnder.wanted === intended) return;
   getWanted = true;
   pump();
 }
 
 /**
- * Makes `next` the latest intent, tells the live page, and sends it when the lane is free.
- * Resolves `true` when Rust accepted it, or a later intent that replaced it (or it already equals
+ * Makes `next` the latest wanted value, tells the live page, and sends it when the lane is free.
+ * Resolves `true` when Rust accepted it, or a later change that replaced it (or it already equals
  * the accepted settings); `false` when the chain rolled back while it was pending. Callers may
  * ignore the result.
  */
@@ -193,7 +193,7 @@ function pump(): void {
 function sendSave(next: Settings): void {
   busy = true;
   const mine = generation;
-  // The callers whose intent this send covers; later callers wait for their own send.
+  // The callers whose change this send covers; later callers wait for their own send.
   const covered = waiters;
   waiters = [];
   const failed = (error: unknown, kind: "write" | "unavailable" = "write") => {
@@ -233,7 +233,7 @@ function sendGet(): void {
   getWanted = false;
   const mine = generation;
   const before = intended;
-  getSentUnder = { intent: before };
+  getSentUnder = { wanted: before };
   commands
     .settingsGet()
     .then(

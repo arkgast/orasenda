@@ -80,9 +80,9 @@ fn clamp_ms(ms: i128) -> u64 {
     u64::try_from(ms.max(0)).unwrap_or(u64::MAX)
 }
 
-/// What a session is called: its intent, or "Deep focus".
-pub fn session_name(intent: Option<&str>) -> &str {
-    intent.unwrap_or(DEEP_FOCUS)
+/// What a session is called: "Deep focus".
+pub fn session_name() -> &'static str {
+    DEEP_FOCUS
 }
 
 #[cfg(test)]

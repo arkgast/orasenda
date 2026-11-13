@@ -17,7 +17,6 @@ impl Session {
                     planned_ms: None,
                     break_kind: None,
                     extensions: 0,
-                    intent: None,
                     warned: false,
                     auto_step: false,
                     open_focus: false,
@@ -49,7 +48,6 @@ impl Session {
                 .open_focus
                 .as_ref()
                 .map_or(live.extensions, |f| f.extensions),
-            intent: live.intent.clone(),
             warned: live.warned,
             auto_step: live.auto_step,
             open_focus: live.open_focus.is_some(),

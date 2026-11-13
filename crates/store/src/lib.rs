@@ -39,4 +39,4 @@ pub use repo::{
 pub use txn::{Entity, Txn};
 
 /// The schema version this build writes, kept only in `PRAGMA user_version` (ADR-012).
-pub const SCHEMA_VERSION: u32 = 5;
+pub const SCHEMA_VERSION: u32 = 6;

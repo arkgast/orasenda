@@ -16,7 +16,6 @@ const SCENARIOS = [
   "warning",
   "breakShort",
   "keepGoing",
-  "intentSet",
 ];
 
 // The reduced-motion project only: under it nothing on Today animates or transitions.

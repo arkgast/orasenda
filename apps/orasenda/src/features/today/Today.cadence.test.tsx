@@ -12,7 +12,6 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { requestIntentField } from "./intentEvents";
 import { renderToday, statusNodes } from "./Today.support";
 
 beforeEach(() => {
@@ -143,93 +142,15 @@ test("rest_line_shows_the_cap_line_while_idle", async () => {
   expect(statusNodes()[0]).toHaveTextContent("4 hours of focus today.");
 });
 
-test("intent_never_auto_opens", async () => {
-  await renderToday();
-  expect(screen.queryByRole("textbox")).toBeNull();
-  await emitTimer(RUNNING);
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.getByRole("button", { name: "What will be done?" })).toBeInTheDocument();
-  await emitTimer({ ...RUNNING, intent: "Draft" });
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.getByRole("button", { name: "Edit intent" })).toBeInTheDocument();
-});
-
-test("start_sends_no_intent_and_idle_has_no_intent_button", async () => {
+test("start_runs_with_no_step", async () => {
   const { backend } = await renderToday();
-  expect(screen.queryByRole("button", { name: /What will be done|Edit intent/ })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /Start focus/ }));
   await settle();
   expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: false } }]);
-  expect(argsOf(backend.calls, "timer_set_intent")).toHaveLength(0);
-});
-
-test("intent_saves_through_the_command_and_returns_focus_to_the_button", async () => {
-  const { backend } = await renderToday();
   await emitTimer(RUNNING);
-  fireEvent.click(screen.getByRole("button", { name: "What will be done?" }));
-  const field = screen.getByRole("textbox", { name: "What will be done?" });
-  expect(field).toHaveFocus();
-  fireEvent.change(field, { target: { value: "Finish the outline" } });
-  fireEvent.keyDown(field, { key: "Enter" });
-  await settle();
-
-  expect(argsOf(backend.calls, "timer_set_intent")).toEqual([{ intent: "Finish the outline" }]);
   expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.getByRole("button", { name: "What will be done?" })).toHaveFocus();
-});
-
-test("intent_empty_return_clears_it_and_escape_sends_nothing", async () => {
-  const { backend } = await renderToday();
-  await emitTimer({ ...RUNNING, intent: "Draft" });
-  fireEvent.click(screen.getByRole("button", { name: "Edit intent" }));
-  const field = screen.getByRole("textbox", { name: "What will be done?" });
-  fireEvent.change(field, { target: { value: "" } });
-  fireEvent.keyDown(field, { key: "Enter" });
-  await settle();
-  expect(argsOf(backend.calls, "timer_set_intent")).toEqual([{ intent: null }]);
-
-  fireEvent.click(screen.getByRole("button", { name: "Edit intent" }));
-  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
-  await settle();
-  expect(argsOf(backend.calls, "timer_set_intent")).toHaveLength(1);
-  expect(screen.getByRole("button", { name: "Edit intent" })).toHaveFocus();
-});
-
-test("intent_request_event_opens_field", async () => {
-  await renderToday();
-  await emitTimer(RUNNING);
-  requestIntentField();
-  await settle();
-  expect(screen.getByRole("textbox", { name: "What will be done?" })).toHaveFocus();
-});
-
-test("intent_request_while_idle_opens_nothing", async () => {
-  await renderToday();
-  requestIntentField();
-  await settle();
-  expect(screen.queryByRole("textbox")).toBeNull();
-});
-
-test("intent_reaches_the_time_view_as_the_task_line", async () => {
-  await renderToday();
-  await emitTimer({ ...RUNNING, intent: "Finish the outline" });
-  expect(document.querySelector('[data-slot="timer-ring-task"]')).toHaveTextContent(
-    "Finish the outline",
-  );
-});
-
-test("timer_set_intent_failure_shows_the_control_error", async () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await renderToday({
-    timer_set_intent: () => Promise.reject({ kind: "store", message: "disk" }),
-  });
-  await emitTimer(RUNNING);
-  fireEvent.click(screen.getByRole("button", { name: "What will be done?" }));
-  const field = screen.getByRole("textbox");
-  fireEvent.change(field, { target: { value: "x" } });
-  fireEvent.keyDown(field, { key: "Enter" });
-  await settle();
-  expect(statusNodes()[0]).toHaveTextContent("Orasenda's timer isn't responding.");
+  expect(statusNodes()).toHaveLength(0);
+  expect(screen.getByRole("button", { name: /Pause session/ })).toBeInTheDocument();
 });
 
 test("extend_refused_at_the_cap_is_a_race_and_shows_nothing", async () => {

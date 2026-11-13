@@ -13,10 +13,10 @@ pub(super) fn merge_row(txn: &mut Txn, row: &SessionRowAll) -> Result<Outcome, S
     txn.conn().execute(
         "INSERT OR REPLACE INTO focus_session (id, created_at, updated_at, deleted_at, preset,
              phase, planned_ms, started_at, ended_at, paused_total_ms, focused_ms, end_reason,
-             extensions, intent, preset_id, preset_name, focus_min, break_min, long_break_min,
+             extensions, preset_id, preset_name, focus_min, break_min, long_break_min,
              rounds, break_kind)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-             ?19, ?20, ?21)",
+             ?19, ?20)",
         rusqlite::params![
             row.id,
             row.created_at,
@@ -31,7 +31,6 @@ pub(super) fn merge_row(txn: &mut Txn, row: &SessionRowAll) -> Result<Outcome, S
             row.focused_ms,
             row.end_reason,
             row.extensions,
-            row.intent,
             row.preset_id,
             row.preset_name,
             row.focus_min,
@@ -60,7 +59,6 @@ pub(super) fn merge_row(txn: &mut Txn, row: &SessionRowAll) -> Result<Outcome, S
         ("break_min", opt(row.break_min)),
         ("long_break_min", opt(row.long_break_min)),
         ("rounds", opt(row.rounds)),
-        ("intent", opt(row.intent.clone())),
         ("break_kind", opt(row.break_kind.clone())),
     ];
     fields.extend(optional.into_iter().filter(|(_, v)| !v.is_null()));

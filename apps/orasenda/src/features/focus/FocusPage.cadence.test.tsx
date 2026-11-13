@@ -43,15 +43,14 @@ async function mount(view: typeof RUNNING, replies: Parameters<typeof mockBacken
 }
 
 test("focus_page_break_and_warning_modes", async () => {
-  await mount({ ...BREAK, intent: null });
+  await mount(BREAK);
   expect(screen.getByRole("timer")).toHaveAccessibleName(/^Break, 4 minutes 59 seconds remaining/);
   expect(screen.getByRole("button", { name: "End break" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Pause break" })).toBeVisible();
   cleanup();
-  await mount({ ...WARNING, intent: "Write the report" });
+  await mount(WARNING);
   const timer = screen.getByRole("timer");
   expect(timer).toHaveAccessibleName(/^Almost up, 24 minutes 59 seconds remaining/);
-  expect(timer).toHaveAccessibleName(/Write the report/);
   expect(screen.getByRole("button", { name: "End session" })).toBeVisible();
   cleanup();
   // A warning inside a break is still a break: the host passes the view's phase.

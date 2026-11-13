@@ -2,15 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { TimerStrip } from "./timer-strip";
 
-const TASK =
-  "Finish the chapter 3 outline and send the draft to Maya before the review meeting on Thursday afternoon";
 const run = { remaining: "1:48", remainingLabel: "1 minute 48 seconds", progress: 0.94 };
 
 test("timer_strip_name_has_remaining_label_and_mode", () => {
-  render(<TimerStrip mode="warning" {...run} task="Finish the chapter 3 outline" />);
+  render(<TimerStrip mode="warning" {...run} />);
   expect(
     screen.getByRole("timer", {
-      name: "Almost up, 1 minute 48 seconds remaining, Finish the chapter 3 outline",
+      name: "Almost up, 1 minute 48 seconds remaining",
     }),
   ).toBeTruthy();
 });
@@ -26,13 +24,11 @@ test("timer_strip_stacked_form", () => {
 });
 
 test("timer_strip_idle_shows_idle_length", () => {
-  const { container, rerender } = render(<TimerStrip mode="idle" idleLength="25 min" />);
+  const { container } = render(<TimerStrip mode="idle" idleLength="25 min" />);
   expect(container.querySelector("[data-slot=timer-strip-length]")?.textContent).toBe("25 min");
   expect(container.querySelector("[data-slot=timer-strip-digits]")).toBeNull();
   expect(container.querySelector("[data-slot=timer-strip-bar]")).toBeNull();
   expect(screen.getByRole("timer").getAttribute("aria-label")).toBe("No session, 25 min");
-  rerender(<TimerStrip mode="idle" idleLength="25 min" task="Outline" />);
-  expect(screen.getByRole("timer").getAttribute("aria-label")).toBe("No session, 25 min, Outline");
 });
 
 test.each([
@@ -52,7 +48,7 @@ test.each([
 });
 
 test("timer_strip_adds_no_live_region", () => {
-  const { container } = render(<TimerStrip mode="focus" {...run} task={TASK} />);
+  const { container } = render(<TimerStrip mode="focus" {...run} />);
   const root = container.querySelector("[role=timer]") as HTMLElement;
   expect(root.getAttribute("aria-live")).toBe("off");
   expect(container.querySelector("[role=status],[role=alert]")).toBeNull();
@@ -60,8 +56,7 @@ test("timer_strip_adds_no_live_region", () => {
     expect(el.getAttribute("aria-live")).toBe("off");
 });
 
-test("timer_strip_task_whole_in_accessible_name", () => {
-  const { container } = render(<TimerStrip mode="focus" {...run} task={TASK} />);
-  expect((screen.getByRole("timer").getAttribute("aria-label") ?? "").endsWith(TASK)).toBe(true);
-  expect(container.querySelector("[data-slot=timer-strip-task]")?.textContent).toBe(TASK);
+test("timer_strip_has_no_task_line", () => {
+  const { container } = render(<TimerStrip mode="focus" {...run} />);
+  expect(container.querySelector("[data-slot=timer-strip-task]")).toBeNull();
 });

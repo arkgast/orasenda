@@ -7,7 +7,6 @@ import {
   provoke,
   SIZES,
   STATES,
-  scenarioOf,
   TWO_ACTIONS,
 } from "./support/today.ts";
 
@@ -36,7 +35,7 @@ test("today_has_no_radios_or_fields", async ({ page }) => {
 for (const size of SIZES) {
   for (const { scenario, primary } of STATES) {
     test(`today_fits_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
-      await openApp(page, scenarioOf(scenario), size);
+      await openApp(page, scenario, size);
       await provoke(page, scenario);
       await expect(page.locator(".today")).toHaveAttribute("data-layout", size.layout);
       await expectTodayFits(page, size, primary, TWO_ACTIONS.has(scenario));
@@ -50,7 +49,7 @@ for (const size of SIZES) {
           ? "today_stacked_strip_row_gaps"
           : "today_gaps_every_size_and_state";
     test(`${gapsName}_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
-      await openApp(page, scenarioOf(scenario), size);
+      await openApp(page, scenario, size);
       await provoke(page, scenario);
       await expectTodayGaps(page, size, scenario);
     });
@@ -90,11 +89,15 @@ test("today_break_row_actions_and_stacked_strip", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Skip break" }).first()).toBeVisible();
 });
 
-test("today_intent_shows_in_the_ring_and_not_the_stacked_strip", async ({ page }) => {
-  await openApp(page, "intentSet", { width: 900, height: 600 });
-  await expect(page.locator('[data-slot="timer-ring-task"]')).toBeVisible();
-  await openApp(page, "intentSet", { width: 360, height: 240 });
-  await expect(page.locator('[data-slot="timer-strip-task"]')).toHaveCount(0);
+test("today_has_no_task_slot_in_any_layout", async ({ page }) => {
+  for (const size of [
+    { width: 900, height: 600 },
+    { width: 640, height: 330 },
+    { width: 360, height: 240 },
+  ]) {
+    await openApp(page, "running", size);
+    await expect(page.locator('[data-slot$="-task"]')).toHaveCount(0);
+  }
 });
 
 // Goal 1 on Today: Deep Work's "1:29:59" inside the ring at every ring size. The long face is held to the

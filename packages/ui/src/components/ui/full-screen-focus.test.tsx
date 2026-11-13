@@ -28,7 +28,6 @@ const base = {
   remainingLabel: "18 minutes 42 seconds",
   progress: 0.25,
   mode: "focus" as const,
-  task: "Draft the outline",
   clock: "09:41",
 };
 
@@ -245,26 +244,12 @@ test("full_screen_focus_calls_timer_layout_on_resize_only", () => {
   expect(screen.getByLabelText("Full-screen focus").getAttribute("data-layout")).toBe("strip");
 });
 
-test("full_screen_focus_minimum_window_is_stacked_with_the_intent_hidden_but_named", () => {
+test("full_screen_focus_minimum_window_is_stacked", () => {
   render(<FullScreenFocus {...base} onExit={none} />);
   act(() => fire(360, 240));
   const section = screen.getByLabelText("Full-screen focus");
   expect(section.getAttribute("data-layout")).toBe("stackedStrip");
-  expect(section.getAttribute("data-intent")).toBe("hidden");
-  expect(screen.getByRole("timer")).toHaveAccessibleName(/Draft the outline/);
-});
-
-test("full_screen_focus_task_whole_in_accessible_name_ring_and_strip", () => {
-  const task = "Finish the chapter 3 outline and send the draft to Maya";
-  const view = render(<FullScreenFocus {...base} task={task} onExit={none} />);
-  expect(screen.getByRole("timer")).toHaveAccessibleName(new RegExp(task));
-  act(() => fire(1000, 440));
-  expect(screen.getByLabelText("Full-screen focus").getAttribute("data-layout")).toBe("strip");
-  expect(screen.getByRole("timer")).toHaveAccessibleName(new RegExp(task));
-  view.rerender(<FullScreenFocus {...base} task={task} mode="idle" onExit={none} />);
-  expect(screen.getByRole("timer")).toHaveAccessibleName(new RegExp(task));
-  act(() => fire(1280, 720));
-  expect(screen.getByText(task, { selector: ".sr-only" })).toBeTruthy();
+  expect(screen.getByRole("timer")).toHaveAccessibleName("Focus, 18 minutes 42 seconds remaining");
 });
 
 test("status_line_shows_the_hosts_text_in_the_same_live_region", () => {

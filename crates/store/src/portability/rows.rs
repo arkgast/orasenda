@@ -42,7 +42,6 @@ pub struct SessionRowAll {
     pub focused_ms: i64,
     pub end_reason: String,
     pub extensions: i64,
-    pub intent: Option<String>,
     pub preset_id: Option<String>,
     pub preset_name: Option<String>,
     pub focus_min: Option<i64>,
@@ -110,7 +109,7 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
         .prepare(
             "SELECT id, created_at, updated_at, deleted_at, preset, phase, planned_ms,
                  started_at, ended_at, paused_total_ms, focused_ms, end_reason, extensions,
-                 intent, preset_id, preset_name, focus_min, break_min, long_break_min, rounds,
+                 preset_id, preset_name, focus_min, break_min, long_break_min, rounds,
                  break_kind
              FROM focus_session ORDER BY id",
         )?
@@ -129,14 +128,13 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
                 focused_ms: row.get(10)?,
                 end_reason: row.get(11)?,
                 extensions: row.get(12)?,
-                intent: row.get(13)?,
-                preset_id: row.get(14)?,
-                preset_name: row.get(15)?,
-                focus_min: row.get(16)?,
-                break_min: row.get(17)?,
-                long_break_min: row.get(18)?,
-                rounds: row.get(19)?,
-                break_kind: row.get(20)?,
+                preset_id: row.get(13)?,
+                preset_name: row.get(14)?,
+                focus_min: row.get(15)?,
+                break_min: row.get(16)?,
+                long_break_min: row.get(17)?,
+                rounds: row.get(18)?,
+                break_kind: row.get(19)?,
             })
         })?
         .collect::<Result<_, _>>()?;

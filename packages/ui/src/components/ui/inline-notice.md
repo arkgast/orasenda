@@ -20,9 +20,8 @@ The row holds at most two sentences, in this order:
 1. The answer to the person's last action (a start that failed, a failed save).
 2. A cadence row or one-shot milestone ("Session ended.", "Your last session ended while Orasenda was closed.", "Two minutes left. Finish the thought."), in the order of Today's table below.
 3. The standing store line, joined after a short milestone in the same row ("Session ended. Orasenda can't save sessions right now."). If the two together exceed 65 characters, the higher one shows and the store line returns when it clears. A joined row takes the tone and glyph of its first sentence.
-4. The intent button, in a running or paused focus with nothing above: no text, a quiet "What will be done?" ("Edit intent" once one is set).
-5. The welcome line (first run only), then the idle rest line ("4 hours of focus today.", `rest` tone).
-6. A tip, only when the row is otherwise empty and Today is idle.
+4. The welcome line (first run only), then the idle rest line ("4 hours of focus today.", `rest` tone).
+5. A tip, only when the row is otherwise empty and Today is idle.
 
 ### Today slots
 
@@ -40,7 +39,7 @@ The row holds at most two sentences, in this order:
 | Running in an automatic step, not in its last 2:00 | neutral | "Still going · ends 15:40" | quiet "Take a break" (name "Take a break now") | the step's warning, or its end |
 | A break ended by time | neutral | "Break over. Start when you're ready." | none | next transition |
 | A break skipped | neutral | "Break ended." | none | next transition |
-| A focus is running or paused, nothing above | none | empty | quiet "What will be done?" or "Edit intent": it swaps the row for an `Input` | the field closing |
+| A focus is running or paused, nothing above | none | empty | none | a line above arriving |
 | Idle after the deep-hours cap | rest | "4 hours of focus today." | none | midnight, or a new session |
 | Store unavailable | attention | "Orasenda can't save sessions right now." | none (it already retries every second) | while the state lasts |
 | Store newer | attention | "This data was saved by a newer Orasenda." | none | while the state lasts |
@@ -62,6 +61,6 @@ A start error shows here, on the same screen as Start. Focus stays on Start; the
 | Store newer | controls read-only, each with the reason | "This data was saved by a newer Orasenda. Settings are read-only until you update." |
 | Shortcut conflict | the recorder's conflict line | none (the index shows "Pick a new shortcut" with the alert glyph) |
 
-Two actions: the first is the notice's own, the second a sibling `Button` in reading order after it. Both keep the 44px hit target. Beside a long line the row may take a second line in a ring layout, and in the strip's narrow column the second action goes under the first row. While the intent field is open it replaces the row; at 360 x 240 it lies over the top of the time.
+Two actions: the first is the notice's own, the second a sibling `Button` in reading order after it. Both keep the 44px hit target. Beside a long line the row may take a second line in a ring layout, and in the strip's narrow column the second action goes under the first row.
 
 Do: show one notice at a time, and keep the row at 44px, growing only to two lines when a second action needs it. Don't: use it to nag about stats.

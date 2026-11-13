@@ -43,7 +43,6 @@ pub(super) fn session(id: &str, at: i64) -> SessionRowAll {
         focused_ms: 1_500_000,
         end_reason: "completed".into(),
         extensions: 0,
-        intent: Some("Outline".into()),
         preset_id: Some("p1".into()),
         preset_name: Some("Classic".into()),
         focus_min: Some(25),
@@ -128,7 +127,6 @@ fn merge_later_updated_at_wins() {
         settings: vec![setting("theme", "\"light\"", 101)],
         presets: vec![preset("p1", "Renamed", 201, None)],
         sessions: vec![SessionRowAll {
-            intent: Some("Draft".into()),
             focused_ms: 1_000_000,
             ..session("s1", 401)
         }],
@@ -157,8 +155,8 @@ fn merge_later_updated_at_wins() {
     let p1 = after.presets.iter().find(|p| p.id == "p1").expect("p1");
     assert_eq!(p1, &file.presets[0]);
     let added = kinds.map(|k| by_entity(&store, k));
-    // setting: value; preset: 7 fields plus deleted_at; session: 16 fields plus deleted_at.
-    assert_eq!([0, 1, 2].map(|i| added[i] - logged_before[i]), [1, 8, 17]);
+    // setting: value; preset: 7 fields plus deleted_at; session: 15 fields plus deleted_at.
+    assert_eq!([0, 1, 2].map(|i| added[i] - logged_before[i]), [1, 8, 16]);
 }
 
 #[test]
@@ -185,7 +183,7 @@ fn merge_tie_keeps_local() {
         settings: vec![setting("theme", "\"light\"", 100)],
         presets: vec![preset("p1", "Tie", 200, None)],
         sessions: vec![SessionRowAll {
-            intent: Some("Other".into()),
+            focused_ms: 1_000_000,
             ..session("s1", 400)
         }],
         ..SyncRows::default()
@@ -311,16 +309,13 @@ fn merge_logs_each_field() {
         ]
     );
     let session_fields = fields("focus_session");
-    for expected in [
-        "preset",
-        "phase",
-        "planned_ms",
-        "intent",
-        "preset_id",
-        "rounds",
-    ] {
+    for expected in ["preset", "phase", "planned_ms", "preset_id", "rounds"] {
         assert!(session_fields.iter().any(|f| f == expected), "{expected}");
     }
+    assert!(
+        !session_fields.iter().any(|f| f == "intent"),
+        "no intent field is logged"
+    );
 }
 
 #[test]

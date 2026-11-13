@@ -38,7 +38,6 @@ fn break_starts_at_planned_end() {
     );
     assert_eq!(brk.planned_ms, 5 * MIN);
     assert_eq!(brk.preset, steady());
-    assert_eq!(brk.intent, None);
     assert_ne!(brk.id, focus.id);
 }
 
@@ -185,38 +184,12 @@ fn pause_in_a_break_freezes_it_and_counts_in_the_break() {
 #[test]
 fn snapshot_round_trips_in_a_break_with_an_open_focus() {
     let mut s = classic_at(T0);
-    s.set_intent(Some("Outline".into()), T0).unwrap();
     s.advance(T0 + 25 * MIN, None);
     let text = serde_json::to_string(&s).unwrap();
     assert_eq!(serde_json::from_str::<Session>(&text).unwrap(), s);
     let j = serde_json::to_value(&s).unwrap();
     assert_eq!(j["phase"], "break");
     assert_eq!(j["break_kind"], "short");
-}
-
-#[test]
-fn set_intent_in_focus_and_pause_only() {
-    let mut s = classic_at(T0);
-    assert_eq!(s.set_intent(Some("Draft".into()), T0 + MIN), Ok(()));
-    assert_eq!(s.view(T0 + MIN).intent.as_deref(), Some("Draft"));
-    s.pause(T0 + 2 * MIN).unwrap();
-    assert_eq!(s.set_intent(Some("Edit".into()), T0 + 3 * MIN), Ok(()));
-    assert_eq!(s.set_intent(None, T0 + 3 * MIN), Ok(()));
-    assert_eq!(s.view(T0 + 3 * MIN).intent, None);
-    s.set_intent(Some("Edit".into()), T0 + 3 * MIN).unwrap();
-    s.resume(T0 + 4 * MIN).unwrap();
-    s.advance(T0 + 28 * MIN, None);
-    assert_eq!(
-        s.set_intent(Some("x".into()), T0 + 28 * MIN),
-        Err(TimerError::WrongState)
-    );
-    let rs = s.stop(T0 + 29 * MIN).unwrap();
-    assert_eq!(rs[0].intent.as_deref(), Some("Edit"));
-    assert_eq!(rs[1].intent, None);
-    assert_eq!(
-        Session::Idle.set_intent(None, T0),
-        Err(TimerError::NothingRunning)
-    );
 }
 
 #[test]

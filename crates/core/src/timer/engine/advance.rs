@@ -144,7 +144,6 @@ impl Live {
             end_reason,
             extensions: self.extensions,
             break_kind: None,
-            intent: self.intent.clone(),
         }
     }
 
@@ -169,7 +168,6 @@ impl Live {
             end_reason,
             extensions: 0,
             break_kind: self.break_kind,
-            intent: None,
         }
     }
 

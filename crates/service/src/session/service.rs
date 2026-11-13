@@ -35,8 +35,6 @@ pub enum Action {
     Stop,
     /// "+10 min", from the last two minutes of a focus or from a break.
     Extend,
-    /// Names the focus, or clears the name with `None`.
-    SetIntent(Option<String>),
     /// "Stop here": clears the keep-going offer.
     DismissOffer,
     /// Ends the focus now as completed and starts its break.

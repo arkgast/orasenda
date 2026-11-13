@@ -14,7 +14,6 @@ const FOCUS: CadenceInput = {
   phase: "focus",
   mode: "focus",
   canExtend: false,
-  intent: null,
   suggestion: null,
   offer: null,
   checkIn: null,
@@ -90,21 +89,15 @@ test("status_line_rank_for_every_row", () => {
     actions: [],
   });
 
-  // Rank 3: the store line, ahead of the intent button and the rest line.
+  // Rank 3: the store line, ahead of the rest line.
   expect(line(FOCUS, { store: "unavailable" })?.tone).toBe("attention");
   expect(line({ ...IDLE, capLine: "4 hours of focus today." }, { store: "newer" })?.tone).toBe(
     "attention",
   );
 
-  // Rank 4: a running or paused focus with nothing above.
-  expect(line(FOCUS)).toEqual({
-    text: "",
-    tone: "neutral",
-    actions: [{ id: "intent", label: "What will be done?", variant: "quiet" }],
-  });
-  expect(line({ ...FOCUS, state: "paused", mode: "paused", intent: "Draft" })?.actions).toEqual([
-    { id: "intent", label: "Edit intent", variant: "quiet" },
-  ]);
+  // Rank 4: a running or paused focus with nothing above shows no line.
+  expect(line(FOCUS)).toBeNull();
+  expect(line({ ...FOCUS, state: "paused", mode: "paused" })).toBeNull();
   // Rank 5: idle, the quiet line.
   expect(line({ ...IDLE, capLine: "4 hours of focus today." })).toEqual({
     text: "4 hours of focus today.",

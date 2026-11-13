@@ -357,7 +357,7 @@ Learning the keys happens on one Mac, and syncing a count that changes on every 
 Updated by the PRs that implement this spec.
 - [ ] Plan and backlog
 - [ ] H1 React structure (H1a, H1b move-only PRs)
-- [ ] H2 Remove the session intent
+- [x] H2 Remove the session intent
 - [ ] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
 - [ ] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen)
 - [ ] H4 Full screen in the main window (Esc and floater spikes first)

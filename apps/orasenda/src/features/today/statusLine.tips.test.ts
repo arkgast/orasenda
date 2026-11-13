@@ -13,7 +13,6 @@ const IDLE: CadenceInput = {
   phase: "focus",
   mode: "idle",
   canExtend: false,
-  intent: null,
   suggestion: null,
   offer: null,
   checkIn: null,

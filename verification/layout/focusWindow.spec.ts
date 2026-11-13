@@ -24,7 +24,6 @@ const STATES = [
   { name: "break", scenario: "breakShort", primary: /Pause break/ },
   { name: "warning", scenario: "warning", primary: /Pause session/ },
   { name: "autoStep", scenario: "autoStep", primary: /Pause session/ },
-  { name: "intent", scenario: "intentSet", primary: /Pause session/ },
   { name: "offer", scenario: "keepGoing", primary: /Keep going/ },
 ] as const;
 // The menu bar above and the Dock below, as a real display reports them. A 360x240 window is

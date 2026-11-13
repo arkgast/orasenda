@@ -115,7 +115,6 @@ fn export_bindings() {
         "timerPause: () => typedError<TimerView_Serialize, TimerCommandError>",
         "timerResume: () => typedError<TimerView_Serialize, TimerCommandError>",
         "timerExtend: () => typedError<TimerView_Serialize, TimerCommandError>",
-        "timerSetIntent: (intent: string | null) => typedError<TimerView_Serialize, TimerCommandError>",
         "timerDismissOffer: () => typedError<TimerView_Serialize, TimerCommandError>",
         "timerTakeBreak: () => typedError<TimerView_Serialize, TimerCommandError>",
         "typedError<null, SettingsError>",

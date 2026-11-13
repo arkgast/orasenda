@@ -123,11 +123,6 @@
   align-self: stretch;
 }
 
-/* The intent field takes the status row's place: its label and the field stack. */
-.today-intent {
-  min-inline-size: 0;
-}
-
 .today-status {
   grid-area: status;
   min-inline-size: 0;
@@ -176,17 +171,4 @@
    Outside the strip (whose column reads from the start) the row centres on the column. */
 .today:not([data-layout="strip"]) .today-controls [data-slot="start-button-row"] {
   justify-content: center;
-}
-
-/* At 360x240 the time track has no spare height: the open field lies over the top of the time
-   instead of pushing it (a positioned box paints above the in-flow time that follows it). */
-.today[data-layout="stackedStrip"] .today-status {
-  position: relative;
-}
-
-.today[data-layout="stackedStrip"] .today-intent {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline: 0;
-  background: var(--surface);
 }

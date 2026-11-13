@@ -8,7 +8,7 @@ impl Session {
     /// - In a running focus with at most two minutes left: `planned += 10 min`, `extensions +=
     ///   1`, and the warning comes again before the new end.
     /// - In a running break: the break is recorded as `stopped` with its real length, and the
-    ///   focus continues (same id, intent and round) with ten more minutes. The cut break is
+    ///   focus continues (same id and round) with ten more minutes. The cut break is
     ///   kept with the session and written with it; the time in it is excluded from the focus.
     ///
     /// Refused while paused (`WrongState`: the action is hidden and returns on resume), for
@@ -73,7 +73,6 @@ impl Live {
             gap_ms,
             extensions: focus.extensions.saturating_add(1),
             round: self.round,
-            intent: focus.intent,
             warned: false,
             auto_step: false,
             open_focus: None,

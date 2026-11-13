@@ -37,7 +37,6 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::timer_resume,
             commands::timer_stop,
             commands::timer_extend,
-            commands::timer_set_intent,
             commands::timer_dismiss_offer,
             commands::timer_take_break,
             commands::hint_shown,

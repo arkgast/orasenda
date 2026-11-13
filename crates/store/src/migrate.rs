@@ -12,6 +12,7 @@ pub(crate) const MIGRATIONS: &[(u32, &str)] = &[
     (3, PRESET_LIBRARY_SQL),
     (4, include_str!("../migrations/0004_window_frame.sql")),
     (5, include_str!("../migrations/0005_inbox_note.sql")),
+    (6, include_str!("../migrations/0006_drop_intent.sql")),
 ];
 
 const _: () = assert!(
