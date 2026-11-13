@@ -3,6 +3,7 @@
 
 mod commands;
 mod data_tasks;
+mod file_picker;
 mod ipc;
 mod lifecycle;
 // The app menu: the pure parts build on every desktop target, the menu itself on macOS.
@@ -75,6 +76,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::backups_delete,
             commands::backups_restore,
             commands::backups_set_policy,
+            commands::data_export,
+            commands::data_import,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -139,6 +142,7 @@ pub fn run() {
     #[cfg(desktop)]
     let app = app
         .plugin(shortcuts::plugin(std::sync::Arc::clone(&held)))
+        .plugin(tauri_plugin_dialog::init())
         .manage(held);
     let app = app
         .manage(spike)

@@ -182,6 +182,8 @@ fn main_capability_exact() {
             "allow-backups-delete",
             "allow-backups-restore",
             "allow-backups-set-policy",
+            "allow-data-export",
+            "allow-data-import",
         ],
     );
     let (_, main) = capability("main.json");

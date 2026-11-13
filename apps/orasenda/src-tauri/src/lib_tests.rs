@@ -7,6 +7,7 @@ use super::*;
 mod capabilities;
 mod capture;
 mod data;
+mod data_files;
 
 use capabilities::{assert_capability, capability};
 
