@@ -1,6 +1,7 @@
 import type { FullScreenFocus } from "@orasenda/ui";
 import type { ComponentProps } from "react";
 import type { TimerView_Serialize } from "../../ipc/bindings";
+import { cadenceOffers } from "../today/cadenceOffers";
 
 type SecondaryAction = NonNullable<
   ComponentProps<typeof FullScreenFocus>["secondaryActions"]
@@ -17,9 +18,10 @@ export type CadenceHandlers = {
 
 /**
  * The Focus window's secondary actions for one view, the same rows Today's status line offers
- * (spec, "Shared with D"): "Keep going" and "Stop here" with the offer; "Skip break" in a break;
- * "Take a break" in an automatic step (the check-in); "+10 min" while it is on offer. The
- * component shows at most two and decides nothing itself.
+ * (spec, "Shared with D"): "Keep going" and "Stop here" with the offer;
+ * the break, warning and check-in actions come from `cadenceOffers`, the rule Today shares ("+10 min"
+ * only from the two-minute warning, and in a break before "Skip break"). The component shows at
+ * most two and decides nothing itself.
  */
 export function cadenceActions(
   view: TimerView_Serialize | null,
@@ -39,28 +41,11 @@ export function cadenceActions(
       { id: "stopHere", label: "Stop here", onSelect: handlers.stopHere },
     ];
   }
-  if (view.phase === "break") {
-    return [{ id: "skipBreak", label: "Skip break", onSelect: handlers.skipBreak }];
-  }
-  if (view.checkIn) {
-    return [
-      {
-        id: "takeBreak",
-        label: "Take a break",
-        name: "Take a break now",
-        onSelect: handlers.takeBreak,
-      },
-    ];
-  }
-  if (view.canExtend) {
-    return [
-      {
-        id: "extend",
-        label: "+10 min",
-        name: "Add 10 minutes of focus",
-        onSelect: handlers.extend,
-      },
-    ];
-  }
-  return [];
+  const offers = cadenceOffers(view) ?? [];
+  return offers.map(({ id, label, name }) => ({
+    id,
+    label,
+    ...(name ? { name } : {}),
+    onSelect: handlers[id],
+  }));
 }

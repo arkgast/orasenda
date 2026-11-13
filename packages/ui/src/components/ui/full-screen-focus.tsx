@@ -40,8 +40,8 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
    */
   status?: string;
   /**
-   * Zero to two quiet actions in the controls row, after End. Two only for the keep-going offer
-   * ("Keep going", "Stop here"). Only the first two render; a third is dropped, so the host passes at most two.
+   * Zero to two quiet actions in the controls row, after End. Two for the keep-going offer
+   * ("Keep going", "Stop here") or for a break ("+10 min", "Skip break"). Only the first two render; a third is dropped, so the host passes at most two.
    * Pause or Resume stays the only round primary.
    */
   secondaryActions?: ReadonlyArray<SecondaryAction>;
@@ -243,7 +243,9 @@ export function FullScreenFocus({
           className={cn(
             "flex h-control-lg w-full shrink-0 items-center justify-center",
             // Room for the host's actions without growing the fixed track: the gap tightens with each one.
-            gapByActions[actions.length],
+            // Two break actions beside Pause and End are 2px too wide for the specimen frame's 344px track at
+            // 360x240 (24px padding); the real window's 12px padding fits. A narrower gap, not padding, takes it up.
+            actions.length === 2 && !offer && !roomy ? "gap-1-5" : gapByActions[actions.length],
           )}
         >
           {offer ? null : idle ? (

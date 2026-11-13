@@ -99,3 +99,33 @@ test("full_screen_focus_end_break_label", () => {
   view.rerender(<FullScreenFocus {...base} mode="warning" />);
   expect(screen.getByRole("button", { name: "End session" })).toBeTruthy();
 });
+
+test("full_screen_focus_two_actions_in_break", () => {
+  render(
+    <FullScreenFocus
+      {...base}
+      mode="break"
+      secondaryActions={[
+        {
+          id: "extend",
+          label: "+10 min",
+          name: "Back to focus for 10 more minutes",
+          onSelect: () => {},
+        },
+        { id: "skip", label: "Skip break", onSelect: () => {} },
+      ]}
+    />,
+  );
+  const controls = document.querySelector("[data-slot=full-screen-focus-controls]") as HTMLElement;
+  const buttons = within(controls).getAllByRole("button");
+  expect(buttons.map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
+    "Pause break",
+    "End break",
+    "Back to focus for 10 more minutes",
+    "Skip break",
+  ]);
+  expect(buttons[2]?.getAttribute("data-variant")).toBe("quiet");
+  expect(buttons[3]?.getAttribute("data-variant")).toBe("ghost");
+  expect(controls.className).toContain("gap-2");
+  expect(controls.querySelectorAll("[data-size=round]")).toHaveLength(1);
+});

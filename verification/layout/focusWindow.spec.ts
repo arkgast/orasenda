@@ -152,3 +152,16 @@ test("focus_window_running_deep_digits_inside_ring", async ({ page }) => {
     if (r.fontSize > md + 0.5) expect(r.problems, label).toEqual([]);
   }
 });
+
+// A break with "+10 min" and "Skip break": both show at every size (the fit checks above cover them).
+test("focus_window_break_shows_two_actions", async ({ page }) => {
+  for (const size of SIZES) {
+    await openFocus(page, "breakShort", size, false);
+    const controls = page.locator("[data-slot=full-screen-focus-controls]");
+    await expect(
+      controls.getByRole("button", { name: "Back to focus for 10 more minutes" }),
+      `${size.w}x${size.h}`,
+    ).toBeVisible();
+    await expect(controls.getByRole("button", { name: "Skip break" })).toBeVisible();
+  }
+});
