@@ -10,6 +10,8 @@ mod menu;
 mod notifications;
 mod platform;
 mod runtime;
+#[cfg(desktop)]
+mod shortcuts;
 pub(crate) mod spike;
 // The menu-bar item: Tauri's tray exists on desktop only.
 #[cfg(desktop)]
@@ -118,7 +120,14 @@ pub fn run() {
     let context = tauri::generate_context!();
     let spike = spike::Spike::new(spike::enabled(), &context.config().identifier);
 
-    let app = tauri::Builder::default()
+    #[cfg(desktop)]
+    let held = std::sync::Arc::new(shortcuts::Held::default());
+    let app = tauri::Builder::default();
+    #[cfg(desktop)]
+    let app = app
+        .plugin(shortcuts::plugin(std::sync::Arc::clone(&held)))
+        .manage(held);
+    let app = app
         .manage(spike)
         .manage(runtime::session::Surfaces::default())
         .manage(lifecycle::PendingNavigate::default())
@@ -131,6 +140,8 @@ pub fn run() {
             runtime::session::setup(app)?;
             runtime::keyboard::manage(app);
             runtime::keyboard::register_saved(app.handle());
+            #[cfg(target_os = "macos")]
+            runtime::keyboard::observe_voice_over(app.handle());
             #[cfg(desktop)]
             tray::setup(app)?;
             runtime::ticker::spawn(runtime::ticker::AppHost::new(app.handle()))?;

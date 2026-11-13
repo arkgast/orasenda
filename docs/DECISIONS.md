@@ -242,7 +242,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-017: Global shortcuts
 - **Date:** 2026-11-12
-- **Status:** proposed (spec [Hotkeys and capture](specs/2026-11-12-hotkeys-and-capture.md))
+- **Status:** accepted (spec [Hotkeys and capture](specs/2026-11-12-hotkeys-and-capture.md); adapter in [#405](https://github.com/arkgast/orasenda/pull/405))
 - **Context:** P1-F adds system-wide shortcuts (⌃⌥F start or pause, ⌃⌥N capture) and single-key shortcuts inside surfaces. ADR-014 already rules out registering from JS, and ADR-016 makes app-wide keys native menu accelerators handled in Rust. A global shortcut can fail to register, because another app holds it, and VoiceOver takes ⌃⌥ keys before any app sees them.
 - **Options considered:**
   1. **`tauri-plugin-global-shortcut` (2.4.1, global-hotkey 0.8) called only from Rust, behind a `ShortcutRegistrar` trait:** maintained by Tauri, covers macOS and Windows, and reports failures. One more dependency.

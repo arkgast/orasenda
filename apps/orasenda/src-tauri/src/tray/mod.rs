@@ -53,7 +53,7 @@ pub(crate) use render::header_text;
 pub(crate) use render::{Glyph, Tray, TrayHandle, tray_label, tray_title_and_icon};
 
 pub(crate) use menu::FocusItems;
-use menu::{MenuEntry, NextSession, build_menu, menu_items, on_menu_event};
+use menu::{MenuEntry, NextSession, build_menu, menu_items, on_menu_event, start_keys};
 use render::report;
 use state::{RETRY_DELAY, lock_state};
 
@@ -167,6 +167,13 @@ pub(crate) fn focus_changed(app: &AppHandle, focus: FocusItems) {
     }
 }
 
+/// The Start item's inert keys text follows `keyboard-changed`.
+fn follow_keyboard(app: &AppHandle, tray: &Arc<Tray>) {
+    use tauri_specta::Event;
+    let tray = Arc::clone(tray);
+    crate::ipc::KeyboardChanged::listen(app, move |event| tray.keyboard_changed(&event.payload.0));
+}
+
 /// Builds the idle menu-bar item and adds it to the [`Surfaces`] that `publish` renders.
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let handle = app.handle();
@@ -181,7 +188,8 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let next = NextSession::new(
         &crate::runtime::session::current_settings(handle),
         crate::runtime::session::run_presets_list(handle),
-    );
+    )
+    .with_keys(start_keys(&crate::runtime::keyboard::state(handle)));
     let (menu, header) = build_menu(
         handle,
         &menu_items(
@@ -218,6 +226,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     }
     let tray = Arc::new(tray);
     app.manage(TrayRef(Arc::clone(&tray)));
+    follow_keyboard(handle, &tray);
     let surface: Arc<dyn NativeSurface> = tray;
     match app.try_state::<Surfaces>() {
         Some(surfaces) => surfaces

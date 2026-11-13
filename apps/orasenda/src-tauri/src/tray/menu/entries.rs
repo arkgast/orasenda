@@ -35,6 +35,15 @@ fn preset_label(preset: &PresetEntry) -> String {
     )
 }
 
+/// "Start focus · 25 min", then the user's keys as inert text when the shortcut is registered.
+fn start_label(next: &NextSession) -> String {
+    let label = format!("Start focus · {} min", next.focus_min());
+    match &next.keys {
+        Some(keys) => format!("{label}  {keys}"),
+        None => label,
+    }
+}
+
 /// Full screen (one item per display when several, the main window's first) and
 /// Show or Hide floating timer. No accelerators: the Focus menu owns them. Empty without displays.
 fn focus_entries(focus: &FocusItems) -> Vec<MenuEntry> {
@@ -98,7 +107,7 @@ pub(crate) fn menu_items(
                 ]);
             }
             idle.extend([
-                item(START, &format!("Start focus · {} min", next.focus_min())),
+                item(START, &start_label(next)),
                 item(JUST_TWO, "Just 2 minutes"),
                 MenuEntry::Submenu {
                     label: "Preset",
