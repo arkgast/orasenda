@@ -377,8 +377,11 @@ mod mac {
                 return;
             };
             // A panel gets its own class back first: tearing it down as a panel aborts the
-            // app (#503, #504). A refused release is logged (`window_error`) and the close
-            // goes ahead.
+            // app (#503, #504). The release is refused only when an observer was added after
+            // the swap (never seen on today's paths); then no class lets every observer go,
+            // and the close can still abort. `window_error` logs the refusal first, so a crash
+            // report has its cause. The other failure (the window or the main thread is gone)
+            // leaves nothing to release, so the result is not needed here.
             // SAFETY: as above.
             let _released =
                 self.with_window(label, |pointer| unsafe { appkit::release_panel(pointer) });
