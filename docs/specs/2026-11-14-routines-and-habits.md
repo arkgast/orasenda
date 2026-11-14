@@ -184,11 +184,19 @@ Every ruling here was made by the controller under the owner's autonomy grant (2
 10. **Keys in the run view: Enter = Done, S = Skip for today, Esc = End routine.** S honours the single-key setting; Enter and Esc are standard button and dialog keys. No new global or menu shortcut, because the Board session owns the menu keys.
 11. **Run view in place on the Routines page, not a window or full screen.** It is one route, and the person sees the rail. Full screen for routines can come later.
 12. **New components: `RoutineCard`, `RoutineStep` and `DayPicker`; `HabitDots` gains `runLine` and `columns="week"`.** Everything else reuses existing components (`RoutineItem`, `WellnessNote`, `Dialog`, `Input`, `PopoverMenu`, `EmptyState`).
-13. **Canvas pick** (filled by R0b): see [Design canvas](#design-canvas).
+13. **Canvas picks: page A (cards), run view A (one step), dot grid A (weeks).** See [Design canvas](#design-canvas).
 14. **ROADMAP:** P4 Routines runs now, alongside P2, and P3 comes later (owner, 2026-11-14).
 
 ## Design canvas
-Filled after the canvas is published: the link, the 2–3 options for the overview, the run view and the dot grid, the pick and why.
+Canvas: https://claude.ai/artifact/3d9UTChLuhpUrBufwGzVPv (private to the owner; every option in light and dark side by side).
+
+| Surface | Options | Pick (controller, 2026-11-14) | Why |
+|---|---|---|---|
+| Routines page | A Cards · B Timeline and detail · C Compact rows | **A Cards** | One primary Start (the next routine due). Every routine and its steps are readable at a glance, built from `RoutineCard` and read-only `RoutineItem`s. B hides routines behind a selection, and C hides the steps and draws a routine-level strip that isn't a habit's record. |
+| Run view | A One step · B Checklist | **A One step** | One thing on screen lowers the cost of starting for the ADHD audience. Enter, S and Esc map to one button each, and the progress list stays below in shape and word. B invites jumping around and has no clear next action. |
+| Dot grid | A Weeks of 28 days · B 14-day strip · C 28 days, one wrapped line | **A Weeks** | Four Monday-aligned rows with a weekday header, so rest days line up and a rhythm shows without a number. B is too short to show the two-in-a-row rule kindly, and C (today's `HabitDots`) puts a Monday in a different column on every width. |
+
+The owner can overrule any pick on review; components follow the pick (`HabitDots columns="week"` adds the weekday header row, aria-hidden).
 
 ## Open questions
 None blocking. The owner may overrule any decision above after reviewing the canvas.
