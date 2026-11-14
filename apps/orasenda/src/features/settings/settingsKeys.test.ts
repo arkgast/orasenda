@@ -41,3 +41,10 @@ test("cadence_field_failure_lines", () => {
     expect(withKeys(SETTINGS, sent, [key])).toEqual(sent);
   }
 });
+
+test("board_buffer_failure_line", () => {
+  const sent = { ...SETTINGS, boardEstimateBuffer: 40 };
+  expect(changedKeys(sent, SETTINGS)).toEqual(["boardBuffer"]);
+  expect(backTo("boardBuffer", SETTINGS, [])).toBe(`${SETTINGS.boardEstimateBuffer}%`);
+  expect(withKeys(SETTINGS, sent, ["boardBuffer"]).boardEstimateBuffer).toBe(40);
+});

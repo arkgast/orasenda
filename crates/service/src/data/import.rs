@@ -69,6 +69,7 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
         } else {
             None
         };
+        let board = guard.board_changed(now_ms);
         let report = ImportReport {
             added: DataCounts::from(merged.added),
             updated: DataCounts::from(merged.updated),
@@ -78,6 +79,7 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
             presets: guard.presets(),
             notes,
             routines,
+            board,
             view: guard.snapshot(now_ms),
         };
         (report, published)
@@ -91,6 +93,7 @@ struct Published {
     presets: Vec<crate::api::PresetEntry>,
     notes: Option<Vec<crate::api::NoteView>>,
     routines: Option<crate::api::RoutinesView>,
+    board: Option<crate::board::Changed>,
     view: (u64, crate::api::TimerView),
 }
 
@@ -104,6 +107,9 @@ fn publish<H: Host>(host: &H, published: &Published) {
         }
         if let Some(routines) = &published.routines {
             host.emit_routines_changed(routines);
+        }
+        if let Some((seq, board)) = &published.board {
+            host.emit_board_changed(*seq, board);
         }
         scheduler::publish_view(host, published.view.0, &published.view.1);
         scheduler::publish_clock(host);

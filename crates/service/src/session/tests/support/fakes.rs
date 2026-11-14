@@ -11,7 +11,7 @@ use orasenda_core::{
 };
 use orasenda_store::Store;
 
-use crate::api::{ClockTick, DataOverview};
+use crate::api::{BoardView, ClockTick, DataOverview};
 use crate::api::{
     KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView, Settings, StartRequest,
     Theme, TimerView,
@@ -49,6 +49,7 @@ pub enum Event {
     BackupsChanged(DataOverview),
     Restarted,
     RoutinesChanged(RoutinesView),
+    BoardChanged(u64, BoardView),
 }
 
 #[derive(Clone, Default)]
@@ -442,5 +443,10 @@ impl Host for TestHost {
     fn emit_routines_changed(&self, view: &RoutinesView) {
         self.note_unlocked();
         self.0.log.push(Event::RoutinesChanged(view.clone()));
+    }
+
+    fn emit_board_changed(&self, seq: u64, board: &BoardView) {
+        self.note_unlocked();
+        self.0.log.push(Event::BoardChanged(seq, board.clone()));
     }
 }

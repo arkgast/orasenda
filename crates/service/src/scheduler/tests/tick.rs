@@ -42,6 +42,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::BackupsChanged(_) => "backups",
             Event::Restarted => "restarted",
             Event::RoutinesChanged(_) => "routines",
+            Event::BoardChanged(..) => "board",
         })
         .collect();
     assert_eq!(

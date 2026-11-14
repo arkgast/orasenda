@@ -58,6 +58,7 @@ fn settings_json() -> serde_json::Value {
         "notifySessionEnd": true,
         "notifyTwoMinutes": false,
         "notifyRoutineDue": false,
+        "boardEstimateBuffer": 25,
         "singleKey": true
     })
 }

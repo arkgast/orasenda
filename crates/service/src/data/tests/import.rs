@@ -322,6 +322,34 @@ fn import_emits_changes_and_applies_theme() {
 }
 
 #[test]
+fn import_emits_the_board_once_after_the_lock() {
+    let dir = TempDir::new();
+    let host = host_in(dir.path());
+    let (_keep, path) = source(|s| {
+        s.write(9_999_999_999_999, |txn| {
+            settings::set(txn, "board.estimate_buffer", &40u8)
+        })
+        .unwrap();
+    });
+    host.log().take();
+    run_import(&host, dir.path(), &path).expect("imports");
+    let events = host.log().take();
+    let boards: Vec<_> = events
+        .iter()
+        .filter_map(|e| match e {
+            Event::BoardChanged(_, view) => Some(view),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(boards.len(), 1);
+    assert_eq!(boards[0].buffer, 40);
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+}
+
+#[test]
 fn import_without_notes_does_not_emit_inbox() {
     let dir = TempDir::new();
     let host = host_in(dir.path());

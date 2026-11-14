@@ -132,6 +132,11 @@ pub struct SessionService {
     /// The local date of the last scheduler tick, so `routines-changed` goes out once at
     /// local midnight. Memory only.
     pub(crate) routines_day: Option<orasenda_core::LocalDate>,
+    /// The local date of the last scheduler tick, so `board-changed` goes out once at local
+    /// midnight. Memory only.
+    pub(crate) board_day: Option<orasenda_core::LocalDate>,
+    /// The sequence number of the last `board-changed` view; the newest wins. Memory only.
+    pub(crate) board_seq: Cell<u64>,
     /// The due nudge's last minute and the routines it nudged today. Memory only.
     pub(crate) nudge: crate::routines::NudgeState,
 }
@@ -180,6 +185,8 @@ impl SessionService {
             hint: hint::HintState::default(),
             tips: tips::TipState::default(),
             routines_day: None,
+            board_day: None,
+            board_seq: Cell::new(0),
             nudge: crate::routines::NudgeState::default(),
         };
         service.load_stored(now_ms);

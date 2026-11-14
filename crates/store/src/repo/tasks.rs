@@ -9,7 +9,7 @@
 
 mod update;
 
-pub use update::{TaskPatch, move_to, set_frog, update};
+pub use update::{TaskPatch, clear_frog, move_to, set_frog, update};
 
 use crate::{Entity, StoreError, Txn, sql_int};
 use serde::{Deserialize, Serialize};

@@ -39,6 +39,7 @@ export const SETTINGS_KEYS = [
   "notifySessionEnd",
   "notifyTwoMinutes",
   "notifyRoutineDue",
+  "boardEstimateBuffer",
   "singleKey",
 ] as const satisfies readonly (keyof Settings)[];
 

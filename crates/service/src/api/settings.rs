@@ -38,6 +38,8 @@ pub struct Settings {
     pub notify_two_minutes: bool,
     /// Notify once when a routine's time comes (`notify.routine_due`). Off by default.
     pub notify_routine_due: bool,
+    /// The planning buffer on estimates, whole percent in 25, 30 ... 50 (`board.estimate_buffer`).
+    pub board_estimate_buffer: u8,
     /// Space and P on Today and Space in full screen act (`keys.single_key`).
     pub single_key: bool,
 }
@@ -55,6 +57,7 @@ impl Default for Settings {
             notify_session_end: false,
             notify_two_minutes: false,
             notify_routine_due: false,
+            board_estimate_buffer: 25,
             single_key: true,
         }
     }

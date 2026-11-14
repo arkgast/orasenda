@@ -29,6 +29,7 @@ pub(super) const KEY_DEEP_CAP_HOURS: &str = "timer.deep_cap_hours";
 pub(super) const KEY_NOTIFY: &str = "notify.session_end";
 pub(super) const KEY_NOTIFY_TWO: &str = "notify.two_minutes";
 pub(super) const KEY_NOTIFY_ROUTINE: &str = "notify.routine_due";
+pub(crate) const KEY_BUFFER: &str = "board.estimate_buffer";
 pub(super) const KEY_THEME: &str = "ui.theme";
 pub(super) const KEY_SINGLE_KEY: &str = "keys.single_key";
 pub(super) const META_NOTIFY_REVIEW: &str = "notify_review";
@@ -216,6 +217,7 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         notify_session_end: read_setting(txn, KEY_NOTIFY, notify_default)?,
         notify_two_minutes: read_setting(txn, KEY_NOTIFY_TWO, defaults.notify_two_minutes)?,
         notify_routine_due: read_setting(txn, KEY_NOTIFY_ROUTINE, defaults.notify_routine_due)?,
+        board_estimate_buffer: read_buffer(txn, defaults.board_estimate_buffer)?,
         single_key: read_setting(txn, KEY_SINGLE_KEY, defaults.single_key)?,
     };
     Ok((settings, pending))
@@ -272,6 +274,9 @@ fn write_changed(
     if new.notify_routine_due != presented.notify_routine_due {
         settings::set(txn, KEY_NOTIFY_ROUTINE, &new.notify_routine_due)?;
     }
+    if new.board_estimate_buffer != presented.board_estimate_buffer {
+        settings::set(txn, KEY_BUFFER, &new.board_estimate_buffer)?;
+    }
     if new.single_key != presented.single_key {
         settings::set(txn, KEY_SINGLE_KEY, &new.single_key)?;
     }
@@ -308,6 +313,9 @@ fn merge_changed(
     }
     if new.notify_routine_due != presented.notify_routine_due {
         cache.notify_routine_due = new.notify_routine_due;
+    }
+    if new.board_estimate_buffer != presented.board_estimate_buffer {
+        cache.board_estimate_buffer = new.board_estimate_buffer;
     }
     if new.single_key != presented.single_key {
         cache.single_key = new.single_key;
@@ -355,7 +363,23 @@ impl SessionService {
         if !(2..=8).contains(&settings.deep_cap_hours) {
             return Some("the deep-hours note can be set from 2 to 8 hours");
         }
+        if !BUFFERS.contains(&settings.board_estimate_buffer) {
+            return Some("the estimate buffer can be 25, 30, 35, 40, 45 or 50 percent");
+        }
         None
+    }
+}
+
+/// The buffers the Board offers, in whole percent.
+pub(crate) const BUFFERS: [u8; 6] = [25, 30, 35, 40, 45, 50];
+
+fn read_buffer(txn: &Txn, default: u8) -> Result<u8, StoreError> {
+    let value = read_setting(txn, KEY_BUFFER, default)?;
+    if BUFFERS.contains(&value) {
+        Ok(value)
+    } else {
+        eprintln!("settings: {KEY_BUFFER} is out of range; using the default");
+        Ok(default)
     }
 }
 

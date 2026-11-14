@@ -208,6 +208,16 @@ fn main_capability_exact() {
             "allow-run-start",
             "allow-run-step",
             "allow-run-end",
+            "allow-board-get",
+            "allow-task-add",
+            "allow-task-update",
+            "allow-task-move",
+            "allow-task-set-frog",
+            "allow-task-remove",
+            "allow-task-restore",
+            "allow-inbox-to-task",
+            "allow-task-restore-note",
+            "allow-board-columns-set",
         ],
     );
     let (_, main) = capability("main.json");

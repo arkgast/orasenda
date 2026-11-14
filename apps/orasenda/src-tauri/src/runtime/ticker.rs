@@ -9,8 +9,8 @@ use std::time::SystemTime;
 use orasenda_core::Notifier;
 use orasenda_core::clock::delay_to_next_second;
 use orasenda_service::api::{
-    DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView, Settings,
-    Theme, TimerView,
+    BoardView, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView,
+    Settings, Theme, TimerView,
 };
 use orasenda_service::session::{SessionService, Surfaces, ViewGate};
 use tauri::{AppHandle, Manager};
@@ -119,6 +119,17 @@ impl Host for AppHost {
         use tauri_specta::Event;
         if let Err(error) = crate::ipc::RoutinesChangedEvent(view.clone()).emit(&self.0) {
             eprintln!("routines: could not emit routines-changed: {error}");
+        }
+    }
+
+    fn emit_board_changed(&self, seq: u64, board: &BoardView) {
+        use tauri_specta::Event;
+        let event = crate::ipc::BoardChanged {
+            seq,
+            board: board.clone(),
+        };
+        if let Err(error) = event.emit(&self.0) {
+            eprintln!("board: could not emit board-changed: {error}");
         }
     }
 }

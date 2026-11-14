@@ -91,26 +91,32 @@ pub fn run_set_settings<H: Host>(host: &H, settings: Settings) -> Result<(), Set
         });
     };
     let now_ms = host.now_ms();
-    let (result, changed) = {
+    let (result, changed, board) = {
         let mut service = lock(service);
         let before = service.store_status;
+        let buffer = service.settings().board_estimate_buffer;
         let result = service.set_settings(settings, now_ms);
         let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
-        (result, changed)
+        // The buffer moves every planned value on the board.
+        let board = (result.is_ok() && service.settings().board_estimate_buffer != buffer)
+            .then(|| service.board_changed(now_ms))
+            .flatten();
+        (result, changed, board)
     };
-    publish_settings_saved(host, &result, changed);
+    publish_settings_saved(host, &result, changed, board);
     result?;
     Ok(())
 }
 
 /// What a settings save does after unlock, in this order: apply the theme when it changed, a
-/// `timer-tick` when the store status changed, a `clock-tick`, then `settings-changed`. Only
+/// `timer-tick` when the store status changed, a `clock-tick`, then `settings-changed`, then `board-changed` when the estimate buffer changed. Only
 /// the `timer-tick` part follows a failed save. The save is committed, so a panic here is
 /// logged and never turned into a failure.
 fn publish_settings_saved<H: Host, E>(
     host: &H,
     result: &Result<SettingsSaved, E>,
     changed: Option<(u64, TimerView)>,
+    board: Option<crate::board::Changed>,
 ) {
     let published = panic::catch_unwind(AssertUnwindSafe(|| {
         if let Ok(saved) = result
@@ -124,6 +130,9 @@ fn publish_settings_saved<H: Host, E>(
         if let Ok(saved) = result {
             scheduler::publish_clock(host);
             host.emit_settings_changed(&saved.presented);
+            if let Some((seq, view)) = &board {
+                host.emit_board_changed(*seq, view);
+            }
         }
     }));
     if published.is_err() {
@@ -192,7 +201,7 @@ pub fn run_select_preset<H: Host>(host: &H, id: PresetId) -> Result<(), TimerCom
         let changed = (service.store_status != before).then(|| service.snapshot(now_ms));
         (result, changed)
     };
-    publish_settings_saved(host, &result, changed);
+    publish_settings_saved(host, &result, changed, None);
     result.map(|_| ()).map_err(|error| TimerCommandError {
         kind: match error.kind {
             SettingsErrorKind::InvalidSpec => TimerCommandErrorKind::InvalidSpec,

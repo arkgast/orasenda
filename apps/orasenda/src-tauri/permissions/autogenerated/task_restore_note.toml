@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-task-restore-note"
+description = "Enables the task_restore_note command without any pre-configured scope."
+commands.allow = ["task_restore_note"]
+
+[[permission]]
+identifier = "deny-task-restore-note"
+description = "Denies the task_restore_note command without any pre-configured scope."
+commands.deny = ["task_restore_note"]

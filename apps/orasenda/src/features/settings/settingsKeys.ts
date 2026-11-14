@@ -21,6 +21,7 @@ export type Key =
   | "notify"
   | "notifyTwo"
   | "notifyRoutine"
+  | "boardBuffer"
   | "singleKey";
 
 export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
@@ -31,6 +32,7 @@ export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[]
   if (sent.notifySessionEnd !== restored.notifySessionEnd) keys.push("notify");
   if (sent.notifyTwoMinutes !== restored.notifyTwoMinutes) keys.push("notifyTwo");
   if (sent.notifyRoutineDue !== restored.notifyRoutineDue) keys.push("notifyRoutine");
+  if (sent.boardEstimateBuffer !== restored.boardEstimateBuffer) keys.push("boardBuffer");
   if (sent.singleKey !== restored.singleKey) keys.push("singleKey");
   return keys;
 }
@@ -46,6 +48,7 @@ export function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]):
     if (key === "theme") next.theme = from.theme;
     else if (key === "preset") next.presetId = from.presetId;
     else if (isCadence(key)) Object.assign(next, { [key]: from[key] });
+    else if (key === "boardBuffer") next.boardEstimateBuffer = from.boardEstimateBuffer;
     else if (key === "singleKey") next.singleKey = from.singleKey;
     else if (key === "notifyTwo") next.notifyTwoMinutes = from.notifyTwoMinutes;
     else if (key === "notifyRoutine") next.notifyRoutineDue = from.notifyRoutineDue;
@@ -69,6 +72,7 @@ export const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: s
   notify: { subject: "Notifications", verb: "weren't", again: "notifications" },
   singleKey: { subject: "Single-key shortcuts", verb: "weren't", again: "single-key shortcuts" },
   notifyTwo: { subject: "The two-minute note", verb: "wasn't", again: "the two-minute note" },
+  boardBuffer: { subject: "The estimate buffer", verb: "wasn't", again: "the estimate buffer" },
   notifyRoutine: { subject: "The routine note", verb: "wasn't", again: "the routine note" },
 };
 
@@ -83,6 +87,7 @@ export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]
   if (key === "deepCapOn") return restored.deepCapOn ? "on" : "off";
   if (key === "longestFocusMin") return `${restored.longestFocusMin} minutes`;
   if (key === "deepCapHours") return `${restored.deepCapHours} hours`;
+  if (key === "boardBuffer") return `${restored.boardEstimateBuffer}%`;
   if (key === "singleKey") return restored.singleKey ? "on" : "off";
   if (key === "notifyRoutine") return restored.notifyRoutineDue ? "on" : "off";
   return (key === "notifyTwo" ? restored.notifyTwoMinutes : restored.notifySessionEnd)

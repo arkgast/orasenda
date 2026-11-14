@@ -99,6 +99,7 @@ export const SETTINGS: Settings = {
   notifySessionEnd: true,
   notifyTwoMinutes: false,
   notifyRoutineDue: false,
+  boardEstimateBuffer: 25,
   singleKey: true,
 };
 
