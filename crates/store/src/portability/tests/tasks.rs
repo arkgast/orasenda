@@ -107,6 +107,16 @@ fn merge_keeps_session_task_id() {
         },
     );
     assert_eq!(store.read(rows).expect("reads").sessions[0].task_id, None);
+    let nulls = store
+        .read(|txn| {
+            Ok(count(
+                txn.conn(),
+                "SELECT count(*) FROM change_log WHERE entity = 'focus_session'
+                   AND field = 'task_id' AND value = 'null'",
+            ))
+        })
+        .expect("reads");
+    assert_eq!(nulls, 1);
 }
 
 #[test]
@@ -165,6 +175,40 @@ fn merged_tasks_log_change_rows() {
         })
         .expect("reads");
     assert_eq!(logged, 1);
+    let logged_as = |sql: &str| store.read(|txn| Ok(count(txn.conn(), sql))).expect("reads");
+    assert_eq!(
+        logged_as(
+            "SELECT count(*) FROM change_log WHERE entity = 'task' AND field = 'tags'
+               AND value = '[\"work\"]'"
+        ),
+        1
+    );
+    assert_eq!(
+        logged_as(
+            "SELECT count(*) FROM change_log WHERE entity = 'task'
+               AND field = 'breakdown_dismissed' AND value = 'true'"
+        ),
+        1
+    );
+}
+
+#[test]
+fn newer_task_clears_are_logged_as_null() {
+    let store = Store::open_in_memory("device-a").expect("opens");
+    merged(&store, &only(vec![task("t1", "Write", 100, None)]));
+    let mut newer = task("t1", "Write", 200, None);
+    newer.due = None;
+    merged(&store, &only(vec![newer]));
+    let nulls = store
+        .read(|txn| {
+            Ok(count(
+                txn.conn(),
+                "SELECT count(*) FROM change_log WHERE entity = 'task' AND entity_id = 't1'
+                   AND field = 'due' AND value = 'null'",
+            ))
+        })
+        .expect("reads");
+    assert_eq!(nulls, 1);
 }
 
 #[test]
@@ -201,6 +245,19 @@ fn bad_rank_goes_to_the_end_of_its_lane() {
     assert!(rank("t3").bytes().all(|b| b.is_ascii_alphanumeric()));
     assert_ne!(rank("t3"), rank("t4"));
     assert!(rank("t4") > rank("t3"));
+    let logged = store
+        .read(|txn| {
+            Ok(count(
+                txn.conn(),
+                &format!(
+                    "SELECT count(*) FROM change_log WHERE entity = 'task' AND entity_id = 't3'
+                       AND field = 'rank' AND value = '\"{}\"'",
+                    rank("t3")
+                ),
+            ))
+        })
+        .expect("reads");
+    assert_eq!(logged, 1);
 }
 
 #[test]

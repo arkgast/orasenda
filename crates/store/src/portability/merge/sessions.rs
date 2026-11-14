@@ -63,7 +63,11 @@ pub(super) fn merge_row(txn: &mut Txn, row: &SessionRowAll) -> Result<Outcome, S
         ("break_kind", opt(row.break_kind.clone())),
         ("task_id", opt(row.task_id.clone())),
     ];
-    fields.extend(optional.into_iter().filter(|(_, v)| !v.is_null()));
+    fields.extend(
+        optional
+            .into_iter()
+            .filter(|(_, v)| local.is_some() || !v.is_null()),
+    );
     if row.deleted_at.is_some() || local.is_some() {
         fields.push(("deleted_at", opt(row.deleted_at)));
     }

@@ -158,8 +158,8 @@ fn merge_later_updated_at_wins() {
     let p1 = after.presets.iter().find(|p| p.id == "p1").expect("p1");
     assert_eq!(p1, &file.presets[0]);
     let added = kinds.map(|k| by_entity(&store, k));
-    // setting: value; preset: 7 fields plus deleted_at; session: 15 fields plus deleted_at.
-    assert_eq!([0, 1, 2].map(|i| added[i] - logged_before[i]), [1, 8, 16]);
+    // setting: value; preset: 7 fields plus deleted_at; session: 16 fields (task_id null included) plus deleted_at.
+    assert_eq!([0, 1, 2].map(|i| added[i] - logged_before[i]), [1, 8, 17]);
 }
 
 #[test]

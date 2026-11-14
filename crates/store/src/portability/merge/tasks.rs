@@ -45,15 +45,18 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
     let mut fields = vec![
         ("title", Value::from(row.title.clone())),
         ("notes", Value::from(row.notes.clone())),
-        ("tags", Value::from(row.tags.clone())),
+        ("tags", json_text(&row.tags)?),
         ("kind", Value::from(row.kind.clone())),
-        ("checklist", Value::from(row.checklist.clone())),
+        ("checklist", json_text(&row.checklist)?),
         ("lane", Value::from(row.lane.clone())),
         ("rank", Value::from(rank)),
-        ("breakdown_dismissed", Value::from(row.breakdown_dismissed)),
+        (
+            "breakdown_dismissed",
+            Value::from(row.breakdown_dismissed != 0),
+        ),
         ("created_at", Value::from(row.created_at)),
     ];
-    // The columns a task may lack are logged when it has them, as an insert does.
+    // An insert logs the columns a task has; a replacement also logs the ones it cleared.
     let optional = [
         ("estimate", opt(row.estimate)),
         ("due", opt(row.due.clone())),
@@ -62,7 +65,11 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
         ("source_note_id", opt(row.source_note_id.clone())),
         ("done_at", opt(row.done_at)),
     ];
-    fields.extend(optional.into_iter().filter(|(_, v)| !v.is_null()));
+    fields.extend(
+        optional
+            .into_iter()
+            .filter(|(_, v)| local.is_some() || !v.is_null()),
+    );
     if row.deleted_at.is_some() || local.is_some() {
         fields.push(("deleted_at", opt(row.deleted_at)));
     }
@@ -72,6 +79,11 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
     } else {
         Outcome::Added
     })
+}
+
+/// A stored JSON column, logged as the JSON value the repository logs.
+fn json_text(text: &str) -> Result<Value, StoreError> {
+    serde_json::from_str(text).map_err(|e| StoreError::Json(e.to_string()))
 }
 
 fn valid_rank(rank: &str) -> bool {
