@@ -240,6 +240,31 @@ fn removing_the_last_open_steps_ends_the_run() {
     assert_eq!(changed(&host).pop().unwrap().run, None);
 }
 
+/// A habit removed outside the service (sync or import) leaves the run unsettled; the next answer
+/// settles it, and when that ends the run the answer is the finished run, not `NotFound`.
+#[test]
+fn a_step_that_finds_the_run_settled_answers_the_finished_run() {
+    let host = host();
+    let (r, ids) = morning(&host);
+    let run = run_run_start(&host, &r).unwrap();
+    run_run_step(&host, &run.id, StepOutcome::Done).unwrap();
+    db(&lock(&host.0.service))
+        .write(T0, |txn| {
+            orasenda_store::routines::habits::remove(txn, &ids[1])?;
+            orasenda_store::routines::habits::remove(txn, &ids[2]).map(|_| ())
+        })
+        .unwrap();
+    host.log().take();
+    let answer = run_run_step(&host, &run.id, StepOutcome::Done).unwrap();
+    assert_eq!(answer.line, "Routine finished. 1 of 3 done today.");
+    assert_eq!(stored(&host, &run.id).outcome, Some(RunOutcome::Finished));
+    assert_eq!(
+        changed(&host).pop().unwrap().run,
+        None,
+        "routines-changed goes out"
+    );
+}
+
 #[test]
 fn removing_the_routine_stops_its_run() {
     let host = host();

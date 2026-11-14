@@ -58,16 +58,18 @@ export function notificationsRow(
 
 /**
  * The "When a routine is due" row's line: the session row's line for the same status and
- * preference, except that "on and allowed" names routines. Its actions stay on the session row,
- * so the page has one "Ask macOS" and one "Open System Settings".
+ * preference, except that "on and allowed" names routines and "on but off in macOS" stays short.
+ * Its actions stay on the session row, so the page has one "Ask macOS" and one "Open System
+ * Settings", and the long "Allow them in System Settings" line is said once, there.
  */
 export function routineDueLine(
   status: NotificationStatus,
   preference: boolean,
   asking: boolean,
 ): string | null {
-  if (status === "granted" && preference && !asking) {
-    return "On. A notification appears once when a routine's time comes.";
+  if (preference && !asking) {
+    if (status === "granted") return "On. A notification appears once when a routine's time comes.";
+    if (status === "denied") return "On here, but macOS has notifications off for Orasenda.";
   }
   return notificationsRow(status, preference, asking).line;
 }
@@ -173,7 +175,7 @@ export function Notifications({
       <SettingsRow
         id="notifications-routines"
         label="Routines"
-        helper="One notification at a routine's time, once a day. Never after it's done."
+        helper="One notification when a routine's time comes, unless you've already started or finished it."
         status={routineLine ?? undefined}
         disabledReason={disabledReason}
       >

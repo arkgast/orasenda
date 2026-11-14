@@ -83,7 +83,9 @@ pub fn step(
     // Steps removed since the last answer are passed first, so the answer lands on a live one.
     let run = settle(txn, run)?;
     if !run.is_open() {
-        return Ok(Err(RoutinesError::NotFound));
+        // Settling ended it (its last steps were removed outside the service): the answer is
+        // the finished run, so routines-changed goes out.
+        return answered(txn, run_id);
     }
     let habit_id = run.step_ids[run.answers.len()].clone();
     let answer = match outcome {

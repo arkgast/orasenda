@@ -82,7 +82,7 @@ export function PaneBody({ pane, headingRef, model, info }: Props) {
             if (checked) tick(m.status, "notifyRoutineDue");
             else untick("notifyRoutineDue");
           }}
-          onAsk={askMacOS}
+          onAsk={() => askMacOS(m.askKey)}
           onOpen={m.openSystemSettings}
         />
       );

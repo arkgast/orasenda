@@ -4,9 +4,9 @@
 //! The scheduler calls [`nudge_due`] every tick; it works once per new local minute. It posts
 //! only while `notify.routine_due` is on and the notification status, read just before
 //! posting, is `granted`; at most once per routine per local date, inside the 30-minute grace
-//! window, never for a routine finished today or one with *Any time* (core `due_now`). The
-//! routines already nudged are kept in memory only, so a relaunch inside the window can nudge
-//! once more (accepted in the spec).
+//! window, never for a routine finished or under way today or one with *Any time* (core
+//! `due_now`). The routines already nudged are kept in memory only, so a relaunch inside the
+//! window can nudge once more (accepted in the spec).
 
 use std::collections::BTreeSet;
 
@@ -101,7 +101,12 @@ impl SessionService {
                     days,
                     today.weekday(),
                     local_minute,
-                    routine.today == RoutineToday::Finished,
+                    // A routine already under way counts as done for the nudge: the person
+                    // is doing it.
+                    matches!(
+                        routine.today,
+                        RoutineToday::Finished | RoutineToday::InProgress
+                    ),
                     self.nudge.nudged.contains(&(routine.id.clone(), today)),
                 )
             })

@@ -126,7 +126,10 @@ export function untick(key: NotifyKey = "notifySessionEnd"): Promise<boolean> {
   return setPreference(key, false);
 }
 
-/** The quiet "Ask macOS" action: the preference is on, macOS hasn't been asked. */
-export function askMacOS(): void {
-  void ask("notifySessionEnd", false);
+/**
+ * The quiet "Ask macOS" action: a preference is on, macOS hasn't been asked. `key` is the box
+ * that is on, so only it reads as waiting on the prompt.
+ */
+export function askMacOS(key: NotifyKey = "notifySessionEnd"): void {
+  void ask(key, false);
 }

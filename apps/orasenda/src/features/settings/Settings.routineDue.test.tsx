@@ -41,7 +41,9 @@ test("routine_due_row_is_off_by_default_in_its_own_row", async () => {
   const box = within(row).getByRole("checkbox", { name: NAME });
   expect(box).not.toBeChecked();
   expect(box).toHaveAttribute("aria-describedby", "notifications-routines-help");
-  expect(row).toHaveTextContent("One notification at a routine's time, once a day.");
+  expect(row).toHaveTextContent(
+    "One notification when a routine's time comes, unless you've already started",
+  );
 });
 
 const LINES: Array<[NotificationStatus, boolean, string | null]> = [
@@ -50,11 +52,7 @@ const LINES: Array<[NotificationStatus, boolean, string | null]> = [
   ["granted", true, "On. A notification appears once when a routine's time comes."],
   ["granted", false, null],
   ["denied", false, "macOS has notifications off for Orasenda."],
-  [
-    "denied",
-    true,
-    "On here, but macOS has notifications off for Orasenda. Allow them in System Settings and Orasenda will use them.",
-  ],
+  ["denied", true, "On here, but macOS has notifications off for Orasenda."],
   ["unavailable", true, "Notifications aren't available in this build."],
 ];
 
@@ -149,4 +147,68 @@ test("routine_due_on_but_not_asked_offers_ask_macos_on_the_session_row", async (
   fireEvent.click(screen.getByRole("button", { name: "Ask macOS" }));
   await settle();
   expect(argsOf(backend.calls, "notifications_request")).toHaveLength(1);
+});
+
+test("routine_due_on_alone_never_says_the_session_row_is_on", async () => {
+  await openIn({
+    timer_state: view({ notifications: "granted" }),
+    settings_get: () => ({
+      ...SETTINGS,
+      notifySessionEnd: false,
+      notifyTwoMinutes: false,
+      notifyRoutineDue: true,
+    }),
+  });
+  expect(screen.getByRole("checkbox", { name: "Tell me when a session ends" })).not.toBeChecked();
+  expect(document.getElementById("notifications-status")).toBeNull();
+  expect(screen.getByRole("checkbox", { name: "Tell me when a session ends" })).toHaveAttribute(
+    "aria-describedby",
+    "notifications-help",
+  );
+  expect(document.getElementById("notifications-routines-status")).toHaveTextContent(
+    "On. A notification appears once when a routine's time comes.",
+  );
+});
+
+test("routine_due_on_alone_while_denied_keeps_open_system_settings_on_the_session_row", async () => {
+  await openIn({
+    timer_state: view({ notifications: "denied" }),
+    settings_get: () => ({
+      ...SETTINGS,
+      notifySessionEnd: false,
+      notifyTwoMinutes: false,
+      notifyRoutineDue: true,
+    }),
+  });
+  expect(document.getElementById("notifications-status")).toHaveTextContent(
+    "macOS has notifications off for Orasenda.",
+  );
+  expect(document.getElementById("notifications-status")).not.toHaveTextContent("On here");
+  expect(screen.getAllByRole("button", { name: /Open System Settings/ })).toHaveLength(1);
+});
+
+test("ask_macos_for_routines_alone_marks_only_the_routine_box_busy", async () => {
+  let answer: (status: NotificationStatus) => void = () => {};
+  await openIn({
+    timer_state: view({ notifications: "notDetermined" }),
+    settings_get: () => ({ ...SETTINGS, notifySessionEnd: false, notifyRoutineDue: true }),
+    notifications_request: () =>
+      new Promise<NotificationStatus>((resolve) => {
+        answer = resolve;
+      }),
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Ask macOS" }));
+  await settle();
+  expect(screen.getByRole("checkbox", { name: NAME })).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByRole("checkbox", { name: "Tell me when a session ends" })).not.toHaveAttribute(
+    "aria-busy",
+  );
+  expect(document.getElementById("notifications-routines-status")).toHaveTextContent(
+    "Waiting for your answer in the macOS prompt.",
+  );
+  expect(document.getElementById("notifications-status")).not.toHaveTextContent(
+    "Waiting for your answer",
+  );
+  answer("granted");
+  await settle();
 });

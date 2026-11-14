@@ -127,6 +127,18 @@ fn a_finished_routine_is_never_nudged() {
 }
 
 #[test]
+fn a_routine_with_an_open_run_is_not_nudged() {
+    let (host, r) = nudge_host(true, NotificationStatus::Granted);
+    run_habit_create(&host, Some(&r), &habit("Stretch")).unwrap();
+    host.set_now(SEVEN - HOUR);
+    let run = run_run_start(&host, &r).unwrap();
+    run_run_step(&host, &run.id, StepOutcome::Done).unwrap();
+    host.log().take();
+    tick_at(&host, SEVEN);
+    assert!(posts(&host).is_empty(), "the person is already doing it");
+}
+
+#[test]
 fn any_time_and_off_days_are_never_nudged() {
     let host = TestHost::fresh(NotificationStatus::Granted);
     let mut any = routine("Whenever");
