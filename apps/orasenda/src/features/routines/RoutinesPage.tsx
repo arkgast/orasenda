@@ -8,7 +8,7 @@ import {
   ScrollRegion,
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 import { ActionMenu, type MoreAction, moreId } from "./ActionMenu";
 import { type Editing, Editor, findHabit } from "./Editors";
 import { byId, useFocusAfter } from "./focusAfter";
@@ -84,8 +84,25 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
     removal.remove({ kind, id, name: item.name, routine: inRoutine });
   };
 
+  // Opening the templates is the next action too.
+  const openTemplates = () => {
+    setLine(null);
+    setTemplates(true);
+  };
+
+  // A new item's More takes focus once its editor has closed. The dialog hands focus back to
+  // its opener (Add) on a zero-delay timer as it unmounts, so this waits for that and then moves.
+  const created = useRef<string | null>(null);
+  useEffect(() => {
+    const id = created.current;
+    if (editing || !id) return;
+    created.current = null;
+    const timer = setTimeout(() => document.getElementById(moreId(id))?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, [editing]);
+
   const onAdd = (id: string) => {
-    if (id === "template") return setTemplates(true);
+    if (id === "template") return openTemplates();
     if (id === "habit") return edit({ kind: "habit", habit: null, routineId: null, asStep: false });
     edit({ kind: "routine", routine: null });
   };
@@ -118,7 +135,7 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   );
 
   const primary = empty ? (
-    <Button variant="primary" onClick={() => setTemplates(true)}>
+    <Button variant="primary" onClick={openTemplates}>
       Start from a template
     </Button>
   ) : view ? (
@@ -188,7 +205,11 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
           view={view}
           write={write}
           onClose={() => setEditing(null)}
-          onSaved={(id) => focus(byId(moreId(id)))}
+          onSaved={(id) => {
+            // An edited item's More opened the editor and gets focus back from the dialog.
+            const isNew = editing.kind === "routine" ? !editing.routine : !editing.habit;
+            if (isNew) created.current = id;
+          }}
         />
       ) : null}
       {templates ? (

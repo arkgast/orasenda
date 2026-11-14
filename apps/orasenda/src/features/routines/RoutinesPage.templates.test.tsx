@@ -9,7 +9,7 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { primaries, renderRoutines, within } from "./RoutinesPage.support";
+import { primaries, renderRoutines, statusText, within } from "./RoutinesPage.support";
 
 afterEach(async () => {
   cleanup();
@@ -170,4 +170,16 @@ test("cancel_closes_the_dialog_without_writing", async () => {
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(argsOf(backend.calls, "routine_add_template")).toEqual([]);
+});
+
+test("opening_the_templates_clears_the_removed_row", async () => {
+  const { container } = await renderRoutines();
+  fireEvent.click(screen.getByRole("button", { name: "More for Stretch" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
+  await settle();
+  expect(statusText(container)).toContain("Removed Stretch.");
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "From a template…" }));
+  await settle();
+  expect(statusText(container)).toBe("");
 });

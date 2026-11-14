@@ -1,6 +1,7 @@
-import { argsOf, NO_ROUTINES, routinesView, settle } from "@shared/test/fixtures";
+import { events } from "@shared/ipc/bindings";
+import { argsOf, NO_ROUTINES, routinesView, routineView, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { card, renderRoutines, statusText, within } from "./RoutinesPage.support";
 
@@ -165,4 +166,49 @@ test("opening_an_editor_clears_the_status_row_and_cancel_writes_nothing", async 
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(argsOf(backend.calls, "routine_update")).toEqual([]);
   expect(statusText(container)).toBe("");
+});
+
+test("a_name_error_is_drawn_before_focus_lands_on_the_name", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderRoutines({
+    routine_create: () => {
+      throw "empty";
+    },
+  });
+  await openNew();
+  const d = "New routine";
+  const name = field(d, "Name");
+  const heard: string[] = [];
+  name.addEventListener("focus", () => {
+    const ids = name.getAttribute("aria-describedby")?.split(" ") ?? [];
+    heard.push(ids.map((id) => document.getElementById(id)?.textContent ?? "").join(" "));
+  });
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add routine" }));
+  await settle();
+  expect(name).toHaveFocus();
+  expect(heard).toEqual([expect.stringContaining("Give it a name.")]);
+});
+
+test("saving_a_new_routine_moves_focus_to_its_more", async () => {
+  await renderRoutines({
+    routine_create: async () => {
+      await events.routinesChanged.emit(
+        routinesView({
+          routines: [routineView(), routineView({ id: "routine-new", name: "Evening walk" })],
+        }),
+      );
+      return "routine-new";
+    },
+  });
+  await openNew();
+  const d = "New routine";
+  fireEvent.change(field(d, "Name"), { target: { value: "Evening walk" } });
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add routine" }));
+  await settle();
+  // The dialog hands focus back after it closes (a zero-delay timer); the new item's More wins.
+  await act(() => new Promise((done) => setTimeout(done, 20)));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(
+    within(card("Evening walk")).getByRole("button", { name: "More for Evening walk" }),
+  ).toHaveFocus();
 });

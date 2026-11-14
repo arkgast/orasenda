@@ -5,7 +5,6 @@ import {
   atMost,
   checkLine,
   type Errors,
-  focusField,
   length,
   MAX_LONG,
   MAX_NAME,
@@ -13,6 +12,7 @@ import {
   NO_ERRORS,
   refusalLine,
 } from "./editing";
+import { byId, useFocusAfter } from "./focusAfter";
 import type { WriteFn } from "./useRoutines";
 
 const EVERY_DAY = 127;
@@ -99,13 +99,16 @@ export function HabitEditor(props: Props): ReactElement {
   const [days, setDays] = useState(habit?.days ?? EVERY_DAY);
   const [errors, setErrors] = useState<Errors<Field>>(NO_ERRORS);
   const [saving, setSaving] = useState(false);
-  const step = habit ? habit.routineId !== null : !!props.asStep;
+  // Focus moves once the error is drawn, so VoiceOver reads the field with it.
+  const focus = useFocusAfter();
+  // A new step moved to "On its own" is a habit again.
+  const step = habit ? habit.routineId !== null : !!props.asStep && routineId !== null;
   const noun = step ? "step" : "habit";
   const routine = routines.find((r) => r.id === routineId) ?? null;
 
   const fieldError = (key: Field, message: string) => {
     setErrors({ fields: { [key]: message }, line: checkLine(WORDS[key]) });
-    focusField(idOf(key));
+    focus(byId(idOf(key)));
   };
 
   const save = () => {
@@ -135,6 +138,8 @@ export function HabitEditor(props: Props): ReactElement {
       // `tooLong` names no field (R5 ruling 5): it is the first one over its limit, in Rust's order.
       const over = outcome.error === "tooLong" && FIELDS.find((f) => length(text[f.key]) > f.max);
       if (over) return fieldError(over.key, atMost(over.max));
+      // The routine it was going into is gone: it is on its own until the person chooses again.
+      if (outcome.error === "notFound" && !habit) setRoutineId(null);
       const tail = "the most Orasenda keeps. Remove one to add another.";
       setErrors({
         fields: {},

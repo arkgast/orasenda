@@ -58,8 +58,3 @@ export function fromFieldTime(value: string): number | null {
   const minutes = Number(match[2]);
   return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
 }
-
-/** Moves focus to the field with `id` (an error under it was just shown). */
-export function focusField(id: string): void {
-  document.getElementById(id)?.focus();
-}

@@ -67,10 +67,31 @@ test("the_removed_row_leaves_after_ten_seconds", async () => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   await choose("More for Stretch", "Remove");
   expect(statusText(container)).toContain("Removed Stretch.");
+  // Focus has moved on from Undo, so nothing holds the row.
+  act(() => screen.getByRole("button", { name: "Add" }).focus());
   await act(async () => vi.advanceTimersByTime(UNDO_MS - 1));
   expect(statusText(container)).toContain("Removed Stretch.");
   await act(async () => vi.advanceTimersByTime(1));
   expect(statusText(container)).toBe("");
+});
+
+test("the_removed_row_stays_while_undo_has_focus_and_leaves_ten_seconds_after_focus_moves", async () => {
+  const { container } = await renderRoutines();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  await choose("More for Stretch", "Remove");
+  const undo = screen.getByRole("button", { name: "Undo removing Stretch" });
+  expect(undo).toHaveFocus();
+  await act(async () => vi.advanceTimersByTime(UNDO_MS * 3));
+  // A keyboard or VoiceOver user keeps their place: Undo is still there and still focused.
+  expect(statusText(container)).toContain("Removed Stretch.");
+  expect(undo).toHaveFocus();
+  const add = screen.getByRole("button", { name: "Add" });
+  act(() => add.focus());
+  await act(async () => vi.advanceTimersByTime(UNDO_MS - 1));
+  expect(statusText(container)).toContain("Removed Stretch.");
+  await act(async () => vi.advanceTimersByTime(1));
+  expect(statusText(container)).toBe("");
+  expect(add).toHaveFocus();
 });
 
 test("the_next_action_replaces_the_removed_row", async () => {

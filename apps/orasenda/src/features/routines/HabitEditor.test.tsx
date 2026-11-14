@@ -192,3 +192,82 @@ test("a_full_list_and_an_empty_name_are_said_kindly", async () => {
   await settle();
   expect(field(d, "Name")).toHaveAccessibleDescription(/Give it a name\./);
 });
+
+test("a_new_step_moved_to_its_own_is_worded_as_a_habit", async () => {
+  await renderRoutines();
+  await choose("More for Morning Light & Movement", "Add a step");
+  fireEvent.click(within(dialog("New step")).getByRole("radio", { name: "On its own" }));
+  const d = "New habit";
+  expect(within(dialog(d)).getByRole("group", { name: "Repeat on" })).toBeInTheDocument();
+  expect(within(dialog(d)).getByRole("button", { name: "Add habit" })).toBeInTheDocument();
+});
+
+test("a_routine_removed_while_adding_puts_the_habit_on_its_own", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderRoutines({
+    habit_create: () => {
+      throw "notFound";
+    },
+  });
+  await choose("More for Morning Light & Movement", "Add a step");
+  const d = "New step";
+  type(d, "Name", "Open the blinds");
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add step" }));
+  await settle();
+  const now = "New habit";
+  expect(within(dialog(now)).getByRole("status")).toHaveTextContent(
+    "That routine was removed. Choose where this habit belongs again.",
+  );
+  expect(within(dialog(now)).getByRole("radio", { name: "On its own" })).toBeChecked();
+  expect(within(dialog(now)).getByRole("group", { name: "Repeat on" })).toBeInTheDocument();
+  expect(field(now, "Name")).toHaveValue("Open the blinds");
+});
+
+test("a_habit_edited_while_its_step_is_removed_or_a_routine_runs_says_so", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let answer = "running";
+  await renderRoutines({
+    habit_update: () => {
+      throw answer;
+    },
+  });
+  const steps = within(card("Morning Light & Movement")).getByRole("list", { name: "Steps" });
+  fireEvent.click(within(steps).getByRole("button", { name: "More for Drink a glass of water" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
+  await settle();
+  const d = "Edit step";
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Save" }));
+  await settle();
+  expect(within(dialog(d)).getByRole("status")).toHaveTextContent(
+    "A routine is running. Save this when it ends.",
+  );
+  answer = "notFound";
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Save" }));
+  await settle();
+  expect(within(dialog(d)).getByRole("status")).toHaveTextContent(
+    "This step was removed, so the change wasn't saved.",
+  );
+});
+
+test("a_field_error_is_drawn_before_focus_lands_on_the_field", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await renderRoutines({
+    habit_create: () => {
+      throw "empty";
+    },
+  });
+  await choose("Add", "New habit");
+  const d = "New habit";
+  const name = field(d, "Name") as HTMLInputElement;
+  const heard: string[] = [];
+  // What VoiceOver reads on focus: the field's description at that moment.
+  name.addEventListener("focus", () => {
+    const ids = name.getAttribute("aria-describedby")?.split(" ") ?? [];
+    heard.push(ids.map((id) => document.getElementById(id)?.textContent ?? "").join(" "));
+  });
+  fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add habit" }));
+  await settle();
+  expect(name).toHaveFocus();
+  expect(heard).toHaveLength(1);
+  expect(heard[0]).toContain("Give it a name.");
+});

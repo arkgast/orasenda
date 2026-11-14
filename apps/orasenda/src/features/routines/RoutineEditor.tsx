@@ -5,7 +5,6 @@ import {
   atMost,
   checkLine,
   type Errors,
-  focusField,
   fromFieldTime,
   length,
   MAX_NAME,
@@ -14,6 +13,7 @@ import {
   refusalLine,
   toFieldTime,
 } from "./editing";
+import { byId, useFocusAfter } from "./focusAfter";
 import type { WriteFn } from "./useRoutines";
 
 const EVERY_DAY = 127;
@@ -43,10 +43,12 @@ export function RoutineEditor({ routine, write, onClose, onSaved }: Props): Reac
   const [days, setDays] = useState(routine?.days ?? EVERY_DAY);
   const [errors, setErrors] = useState<Errors<"name" | "time">>(NO_ERRORS);
   const [saving, setSaving] = useState(false);
+  // Focus moves once the error is drawn, so VoiceOver reads the field with it.
+  const focus = useFocusAfter();
 
   const fieldError = (field: "name" | "time", text: string) => {
     setErrors({ fields: { [field]: text }, line: checkLine(field) });
-    focusField(field === "name" ? nameId : timeId);
+    focus(byId(field === "name" ? nameId : timeId));
   };
 
   const save = () => {

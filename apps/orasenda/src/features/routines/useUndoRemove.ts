@@ -33,30 +33,57 @@ function fullLine(item: Removable): string {
 
 const undoName = (item: Removable) => `Undo removing ${item.name}`;
 
+/** The Undo action for `item` in the page's status row, if it is drawn. */
+const undoButton = (item: Removable): HTMLElement | undefined =>
+  Array.from(document.querySelectorAll<HTMLElement>("[data-slot=page-frame-status] button")).find(
+    (b) => b.getAttribute("aria-label") === undoName(item),
+  );
+
 /**
  * Remove with Undo (spec §Editors). A remove goes through the page's write chain; once Rust has it,
  * the status row says "Removed <name>." with **Undo** for ten seconds or until the next action
  * (every action clears the row), and focus moves to Undo, since the item's own controls are gone.
- * Undo restores it and focus returns to its More. Refusals are worded here from `RoutinesError`;
+ * While Undo has focus the row stays (WCAG 2.2.1), so a keyboard or VoiceOver user never loses
+ * their place; it leaves ten seconds after focus moves on. Undo restores it and focus returns to
+ * its More. Refusals are worded here from `RoutinesError`;
  * nothing fails silently.
  */
 export function useUndoRemove(deps: Deps): { remove(item: Removable): void } {
   const latest = useRef(deps);
   latest.current = deps;
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** The line this hook showed last; a timer or listener for an older one does nothing. */
+  const shown = useRef<Notice | null>(null);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   return useMemo(() => {
-    const show = (notice: Notice | null, expires = false) => {
+    /** Starts the ten seconds for `notice`; at the end it leaves unless its Undo has focus. */
+    const expire = (notice: Notice, item: Removable) => {
       clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        if (shown.current !== notice) return;
+        const undo = undoButton(item);
+        if (undo && undo === document.activeElement) {
+          // Held while focused: the ten seconds start again once focus moves on.
+          undo.addEventListener(
+            "focusout",
+            () => {
+              if (shown.current === notice) expire(notice, item);
+            },
+            { once: true },
+          );
+          return;
+        }
+        shown.current = null;
+        latest.current.setLine((line) => (line === notice ? null : line));
+      }, UNDO_MS);
+    };
+
+    const show = (notice: Notice | null, expiresFor?: Removable) => {
+      clearTimeout(timer.current);
+      shown.current = notice;
       latest.current.setLine(notice);
-      if (notice && expires) {
-        // Only this notice leaves on time; a newer line stays.
-        timer.current = setTimeout(
-          () => latest.current.setLine((line) => (line === notice ? null : line)),
-          UNDO_MS,
-        );
-      }
+      if (notice && expiresFor) expire(notice, expiresFor);
     };
 
     const send = (item: Removable, verb: "remove" | "restore"): Promise<Outcome> => {
@@ -82,13 +109,9 @@ export function useUndoRemove(deps: Deps): { remove(item: Removable): void } {
               tone: "neutral",
               action: { label: "Undo", name: undoName(item), run: () => undo(item) },
             },
-            true,
+            item,
           );
-          latest.current.focus(() =>
-            Array.from(document.querySelectorAll<HTMLElement>("button")).find(
-              (b) => b.getAttribute("aria-label") === undoName(item),
-            ),
-          );
+          latest.current.focus(() => undoButton(item));
           return;
         }
         if (outcome.error === "notFound") {
