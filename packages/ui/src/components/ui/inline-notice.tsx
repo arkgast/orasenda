@@ -11,7 +11,12 @@ export type InlineNoticeProps = {
   actionName?: string;
   onAction?: () => void;
 } & (
-  | { variant?: "default"; tone?: "neutral" | "warning" }
+  | {
+      variant?: "default";
+      tone?: "neutral" | "warning";
+      /** A second, quiet action after the first (for "Keep as is"). `name` is the accessible name when it differs from `label`. */
+      secondaryAction?: { label: string; name?: string; onAction: () => void };
+    }
   | {
       variant: "row";
       tone?: "neutral" | "attention" | "rest" | "warning";
@@ -67,6 +72,7 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
     );
   }
   const warning = props.tone === "warning";
+  const second = props.secondaryAction;
   return (
     <div
       data-slot="inline-notice"
@@ -89,6 +95,11 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
       {hasAction ? (
         <Button variant="ghost" aria-label={props.actionName || undefined} onClick={props.onAction}>
           {props.actionLabel}
+        </Button>
+      ) : null}
+      {second ? (
+        <Button variant="quiet" aria-label={second.name || undefined} onClick={second.onAction}>
+          {second.label}
         </Button>
       ) : null}
     </div>

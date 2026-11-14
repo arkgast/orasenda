@@ -39,7 +39,7 @@ test("tag_field_refuses_a_duplicate_ignoring_case_with_a_line", () => {
   type(field, "writing");
   fireEvent.keyDown(field, { key: "Enter" });
   expect(onChange).not.toHaveBeenCalled();
-  expect(screen.getByText("Writing is already a tag.")).toBeTruthy();
+  expect(screen.getByText("writing is already a tag.")).toBeTruthy();
 });
 
 test("tag_field_refuses_past_max_and_past_length", () => {

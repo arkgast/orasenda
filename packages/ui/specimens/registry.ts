@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
+import { ChecklistSpecimen } from "../src/components/ui/checklist.specimen.tsx";
 import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx";
@@ -19,11 +20,14 @@ import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
 import { RoutineCardSpecimen } from "../src/components/ui/routine-card.specimen.tsx";
 import { RoutineStepSpecimen } from "../src/components/ui/routine-step.specimen.tsx";
+import { SelectSpecimen } from "../src/components/ui/select.specimen.tsx";
 import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.tsx";
 import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
 import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen";
 import { TaskCardSpecimen } from "../src/components/ui/task-card.specimen.tsx";
+import { StepperSpecimen } from "../src/components/ui/stepper.specimen.tsx";
+import { TagFieldSpecimen } from "../src/components/ui/tag-field.specimen.tsx";
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
@@ -57,4 +61,8 @@ export const specimens: Record<string, () => ReactElement> = {
   DayPicker: DayPickerSpecimen,
   KanbanColumn: KanbanColumnSpecimen,
   TaskCard: TaskCardSpecimen,
+  Select: SelectSpecimen,
+  Checklist: ChecklistSpecimen,
+  TagField: TagFieldSpecimen,
+  Stepper: StepperSpecimen,
 };

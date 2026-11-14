@@ -40,12 +40,17 @@ export interface DialogProps {
   destructive?: boolean;
   scrim?: boolean;
   loading?: boolean;
+  /** "sheet" is the wide task sheet: capped at sheet-width, always over the scrim, with a two-column body. */
+  size?: "panel" | "sheet";
 }
 
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
 const content =
-  "flex max-h-full w-full max-w-panel-width flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+  "flex max-h-full w-full flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+
+const PANEL_WIDTH = "max-w-panel-width";
+const SHEET_WIDTH = "max-w-sheet-width";
 
 /**
  * A confirmation. Escape and the cancel button call `onCancel`; backdrop clicks never dismiss. `destructive`
@@ -63,12 +68,14 @@ export function Dialog({
   destructive,
   scrim,
   loading,
+  size = "panel",
 }: DialogProps): JSX.Element {
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const Prim = destructive ? AlertDialog : DialogPrimitive;
-  const showScrim = !!(scrim || destructive);
+  const sheet = size === "sheet";
+  const showScrim = !!(scrim || destructive || sheet);
   return (
     <Prim.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Prim.Portal>
@@ -84,7 +91,8 @@ export function Dialog({
             aria-modal="true"
             data-slot="dialog-content"
             ref={contentRef}
-            className={content}
+            data-size={size}
+            className={cn(content, sheet ? SHEET_WIDTH : PANEL_WIDTH)}
             onOpenAutoFocus={(event) => {
               // There is no Trigger part (the host owns the trigger), so remember what had focus.
               const active = document.activeElement as HTMLElement | null;
@@ -117,7 +125,15 @@ export function Dialog({
                 {description}
               </Prim.Description>
             ) : null}
-            {children}
+            {sheet ? (
+              <div data-slot="dialog-sheet-body" className="@container">
+                <div className="grid grid-cols-1 gap-x-5 gap-y-4 @sheet-stack:grid-cols-2">
+                  {children}
+                </div>
+              </div>
+            ) : (
+              children
+            )}
             <div
               data-slot="dialog-actions"
               ref={actionsRef}

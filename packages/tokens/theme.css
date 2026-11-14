@@ -108,6 +108,7 @@
   --spacing-hour-gutter: var(--hour-gutter);
   --spacing-minute-scale: var(--minute-scale);
   --spacing-panel-width: var(--panel-width);
+  --spacing-sheet-width: var(--sheet-width);
   --spacing-picker-height: var(--picker-height);
   --spacing-popover-width: var(--popover-width);
   --spacing-timer-size: var(--timer-size);
@@ -191,6 +192,7 @@
   --container-6xl: 1152px;
   --container-7xl: 1280px;
   --container-start-compact: 400px;
+  --container-sheet-stack: 560px;
   --container-ring-clock: 480px;
   --container-tooltip: 40ch;
 }
