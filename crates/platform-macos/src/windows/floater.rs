@@ -60,3 +60,14 @@ pub unsafe fn key_without_activation(ns_window: *mut c_void) -> Result<(), Windo
     window.makeKeyWindow();
     Ok(())
 }
+
+/// Puts back the class a window had before it was made a panel. Not yet implemented.
+///
+/// # Safety
+///
+/// Same contract as [`configure_floater`].
+pub unsafe fn release_panel(ns_window: *mut c_void) -> Result<(), WindowError> {
+    main_thread()?;
+    window(ns_window)?;
+    Ok(())
+}

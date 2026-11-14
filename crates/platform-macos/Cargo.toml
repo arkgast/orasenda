@@ -25,3 +25,8 @@ harness = false
 [[test]]
 name = "windows_main_thread"
 harness = false
+
+# A panel's class swap against real KVO observers needs a real window, so the main thread.
+[[test]]
+name = "panel_kvo"
+harness = false

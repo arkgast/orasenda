@@ -37,7 +37,7 @@ pub use displays::{
     Display, Rect, ScreenObserver, display_key, displays, frame_of, observe_screen_changes,
     set_frame, to_appkit, to_top_left,
 };
-pub use floater::{configure_floater, key_without_activation};
+pub use floater::{configure_floater, key_without_activation, release_panel};
 pub use full_screen_observer::{FullScreenEvent, FullScreenObserver, observe_full_screen};
 pub use keys::{FloaterKey, KeyMonitor, Modifiers, floater_key, install_floater_key_monitor};
 
