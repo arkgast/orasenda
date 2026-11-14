@@ -204,3 +204,10 @@ fn template_ids_round_trip_as_text() {
         "\"deepWorkStart\""
     );
 }
+
+#[test]
+fn get_finds_every_template_by_its_id() {
+    for t in templates::all() {
+        assert_eq!(templates::get(t.id).id, t.id);
+    }
+}

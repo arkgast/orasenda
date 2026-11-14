@@ -99,7 +99,7 @@ fn one_miss_is_forgiven() {
         run_of_days(ago(100), today(), EVERY, &done(&[1, 2, 4, 5])),
         4
     );
-    // Yesterday alone is not done yet: the run holds.
+    // Yesterday is not done, but a single miss is forgiven: the run holds.
     assert_eq!(run_of_days(ago(100), today(), EVERY, &done(&[2, 3])), 2);
     // Single misses apart from each other are each forgiven.
     assert_eq!(

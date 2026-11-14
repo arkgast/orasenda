@@ -2,7 +2,7 @@
 //! five starter templates. Pure; no clock, no I/O. Callers pass the local date and minute in.
 
 mod date;
-mod due;
+pub mod due;
 pub mod templates;
 pub mod tracker;
 mod weekdays;
