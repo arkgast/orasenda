@@ -9,22 +9,19 @@ import {
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import { type ReactElement, useState } from "react";
-import { ActionMenu, type MoreAction } from "./ActionMenu";
+import { ActionMenu, type MoreAction, moreId } from "./ActionMenu";
+import { type Editing, Editor, findHabit } from "./Editors";
+import { byId, useFocusAfter } from "./focusAfter";
 import { HabitList } from "./HabitList";
 import { RoutineList } from "./RoutineList";
 import { TemplateDialog } from "./TemplateDialog";
-import { type Line, type RoutinesView, useRoutines } from "./useRoutines";
+import { type Line, type Notice, type RoutinesView, useRoutines } from "./useRoutines";
+import { useUndoRemove } from "./useUndoRemove";
 import "./routines.css";
 
-const LINES: Record<Exclude<Line, null>, string> = {
+const LINES: Record<Exclude<Line, Notice | null>, string> = {
   writeFailed: "That change couldn't be saved. Your data is safe; try again in a moment.",
   readFailed: "Routines can't be read right now. Your data is safe; try again in a moment.",
-  makeRoutineSoon: "Making your own routine comes in the next update.",
-  makeHabitSoon: "Making a habit comes in the next update.",
-  editRoutineSoon: "Editing routines comes in the next update.",
-  editHabitSoon: "Editing habits comes in the next update.",
-  removeRoutineSoon: "Removing routines comes in the next update.",
-  removeHabitSoon: "Removing habits comes in the next update.",
 };
 
 /**
@@ -52,22 +49,45 @@ type Props = {
 /** The Routines page: the routines as cards, the standalone habits, and Add. */
 export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   const { compact } = useWindowLayout();
-  const { routines, line, setLine, check, addTemplate, move, retry } = useRoutines();
+  const { routines, line, setLine, check, addTemplate, move, write, retry } = useRoutines();
+  const focus = useFocusAfter();
+  const removal = useUndoRemove({ write, setLine, focus });
   const [templates, setTemplates] = useState(false);
+  const [editing, setEditing] = useState<Editing | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const view = routines.status === "ok" ? routines.view : null;
   const empty = view !== null && view.routines.length === 0 && view.habits.length === 0;
 
-  const more = (kind: "Routine" | "Habit") => (id: string, index: number, action: MoreAction) => {
+  // Opening an editor is the next action: it clears the status row, Undo included.
+  const edit = (next: Editing) => {
+    setLine(null);
+    setEditing(next);
+  };
+
+  const more = (kind: "routine" | "habit") => (id: string, index: number, action: MoreAction) => {
+    if (!view) return;
     if (action === "up" || action === "down") {
-      return move(kind === "Routine" ? "routine" : "habit", id, index + (action === "up" ? -1 : 1));
+      // Focus stays on the moved item's More once the new order is drawn.
+      return move(kind, id, index + (action === "up" ? -1 : 1), () => focus(byId(moreId(id))));
     }
-    setLine(`${action}${kind}Soon`);
+    if (action === "step") return edit({ kind: "habit", habit: null, routineId: id, asStep: true });
+    const routine = kind === "routine" ? view.routines.find((r) => r.id === id) : undefined;
+    const habit = kind === "habit" ? findHabit(view, id) : undefined;
+    if (action === "edit") {
+      if (routine) edit({ kind: "routine", routine });
+      if (habit) edit({ kind: "habit", habit, routineId: habit.routineId, asStep: false });
+      return;
+    }
+    const item = routine ?? habit;
+    if (!item) return;
+    const inRoutine = habit?.routineId ? view.routines.find((r) => r.id === habit.routineId) : null;
+    removal.remove({ kind, id, name: item.name, routine: inRoutine });
   };
 
   const onAdd = (id: string) => {
     if (id === "template") return setTemplates(true);
-    setLine(id === "habit" ? "makeHabitSoon" : "makeRoutineSoon");
+    if (id === "habit") return edit({ kind: "habit", habit: null, routineId: null, asStep: false });
+    edit({ kind: "routine", routine: null });
   };
 
   const failed = routines.status === "error" || line === "readFailed";
@@ -80,6 +100,16 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
       onAction={retry}
     >
       {LINES.readFailed}
+    </InlineNotice>
+  ) : typeof line === "object" && line !== null ? (
+    <InlineNotice
+      variant="row"
+      tone={line.tone}
+      actionLabel={line.action?.label}
+      actionName={line.action?.name}
+      onAction={line.action?.run}
+    >
+      {line.text}
     </InlineNotice>
   ) : (
     <InlineNotice variant="row" tone={line === "writeFailed" ? "attention" : "neutral"}>
@@ -120,7 +150,7 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
               title="No routines yet."
               message="Routines are small steps you take at the same time each day."
               actionLabel="Make your own"
-              onAction={() => setLine("makeRoutineSoon")}
+              onAction={() => edit({ kind: "routine", routine: null })}
             />
           ) : view ? (
             <div className="app-routines-body">
@@ -137,20 +167,30 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
                 legendFor={legendFor(view, expanded)}
                 onStart={onStart}
                 primaryStart={onStart ? primaryStart(view) : null}
-                onMore={more("Routine")}
+                onMore={more("routine")}
+                onStepMore={more("habit")}
               />
               {view.habits.length > 0 ? (
                 <HabitList
                   habits={view.habits}
                   legendFor={legendFor(view, expanded)}
                   onCheck={check}
-                  onMore={more("Habit")}
+                  onMore={more("habit")}
                 />
               ) : null}
             </div>
           ) : null}
         </ScrollRegion>
       </PageFrame>
+      {editing && view ? (
+        <Editor
+          editing={editing}
+          view={view}
+          write={write}
+          onClose={() => setEditing(null)}
+          onSaved={(id) => focus(byId(moreId(id)))}
+        />
+      ) : null}
       {templates ? (
         <TemplateDialog onAdd={addTemplate} onClose={() => setTemplates(false)} />
       ) : null}

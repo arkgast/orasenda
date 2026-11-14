@@ -15,16 +15,23 @@ export type Routines =
   | { status: "error" }
   | { status: "ok"; view: RoutinesView };
 
-/** The status row's line: the answer to the person's last action. */
-export type Line =
-  | "writeFailed"
-  | "readFailed"
-  // The editors and Remove with Undo come with R9 (#522); until then their entries say so.
-  | `${"make" | "edit" | "remove"}${"Routine" | "Habit"}Soon`
-  | null;
+/** A worded line for the status row, with at most one action (Undo, Try again). */
+export type Notice = {
+  text: string;
+  tone: "neutral" | "attention";
+  action?: { label: string; name: string; run(): void };
+};
 
-/** What a write answered: ok, a refusal from Rust, or a failure to reach it. */
-export type Outcome = { status: "ok" } | { status: "error"; error: RoutinesError | "unreachable" };
+/** The status row's line: the answer to the person's last action. Every new action clears it. */
+export type Line = "writeFailed" | "readFailed" | Notice | null;
+
+/** What a write answered: ok (with Rust's data, such as a new id), a refusal, or no answer. */
+export type Outcome =
+  | { status: "ok"; data?: unknown }
+  | { status: "error"; error: RoutinesError | "unreachable" };
+
+/** Sends one routines command through the page's chain and resolves with what it answered. */
+export type WriteFn = (name: string, send: () => Promise<Answer>) => Promise<Outcome>;
 
 type Answer = { status: "ok"; data: unknown } | { status: "error"; error: RoutinesError };
 
@@ -140,7 +147,7 @@ export function useRoutines() {
       let outcome: Outcome;
       try {
         const answer = await sendInTurn(write.send);
-        outcome = answer.status === "ok" ? { status: "ok" } : answer;
+        outcome = answer.status === "ok" ? { status: "ok", data: answer.data } : answer;
       } catch (error) {
         console.error(`${write.name} failed`, error);
         outcome = { status: "error", error: "unreachable" };
@@ -209,7 +216,7 @@ export function useRoutines() {
   );
 
   const move = useCallback(
-    (kind: "routine" | "habit", id: string, toIndex: number) => {
+    (kind: "routine" | "habit", id: string, toIndex: number, moved?: () => void) => {
       setLine(null);
       push({
         key: `move:${++writeSeq}`,
@@ -218,9 +225,17 @@ export function useRoutines() {
           kind === "routine" ? commands.routineMove(id, toIndex) : commands.habitMove(id, toIndex),
         settle: (outcome) => {
           if (outcome.status === "error" && outcome.error !== "notFound") setLine("writeFailed");
+          moved?.();
         },
       });
     },
+    [push],
+  );
+
+  /** One write for the editors and Remove with Undo; the caller words its answer. */
+  const write: WriteFn = useCallback(
+    (name, send) =>
+      new Promise((resolve) => push({ key: `write:${++writeSeq}`, name, send, settle: resolve })),
     [push],
   );
 
@@ -238,5 +253,5 @@ export function useRoutines() {
     [routines, checks],
   );
 
-  return { routines: shown, line, setLine, check, addTemplate, move, retry };
+  return { routines: shown, line, setLine, check, addTemplate, move, write, retry };
 }

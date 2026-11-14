@@ -158,7 +158,7 @@ test("move_down_and_up_call_routine_move_with_the_new_index", async () => {
     within(menu)
       .getAllByRole("menuitem")
       .map((item) => item.textContent),
-  ).toEqual(["Edit", "Move up", "Move down", "Remove"]);
+  ).toEqual(["Edit", "Add a step", "Move up", "Move down", "Remove"]);
   expect(within(menu).getByRole("menuitem", { name: "Move up" })).toHaveAttribute(
     "aria-disabled",
     "true",
@@ -168,20 +168,45 @@ test("move_down_and_up_call_routine_move_with_the_new_index", async () => {
   expect(argsOf(backend.calls, "routine_move")).toEqual([{ id: "routine-1", toIndex: 1 }]);
 });
 
-test("habit_move_and_editors_from_the_habit_more_menu", async () => {
-  const { backend, container } = await renderRoutines({
-    routines_list: () =>
-      routinesView({
-        habits: [standaloneHabit(), standaloneHabit({ id: "habit-b", name: "Read" })],
-      }),
+test("habit_move_calls_habit_move_and_focus_stays_on_the_moved_habit", async () => {
+  const two = [standaloneHabit(), standaloneHabit({ id: "habit-b", name: "Read" })];
+  const { backend } = await renderRoutines({
+    routines_list: () => routinesView({ habits: two }),
+    habit_move: async () => {
+      await events.routinesChanged.emit(routinesView({ habits: [two[1], two[0]] }));
+      return null;
+    },
   });
   fireEvent.click(screen.getByRole("button", { name: "More for Read" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "Move up" }));
   await settle();
   expect(argsOf(backend.calls, "habit_move")).toEqual([{ id: "habit-b", toIndex: 0 }]);
-  fireEvent.click(screen.getByRole("button", { name: "More for Read" }));
-  fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
-  expect(statusText(container)).toBe("Editing habits comes in the next update.");
+  const list = screen.getByRole("list", { name: "Habits" });
+  expect(
+    within(list)
+      .getAllByRole("heading", { level: 3 })
+      .map((h) => h.textContent),
+  ).toEqual(["Read", "Stretch"]);
+  expect(screen.getByRole("button", { name: "More for Read" })).toHaveFocus();
+});
+
+test("a_step_moves_within_its_routine_and_keeps_focus", async () => {
+  const { backend } = await renderRoutines();
+  const steps = within(card("Morning Light & Movement")).getByRole("list", { name: "Steps" });
+  const more = within(steps).getByRole("button", { name: "More for Move for 5–10 minutes" });
+  fireEvent.click(more);
+  const menu = await screen.findByRole("menu");
+  expect(
+    within(menu)
+      .getAllByRole("menuitem")
+      .map((item) => item.textContent),
+  ).toEqual(["Edit", "Move up", "Move down", "Remove"]);
+  fireEvent.click(within(menu).getByRole("menuitem", { name: "Move up" }));
+  await settle();
+  expect(argsOf(backend.calls, "habit_move")).toEqual([{ id: "habit-2", toIndex: 0 }]);
+  expect(
+    within(steps).getByRole("button", { name: "More for Move for 5–10 minutes" }),
+  ).toHaveFocus();
 });
 
 test("a_write_after_navigating_away_and_back_waits_for_the_one_still_in_flight", async () => {

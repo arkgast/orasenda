@@ -2,6 +2,8 @@ import { Button, PopoverMenu, type PopoverMenuItem } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
 
 type Props = {
+  /** The trigger's id, so focus can come back to it after a move or an Undo (`moreId`). */
+  id?: string;
   /** The visible word on the trigger: "More" or "Add". */
   label: string;
   /** The trigger's spoken name when the word repeats on the page: "More for Stretch". */
@@ -12,13 +14,14 @@ type Props = {
 };
 
 /** A quiet button that opens a `PopoverMenu` of actions. The host owns what each row does. */
-export function ActionMenu({ label, name, heading, items, onSelect }: Props): ReactElement {
+export function ActionMenu({ id, label, name, heading, items, onSelect }: Props): ReactElement {
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
   return (
     <span ref={anchor} className="app-routines-menu">
       <Button
+        id={id}
         variant="quiet"
         aria-label={name}
         aria-haspopup="menu"
@@ -42,14 +45,21 @@ export function ActionMenu({ label, name, heading, items, onSelect }: Props): Re
   );
 }
 
-/** The More menu rows for one routine or habit at `index` of `count`. */
-export function moreItems(index: number, count: number): PopoverMenuItem[] {
+/** The id of the More trigger for routine or habit `itemId`. */
+export const moreId = (itemId: string): string => `routines-more-${itemId}`;
+
+/**
+ * The More menu rows for one routine or habit at `index` of `count`. A routine's menu also has
+ * *Add a step* (`step`).
+ */
+export function moreItems(index: number, count: number, step = false): PopoverMenuItem[] {
   return [
     { id: "edit", label: "Edit", kind: "link" },
+    ...(step ? [{ id: "step", label: "Add a step", kind: "link" as const }] : []),
     { id: "up", label: "Move up", kind: "link", disabled: index === 0 },
     { id: "down", label: "Move down", kind: "link", disabled: index === count - 1 },
     { id: "remove", label: "Remove", kind: "link" },
   ];
 }
 
-export type MoreAction = "edit" | "up" | "down" | "remove";
+export type MoreAction = "edit" | "step" | "up" | "down" | "remove";

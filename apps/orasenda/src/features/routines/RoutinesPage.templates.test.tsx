@@ -9,7 +9,7 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { primaries, renderRoutines, statusText, within } from "./RoutinesPage.support";
+import { primaries, renderRoutines, within } from "./RoutinesPage.support";
 
 afterEach(async () => {
   cleanup();
@@ -32,12 +32,6 @@ test("empty_state_offers_a_template_first_and_making_your_own", async () => {
   expect(primary[0]).toHaveTextContent("Start from a template");
   expect(screen.getByRole("button", { name: "Make your own" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Add" })).toBeNull();
-});
-
-test("make_your_own_says_the_editor_comes_next_rather_than_doing_nothing", async () => {
-  const { container } = await renderRoutines({ routines_list: () => NO_ROUTINES });
-  fireEvent.click(screen.getByRole("button", { name: "Make your own" }));
-  expect(statusText(container)).toBe("Making your own routine comes in the next update.");
 });
 
 test("template_dialog_lists_the_five_templates_with_steps_and_the_wellness_note", async () => {
