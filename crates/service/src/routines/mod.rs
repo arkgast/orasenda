@@ -1,16 +1,23 @@
 //! Routines and habits in the service (spec 2026-11-14, §Service and IPC): the routines, their
 //! habits, check-ins and templates, and the `routines-changed` event.
 //!
+//! Runs and the due nudge are in [`run`] and [`nudge`].
+//!
 //! Like the Inbox, each `run_*` locks the [`SessionService`](crate::session::SessionService)
 //! for the store write and its read-back, then emits `routines-changed` after the lock is
 //! released. A store that can't be read is an error, never an empty list.
 
+mod nudge;
+mod run;
+mod run_view;
 mod service;
 #[cfg(test)]
 mod tests;
 mod view;
 pub mod words;
 
+pub use nudge::{NudgeState, nudge_due, nudge_text};
+pub use run::{run_run_end, run_run_start, run_run_step};
 pub use service::{MAX_LONG, MAX_ROUTINE_HABITS, MAX_ROUTINES, MAX_SHORT, MAX_STANDALONE_HABITS};
 pub use view::WINDOW_DAYS;
 
@@ -89,9 +96,15 @@ pub fn run_routine_move<H: Host>(host: &H, id: &str, to_index: u32) -> Result<()
     })
 }
 
-/// `routine_remove`: tombstones a routine and its habits.
+/// `routine_remove`: tombstones a routine and its habits, and stops its open run.
 pub fn run_routine_remove<H: Host>(host: &H, id: &str) -> Result<(), RoutinesError> {
-    write(host, |txn, _| found(routine_rows::remove(txn, id)?))
+    write(host, |txn, _| {
+        if !routine_rows::remove(txn, id)? {
+            return Ok(Err(RoutinesError::NotFound));
+        }
+        run::stop_routine(txn, id)?;
+        Ok(Ok(()))
+    })
 }
 
 /// `routine_restore`: brings a removed routine back with the habits its removal took.
@@ -125,9 +138,16 @@ pub fn run_habit_move<H: Host>(host: &H, id: &str, to_index: u32) -> Result<(), 
     })
 }
 
-/// `habit_remove`: tombstones a habit.
+/// `habit_remove`: tombstones a habit. An open run passes its step (*skipped*) once it gets
+/// there.
 pub fn run_habit_remove<H: Host>(host: &H, id: &str) -> Result<(), RoutinesError> {
-    write(host, |txn, _| found(habits::remove(txn, id)?))
+    write(host, |txn, _| {
+        if !habits::remove(txn, id)? {
+            return Ok(Err(RoutinesError::NotFound));
+        }
+        run::settle_open(txn)?;
+        Ok(Ok(()))
+    })
 }
 
 /// `habit_restore`: brings a removed habit back when its routine is live and has room.

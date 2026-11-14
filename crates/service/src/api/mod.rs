@@ -34,7 +34,8 @@ pub use keyboard::{
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
 pub use routines::{
     HabitDayState, HabitDotView, HabitDraft, HabitView, RoutineDraft, RoutineToday, RoutineView,
-    RoutinesError, RoutinesView, RunStepView, RunView, StepState, TemplateId, TemplateView,
+    RoutinesError, RoutinesView, RunStepView, RunView, StepOutcome, StepState, TemplateId,
+    TemplateView,
 };
 pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{

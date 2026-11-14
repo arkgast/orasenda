@@ -28,6 +28,7 @@ pub(super) const KEY_DEEP_CAP_ON: &str = "timer.deep_cap_on";
 pub(super) const KEY_DEEP_CAP_HOURS: &str = "timer.deep_cap_hours";
 pub(super) const KEY_NOTIFY: &str = "notify.session_end";
 pub(super) const KEY_NOTIFY_TWO: &str = "notify.two_minutes";
+pub(super) const KEY_NOTIFY_ROUTINE: &str = "notify.routine_due";
 pub(super) const KEY_THEME: &str = "ui.theme";
 pub(super) const KEY_SINGLE_KEY: &str = "keys.single_key";
 pub(super) const META_NOTIFY_REVIEW: &str = "notify_review";
@@ -214,6 +215,7 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         deep_cap_hours: read_ranged(txn, KEY_DEEP_CAP_HOURS, defaults.deep_cap_hours, 2..=8)?,
         notify_session_end: read_setting(txn, KEY_NOTIFY, notify_default)?,
         notify_two_minutes: read_setting(txn, KEY_NOTIFY_TWO, defaults.notify_two_minutes)?,
+        notify_routine_due: read_setting(txn, KEY_NOTIFY_ROUTINE, defaults.notify_routine_due)?,
         single_key: read_setting(txn, KEY_SINGLE_KEY, defaults.single_key)?,
     };
     Ok((settings, pending))
@@ -267,6 +269,9 @@ fn write_changed(
     if new.notify_two_minutes != presented.notify_two_minutes {
         settings::set(txn, KEY_NOTIFY_TWO, &new.notify_two_minutes)?;
     }
+    if new.notify_routine_due != presented.notify_routine_due {
+        settings::set(txn, KEY_NOTIFY_ROUTINE, &new.notify_routine_due)?;
+    }
     if new.single_key != presented.single_key {
         settings::set(txn, KEY_SINGLE_KEY, &new.single_key)?;
     }
@@ -300,6 +305,9 @@ fn merge_changed(
     }
     if new.notify_two_minutes != presented.notify_two_minutes {
         cache.notify_two_minutes = new.notify_two_minutes;
+    }
+    if new.notify_routine_due != presented.notify_routine_due {
+        cache.notify_routine_due = new.notify_routine_due;
     }
     if new.single_key != presented.single_key {
         cache.single_key = new.single_key;

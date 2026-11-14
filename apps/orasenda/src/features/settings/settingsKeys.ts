@@ -14,7 +14,14 @@ export const CADENCE_KEYS = [
 
 export type CadenceKey = (typeof CADENCE_KEYS)[number];
 
-export type Key = "theme" | "preset" | CadenceKey | "notify" | "notifyTwo" | "singleKey";
+export type Key =
+  | "theme"
+  | "preset"
+  | CadenceKey
+  | "notify"
+  | "notifyTwo"
+  | "notifyRoutine"
+  | "singleKey";
 
 export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
   const keys: Key[] = [];
@@ -23,6 +30,7 @@ export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[]
   for (const field of CADENCE_KEYS) if (sent[field] !== restored[field]) keys.push(field);
   if (sent.notifySessionEnd !== restored.notifySessionEnd) keys.push("notify");
   if (sent.notifyTwoMinutes !== restored.notifyTwoMinutes) keys.push("notifyTwo");
+  if (sent.notifyRoutineDue !== restored.notifyRoutineDue) keys.push("notifyRoutine");
   if (sent.singleKey !== restored.singleKey) keys.push("singleKey");
   return keys;
 }
@@ -40,6 +48,7 @@ export function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]):
     else if (isCadence(key)) Object.assign(next, { [key]: from[key] });
     else if (key === "singleKey") next.singleKey = from.singleKey;
     else if (key === "notifyTwo") next.notifyTwoMinutes = from.notifyTwoMinutes;
+    else if (key === "notifyRoutine") next.notifyRoutineDue = from.notifyRoutineDue;
     else next.notifySessionEnd = from.notifySessionEnd;
   }
   return next;
@@ -60,6 +69,7 @@ export const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: s
   notify: { subject: "Notifications", verb: "weren't", again: "notifications" },
   singleKey: { subject: "Single-key shortcuts", verb: "weren't", again: "single-key shortcuts" },
   notifyTwo: { subject: "The two-minute note", verb: "wasn't", again: "the two-minute note" },
+  notifyRoutine: { subject: "The routine note", verb: "wasn't", again: "the routine note" },
 };
 
 export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]): string {
@@ -74,6 +84,7 @@ export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]
   if (key === "longestFocusMin") return `${restored.longestFocusMin} minutes`;
   if (key === "deepCapHours") return `${restored.deepCapHours} hours`;
   if (key === "singleKey") return restored.singleKey ? "on" : "off";
+  if (key === "notifyRoutine") return restored.notifyRoutineDue ? "on" : "off";
   return (key === "notifyTwo" ? restored.notifyTwoMinutes : restored.notifySessionEnd)
     ? "on"
     : "off";

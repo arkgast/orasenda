@@ -13,7 +13,8 @@ pub struct RoutinesView {
     pub routines: Vec<RoutineView>,
     /// The standalone habits, in order.
     pub habits: Vec<HabitView>,
-    /// The open run, if any. Always `None` until the run commands land (R6).
+    /// Today's open run, if any (one at a time). A run left open on an earlier day is never
+    /// shown: it is closed as `stopped` on the new day.
     pub run: Option<RunView>,
 }
 
@@ -103,7 +104,8 @@ pub enum HabitDayState {
     Upcoming,
 }
 
-/// The open run, step by step. Defined here so the view type is stable; filled from R6.
+/// A run, step by step: the open run in [`RoutinesView`], or the run a `run_*` command
+/// answered (which may have just ended).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RunView {
@@ -117,7 +119,8 @@ pub struct RunView {
     pub skipped: u16,
     pub total: u16,
     pub wellness: bool,
-    /// "Step 2 of 5" or "Routine finished. 4 of 5 done today."
+    /// "Step 2 of 5", "Routine finished. 4 of 5 done today." or, when ended early, "Routine
+    /// ended. 2 of 5 done today."
     pub line: String,
 }
 
@@ -140,6 +143,16 @@ pub enum StepState {
     Upcoming,
     Done,
     Skipped,
+}
+
+/// The answer to a run's current step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum StepOutcome {
+    /// Checks the step's habit in for today.
+    Done,
+    /// *Skip for today*: only the run's counts change.
+    Skip,
 }
 
 /// A routine as typed in its editor. The service trims the name.
@@ -197,7 +210,7 @@ pub enum RoutinesError {
     TooLong,
     /// 30 routines, 20 habits in this routine, or 30 standalone habits already.
     Full,
-    /// A run is open (from R6).
+    /// Another run is open today: end it first.
     Running,
     /// The store is unavailable or failed.
     Store,

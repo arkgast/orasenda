@@ -67,6 +67,9 @@
     "allow-habit-move",
     "allow-habit-remove",
     "allow-habit-restore",
-    "allow-habit-check"
+    "allow-habit-check",
+    "allow-run-start",
+    "allow-run-step",
+    "allow-run-end"
   ]
 }

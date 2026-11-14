@@ -158,6 +158,12 @@ export const commands = {
 	habitRestore: (id: string) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_restore", { id })),
 	/**  Checks a habit in for today (`done`), or removes today's check-in. */
 	habitCheck: (id: string, done: boolean) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_check", { id, done })),
+	/**  Starts a run of a routine, its steps frozen in their current order. */
+	runStart: (routineId: string) => typedError<RunView_Serialize, RoutinesError>(__TAURI_INVOKE("run_start", { routineId })),
+	/**  Answers the open run's current step: `done` checks its habit in, `skip` only counts. */
+	runStep: (runId: string, outcome: StepOutcome) => typedError<RunView_Serialize, RoutinesError>(__TAURI_INVOKE("run_step", { runId, outcome })),
+	/**  Ends the open run early, as stopped. */
+	runEnd: (runId: string) => typedError<RunView_Serialize, RoutinesError>(__TAURI_INVOKE("run_end", { runId })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -996,7 +1002,7 @@ export type RoutinesError =
 "tooLong" | 
 /**  30 routines, 20 habits in this routine, or 30 standalone habits already. */
 "full" | 
-/**  A run is open (from R6). */
+/**  Another run is open today: end it first. */
 "running" | 
 /**  The store is unavailable or failed. */
 "store";
@@ -1015,7 +1021,10 @@ export type RoutinesView_Deserialize = {
 	routines: RoutineView_Deserialize[],
 	/**  The standalone habits, in order. */
 	habits: HabitView_Deserialize[],
-	/**  The open run, if any. Always `None` until the run commands land (R6). */
+	/**
+	 *  Today's open run, if any (one at a time). A run left open on an earlier day is never
+	 *  shown: it is closed as `stopped` on the new day.
+	 */
 	run?: RunView_Deserialize | null,
 };
 
@@ -1027,7 +1036,10 @@ export type RoutinesView_Serialize = {
 	routines: RoutineView_Serialize[],
 	/**  The standalone habits, in order. */
 	habits: HabitView_Serialize[],
-	/**  The open run, if any. Always `None` until the run commands land (R6). */
+	/**
+	 *  Today's open run, if any (one at a time). A run left open on an earlier day is never
+	 *  shown: it is closed as `stopped` on the new day.
+	 */
 	run: RunView_Serialize | null,
 };
 
@@ -1041,10 +1053,16 @@ export type RunStepView = {
 	state: StepState,
 };
 
-/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+/**
+ *  A run, step by step: the open run in [`RoutinesView`], or the run a `run_*` command
+ *  answered (which may have just ended).
+ */
 export type RunView = RunView_Serialize | RunView_Deserialize;
 
-/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+/**
+ *  A run, step by step: the open run in [`RoutinesView`], or the run a `run_*` command
+ *  answered (which may have just ended).
+ */
 export type RunView_Deserialize = {
 	id: string,
 	routineId: string,
@@ -1056,11 +1074,17 @@ export type RunView_Deserialize = {
 	skipped: number,
 	total: number,
 	wellness: boolean,
-	/**  "Step 2 of 5" or "Routine finished. 4 of 5 done today." */
+	/**
+	 *  "Step 2 of 5", "Routine finished. 4 of 5 done today." or, when ended early, "Routine
+	 *  ended. 2 of 5 done today."
+	 */
 	line: string,
 };
 
-/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+/**
+ *  A run, step by step: the open run in [`RoutinesView`], or the run a `run_*` command
+ *  answered (which may have just ended).
+ */
 export type RunView_Serialize = {
 	id: string,
 	routineId: string,
@@ -1072,7 +1096,10 @@ export type RunView_Serialize = {
 	skipped: number,
 	total: number,
 	wellness: boolean,
-	/**  "Step 2 of 5" or "Routine finished. 4 of 5 done today." */
+	/**
+	 *  "Step 2 of 5", "Routine finished. 4 of 5 done today." or, when ended early, "Routine
+	 *  ended. 2 of 5 done today."
+	 */
 	line: string,
 };
 
@@ -1097,6 +1124,8 @@ export type Settings = {
 	notifySessionEnd: boolean,
 	/**  Notify two minutes before the end (`notify.two_minutes`). */
 	notifyTwoMinutes: boolean,
+	/**  Notify once when a routine's time comes (`notify.routine_due`). Off by default. */
+	notifyRoutineDue: boolean,
 	/**  Space and P on Today and Space in full screen act (`keys.single_key`). */
 	singleKey: boolean,
 };
@@ -1157,6 +1186,13 @@ export type StartRequest = {
 	/**  Start the built-in two-minute focus; otherwise the selected preset. */
 	quick: boolean,
 };
+
+/**  The answer to a run's current step. */
+export type StepOutcome = 
+/**  Checks the step's habit in for today. */
+"done" | 
+/**  *Skip for today*: only the run's counts change. */
+"skip";
 
 /**  A step's state in a run. */
 export type StepState = "upcoming" | "done" | "skipped";

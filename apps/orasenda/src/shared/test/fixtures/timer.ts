@@ -98,6 +98,7 @@ export const SETTINGS: Settings = {
   deepCapHours: 4,
   notifySessionEnd: true,
   notifyTwoMinutes: false,
+  notifyRoutineDue: false,
   singleKey: true,
 };
 

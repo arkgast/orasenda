@@ -5,7 +5,7 @@ import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { askingKey, pendingKeys, subscribeAsking } from "./notificationsToggle";
-import { notificationsRow } from "./panes/Notifications";
+import { notificationsRow, routineDueLine } from "./panes/Notifications";
 import { changedKeys, type Key } from "./settingsKeys";
 import { buildNotice, type Line, READ_ONLY, WRITE_REASON } from "./settingsNotice";
 import { usePresetEditing } from "./usePresets";
@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS: SettingsValue = {
   deepCapHours: 4,
   notifySessionEnd: false,
   notifyTwoMinutes: false,
+  notifyRoutineDue: false,
   singleKey: true,
 };
 
@@ -107,7 +108,10 @@ export function useSettingsModel() {
 
   const row = notificationsRow(
     status,
-    askingFor !== null || shown.notifySessionEnd || shown.notifyTwoMinutes,
+    askingFor !== null ||
+      shown.notifySessionEnd ||
+      shown.notifyTwoMinutes ||
+      shown.notifyRoutineDue,
     askingFor !== null,
   );
   const notifyLine =
@@ -117,6 +121,14 @@ export function useSettingsModel() {
       row.action === "open" && openFailed
         ? "Find Orasenda in System Settings, Notifications."
         : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ") || null;
+
+  const routineLine =
+    [
+      reasonIf("notifyRoutine"),
+      routineDueLine(status, shown.notifyRoutineDue, askingFor === "notifyRoutineDue"),
     ]
       .filter(Boolean)
       .join(" ") || null;
@@ -149,6 +161,7 @@ export function useSettingsModel() {
     ticked,
     row,
     notifyLine,
+    routineLine,
     notice,
     reasonIf,
     withLatest,
