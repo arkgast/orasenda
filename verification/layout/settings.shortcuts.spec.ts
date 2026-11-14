@@ -27,8 +27,14 @@ async function smallControls(page: Page): Promise<string[]> {
 for (const size of SIZES) {
   const at = `${size.width}x${size.height}`;
 
-  for (const scenario of ["idle", "keyboardLongest", "keyboardFresh", "keyboardSingleOff"]) {
-    test(`settings_keyboard_fits_${at}_${scenario}`, async ({ page }) => {
+  for (const scenario of [
+    "idle",
+    "keyboardLongest",
+    "keyboardFresh",
+    "keyboardSingleOff",
+    "keyboardRepaired",
+  ]) {
+    test(`settings_shortcuts_fits_${at}_${scenario}`, async ({ page }) => {
       await openApp(page, scenario, size, { page: "settings", pane: "Shortcuts" });
       const heading = page.locator("#settings-keyboard-heading");
       await heading.scrollIntoViewIfNeeded();
@@ -53,8 +59,8 @@ for (const size of SIZES) {
           getComputedStyle(document.documentElement).getPropertyValue("--field-width"),
         ),
       );
-      // Two actions, two slots each.
-      expect(widths).toHaveLength(4);
+      // Six actions, two slots each.
+      expect(widths).toHaveLength(12);
       for (const width of widths)
         expect(width, "the recorder is at least field-width").toBeGreaterThanOrEqual(field);
 
@@ -72,7 +78,7 @@ for (const size of SIZES) {
 }
 
 for (const size of SIZES) {
-  test(`settings_keyboard_warning_fits_${size.width}x${size.height}`, async ({ page }) => {
+  test(`settings_shortcuts_warning_fits_${size.width}x${size.height}`, async ({ page }) => {
     await openApp(page, "keyboardWarning", size, { page: "settings", pane: "Shortcuts" });
     const field = page.locator("#keyboard-startPause-app-field");
     await field.scrollIntoViewIfNeeded();
@@ -103,7 +109,7 @@ for (const size of SIZES) {
   });
 }
 
-test("settings_keyboard_lines_are_words", async ({ page }) => {
+test("settings_shortcuts_lines_are_words", async ({ page }) => {
   await openApp(page, "keyboardLongest", SIZES[2], { page: "settings", pane: "Shortcuts" });
   await expect(
     page.getByText("Another app uses this shortcut. Pick a different one."),
@@ -111,9 +117,84 @@ test("settings_keyboard_lines_are_words", async ({ page }) => {
   await expect(page.getByText(/VoiceOver uses Control-Option keys/)).toHaveCount(1);
 });
 
-test("settings_keyboard_fresh_shows_the_command_voiceover_line", async ({ page }) => {
+test("settings_shortcuts_fresh_shows_the_command_voiceover_line", async ({ page }) => {
   await openApp(page, "keyboardFresh", SIZES[2], { page: "settings", pane: "Shortcuts" });
   await expect(
     page.getByText("VoiceOver uses this key while it's on. Pick another to use both."),
-  ).toHaveCount(2);
+  ).toHaveCount(5); // every default with Control, Option and Command: the five actions that have one
+});
+
+/** The two recorders of a row: side by side from 1440, stacked below. */
+test("settings_shortcuts_recorders_sit_side_by_side_or_stack", async ({ page }) => {
+  for (const size of SIZES) {
+    await openApp(page, "idle", size, { page: "settings", pane: "Shortcuts" });
+    const app = page.locator("#keyboard-startPause-app-field");
+    await app.scrollIntoViewIfNeeded();
+    const a = await app.boundingBox();
+    const g = await page.locator("#keyboard-startPause-global-field").boundingBox();
+    const name = await page.locator("#keyboard-startPause-label").boundingBox();
+    if (!a || !g || !name) throw new Error("row not laid out");
+    const at = `${size.width}x${size.height}`;
+    if (size.width === 1440) {
+      expect(Math.abs(a.y - g.y), `${at}: recorders share a top`).toBeLessThan(1);
+      expect(a.x + a.width, `${at}: recorders do not overlap`).toBeLessThanOrEqual(g.x);
+      expect(name.y, `${at}: the name is beside the recorders, not above`).toBeLessThan(
+        a.y + a.height,
+      );
+      expect(name.x + name.width, `${at}: the name is left of the recorders`).toBeLessThanOrEqual(
+        a.x,
+      );
+      expect(a.width, `${at}: wider than field-width`).toBeGreaterThan(200);
+    } else if (size.width === 900) {
+      const apart = a.x + a.width <= g.x || a.y + a.height <= g.y;
+      expect(apart, `${at}: recorders do not overlap`).toBe(true);
+    } else {
+      expect(g.y, `${at}: recorders stack`).toBeGreaterThan(a.y + a.height - 1);
+    }
+  }
+});
+
+test("settings_shortcuts_message_row_keeps_its_height_while_recording", async ({ page }) => {
+  await openApp(page, "idle", SIZES[3], { page: "settings", pane: "Shortcuts" });
+  const field = page.locator("#keyboard-startPause-app-field");
+  await field.scrollIntoViewIfNeeded();
+  const row = page.locator("#keyboard-startPause");
+  const before = await row.boundingBox();
+  const line = page.locator("#keyboard-startPause-app-field-message");
+  const lineBefore = await line.boundingBox();
+  await field.click();
+  await expect(field).toHaveAttribute("data-recording", "true");
+  await field.press("u");
+  await expect(line).toContainText("Add");
+  const lineAfter = await line.boundingBox();
+  const after = await row.boundingBox();
+  expect(lineAfter?.height, "the message row is reserved").toBe(lineBefore?.height);
+  expect(after?.height, "the row keeps its height").toBe(before?.height);
+});
+
+test("settings_shortcuts_warning_reason_fits_the_message_row", async ({ page }) => {
+  await openApp(page, "keyboardWarning", SIZES[3], { page: "settings", pane: "Shortcuts" });
+  const field = page.locator("#keyboard-startPause-global-field");
+  await field.scrollIntoViewIfNeeded();
+  const line = page.locator("#keyboard-startPause-global-field-message");
+  const before = await line.boundingBox();
+  await field.click();
+  await field.press("Control+u");
+  await expect(page.getByRole("button", { name: "Pick another" }).first()).toBeVisible();
+  const reason = line.getByText("Other apps often use this key.");
+  await expect(reason).toBeVisible();
+  const after = await line.boundingBox();
+  expect(after?.height, "the warning question stays in the reserved two lines").toBe(
+    before?.height,
+  );
+  // The reason is the first sentence of the line: its glyphs sit on one line box.
+  const tops = await reason.evaluate((el, len) => {
+    const node = el.firstChild;
+    if (!node) return [];
+    const range = document.createRange();
+    range.setStart(node, 0);
+    range.setEnd(node, len);
+    return Array.from(range.getClientRects()).map((r) => Math.round(r.top));
+  }, "Other apps often use this key.".length);
+  expect(new Set(tops).size, "the reason takes one line").toBe(1);
 });

@@ -8,6 +8,8 @@
 @import "tailwindcss/utilities.css" layer(utilities) source("./");
 @import "tw-animate-css";
 @import "@orasenda/tokens/theme.css";
+/* The app's own components use utilities too (container-query row layouts); scan them so the host does not need a second Tailwind root. */
+@source "../../../apps/orasenda/src";
 
 /* Page-wide rules Preflight does not cover: the keyboard focus ring, reduced motion, forced colors. */
 :where(a[href], button, input, select, textarea, summary, [tabindex]):focus-visible {
