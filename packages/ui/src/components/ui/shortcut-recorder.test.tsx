@@ -275,3 +275,26 @@ test("shortcut_recorder_empty_slot_reads_none_and_restore_is_per_recorder", () =
   expect(screen.getByRole("button", { name: /Everywhere None Change/ })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Restore default" })).toBeNull();
 });
+
+// #506: WebKit doesn't focus a clicked <button>, and fireEvent.click doesn't either, so these
+// stand in for a click in the app's webview.
+test("shortcut_recorder_click_focuses_the_field", () => {
+  const { field } = setup();
+  fireEvent.click(field);
+  expect(field).toHaveAttribute("data-recording", "true");
+  expect(field).toHaveFocus();
+});
+
+test("shortcut_recorder_clicking_another_recorder_stops_the_first", () => {
+  render(
+    <>
+      <ShortcutRecorder label="In Orasenda" keys="⌘F" onRecord={vi.fn()} />
+      <ShortcutRecorder label="Everywhere" keys="⌃⌥⌘F" onRecord={vi.fn()} />
+    </>,
+  );
+  const [first, second] = screen.getAllByRole("button");
+  fireEvent.click(first);
+  fireEvent.click(second);
+  expect(second).toHaveAttribute("data-recording", "true");
+  expect(first).not.toHaveAttribute("data-recording");
+});
