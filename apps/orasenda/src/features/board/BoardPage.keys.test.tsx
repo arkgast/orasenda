@@ -1,8 +1,8 @@
-import { argsOf, settle } from "@shared/test/fixtures";
+import { argsOf, boardOf, emitBoardChanged, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
-import { card, renderBoard } from "./BoardPage.support";
+import { card, renderBoard, TASKS } from "./BoardPage.support";
 
 afterEach(async () => {
   cleanup();
@@ -39,7 +39,7 @@ test("arrow_keys_move_selection_between_columns", async () => {
 
 test("only the selected card is a tab stop", async () => {
   await renderBoard();
-  card("Write intro").focus();
+  act(() => card("Write intro").focus());
   expect(card("Write intro")).toHaveAttribute("tabindex", "0");
   expect(card("Book dentist")).toHaveAttribute("tabindex", "-1");
 });
@@ -131,4 +131,13 @@ test("cmd_return_starts_a_session", async () => {
   key("Write intro", { key: "Enter", metaKey: true });
   await settle();
   expect(argsOf(backend.calls, "timer_start")).toHaveLength(1);
+});
+
+test("focus follows a card to the column it moved to", async () => {
+  await renderBoard();
+  key("Write intro", { key: "ArrowRight", metaKey: true, altKey: true });
+  await settle();
+  const moved = TASKS.map((t) => (t.id === "t1" ? { ...t, lane: "doing" as const } : t));
+  await emitBoardChanged(1, boardOf(moved));
+  expect(card("Write intro")).toHaveFocus();
 });

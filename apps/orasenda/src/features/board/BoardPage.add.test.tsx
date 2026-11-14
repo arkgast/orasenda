@@ -64,9 +64,8 @@ test("the Add task button focuses the field", async () => {
 
 test("an empty board offers Add task and opens the field", async () => {
   await renderBoard({ board: BOARD });
-  expect(
-    screen.getByText("No tasks yet. Add one, or move a note from the Inbox."),
-  ).toBeInTheDocument();
+  expect(screen.getByText("No tasks yet.")).toBeInTheDocument();
+  expect(screen.getByText("Add one, or move a note from the Inbox.")).toBeInTheDocument();
   fireEvent.keyDown(window, { key: "n", metaKey: true });
   await settle();
   expect(field()).toHaveFocus();

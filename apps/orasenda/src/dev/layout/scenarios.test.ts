@@ -36,6 +36,11 @@ const NAMES = [
   "routinesOverview",
   "routinesEmpty",
   "routinesRun",
+  "boardWeek",
+  "boardOver",
+  "boardLong",
+  "boardEmpty",
+  "boardUnreadable",
 ];
 
 const NEW_COMMANDS = [
