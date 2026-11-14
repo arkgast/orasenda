@@ -1,6 +1,6 @@
 # Routines and habits (P4, first part) — Spec
 
-- Status: approved (owner, 2026-11-14: "go autonomous until you finish"; every ruling below is the controller's, recorded under Decisions, and the owner can overrule it later)
+- Status: implemented (2026-11-14, R1–R10; see [Implementation status](#implementation-status)). Approved by the owner, 2026-11-14: "go autonomous until you finish"; every ruling below is the controller's, recorded under Decisions, and the owner can overrule it later.
 - Date: 2026-11-14
 - Owner: Arnold Gandarillas Castillo
 - Related:
@@ -192,6 +192,35 @@ Every ruling here was made by the controller under the owner's autonomy grant (2
 18. **`TemplateId` lives in core, and `TemplateId::as_str()` (camelCase, e.g. `morningLight`) is the text stored in `routine.template`** (R1, #514). Core owns the template data, so it owns the id; `TemplateId::parse` reads it back, and an unknown text means no template.
 19. **`TemplateStep` has a `detail` (the evidence line, e.g. "The evidence is contested.") and `Template` has a `note` (the full wellness note)** (R1, #514). Both are worded once in core, so the service and the webview never assemble them.
 20. **2-minute versions are written in lower case** ("one sip", "ten squats") (R1, #514), because the service words them into "2-minute version: one sip."
+21. **The due window is `[time, time + 30)`, and a minute of 1440 or more is never due** (R1, #514). Core also gains the small pure helpers the service needs: `LocalDate::label()` ("Monday 9 November"), `minute_of_day`, `Weekdays::from_bits` and `Weekdays::days()`.
+22. **No `REFERENCES` clauses; merge import writes parents first** (R2, #515). Foreign keys are off in this store, and sync may deliver a child before its parent.
+23. **`routine_run` gains an `answers` column** (a JSON list of `done` or `skipped`, in order) (R2, #515), so a reload knows which step was skipped. CHECKs tie it to the counts and `step_ids`; `ended_at` and `outcome` are set together.
+24. **`habit.days` is allowed only on a standalone habit** (R2, #515); a standalone habit sent without days is stored as every day (127), and a step's dots follow its routine's days (R5, #518).
+25. **Restoring a routine brings back exactly the habits its removal tombstoned** (same `deleted_at`) (R2, #515). A habit removed earlier on its own stays removed, and `habit_restore` of a step whose routine is removed answers `NotFound` (R5, #518).
+26. **Moves happen in the store** (`move_to` renumbers the live list from 0 and logs only changed positions); a habit moves only within its own list (R2, #515).
+27. **Store days are ISO strings with a `GLOB` CHECK; the store doesn't depend on core's `LocalDate`** (R2, #515). The run API stays dumb; the run rules are the service's.
+28. **Portability counts the four tables** (R2, #515; R5, #518): `SyncRows`, `Counts` and the IPC `DataCounts` gain routines, habits, check-ins and runs; the import line words them, and an import that touched them emits `routines-changed`.
+29. **`HabitDots columns="week"` reads the first day's `weekday` (0 = Monday) from the data, never from a date parse** (R3, #516). Until `HabitDotView` carries it (#547), the page reads it from the first word of Rust's label (R7, #520).
+30. **`RoutineCard` is an `h2` by default (`headingLevel` 3 inside a section), and its today shapes use `break`** (hollow ring, half ring, filled check) (R3, #516). The `routine` hue is the start edge only; the words carry the meaning.
+31. **`RoutineStep` leaves focus and the live region to its host** and exposes `stepNameRef`; the progress list draws done, skipped, now and upcoming as four shapes with words (R4, #517).
+32. **`DayPicker`'s last day stays `aria-disabled`, not native-disabled,** so keyboard and VoiceOver users reach it and hear "At least one day stays on." Seven plain toggle buttons at `hit-min` (R4, #517).
+33. **The wellness note travels with the view** (`RoutineView.note`, `TemplateView.note`), and `TemplateView.steps` are worded lines with "(optional)" and the evidence line (R5, #518).
+34. **`RoutineToday` counts check-ins:** *finished* when a finished run exists today or every live habit is checked in; *in progress* when some habit is checked in or a run is open (R5, #518).
+35. **Out-of-range input maps to `Empty` (mask 0) or `TooLong` (mask above 127, time above 1439, text over its limit), checked in field order** (R5, #518). `habit_check` is idempotent and still emits.
+36. **Midnight is noticed by the scheduler** (`SessionService.routines_day`): a tick on a new local date emits `routines-changed` once and closes a stale run (R5, #518; R6, #519).
+37. **One open run at a time across routines; a run on a routine with no live habits answers `Empty`** (R6, #519). A step whose habit was removed is recorded as `skipped` when reached, so the stored counts match the view.
+38. **`run_end` words "Routine ended. 2 of 5 done today."; the run commands answer the run they acted on, even when it just ended** (R6, #519).
+39. **The nudge reads the notification status only when a routine is due,** and marks nothing nudged unless it is `granted`, so permission granted inside the window still gets one nudge. A failed post counts as nudged (R6, #519).
+40. **Settings › Notifications:** *When a routine is due* is its own row labelled "Routines"; the permission actions stay on the session row so no two buttons share a name (R6, #519).
+41. **The overview's one primary Start goes to the routine in progress today, else the first not started in the person's order** (R7, #520). The webview can't know "due next" without reading the clock.
+42. **Writes are one in flight, newest check-in wins, and a failure rolls back to Rust's last view with a plain line** (R7, #520; R9, #522). An Ok with no `routines-changed` reads the list again.
+43. **The legend sits once, on the first grid on the page; the "Done today" checkbox is a `RoutineItem` named "Done today: <habit>"** (R7, #520). `RoutineItem` gained `name` and its documented `readOnly` form.
+44. **Esc always ends or leaves the run view; Enter-at-rest and S follow `keys.single_key`** (R8, #521). End routine ends at once with no confirm, and one answer is in flight at a time.
+45. **The run view has its own frame, not `PageFrame`,** because `RoutineStep` owns the page's `h1`; key hints (`Kbd`, `aria-keyshortcuts`) show only while single keys are on (R8, #521). Whether `Kbd` inside `Button` is an allowed use is #568.
+46. **Every step has its own More menu, and a routine's More gains Add a step** (R9, #522), so a template's copied steps can be edited (Decision 7). A new habit picks where it belongs (*Belongs to*).
+47. **Time of day is an `Input type="time"` with an *Any time* chip; a new routine starts at Any time, every day** (R9, #522). The input's `HH:MM` is machine format; Rust words every displayed time.
+48. **Remove has no confirm; Undo is the safety** (R9, #522). The row says "Removed <name>." with Undo for 10 seconds or until the next action, and focus moves to Undo, then back to the item's More.
+49. **Follow-ups are filed as their own issues with a `priority:` label, linked from [Follow-ups](#follow-ups) and the ROADMAP** (R10, #523). The macOS CI timeout (#570) waits for the owner, because `ci` is a required check.
 
 ## Design canvas
 Canvas: https://claude.ai/artifact/3d9UTChLuhpUrBufwGzVPv (private to the owner; every option in light and dark side by side).
@@ -210,13 +239,28 @@ None blocking. The owner may overrule any decision above after reviewing the can
 ## Implementation status
 - Plan: [docs/plans/2026-11-14-routines-and-habits.md](../plans/2026-11-14-routines-and-habits.md)
 - Epic #513
-- [ ] R1 (#514)
-- [ ] R2 (#515)
-- [ ] R3 (#516)
-- [ ] R4 (#517)
-- [ ] R5 (#518)
-- [ ] R6 (#519)
-- [ ] R7 (#520)
-- [ ] R8 (#521)
-- [ ] R9 (#522)
-- [ ] R10 (#523)
+- [x] R1 (#514): [#525](https://github.com/arkgast/orasenda/pull/525)
+- [x] R2 (#515): [#526](https://github.com/arkgast/orasenda/pull/526)
+- [x] R3 (#516): [#527](https://github.com/arkgast/orasenda/pull/527)
+- [x] R4 (#517): [#528](https://github.com/arkgast/orasenda/pull/528)
+- [x] R5 (#518): [#529](https://github.com/arkgast/orasenda/pull/529)
+- [x] R6 (#519): [#551](https://github.com/arkgast/orasenda/pull/551)
+- [x] R7 (#520): [#546](https://github.com/arkgast/orasenda/pull/546)
+- [x] R8 (#521): [#556](https://github.com/arkgast/orasenda/pull/556)
+- [x] R9 (#522): [#555](https://github.com/arkgast/orasenda/pull/555)
+- [x] R10 (#523): this close-out (CONTEXT terms, ROADMAP, common issues, follow-ups)
+
+## Follow-ups
+Filed at the close-out (R10, #523). Each is its own issue.
+- [#560](https://github.com/arkgast/orasenda/issues/560) The Evening Shutdown flow (SPEC 2.5).
+- [#561](https://github.com/arkgast/orasenda/issues/561) Weekly review and plan.
+- [#562](https://github.com/arkgast/orasenda/issues/562) Neutral stats for routines and habits.
+- [#563](https://github.com/arkgast/orasenda/issues/563) Open or start a routine from its due nudge (notification actions).
+- [#564](https://github.com/arkgast/orasenda/issues/564) Link "Set the Frog and 3 priorities" to the Board task.
+- [#565](https://github.com/arkgast/orasenda/issues/565) Deep Work Start's blocking step starts a blocking profile (after P6).
+- [#566](https://github.com/arkgast/orasenda/issues/566) Onboarding offers the Morning template (P3).
+- [#547](https://github.com/arkgast/orasenda/issues/547) A weekday field on `HabitDotView` (drop the label parse).
+- [#567](https://github.com/arkgast/orasenda/issues/567) Move `useRunKeys` and `useLeaveKey` into one `domain/keyboard` hook.
+- [#568](https://github.com/arkgast/orasenda/issues/568) Confirm `Kbd` inside `Button` is an allowed use (run view key hints).
+- [#569](https://github.com/arkgast/orasenda/issues/569) Layout scenarios for the routine and habit editors.
+- [#570](https://github.com/arkgast/orasenda/issues/570) The macOS `ci` job hits its 45-minute timeout (owner decision).

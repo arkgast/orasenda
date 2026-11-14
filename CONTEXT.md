@@ -73,12 +73,28 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Fold rule | The one-time move of the spec-F keys `keys.start_pause` and `keys.capture` into the two-slot model, at launch and after importing an old file: the old default becomes the new default, a custom key becomes the Everywhere binding, and `"off"` becomes empty. | The repair pass |
 | Repair pass | The deterministic fix for two slots holding the same chord, after load, after the fold and after each import: a fixed key wins, then a user-set slot over a default, then registry order. The loser is turned off and marked *repaired*. | The recorder's conflict check |
 | Pane | One Settings view in the master-detail layout (General, Timer, Notifications, Shortcuts, About, Your data, Backups), picked from the sticky pane list. | A section of one long scroll |
+| Routine | An ordered list of habits with an optional time of day and the weekdays it runs (P4, spec 2026-11-14). Syncable (`routine`); removed by tombstone, and removing it tombstones its habits. At most 30 live. | A template (the starting copy); a focus session |
+| Habit | A recurring action with a name and the optional implementation intention (*when*, *where*), anchor, 2-minute version and identity statement. It sits in one routine (a step there) or stands alone with its own weekdays. Syncable (`habit`). | A step (a habit as it appears inside a run); a task (P2) |
+| Implementation intention | A habit's *when* and *where*, free text, worded by Rust as "I will drink a glass of water at 7:00 in the kitchen." Only a routine's time is a clock time. | The routine's time of day (what the due nudge reads) |
+| Anchor | The habit an action follows, worded by Rust as "After I wake up, I will drink a glass of water." | The implementation intention (a time and place) |
+| 2-minute version | The smallest form of a habit, written lower case ("one sip") and shown as "2-minute version: one sip." in a run. | Quick start (the 2-minute focus session) |
+| Identity statement | The person's own line about who the habit makes them ("I am someone who moves every day"). Empty in every template. | A goal or a score |
+| Template | One of the five built-in starter routines (Morning Light & Movement, Deep Work Start, Study Session, Evening Shutdown, Wind-down), kept in core as data with a `TemplateId`. Adding one copies it into an ordinary, editable routine; the copy keeps the id only to show the wellness note. | A routine; a default preset (which can be restored) |
+| Check-in | A `habit_check` row: this habit was done on this local date. Its id is `<habit_id>:<YYYY-MM-DD>`, so two devices agree. Unchecking tombstones it; only *done* is stored. | A run (a check-in can happen outside a run) |
+| Run (routine run) | One pass through a routine, step by step, in the run view: a `routine_run` row with its day, start, end, outcome (`finished` or `stopped`), counts, the step order frozen at start and the answers. At most one is open at a time; one left open on an earlier day is closed as `stopped`. | A focus session; a run of days |
+| Step | One habit inside a run: *upcoming*, *done* or *skipped*. *Done* checks the habit in; *Skip for today* writes only the run's counts. A removed habit's step reads *skipped*. | A habit |
+| Scheduled day | A local date on which a habit is expected: in its routine's weekdays (or a standalone habit's own), on or after the day it was created. | A rest day (any other day) |
+| Dot grid | The last 28 local days of one habit in `HabitDots`, in Monday-aligned weeks, each day a shape and a word: done, not done, rest or upcoming. Days before the habit existed are left out. | A streak counter |
+| Run of days | The count of done scheduled days, where a single not-done scheduled day between two done days is forgiven; two in a row end it. Shown as words from 2 ("5 days kept"), never as a big number. | A streak that breaks on one miss |
+| Fresh-start line | The restart line "Two days off. Today is a fresh start.", shown while the two latest scheduled days before today are both not done and today is not done yet. Replaces the run line. | A warning (Orasenda has none) |
+| Due nudge | The one local notification "<Routine name> is ready when you are." at a routine's time of day, at most once per routine per local day, within 30 minutes of the time and never after the routine is done. Gated by `notify.routine_due` (off by default) and the notification status. | A reminder list; the session-end notification |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
 - A session has one phase and moves idle → running ⇄ paused; ending (from running by time, or from either by *End session*) produces a record and a milestone and returns the engine to idle. Ended is not a state.
 - The scheduler feeds every engine the same `now_ms`; surfaces render the resulting view.
 - Syncable entities write change-log rows in the same transaction; device-only entities do not.
+- A routine holds ordered habits; a habit with no routine stands alone. A template is copied into a routine, never linked. A run freezes its routine's habits as steps at start; *Done* on a step writes a check-in. The dot grid, the run of days and the fresh-start line read only check-ins and scheduled days.
 
 ## Decisions
 ADRs live in [docs/DECISIONS.md](docs/DECISIONS.md): ADR-002 (storage), ADR-011 (time and scheduling), ADR-012 (store crate API), ADR-013 (one Rust state, many surfaces), ADR-014 (settings), ADR-015 (code-first design system), ADR-019 (full screen in the main window), ADR-020 (two bindings, one registry), ADR-021 (frontend layers).
