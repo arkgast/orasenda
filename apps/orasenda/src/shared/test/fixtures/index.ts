@@ -3,6 +3,7 @@ import { act } from "@testing-library/react";
 import type { AppInfo, DisplayInfo, NoteView, TimerState_Serialize } from "../../ipc/bindings";
 import { events } from "../../ipc/bindings";
 import { DATA_REPLIES } from "./data";
+import { FULL_SCREEN_REPLIES } from "./fullScreen";
 import { KEYBOARD } from "./keyboard";
 import { BREAK, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS } from "./timer";
 
@@ -87,6 +88,7 @@ const DEFAULTS: Replies = {
   main_show: () => null,
   preset_select: () => null,
   ...DATA_REPLIES,
+  ...FULL_SCREEN_REPLIES,
 };
 
 /**
@@ -170,5 +172,6 @@ export async function emitInboxChanged(notes: NoteView[]): Promise<void> {
 }
 
 export * from "./data";
+export * from "./fullScreen";
 export * from "./keyboard";
 export * from "./timer";

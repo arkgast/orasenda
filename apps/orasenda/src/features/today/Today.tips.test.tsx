@@ -99,7 +99,9 @@ test("menu_and_focus_view_tips_use_the_spec_copy", async () => {
   expect(line().shown.length).toBeLessThanOrEqual(65);
   await emitTimer(RUNNING);
   await emitTimer({ ...IDLE, tip: "focusViewKeys" });
-  expect(line().shown).toBe("Tip: F key opens Focus view, full screen or floating.");
+  // The F single key is gone: the older tip reads the same registry keys as the newer one.
+  expect(line().shown).toBe("Tip: ⌘F opens full screen, ⇧⌘T the floating timer.");
+  expect(line().shown).not.toMatch(/F key/);
   expect(line().shown.length).toBeLessThanOrEqual(65);
   await emitTimer(RUNNING);
   await emitTimer({ ...IDLE, tip: "focusView" });

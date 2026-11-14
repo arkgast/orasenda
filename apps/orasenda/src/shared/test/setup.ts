@@ -14,3 +14,4 @@ beforeAll(async () => {
 // styles/app.css (through the tokens) defines these in the real app; jsdom loads no stylesheet.
 document.documentElement.style.setProperty("--layout-compact-width", "640px");
 document.documentElement.style.setProperty("--layout-compact-height", "480px");
+document.documentElement.style.setProperty("--duration-hint", "4s");

@@ -1,5 +1,5 @@
 import type { Handler } from "./backend";
-import { backend, RUNNING } from "./backend";
+import { backend, IDLE, RUNNING, WINDOWED } from "./backend";
 import { rejects } from "./timer";
 import { DEEP_RUNNING } from "./today";
 
@@ -14,5 +14,26 @@ export const FOCUS: Record<string, Handler> = {
   closeError: backend({
     view: RUNNING,
     replies: { focus_view_close: rejects("unavailable", "no window") },
+  }),
+  // `main` in native full screen (H4b). The hint count is 0 where a spec measures the layout, so
+  // nothing fades under it; `fullScreenHint` is the first entry, with its hint showing.
+  fullScreenRunning: backend({
+    view: RUNNING,
+    replies: { window_view: () => ({ ...WINDOWED, fullScreen: true, hintsLeft: 0 }) },
+  }),
+  fullScreenIdle: backend({
+    view: IDLE,
+    replies: { window_view: () => ({ ...WINDOWED, fullScreen: true, hintsLeft: 0 }) },
+  }),
+  fullScreenHint: backend({
+    view: RUNNING,
+    replies: { window_view: () => ({ ...WINDOWED, fullScreen: true, hintsLeft: 3 }) },
+  }),
+  leaveError: backend({
+    view: RUNNING,
+    replies: {
+      window_view: () => ({ ...WINDOWED, fullScreen: true, hintsLeft: 0 }),
+      full_screen_leave: rejects("failed", "no"),
+    },
   }),
 };

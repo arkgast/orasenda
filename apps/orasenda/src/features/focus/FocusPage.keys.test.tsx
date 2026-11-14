@@ -81,18 +81,18 @@ test("focus_exit_closes_at_once_with_no_dialog", async () => {
   fireEvent.keyDown(screen.getByRole("region", { name: "Full-screen focus" }), { key: "Escape" });
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(argsOf(backend.calls, "focus_view_close")).toHaveLength(1);
+  expect(argsOf(backend.calls, "full_screen_leave")).toHaveLength(1);
 });
 
 test("focus_close_failure_in_status_line", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   await open({
     timer_view: () => RUNNING,
-    focus_view_close: () => Promise.reject({ kind: "unavailable", message: "no window" }),
+    full_screen_leave: () => Promise.reject({ kind: "unavailable", message: "no window" }),
   });
   fireEvent.click(screen.getByRole("button", { name: "Leave full screen" }));
   await settle();
-  expect(screen.getByRole("status")).toHaveTextContent("This window didn't close.");
+  expect(screen.getByRole("status")).toHaveTextContent("Orasenda couldn't leave full screen.");
 });
 
 function space(init: KeyboardEventInit = {}, target?: Element): boolean {

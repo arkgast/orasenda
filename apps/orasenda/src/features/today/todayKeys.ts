@@ -13,20 +13,18 @@ type Args = {
 };
 
 /**
- * Today's single keys: Space starts, pauses or resumes; F opens the Focus view menu; P opens the
- * preset popover. F and P are requests the two controls count and answer (`openRequest`).
+ * Today's single keys: Space starts, pauses or resumes; P opens the preset
+ * popover. P is a request the control counts and answers (`openRequest`).
  */
 export function useTodayKeys({ enabled, canStart, active, start, pauseResume }: Args) {
-  const [viewRequest, setViewRequest] = useState(0);
   const [presetRequest, setPresetRequest] = useState(0);
   const toggle = () => {
     if (canStart) start();
     else if (active) pauseResume();
   };
-  const openView = () => setViewRequest((n) => n + 1);
   const openPreset = () => setPresetRequest((n) => n + 1);
-  // The start or pause key comes from the registry; F and P are Today's own until H4.
+  // The start or pause key comes from the registry; P is Today's own.
   const space = singleKeyName(useBindings().byId("startPause"));
-  useSingleKeys({ ...(space ? { [space]: toggle } : {}), f: openView, p: openPreset }, enabled);
-  return { viewRequest, presetRequest };
+  useSingleKeys({ ...(space ? { [space]: toggle } : {}), p: openPreset }, enabled);
+  return { presetRequest };
 }

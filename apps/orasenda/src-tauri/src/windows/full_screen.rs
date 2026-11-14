@@ -57,6 +57,8 @@ pub(crate) trait FsOps {
     fn hints_left(&self) -> u8;
     /// Counts an entry; returns the entries left before it.
     fn bump_hint(&self) -> u8;
+    /// Ends the Focus-view tip: a full screen was opened (`used.focus_view`).
+    fn note_opened(&self);
     fn publish(&self, view: &WindowView);
 }
 
@@ -129,6 +131,9 @@ impl FullScreen {
     pub(crate) fn after_event<O: FsOps + ?Sized>(&self, ops: &O, event: Observed) {
         match event {
             Observed::Entered => {
+                // Every entry ends the Focus-view tip, whichever route made it (button, key,
+                // menu, palette or another app).
+                ops.note_opened();
                 let left = ops.bump_hint();
                 let mut inner = self.inner();
                 inner.hints_left = left;
@@ -149,13 +154,14 @@ impl FullScreen {
 
     /// The current view, the same value the last `window-view` carried.
     pub(crate) fn view<O: FsOps + ?Sized>(&self, ops: &O) -> WindowView {
-        let (counted, entered) = {
+        // `on`, `counted` and `hints_left` are read under one lock, so a did-enter between
+        // them can't give a full-screen view the hints of the entry before.
+        let (on, counted, entered) = {
             let inner = self.inner();
-            (inner.on && inner.counted, inner.hints_left)
+            (inner.on, inner.on && inner.counted, inner.hints_left)
         };
-        let on_now = self.is_on();
         WindowView {
-            full_screen: on_now,
+            full_screen: on,
             display: ops.display(),
             hints_left: if counted { entered } else { ops.hints_left() },
         }

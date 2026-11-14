@@ -15,7 +15,7 @@ use orasenda_service::api::KeyboardView;
 use orasenda_service::keyboard::ActionId;
 
 #[cfg(target_os = "macos")]
-pub(crate) use native::{apply_accelerators, rebuild_view};
+pub(crate) use native::{apply_accelerators, rebuild_view, set_leave_enabled};
 
 /// One item of a registry-built menu.
 #[derive(Debug, Clone, PartialEq, Eq)]

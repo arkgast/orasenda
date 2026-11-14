@@ -65,6 +65,16 @@ export function hintFor(action: ActionView | undefined): string | null {
   return action.global.status === "registered" ? (action.global.display ?? null) : null;
 }
 
+/**
+ * The binding a hint shows for an action: the *In Orasenda* one, else the *Everywhere* one while it
+ * works (the same rule as `hintFor`), else nothing.
+ */
+export function shownBinding(action: ActionView | undefined): BindingView | undefined {
+  if (!action) return undefined;
+  if (action.app.display) return action.app;
+  return action.global.status === "registered" && action.global.display ? action.global : undefined;
+}
+
 /** A registry single key as `useSingleKeys` names it: "Space", or a lower-case letter. */
 export function singleKeyName(action: ActionView | undefined): string | null {
   const key = action?.singleKey;

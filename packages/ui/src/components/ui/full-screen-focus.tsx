@@ -237,6 +237,9 @@ export function FullScreenFocus({
             data-slot="full-screen-focus-controls"
             className={cn(
               "flex h-control-lg w-full shrink-0 items-center justify-center",
+              // The flex gap above the lower region (space-4) puts the centre of the region 8px below the midpoint
+              // between the bottom of the ring and the bottom of the view; this lifts the row onto it.
+              roomy && "-translate-y-2",
               // Room for the host's actions without growing the fixed track: the gap tightens with each one.
               // Two break actions beside Pause and End are 2px too wide for the specimen frame's 344px track at
               // 360x240 (24px padding); the real window's 12px padding fits. A narrower gap, not padding, takes it up.

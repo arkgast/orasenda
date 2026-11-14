@@ -709,8 +709,13 @@ export type OverlayShow = {
 	appName: string,
 };
 
-/**  Asks `main` to open the command palette. No payload. */
-export type PaletteOpen = null;
+/**
+ *  Asks `main` to open the command palette. With `displays_only` it lists only the
+ *  *Full screen on <display>* commands (*Full screen on another display*).
+ */
+export type PaletteOpen = {
+	displaysOnly: boolean,
+};
 
 /**  Which part of the loop a session is in. */
 export type Phase = "focus" | "break";

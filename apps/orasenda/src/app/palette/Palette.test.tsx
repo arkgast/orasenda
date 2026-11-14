@@ -116,12 +116,7 @@ test.each([
   ["End session", { timer_view: () => RUNNING }, "timer_stop", undefined],
   ["Floating timer", {}, "action_run", { id: "floater" }],
   ["Just 2 minutes", {}, "timer_start", { request: { quick: true } }],
-  [
-    "Full screen on Built-in",
-    {},
-    "focus_view_open",
-    { target: { kind: "fullScreen", displayId: "1" } },
-  ],
+  ["Full screen on Built-in", {}, "full_screen_enter_on", { displayId: "1" }],
   [
     "Use preset: Gentle",
     {},
@@ -179,14 +174,14 @@ test.each([
   }
 });
 
-test.each(FAILURES)("focus_view_open_failure_shows_line: %s", async (_name, fail) => {
+test.each(FAILURES)("full_screen_failure_shows_line: %s", async (_name, fail) => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  const { onClose } = await open({ focus_view_open: fail });
+  const { onClose } = await open({ full_screen_enter_on: fail });
   fireEvent.click(screen.getByRole("option", { name: /Full screen on Built-in/ }));
   await settle();
   expect(onClose).not.toHaveBeenCalled();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Couldn't open the Focus view. Please try again.",
+    "Couldn't open full screen. Please try again.",
   );
 });
 
@@ -197,7 +192,7 @@ test("floater_failure_shows_line", async () => {
   await settle();
   expect(onClose).not.toHaveBeenCalled();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Couldn't open the Focus view. Please try again.",
+    "Couldn't open the floating timer. Please try again.",
   );
 });
 

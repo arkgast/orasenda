@@ -52,7 +52,7 @@ test("controls_centred_below_ring", async ({ page }) => {
     if (!(ring && view && pause && end)) throw new Error(`${w}x${h}: missing box`);
     const middle = (ring.y + ring.height + view.y + view.height) / 2;
     expect(Math.abs(pause.y + pause.height / 2 - middle), `${w}x${h} centred`).toBeLessThanOrEqual(
-      8,
+      1,
     );
     // space-8 (64px) between the two.
     expect(end.x - (pause.x + pause.width), `${w}x${h} gap`).toBeCloseTo(64, 0);

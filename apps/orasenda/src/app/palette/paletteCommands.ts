@@ -23,6 +23,8 @@ export type PaletteInput = {
   actions?: ReadonlyArray<ActionView>;
   /** The registry's fixed keys: the hints of Start focus, End session and the pages. */
   fixed?: ReadonlyArray<FixedKeyView>;
+  /** Only the *Full screen on <display>* commands: *Full screen on another display* opened it. */
+  displaysOnly?: boolean;
 };
 
 const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
@@ -77,14 +79,19 @@ function captureCommand(input: PaletteInput): Command {
 function focusViewCommands(input: PaletteInput): Command[] {
   const { displays } = input;
   if (displays.length === 0) return [];
-  const full = displays.map((display, index): Command => {
-    const label = displays.length === 1 ? "Full screen" : `Full screen on ${display.name}`;
-    return {
-      id: `fullScreen:${display.id}`,
-      label,
-      ...(index === 0 ? hint(input, "fullScreen") : {}),
-    };
-  });
+  // One display: the registry's *Full screen*. Two or more: one command per display, and the
+  // first (the main window's) names the key.
+  const full =
+    displays.length === 1
+      ? [{ id: "fullScreen", label: "Full screen", ...hint(input, "fullScreen") }]
+      : displays.map(
+          (display, index): Command => ({
+            id: `fullScreen:${display.id}`,
+            label: `Full screen on ${display.name}`,
+            ...(index === 0 ? hint(input, "fullScreen") : {}),
+          }),
+        );
+  if (input.displaysOnly) return full;
   return [...full, { id: "floater", label: "Floating timer", ...hint(input, "floater") }];
 }
 
@@ -123,6 +130,7 @@ function preferenceCommands(input: PaletteInput): Command[] {
 
 /** The commands available now, in the order the palette shows them (command-palette.md). */
 export function paletteCommands(input: PaletteInput): Command[] {
+  if (input.displaysOnly) return focusViewCommands(input);
   const pages = PAGE_ORDER.map(({ id, label }, index) => ({
     id: `page:${id}`,
     label: `Go to ${label}`,

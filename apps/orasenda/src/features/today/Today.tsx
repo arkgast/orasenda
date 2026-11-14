@@ -1,3 +1,5 @@
+import { shownBinding } from "@domain/keyboard/bindings";
+import { useBindings } from "@domain/keyboard/useBindings";
 import { useShortcuts } from "@domain/keyboard/useShortcuts";
 import { PagesButton } from "@domain/navigation/PagesButton";
 import { PresetSummary } from "@domain/presets/PresetSummary";
@@ -8,7 +10,6 @@ import { useTimer } from "@domain/timer/useTimer";
 import type { NavPage } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type {
-  FocusViewTarget,
   MilestoneEvent_Serialize,
   Settings,
   SettingsTarget,
@@ -20,8 +21,7 @@ import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useState } from "react";
 import { Controls } from "./Controls";
-import { FocusViewButton } from "./FocusViewButton";
-import { openFocusView } from "./focusView";
+import { type FocusButtonId, FocusButtons } from "./FocusButtons";
 import { type Notice, noticeAfter } from "./notices";
 import { StatusRow } from "./StatusRow";
 import { type StatusActionId, statusLine } from "./statusLine";
@@ -71,7 +71,8 @@ export function Today({ onNavigate }: Props) {
   const [failedStart, setFailedStart] = useState<StartRequest | null>(null);
   const [controlError, setControlError] = useState(false);
   // The focus view that failed to open, so Try again repeats it.
-  const [failedOpen, setFailedOpen] = useState<FocusViewTarget | null>(null);
+  const [failedOpen, setFailedOpen] = useState<FocusButtonId | null>(null);
+  const bindings = useBindings();
 
   useEffect(() => {
     const unregister = register({
@@ -162,8 +163,16 @@ export function Today({ onNavigate }: Props) {
       .finally(() => setStarting(false));
   };
 
-  const openView = (target: FocusViewTarget) => {
-    openFocusView(target).then((opened) => setFailedOpen(opened ? null : target));
+  // Both buttons go through `action_run`, the entry point menus and global shortcuts use; the
+  // command answers once the work is handed on, and Rust logs a failure of the window itself.
+  const openView = (id: FocusButtonId) => {
+    commands.actionRun(id).then(
+      () => setFailedOpen(null),
+      (error: unknown) => {
+        console.error("action_run failed", error);
+        setFailedOpen(id);
+      },
+    );
   };
 
   const choosePreset = (presetId: string) => {
@@ -291,10 +300,10 @@ export function Today({ onNavigate }: Props) {
           />
         </div>
         <div className="today-top-end">
-          <FocusViewButton
-            onOpen={openView}
-            singleKeys={singleKeys}
-            openRequest={keys.viewRequest}
+          <FocusButtons
+            fullScreen={shownBinding(bindings.byId("fullScreen"))}
+            floater={shownBinding(bindings.byId("floater"))}
+            onRun={openView}
           />
         </div>
       </div>

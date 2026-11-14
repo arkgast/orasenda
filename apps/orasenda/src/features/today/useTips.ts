@@ -31,10 +31,8 @@ function tipInput(id: TipId, keys: Keys | null, view: KeyboardView | null): TipI
       const text = "Tip: The menu bar item starts focus from anywhere.";
       return { id, text, spoken: text };
     }
-    case "focusViewKeys": {
-      const text = "Tip: F key opens Focus view, full screen or floating.";
-      return { id, text, spoken: text };
-    }
+    // The F key is gone (H4): the older tip says what the registry's keys do.
+    case "focusViewKeys":
     case "focusView": {
       // Both keys come from the registry; until they are known, or if either is cleared, the tip waits.
       const full = appKeys(view, "fullScreen");

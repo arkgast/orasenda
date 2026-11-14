@@ -88,6 +88,9 @@ mod other {
         fn hide_main(&self) -> Result<(), FocusViewError> {
             Err(unavailable())
         }
+        fn main_full_screen(&self) -> bool {
+            false
+        }
         fn load_frame(&self, _displays: &[&str]) -> Option<(String, Frame)> {
             None
         }
@@ -380,6 +383,10 @@ mod mac {
 
         fn hide_main(&self) -> Result<(), FocusViewError> {
             self.window(MAIN)?.hide().map_err(tauri_error)
+        }
+
+        fn main_full_screen(&self) -> bool {
+            crate::windows::full_screen::is_on(&self.app)
         }
 
         fn migrate_frames(&self, screens: &[Screen]) {

@@ -3,7 +3,8 @@ import { openApp } from "./support/app.ts";
 import { SIZES as TODAY_SIZES } from "./support/today.ts";
 
 // #321: in the ring and stackedStrip layouts the controls, the time and the top row's summary
-// share one centre line, the centre of the page box Today fills (right of the nav rail).
+// share one centre line, the centre of the page box Today fills (right of the nav rail). In a compact
+// window the summary is centred between Pages and the two focus buttons instead.
 const SIZES = [
   { width: 360, height: 240 },
   { width: 640, height: 480 },
@@ -20,6 +21,8 @@ type Centres = {
   controls: number;
   time: number;
   summary: number;
+  cell: number;
+  compact: boolean;
   controlsLeft: number;
   controlsRight: number;
   timeRight: number;
@@ -49,6 +52,8 @@ async function centres(page: Page): Promise<Centres> {
       controls: (left + right) / 2,
       time: mid(q(".today-time").firstElementChild?.getBoundingClientRect() as DOMRect),
       summary: mid(q('[data-slot="preset-summary"] button').getBoundingClientRect()),
+      cell: mid(q(".today-summary").getBoundingClientRect()),
+      compact: q(".today").dataset.compact !== undefined,
     };
   });
 }
@@ -67,8 +72,13 @@ for (const size of SIZES) {
         expect(Math.abs(a - b), `${what} ${JSON.stringify(c)}`).toBeLessThanOrEqual(1);
       near(c.controls, c.time, "controls vs time");
       near(c.controls, c.column, "controls vs window");
-      near(c.summary, c.column, "summary vs window");
-      near(c.summary, c.time, "summary vs time");
+      if (c.compact) {
+        // H4b: two buttons end the top row, so the summary is centred in its own cell, not on the window.
+        near(c.summary, c.cell, "summary vs its cell");
+      } else {
+        near(c.summary, c.column, "summary vs window");
+        near(c.summary, c.time, "summary vs time");
+      }
     });
   }
 }

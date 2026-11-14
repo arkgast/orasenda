@@ -135,3 +135,21 @@ test("palette_has_capture_command", () => {
     paletteCommands({ ...base, settings: null, view: null }).some((c) => c.id === "capture"),
   ).toBe(true);
 });
+
+test("palette_displays_only_lists_the_display_commands", () => {
+  const input = { ...base, actions: KEYBOARD.actions, fixed: KEYBOARD.fixed };
+  const only = paletteCommands({ ...input, displaysOnly: true });
+  expect(only.map((c) => c.id)).toEqual(["fullScreen:1", "fullScreen:2"]);
+  expect(only.map((c) => c.label)).toEqual([
+    "Full screen on Built-in Retina Display",
+    "Full screen on DELL U2720Q",
+  ]);
+  // Nothing else: no session rows, pages, themes or the floater.
+  expect(paletteCommands(input).length).toBeGreaterThan(only.length);
+});
+
+test("palette_one_display_is_plain_full_screen", () => {
+  const one = paletteCommands({ ...base, displays: [DISPLAYS[0]] });
+  expect(one.find((c) => c.id === "fullScreen")).toMatchObject({ label: "Full screen" });
+  expect(one.some((c) => c.id.startsWith("fullScreen:"))).toBe(false);
+});
