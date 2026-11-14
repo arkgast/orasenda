@@ -50,6 +50,7 @@ pub(super) fn session(id: &str, at: i64) -> SessionRowAll {
         long_break_min: Some(15),
         rounds: Some(4),
         break_kind: None,
+        task_id: None,
     }
 }
 

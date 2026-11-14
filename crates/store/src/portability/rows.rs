@@ -50,6 +50,7 @@ pub struct SessionRowAll {
     pub long_break_min: Option<i64>,
     pub rounds: Option<i64>,
     pub break_kind: Option<String>,
+    pub task_id: Option<String>,
 }
 
 /// An `inbox_note` row.
@@ -62,6 +63,29 @@ pub struct NoteRowAll {
     pub deleted_at: Option<i64>,
 }
 
+/// A `task` row. `tags` and `checklist` are the stored JSON text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskRowAll {
+    pub id: String,
+    pub title: String,
+    pub notes: String,
+    pub tags: String,
+    pub kind: String,
+    pub estimate: Option<i64>,
+    pub due: Option<String>,
+    pub priority: Option<String>,
+    pub checklist: String,
+    pub lane: String,
+    pub rank: String,
+    pub frog_day: Option<String>,
+    pub breakdown_dismissed: i64,
+    pub source_note_id: Option<String>,
+    pub done_at: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub deleted_at: Option<i64>,
+}
+
 /// Everything import merges.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SyncRows {
@@ -69,6 +93,7 @@ pub struct SyncRows {
     pub presets: Vec<PresetRowAll>,
     pub sessions: Vec<SessionRowAll>,
     pub notes: Vec<NoteRowAll>,
+    pub tasks: Vec<TaskRowAll>,
     pub routines: Vec<RoutineRowAll>,
     pub habits: Vec<HabitRowAll>,
     pub checks: Vec<CheckRowAll>,
@@ -115,7 +140,7 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
             "SELECT id, created_at, updated_at, deleted_at, preset, phase, planned_ms,
                  started_at, ended_at, paused_total_ms, focused_ms, end_reason, extensions,
                  preset_id, preset_name, focus_min, break_min, long_break_min, rounds,
-                 break_kind
+                 break_kind, task_id
              FROM focus_session ORDER BY id",
         )?
         .query_map([], |row| {
@@ -140,6 +165,7 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
                 long_break_min: row.get(17)?,
                 rounds: row.get(18)?,
                 break_kind: row.get(19)?,
+                task_id: row.get(20)?,
             })
         })?
         .collect::<Result<_, _>>()?;
@@ -155,12 +181,43 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
             })
         })?
         .collect::<Result<_, _>>()?;
+    let tasks = conn
+        .prepare(
+            "SELECT id, title, notes, tags, kind, estimate, due, priority, checklist, lane, rank,
+                 frog_day, breakdown_dismissed, source_note_id, done_at, created_at, updated_at,
+                 deleted_at
+             FROM task ORDER BY id",
+        )?
+        .query_map([], |row| {
+            Ok(TaskRowAll {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                notes: row.get(2)?,
+                tags: row.get(3)?,
+                kind: row.get(4)?,
+                estimate: row.get(5)?,
+                due: row.get(6)?,
+                priority: row.get(7)?,
+                checklist: row.get(8)?,
+                lane: row.get(9)?,
+                rank: row.get(10)?,
+                frog_day: row.get(11)?,
+                breakdown_dismissed: row.get(12)?,
+                source_note_id: row.get(13)?,
+                done_at: row.get(14)?,
+                created_at: row.get(15)?,
+                updated_at: row.get(16)?,
+                deleted_at: row.get(17)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
     let (routines, habits, checks, runs) = routine_rows::read(conn)?;
     Ok(SyncRows {
         settings,
         presets,
         sessions,
         notes,
+        tasks,
         routines,
         habits,
         checks,

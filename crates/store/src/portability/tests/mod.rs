@@ -6,6 +6,7 @@ mod probe;
 mod rows;
 mod snapshot;
 mod stats;
+mod tasks;
 
 use crate::Store;
 use crate::migrate::MIGRATIONS;

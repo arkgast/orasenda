@@ -9,6 +9,7 @@ mod presets;
 mod routines;
 mod sessions;
 mod settings;
+mod tasks;
 
 use super::{Counts, SyncRows};
 use crate::{StoreError, Txn};
@@ -56,6 +57,10 @@ pub fn merge(txn: &mut Txn, rows: &SyncRows) -> Result<MergeCounts, StoreError> 
     for row in &rows.notes {
         let (a, u) = (&mut counts.added.notes, &mut counts.updated.notes);
         notes::merge_row(txn, row)?.tally(a, u);
+    }
+    for row in &rows.tasks {
+        let (a, u) = (&mut counts.added.tasks, &mut counts.updated.tasks);
+        tasks::merge_row(txn, row)?.tally(a, u);
     }
     // Parents before children, so a reader never sees a habit before its routine.
     for row in &rows.routines {
