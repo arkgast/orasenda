@@ -31,9 +31,9 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
         "INSERT INTO focus_session (id, created_at, updated_at, deleted_at, preset, phase,
              planned_ms, started_at, ended_at, paused_total_ms, focused_ms, end_reason,
              extensions, preset_id, preset_name, focus_min, break_min, long_break_min,
-             rounds, break_kind)
+             rounds, break_kind, task_id)
          VALUES (?1, ?2, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
-             ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+             ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
         rusqlite::params![
             record.id.0,
             sql_int(record.ended_ms)?,
@@ -53,6 +53,7 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
             snapshot.map(|s| *s.4),
             snapshot.map(|s| *s.5),
             break_kind,
+            record.task_id,
         ],
     )?;
     let mut fields = vec![
@@ -78,6 +79,9 @@ pub fn insert(txn: &mut Txn, record: &SessionRecord) -> Result<(), StoreError> {
     }
     if let Some(kind) = &break_kind {
         fields.push(("break_kind", Value::from(kind.clone())));
+    }
+    if let Some(task_id) = &record.task_id {
+        fields.push(("task_id", Value::from(task_id.clone())));
     }
     txn.log_fields(Entity::FocusSession, &record.id.0, &fields)
 }

@@ -42,7 +42,7 @@ fn migration_0007_adds_the_routines_tables_and_keeps_rows() {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
-    assert_eq!(version, 7);
+    assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(
         columns(&conn, "routine"),
         [
