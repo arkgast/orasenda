@@ -192,3 +192,14 @@ pub fn set_frog(txn: &mut Txn, id: &str, day: &str) -> Result<Option<Option<Stri
     changes.write(txn, id)?;
     Ok(Some(others.first().cloned()))
 }
+
+/// Clears the Frog flag of a live task. Returns whether anything changed: a missing or removed
+/// task, or one that is not a Frog, changes nothing.
+pub fn clear_frog(txn: &mut Txn, id: &str) -> Result<bool, StoreError> {
+    let Some(old) = live(txn, id)? else {
+        return Ok(false);
+    };
+    let mut changes = Changes::default();
+    changes.opt_text("frog_day", &None, &old.frog_day);
+    changes.write(txn, id)
+}

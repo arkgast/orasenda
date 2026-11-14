@@ -62,6 +62,7 @@ fn every_new_key_round_trips() {
         notify_session_end: true,
         notify_two_minutes: true,
         notify_routine_due: true,
+        board_estimate_buffer: 40,
         single_key: false,
     };
     s.set_settings(all.clone(), T0).expect("saves");

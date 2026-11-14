@@ -2,6 +2,7 @@
 //! types them for the webview with tauri-specta (ADR-007); `src/shared/ipc/bindings.ts` is generated
 //! from these.
 
+mod board;
 mod data;
 mod errors;
 mod events;
@@ -16,6 +17,10 @@ mod tests;
 mod timer;
 mod tips;
 
+pub use board::{
+    BoardError, BoardView, ChecklistItemView, ColumnSettings, ColumnView, Lane, LimitState,
+    TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
+};
 pub use data::{
     BackupEntry, BackupFrequency, BackupKind, BackupPolicy, DataCounts, DataError, DataErrorKind,
     DataOverview, ExportOutcome, ImportOutcome, ImportReport,
