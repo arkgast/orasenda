@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-routine-restore"
+description = "Enables the routine_restore command without any pre-configured scope."
+commands.allow = ["routine_restore"]
+
+[[permission]]
+identifier = "deny-routine-restore"
+description = "Denies the routine_restore command without any pre-configured scope."
+commands.deny = ["routine_restore"]

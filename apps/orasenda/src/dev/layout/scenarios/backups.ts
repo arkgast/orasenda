@@ -16,7 +16,16 @@ const TWELVE: BackupEntry[] = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 const overview = (backups: BackupEntry[]): DataOverview_Serialize => ({
-  counts: { sessions: 12, presets: 3, notes: 2, settings: 9 },
+  counts: {
+    sessions: 12,
+    presets: 3,
+    notes: 2,
+    settings: 9,
+    routines: 0,
+    habits: 0,
+    checks: 0,
+    runs: 0,
+  },
   folder: "/Users/test/Library/Application Support/com.veloud.orasenda",
   backups,
   policy: { frequency: "monthly", keep: 12 },

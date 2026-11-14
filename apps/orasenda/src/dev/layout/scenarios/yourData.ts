@@ -7,7 +7,16 @@ const POLICY = { frequency: "monthly", keep: 10 };
 
 function overview(patch: Record<string, unknown> = {}) {
   return {
-    counts: { sessions: 128, presets: 3, notes: 14, settings: 9 },
+    counts: {
+      sessions: 128,
+      presets: 3,
+      notes: 14,
+      settings: 9,
+      routines: 0,
+      habits: 0,
+      checks: 0,
+      runs: 0,
+    },
     folder: FOLDER,
     backups: [],
     policy: POLICY,
@@ -21,8 +30,26 @@ const SAVED = { kind: "saved", file: "Orasenda data 2026-11-12.db" };
 const IMPORTED = {
   kind: "imported",
   report: {
-    added: { sessions: 12, presets: 1, notes: 3, settings: 0 },
-    updated: { sessions: 0, presets: 0, notes: 0, settings: 2 },
+    added: {
+      sessions: 12,
+      presets: 1,
+      notes: 3,
+      settings: 0,
+      routines: 0,
+      habits: 0,
+      checks: 0,
+      runs: 0,
+    },
+    updated: {
+      sessions: 0,
+      presets: 0,
+      notes: 0,
+      settings: 2,
+      routines: 0,
+      habits: 0,
+      checks: 0,
+      runs: 0,
+    },
   },
 };
 

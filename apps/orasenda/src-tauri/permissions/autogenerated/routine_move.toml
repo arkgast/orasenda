@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-routine-move"
+description = "Enables the routine_move command without any pre-configured scope."
+commands.allow = ["routine_move"]
+
+[[permission]]
+identifier = "deny-routine-move"
+description = "Denies the routine_move command without any pre-configured scope."
+commands.deny = ["routine_move"]

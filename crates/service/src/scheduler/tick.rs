@@ -23,13 +23,22 @@ fn tick_once<H: Host>(host: &H) {
         return;
     };
     let now_ms = host.now_ms();
-    let (effects, clock) = {
+    let (effects, clock, routines) = {
         let mut service = lock(service);
         let effects = service.tick(now_ms);
-        (effects, service.clock_tick(now_ms))
+        let routines = if service.routines_day_turned(now_ms) {
+            crate::routines::changed_view(&service, now_ms)
+        } else {
+            None
+        };
+        (effects, service.clock_tick(now_ms), routines)
     };
     host.emit_clock_tick(&clock);
     publish(host, effects);
+    // Once at local midnight, so the dot grids and the today lines roll over.
+    if let Some(view) = routines {
+        host.emit_routines_changed(&view);
+    }
 }
 
 /// Emits one `clock-tick` now.

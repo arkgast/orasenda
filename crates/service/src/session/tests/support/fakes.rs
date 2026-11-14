@@ -13,7 +13,8 @@ use orasenda_store::Store;
 
 use crate::api::{ClockTick, DataOverview};
 use crate::api::{
-    KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, StartRequest, Theme, TimerView,
+    KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView, Settings, StartRequest,
+    Theme, TimerView,
 };
 use crate::scheduler::Host;
 use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
@@ -47,6 +48,7 @@ pub enum Event {
     KeyboardChanged(KeyboardView),
     BackupsChanged(DataOverview),
     Restarted,
+    RoutinesChanged(RoutinesView),
 }
 
 #[derive(Clone, Default)]
@@ -435,5 +437,10 @@ impl Host for TestHost {
     fn restart(&self) {
         self.note_unlocked();
         self.0.log.push(Event::Restarted);
+    }
+
+    fn emit_routines_changed(&self, view: &RoutinesView) {
+        self.note_unlocked();
+        self.0.log.push(Event::RoutinesChanged(view.clone()));
     }
 }

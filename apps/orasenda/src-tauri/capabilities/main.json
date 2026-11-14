@@ -53,6 +53,20 @@
     "allow-full-screen-enter",
     "allow-full-screen-enter-on",
     "allow-full-screen-leave",
-    "allow-window-view"
+    "allow-window-view",
+    "allow-routines-list",
+    "allow-routine-templates",
+    "allow-routine-create",
+    "allow-routine-add-template",
+    "allow-routine-update",
+    "allow-routine-move",
+    "allow-routine-remove",
+    "allow-routine-restore",
+    "allow-habit-create",
+    "allow-habit-update",
+    "allow-habit-move",
+    "allow-habit-remove",
+    "allow-habit-restore",
+    "allow-habit-check"
   ]
 }

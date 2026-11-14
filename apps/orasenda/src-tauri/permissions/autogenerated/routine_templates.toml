@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-routine-templates"
+description = "Enables the routine_templates command without any pre-configured scope."
+commands.allow = ["routine_templates"]
+
+[[permission]]
+identifier = "deny-routine-templates"
+description = "Denies the routine_templates command without any pre-configured scope."
+commands.deny = ["routine_templates"]

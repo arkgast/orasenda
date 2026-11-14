@@ -99,6 +99,19 @@ impl Type for BackupsChangedEvent {
     }
 }
 
+/// `routines-changed`: the Routines page's view after any routines write, at local midnight
+/// and after an import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "routines-changed")]
+pub struct RoutinesChangedEvent(pub RoutinesView);
+
+impl Type for RoutinesChangedEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <RoutinesView as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
