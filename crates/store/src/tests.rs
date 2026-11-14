@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 mod migration_0006;
 mod migration_0007;
+mod migration_0008;
 
 const DEVICE: &str = "device-a";
 
@@ -123,7 +124,8 @@ fn fresh_file_reaches_current_schema_without_review_marker() {
             "break_min",
             "long_break_min",
             "rounds",
-            "break_kind"
+            "break_kind",
+            "task_id"
         ]
     );
     assert_eq!(
@@ -135,7 +137,7 @@ fn fresh_file_reaches_current_schema_without_review_marker() {
             &conn,
             "SELECT count(*) FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
         ),
-        12
+        13
     );
 }
 

@@ -41,16 +41,53 @@ fn migration_7_to_8_keeps_rows() {
     assert_eq!(
         columns(&conn, "task"),
         [
-            "id", "title", "notes", "tags", "kind", "estimate", "due", "priority", "checklist",
-            "lane", "rank", "frog_day", "breakdown_dismissed", "source_note_id", "done_at",
-            "created_at", "updated_at", "deleted_at"
+            "id",
+            "title",
+            "notes",
+            "tags",
+            "kind",
+            "estimate",
+            "due",
+            "priority",
+            "checklist",
+            "lane",
+            "rank",
+            "frog_day",
+            "breakdown_dismissed",
+            "source_note_id",
+            "done_at",
+            "created_at",
+            "updated_at",
+            "deleted_at"
         ]
     );
     assert!(columns(&conn, "focus_session").contains(&"task_id".to_owned()));
-    assert_eq!(count(&conn, "SELECT count(*) FROM focus_session WHERE task_id IS NULL"), 1);
-    for table in ["focus_session", "inbox_note", "routine", "setting", "change_log"] {
-        assert_eq!(count(&conn, &format!("SELECT count(*) FROM {table}")), 1, "{table}");
+    assert_eq!(
+        count(
+            &conn,
+            "SELECT count(*) FROM focus_session WHERE task_id IS NULL"
+        ),
+        1
+    );
+    for table in [
+        "focus_session",
+        "inbox_note",
+        "routine",
+        "setting",
+        "change_log",
+    ] {
+        assert_eq!(
+            count(&conn, &format!("SELECT count(*) FROM {table}")),
+            1,
+            "{table}"
+        );
     }
     assert_eq!(count(&conn, "SELECT count(*) FROM task"), 0);
-    assert_eq!(count(&conn, "SELECT count(*) FROM pragma_index_info('focus_session_task')"), 1);
+    assert_eq!(
+        count(
+            &conn,
+            "SELECT count(*) FROM pragma_index_info('focus_session_task')"
+        ),
+        1
+    );
 }

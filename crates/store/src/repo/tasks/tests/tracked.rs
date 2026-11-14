@@ -30,8 +30,10 @@ fn tracked_sums_focus_rows_only() {
             crate::focus_sessions::insert(txn, &record("s5", Phase::Focus, 5, None))?;
             // A break row carrying the id is not tracked time.
             crate::focus_sessions::insert(txn, &record("s6", Phase::Break, 400, Some("a")))?;
-            txn.conn()
-                .execute("UPDATE focus_session SET deleted_at = 1 WHERE id = 's4'", [])?;
+            txn.conn().execute(
+                "UPDATE focus_session SET deleted_at = 1 WHERE id = 's4'",
+                [],
+            )?;
             Ok(())
         })
         .expect("inserts");
@@ -39,8 +41,16 @@ fn tracked_sums_focus_rows_only() {
     assert_eq!(
         got,
         [
-            Tracked { task_id: "a".into(), focused_ms: 350, sessions: 2 },
-            Tracked { task_id: "b".into(), focused_ms: 70, sessions: 1 },
+            Tracked {
+                task_id: "a".into(),
+                focused_ms: 350,
+                sessions: 2
+            },
+            Tracked {
+                task_id: "b".into(),
+                focused_ms: 70,
+                sessions: 1
+            },
         ]
     );
 }
@@ -86,12 +96,19 @@ fn list_done_since_is_newest_first() {
         insert_one(&store, &new_task(id, Lane::Doing, rank));
     }
     for (id, at) in [("a", 100), ("b", 300), ("c", 200)] {
-        store.write(at, |txn| move_to(txn, id, Lane::Done, "V")).expect("moves");
+        store
+            .write(at, |txn| move_to(txn, id, Lane::Done, "V"))
+            .expect("moves");
     }
-    store.write(400, |txn| remove(txn, "c", 400)).expect("removes");
+    store
+        .write(400, |txn| remove(txn, "c", 400))
+        .expect("removes");
     let got = store.read(|txn| list_done_since(txn, 150)).expect("lists");
     // a is too old, c is removed, d is not done.
     assert_eq!(got.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["b"]);
     let all = store.read(|txn| list_done_since(txn, 0)).expect("lists");
-    assert_eq!(all.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["b", "a"]);
+    assert_eq!(
+        all.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+        ["b", "a"]
+    );
 }
