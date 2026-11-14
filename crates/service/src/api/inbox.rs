@@ -1,4 +1,4 @@
-//! The Inbox as the webview sees it: notes captured from anywhere, listed on Board.
+//! The Inbox as the webview sees it: notes captured from anywhere, listed on the Inbox page.
 
 use serde::{Deserialize, Serialize};
 

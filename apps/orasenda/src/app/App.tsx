@@ -45,7 +45,7 @@ function load<P>(importer: () => Promise<ComponentType<P>>) {
 
 const todayPage = load(() => import("@features/today/Today").then((m) => m.Today));
 const settingsPage = load(() => import("@features/settings/Settings").then((m) => m.Settings));
-const boardPage = load(() => import("@features/board/BoardPage").then((m) => m.BoardPage));
+const inboxPage = load(() => import("@features/inbox/InboxPage").then((m) => m.InboxPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
 const focusPage = load(() => import("@features/focus/FocusPage").then((m) => m.FocusPage));
 
@@ -53,7 +53,7 @@ const focusPage = load(() => import("@features/focus/FocusPage").then((m) => m.F
 export const pagesReady = Promise.allSettled([
   todayPage.ready,
   settingsPage.ready,
-  boardPage.ready,
+  inboxPage.ready,
   placeholderPage.ready,
   focusPage.ready,
 ]);
@@ -66,8 +66,8 @@ function Settings(props: ComponentProps<typeof import("@features/settings/Settin
   const Page = settingsPage.use();
   return <Page {...props} />;
 }
-function Board(props: ComponentProps<typeof import("@features/board/BoardPage").BoardPage>) {
-  const Page = boardPage.use();
+function Inbox(props: ComponentProps<typeof import("@features/inbox/InboxPage").InboxPage>) {
+  const Page = inboxPage.use();
   return <Page {...props} />;
 }
 function FocusPage(props: ComponentProps<typeof import("@features/focus/FocusPage").FocusPage>) {
@@ -81,7 +81,7 @@ function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeh
 
 const TITLES: Readonly<Record<NavPage, string>> = {
   today: "Today",
-  board: "Board",
+  inbox: "Inbox",
   calendar: "Calendar",
   routines: "Routines",
   review: "Review",
@@ -239,7 +239,7 @@ export function App() {
     <div
       className={[
         "app",
-        current === "settings" || current === "board" ? "app-bound" : "",
+        current === "settings" || current === "inbox" ? "app-bound" : "",
         compact ? "app-compact" : "",
       ]
         .filter(Boolean)
@@ -256,8 +256,8 @@ export function App() {
               {current === "settings" ? (
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}
-              {current === "board" ? <Board onNavigate={(page) => navigate(page)} /> : null}
-              {current !== "today" && current !== "settings" && current !== "board" ? (
+              {current === "inbox" ? <Inbox onNavigate={(page) => navigate(page)} /> : null}
+              {current !== "today" && current !== "settings" && current !== "inbox" ? (
                 <Placeholder
                   title={TITLES[current]}
                   compact={compact}

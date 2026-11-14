@@ -45,9 +45,9 @@ declare global {
       InlineNotice: typeof import("./components/ui/inline-notice").InlineNotice;
       Toast: typeof import("./components/ui/toast").Toast;
       NavRail: (props: {
-        current: "today" | "board" | "calendar" | "routines" | "review" | "settings";
+        current: "today" | "inbox" | "calendar" | "routines" | "review" | "settings";
         onNavigate: (
-          page: "today" | "board" | "calendar" | "routines" | "review" | "settings",
+          page: "today" | "inbox" | "calendar" | "routines" | "review" | "settings",
         ) => void;
       }) => React.ReactElement;
       KanbanColumn: typeof import("./components/ui/kanban-column").KanbanColumn;
@@ -153,4 +153,4 @@ export interface BarRowProps {
   spoken: string;
   goal?: { minutes: number; words: string };
 }
-export type NavPage = "today" | "board" | "calendar" | "routines" | "review" | "settings";
+export type NavPage = "today" | "inbox" | "calendar" | "routines" | "review" | "settings";

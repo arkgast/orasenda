@@ -1,8 +1,8 @@
 import type { Handler } from "./backend";
 import { BACKUPS_SCENARIOS } from "./backups";
-import { BOARD } from "./board";
 import { DATA } from "./data";
 import { FOCUS } from "./focus";
+import { INBOX } from "./inbox";
 import { KEYBOARD_SCENARIOS } from "./keyboard";
 import { SETTINGS_SCENARIOS } from "./settings";
 import { TIMER } from "./timer";
@@ -18,7 +18,7 @@ const SCENARIOS: Record<string, Handler> = {
   ...TODAY,
   ...KEYBOARD_SCENARIOS,
   ...FOCUS,
-  ...BOARD,
+  ...INBOX,
   ...DATA,
   ...BACKUPS_SCENARIOS,
   ...YOUR_DATA,

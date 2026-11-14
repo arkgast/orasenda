@@ -31,7 +31,7 @@ afterEach(async () => {
 });
 
 async function renderInbox(replies: Replies = {}) {
-  const backend = mockBackend({ keyinbox_state: () => KEYBOARD, ...replies });
+  const backend = mockBackend({ keyboard_state: () => KEYBOARD, ...replies });
   const view = render(<InboxPage onNavigate={() => {}} />);
   await settle();
   return { backend, ...view };
@@ -110,7 +110,7 @@ test("inbox_load_failure_is_not_the_empty_state", async () => {
 
 test("inbox_shows_nothing_while_loading", async () => {
   const gate = deferred<NoteView[]>();
-  mockBackend({ keyinbox_state: () => KEYBOARD, inbox_list: () => gate.promise });
+  mockBackend({ keyboard_state: () => KEYBOARD, inbox_list: () => gate.promise });
   render(<InboxPage onNavigate={() => {}} />);
   await settle();
   expect(screen.queryByText("Nothing in your Inbox.")).not.toBeInTheDocument();
@@ -128,7 +128,7 @@ test("inbox_empty_copy_follows_shortcut_status", async () => {
   for (const status of ["off", "failed"] as const) {
     const { unmount: again } = await renderInbox({
       inbox_list: () => [],
-      keyinbox_state: () =>
+      keyboard_state: () =>
         withGlobal(
           KEYBOARD,
           "capture",
@@ -142,7 +142,7 @@ test("inbox_empty_copy_follows_shortcut_status", async () => {
   }
 });
 
-test("inbox_empty_copy_follows_keyinbox_changed", async () => {
+test("inbox_empty_copy_follows_keyboard_changed", async () => {
   await renderInbox({ inbox_list: () => [] });
   await act(async () => {
     await events.keyboardChanged.emit(

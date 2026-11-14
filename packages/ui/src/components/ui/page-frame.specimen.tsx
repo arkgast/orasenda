@@ -28,7 +28,7 @@ export function PageFrameSpecimen(): ReactElement {
       </Frame>
       <Frame state="page-frame-list-1440x900" width={1440} height={900}>
         <PageFrame
-          title="Board"
+          title="Inbox"
           primary={<Button variant="primary">Plan the day</Button>}
           status={
             <InlineNotice variant="row" tone="neutral">
@@ -36,7 +36,7 @@ export function PageFrameSpecimen(): ReactElement {
             </InlineNotice>
           }
         >
-          <ScrollRegion label="Board">{rows(40)}</ScrollRegion>
+          <ScrollRegion label="Inbox">{rows(40)}</ScrollRegion>
         </PageFrame>
       </Frame>
       <Frame state="page-frame-flow-900x600" width={900} height={600}>

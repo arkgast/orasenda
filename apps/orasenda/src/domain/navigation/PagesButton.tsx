@@ -7,7 +7,7 @@ import { requestPalette } from "./paletteRequest";
 
 export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "today", label: "Today" },
-  { id: "board", label: "Board" },
+  { id: "inbox", label: "Inbox" },
   { id: "calendar", label: "Calendar" },
   { id: "routines", label: "Routines" },
   { id: "review", label: "Review" },

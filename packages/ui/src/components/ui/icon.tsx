@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   "jump",
   "today",
   "board",
+  "inbox",
   "calendar",
   "routines",
   "review",
@@ -86,6 +87,9 @@ const GLYPHS: Record<IconName, ReactElement> = {
       <rect x="2.5" y="2.5" width="15" height="15" rx="2" />
       <path d="M6.5 6v6.5M10 6v3.5M13.5 6v8" />
     </>
+  ),
+  inbox: (
+    <path d="M2.5 11.5l2-7.5h11l2 7.5v4a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5zM2.5 11.5h4.5a3 3 0 0 0 6 0h4.5" />
   ),
   calendar: (
     <>
