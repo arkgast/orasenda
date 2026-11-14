@@ -78,7 +78,7 @@ fn fixed_keys_are_unique() {
 
 #[test]
 fn fixed_page_keys_name_the_real_pages() {
-    let labels: Vec<_> = (1..=6)
+    let labels: Vec<_> = (1..=7)
         .map(|n| {
             let keys = format!("Super+Digit{n}");
             FIXED.iter().find(|f| f.keys == keys).expect("fixed").label
@@ -87,7 +87,7 @@ fn fixed_page_keys_name_the_real_pages() {
     assert_eq!(
         labels,
         [
-            "Today", "Inbox", "Calendar", "Routines", "Review", "Settings"
+            "Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings"
         ]
     );
 }

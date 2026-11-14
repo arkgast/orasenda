@@ -8,6 +8,7 @@ import { requestPalette } from "./paletteRequest";
 export const PAGE_ORDER: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "today", label: "Today" },
   { id: "inbox", label: "Inbox" },
+  { id: "board", label: "Board" },
   { id: "calendar", label: "Calendar" },
   { id: "routines", label: "Routines" },
   { id: "review", label: "Review" },
@@ -19,7 +20,7 @@ type Props = {
   onNavigate(page: NavPage): void;
 };
 
-/** The way to the other pages when the window is compact: a native menu of the six pages. */
+/** The way to the other pages when the window is compact: a native menu of the pages. */
 export function PagesButton({ current, onNavigate }: Props): ReactElement {
   const box = useRef<HTMLSpanElement>(null);
   const [expanded, setExpanded] = useState(false);

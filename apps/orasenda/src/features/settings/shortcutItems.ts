@@ -1,4 +1,5 @@
 import { pageAccelerator, pagesRange } from "@domain/keyboard/bindings";
+import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { describeShortcut, type ShortcutListItem } from "@orasenda/ui";
 import type { FixedKeyView, KeyboardView } from "@shared/ipc/bindings";
 
@@ -6,8 +7,6 @@ type Entry = { action: string; keys: string; spoken?: string; single?: boolean }
 
 /** Today's single keys besides the registry's own (F and P go with H4). */
 const TODAY_EXTRA = ["F", "P"];
-
-const PAGES = 6;
 
 /** The fixed keys All shortcuts lists, by accelerator; the page keys fold into one row, the menu's standard items are left out. */
 const SHOWN_FIXED = new Set([
@@ -23,13 +22,13 @@ function fixedEntries(fixed: ReadonlyArray<FixedKeyView>): Entry[] {
   const rows: Entry[] = fixed
     .filter((f) => SHOWN_FIXED.has(f.keys))
     .map((f) => ({ action: f.label, keys: f.display, spoken: f.spoken }));
-  const range = pagesRange(fixed, PAGES);
+  const range = pagesRange(fixed, PAGE_ORDER.length);
   const first = fixed.find((f) => f.keys === pageAccelerator(1));
   if (range && first) {
     rows.push({
       action: "Go to a page",
       keys: range,
-      spoken: `${first.spoken} to ${PAGES}`,
+      spoken: `${first.spoken} to ${PAGE_ORDER.length}`,
     });
   }
   return rows;

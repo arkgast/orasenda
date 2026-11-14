@@ -13,10 +13,10 @@ function StatefulRail(): ReactElement {
 export function NavRailSpecimen(): ReactElement {
   return (
     <>
-      <Frame state="nav-rail-today" width={72} height={400}>
+      <Frame state="nav-rail-today" width={72} height={460}>
         <StatefulRail />
       </Frame>
-      <Frame state="nav-rail-settings" width={72} height={400}>
+      <Frame state="nav-rail-settings" width={72} height={460}>
         <NavRail current="settings" onNavigate={noop} />
       </Frame>
     </>

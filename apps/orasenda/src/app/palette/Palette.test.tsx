@@ -58,6 +58,25 @@ test("palette_row_runs_focus_view_and_navigation", async () => {
   expect(again.onNavigate).toHaveBeenCalledWith("settings");
 });
 
+test("palette_go_to_board", async () => {
+  const { onNavigate } = await open();
+  fireEvent.click(screen.getByRole("option", { name: /Go to Board/ }));
+  expect(onNavigate).toHaveBeenCalledWith("board");
+  cleanup();
+  await open();
+  const goTo = screen.getAllByRole("option", { name: /^Go to / });
+  expect(goTo.map((o) => /^Go to (\w+)/.exec(o.textContent ?? "")?.[1])).toEqual([
+    "Today",
+    "Inbox",
+    "Board",
+    "Calendar",
+    "Routines",
+    "Review",
+    "Settings",
+  ]);
+  expect(goTo[2]).toHaveTextContent("⌘3");
+});
+
 test("palette_capture_row_opens_the_panel_and_shows_the_current_keys", async () => {
   const { backend, onClose } = await open();
   const row = screen.getByRole("option", { name: /Capture a thought/ });

@@ -137,7 +137,7 @@ async function openCompactSettings() {
   const backend = mockBackend();
   render(<App />);
   await settle();
-  fireEvent.keyDown(document.body, { key: "6", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "7", metaKey: true });
   await settle();
   return backend;
 }

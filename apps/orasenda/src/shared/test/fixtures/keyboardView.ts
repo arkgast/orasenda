@@ -113,7 +113,7 @@ export const KEYBOARD: KeyboardView_Serialize = {
     fixed("Start focus", "Super+Enter", "⌘↩", "Command-Return"),
     fixed("Just 2 minutes", "Shift+Super+Enter", "⇧⌘↩", "Shift-Command-Return"),
     fixed("End session", "Super+Period", "⌘.", "Command-Period"),
-    ...["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"].map((label, i) =>
+    ...["Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings"].map((label, i) =>
       fixed(label, `Super+Digit${i + 1}`, `⌘${i + 1}`, `Command-${i + 1}`),
     ),
     fixed("Leave full screen", "Escape", "Esc", "Escape"),

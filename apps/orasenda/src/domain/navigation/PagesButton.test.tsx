@@ -1,6 +1,7 @@
+import { NavRail } from "@orasenda/ui";
 import { mockBackend, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { PagesButton } from "./PagesButton";
 import { onPaletteRequest } from "./paletteRequest";
@@ -12,7 +13,16 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-const NAMES = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings", "Commands…"];
+const NAMES = [
+  "Today",
+  "Inbox",
+  "Board",
+  "Calendar",
+  "Routines",
+  "Review",
+  "Settings",
+  "Commands…",
+];
 
 function open(answer: string | null, current: "today" | "inbox" = "inbox") {
   const backend = mockBackend({ native_menu_popup: () => answer });
@@ -34,7 +44,7 @@ function open(answer: string | null, current: "today" | "inbox" = "inbox") {
   return { backend, onNavigate };
 }
 
-test("pages_button_sends_six_items_current_checked", async () => {
+test("pages_button_sends_seven_items_current_checked", async () => {
   const { backend } = open(null);
   await settle();
   const call = backend.calls.find((c) => c.cmd === "native_menu_popup");
@@ -45,7 +55,7 @@ test("pages_button_sends_six_items_current_checked", async () => {
   ).request;
   expect(request.items.map((i) => i.label)).toEqual(NAMES);
   expect(request.items.map((i) => i.accelerator)).toEqual([
-    ...[1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`),
+    ...[1, 2, 3, 4, 5, 6, 7].map((n) => `Cmd+${n}`),
     "Cmd+K",
   ]);
   expect(request.items.map((i) => i.checked)).toEqual([
@@ -55,11 +65,13 @@ test("pages_button_sends_six_items_current_checked", async () => {
     false,
     false,
     false,
+    false,
     null,
   ]);
   expect(request.items.map((i) => i.id)).toEqual([
     "today",
     "inbox",
+    "board",
     "calendar",
     "routines",
     "review",
@@ -77,7 +89,10 @@ test("pages_button_is_a_menu_trigger_with_shortcuts", async () => {
   // The chords come from the registry's fixed keys, so none show before keyboard_state answers.
   expect(button).not.toHaveAttribute("aria-keyshortcuts");
   await settle();
-  expect(button).toHaveAttribute("aria-keyshortcuts", "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6");
+  expect(button).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6 Meta+7",
+  );
 });
 
 test("pages_choice_navigates", async () => {
@@ -116,4 +131,20 @@ test("pages_commands_opens_palette", async () => {
   expect(opened).toHaveBeenCalledTimes(1);
   expect(onNavigate).not.toHaveBeenCalled();
   stop();
+});
+
+test("pages_button_order_matches_rail", async () => {
+  const { backend } = open(null);
+  await settle();
+  const call = backend.calls.find((c) => c.cmd === "native_menu_popup");
+  const items = (call as { args: { request: { items: Array<{ label: string }> } } }).args.request
+    .items;
+  const menu = items.map((i) => i.label).filter((l) => l !== "Commands…");
+  cleanup();
+  render(<NavRail current="today" onNavigate={() => {}} />);
+  const rail = screen.getByRole("navigation", { name: "Main navigation" });
+  const names = within(rail)
+    .getAllByRole("button")
+    .map((b) => b.textContent?.trim());
+  expect(names).toEqual(menu);
 });

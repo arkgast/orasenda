@@ -15,7 +15,7 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./App";
 
-const PAGES = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"];
+const PAGES = ["Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings"];
 
 function strictApp(commits: string[]) {
   return (
@@ -103,7 +103,7 @@ test("cmd_digits_navigate_from_any_page", async () => {
   render(<App />);
   await settle();
 
-  fireEvent.keyDown(document.body, { key: "3", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "4", metaKey: true });
   await settle();
   expect(screen.getByRole("heading", { level: 1, name: "Calendar" })).toHaveFocus();
   fireEvent.keyDown(document.body, { key: "1", metaKey: true });
@@ -295,4 +295,17 @@ test("no_webview_binding_for_focus_shortcuts", async () => {
   fireEvent.keyDown(document.body, { key: "T", metaKey: true, shiftKey: true });
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("digit3_opens_board_and_digit7_settings", async () => {
+  mockBackend();
+  render(<App />);
+  await settle();
+
+  fireEvent.keyDown(document.body, { key: "3", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toHaveFocus();
+  fireEvent.keyDown(document.body, { key: "7", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
 });

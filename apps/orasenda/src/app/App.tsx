@@ -92,6 +92,7 @@ function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeh
 const TITLES: Readonly<Record<NavPage, string>> = {
   today: "Today",
   inbox: "Inbox",
+  board: "Board",
   calendar: "Calendar",
   routines: "Routines",
   review: "Review",

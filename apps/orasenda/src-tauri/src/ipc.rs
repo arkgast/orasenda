@@ -374,6 +374,7 @@ mod tests {
         for (page, name) in [
             (NavigatePage::Today, "today"),
             (NavigatePage::Inbox, "inbox"),
+            (NavigatePage::Board, "board"),
             (NavigatePage::Calendar, "calendar"),
             (NavigatePage::Routines, "routines"),
             (NavigatePage::Review, "review"),

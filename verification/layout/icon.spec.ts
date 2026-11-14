@@ -15,7 +15,7 @@ test("glyph_sheet_at_20px_both_themes", async ({ page }, info) => {
       return { w: r.width, h: r.height, stroke: getComputedStyle(el).stroke };
     }),
   );
-  expect(sizes.length).toBe(20);
+  expect(sizes.length).toBe(21);
   const ink = await page
     .locator("[data-icon]")
     .first()
@@ -42,6 +42,7 @@ test("icons_and_rail_aria_snapshot", async ({ page }) => {
     - navigation "Main navigation":
       - button "Today"
       - button "Inbox"
+      - button "Board"
       - button "Calendar"
       - button "Routines"
       - button "Review"
