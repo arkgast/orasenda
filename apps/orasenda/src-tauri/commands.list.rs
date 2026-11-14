@@ -87,4 +87,5 @@ pub const COMMANDS: &[&str] = &[
     "spike_usage",
     "spike_overlay_ready",
     "spike_overlay_choice",
+    "timer_set_task",
 ];

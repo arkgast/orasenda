@@ -218,3 +218,21 @@ pub enum BoardError {
     /// The store is unavailable or the write failed.
     Store,
 }
+
+/// What a start did to the board that the person should be told, as a toast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum BoardNoticeKind {
+    /// Starting went past the Doing limit, so the longest task there went back to Today.
+    MovedBack,
+    /// The board write at a start failed. The session started anyway.
+    NotSaved,
+}
+
+/// `board-notice`: a line to show after a start, in the words to show.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardNotice {
+    pub kind: BoardNoticeKind,
+    pub message: String,
+}

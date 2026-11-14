@@ -109,7 +109,7 @@ fn other_file() -> (TempDir, PathBuf) {
 }
 
 fn start_session(host: &TestHost) {
-    run_action_on(host, Action::Start(StartRequest { quick: false })).unwrap();
+    run_action_on(host, Action::Start(StartRequest::default())).unwrap();
 }
 
 #[test]

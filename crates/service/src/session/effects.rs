@@ -37,6 +37,11 @@ pub struct Effects {
     /// The cached theme, when a recovered launch read changed it; applied after unlock,
     /// before `settings_changed`.
     pub apply_theme: Option<Theme>,
+    /// The board to emit as `board-changed`: a start or a link moved a task, or a focus row
+    /// for a task was written.
+    pub board: Option<crate::board::Changed>,
+    /// The toast a start owes, emitted as `board-notice`.
+    pub board_notice: Option<crate::api::BoardNotice>,
     /// Orders `view` against every other published view (see [`ViewGate`]).
     pub seq: u64,
     /// The idle cap line or the keep-going offer changed since the last numbered view: the
@@ -91,6 +96,10 @@ impl SessionService {
             outcome.quick_completed,
         );
         let notice = notice_for(&outcome, &presented, &view);
+        let board = std::mem::take(&mut self.board_dirty)
+            .then(|| self.board_changed(now_ms))
+            .flatten();
+        let board_notice = self.notice_owed.take();
         let mut milestones = outcome.milestones;
         if self.listening {
             if milestones.is_empty() {
@@ -103,6 +112,8 @@ impl SessionService {
         }
         Effects {
             seq,
+            board,
+            board_notice,
             result: result.map(|()| view.clone()),
             view,
             was_idle,

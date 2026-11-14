@@ -29,6 +29,10 @@ pub enum TimerCommandErrorKind {
     Store,
     /// "+10 min" was asked past the extension cap.
     ExtensionCap,
+    /// The task asked for is gone or removed.
+    TaskNotFound,
+    /// The task asked for is in Done.
+    TaskDone,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]

@@ -43,6 +43,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::Restarted => "restarted",
             Event::RoutinesChanged(_) => "routines",
             Event::BoardChanged(..) => "board",
+            Event::BoardNotice(_) => "board-notice",
         })
         .collect();
     assert_eq!(

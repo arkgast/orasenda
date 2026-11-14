@@ -56,6 +56,7 @@ export const IDLE: TimerView_Serialize = {
   hint: null,
   tip: null,
   welcome: false,
+  task: null,
 };
 
 export const RUNNING: TimerView_Serialize = {

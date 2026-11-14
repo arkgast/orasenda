@@ -144,3 +144,22 @@ fn milestone_kinds_go_over_ipc_in_camel_case() {
     assert_eq!(name(MilestoneKind::CapReached), "capReached");
     assert_eq!(name(MilestoneKind::Warned), "warned");
 }
+
+#[test]
+fn data_counts_include_tasks() {
+    let counts = DataCounts::from(orasenda_store::portability::Counts {
+        tasks: 3,
+        ..Default::default()
+    });
+    assert_eq!(counts.tasks, 3);
+    assert_eq!(serde_json::to_value(counts).unwrap()["tasks"], json!(3));
+}
+
+#[test]
+fn start_request_task_id_is_optional() {
+    let bare: StartRequest = serde_json::from_value(json!({ "quick": false })).unwrap();
+    assert_eq!(bare.task_id, None);
+    let with: StartRequest =
+        serde_json::from_value(json!({ "quick": false, "taskId": "t1" })).unwrap();
+    assert_eq!(with.task_id.as_deref(), Some("t1"));
+}

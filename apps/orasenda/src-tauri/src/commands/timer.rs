@@ -85,3 +85,14 @@ pub async fn timer_dismiss_offer(app: tauri::AppHandle) -> Result<TimerView, Tim
 pub async fn timer_take_break(app: tauri::AppHandle) -> Result<TimerView, TimerCommandError> {
     run(app, Action::TakeBreak).await
 }
+
+/// Chooses the task for the next start while idle, or changes the running session's task.
+/// `None` clears it. Picking a task is always optional.
+#[tauri::command]
+#[specta::specta]
+pub async fn timer_set_task(
+    app: tauri::AppHandle,
+    task_id: Option<String>,
+) -> Result<TimerView, TimerCommandError> {
+    run(app, Action::SetTask(task_id)).await
+}

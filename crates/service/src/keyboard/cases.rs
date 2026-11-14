@@ -349,8 +349,7 @@ fn start_pause_press_with_a_start_in_flight_pauses() {
     use orasenda_core::Phase;
     let r = rig();
     // A Start lands at the same moment, just before the press: the press sees Running.
-    let started =
-        run_action_on(&r.host, Action::Start(StartRequest { quick: false })).expect("starts");
+    let started = run_action_on(&r.host, Action::Start(StartRequest::default())).expect("starts");
     press(&r);
     let v = run_view(&r.host);
     assert_eq!((v.state, v.phase), (EngineState::Paused, Phase::Focus));
@@ -361,7 +360,7 @@ fn start_pause_press_with_a_start_in_flight_pauses() {
         let r = Arc::clone(&r);
         std::thread::spawn(move || press(&r))
     };
-    let _ = run_action_on(&r.host, Action::Start(StartRequest { quick: false }));
+    let _ = run_action_on(&r.host, Action::Start(StartRequest::default()));
     press.join().expect("press thread");
     let v = run_view(&r.host);
     assert!(matches!(

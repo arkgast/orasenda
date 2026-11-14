@@ -31,7 +31,13 @@ impl SessionService {
         let offset = self.local_time().utc_offset_min(now_ms);
         let since = view::done_since(cx.today, offset);
         let rows = store.read(|txn| view::read(txn, since))?;
-        Ok(view::build(&rows, cx))
+        let mut board = view::build(&rows, cx);
+        if let Some(running) = self.running_task() {
+            for task in board.columns.iter_mut().flat_map(|c| &mut c.tasks) {
+                task.active = task.id == running;
+            }
+        }
+        Ok(board)
     }
 
     /// The next `board-changed` payload. A failed read is logged and gives `None`: the write
@@ -53,7 +59,7 @@ impl SessionService {
     /// Runs `op` in one write at `now_ms`. Returns its value and, when the write committed and
     /// the read-back worked, the payload for `board-changed`. A refusal writes nothing.
     pub(crate) fn board_write<T>(
-        &self,
+        &mut self,
         now_ms: u64,
         op: impl FnOnce(&mut Txn, Ctx) -> Answer<T>,
     ) -> Result<(T, Option<Changed>), BoardError> {
@@ -63,7 +69,16 @@ impl SessionService {
             eprintln!("board: could not write ({error})");
             BoardError::Store
         })??;
+        // A task may have been removed or moved to Done: the link follows.
+        if self.refresh_task_links(now_ms) {
+            self.link_view_owed = true;
+        }
         Ok((value, self.board_changed(now_ms)))
+    }
+
+    /// The timer view to publish when the last board write changed the linked task.
+    pub(crate) fn take_link_view(&mut self, now_ms: u64) -> Option<(u64, crate::api::TimerView)> {
+        std::mem::take(&mut self.link_view_owed).then(|| self.snapshot(now_ms))
     }
 
     /// The payload for `board-changed` when this tick's local date differs from the last

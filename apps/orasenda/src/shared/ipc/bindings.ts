@@ -10,7 +10,7 @@ export const commands = {
 	/**  The current timer view and any milestones not yet seen. */
 	timerState: () => __TAURI_INVOKE<TimerState_Serialize>("timer_state"),
 	/**  Starts a session. */
-	timerStart: (request: StartRequest) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_start", { request })),
+	timerStart: (request: StartRequest_Deserialize) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_start", { request })),
 	/**  Pauses the running session. */
 	timerPause: () => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_pause")),
 	/**  Resumes a paused session. */
@@ -184,6 +184,11 @@ export const commands = {
 	taskRestoreNote: (taskId: string) => typedError<null, BoardError>(__TAURI_INVOKE("task_restore_note", { taskId })),
 	/**  Saves the columns' names and limits. */
 	boardColumnsSet: (columns: ColumnSettings_Deserialize[]) => typedError<null, BoardError>(__TAURI_INVOKE("board_columns_set", { columns })),
+	/**
+	 *  Chooses the task for the next start while idle, or changes the running session's task.
+	 *  `None` clears it. Picking a task is always optional.
+	 */
+	timerSetTask: (taskId: string | null) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_set_task", { taskId })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -204,6 +209,7 @@ export const commands = {
 export const events = {
 	backupsChanged: makeEvent<DataOverview_Serialize, DataOverview_Deserialize>("backups-changed"),
 	boardChanged: makeEvent<BoardChanged_Serialize, BoardChanged_Deserialize>("board-changed"),
+	boardNotice: makeEvent<BoardNotice, BoardNotice>("board-notice"),
 	captureFocus: makeEvent<CaptureFocus, CaptureFocus>("capture-focus"),
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	inboxChanged: makeEvent<NoteView[], NoteView[]>("inbox-changed"),
@@ -398,6 +404,19 @@ export type BoardError =
 /**  The store is unavailable or the write failed. */
 "store";
 
+/**  `board-notice`: a line to show after a start, in the words to show. */
+export type BoardNotice = {
+	kind: BoardNoticeKind,
+	message: string,
+};
+
+/**  What a start did to the board that the person should be told, as a toast. */
+export type BoardNoticeKind = 
+/**  Starting went past the Doing limit, so the longest task there went back to Today. */
+"movedBack" | 
+/**  The board write at a start failed. The session started anyway. */
+"notSaved";
+
 /**  Everything the Board page shows. */
 export type BoardView = BoardView_Serialize | BoardView_Deserialize;
 
@@ -530,6 +549,8 @@ export type DataCounts = {
 	checks: number,
 	/**  Routine runs. */
 	runs: number,
+	/**  Board tasks. */
+	tasks: number,
 };
 
 export type DataError = {
@@ -1347,9 +1368,22 @@ export type SpikeStatus = {
 export type SpikeUsageChanged = null;
 
 /**  Asks to start a session. */
-export type StartRequest = {
+export type StartRequest = StartRequest_Serialize | StartRequest_Deserialize;
+
+/**  Asks to start a session. */
+export type StartRequest_Deserialize = {
 	/**  Start the built-in two-minute focus; otherwise the selected preset. */
 	quick: boolean,
+	/**  The task to link; overrides the chosen task. Absent starts with the choice, if any. */
+	taskId?: string | null,
+};
+
+/**  Asks to start a session. */
+export type StartRequest_Serialize = {
+	/**  Start the built-in two-minute focus; otherwise the selected preset. */
+	quick: boolean,
+	/**  The task to link; overrides the chosen task. Absent starts with the choice, if any. */
+	taskId: string | null,
 };
 
 /**  The answer to a run's current step. */
@@ -1590,7 +1624,11 @@ export type TimerCommandError = {
 /**  Why a timer command failed. */
 export type TimerCommandErrorKind = "alreadyRunning" | "nothingRunning" | "wrongState" | "invalidSpec" | "store" | 
 /**  "+10 min" was asked past the extension cap. */
-"extensionCap";
+"extensionCap" | 
+/**  The task asked for is gone or removed. */
+"taskNotFound" | 
+/**  The task asked for is in Done. */
+"taskDone";
 
 /**  The view plus milestones the webview has not seen yet. */
 export type TimerState = TimerState_Serialize | TimerState_Deserialize;
@@ -1605,6 +1643,12 @@ export type TimerState_Deserialize = {
 export type TimerState_Serialize = {
 	view: TimerView_Serialize,
 	pending: MilestoneEvent_Serialize[],
+};
+
+/**  The task a session (or the next start) is for: its id and title. */
+export type TimerTask = {
+	id: string,
+	title: string,
 };
 
 /**  Everything the webview shows about the timer, emitted as `timer-tick`. */
@@ -1656,6 +1700,11 @@ export type TimerView_Deserialize = {
 	tip?: TipId | null,
 	/**  The first-run welcome line shows: no session was ever started on this device. */
 	welcome: boolean,
+	/**
+	 *  The task the running session is for, or while idle the one chosen for the next start.
+	 *  Read from a cache, never from the store per tick.
+	 */
+	task?: TimerTask | null,
 };
 
 /**  Everything the webview shows about the timer, emitted as `timer-tick`. */
@@ -1704,6 +1753,11 @@ export type TimerView_Serialize = {
 	tip: TipId | null,
 	/**  The first-run welcome line shows: no session was ever started on this device. */
 	welcome: boolean,
+	/**
+	 *  The task the running session is for, or while idle the one chosen for the next start.
+	 *  Read from a cache, never from the store per tick.
+	 */
+	task: TimerTask | null,
 };
 
 /**

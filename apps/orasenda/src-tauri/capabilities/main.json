@@ -80,6 +80,7 @@
     "allow-task-restore",
     "allow-inbox-to-task",
     "allow-task-restore-note",
-    "allow-board-columns-set"
+    "allow-board-columns-set",
+    "allow-timer-set-task"
   ]
 }

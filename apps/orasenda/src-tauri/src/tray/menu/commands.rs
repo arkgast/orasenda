@@ -75,7 +75,10 @@ pub(crate) fn menu_command(id: &str) -> Option<MenuCommand> {
 /// The start a *Start focus* (`quick: false`) or *Just 2 minutes* item runs: the service
 /// starts the selected preset or `quick`.
 pub(crate) fn start_action(quick: bool) -> Action {
-    Action::Start(StartRequest { quick })
+    Action::Start(StartRequest {
+        quick,
+        ..StartRequest::default()
+    })
 }
 
 /// Where in Settings a menu item opens, when not at the top.

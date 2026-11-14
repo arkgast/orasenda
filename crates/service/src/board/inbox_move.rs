@@ -85,7 +85,7 @@ fn moved<H: Host, T>(
         board,
         notes,
     } = {
-        let guard = lock(service);
+        let mut guard = lock(service);
         let (value, board) = guard.board_write(now_ms, op)?;
         let notes = guard
             .inbox_live(now_ms)

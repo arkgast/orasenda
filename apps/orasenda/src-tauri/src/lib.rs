@@ -112,6 +112,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::inbox_to_task,
             commands::task_restore_note,
             commands::board_columns_set,
+            commands::timer_set_task,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,
@@ -135,6 +136,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::BackupsChangedEvent,
             ipc::RoutinesChangedEvent,
             ipc::BoardChanged,
+            ipc::BoardNoticeEvent,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])

@@ -122,6 +122,13 @@ impl Host for AppHost {
         }
     }
 
+    fn emit_board_notice(&self, notice: &orasenda_service::api::BoardNotice) {
+        use tauri_specta::Event;
+        if let Err(error) = crate::ipc::BoardNoticeEvent(notice.clone()).emit(&self.0) {
+            eprintln!("board: could not emit board-notice: {error}");
+        }
+    }
+
     fn emit_board_changed(&self, seq: u64, board: &BoardView) {
         use tauri_specta::Event;
         let event = crate::ipc::BoardChanged {

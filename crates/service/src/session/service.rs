@@ -48,6 +48,9 @@ pub enum Action {
     /// The start or pause shortcut: starts the selected preset when idle, pauses a running
     /// session (a focus or a break) and resumes a paused one.
     StartPauseToggle,
+    /// `timer_set_task`: the task for the next start while idle, the live session's task
+    /// otherwise; `None` clears it.
+    SetTask(Option<String>),
 }
 
 /// A native view of the timer (T9's menu-bar item).
@@ -120,6 +123,7 @@ pub struct SessionService {
         Option<Offer>,
         Option<crate::api::TipId>,
         bool,
+        Option<crate::api::TimerTask>,
     ),
     /// Today's rows could not be read; set so the failure is logged once.
     pub(super) day_read_failed: Cell<bool>,
@@ -139,6 +143,18 @@ pub struct SessionService {
     pub(crate) board_seq: Cell<u64>,
     /// The due nudge's last minute and the routines it nudged today. Memory only.
     pub(crate) nudge: crate::routines::NudgeState,
+    /// The task the person chose for the next start, if any. Never set by the service itself.
+    pub(super) chosen_task: Option<String>,
+    /// The previous session's task, for a *Keep going* or a roll-on right after a quick end.
+    pub(super) carry_task: Option<String>,
+    /// Titles of the chosen and the session's task. Refreshed on a board write, never per tick.
+    pub(super) task_titles: HashMap<String, String>,
+    /// The board changed under the session (a start, a link, a focus row): owed a `board-changed`.
+    pub(super) board_dirty: bool,
+    /// A toast owed after a start moved a task back, or failed to move one.
+    pub(super) notice_owed: Option<crate::api::BoardNotice>,
+    /// The last board write changed the linked task: owed a `timer-tick`.
+    pub(crate) link_view_owed: bool,
 }
 
 impl SessionService {
@@ -179,7 +195,7 @@ impl SessionService {
             ids: Box::new(new_session_id),
             offer: false,
             cap_checked: None,
-            shown_idle: (None, None, None, false),
+            shown_idle: (None, None, None, false, None),
             day_read_failed: Cell::new(false),
             day_cache: day_cache::DayCache::default(),
             hint: hint::HintState::default(),
@@ -188,6 +204,12 @@ impl SessionService {
             board_day: None,
             board_seq: Cell::new(0),
             nudge: crate::routines::NudgeState::default(),
+            chosen_task: None,
+            carry_task: None,
+            task_titles: HashMap::new(),
+            board_dirty: false,
+            notice_owed: None,
+            link_view_owed: false,
         };
         service.load_stored(now_ms);
         service.load_hint();
@@ -201,6 +223,7 @@ impl SessionService {
         }
         // After the recovery: it may have written the rows of a session that ended while closed.
         service.load_tips();
+        service.refresh_task_links(now_ms);
         service
     }
 
@@ -219,6 +242,7 @@ impl SessionService {
         self.load_stored(now_ms);
         self.log_unknown_selection();
         self.day_cache.bump();
+        self.refresh_task_links(now_ms);
     }
 
     /// The store, `None` while it is unavailable. For the Inbox.
@@ -267,7 +291,7 @@ impl SessionService {
     /// What the start or pause shortcut does in the engine's state now (after it advanced).
     pub(super) fn toggle_action(&self, now_ms: u64) -> Action {
         match self.engine.view(now_ms).state {
-            EngineState::Idle => Action::Start(StartRequest { quick: false }),
+            EngineState::Idle => Action::Start(StartRequest::default()),
             EngineState::Running => Action::Pause,
             EngineState::Paused => Action::Resume,
         }

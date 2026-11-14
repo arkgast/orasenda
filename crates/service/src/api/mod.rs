@@ -18,8 +18,8 @@ mod timer;
 mod tips;
 
 pub use board::{
-    BoardError, BoardView, ChecklistItemView, ColumnSettings, ColumnView, Lane, LimitState,
-    TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
+    BoardError, BoardNotice, BoardNoticeKind, BoardView, ChecklistItemView, ColumnSettings,
+    ColumnView, Lane, LimitState, TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
 };
 pub use data::{
     BackupEntry, BackupFrequency, BackupKind, BackupPolicy, DataCounts, DataError, DataErrorKind,
@@ -44,6 +44,7 @@ pub use routines::{
 };
 pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{
-    ClockTick, Mode, Offer, StartRequest, StoreStatus, SuggestionView, TimerState, TimerView,
+    ClockTick, Mode, Offer, StartRequest, StoreStatus, SuggestionView, TimerState, TimerTask,
+    TimerView,
 };
 pub use tips::{TipId, TipSeen};

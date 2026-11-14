@@ -5,8 +5,8 @@ use super::*;
 use crate::api::{
     BoardNoticeKind, Settings, StartRequest, TimerCommandError, TimerCommandErrorKind, TimerView,
 };
-use crate::session::test_support::{CLASSIC_END_MS, CLASSIC_MS, db};
 use crate::scheduler::Host;
+use crate::session::test_support::{CLASSIC_END_MS, CLASSIC_MS, db};
 use crate::session::{Action, current_settings, lock, run_action_on, run_set_settings, run_state};
 
 fn request(task: Option<&str>) -> StartRequest {
@@ -35,7 +35,9 @@ fn task_of(host: &TestHost, id: &str) -> TaskView {
 }
 
 fn linked(view: &TimerView) -> Option<(&str, &str)> {
-    view.task.as_ref().map(|t| (t.id.as_str(), t.title.as_str()))
+    view.task
+        .as_ref()
+        .map(|t| (t.id.as_str(), t.title.as_str()))
 }
 
 fn kind_of(result: Result<TimerView, TimerCommandError>) -> TimerCommandErrorKind {
@@ -67,7 +69,7 @@ fn space_start_links_chosen_task() {
             Event::Tick(v) => Some(v),
             _ => None,
         })
-        .last()
+        .next_back()
         .expect("choosing while idle publishes the view");
     assert_eq!(linked(&last_tick), Some((a.id.as_str(), "Fix sync bug")));
 
@@ -100,7 +102,9 @@ fn choice_clears_when_task_moves_to_done() {
     run_task_move(&host, &a.id, Lane::Done, 0).expect("moves");
     assert_eq!(crate::session::run_view(&host).task, None);
     assert!(
-        host.log().count(|e| matches!(e, Event::Tick(v) if v.task.is_none())) >= 1,
+        host.log()
+            .count(|e| matches!(e, Event::Tick(v) if v.task.is_none()))
+            >= 1,
         "the cleared choice is published"
     );
     let started = start_on(&host, None).expect("starts");
@@ -129,7 +133,7 @@ fn start_with_task_moves_it_to_doing() {
     let started = start_on(&host, Some(&a.id)).expect("starts");
     assert_eq!(linked(&started), Some((a.id.as_str(), "A")));
     assert_eq!(task_of(&host, &a.id).lane, Lane::Doing);
-    assert!(changed(&host).len() >= 1, "the board is re-emitted");
+    assert!(!changed(&host).is_empty(), "the board is re-emitted");
     assert!(notices(&host).is_empty(), "no toast under the limit");
 }
 
@@ -245,7 +249,11 @@ fn row_written_grows_tracked_time() {
     start_on(&host, Some(&a.id)).expect("starts");
     host.set_now(T0 + CLASSIC_MS);
     run_state(&host);
-    assert_eq!(task_of(&host, &a.id).sessions, 0, "not until the break ends");
+    assert_eq!(
+        task_of(&host, &a.id).sessions,
+        0,
+        "not until the break ends"
+    );
     host.log().take();
     host.set_now(T0 + CLASSIC_END_MS);
     run_state(&host);
@@ -267,7 +275,11 @@ fn removing_linked_task_clears_link() {
     let view = crate::session::run_view(&host);
     assert_eq!(view.task, None, "the slot reads No task");
     assert_eq!(view.state, orasenda_core::EngineState::Running);
-    assert!(host.log().count(|e| matches!(e, Event::Tick(v) if v.task.is_none())) >= 1);
+    assert!(
+        host.log()
+            .count(|e| matches!(e, Event::Tick(v) if v.task.is_none()))
+            >= 1
+    );
     run_task_restore(&host, &a.id).expect("restores");
     assert_eq!(
         crate::session::run_view(&host).task,

@@ -26,6 +26,7 @@ impl SessionService {
                 | Action::HintShown(_)
                 | Action::TipSeen(..)
                 | Action::FocusViewOpened
+                | Action::SetTask(_)
         );
         let toggled = matches!(action, Action::StartPauseToggle);
         let action = match action {
@@ -33,9 +34,7 @@ impl SessionService {
             other => other,
         };
         let result = match action {
-            Action::Start(request) => self
-                .start(&request, now_ms, new_id, &mut outcome)
-                .map_err(TimerCommandError::from),
+            Action::Start(request) => self.start(&request, now_ms, new_id, &mut outcome),
             Action::Pause => self
                 .engine
                 .pause(now_ms)
@@ -54,6 +53,7 @@ impl SessionService {
             Action::Extend => self.extend(now_ms, &mut outcome),
             Action::DismissOffer => {
                 self.offer = false;
+                self.carry_task = None;
                 Ok(())
             }
             Action::TakeBreak => self.take_break(now_ms, &mut outcome),
@@ -69,6 +69,7 @@ impl SessionService {
                 self.note_focus_view_opened(now_ms);
                 Ok(())
             }
+            Action::SetTask(task) => self.set_task(task, now_ms),
             // Resolved above.
             Action::StartPauseToggle => Ok(()),
         };
@@ -77,6 +78,7 @@ impl SessionService {
         }
         if result.is_ok() && clears_offer {
             self.offer = false;
+            self.carry_task = None;
         }
         let mut effects = self.effects(now_ms, was_idle, outcome, result);
         effects.idle_changed = self.shown_idle != shown;
@@ -155,9 +157,12 @@ impl SessionService {
     /// instant, as *Keep going* would.
     fn roll_on(&mut self, at_ms: u64, outcome: &mut Outcome) {
         let id = (self.ids)();
-        let request = StartRequest { quick: false };
+        let request = StartRequest::default();
         if let Err(error) = self.start(&request, at_ms, move || id, outcome) {
-            eprintln!("session: the roll-on after a quick session could not start ({error})");
+            eprintln!(
+                "session: the roll-on after a quick session could not start ({})",
+                error.message
+            );
         }
     }
 
@@ -167,10 +172,11 @@ impl SessionService {
         now_ms: u64,
         new_id: impl FnOnce() -> SessionId,
         outcome: &mut Outcome,
-    ) -> Result<(), TimerError> {
+    ) -> Result<(), TimerCommandError> {
         if !self.engine.is_idle() {
-            return Err(TimerError::AlreadyRunning);
+            return Err(TimerError::AlreadyRunning.into());
         }
+        let task = self.pick_start_task(request)?;
         // The selected preset as the library has it now; the session keeps this snapshot.
         let preset = if request.quick {
             SessionPreset::Quick
@@ -178,10 +184,14 @@ impl SessionService {
             snapshot_of(self.selected())
         };
         let round = self.round_for(&preset, now_ms);
-        self.engine.start(new_id(), preset, round, None, now_ms)?;
+        self.engine
+            .start(new_id(), preset, round, task.clone(), now_ms)?;
         self.keep_awake = self.begin_keep_awake();
         self.changed(now_ms, MilestoneKind::Started, outcome);
         self.note_started(now_ms);
+        if let Some(id) = task {
+            self.link_started(&id, now_ms);
+        }
         Ok(())
     }
 
@@ -263,6 +273,8 @@ impl SessionService {
         };
         self.hint.pending = false;
         self.note_session_ended(&records);
+        // The running task is no longer active on the board.
+        self.board_dirty |= records.iter().any(|r| r.task_id.is_some());
         let quick = first.preset == SessionPreset::Quick;
         outcome.milestones.push(MilestoneEvent {
             kind: MilestoneKind::Ended,
@@ -274,6 +286,7 @@ impl SessionService {
         self.check_cap(&first, now_ms, outcome);
         if quick && last.end_reason == orasenda_core::EndReason::Completed {
             outcome.quick_completed = true;
+            self.carry_task = first.task_id.clone();
             self.offer = self.auto_longest_ms().is_none();
         }
         outcome.drop_after_unlock = self.keep_awake.take();

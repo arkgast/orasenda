@@ -7,12 +7,14 @@
 
 mod check;
 mod columns;
+mod doing;
 mod inbox_move;
 mod service;
 #[cfg(test)]
 mod tests;
 mod view;
 
+pub(crate) use doing::move_to_doing;
 pub use inbox_move::{run_inbox_to_task, run_task_restore_note};
 
 use orasenda_store::Txn;
@@ -211,9 +213,17 @@ fn write<H: Host, T>(
     op: impl FnOnce(&mut Txn, Ctx) -> Answer<T>,
 ) -> Result<T, BoardError> {
     let service = host.service().ok_or(BoardError::Store)?;
-    let (value, changed) = lock(service).board_write(host.now_ms(), op)?;
+    let now_ms = host.now_ms();
+    let (value, changed, timer) = {
+        let mut guard = lock(service);
+        let (value, changed) = guard.board_write(now_ms, op)?;
+        (value, changed, guard.take_link_view(now_ms))
+    };
     if let Some((seq, view)) = changed {
         host.emit_board_changed(seq, &view);
+    }
+    if let Some((seq, view)) = timer {
+        crate::scheduler::publish_view(host, seq, &view);
     }
     Ok(value)
 }
