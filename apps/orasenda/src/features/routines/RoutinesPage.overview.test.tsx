@@ -128,10 +128,11 @@ test("the_page_follows_routines_changed", async () => {
   );
 });
 
-test("start_is_hidden_until_the_run_view_wires_it", async () => {
+test("start_is_wired_to_the_run_view_by_default_as_the_one_primary", async () => {
   const { container } = await renderRoutines();
-  expect(screen.queryByRole("button", { name: /^Start/ })).toBeNull();
-  expect(primaries(container)).toHaveLength(0);
+  expect(primaries(container)).toEqual([
+    screen.getByRole("button", { name: "Start Morning Light & Movement" }),
+  ]);
 });
 
 test("with_start_wired_one_primary_start_goes_to_the_routine_in_progress_or_first_not_finished", async () => {

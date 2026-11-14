@@ -8,12 +8,13 @@ import {
   ScrollRegion,
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
-import { type ReactElement, useEffect, useRef, useState } from "react";
+import { type ReactElement, useCallback, useEffect, useRef, useState } from "react";
 import { ActionMenu, type MoreAction, moreId } from "./ActionMenu";
 import { type Editing, Editor, findHabit } from "./Editors";
 import { byId, useFocusAfter } from "./focusAfter";
 import { HabitList } from "./HabitList";
 import { RoutineList } from "./RoutineList";
+import { RunView, useRun } from "./RunView";
 import { TemplateDialog } from "./TemplateDialog";
 import { type Line, type Notice, type RoutinesView, useRoutines } from "./useRoutines";
 import { useUndoRemove } from "./useUndoRemove";
@@ -22,6 +23,7 @@ import "./routines.css";
 const LINES: Record<Exclude<Line, Notice | null>, string> = {
   writeFailed: "That change couldn't be saved. Your data is safe; try again in a moment.",
   readFailed: "Routines can't be read right now. Your data is safe; try again in a moment.",
+  startFailed: "That routine couldn't start. Your data is safe; try again in a moment.",
 };
 
 /**
@@ -42,14 +44,14 @@ function legendFor(view: RoutinesView, expanded: ReadonlySet<string>): string | 
 
 type Props = {
   onNavigate(page: NavPage): void;
-  /** Starts a routine's run. The run view (R8) wires it; until then no Start shows. */
+  /** Starts a routine's run; by default the page's own run view sends `run_start`. */
   onStart?: (routineId: string) => void;
 };
 
 /** The Routines page: the routines as cards, the standalone habits, and Add. */
 export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   const { compact } = useWindowLayout();
-  const { routines, line, setLine, check, addTemplate, move, write, retry } = useRoutines();
+  const { routines, line, setLine, check, addTemplate, move, write, runCall, retry } = useRoutines();
   const focus = useFocusAfter();
   const removal = useUndoRemove({ write, setLine, focus });
   const [templates, setTemplates] = useState(false);
@@ -57,6 +59,21 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const view = routines.status === "ok" ? routines.view : null;
   const empty = view !== null && view.routines.length === 0 && view.habits.length === 0;
+  const startFailed = useCallback(() => {
+    // A refused start (another run is open) reads the list again, so that run shows.
+    retry();
+    setLine("startFailed");
+  }, [retry, setLine]);
+  const run = useRun(view?.run ?? null, runCall, startFailed);
+  const start = onStart ?? run.start;
+  const page = useRef<HTMLDivElement>(null);
+  const running = run.shown !== null;
+  const wasRunning = useRef(running);
+  useEffect(() => {
+    // Back from a run: focus returns to the page's heading.
+    if (wasRunning.current && !running) page.current?.querySelector<HTMLElement>("h1")?.focus();
+    wasRunning.current = running;
+  }, [running]);
 
   // Opening an editor is the next action: it clears the status row, Undo included.
   const edit = (next: Editing) => {
@@ -101,6 +118,15 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
     return () => clearTimeout(timer);
   }, [editing]);
 
+  if (run.shown) {
+    const note = view?.routines.find((r) => r.id === run.shown?.run.routineId)?.note ?? null;
+    return (
+      <div className="app-routines-page">
+        <RunView run={run} note={note} compact={compact} onNavigate={onNavigate} />
+      </div>
+    );
+  }
+
   const onAdd = (id: string) => {
     if (id === "template") return openTemplates();
     if (id === "habit") return edit({ kind: "habit", habit: null, routineId: null, asStep: false });
@@ -129,7 +155,7 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
       {line.text}
     </InlineNotice>
   ) : (
-    <InlineNotice variant="row" tone={line === "writeFailed" ? "attention" : "neutral"}>
+    <InlineNotice variant="row" tone={line === "writeFailed" || line === "startFailed" ? "attention" : "neutral"}>
       {line ? LINES[line] : ""}
     </InlineNotice>
   );
@@ -152,7 +178,7 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   ) : undefined;
 
   return (
-    <div className="app-routines-page">
+    <div ref={page} className="app-routines-page">
       <PageFrame
         title="Routines"
         compactPicker={
@@ -182,8 +208,8 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
                   })
                 }
                 legendFor={legendFor(view, expanded)}
-                onStart={onStart}
-                primaryStart={onStart ? primaryStart(view) : null}
+                onStart={start}
+                primaryStart={primaryStart(view)}
                 onMore={more("routine")}
                 onStepMore={more("habit")}
               />

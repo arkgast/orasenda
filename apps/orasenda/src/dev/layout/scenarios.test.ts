@@ -35,6 +35,7 @@ const NAMES = [
   "captureSaving",
   "routinesOverview",
   "routinesEmpty",
+  "routinesRun",
 ];
 
 const NEW_COMMANDS = [
