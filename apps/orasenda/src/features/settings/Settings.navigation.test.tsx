@@ -120,9 +120,7 @@ test("about_line_waits_for_app_info", async () => {
   await settle();
   expect(screen.getByText("Orasenda 0.1.0 for macOS")).toBeInTheDocument();
   expect(
-    screen.getByText(
-      "Your sessions and settings stay on this Mac. Orasenda doesn't use the network.",
-    ),
+    screen.getByText("Your data stays on this Mac. Orasenda doesn't use the network."),
   ).toBeInTheDocument();
 });
 
