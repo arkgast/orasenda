@@ -27,8 +27,11 @@ impl SessionService {
     /// The board at `now_ms`.
     pub(crate) fn board_build(&self, now_ms: u64) -> Result<BoardView, StoreError> {
         let store = self.store().ok_or_else(unavailable)?;
-        let rows = store.read(|txn| view::read(txn, now_ms))?;
-        Ok(view::build(&rows, self.board_ctx(now_ms)))
+        let cx = self.board_ctx(now_ms);
+        let offset = self.local_time().utc_offset_min(now_ms);
+        let since = view::done_since(cx.today, offset);
+        let rows = store.read(|txn| view::read(txn, since))?;
+        Ok(view::build(&rows, cx))
     }
 
     /// The next `board-changed` payload. A failed read is logged and gives `None`: the write

@@ -6,6 +6,7 @@ mod columns;
 mod events;
 mod frog;
 mod inbox_move;
+mod settings;
 mod view;
 
 use orasenda_core::NotificationStatus;

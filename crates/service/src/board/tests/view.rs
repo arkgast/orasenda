@@ -70,12 +70,19 @@ fn done_shows_last_14_days() {
         ["new", "mid", "old"],
         "newest first"
     );
+    host.set_now(T0 + 13 * DAY);
+    let board = run_board_get(&host).expect("reads");
+    assert_eq!(
+        titles(&board, Lane::Done),
+        ["new", "mid", "old"],
+        "the 14th local day is still in"
+    );
     host.set_now(T0 + 14 * DAY);
     let board = run_board_get(&host).expect("reads");
     assert_eq!(
         titles(&board, Lane::Done),
         ["new", "mid"],
-        "14 days is the edge"
+        "the window moves at local midnight"
     );
     assert_eq!(lane(&board, Lane::Done).count, 2);
     host.set_now(T0 + 40 * DAY);

@@ -25,6 +25,7 @@ use crate::api::{
 };
 use crate::scheduler::Host;
 use crate::session::lock;
+pub(crate) use service::Changed;
 use service::{Answer, live, rank_at};
 use view::{Ctx, stored_lane};
 
@@ -202,8 +203,9 @@ fn stored_priority(priority: TaskPriority) -> tasks::Priority {
 /// Locks the service, runs `op` in one write and reads the board back, then emits
 /// `board-changed` after the lock is released.
 ///
-/// When the write commits but the read-back fails, the command still answers `Ok` and no
-/// event follows (a log line records it); the webview re-reads with `board_get`.
+/// When the write commits but the read-back fails, the command still answers `Ok`, no event
+/// follows and the failure is logged at error level (`board_changed`). `useBoard` re-reads
+/// with `board_get` when an ok answer brings no event.
 fn write<H: Host, T>(
     host: &H,
     op: impl FnOnce(&mut Txn, Ctx) -> Answer<T>,

@@ -10,7 +10,7 @@ use crate::api::{
 };
 
 const DAY_MS: u64 = 86_400_000;
-/// Done lists tasks finished within this many days.
+/// Done lists tasks finished within this many local days, today included.
 const DONE_DAYS: u64 = 14;
 const MONTHS: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -31,8 +31,14 @@ pub(super) struct Rows {
     columns: Vec<crate::api::ColumnSettings>,
 }
 
-pub(super) fn read(txn: &Txn, now_ms: u64) -> Result<Rows, StoreError> {
-    let since = now_ms.saturating_sub(DONE_DAYS * DAY_MS).saturating_add(1);
+/// Done lists tasks finished since `since`: local midnight, `DONE_DAYS - 1` days before today, so
+/// the window moves only at the day roll (when the board is re-emitted).
+pub(super) fn done_since(today: LocalDate, offset_min: i32) -> u64 {
+    let start = (today.days_since_epoch() - (DONE_DAYS as i64 - 1)) * DAY_MS as i64;
+    u64::try_from(start - i64::from(offset_min) * 60_000).unwrap_or(0)
+}
+
+pub(super) fn read(txn: &Txn, since: u64) -> Result<Rows, StoreError> {
     Ok(Rows {
         live: tasks::list_live(txn)?,
         done: tasks::list_done_since(txn, since)?,

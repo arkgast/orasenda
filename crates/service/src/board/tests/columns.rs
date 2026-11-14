@@ -73,11 +73,3 @@ fn columns_refuse_bad_input() {
         "Today"
     );
 }
-
-#[test]
-fn the_settings_loader_tolerates_the_columns_row() {
-    let host = host();
-    run_board_columns_set(&host, cols(5, 2)).expect("saves");
-    let settings = crate::session::lock(&host.0.service).settings();
-    assert_eq!(settings, crate::api::Settings::default());
-}
