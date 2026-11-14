@@ -18,7 +18,8 @@ use crate::session::{DB_FILE, lock};
 /// runs. Takes a `before-import` backup first, always, then merges in one write and keeps
 /// the preset library under its cap. Afterwards the service reloads and the host applies the
 /// theme and emits `settings-changed` and `presets-changed`, plus `inbox-changed` when notes
-/// were added or updated. `dir` is the app data dir.
+/// were added or updated and `routines-changed` when routines, habits, check-ins or runs
+/// were. `dir` is the app data dir.
 ///
 /// The service stays locked from the copy until the reload, so no session can start between
 /// the check and the write.
@@ -60,6 +61,14 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
         } else {
             None
         };
+        let routines_changed = [&merged.added, &merged.updated]
+            .iter()
+            .any(|c| c.routines + c.habits + c.checks + c.runs > 0);
+        let routines = if routines_changed {
+            crate::routines::changed_view(&guard, now_ms)
+        } else {
+            None
+        };
         let report = ImportReport {
             added: DataCounts::from(merged.added),
             updated: DataCounts::from(merged.updated),
@@ -68,6 +77,7 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
             settings: guard.settings(),
             presets: guard.presets(),
             notes,
+            routines,
             view: guard.snapshot(now_ms),
         };
         (report, published)
@@ -80,6 +90,7 @@ struct Published {
     settings: crate::api::Settings,
     presets: Vec<crate::api::PresetEntry>,
     notes: Option<Vec<crate::api::NoteView>>,
+    routines: Option<crate::api::RoutinesView>,
     view: (u64, crate::api::TimerView),
 }
 
@@ -90,6 +101,9 @@ fn publish<H: Host>(host: &H, published: &Published) {
         host.emit_presets_changed(&published.presets);
         if let Some(notes) = &published.notes {
             host.emit_inbox_changed(notes);
+        }
+        if let Some(routines) = &published.routines {
+            host.emit_routines_changed(routines);
         }
         scheduler::publish_view(host, published.view.0, &published.view.1);
         scheduler::publish_clock(host);

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-routine-update"
+description = "Enables the routine_update command without any pre-configured scope."
+commands.allow = ["routine_update"]
+
+[[permission]]
+identifier = "deny-routine-update"
+description = "Denies the routine_update command without any pre-configured scope."
+commands.deny = ["routine_update"]

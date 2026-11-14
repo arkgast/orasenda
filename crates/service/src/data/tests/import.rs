@@ -375,3 +375,55 @@ fn import_wal_source_with_commit_still_in_wal() {
     assert!(leftovers(dir.path()).is_empty());
     drop(conn);
 }
+
+#[test]
+fn import_of_only_routine_rows_counts_them_and_emits_routines_changed() {
+    use orasenda_store::routines::{self as routine_rows, NewRoutine, RoutineFields};
+    let dir = TempDir::new();
+    let host = host_in(dir.path());
+    let (_keep, path) = source(|s| {
+        let routine = NewRoutine {
+            id: "r1".into(),
+            fields: RoutineFields {
+                name: "Imported".into(),
+                time_of_day: None,
+                days: 127,
+            },
+            template: None,
+            position: 0,
+        };
+        s.write(5, |txn| routine_rows::insert(txn, &routine))
+            .expect("routine written");
+    });
+    host.log().take();
+    let report = run_import(&host, dir.path(), &path).expect("imports");
+    assert_eq!(report.added.routines, 1);
+    assert_eq!(report.added.notes, 0);
+    let events = host.log().take();
+    assert!(
+        events.iter().any(|e| matches!(
+            e,
+            Event::RoutinesChanged(view) if view.routines.len() == 1 && view.routines[0].name == "Imported"
+        )),
+        "{events:?}"
+    );
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+}
+
+#[test]
+fn import_without_routine_rows_does_not_emit_routines_changed() {
+    let dir = TempDir::new();
+    let host = host_in(dir.path());
+    let (_keep, path) = source(|s| note(s, "n1", 5));
+    host.log().take();
+    run_import(&host, dir.path(), &path).expect("imports");
+    let events = host.log().take();
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, Event::RoutinesChanged(_)))
+    );
+}

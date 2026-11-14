@@ -5,7 +5,16 @@ import type { Replies } from "./index";
 
 /** One backup of every kind, the last one saved by a newer Orasenda (`data_overview`). */
 export const OVERVIEW: DataOverview_Serialize = {
-  counts: { sessions: 12, presets: 3, notes: 2, settings: 9 },
+  counts: {
+    sessions: 12,
+    presets: 3,
+    notes: 2,
+    settings: 9,
+    routines: 0,
+    habits: 0,
+    checks: 0,
+    runs: 0,
+  },
   folder: "/Users/test/Library/Application Support/com.veloud.orasenda",
   backups: [
     {

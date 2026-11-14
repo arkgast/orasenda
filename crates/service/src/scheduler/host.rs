@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::Notifier;
 
 use crate::api::{
-    ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, Settings, Theme,
-    TimerView,
+    ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView,
+    Settings, Theme, TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 
@@ -48,4 +48,8 @@ pub trait Host: Clone + Send + Sync + 'static {
     /// Restarts the app so a staged Restore or Delete all data lands. In the app it does not
     /// return; tests record it.
     fn restart(&self);
+    /// Emits `routines-changed`: the Routines page's view after a write, at local midnight or
+    /// after an import. Never called under the service lock. An emit error is logged, never
+    /// fatal.
+    fn emit_routines_changed(&self, view: &RoutinesView);
 }

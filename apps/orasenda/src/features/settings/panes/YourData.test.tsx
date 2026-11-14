@@ -11,7 +11,16 @@ afterEach(async () => {
   clearMocks();
 });
 
-const COUNTS = { sessions: 0, presets: 0, notes: 0, settings: 0 };
+const COUNTS = {
+  sessions: 0,
+  presets: 0,
+  notes: 0,
+  settings: 0,
+  routines: 0,
+  habits: 0,
+  checks: 0,
+  runs: 0,
+};
 const fail =
   (kind: string, message = "x") =>
   () =>
@@ -90,7 +99,16 @@ test("cancelled_panel_says_nothing", async () => {
 
 test("import_report_line_non_zero_parts", async () => {
   const report = {
-    added: { sessions: 12, presets: 1, notes: 3, settings: 0 },
+    added: {
+      sessions: 12,
+      presets: 1,
+      notes: 3,
+      settings: 0,
+      routines: 0,
+      habits: 0,
+      checks: 0,
+      runs: 0,
+    },
     updated: { ...COUNTS, settings: 2 },
   };
   await open({ data_import: () => ({ kind: "imported", report }) });
@@ -99,6 +117,17 @@ test("import_report_line_non_zero_parts", async () => {
   await settle();
   expect(lines()).toEqual(["Added 12 sessions, 1 preset and 3 notes. Updated 2 settings."]);
   expect(button("Import data…")).toHaveFocus();
+});
+
+test("import_report_line_names_routine_rows", async () => {
+  const report = {
+    added: { ...COUNTS, routines: 2, habits: 9, checks: 1 },
+    updated: { ...COUNTS, runs: 3 },
+  };
+  await open({ data_import: () => ({ kind: "imported", report }) });
+  fireEvent.click(button("Import data…"));
+  await settle();
+  expect(lines()).toEqual(["Added 2 routines, 9 habits and 1 check-in. Updated 3 routine runs."]);
 });
 
 test("import_refreshes_the_stored_counts", async () => {

@@ -5,6 +5,7 @@ import { events } from "../../ipc/bindings";
 import { DATA_REPLIES } from "./data";
 import { FULL_SCREEN_REPLIES } from "./fullScreen";
 import { KEYBOARD } from "./keyboard";
+import { ROUTINES_REPLIES } from "./routines";
 import { BREAK, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS } from "./timer";
 
 /** One backend command the UI sent, with its arguments. */
@@ -88,6 +89,7 @@ const DEFAULTS: Replies = {
   preset_select: () => null,
   ...DATA_REPLIES,
   ...FULL_SCREEN_REPLIES,
+  ...ROUTINES_REPLIES,
 };
 
 /**
@@ -173,4 +175,5 @@ export async function emitInboxChanged(notes: NoteView[]): Promise<void> {
 export * from "./data";
 export * from "./fullScreen";
 export * from "./keyboard";
+export * from "./routines";
 export * from "./timer";

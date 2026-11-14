@@ -7,6 +7,7 @@ pub mod api;
 pub mod data;
 pub mod inbox;
 pub mod keyboard;
+pub mod routines;
 pub mod scheduler;
 pub mod session;
 pub mod windows;

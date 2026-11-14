@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-routine-create"
+description = "Enables the routine_create command without any pre-configured scope."
+commands.allow = ["routine_create"]
+
+[[permission]]
+identifier = "deny-routine-create"
+description = "Denies the routine_create command without any pre-configured scope."
+commands.deny = ["routine_create"]

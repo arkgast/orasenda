@@ -130,6 +130,34 @@ export const commands = {
 	dataExport: () => typedError<ExportOutcome, DataError>(__TAURI_INVOKE("data_export")),
 	/**  Merges a data file the user chooses. `Busy` during a session, before any panel opens. */
 	dataImport: () => typedError<ImportOutcome, DataError>(__TAURI_INVOKE("data_import")),
+	/**  The routines, the standalone habits and the open run. */
+	routinesList: () => typedError<RoutinesView_Serialize, RoutinesError>(__TAURI_INVOKE("routines_list")),
+	/**  The five starter templates. */
+	routineTemplates: () => typedError<TemplateView_Serialize[], RoutinesError>(__TAURI_INVOKE("routine_templates")),
+	/**  Saves a new routine; answers its id. */
+	routineCreate: (draft: RoutineDraft_Deserialize) => typedError<string, RoutinesError>(__TAURI_INVOKE("routine_create", { draft })),
+	/**  Copies a template into a new, editable routine; answers its id. */
+	routineAddTemplate: (template: TemplateId) => typedError<string, RoutinesError>(__TAURI_INVOKE("routine_add_template", { template })),
+	/**  Saves a routine's name, time and days. */
+	routineUpdate: (id: string, draft: RoutineDraft_Deserialize) => typedError<null, RoutinesError>(__TAURI_INVOKE("routine_update", { id, draft })),
+	/**  Moves a routine to `toIndex` (past the end means last). */
+	routineMove: (id: string, toIndex: number) => typedError<null, RoutinesError>(__TAURI_INVOKE("routine_move", { id, toIndex })),
+	/**  Removes a routine and its habits (they can be brought back). */
+	routineRemove: (id: string) => typedError<null, RoutinesError>(__TAURI_INVOKE("routine_remove", { id })),
+	/**  Brings a removed routine back with its habits. */
+	routineRestore: (id: string) => typedError<null, RoutinesError>(__TAURI_INVOKE("routine_restore", { id })),
+	/**  Saves a new habit in a routine, or standalone for `null`; answers its id. */
+	habitCreate: (routineId: string | null, draft: HabitDraft_Deserialize) => typedError<string, RoutinesError>(__TAURI_INVOKE("habit_create", { routineId, draft })),
+	/**  Saves a habit's fields. */
+	habitUpdate: (id: string, draft: HabitDraft_Deserialize) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_update", { id, draft })),
+	/**  Moves a habit within its own list. */
+	habitMove: (id: string, toIndex: number) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_move", { id, toIndex })),
+	/**  Removes a habit (it can be brought back). */
+	habitRemove: (id: string) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_remove", { id })),
+	/**  Brings a removed habit back. */
+	habitRestore: (id: string) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_restore", { id })),
+	/**  Checks a habit in for today (`done`), or removes today's check-in. */
+	habitCheck: (id: string, done: boolean) => typedError<null, RoutinesError>(__TAURI_INVOKE("habit_check", { id, done })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -157,6 +185,7 @@ export const events = {
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
 	paletteOpen: makeEvent<PaletteOpen, PaletteOpen>("palette-open"),
 	presetsChanged: makeEvent<PresetEntry[], PresetEntry[]>("presets-changed"),
+	routinesChanged: makeEvent<RoutinesView_Serialize, RoutinesView_Deserialize>("routines-changed"),
 	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
 	timerMilestone: makeEvent<MilestoneEvent_Serialize, MilestoneEvent_Deserialize>("timer-milestone"),
@@ -335,6 +364,12 @@ export type DataCounts = {
 	presets: number,
 	notes: number,
 	settings: number,
+	routines: number,
+	habits: number,
+	/**  Habit check-ins. */
+	checks: number,
+	/**  Routine runs. */
+	runs: number,
 };
 
 export type DataError = {
@@ -445,6 +480,118 @@ export type GlobalBindingView_Serialize = {
 
 /**  Where an action works. */
 export type Group = "fullScreen" | "timer" | "capture";
+
+/**  A day's state in the dot grid. Nothing is ever a miss. */
+export type HabitDayState = "done" | "notDone" | "rest" | "upcoming";
+
+/**  One day in a habit's dot grid. */
+export type HabitDotView = {
+	state: HabitDayState,
+	today: boolean,
+	/**  The date for VoiceOver: "Monday 9 November". */
+	label: string,
+};
+
+/**
+ *  A habit as typed in its editor. The service trims every text, and an empty one becomes
+ *  `None`.
+ */
+export type HabitDraft = HabitDraft_Serialize | HabitDraft_Deserialize;
+
+/**
+ *  A habit as typed in its editor. The service trims every text, and an empty one becomes
+ *  `None`.
+ */
+export type HabitDraft_Deserialize = {
+	name: string,
+	whenText?: string | null,
+	whereText?: string | null,
+	anchor?: string | null,
+	twoMinute?: string | null,
+	identity?: string | null,
+	optional: boolean,
+	/**  A standalone habit's weekday mask; ignored inside a routine. `None` is every day. */
+	days?: number | null,
+};
+
+/**
+ *  A habit as typed in its editor. The service trims every text, and an empty one becomes
+ *  `None`.
+ */
+export type HabitDraft_Serialize = {
+	name: string,
+	whenText: string | null,
+	whereText: string | null,
+	anchor: string | null,
+	twoMinute: string | null,
+	identity: string | null,
+	optional: boolean,
+	/**  A standalone habit's weekday mask; ignored inside a routine. `None` is every day. */
+	days: number | null,
+};
+
+/**  One habit: a routine's step or a standalone habit. */
+export type HabitView = HabitView_Serialize | HabitView_Deserialize;
+
+/**  One habit: a routine's step or a standalone habit. */
+export type HabitView_Deserialize = {
+	/**  A UUIDv7. */
+	id: string,
+	/**  `None` for a standalone habit. */
+	routineId?: string | null,
+	name: string,
+	whenText?: string | null,
+	whereText?: string | null,
+	anchor?: string | null,
+	twoMinute?: string | null,
+	identity?: string | null,
+	optional: boolean,
+	/**  A standalone habit's weekday mask; `None` inside a routine. */
+	days?: number | null,
+	/**  A standalone habit's days, worded; `None` inside a routine. */
+	daysLabel?: string | null,
+	/**  "I will drink a glass of water at 7:00 in the kitchen." */
+	intention: string,
+	/**  "After I wake up, I will drink a glass of water." */
+	anchorLine?: string | null,
+	/**  The last 28 local days, oldest first; days before the habit was made are left out. */
+	dots: HabitDotView[],
+	doneToday: boolean,
+	/**  "5 days kept", from 2 days up. */
+	runLine?: string | null,
+	/**  "Two days off. Today is a fresh start." */
+	freshStart?: string | null,
+};
+
+/**  One habit: a routine's step or a standalone habit. */
+export type HabitView_Serialize = {
+	/**  A UUIDv7. */
+	id: string,
+	/**  `None` for a standalone habit. */
+	routineId: string | null,
+	name: string,
+	whenText: string | null,
+	whereText: string | null,
+	anchor: string | null,
+	twoMinute: string | null,
+	identity: string | null,
+	optional: boolean,
+	/**  A standalone habit's weekday mask; `None` inside a routine. */
+	days: number | null,
+	/**  A standalone habit's days, worded; `None` inside a routine. */
+	daysLabel: string | null,
+	/**  "I will drink a glass of water at 7:00 in the kitchen." */
+	intention: string,
+	/**  "After I wake up, I will drink a glass of water." */
+	anchorLine: string | null,
+	/**  The last 28 local days, oldest first; days before the habit was made are left out. */
+	dots: HabitDotView[],
+	doneToday: boolean,
+	/**  "5 days kept", from 2 days up. */
+	runLine: string | null,
+	/**  "Two days off. Today is a fresh start." */
+	freshStart: string | null,
+};
 
 /**  A hint the timer view can carry. Each is shown once, ever. */
 export type Hint = 
@@ -766,6 +913,169 @@ export type PresetPatch_Serialize = {
 	rounds: number | null,
 };
 
+/**  A routine as typed in its editor. The service trims the name. */
+export type RoutineDraft = RoutineDraft_Serialize | RoutineDraft_Deserialize;
+
+/**  A routine as typed in its editor. The service trims the name. */
+export type RoutineDraft_Deserialize = {
+	name: string,
+	/**  Minutes after local midnight (0–1439); `None` is any time. */
+	timeOfDay?: number | null,
+	/**  The weekday mask (1–127). */
+	days: number,
+};
+
+/**  A routine as typed in its editor. The service trims the name. */
+export type RoutineDraft_Serialize = {
+	name: string,
+	/**  Minutes after local midnight (0–1439); `None` is any time. */
+	timeOfDay: number | null,
+	/**  The weekday mask (1–127). */
+	days: number,
+};
+
+/**  How far today's pass through a routine went. Drawn as shape and word. */
+export type RoutineToday = "notStarted" | "inProgress" | "finished";
+
+/**  One routine with its habits (its steps) and today's progress. */
+export type RoutineView = RoutineView_Serialize | RoutineView_Deserialize;
+
+/**  One routine with its habits (its steps) and today's progress. */
+export type RoutineView_Deserialize = {
+	/**  A UUIDv7. */
+	id: string,
+	name: string,
+	/**  Minutes after local midnight; `None` is any time. */
+	timeOfDay?: number | null,
+	/**  The time worded by the hour cycle: "07:00" or "7:00 AM". */
+	time?: string | null,
+	/**  The weekday mask, Monday = 1 … Sunday = 64. */
+	days: number,
+	/**  "Every day", "Weekdays", "Weekends" or "Mon, Wed, Fri". */
+	daysLabel: string,
+	/**  Copied from a template: the routine shows its wellness note. */
+	wellness: boolean,
+	/**  The wellness note to show, when `wellness`: "Wellness suggestion, not medical advice." */
+	note?: string | null,
+	habits: HabitView_Deserialize[],
+	today: RoutineToday,
+	/**  "Not started today", "2 of 5 done today" or "Done today, 4 of 5". */
+	todayLine: string,
+};
+
+/**  One routine with its habits (its steps) and today's progress. */
+export type RoutineView_Serialize = {
+	/**  A UUIDv7. */
+	id: string,
+	name: string,
+	/**  Minutes after local midnight; `None` is any time. */
+	timeOfDay: number | null,
+	/**  The time worded by the hour cycle: "07:00" or "7:00 AM". */
+	time: string | null,
+	/**  The weekday mask, Monday = 1 … Sunday = 64. */
+	days: number,
+	/**  "Every day", "Weekdays", "Weekends" or "Mon, Wed, Fri". */
+	daysLabel: string,
+	/**  Copied from a template: the routine shows its wellness note. */
+	wellness: boolean,
+	/**  The wellness note to show, when `wellness`: "Wellness suggestion, not medical advice." */
+	note: string | null,
+	habits: HabitView_Serialize[],
+	today: RoutineToday,
+	/**  "Not started today", "2 of 5 done today" or "Done today, 4 of 5". */
+	todayLine: string,
+};
+
+/**  Why a routines command was refused. */
+export type RoutinesError = 
+/**  No such live routine or habit, or it is already in the state asked for. */
+"notFound" | 
+/**  The name is only whitespace, or no weekday is chosen. */
+"empty" | 
+/**  A text is over its limit (80 or 120 characters), or a time or day mask is out of range. */
+"tooLong" | 
+/**  30 routines, 20 habits in this routine, or 30 standalone habits already. */
+"full" | 
+/**  A run is open (from R6). */
+"running" | 
+/**  The store is unavailable or failed. */
+"store";
+
+/**
+ *  Everything the Routines page shows: the routines in order, the standalone habits and the
+ *  open run.
+ */
+export type RoutinesView = RoutinesView_Serialize | RoutinesView_Deserialize;
+
+/**
+ *  Everything the Routines page shows: the routines in order, the standalone habits and the
+ *  open run.
+ */
+export type RoutinesView_Deserialize = {
+	routines: RoutineView_Deserialize[],
+	/**  The standalone habits, in order. */
+	habits: HabitView_Deserialize[],
+	/**  The open run, if any. Always `None` until the run commands land (R6). */
+	run?: RunView_Deserialize | null,
+};
+
+/**
+ *  Everything the Routines page shows: the routines in order, the standalone habits and the
+ *  open run.
+ */
+export type RoutinesView_Serialize = {
+	routines: RoutineView_Serialize[],
+	/**  The standalone habits, in order. */
+	habits: HabitView_Serialize[],
+	/**  The open run, if any. Always `None` until the run commands land (R6). */
+	run: RunView_Serialize | null,
+};
+
+/**  One step of a run. */
+export type RunStepView = {
+	habitId: string,
+	name: string,
+	/**  The intention, the anchor line, "2-minute version: …" and the identity, as present. */
+	detail: string[],
+	optional: boolean,
+	state: StepState,
+};
+
+/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+export type RunView = RunView_Serialize | RunView_Deserialize;
+
+/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+export type RunView_Deserialize = {
+	id: string,
+	routineId: string,
+	routineName: string,
+	steps: RunStepView[],
+	/**  The index of the step to answer; `None` once every step is answered. */
+	current?: number | null,
+	done: number,
+	skipped: number,
+	total: number,
+	wellness: boolean,
+	/**  "Step 2 of 5" or "Routine finished. 4 of 5 done today." */
+	line: string,
+};
+
+/**  The open run, step by step. Defined here so the view type is stable; filled from R6. */
+export type RunView_Serialize = {
+	id: string,
+	routineId: string,
+	routineName: string,
+	steps: RunStepView[],
+	/**  The index of the step to answer; `None` once every step is answered. */
+	current: number | null,
+	done: number,
+	skipped: number,
+	total: number,
+	wellness: boolean,
+	/**  "Step 2 of 5" or "Routine finished. 4 of 5 done today." */
+	line: string,
+};
+
 /**  Opaque session identifier, serialized as a bare string. */
 export type SessionId = string;
 
@@ -848,6 +1158,9 @@ export type StartRequest = {
 	quick: boolean,
 };
 
+/**  A step's state in a run. */
+export type StepState = "upcoming" | "done" | "skipped";
+
 /**  Whether the session store could be used. */
 export type StoreStatus = "ok" | "unavailable" | "newer";
 
@@ -869,6 +1182,44 @@ export type SuggestionView_Serialize = {
 	text: string,
 	/**  `optional` or `experimental`; `None` for a line with a source or a product principle. */
 	label: SuggestionLabel | null,
+};
+
+/**  Which template a routine was copied from. Stored as its camelCase text (`as_str`). */
+export type TemplateId = "morningLight" | "deepWorkStart" | "studySession" | "eveningShutdown" | "windDown";
+
+/**  A starter template, for the template dialog. */
+export type TemplateView = TemplateView_Serialize | TemplateView_Deserialize;
+
+/**  A starter template, for the template dialog. */
+export type TemplateView_Deserialize = {
+	id: TemplateId,
+	name: string,
+	summary: string,
+	/**  The time worded by the hour cycle; `None` is any time. */
+	time?: string | null,
+	/**
+	 *  The steps in order, worded: "Electrolytes (optional)",
+	 *  "Delay caffeine 90–120 minutes (optional). The evidence is contested."
+	 */
+	steps: string[],
+	/**  The wellness note: "Wellness suggestion, not medical advice." */
+	note: string,
+};
+
+/**  A starter template, for the template dialog. */
+export type TemplateView_Serialize = {
+	id: TemplateId,
+	name: string,
+	summary: string,
+	/**  The time worded by the hour cycle; `None` is any time. */
+	time: string | null,
+	/**
+	 *  The steps in order, worded: "Electrolytes (optional)",
+	 *  "Delay caffeine 90–120 minutes (optional). The evidence is contested."
+	 */
+	steps: string[],
+	/**  The wellness note: "Wellness suggestion, not medical advice." */
+	note: string,
 };
 
 /**  The colour theme the person chose. */

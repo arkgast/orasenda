@@ -9,6 +9,7 @@ mod hint;
 mod inbox;
 mod keyboard;
 mod presets;
+mod routines;
 mod settings;
 #[cfg(test)]
 mod tests;
@@ -31,6 +32,10 @@ pub use keyboard::{
     ShortcutStatus,
 };
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
+pub use routines::{
+    HabitDayState, HabitDotView, HabitDraft, HabitView, RoutineDraft, RoutineToday, RoutineView,
+    RoutinesError, RoutinesView, RunStepView, RunView, StepState, TemplateId, TemplateView,
+};
 pub use settings::{Settings, Theme, default_selected_id};
 pub use timer::{
     ClockTick, Mode, Offer, StartRequest, StoreStatus, SuggestionView, TimerState, TimerView,

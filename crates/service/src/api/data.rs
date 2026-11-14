@@ -63,6 +63,12 @@ pub struct DataCounts {
     pub presets: u32,
     pub notes: u32,
     pub settings: u32,
+    pub routines: u32,
+    pub habits: u32,
+    /// Habit check-ins.
+    pub checks: u32,
+    /// Routine runs.
+    pub runs: u32,
 }
 
 impl From<Counts> for DataCounts {
@@ -72,6 +78,10 @@ impl From<Counts> for DataCounts {
             presets: counts.presets,
             notes: counts.notes,
             settings: counts.settings,
+            routines: counts.routines,
+            habits: counts.habits,
+            checks: counts.checks,
+            runs: counts.runs,
         }
     }
 }
