@@ -182,3 +182,41 @@ test("dialog_returns_focus_to_the_trigger_on_close", async () => {
   await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await vi.waitFor(() => expect(document.activeElement).toBe(trigger));
 });
+
+test("dialog_sheet_is_capped_at_the_sheet_width_with_the_scrim", () => {
+  render(
+    <Dialog {...base} size="sheet" confirmLabel="Done" onCancel={() => {}}>
+      <p>Fields</p>
+    </Dialog>,
+  );
+  const dialog = screen.getByRole("dialog");
+  expect(dialog).toHaveAttribute("data-size", "sheet");
+  expect(dialog.className).toContain("max-w-sheet-width");
+  expect(dialog.className).not.toContain("max-w-panel-width");
+  expect(document.querySelector("[data-slot=dialog-overlay]")).toHaveAttribute(
+    "data-scrim",
+    "true",
+  );
+});
+
+test("dialog_sheet_body_is_two_columns_that_stack_when_narrow", () => {
+  render(
+    <Dialog {...base} size="sheet" onCancel={() => {}}>
+      <p>Fields</p>
+    </Dialog>,
+  );
+  const body = document.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
+  expect(body).toHaveClass("@container");
+  expect(body.firstElementChild?.className).toContain("grid-cols-1");
+  expect(body.firstElementChild?.className).toContain("@sheet-stack:grid-cols-2");
+});
+
+test("dialog_default_size_keeps_the_panel_width_and_a_clear_backdrop", () => {
+  render(<Dialog {...base} onCancel={() => {}} />);
+  expect(screen.getByRole("dialog").className).toContain("max-w-panel-width");
+  expect(document.querySelector("[data-slot=dialog-sheet-body]")).toBeNull();
+  expect(document.querySelector("[data-slot=dialog-overlay]")).toHaveAttribute(
+    "data-scrim",
+    "false",
+  );
+});

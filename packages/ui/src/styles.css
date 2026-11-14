@@ -36,16 +36,19 @@
 
 /* Unlayered on purpose: the Choice component's utilities sit in @layer utilities and would otherwise beat these system-colour rules. */
 @media (forced-colors: active) {
-  [data-slot="choice"] input:checked {
+  [data-slot="choice"] input:checked,
+  [data-slot="checklist-item"] input[type="checkbox"]:checked {
     forced-color-adjust: none;
     background: Highlight;
     border-color: Highlight;
     box-shadow: inset 0 0 0 2px Canvas;
   }
-  [data-slot="choice"] input[type="checkbox"]:checked {
+  [data-slot="choice"] input[type="checkbox"]:checked,
+  [data-slot="checklist-item"] input[type="checkbox"]:checked {
     box-shadow: none;
   }
-  [data-slot="choice"] input[type="checkbox"]:checked::before {
+  [data-slot="choice"] input[type="checkbox"]:checked::before,
+  [data-slot="checklist-item"] input[type="checkbox"]:checked::before {
     border-color: HighlightText;
   }
   [data-slot="choice"] input:checked:focus-visible {

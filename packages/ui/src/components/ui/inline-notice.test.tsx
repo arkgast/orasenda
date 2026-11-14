@@ -132,3 +132,32 @@ test("inline_notice_row_keeps_one_always_mounted_status_paragraph", () => {
   expect(onAction).toHaveBeenCalledTimes(1);
   expect(live.contains(screen.getByRole("button"))).toBe(false);
 });
+
+test("inline_notice_secondary_action_is_a_quiet_sibling_after_the_first", () => {
+  const onAction = vi.fn();
+  const onSecond = vi.fn();
+  render(
+    <InlineNotice
+      actionLabel="Add a checklist"
+      onAction={onAction}
+      secondaryAction={{ label: "Keep as is", onAction: onSecond }}
+    >
+      This looks big. Could it be a few smaller tasks?
+    </InlineNotice>,
+  );
+  const buttons = screen.getAllByRole("button");
+  expect(buttons.map((b) => b.textContent)).toEqual(["Add a checklist", "Keep as is"]);
+  expect(buttons[1]).toHaveAttribute("data-variant", "quiet");
+  fireEvent.click(screen.getByRole("button", { name: "Keep as is" }));
+  expect(onSecond).toHaveBeenCalledTimes(1);
+  expect(onAction).not.toHaveBeenCalled();
+});
+
+test("inline_notice_secondary_action_name_overrides_the_label", () => {
+  render(
+    <InlineNotice secondaryAction={{ label: "Keep", name: "Keep as is", onAction: () => {} }}>
+      Note
+    </InlineNotice>,
+  );
+  expect(screen.getByRole("button", { name: "Keep as is" })).toBeTruthy();
+});

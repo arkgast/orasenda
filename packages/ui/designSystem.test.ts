@@ -55,6 +55,10 @@ const PREVIOUS_SURFACE = [
   "RoutineCard",
   "RoutineStep",
   "DayPicker",
+  "Select",
+  "Checklist",
+  "TagField",
+  "Stepper",
 ];
 
 // `just design-system-check` builds once and passes the folder in DS_OUT; alone, the test builds its own.
@@ -81,7 +85,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(44);
+  expect(components).toHaveLength(48);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -210,6 +214,17 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     steps: [{ name: "Dim the lights", state: "upcoming" }],
   },
   DayPicker: { label: "Repeat on", value: 31, onChange: noop },
+  Select: { label: "Column", options: [{ value: "backlog", label: "Backlog" }] },
+  Checklist: {
+    label: "Checklist",
+    items: [{ id: "a", text: "Outline", done: false }],
+    onToggle: noop,
+    onAdd: noop,
+    onRemove: noop,
+    onRename: noop,
+  },
+  TagField: { label: "Tags", tags: ["Writing"], onChange: noop },
+  Stepper: { label: "Estimate", value: 2, min: 0, max: 12, onChange: noop },
 };
 
 /** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */

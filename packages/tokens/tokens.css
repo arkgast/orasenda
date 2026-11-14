@@ -100,6 +100,7 @@
   --hour-gutter: 52px;
   --minute-scale: 2px;
   --panel-width: 420px;
+  --sheet-width: 720px;
   --picker-height: 520px;
   --popover-width: 272px;
   --timer-size: 280px;
@@ -137,6 +138,7 @@
   --container-6xl: 1152px;
   --container-7xl: 1280px;
   --container-start-compact: 400px;
+  --container-sheet-stack: 560px;
   --container-ring-clock: 480px;
   --container-tooltip: 40ch;
   --fluid-gutter: clamp(var(--space-4), 4cqi, var(--space-6));
