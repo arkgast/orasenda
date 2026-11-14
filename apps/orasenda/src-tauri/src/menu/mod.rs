@@ -3,6 +3,9 @@
 //!
 //! The pure models ([`view_menu::entries`] and the others) are tested on every desktop target;
 //! the native build and the rebinding of accelerators are macOS only.
+//!
+//! Off macOS only the tests call the pure models, so dead code is allowed there.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 
 pub(crate) mod app_menu;
 pub(crate) mod focus_menu;
