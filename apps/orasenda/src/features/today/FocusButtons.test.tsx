@@ -59,7 +59,6 @@ test("today_full_screen_one_step", async () => {
   // One command, the registry's: no menu, no display choice, no dialog.
   expect(argsOf(backend.calls, "action_run")).toEqual([{ id: "fullScreen" }]);
   expect(argsOf(backend.calls, "native_menu_popup")).toEqual([]);
-  expect(argsOf(backend.calls, "focus_view_open")).toEqual([]);
   expect(screen.queryByRole("dialog")).toBeNull();
 });
 

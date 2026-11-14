@@ -162,7 +162,8 @@ fn main_capability_exact() {
             "allow-presets-list",
             "allow-native-menu-popup",
             "allow-displays-list",
-            "allow-focus-view-open",
+            "allow-timer-view",
+            "allow-preset-select",
             "allow-preset-add",
             "allow-preset-update",
             "allow-preset-remove",
@@ -196,53 +197,11 @@ fn main_capability_exact() {
     for withheld in [
         "allow-focus-view-close",
         "allow-main-show",
-        "allow-timer-view",
-        "allow-preset-select",
         "allow-capture-note",
         "allow-capture-close",
     ] {
         assert!(!main.iter().any(|p| p == withheld), "main has {withheld}");
     }
-}
-
-#[test]
-fn focus_capability_exact_with_cadence() {
-    assert_capability(
-        "focus.json",
-        &["focus-*"],
-        &[
-            "core:event:allow-listen",
-            "core:event:allow-unlisten",
-            "allow-timer-view",
-            "allow-timer-start",
-            "allow-timer-pause",
-            "allow-timer-resume",
-            "allow-timer-stop",
-            "allow-timer-extend",
-            "allow-timer-take-break",
-            "allow-timer-dismiss-offer",
-            "allow-settings-get",
-            "allow-presets-list",
-            "allow-preset-select",
-            "allow-focus-view-close",
-            "allow-capture-open",
-        ],
-    );
-    let (_, focus) = capability("focus.json");
-    for withheld in [
-        "allow-timer-state",
-        "allow-hint-shown",
-        "allow-tip-seen",
-        "allow-settings-set",
-        "allow-native-menu-popup",
-        "allow-presets-get",
-    ] {
-        assert!(!focus.iter().any(|p| p == withheld), "focus has {withheld}");
-    }
-    assert!(
-        !focus.iter().any(|p| p.starts_with("core:window:")),
-        "focus has a window permission"
-    );
 }
 
 #[test]
@@ -289,7 +248,7 @@ fn floater_capability_exact_with_cadence() {
         );
     }
     // Only the floater may start a drag.
-    for file in ["main.json", "focus.json", "dev.json", "overlay.json"] {
+    for file in ["main.json", "dev.json", "overlay.json"] {
         let (_, other) = capability(file);
         assert!(
             !other
@@ -331,7 +290,6 @@ fn dev_and_overlay_capabilities_exact() {
 fn every_manifest_command_is_granted_somewhere() {
     let granted: Vec<String> = [
         "main.json",
-        "focus.json",
         "floater.json",
         "capture.json",
         "dev.json",
@@ -346,5 +304,35 @@ fn every_manifest_command_is_granted_somewhere() {
             granted.contains(&permission),
             "no capability grants {permission}"
         );
+    }
+}
+
+#[test]
+fn no_focus_capability() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("capabilities");
+    assert!(!dir.join("focus.json").exists(), "focus.json is back");
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().is_some_and(|ext| ext == "json") {
+            let text = std::fs::read_to_string(&path).unwrap();
+            assert!(
+                !text.contains("focus-*"),
+                "{} names focus-*",
+                path.display()
+            );
+            assert!(
+                !text.contains("allow-focus-view-open"),
+                "{} grants focus_view_open",
+                path.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn floater_keeps_close_and_main_show() {
+    let (_, floater) = capability("floater.json");
+    for kept in ["allow-focus-view-close", "allow-main-show"] {
+        assert!(floater.iter().any(|p| p == kept), "floater lost {kept}");
     }
 }

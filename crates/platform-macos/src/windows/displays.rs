@@ -10,7 +10,6 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 
 use block2::RcBlock;
-use objc2::MainThreadMarker;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, ProtocolObject};
 use objc2_app_kit::{NSApplicationDidChangeScreenParametersNotification, NSScreen};
@@ -35,7 +34,7 @@ pub struct Rect {
 /// origin and y grows downward).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Display {
-    /// The label-safe key ([`display_key`]); the Focus window is `focus-<id>`.
+    /// The label-safe key ([`display_key`]).
     pub id: String,
     /// The key this display had before the UUID ([`display_key`] of the old form).
     pub legacy_id: String,
@@ -60,7 +59,7 @@ pub fn to_appkit(top_left: Rect, primary_height: f64) -> Rect {
 }
 
 /// `raw` reduced to ASCII letters, digits and single hyphens, never empty, so that
-/// `focus-<key>` is a valid Tauri window label. Idempotent.
+/// it is a valid part of a Tauri window label. Idempotent.
 pub fn display_key(raw: &str) -> String {
     let mut key = String::new();
     for c in raw.chars() {
@@ -150,23 +149,6 @@ fn rect_of(rect: NSRect) -> Rect {
         width: rect.size.width,
         height: rect.size.height,
     }
-}
-
-/// The screen with display key `key`, or `UnknownDisplay`.
-pub(crate) fn screen_with_key(
-    mtm: MainThreadMarker,
-    key: &str,
-) -> Result<Retained<NSScreen>, WindowError> {
-    let screens = NSScreen::screens(mtm);
-    let height = screens
-        .firstObject()
-        .map_or(0.0, |primary| primary.frame().size.height);
-    screens
-        .iter()
-        .enumerate()
-        .find(|(index, screen)| describe(screen, *index, height).id == key)
-        .map(|(_, screen)| screen)
-        .ok_or_else(|| WindowError::UnknownDisplay(key.into()))
 }
 
 /// The window's display key and its frame in integer points relative to that display's

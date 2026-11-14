@@ -162,10 +162,9 @@ export function backend({
     navigate_take: () => null,
     notifications_request: () => view.notifications,
     notifications_open_settings: () => null,
-    // The Focus window and the floater: the view without draining, and their actions.
+    // Full screen and the floater: the view without draining, and their actions.
     timer_view: () => view,
     displays_list: () => displaysFor(1),
-    focus_view_open: () => null,
     focus_view_close: () => null,
     // `main`'s full screen (H4): windowed unless a scenario says otherwise.
     window_view: () => WINDOWED,

@@ -1,53 +1,10 @@
-//! Display changes: the Focus windows follow the displays, the floater leaves a gone one.
+//! Display changes: the floater leaves a gone display.
 
 use super::*;
 use crate::windows::displays::reframe_on;
 
 fn calls_of(fake: &Fake) -> Vec<String> {
     fake.calls()
-}
-
-#[test]
-fn screens_changed_reframes_each_focus_window_and_emits_insets() {
-    let fake = Fake::new(vec![screen("A", 1440, 900), screen("B", 1920, 1080)]);
-    fake.windows
-        .borrow_mut()
-        .extend(["main".into(), "focus-A".into(), "focus-B".into()]);
-    reframe_on(&fake);
-    assert_eq!(
-        calls_of(&fake),
-        [
-            "cover focus-A A",
-            "insets focus-A",
-            "cover focus-B B",
-            "insets focus-B"
-        ]
-    );
-    assert_eq!(fake.count("key"), 0, "no window takes key focus");
-    assert_eq!(fake.count("show"), 0);
-}
-
-#[test]
-fn screens_changed_closes_focus_on_gone_display() {
-    let fake = Fake::new(vec![screen("A", 1440, 900)]);
-    fake.windows
-        .borrow_mut()
-        .extend(["focus-A".into(), "focus-B".into()]);
-    reframe_on(&fake);
-    assert_eq!(
-        calls_of(&fake),
-        ["cover focus-A A", "insets focus-A", "close focus-B"]
-    );
-    assert_eq!(*fake.windows.borrow(), ["focus-A"]);
-}
-
-#[test]
-fn screens_changed_closes_a_focus_window_that_cannot_be_framed() {
-    let mut fake = Fake::new(vec![screen("A", 1440, 900)]);
-    fake.fail_on = Some("cover");
-    fake.windows.borrow_mut().push("focus-A".into());
-    reframe_on(&fake);
-    assert_eq!(calls_of(&fake), ["cover focus-A A", "close focus-A"]);
 }
 
 #[test]
@@ -153,5 +110,4 @@ fn display_infos_flag_the_main_display_first_fallback() {
             .collect::<Vec<_>>(),
         vec![true, false]
     );
-    assert_eq!(focus::focus_label("1"), "focus-1");
 }

@@ -1,7 +1,6 @@
-//! Display changes (spec: Display changes): when the screen parameters change, each open Focus
-//! window is framed to its display again and told its insets, a Focus window whose display is
-//! gone closes, a floater whose display is gone moves to the main window's display, and the
-//! Focus menu and the menu-bar item are rebuilt. No window takes key focus.
+//! Display changes (spec: Display changes): when the screen parameters change, a floater whose
+//! display is gone moves to the main window's display, and the Focus menu and the menu-bar item
+//! are rebuilt. No window takes key focus.
 //!
 //! The pure steps ([`reframe_on`]) run over [`Ops`] and are tested with a fake. The platform
 //! half sits on the macOS screen observer; every call runs off the main thread.
@@ -11,13 +10,11 @@ use orasenda_service::windows::{default_frame, frame_within};
 #[cfg(desktop)]
 use super::AppOps;
 use super::floater::{EDGE_INSET, HEIGHT, LIMITS, WIDTH};
-use super::focus::focus_label;
 use super::{FLOATER, Ops, Screen};
 #[cfg(desktop)]
 use tauri::AppHandle;
 
-/// Frames every open Focus window to its display and emits its insets; closes the ones whose
-/// display is gone (or that can't be framed), then moves a stranded floater.
+/// Moves a stranded floater to a connected display.
 pub(crate) fn reframe_on<O: Ops>(ops: &O) {
     let screens = match ops.screens() {
         Ok(screens) => screens,
@@ -26,19 +23,6 @@ pub(crate) fn reframe_on<O: Ops>(ops: &O) {
             return;
         }
     };
-    for label in ops.focus_labels() {
-        let Some(screen) = screens.iter().find(|s| focus_label(&s.id) == label) else {
-            ops.close(&label);
-            continue;
-        };
-        match ops.cover_display(&label, &screen.id) {
-            Ok(()) => ops.emit_insets(&label, screen.insets),
-            Err(error) => {
-                eprintln!("displays: could not frame {label}: {}", error.message);
-                ops.close(&label);
-            }
-        }
-    }
     move_floater(ops, &screens);
 }
 

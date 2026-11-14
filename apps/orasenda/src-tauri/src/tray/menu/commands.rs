@@ -132,7 +132,7 @@ fn run_command(app: &AppHandle, command: MenuCommand) {
         MenuCommand::Start => start_action(false),
         MenuCommand::JustTwo => start_action(true),
         MenuCommand::FullScreen(display) => {
-            if let Err(error) = crate::windows::open_focus(app, &display) {
+            if let Err(error) = crate::windows::full_screen::enter(app, Some(&display)) {
                 eprintln!("tray: Full screen didn't open: {}", error.message);
             }
             return;

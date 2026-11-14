@@ -47,5 +47,4 @@ fn focus_view_close_refused_for_main() {
         FocusViewErrorKind::Unavailable
     );
     assert!(closable("floater").is_ok());
-    assert!(closable("focus-1").is_ok());
 }

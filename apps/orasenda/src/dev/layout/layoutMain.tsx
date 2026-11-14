@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { App } from "../../app/App";
 import { CapturePage } from "../../features/capture/CapturePage";
 import { FloaterPage } from "../../features/floater/FloaterPage";
-import { FocusPage } from "../../features/focus/FocusPage";
 import { events } from "../../shared/ipc/bindings";
 // The design system first, so the app's own rules can build on it.
 import "@orasenda/ui/styles.css";
@@ -11,8 +10,7 @@ import "../../styles/app.css";
 import { displaysFor, SCENARIO_NAMES, scenarioHandler } from "./scenarios";
 
 // `layout.html?scenario=<name>[&page=settings][&popover=1]`: the real App against mockIPC, no Tauri.
-// `&surface=focus|floater|capture` renders that window's page instead (the Focus window reads
-// `&insets=t,r,b,l` from this same query, as it does from `focus.html`), and `&displays=1|2|3`
+// `&surface=floater|capture` renders that window's page instead, and `&displays=1|2|3`
 // sets how many displays `displays_list` answers.
 // A dev page for verification/layout; it is not a build input.
 const query = new URLSearchParams(location.search);
@@ -29,27 +27,17 @@ if (!handler) {
 }
 
 const surface = query.get("surface");
-if (surface !== null && surface !== "focus" && surface !== "floater" && surface !== "capture") {
-  throw new Error(
-    `unknown surface "${surface}"; use "focus", "floater", "capture" or leave it out`,
-  );
+if (surface !== null && surface !== "floater" && surface !== "capture") {
+  throw new Error(`unknown surface "${surface}"; use "floater", "capture" or leave it out`);
 }
 
 mockIPC(handler, { shouldMockEvents: true });
 createRoot(root).render(
-  surface === "focus" ? (
-    <FocusPage />
-  ) : surface === "floater" ? (
-    <FloaterPage />
-  ) : surface === "capture" ? (
-    <CapturePage />
-  ) : (
-    <App />
-  ),
+  surface === "floater" ? <FloaterPage /> : surface === "capture" ? <CapturePage /> : <App />,
 );
 
 if (surface !== null && name === "ended") {
-  // The `ended` scenario is a milestone, which a Focus window or floater takes from the event
+  // The `ended` scenario is a milestone, which the floater takes from the event
   // (it never calls `timer_state`): send it once the page is listening.
   const emitEnded = () =>
     void events.timerMilestone.emit({

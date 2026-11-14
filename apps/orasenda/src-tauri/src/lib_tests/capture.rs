@@ -40,7 +40,7 @@ fn capture_capability_exact() {
         "capture has a window or plugin permission"
     );
     // Every window that can open the panel has `capture_open`; only `capture` has the rest.
-    for file in ["main.json", "focus.json", "floater.json"] {
+    for file in ["main.json", "floater.json"] {
         let (_, other) = capability(file);
         assert!(
             other.iter().any(|p| p == "allow-capture-open"),

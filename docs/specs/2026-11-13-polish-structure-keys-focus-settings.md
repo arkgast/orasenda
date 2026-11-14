@@ -369,7 +369,7 @@ Updated by the PRs that implement this spec.
 - [x] H2 Remove the session intent
 - [ ] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
 - [x] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen): 5A 4A 3A 2A 1B
-- [ ] H4 Full screen in the main window (Esc and floater spikes first)
+- [x] H4 Full screen in the main window (Esc and floater spikes first)
 - [ ] H5 Settings shell, seven pane ids, first four panes
 - [ ] H6 About and Your data (supersedes #419)
 - [ ] H7 Backups (supersedes #420)

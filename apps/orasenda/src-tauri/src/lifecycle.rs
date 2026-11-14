@@ -233,10 +233,8 @@ mod tests {
     }
 
     #[test]
-    fn close_requested_focus_and_floater_close() {
+    fn close_requested_floater_closes() {
         assert_eq!(on_close_requested("floater"), CloseAction::Pass);
-        assert_eq!(on_close_requested("focus-69732992"), CloseAction::Pass);
-        assert_eq!(on_close_requested("focus-"), CloseAction::Pass);
     }
 
     #[test]

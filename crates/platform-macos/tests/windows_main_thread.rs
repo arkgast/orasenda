@@ -27,8 +27,8 @@ fn windows_fns_refuse_null_window() {
     use std::ptr::null_mut;
 
     use orasenda_platform_macos::windows::{
-        Rect, WindowError, configure_floater, configure_focus_window, displays, frame_of,
-        install_floater_key_monitor, key_without_activation, observe_full_screen, set_frame,
+        Rect, WindowError, configure_floater, displays, frame_of, install_floater_key_monitor,
+        key_without_activation, observe_full_screen, set_frame,
     };
 
     let refused = Err(WindowError::NullWindow);
@@ -40,7 +40,6 @@ fn windows_fns_refuse_null_window() {
     };
     // SAFETY: null is allowed by the contract and reported as `NullWindow`.
     unsafe {
-        assert_eq!(configure_focus_window(null_mut(), "x"), refused);
         assert_eq!(configure_floater(null_mut()), refused);
         assert_eq!(key_without_activation(null_mut()), refused);
         assert_eq!(set_frame(null_mut(), "x", any_frame), refused);

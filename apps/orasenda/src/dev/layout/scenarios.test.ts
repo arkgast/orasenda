@@ -38,7 +38,6 @@ const NAMES = [
 const NEW_COMMANDS = [
   "timer_view",
   "displays_list",
-  "focus_view_open",
   "focus_view_close",
   "window_view",
   "full_screen_enter",

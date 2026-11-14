@@ -1,4 +1,4 @@
-//! The Focus views' windows (ADR-016): the full-screen Focus window per display and the
+//! The Focus views' windows (ADR-016, ADR-019): full screen in main and the
 //! floater. The pure parts (the window specs, the open and close steps over [`Ops`]) build
 //! everywhere and are tested with a fake; [`native`] is the macOS implementation, and every
 //! other platform answers `unavailable`.
@@ -14,13 +14,12 @@ use tauri::AppHandle;
 
 use crate::runtime::session::Action;
 
-use crate::ipc::{FocusInsets, FocusViewError};
+use crate::ipc::FocusViewError;
 
 mod capture;
 pub(crate) mod displays;
 mod floater;
 mod floater_keys;
-pub(crate) mod focus;
 pub(crate) mod frames;
 pub(crate) mod full_screen;
 mod native;
@@ -63,7 +62,6 @@ pub(crate) struct Screen {
     pub size: (u32, u32),
     /// The display without the menu bar and the Dock.
     pub visible: Frame,
-    pub insets: FocusInsets,
 }
 
 /// What the open and close steps need from the platform. The macOS implementation runs each
@@ -74,14 +72,10 @@ pub(crate) trait Ops {
     /// The display `main` is on, from its recorded frame.
     fn main_display(&self) -> Option<String>;
     fn exists(&self, label: &str) -> bool;
-    /// The labels of the open Focus windows.
-    fn focus_labels(&self) -> Vec<String>;
     /// The display a window is on now, from its frame; `None` when it can't be read.
     fn window_display(&self, label: &str) -> Option<String>;
     /// Creates the window hidden. Fails when the label exists.
     fn create(&self, spec: &WindowSpec) -> Result<(), FocusViewError>;
-    /// Frames a Focus window to the whole display.
-    fn cover_display(&self, label: &str, display_id: &str) -> Result<(), FocusViewError>;
     /// Turns the window into the floating panel (once, before it is shown).
     fn make_floater(&self, label: &str) -> Result<(), FocusViewError>;
     fn place(&self, label: &str, display_id: &str, frame: Frame) -> Result<(), FocusViewError>;
@@ -105,7 +99,6 @@ pub(crate) trait Ops {
     fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)>;
     /// Moves floater frames stored under each screen's `legacy_id` to its `id`, once.
     fn migrate_frames(&self, screens: &[Screen]);
-    fn emit_insets(&self, label: &str, insets: FocusInsets);
     fn close(&self, label: &str);
 }
 
@@ -117,15 +110,6 @@ pub(crate) fn screen_of<'a>(screens: &'a [Screen], id: &str) -> Result<&'a Scree
         .ok_or_else(|| FocusViewError::no_display("That display isn't connected."))
 }
 
-/// Opens (or focuses) the Focus window of a display.
-pub(crate) fn open_focus(app: &AppHandle, display_id: &str) -> Result<(), FocusViewError> {
-    let result = focus::open_focus_on(&AppOps::new(app), display_id);
-    if result.is_ok() {
-        note_opened(app);
-    }
-    result
-}
-
 /// A Focus view opened: the session remembers it (`used.focus_view`, which ends the tip about it).
 pub(crate) fn note_opened(app: &AppHandle) {
     if let Err(error) = crate::runtime::session::run_action(app, Action::FocusViewOpened) {
@@ -134,16 +118,6 @@ pub(crate) fn note_opened(app: &AppHandle) {
             error.message
         );
     }
-}
-
-/// Opens the floater at its remembered frame, or focuses it when shown; then hides `main`.
-pub(crate) fn open_floater(app: &AppHandle) -> Result<(), FocusViewError> {
-    let result = floater::open_floater_on(&AppOps::new(app));
-    if result.is_ok() {
-        note_opened(app);
-    }
-    surfaces_changed(app);
-    result
 }
 
 /// Closes the floater, if any; its `CloseRequested` saves the frame.
@@ -169,13 +143,6 @@ pub(crate) fn close_capture(app: &AppHandle) {
 /// Whether the floater window exists.
 pub(crate) fn floater_shown(app: &AppHandle) -> bool {
     AppOps::new(app).exists(FLOATER)
-}
-
-/// The display `main` is on: its recorded display, or the primary one.
-pub(crate) fn main_display(app: &AppHandle) -> Option<String> {
-    let ops = AppOps::new(app);
-    ops.main_display()
-        .or_else(|| ops.screens().ok()?.into_iter().next().map(|s| s.id))
 }
 
 /// Shows `main` and asks it to open the command palette.

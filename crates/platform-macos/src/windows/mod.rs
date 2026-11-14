@@ -1,5 +1,5 @@
 //! AppKit control for the Focus views (ADR-004, ADR-010, ADR-016): the displays, the
-//! full-screen Focus window, the floating timer panel (the floater) and its keys.
+//! floating timer panel (the floater) and its keys.
 //!
 //! Every function needs the main thread and returns [`WindowError::NotOnMainThread`]
 //! elsewhere, before it looks at a window pointer. `ns_window` is the pointer from Tauri's
@@ -24,7 +24,6 @@ mod capture;
 mod display_uuid;
 mod displays;
 mod floater;
-mod focus_window;
 mod full_screen_observer;
 mod keys;
 #[cfg(test)]
@@ -39,7 +38,6 @@ pub use displays::{
     set_frame, to_appkit, to_top_left,
 };
 pub use floater::{configure_floater, key_without_activation};
-pub use focus_window::configure_focus_window;
 pub use full_screen_observer::{FullScreenEvent, FullScreenObserver, observe_full_screen};
 pub use keys::{FloaterKey, KeyMonitor, Modifiers, floater_key, install_floater_key_monitor};
 
