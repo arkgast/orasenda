@@ -72,14 +72,14 @@ fn start_while_running_is_already_running_and_changes_nothing() {
     let mut s = classic_at(T0);
     let running = s.clone();
     assert_eq!(
-        s.start(id("b"), SessionPreset::Quick, 1, T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, 1, None, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, running);
     s.pause(T0 + MIN).unwrap();
     let paused = s.clone();
     assert_eq!(
-        s.start(id("b"), SessionPreset::Quick, 1, T0 + MIN),
+        s.start(id("b"), SessionPreset::Quick, 1, None, T0 + MIN),
         Err(TimerError::AlreadyRunning)
     );
     assert_eq!(s, paused);

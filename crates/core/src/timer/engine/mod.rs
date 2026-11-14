@@ -4,7 +4,7 @@
 //! Every method takes `now_ms`; the engine never reads the clock. Arithmetic saturates, so a
 //! clock set back, a snapshot from the future or an instant near `u64::MAX` never panics.
 //!
-//! Layout: this file holds the state and the plain transitions (start, pause, resume);
+//! Layout: this file holds the state and the plain transitions (start, pause, resume, set_task);
 //! `advance` the clock-driven ones, `breaks` the break and the end of a session, `extend` the
 //! `+10 min` actions, `auto` the automatic steps and `view` the numbers for the surfaces.
 
@@ -37,6 +37,9 @@ pub struct Live {
     pub(crate) extensions: u8,
     /// Fixed at start; decides which break comes.
     pub(crate) round: u8,
+    /// The task the focus is for, when one was picked. In a break it lives in `open_focus`.
+    #[serde(default)]
+    pub(crate) task_id: Option<String>,
     pub(crate) warned: bool,
     pub(crate) auto_step: bool,
     pub(crate) open_focus: Option<Box<SessionRecord>>,
@@ -67,13 +70,15 @@ pub enum Session {
 }
 
 impl Session {
-    /// Starts a focus session of `preset.focus_ms()` as round `round`. Refused with
+    /// Starts a focus session of `preset.focus_ms()` as round `round`, for `task_id` when one
+    /// is given (nothing here picks one). Refused with
     /// `AlreadyRunning` unless idle.
     pub fn start(
         &mut self,
         id: SessionId,
         preset: SessionPreset,
         round: u8,
+        task_id: Option<String>,
         now_ms: u64,
     ) -> Result<(), TimerError> {
         match self {
@@ -90,6 +95,7 @@ impl Session {
                         gap_ms: 0,
                         extensions: 0,
                         round,
+                        task_id,
                         warned: false,
                         auto_step: false,
                         open_focus: None,
@@ -147,6 +153,34 @@ impl Session {
                 *self = Session::Running { live };
                 Ok(())
             }
+        }
+    }
+
+    /// Sets the task the session is for (or clears it with `None`): the live focus, running or
+    /// paused, or the finished focus waiting in a break. Returns whether it changed; refused
+    /// when idle (`NothingRunning`).
+    pub fn set_task(&mut self, task: Option<String>, _now_ms: u64) -> Result<bool, TimerError> {
+        let live = match self {
+            Session::Idle => return Err(TimerError::NothingRunning),
+            Session::Running { live } | Session::Paused { live, .. } => live,
+        };
+        let slot = match live.open_focus.as_mut() {
+            Some(focus) => &mut focus.task_id,
+            None => &mut live.task_id,
+        };
+        let changed = *slot != task;
+        *slot = task;
+        Ok(changed)
+    }
+
+    /// The task the session is for: the focus's, also during its break.
+    pub fn task_id(&self) -> Option<&str> {
+        match self {
+            Session::Idle => None,
+            Session::Running { live } | Session::Paused { live, .. } => live
+                .open_focus
+                .as_ref()
+                .map_or(live.task_id.as_deref(), |f| f.task_id.as_deref()),
         }
     }
 

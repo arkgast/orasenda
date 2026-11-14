@@ -79,14 +79,14 @@ fn record_carries_the_preset_given_to_start() {
         (library(2), 90 * MIN),
     ] {
         let mut s = Session::Idle;
-        s.start(id("p"), preset.clone(), 1, T0).unwrap();
+        s.start(id("p"), preset.clone(), 1, None, T0).unwrap();
         let r = ended(s.advance(T0 + planned + 60 * MIN, None));
         assert_eq!(r.preset, preset);
         assert_eq!(r.planned_ms, planned);
         assert_eq!(r.focused_ms, planned);
     }
     let mut s = Session::Idle;
-    s.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    s.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     assert_eq!(s.view(T0).remaining_ms, QUICK_START_MS);
     assert_eq!(s.stop(T0 + MIN).unwrap()[0].preset, SessionPreset::Quick);
 }
@@ -94,7 +94,7 @@ fn record_carries_the_preset_given_to_start() {
 #[test]
 fn one_milestone_per_transition_none_per_tick() {
     let mut s = Session::Idle;
-    assert_eq!(s.start(id("a"), steady(), 1, T0), Ok(()));
+    assert_eq!(s.start(id("a"), steady(), 1, None, T0), Ok(()));
     for t in (0..10 * 60).map(|k| T0 + k * S) {
         assert_eq!(s.advance(t, None), Vec::<Milestone>::new(), "tick at {t}");
     }

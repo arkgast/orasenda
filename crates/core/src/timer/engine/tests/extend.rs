@@ -38,7 +38,7 @@ fn extend_is_refused_outside_the_last_two_minutes() {
     assert_eq!(s.extend(T0 + 25 * MIN), Ok(Milestone::Extended));
     assert_eq!(Session::Idle.extend(T0), Err(TimerError::NothingRunning));
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     assert_eq!(q.extend(T0 + 100 * S), Err(TimerError::WrongState));
 }
 

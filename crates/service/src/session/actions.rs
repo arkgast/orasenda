@@ -178,7 +178,7 @@ impl SessionService {
             snapshot_of(self.selected())
         };
         let round = self.round_for(&preset, now_ms);
-        self.engine.start(new_id(), preset, round, now_ms)?;
+        self.engine.start(new_id(), preset, round, None, now_ms)?;
         self.keep_awake = self.begin_keep_awake();
         self.changed(now_ms, MilestoneKind::Started, outcome);
         self.note_started(now_ms);

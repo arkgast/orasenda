@@ -112,7 +112,7 @@ fn progress_stays_in_unit_interval() {
         long_break_min: 15,
         rounds: 4,
     };
-    z.start(id("z"), zero, 1, T0).unwrap();
+    z.start(id("z"), zero, 1, None, T0).unwrap();
     let p = z.view(T0).progress;
     assert!((0.0..=1.0).contains(&p), "{p}");
 }

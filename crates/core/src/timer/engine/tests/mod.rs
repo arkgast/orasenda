@@ -33,7 +33,7 @@ fn library(index: usize) -> SessionPreset {
 /// A session of default `index` at round `round`, started at `now`.
 fn at(index: usize, round: u8, now: u64) -> Session {
     let mut s = Session::default();
-    s.start(id("a"), library(index), round, now).unwrap();
+    s.start(id("a"), library(index), round, None, now).unwrap();
     s
 }
 
@@ -85,4 +85,5 @@ mod breaks;
 mod extend;
 mod lifecycle;
 mod sleep;
+mod task;
 mod view;

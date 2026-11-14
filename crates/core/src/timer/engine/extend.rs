@@ -73,6 +73,7 @@ impl Live {
             gap_ms,
             extensions: focus.extensions.saturating_add(1),
             round: self.round,
+            task_id: focus.task_id,
             warned: false,
             auto_step: false,
             open_focus: None,

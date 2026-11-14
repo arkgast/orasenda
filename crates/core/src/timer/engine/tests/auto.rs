@@ -99,7 +99,7 @@ fn take_break_is_refused_in_a_break_idle_or_quick() {
         Err(TimerError::NothingRunning)
     );
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     assert_eq!(q.take_break(T0 + S), Err(TimerError::WrongState));
 }
 
@@ -164,7 +164,7 @@ fn sleep_across_several_steps_stops_at_the_limit() {
 #[test]
 fn quick_rolls_on_with_auto_and_not_without() {
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     let ms = q.advance(T0 + QUICK_START_MS, LIMIT);
     assert_eq!(ms.len(), 2);
     assert!(matches!(ms[0], Milestone::Ended(_)));
@@ -172,7 +172,7 @@ fn quick_rolls_on_with_auto_and_not_without() {
     assert!(q.is_idle());
 
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     let ms = q.advance(T0 + QUICK_START_MS, None);
     assert_eq!(ms.len(), 1);
 }

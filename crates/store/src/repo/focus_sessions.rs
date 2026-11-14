@@ -175,6 +175,7 @@ mod tests {
             end_reason: EndReason::Completed,
             extensions: 2,
             break_kind: None,
+            task_id: None,
         }
     }
 
@@ -285,6 +286,7 @@ mod tests {
         let brk = SessionRecord {
             phase: Phase::Break,
             break_kind: Some(BreakKind::Long),
+            task_id: None,
             ..record("break")
         };
         store
