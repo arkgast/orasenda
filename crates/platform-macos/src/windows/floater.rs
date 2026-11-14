@@ -60,3 +60,18 @@ pub unsafe fn key_without_activation(ns_window: *mut c_void) -> Result<(), Windo
     window.makeKeyWindow();
     Ok(())
 }
+
+/// Gives a window made into a panel (floater or capture) its own class back. Call it on the
+/// main thread right before the window closes: AppKit and WebKit observed it with KVO before the
+/// swap, and tearing it down as a panel throws `NSRangeException` from their observer removal,
+/// which aborts the app (#503, #504). A window that was never swapped is left as it is; one
+/// whose class changed since the swap is refused (`Platform`) and left as it is. Main thread only.
+///
+/// # Safety
+///
+/// Same contract as [`configure_floater`].
+pub unsafe fn release_panel(ns_window: *mut c_void) -> Result<(), WindowError> {
+    main_thread()?;
+    let window = window(ns_window)?;
+    crate::panel_swap::restore(window.as_ref()).map_err(WindowError::Platform)
+}

@@ -373,9 +373,19 @@ mod mac {
         }
 
         fn close(&self, label: &str) {
-            if let Some(window) = self.app.get_webview_window(label)
-                && let Err(error) = window.close()
-            {
+            let Some(window) = self.app.get_webview_window(label) else {
+                return;
+            };
+            // A panel gets its own class back first: tearing it down as a panel aborts the
+            // app (#503, #504). The release is refused only when an observer was added after
+            // the swap (never seen on today's paths); then no class lets every observer go,
+            // and the close can still abort. `window_error` logs the refusal first, so a crash
+            // report has its cause. The other failure (the window or the main thread is gone)
+            // leaves nothing to release, so the result is not needed here.
+            // SAFETY: as above.
+            let _released =
+                self.with_window(label, |pointer| unsafe { appkit::release_panel(pointer) });
+            if let Err(error) = window.close() {
                 eprintln!("windows: could not close {label}: {error}");
             }
         }
