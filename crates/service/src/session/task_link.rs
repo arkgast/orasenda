@@ -155,7 +155,13 @@ impl SessionService {
     pub(crate) fn refresh_task_links(&mut self, now_ms: u64) -> bool {
         let before = self.task_view();
         let session = self.engine.task_id().map(str::to_owned);
-        let ids: Vec<String> = self.chosen_task.iter().chain(&session).cloned().collect();
+        let ids: Vec<String> = self
+            .chosen_task
+            .iter()
+            .chain(&self.carry_task)
+            .chain(&session)
+            .cloned()
+            .collect();
         let Some(store) = &self.store else {
             return false;
         };
@@ -176,6 +182,11 @@ impl SessionService {
             && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::Done)
         {
             self.chosen_task = None;
+        }
+        if let Some(id) = self.carry_task.clone()
+            && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::Done)
+        {
+            self.carry_task = None;
         }
         let mut cleared = false;
         if let Some(id) = &session

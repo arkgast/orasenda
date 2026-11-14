@@ -393,3 +393,41 @@ fn restoring_a_note_clears_the_chosen_task_and_publishes() {
         "the cleared choice is published"
     );
 }
+
+fn offer_on(host: &TestHost, task: &TaskView) {
+    let quick = StartRequest {
+        quick: true,
+        task_id: Some(task.id.clone()),
+    };
+    run_action_on(host, Action::Start(quick)).expect("starts");
+    host.set_now(T0 + 2 * MINUTE);
+    assert_eq!(
+        run_state(host).view.offer,
+        Some(crate::api::Offer::KeepGoing)
+    );
+}
+
+#[test]
+fn board_write_during_keep_going_offer_keeps_carried_title() {
+    let host = host();
+    let a = add(&host, "A", Lane::Today);
+    offer_on(&host, &a);
+    add(&host, "B", Lane::Today);
+    assert_eq!(
+        linked(&crate::session::run_view(&host)),
+        Some((a.id.as_str(), "A"))
+    );
+    let again = start_on(&host, None).expect("starts again");
+    assert_eq!(linked(&again), Some((a.id.as_str(), "A")));
+}
+
+#[test]
+fn carried_task_removed_clears_carry() {
+    let host = host();
+    let a = add(&host, "A", Lane::Today);
+    offer_on(&host, &a);
+    run_task_remove(&host, &a.id).expect("removes");
+    assert_eq!(crate::session::run_view(&host).task, None);
+    let again = start_on(&host, None).expect("starts again");
+    assert_eq!(linked(&again), None);
+}
