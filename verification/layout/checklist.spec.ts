@@ -33,6 +33,6 @@ test("checklist_keyboard_focus_rings_show", async ({ page }) => {
   const items = page.locator('[data-frame][data-state="checklist-items"]');
   for (let i = 0; i < 3; i++) {
     await pressTab(page);
-    await expectFocusRingVisible(page.locator(":focus"), items);
+    await expectFocusRingVisible(page.locator(":focus"));
   }
 });

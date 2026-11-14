@@ -9,7 +9,7 @@ test("stepper_fits_every_frame_down_to_271_and_meets_hit_min", async ({ page }) 
     const frame = all.nth(i);
     const box = await frame.boundingBox();
     const overflow = await frame.evaluate((el) => el.scrollWidth - el.clientWidth);
-    expect(overflow, await frame.getAttribute("data-state")).toBeLessThanOrEqual(0);
+    expect(overflow, (await frame.getAttribute("data-state")) ?? "frame").toBeLessThanOrEqual(0);
     expect(box?.width).toBeGreaterThan(0);
     expect(await smallTargets(frame)).toEqual([]);
   }
