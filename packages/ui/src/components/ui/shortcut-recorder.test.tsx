@@ -286,10 +286,23 @@ test("shortcut_recorder_click_focuses_the_field", () => {
 });
 
 test("shortcut_recorder_clicking_another_recorder_stops_the_first", () => {
+  // One host for both, as in the Shortcuts pane: its suspension is a queue of on/off, so the
+  // first recorder's off must come before the second's on.
+  const onRecordingChange = vi.fn();
   render(
     <>
-      <ShortcutRecorder label="In Orasenda" keys="⌘F" onRecord={vi.fn()} />
-      <ShortcutRecorder label="Everywhere" keys="⌃⌥⌘F" onRecord={vi.fn()} />
+      <ShortcutRecorder
+        label="In Orasenda"
+        keys="⌘F"
+        onRecord={vi.fn()}
+        onRecordingChange={onRecordingChange}
+      />
+      <ShortcutRecorder
+        label="Everywhere"
+        keys="⌃⌥⌘F"
+        onRecord={vi.fn()}
+        onRecordingChange={onRecordingChange}
+      />
     </>,
   );
   const [first, second] = screen.getAllByRole("button");
@@ -297,4 +310,5 @@ test("shortcut_recorder_clicking_another_recorder_stops_the_first", () => {
   fireEvent.click(second);
   expect(second).toHaveAttribute("data-recording", "true");
   expect(first).not.toHaveAttribute("data-recording");
+  expect(onRecordingChange.mock.calls).toEqual([[true], [false], [true]]);
 });
