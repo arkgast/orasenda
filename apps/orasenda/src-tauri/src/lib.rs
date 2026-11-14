@@ -55,6 +55,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::focus_view_open,
             commands::focus_view_close,
             commands::main_show,
+            commands::full_screen_enter,
+            commands::full_screen_enter_on,
+            commands::full_screen_leave,
+            commands::window_view,
             commands::timer_view,
             commands::preset_select,
             commands::preset_add,
@@ -101,6 +105,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::Navigate,
             ipc::FocusInsets,
             ipc::PaletteOpen,
+            ipc::WindowView,
             ipc::CaptureFocus,
             ipc::BackupsChangedEvent,
             spike::OverlayShow,
@@ -155,6 +160,7 @@ pub fn run() {
         .manage(commands::PopupSlot::default())
         .manage(actions::Recent::default())
         .manage(windows::frames::Frames::default())
+        .manage(windows::full_screen::FullScreen::default())
         .manage(notifications::Notifications::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
@@ -174,6 +180,8 @@ pub fn run() {
             // The first Focus menu and tray items, and the display observer.
             #[cfg(desktop)]
             windows::displays::install(app.handle());
+            #[cfg(desktop)]
+            windows::full_screen::install(app.handle());
             Ok(())
         });
     #[cfg(target_os = "macos")]

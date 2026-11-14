@@ -48,6 +48,10 @@
     "allow-backups-restore",
     "allow-backups-set-policy",
     "allow-data-export",
-    "allow-data-import"
+    "allow-data-import",
+    "allow-full-screen-enter",
+    "allow-full-screen-enter-on",
+    "allow-full-screen-leave",
+    "allow-window-view"
   ]
 }

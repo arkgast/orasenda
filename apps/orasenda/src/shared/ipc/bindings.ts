@@ -52,6 +52,17 @@ export const commands = {
 	focusViewClose: () => typedError<null, FocusViewError>(__TAURI_INVOKE("focus_view_close")),
 	/**  Open Orasenda: shows `main`, then closes the floater. */
 	mainShow: () => typedError<null, FocusViewError>(__TAURI_INVOKE("main_show")),
+	/**  Enters full screen on the display `main` is on. */
+	fullScreenEnter: () => typedError<null, FullScreenError>(__TAURI_INVOKE("full_screen_enter")),
+	/**  Enters full screen on another display: leaves, waits for did-exit, moves, enters. */
+	fullScreenEnterOn: (displayId: string) => typedError<null, FullScreenError>(__TAURI_INVOKE("full_screen_enter_on", { displayId })),
+	/**  Leaves full screen at once. Not in full screen is done. */
+	fullScreenLeave: () => typedError<null, FullScreenError>(__TAURI_INVOKE("full_screen_leave")),
+	/**
+	 *  `main`'s full-screen state, display and the hints left, for a webview that just mounted or
+	 *  reloaded. The same value the last `window-view` event carried.
+	 */
+	windowView: () => __TAURI_INVOKE<WindowView_Serialize>("window_view"),
 	/**  The current timer view, without taking the milestones `timer_state` hands to Today. */
 	timerView: () => __TAURI_INVOKE<TimerView_Serialize>("timer_view"),
 	/**  Saves a library preset as the next session's, while idle. */
@@ -153,6 +164,7 @@ export const events = {
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
 	timerMilestone: makeEvent<MilestoneEvent_Serialize, MilestoneEvent_Deserialize>("timer-milestone"),
 	timerTick: makeEvent<TimerView_Serialize, TimerView_Deserialize>("timer-tick"),
+	windowView: makeEvent<WindowView_Serialize, WindowView_Deserialize>("window-view"),
 };
 
 /* Types */
@@ -417,6 +429,23 @@ export type FocusViewErrorKind =
 
 /**  Which Focus view to open. */
 export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind: "floater" };
+
+/**  A failed `full_screen_enter`, `full_screen_enter_on` or `full_screen_leave`. */
+export type FullScreenError = {
+	kind: FullScreenErrorKind,
+	message: string,
+};
+
+/**  Why a full-screen request did not happen. */
+export type FullScreenErrorKind = 
+/**  This platform or window can't do it. */
+"unavailable" | 
+/**  The display is not connected. */
+"noDisplay" | 
+/**  AppKit refused or failed the transition (did-fail), or `main` could not be shown. */
+"failed" | 
+/**  No did-enter or did-exit within 3 s; the state is whatever AppKit last reported. */
+"timedOut";
 
 /**  An *Everywhere* binding with its status. */
 export type GlobalBindingView = GlobalBindingView_Serialize | GlobalBindingView_Deserialize;
@@ -1023,6 +1052,42 @@ export type UsageSegment_Serialize = {
 	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
 	startMs: number,
 	endMs: number | null,
+};
+
+/**
+ *  `main`'s native full-screen state, as AppKit last reported it. Emitted as `window-view` on
+ *  every change and returned by `window_view()` on mount or reload.
+ */
+export type WindowView = WindowView_Serialize | WindowView_Deserialize;
+
+/**
+ *  `main`'s native full-screen state, as AppKit last reported it. Emitted as `window-view` on
+ *  every change and returned by `window_view()` on mount or reload.
+ */
+export type WindowView_Deserialize = {
+	fullScreen: boolean,
+	/**  The display `main` is on; `None` when it can't be read. */
+	display?: string | null,
+	/**
+	 *  Entries left that show the key hints: 3 on the first, 0 from the fourth. In full screen
+	 *  it is the count at that entry's start, so a reload shows the same hints.
+	 */
+	hintsLeft: number,
+};
+
+/**
+ *  `main`'s native full-screen state, as AppKit last reported it. Emitted as `window-view` on
+ *  every change and returned by `window_view()` on mount or reload.
+ */
+export type WindowView_Serialize = {
+	fullScreen: boolean,
+	/**  The display `main` is on; `None` when it can't be read. */
+	display: string | null,
+	/**
+	 *  Entries left that show the key hints: 3 on the first, 0 from the fourth. In full screen
+	 *  it is the count at that entry's start, so a reload shows the same hints.
+	 */
+	hintsLeft: number,
 };
 
 /* Tauri Specta runtime */

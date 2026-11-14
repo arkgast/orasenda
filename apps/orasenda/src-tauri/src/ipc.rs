@@ -200,6 +200,70 @@ pub struct FocusInsets {
     pub left: u32,
 }
 
+/// Why a full-screen request did not happen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum FullScreenErrorKind {
+    /// This platform or window can't do it.
+    Unavailable,
+    /// The display is not connected.
+    NoDisplay,
+    /// AppKit refused or failed the transition (did-fail), or `main` could not be shown.
+    Failed,
+    /// No did-enter or did-exit within 3 s; the state is whatever AppKit last reported.
+    TimedOut,
+}
+
+/// A failed `full_screen_enter`, `full_screen_enter_on` or `full_screen_leave`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+pub struct FullScreenError {
+    pub kind: FullScreenErrorKind,
+    pub message: String,
+}
+
+impl FullScreenError {
+    pub fn new(kind: FullScreenErrorKind, message: impl Into<String>) -> Self {
+        Self {
+            kind,
+            message: message.into(),
+        }
+    }
+
+    pub fn unavailable(message: impl Into<String>) -> Self {
+        Self::new(FullScreenErrorKind::Unavailable, message)
+    }
+
+    pub fn failed(message: impl Into<String>) -> Self {
+        Self::new(FullScreenErrorKind::Failed, message)
+    }
+}
+
+impl From<FocusViewError> for FullScreenError {
+    fn from(error: FocusViewError) -> Self {
+        let kind = match error.kind {
+            FocusViewErrorKind::NoDisplay => FullScreenErrorKind::NoDisplay,
+            FocusViewErrorKind::Unavailable => FullScreenErrorKind::Unavailable,
+        };
+        Self::new(kind, error.message)
+    }
+}
+
+/// `main`'s native full-screen state, as AppKit last reported it. Emitted as `window-view` on
+/// every change and returned by `window_view()` on mount or reload.
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,
+)]
+#[tauri_specta(event_name = "window-view")]
+#[serde(rename_all = "camelCase")]
+pub struct WindowView {
+    pub full_screen: bool,
+    /// The display `main` is on; `None` when it can't be read.
+    pub display: Option<String>,
+    /// Entries left that show the key hints: 3 on the first, 0 from the fourth. In full screen
+    /// it is the count at that entry's start, so a reload shows the same hints.
+    pub hints_left: u8,
+}
+
 /// Asks `main` to open the command palette. No payload.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,

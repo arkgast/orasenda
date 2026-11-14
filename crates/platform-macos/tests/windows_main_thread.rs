@@ -28,7 +28,7 @@ fn windows_fns_refuse_null_window() {
 
     use orasenda_platform_macos::windows::{
         Rect, WindowError, configure_floater, configure_focus_window, displays, frame_of,
-        install_floater_key_monitor, key_without_activation, set_frame,
+        install_floater_key_monitor, key_without_activation, observe_full_screen, set_frame,
     };
 
     let refused = Err(WindowError::NullWindow);
@@ -47,6 +47,10 @@ fn windows_fns_refuse_null_window() {
         assert_eq!(frame_of(null_mut()), None);
         assert!(matches!(
             install_floater_key_monitor(null_mut(), Box::new(|_| false)),
+            Err(WindowError::NullWindow)
+        ));
+        assert!(matches!(
+            observe_full_screen(null_mut(), Box::new(|_| {})),
             Err(WindowError::NullWindow)
         ));
     }

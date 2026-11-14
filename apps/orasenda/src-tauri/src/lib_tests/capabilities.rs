@@ -186,6 +186,10 @@ fn main_capability_exact() {
             "allow-backups-set-policy",
             "allow-data-export",
             "allow-data-import",
+            "allow-full-screen-enter",
+            "allow-full-screen-enter-on",
+            "allow-full-screen-leave",
+            "allow-window-view",
         ],
     );
     let (_, main) = capability("main.json");
@@ -262,6 +266,10 @@ fn floater_capability_exact_with_cadence() {
             "allow-action-run",
             "allow-keyboard-state",
             "allow-capture-open",
+            "allow-full-screen-enter",
+            "allow-full-screen-enter-on",
+            "allow-full-screen-leave",
+            "allow-window-view",
         ],
     );
     let (_, floater) = capability("floater.json");
