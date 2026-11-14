@@ -1,16 +1,17 @@
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { Checklist, type ChecklistItem } from "./checklist";
 
 function Live(props: { initial: ChecklistItem[]; max?: number }): ReactElement {
   const [items, setItems] = useState(props.initial);
+  const counter = useRef(0);
   return (
     <Checklist
       label="Checklist"
       items={items}
       max={props.max}
       onToggle={(id) => setItems(items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)))}
-      onAdd={(text) => setItems([...items, { id: `n${items.length}${text}`, text, done: false }])}
+      onAdd={(text) => setItems([...items, { id: `n${counter.current++}`, text, done: false }])}
       onRemove={(id) => setItems(items.filter((i) => i.id !== id))}
       onRename={(id, text) => setItems(items.map((i) => (i.id === id ? { ...i, text } : i)))}
     />

@@ -41,6 +41,14 @@ test("checklist_backspace_on_an_empty_item_removes_it", () => {
   fireEvent.change(field, { target: { value: "" } });
   fireEvent.keyDown(field, { key: "Backspace" });
   expect(onRemove).toHaveBeenCalledWith("b");
+  expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Edit Outline" }));
+});
+
+test("checklist_remove_button_moves_focus_to_a_neighbour", () => {
+  setup();
+  screen.getByRole("button", { name: "Remove item Draft" }).focus();
+  fireEvent.click(screen.getByRole("button", { name: "Remove item Draft" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Remove item Edit" }));
 });
 
 test("checklist_backspace_on_text_does_not_remove", () => {

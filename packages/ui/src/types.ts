@@ -93,12 +93,6 @@ export interface DialogNextProps extends DialogProps {
 export interface NowLineNextProps extends NowLineProps {
   compact?: boolean;
 }
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string;
-  /** Only for a compact page picker that replaces a visible title. */
-  labelHidden?: boolean;
-  options: Array<{ value: string; label: string }>;
-}
 export interface SessionSlotProps extends Omit<MenuBarTimerProps, "compact"> {
   onPause: () => void;
   onResume: () => void;

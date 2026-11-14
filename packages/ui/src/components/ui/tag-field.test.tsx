@@ -40,6 +40,22 @@ test("tag_field_refuses_a_duplicate_ignoring_case_with_a_line", () => {
   fireEvent.keyDown(field, { key: "Enter" });
   expect(onChange).not.toHaveBeenCalled();
   expect(screen.getByText("writing is already a tag.")).toBeTruthy();
+  expect(field.value).toBe("writing");
+});
+
+test("tag_field_blur_adds_the_typed_tag", () => {
+  const { onChange, field } = setup([]);
+  type(field, "calm");
+  fireEvent.blur(field);
+  expect(onChange).toHaveBeenCalledWith(["calm"]);
+});
+
+test("tag_field_remove_button_moves_focus_to_a_neighbour", () => {
+  setup(["Writing", "Planning"]);
+  const first = screen.getAllByRole("button", { name: /Remove tag/ })[0] as HTMLElement;
+  first.focus();
+  fireEvent.click(first);
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Remove tag Planning" }));
 });
 
 test("tag_field_refuses_past_max_and_past_length", () => {

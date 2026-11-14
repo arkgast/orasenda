@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactElement, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactElement, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -33,6 +33,7 @@ interface RowProps extends Pick<ChecklistProps, "onToggle" | "onRemove" | "onRen
   item: ChecklistItem;
   /** Called with the row's element after a removal so focus can move to a neighbour. */
   onBackspaceEmpty: (id: string, row: HTMLElement) => void;
+  onRemoveClick: (id: string, row: HTMLElement) => void;
 }
 
 /** One item: a checkbox, an editable text kept as a draft until Enter or blur, and a remove button. */
@@ -42,10 +43,17 @@ function Row({
   onRemove,
   onRename,
   onBackspaceEmpty,
+  onRemoveClick,
   disabled,
 }: RowProps): ReactElement {
+  const rowRef = useRef<HTMLLIElement>(null);
   const [draft, setDraft] = useState(item.text);
-  useEffect(() => setDraft(item.text), [item.text]);
+  // Adopt a changed text during render rather than in an effect.
+  const [seen, setSeen] = useState(item.text);
+  if (seen !== item.text) {
+    setSeen(item.text);
+    setDraft(item.text);
+  }
   const commit = () => {
     const text = draft.trim();
     if (!text) setDraft(item.text);
@@ -62,7 +70,12 @@ function Row({
     }
   };
   return (
-    <li data-slot="checklist-item" data-done={item.done} className="flex items-center gap-1">
+    <li
+      ref={rowRef}
+      data-slot="checklist-item"
+      data-done={item.done}
+      className="flex items-center gap-2"
+    >
       <label className="grid size-hit-min shrink-0 cursor-pointer place-items-center">
         <input
           type="checkbox"
@@ -92,7 +105,7 @@ function Row({
         label={`Remove item ${item.text}`}
         icon={<Icon name="close" />}
         disabled={disabled}
-        onClick={() => onRemove(item.id)}
+        onClick={() => rowRef.current && onRemoveClick(item.id, rowRef.current)}
       />
     </li>
   );
@@ -127,6 +140,13 @@ export function Checklist({
     setDraft("");
     setRefusal("");
   };
+  const removeButtonFocus = (itemId: string, row: HTMLElement) => {
+    const target = (
+      row.nextElementSibling ?? row.previousElementSibling
+    )?.querySelector<HTMLElement>("button");
+    onRemove(itemId);
+    (target ?? addRef.current)?.focus();
+  };
   const removeEmpty = (itemId: string, row: HTMLElement) => {
     const previous = row.previousElementSibling?.querySelector<HTMLElement>("input[type=text]");
     onRemove(itemId);
@@ -140,10 +160,10 @@ export function Checklist({
     >
       <legend className="mb-2 p-0 text-body-sm text-ink">{label}</legend>
       <p role="status" data-slot="checklist-count" className="m-0 text-body-sm text-ink-muted">
-        {done} of {items.length} done
+        {items.length > 0 ? `${done} of ${items.length} done` : ""}
       </p>
       {items.length > 0 ? (
-        <ul data-slot="checklist-items" className="m-0 flex list-none flex-col p-0">
+        <ul data-slot="checklist-items" className="m-0 flex list-none flex-col gap-2 p-0">
           {items.map((item) => (
             <Row
               key={item.id}
@@ -153,6 +173,7 @@ export function Checklist({
               onRemove={onRemove}
               onRename={onRename}
               onBackspaceEmpty={removeEmpty}
+              onRemoveClick={removeButtonFocus}
             />
           ))}
         </ul>
@@ -185,7 +206,6 @@ export function Checklist({
       {refusal ? (
         <p
           id={`${id}-refusal`}
-          role="status"
           data-slot="field-error"
           className="m-0 flex items-baseline gap-2 text-body-sm text-ink-muted"
         >

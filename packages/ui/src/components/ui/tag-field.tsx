@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactElement, useId, useState } from "react";
+import { type KeyboardEvent, type ReactElement, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 
@@ -48,6 +48,7 @@ export function TagField({
   const id = useId();
   const [draft, setDraft] = useState("");
   const [refusal, setRefusal] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const commit = (candidates: readonly string[], rest: string) => {
     const { next, refusal: line } = addAll(tags, candidates, max, maxLength);
@@ -68,7 +69,7 @@ export function TagField({
         {label}
       </label>
       {tags.length > 0 ? (
-        <ul data-slot="tag-list" className="m-0 flex list-none flex-wrap gap-2 p-0">
+        <ul data-slot="tag-list" className="m-0 flex list-none flex-wrap gap-x-2 gap-y-5 p-0">
           {tags.map((tag) => (
             <li
               key={tag}
@@ -80,7 +81,14 @@ export function TagField({
                 type="button"
                 aria-label={`Remove tag ${tag}`}
                 disabled={disabled}
-                onClick={() => onChange(tags.filter((t) => t !== tag))}
+                onClick={(event) => {
+                  const li = event.currentTarget.closest("li");
+                  const target = (
+                    li?.nextElementSibling ?? li?.previousElementSibling
+                  )?.querySelector<HTMLElement>("button");
+                  onChange(tags.filter((t) => t !== tag));
+                  (target ?? inputRef.current)?.focus();
+                }}
                 className={cn(
                   "relative grid size-icon-lg shrink-0 cursor-pointer place-items-center rounded-pill border-0 bg-clear p-0 text-ink-muted hover:text-ink",
                   "before:absolute before:top-1/2 before:left-1/2 before:size-hit-min before:-translate-x-1/2 before:-translate-y-1/2",
@@ -95,6 +103,7 @@ export function TagField({
         </ul>
       ) : null}
       <input
+        ref={inputRef}
         id={id}
         type="text"
         value={draft}
@@ -123,7 +132,6 @@ export function TagField({
       {refusal ? (
         <p
           id={`${id}-refusal`}
-          role="status"
           data-slot="field-error"
           className="m-0 flex items-baseline gap-2 text-body-sm text-ink-muted"
         >

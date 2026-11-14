@@ -33,6 +33,9 @@ export function StepperSpecimen(): ReactElement {
       <Frame state="stepper-disabled" width={320} height={120}>
         <Live initial={3} disabled />
       </Frame>
+      <Frame state="stepper-narrow-271" width={271} height={120}>
+        <Live initial={3} />
+      </Frame>
       <Frame state="stepper-narrow-360" width={360} height={120}>
         <Live initial={3} />
       </Frame>

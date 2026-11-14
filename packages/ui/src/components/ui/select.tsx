@@ -65,9 +65,7 @@ export function Select({
           data-slot="select-chevron"
           className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-ink-muted"
         >
-          <span className="inline-flex rotate-90">
-            <Icon name="chevron" size="md" />
-          </span>
+          <Icon name="chevron" size="md" />
         </span>
       </div>
       {helper ? (

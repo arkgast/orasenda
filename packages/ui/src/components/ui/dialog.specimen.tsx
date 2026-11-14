@@ -5,6 +5,7 @@ import { Button } from "./button.tsx";
 import { Dialog } from "./dialog.tsx";
 import { Input } from "./input.tsx";
 import { Select } from "./select.tsx";
+import { Stepper } from "./stepper.tsx";
 
 type Kind = "plain" | "destructive" | "scrim" | "loading" | "sheet";
 
@@ -84,6 +85,15 @@ export function DialogSpecimen(): ReactElement {
             ]}
           />
           <Input label="Due" type="date" />
+          <Stepper
+            label="Estimate"
+            value={3}
+            min={0}
+            max={12}
+            onChange={() => undefined}
+            zeroLabel="No estimate"
+            valueText={(n) => `${n} sessions`}
+          />
           <Select
             label="Priority"
             options={[
