@@ -42,6 +42,7 @@ test("icons_and_rail_aria_snapshot", async ({ page }) => {
     - navigation "Main navigation":
       - button "Today"
       - button "Inbox"
+      - button "Board"
       - button "Calendar"
       - button "Routines"
       - button "Review"

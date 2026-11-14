@@ -84,6 +84,8 @@ fn set_binding_in_use_fixed_key() {
         ("Super+Comma", "Settings"),
         ("Super+KeyQ", "Quit Orasenda"),
         ("Super+Digit1", "Today"),
+        ("Super+Digit3", "Board"),
+        ("Super+Digit7", "Settings"),
     ] {
         for slot in Slot::ALL {
             let err = set(&r, ActionId::Capture, slot, keys, true).expect_err(keys);

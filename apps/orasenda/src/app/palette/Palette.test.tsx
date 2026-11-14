@@ -58,6 +58,12 @@ test("palette_row_runs_focus_view_and_navigation", async () => {
   expect(again.onNavigate).toHaveBeenCalledWith("settings");
 });
 
+test("palette_go_to_board", async () => {
+  const { onNavigate } = await open();
+  fireEvent.click(screen.getByRole("option", { name: /Go to Board/ }));
+  expect(onNavigate).toHaveBeenCalledWith("board");
+});
+
 test("palette_capture_row_opens_the_panel_and_shows_the_current_keys", async () => {
   const { backend, onClose } = await open();
   const row = screen.getByRole("option", { name: /Capture a thought/ });

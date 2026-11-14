@@ -15,7 +15,7 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./App";
 
-const PAGES = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"];
+const PAGES = ["Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings"];
 
 function strictApp(commits: string[]) {
   return (

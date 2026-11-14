@@ -2,9 +2,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { NavRail } from "./nav-rail.tsx";
 
-const LABELS = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"];
+const LABELS = ["Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings"];
 
-test("nav_rail_exposes_navigation_with_name", () => {
+test("nav_rail_lists_seven_pages_in_order", () => {
   render(<NavRail current="today" onNavigate={() => {}} />);
   const nav = screen.getByRole("navigation", { name: "Main navigation" });
   expect(nav.getAttribute("data-slot")).toBe("nav-rail");
