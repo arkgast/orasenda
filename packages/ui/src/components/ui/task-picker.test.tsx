@@ -39,7 +39,7 @@ test("task_picker_opens_a_combobox_with_options_in_lane_order", () => {
   expect(box.getAttribute("aria-controls")).toBe(list.id);
   const names = within(list)
     .getAllByRole("option")
-    .map((o) => o.textContent);
+    .map((o) => o.textContent?.replace("Selected", ""));
   expect(names).toEqual([
     "Draft the OutlineDoing · Frog",
     "Review the budgetDoing",
@@ -135,4 +135,14 @@ test("task_picker_an_empty_options_list_says_so", () => {
   setup({ options: [] });
   fireEvent.click(quiet());
   expect(screen.getByText("No matching tasks")).toBeVisible();
+});
+
+test("the_active_option_is_scrolled_into_view_and_marked_in_words", () => {
+  const scroll = vi.fn();
+  Element.prototype.scrollIntoView = scroll;
+  setup();
+  fireEvent.click(screen.getByRole("button", { name: "Add a task" }));
+  press("ArrowDown");
+  expect(scroll).toHaveBeenCalledWith({ block: "nearest" });
+  expect(screen.getAllByText("Selected")).toHaveLength(1);
 });

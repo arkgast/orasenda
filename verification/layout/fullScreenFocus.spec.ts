@@ -94,7 +94,7 @@ test("full_screen_focus_strip_in_strip_frame", async ({ page }) => {
   }
 });
 
-test("full_screen_focus_has_no_task_slot_in_any_frame", async ({ page }) => {
+test("full_screen_focus_frames_without_a_task_have_no_task_line", async ({ page }) => {
   await openSpecimen(page, "FullScreenFocus");
   for (const { w, h } of SIZES) {
     for (const mode of MODES) {

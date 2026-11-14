@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { InboxRow, type InboxRowProps } from "./inbox-row";
 
-function setup(over: Partial<InboxRowProps> = {}) {
+function setup(over: Record<string, unknown> = {}) {
   const onRemove = vi.fn();
   render(
     <ul>
@@ -13,7 +13,7 @@ function setup(over: Partial<InboxRowProps> = {}) {
         timeLabel="Captured at 9:41 AM"
         onRemove={onRemove}
         removeName="Remove note: Ask Sam about the invoice"
-        {...over}
+        {...(over as object)}
       />
     </ul>,
   );

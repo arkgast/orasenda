@@ -10,7 +10,9 @@ const WIDTHS = [360, 640, 1440];
 async function checkFrame(page: import("@playwright/test").Page, state: string) {
   const frame = page.locator(`[data-frame][data-state="${state}"]`);
   await expect(frame, state).toHaveCount(1);
-  await expect(frame.locator("[data-slot=timer-strip-task]"), state).toHaveCount(0);
+  await expect(frame.locator("[data-slot=timer-strip-task]"), state).toHaveCount(
+    state.includes("-task-") ? 1 : 0,
+  );
   await expectVisibleFits(frame);
   const md = Number.parseFloat(
     await page.evaluate(() =>
@@ -28,6 +30,7 @@ test("timer_strip_fits_at_360_640_1440", async ({ page }, info) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openSpecimen(page, "TimerStrip");
   for (const w of WIDTHS) for (const m of MODES) await checkFrame(page, `timer-strip-${w}-${m}`);
+  for (const m of MODES) await checkFrame(page, `timer-strip-task-360-${m}`);
   await shoot(page, info, "timer-strip");
 });
 

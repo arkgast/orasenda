@@ -1,4 +1,12 @@
-import { type JSX, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type JSX,
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -53,6 +61,7 @@ export function TaskPicker({
   const listId = `${base}-list`;
   const quiet = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+  const panel = useRef<HTMLDivElement>(null);
   const shown = matches(options, query);
   const optionId = (id: string) => `${base}-opt-${id}`;
   const current = shown[Math.min(active, shown.length - 1)];
@@ -63,6 +72,26 @@ export function TaskPicker({
       quiet.current?.focus();
     }
   }, [editing]);
+
+  const [room, setRoom] = useState<number | undefined>(undefined);
+  // Cap the panel at the room left below the input so it never leaves the window (scrolls inside instead).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the list changes
+  useLayoutEffect(() => {
+    if (!editing) return;
+    const measure = () => {
+      const top = panel.current?.getBoundingClientRect().top;
+      if (top !== undefined) setRoom(Math.max(0, window.innerHeight - top - 8));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [editing, shown.length]);
+  const currentId = current?.id;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when the active option changes
+  useEffect(() => {
+    if (!editing || !currentId) return;
+    document.getElementById(`${base}-opt-${currentId}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [editing, currentId, base]);
 
   const open = () => {
     setQuery("");
@@ -95,7 +124,7 @@ export function TaskPicker({
 
   if (!editing) {
     return (
-      <div data-slot="task-picker" className="flex min-w-0 items-center">
+      <div data-slot="task-picker" className="flex min-w-0 items-center gap-1">
         <button
           ref={quiet}
           type="button"
@@ -121,7 +150,7 @@ export function TaskPicker({
         label={quietLabel}
         className="**:data-[slot=field-label]:sr-only"
         role="combobox"
-        aria-expanded
+        aria-expanded={shown.length > 0}
         aria-autocomplete="list"
         aria-controls={shown.length ? listId : undefined}
         aria-activedescendant={current ? optionId(current.id) : undefined}
@@ -134,13 +163,17 @@ export function TaskPicker({
           setActive(0);
         }}
         onKeyDown={onKeyDown}
-        onBlur={() => close(false)}
+        onBlur={() => {
+          if (!restoreFocus.current) close(false);
+        }}
       />
       {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: keeps focus in the input while the pointer chooses an option */}
       <div
+        ref={panel}
+        style={{ maxHeight: room }}
         data-slot="task-picker-panel"
         onMouseDown={(event) => event.preventDefault()}
-        className="absolute inset-x-0 top-full z-popover mt-1 max-h-popover-width overflow-auto rounded-md border border-line-strong bg-surface-overlay py-1 shadow-overlay"
+        className="absolute inset-x-0 top-full z-popover mt-1 overflow-auto rounded-md border border-line-strong bg-surface-overlay py-1 shadow-overlay"
       >
         {shown.length === 0 ? (
           <p className="m-0 px-4 py-3 text-body-sm text-ink-muted">No matching tasks</p>
@@ -157,14 +190,19 @@ export function TaskPicker({
                 onClick={() => pick(option.id)}
                 onMouseMove={() => setActive(shown.indexOf(option))}
                 className={cn(
-                  "mx-1 flex min-h-hit-min cursor-pointer items-center justify-between gap-3 rounded-sm px-3 text-body text-ink hover:bg-surface-sunken",
-                  option === current && "bg-selection",
+                  "mx-1 flex min-h-hit-min cursor-pointer items-center justify-between gap-3 rounded-sm border-s-2 border-clear px-3 text-body text-ink hover:bg-surface-sunken",
+                  option === current && "border-focus bg-selection",
                 )}
               >
                 <span className="min-w-0 truncate">{option.title}</span>
-                <span className="flex-none text-body-sm text-ink-muted">
+                <span className="flex-none text-end text-body-sm text-ink-muted">
                   {option.laneLabel}
                   {option.frog ? " · Frog" : ""}
+                  {option === current ? (
+                    <span aria-hidden="true" className="block text-caption text-focus">
+                      Selected
+                    </span>
+                  ) : null}
                 </span>
               </div>
             ))}

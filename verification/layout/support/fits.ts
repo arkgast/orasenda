@@ -7,6 +7,9 @@ export async function overflows(frame: Locator): Promise<string[]> {
     const out: string[] = [];
     for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
       if (!(el instanceof HTMLElement)) continue;
+      // A task line is cut with an ellipsis by design: one line, text-overflow ellipsis.
+      if (el.dataset.slot?.endsWith("-task") && getComputedStyle(el).textOverflow === "ellipsis")
+        continue;
       if (el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight) {
         const cls =
           typeof el.className === "string" && el.className ? `.${el.className.split(" ")[0]}` : "";

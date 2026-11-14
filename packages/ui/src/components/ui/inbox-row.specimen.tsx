@@ -8,14 +8,15 @@ function Row(props: { text: string; kind: "internal" | "external"; menu?: boolea
   return (
     <ul className="m-0 p-0">
       <InboxRow
+        {...(props.menu
+          ? { onMoveToBoard: () => {}, moreName: `More actions for ${props.text.slice(0, 40)}` }
+          : { onMoveToBoard: undefined, moreName: undefined })}
         text={props.text}
         kind={props.kind}
         time="09:41"
         timeLabel="Captured at 9:41 AM"
         onRemove={() => {}}
         removeName={`Remove note: ${props.text.slice(0, 40)}`}
-        onMoveToBoard={props.menu ? () => {} : undefined}
-        moreName={`More actions for ${props.text.slice(0, 40)}`}
         tabIndex={props.menu ? 0 : undefined}
       />
     </ul>

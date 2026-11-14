@@ -149,7 +149,7 @@ export function TimerStrip(props: TimerStripProps): ReactElement {
         <div
           data-slot="timer-strip-task"
           aria-hidden="true"
-          className="max-w-full truncate text-body-sm text-ink-muted"
+          className={cn("max-w-full truncate text-body-sm text-ink-muted", stacked && "mt-1")}
         >
           {task}
         </div>

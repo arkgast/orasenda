@@ -3,7 +3,16 @@ import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { PopoverMenu } from "./popover-menu";
 
-export interface InboxRowProps {
+type MenuProps =
+  | { onMoveToBoard?: undefined; moreName?: undefined }
+  | {
+      /** Moves the note to the Board. With it, the end of the row is a "More actions" menu (Move to Board, Remove). */
+      onMoveToBoard: () => void;
+      /** The menu button's name ("More actions for Ask Sam about the invoice"). Required with onMoveToBoard. */
+      moreName: string;
+    };
+
+export type InboxRowProps = MenuProps & {
   /** The note. It wraps and is never truncated. */
   text: string;
   kind: "internal" | "external";
@@ -14,15 +23,11 @@ export interface InboxRowProps {
   onRemove: () => void;
   /** The Remove button's name ("Remove note: Ask Sam about the invoice"). */
   removeName: string;
-  /** Moves the note to the Board. With it, the end of the row is a "More actions" menu (Move to Board, Remove). */
-  onMoveToBoard?: () => void;
-  /** The menu button's name ("More actions for Ask Sam about the invoice"). Needed with onMoveToBoard. */
-  moreName?: string;
   /** Makes the row focusable. The host owns the roving: 0 for the active row, -1 for the others. Omitted: not focusable. */
   tabIndex?: 0 | -1;
   /** Keys pressed on the row (or in it); the host handles ↑/↓ and the rest. */
   onKeyDown?: (event: KeyboardEvent<HTMLLIElement>) => void;
-}
+};
 
 const KIND_WORD = { internal: "Internal", external: "External" } as const;
 
@@ -50,7 +55,7 @@ export function InboxRow({
       data-kind={kind}
       tabIndex={tabIndex}
       onKeyDown={onKeyDown}
-      className="flex min-h-hit-min list-none items-start justify-between gap-3 border-b border-line py-2 pe-1 outline-focus-ring -outline-offset-2 focus-visible:outline-2"
+      className="flex min-h-hit-min list-none items-start justify-between gap-3 border-b border-line py-2 pe-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
     >
       <div className="flex min-w-0 flex-col gap-1">
         <p className="m-0 whitespace-pre-wrap break-words text-body text-ink">{text}</p>
@@ -66,7 +71,7 @@ export function InboxRow({
         <>
           <span ref={anchor} className="flex-none">
             <IconButton
-              label={moreName ?? removeName}
+              label={moreName}
               icon={<Icon name="menu" />}
               aria-haspopup="menu"
               aria-expanded={open}

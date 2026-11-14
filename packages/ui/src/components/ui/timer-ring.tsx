@@ -153,7 +153,10 @@ export function TimerRing(p: TimerRingProps): ReactElement {
         {p.task ? (
           <div
             data-slot="timer-ring-task"
-            className="max-w-3/5 truncate text-body-sm text-ink-muted"
+            className={cn(
+              "max-w-3/5 truncate text-body-sm text-ink-muted",
+              fluid && p.clock && "hidden @ring-clock:block",
+            )}
           >
             {p.task}
           </div>
