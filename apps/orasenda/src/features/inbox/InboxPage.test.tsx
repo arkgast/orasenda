@@ -14,7 +14,7 @@ import {
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { BoardPage } from "./BoardPage";
+import { InboxPage } from "./InboxPage";
 
 const THREE: NoteView[] = [
   ...NOTES.slice(0, 1),
@@ -30,9 +30,9 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-async function renderBoard(replies: Replies = {}) {
-  const backend = mockBackend({ keyboard_state: () => KEYBOARD, ...replies });
-  const view = render(<BoardPage onNavigate={() => {}} />);
+async function renderInbox(replies: Replies = {}) {
+  const backend = mockBackend({ keyinbox_state: () => KEYBOARD, ...replies });
+  const view = render(<InboxPage onNavigate={() => {}} />);
   await settle();
   return { backend, ...view };
 }
@@ -40,23 +40,23 @@ const rowTexts = () =>
   screen.queryAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
 const removeButton = (text: string) => screen.getByRole("button", { name: `Remove note: ${text}` });
 
-test("board_lists_newest_first", async () => {
-  await renderBoard();
+test("inbox_lists_newest_first", async () => {
+  await renderInbox();
   expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
   expect(rowTexts()).toEqual(["Email the landlord about the lease", "Try the smaller timer ring"]);
   expect(screen.getByText(/External/)).toBeInTheDocument();
 });
 
-test("board_updates_on_inbox_changed", async () => {
-  await renderBoard();
+test("inbox_updates_on_inbox_changed", async () => {
+  await renderInbox();
   await emitInboxChanged(THREE);
   expect(rowTexts()).toHaveLength(3);
   await emitInboxChanged([]);
   expect(screen.getByText("Nothing in your Inbox.")).toBeInTheDocument();
 });
 
-test("board_remove_then_undo", async () => {
-  const { backend } = await renderBoard();
+test("inbox_remove_then_undo", async () => {
+  const { backend } = await renderInbox();
   fireEvent.click(removeButton("Email the landlord about the lease"));
   expect(rowTexts()).toEqual(["Try the smaller timer ring"]);
   expect(screen.getByText("Note removed.")).toBeInTheDocument();
@@ -70,8 +70,8 @@ test("board_remove_then_undo", async () => {
   expect(screen.queryByText("Note removed.")).not.toBeInTheDocument();
 });
 
-test("board_undo_line_ends_after_ten_seconds_or_the_next_removal", async () => {
-  await renderBoard({ inbox_list: () => THREE });
+test("inbox_undo_line_ends_after_ten_seconds_or_the_next_removal", async () => {
+  await renderInbox({ inbox_list: () => THREE });
   vi.useFakeTimers();
   fireEvent.click(removeButton("Call the dentist"));
   act(() => vi.advanceTimersByTime(10_001));
@@ -80,8 +80,8 @@ test("board_undo_line_ends_after_ten_seconds_or_the_next_removal", async () => {
   expect(screen.getByText("Note removed.")).toBeInTheDocument();
 });
 
-test("board_remove_failure_line", async () => {
-  await renderBoard({ inbox_remove: () => Promise.reject("store") });
+test("inbox_remove_failure_line", async () => {
+  await renderInbox({ inbox_remove: () => Promise.reject("store") });
   fireEvent.click(removeButton("Email the landlord about the lease"));
   await settle();
   expect(rowTexts()).toHaveLength(2);
@@ -91,8 +91,8 @@ test("board_remove_failure_line", async () => {
   expect(screen.queryByText("Note removed.")).not.toBeInTheDocument();
 });
 
-test("board_restore_failure_line", async () => {
-  await renderBoard({ inbox_restore: () => Promise.reject("store") });
+test("inbox_restore_failure_line", async () => {
+  await renderInbox({ inbox_restore: () => Promise.reject("store") });
   fireEvent.click(removeButton("Email the landlord about the lease"));
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
@@ -102,16 +102,16 @@ test("board_restore_failure_line", async () => {
   expect(rowTexts()).toEqual(["Try the smaller timer ring"]);
 });
 
-test("board_load_failure_is_not_the_empty_state", async () => {
-  await renderBoard({ inbox_list: () => Promise.reject("store") });
+test("inbox_load_failure_is_not_the_empty_state", async () => {
+  await renderInbox({ inbox_list: () => Promise.reject("store") });
   expect(screen.getByText("Orasenda can't read your Inbox right now.")).toBeInTheDocument();
   expect(screen.queryByText("Nothing in your Inbox.")).not.toBeInTheDocument();
 });
 
-test("board_shows_nothing_while_loading", async () => {
+test("inbox_shows_nothing_while_loading", async () => {
   const gate = deferred<NoteView[]>();
-  mockBackend({ keyboard_state: () => KEYBOARD, inbox_list: () => gate.promise });
-  render(<BoardPage onNavigate={() => {}} />);
+  mockBackend({ keyinbox_state: () => KEYBOARD, inbox_list: () => gate.promise });
+  render(<InboxPage onNavigate={() => {}} />);
   await settle();
   expect(screen.queryByText("Nothing in your Inbox.")).not.toBeInTheDocument();
   gate.resolve([]);
@@ -119,16 +119,16 @@ test("board_shows_nothing_while_loading", async () => {
   expect(screen.getByText("Nothing in your Inbox.")).toBeInTheDocument();
 });
 
-test("board_empty_copy_follows_shortcut_status", async () => {
-  const { unmount } = await renderBoard({ inbox_list: () => [] });
+test("inbox_empty_copy_follows_shortcut_status", async () => {
+  const { unmount } = await renderInbox({ inbox_list: () => [] });
   expect(screen.getByText("⌃⌥N captures a thought from anywhere.")).toBeInTheDocument();
   unmount();
   cleanup();
   clearMocks();
   for (const status of ["off", "failed"] as const) {
-    const { unmount: again } = await renderBoard({
+    const { unmount: again } = await renderInbox({
       inbox_list: () => [],
-      keyboard_state: () =>
+      keyinbox_state: () =>
         withGlobal(
           KEYBOARD,
           "capture",
@@ -142,8 +142,8 @@ test("board_empty_copy_follows_shortcut_status", async () => {
   }
 });
 
-test("board_empty_copy_follows_keyboard_changed", async () => {
-  await renderBoard({ inbox_list: () => [] });
+test("inbox_empty_copy_follows_keyinbox_changed", async () => {
+  await renderInbox({ inbox_list: () => [] });
   await act(async () => {
     await events.keyboardChanged.emit(
       withGlobal(KEYBOARD, "capture", { keys: null, display: null, spoken: null, status: "off" }),
@@ -152,8 +152,8 @@ test("board_empty_copy_follows_keyboard_changed", async () => {
   expect(screen.getByText("Capture a thought from the menu bar.")).toBeInTheDocument();
 });
 
-test("board_focus_after_remove", async () => {
-  await renderBoard({ inbox_list: () => THREE });
+test("inbox_focus_after_remove", async () => {
+  await renderInbox({ inbox_list: () => THREE });
   // The first row: focus goes to the next row's Remove.
   fireEvent.click(removeButton("Email the landlord about the lease"));
   expect(removeButton("Call the dentist")).toHaveFocus();
@@ -165,9 +165,9 @@ test("board_focus_after_remove", async () => {
   expect(screen.getByRole("heading", { name: "Inbox" })).toHaveFocus();
 });
 
-test("board_undo_waits_for_the_remove_and_keeps_focus", async () => {
+test("inbox_undo_waits_for_the_remove_and_keeps_focus", async () => {
   const gate = deferred<null>();
-  const { backend } = await renderBoard({
+  const { backend } = await renderInbox({
     inbox_list: () => THREE,
     inbox_remove: () => gate.promise,
   });
@@ -181,8 +181,8 @@ test("board_undo_waits_for_the_remove_and_keeps_focus", async () => {
   expect(rowTexts()).toContain("Call the dentist");
 });
 
-test("board_undo_failure_focuses_the_heading", async () => {
-  await renderBoard({
+test("inbox_undo_failure_focuses_the_heading", async () => {
+  await renderInbox({
     inbox_list: () => THREE,
     inbox_restore: () => Promise.reject("store"),
   });

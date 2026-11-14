@@ -107,7 +107,7 @@ test("the_ordinary_palette_still_lists_everything", async () => {
   await settle();
   await emitPaletteOpen();
   expect(screen.getAllByRole("option").length).toBeGreaterThan(DISPLAYS.length);
-  expect(screen.getByRole("option", { name: /Go to Board/ })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: /Go to Inbox/ })).toBeInTheDocument();
 });
 
 test("esc_in_the_palette_closes_only_the_palette", async () => {

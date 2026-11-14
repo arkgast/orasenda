@@ -15,7 +15,7 @@ import { Profiler, StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./App";
 
-const PAGES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
+const PAGES = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"];
 
 function strictApp(commits: string[]) {
   return (
@@ -154,8 +154,7 @@ test("only_one_h1_per_page", async () => {
     await settle();
     const headings = container.querySelectorAll("h1");
     expect(headings, page).toHaveLength(1);
-    // The Board page's heading is its content: the Inbox.
-    expect(headings[0], page).toHaveTextContent(page === "Board" ? "Inbox" : page);
+    expect(headings[0], page).toHaveTextContent(page);
   }
 });
 

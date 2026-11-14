@@ -44,13 +44,13 @@ for (const size of SIZES) {
     if (isCompact(size)) await expect(rail).toHaveCount(0);
     else {
       await expect(rail).toBeVisible();
-      await expectTargets(page, ["Today", "Board", "Settings"]);
+      await expectTargets(page, ["Today", "Inbox", "Settings"]);
     }
     // Today's own top row (with the Pages button) comes with C4.
     await expect(page.getByRole("heading", { level: 1, name: "Today" })).toBeAttached();
   });
 
-  test(`app_shell_board_${label}`, async ({ page }) => {
+  test(`app_shell_inbox_${label}`, async ({ page }) => {
     await openApp(page, "idle", size);
     await page.keyboard.press("Meta+2");
     await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeFocused();
