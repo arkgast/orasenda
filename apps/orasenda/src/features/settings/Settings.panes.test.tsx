@@ -126,18 +126,18 @@ test.each(HEADING_TARGETS)("target_opens_pane_and_field_%s", async (target, name
 });
 
 test.each(["focusMinutes", "breakMinutes"] as const)(
-  "target_opens_pane_and_field_%s",
+  "focus_minutes_target_focuses_edit_%s",
   async (target) => {
     await arrive(target);
     expect(headings()).toEqual(["Timer"]);
     const selected = document.querySelector<HTMLElement>('input[id^="preset-"]:checked');
     expect(selected).not.toBeNull();
-    expect(document.activeElement?.id).toBe(selected?.id.replace(/-radio$/, "-edit"));
-    expect(document.activeElement).toHaveAccessibleName(/^Edit /);
+    const name = selected?.closest("label")?.textContent;
+    expect(document.activeElement).toHaveAccessibleName(`Edit ${name}`);
   },
 );
 
-test("target_opens_pane_and_field_keepGoing", async () => {
+test("keep_going_target_focuses_checkbox", async () => {
   await arrive("keepGoing");
   expect(headings()).toEqual(["Timer"]);
   expect(screen.getByRole("checkbox", { name: "Keep going automatically" })).toHaveFocus();

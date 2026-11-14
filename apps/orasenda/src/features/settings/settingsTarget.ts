@@ -1,4 +1,5 @@
 import type { SettingsTarget } from "@shared/ipc/bindings";
+import { presetEditButton } from "./PresetTable";
 import type { PaneFocus } from "./usePaneFocus";
 
 export type { SettingsTarget };
@@ -25,7 +26,7 @@ export function focusKeepGoing(root: HTMLElement): boolean {
 export function focusSelectedPresetEdit(root: HTMLElement): boolean {
   const radio = root.querySelector<HTMLInputElement>('input[id^="preset-"][id$="-radio"]:checked');
   const edit = radio
-    ? root.querySelector<HTMLElement>(`#${radio.id.replace(/-radio$/, "-edit")}`)
+    ? presetEditButton(root, radio.id.slice("preset-".length, -"-radio".length))
     : null;
   if (!edit) return false;
   edit.focus();

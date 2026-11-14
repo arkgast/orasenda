@@ -63,9 +63,9 @@ test("settings_timer_radios_from_library", async () => {
     "radio",
   );
   expect(radios.map((radio) => radio.closest("label")?.textContent)).toEqual([
-    "Gentle Start15 / 5 · long 15 after 4",
-    "Steady Focus25 / 5 · long 15 after 4",
-    "Deep Work90 / 15 · long 30 after 2",
+    "Gentle Start",
+    "Steady Focus",
+    "Deep Work",
   ]);
   expect(presetRadio("Steady Focus")).toBeChecked();
   // The Custom fields are gone.

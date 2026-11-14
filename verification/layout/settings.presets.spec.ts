@@ -30,6 +30,25 @@ async function expectTargets(page: Page): Promise<void> {
   expect(small, "every control is at least 44x44").toEqual([]);
 }
 
+/** The table stays inside the scroll region: no sideways scroll, and every Remove is within it. */
+async function expectTableInRegion(page: Page): Promise<void> {
+  const m = await page.locator("[data-slot=scroll-region]").evaluate((region) => {
+    const r = region.getBoundingClientRect();
+    const t = region.querySelector("[data-slot=data-table]")?.getBoundingClientRect();
+    const outside = Array.from(region.querySelectorAll("button[aria-label^='Remove ']"))
+      .filter((b) => b.getBoundingClientRect().right > r.right + 0.5)
+      .map((b) => b.getAttribute("aria-label"));
+    return {
+      over: region.scrollWidth - region.clientWidth,
+      tableRight: t ? t.right - r.right : 0,
+      outside,
+    };
+  });
+  expect(m.over, "region does not scroll sideways").toBeLessThanOrEqual(0);
+  expect(m.tableRight, "table inside the region").toBeLessThanOrEqual(0.5);
+  expect(m.outside, "Remove buttons inside the region").toEqual([]);
+}
+
 async function expectNoDocumentScroll(page: Page): Promise<void> {
   const m = await page.evaluate(() => ({
     h: document.documentElement.scrollHeight,
@@ -59,7 +78,33 @@ for (const size of SIZES) {
       await expectTargets(page);
     });
 
-    test(`presets_twelve_${at}`, async ({ page }) => {
+    test(`preset_headers_whole_words_${at}`, async ({ page }) => {
+      await openApp(page, "presetsOne", size, { page: "settings", pane: "Timer" });
+      if (size.width < 640) return; // compact keeps in-word breaks until the owner rules
+      const tall = await page.locator("[data-slot=data-table] thead th").evaluateAll((ths) =>
+        ths
+          .filter((t) => {
+            const range = document.createRange();
+            range.selectNodeContents(t.firstChild ?? t);
+            if (t.querySelector(".sr-only")) return false;
+            const tops = new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top)));
+            return tops.size > 1;
+          })
+          .map((t) => t.textContent),
+      );
+      expect(tall, "each header is one line").toEqual([]);
+    });
+
+    test(`presets_one_${at}`, async ({ page }) => {
+      await openApp(page, "presetsOne", size, { page: "settings", pane: "Timer" });
+      await expect(page.getByRole("button", { name: /^Remove / })).toBeDisabled();
+      await expect(page.getByText("At least one preset stays.")).toBeVisible();
+      await expectNoDocumentScroll(page);
+      await expectTableInRegion(page);
+      await expectTargets(page);
+    });
+
+    test(`twelve_presets_fit_${at}`, async ({ page }) => {
       await openApp(page, "presetsTwelve", size, { page: "settings", pane: "Timer" });
       const add = page.getByRole("button", { name: "Add preset" });
       await add.scrollIntoViewIfNeeded();
@@ -70,6 +115,7 @@ for (const size of SIZES) {
       await remove.evaluate((n) => n.scrollIntoView({ block: "center" }));
       await expectFocusRingVisible(remove);
       await expectNoDocumentScroll(page);
+      await expectTableInRegion(page);
       await expectTargets(page);
     });
   }
