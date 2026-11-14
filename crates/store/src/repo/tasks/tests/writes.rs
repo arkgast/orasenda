@@ -168,11 +168,11 @@ fn set_frog_moves_the_flag() {
     let first = store
         .write(2_000, |txn| set_frog(txn, "a", day))
         .expect("sets");
-    assert_eq!(first, None);
+    assert_eq!(first, Some(None));
     let second = store
         .write(3_000, |txn| set_frog(txn, "b", day))
         .expect("sets");
-    assert_eq!(second.as_deref(), Some("a"));
+    assert_eq!(second, Some(Some("a".to_owned())));
     assert_eq!(get_row(&store, "a").frog_day, None);
     assert_eq!(get_row(&store, "b").frog_day.as_deref(), Some(day));
     assert_eq!(get_row(&store, "a").updated_at, 3_000);
@@ -182,16 +182,16 @@ fn set_frog_moves_the_flag() {
     let again = store
         .write(4_000, |txn| set_frog(txn, "b", day))
         .expect("sets");
-    assert_eq!(again, None);
+    assert_eq!(again, Some(None));
     assert_eq!(log_len(&store), before);
-    // A different day's Frog is untouched; a missing task is an error and writes nothing.
+    // A different day's Frog is untouched; a missing task is `None` and writes nothing.
     let other = store
         .write(5_000, |txn| set_frog(txn, "a", "2026-11-15"))
         .expect("sets");
-    assert_eq!(other, None);
+    assert_eq!(other, Some(None));
     assert_eq!(get_row(&store, "b").frog_day.as_deref(), Some(day));
     let missing = store.write(6_000, |txn| set_frog(txn, "nope", day));
-    assert!(missing.is_err());
+    assert_eq!(missing.expect("no error"), None);
     assert_eq!(get_row(&store, "b").frog_day.as_deref(), Some(day));
 }
 
@@ -244,4 +244,41 @@ fn remove_and_restore() {
         &log[log.len() - 2..],
         [pair("deleted_at", "2000"), pair("deleted_at", "null")]
     );
+}
+
+#[test]
+fn set_frog_clears_every_other_frog_and_returns_the_newest() {
+    let store = store();
+    let day = "2026-11-14";
+    for (id, rank) in [("a", "V"), ("b", "W"), ("c", "X")] {
+        insert_one(&store, &new_task(id, Lane::Today, rank));
+    }
+    // A merge can leave two Frogs on one day: seed them with different updated_at.
+    store
+        .write(2_000, |txn| {
+            txn.conn().execute(
+                "UPDATE task SET frog_day = ?1, updated_at = CASE id WHEN 'a' THEN 1500 ELSE 1800 END
+                 WHERE id IN ('a', 'b')",
+                [day],
+            )?;
+            Ok(())
+        })
+        .expect("seeds");
+    let previous = store
+        .write(3_000, |txn| set_frog(txn, "c", day))
+        .expect("sets");
+    assert_eq!(previous, Some(Some("b".to_owned())));
+    assert_eq!(get_row(&store, "a").frog_day, None);
+    assert_eq!(get_row(&store, "b").frog_day, None);
+    assert_eq!(get_row(&store, "c").frog_day.as_deref(), Some(day));
+}
+
+#[test]
+fn insert_into_done_sets_and_logs_done_at() {
+    let store = store();
+    insert_one(&store, &new_task("d", Lane::Done, "V"));
+    assert_eq!(get_row(&store, "d").done_at, Some(1_000));
+    assert!(log_of(&store, "d").iter().any(|(f, _)| f == "done_at"));
+    let since = store.read(|txn| list_done_since(txn, 0)).expect("lists");
+    assert_eq!(since.len(), 1);
 }

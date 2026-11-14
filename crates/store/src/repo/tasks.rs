@@ -122,15 +122,18 @@ const COLUMNS: &str = "id, title, notes, tags, kind, estimate, due, priority, ch
     deleted_at";
 
 /// Inserts a live task in the given lane and logs every field. `updated_at` is the write time.
+/// A task inserted straight into `Done` gets `done_at` = the write time (and it is logged).
 /// A value the CHECKs refuse, or a repeated id, fails and writes nothing.
 pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
     let tags = serde_json::to_string(&task.tags)?;
     let checklist = serde_json::to_string(&task.checklist)?;
+    let now = txn.now_ms();
+    let done_at = (task.lane == Lane::Done).then_some(now);
     txn.conn().execute(
         "INSERT INTO task (id, title, notes, tags, kind, estimate, due, priority, checklist,
              lane, rank, frog_day, breakdown_dismissed, source_note_id, done_at, created_at,
              updated_at, deleted_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, ?13, NULL, ?14, ?15, NULL)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, ?13, ?16, ?14, ?15, NULL)",
         rusqlite::params![
             task.id,
             task.title,
@@ -146,39 +149,40 @@ pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
             task.frog_day,
             task.source_note_id,
             sql_int(task.created_at)?,
-            sql_int(txn.now_ms())?,
+            sql_int(now)?,
+            done_at.map(sql_int).transpose()?,
         ],
     )?;
-    txn.log_fields(
-        Entity::Task,
-        &task.id,
-        &[
-            ("title", Value::from(task.title.clone())),
-            ("notes", Value::from(task.notes.clone())),
-            ("tags", serde_json::to_value(&task.tags)?),
-            ("kind", Value::from(task.kind.as_str())),
-            ("estimate", task.estimate.map_or(Value::Null, Value::from)),
-            ("due", task.due.clone().map_or(Value::Null, Value::from)),
-            (
-                "priority",
-                task.priority
-                    .map_or(Value::Null, |p| Value::from(p.as_str())),
-            ),
-            ("checklist", serde_json::to_value(&task.checklist)?),
-            ("lane", Value::from(task.lane.as_str())),
-            ("rank", Value::from(task.rank.clone())),
-            (
-                "frog_day",
-                task.frog_day.clone().map_or(Value::Null, Value::from),
-            ),
-            ("breakdown_dismissed", Value::from(false)),
-            (
-                "source_note_id",
-                task.source_note_id.clone().map_or(Value::Null, Value::from),
-            ),
-            ("created_at", Value::from(task.created_at)),
-        ],
-    )
+    let mut fields = vec![
+        ("title", Value::from(task.title.clone())),
+        ("notes", Value::from(task.notes.clone())),
+        ("tags", serde_json::to_value(&task.tags)?),
+        ("kind", Value::from(task.kind.as_str())),
+        ("estimate", task.estimate.map_or(Value::Null, Value::from)),
+        ("due", task.due.clone().map_or(Value::Null, Value::from)),
+        (
+            "priority",
+            task.priority
+                .map_or(Value::Null, |p| Value::from(p.as_str())),
+        ),
+        ("checklist", serde_json::to_value(&task.checklist)?),
+        ("lane", Value::from(task.lane.as_str())),
+        ("rank", Value::from(task.rank.clone())),
+        (
+            "frog_day",
+            task.frog_day.clone().map_or(Value::Null, Value::from),
+        ),
+        ("breakdown_dismissed", Value::from(false)),
+        (
+            "source_note_id",
+            task.source_note_id.clone().map_or(Value::Null, Value::from),
+        ),
+        ("created_at", Value::from(task.created_at)),
+    ];
+    if let Some(done_at) = done_at {
+        fields.push(("done_at", Value::from(done_at)));
+    }
+    txn.log_fields(Entity::Task, &task.id, &fields)
 }
 
 /// One task by id, removed or not, or `None` when there is no such row.

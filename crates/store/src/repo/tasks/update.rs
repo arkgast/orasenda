@@ -169,22 +169,17 @@ pub fn move_to(txn: &mut Txn, id: &str, lane: Lane, rank: &str) -> Result<bool, 
 }
 
 /// Makes a live task the Frog of `day` (`YYYY-MM-DD`) and, in the same transaction, clears the
-/// flag from any other live task for that day. Returns the id of the Frog it replaced, or
-/// `None` when there was none (or the task already was the Frog). A missing or removed task
-/// is an error and writes nothing.
-pub fn set_frog(txn: &mut Txn, id: &str, day: &str) -> Result<Option<String>, StoreError> {
+/// flag from any other live task for that day. Returns `None` when the task is missing or
+/// removed (nothing is written); otherwise `Some(previous)`, where `previous` is the id of the
+/// Frog it replaced (the most recently updated when a merge left several), or `None` when
+/// there was none or the task already was the Frog.
+pub fn set_frog(txn: &mut Txn, id: &str, day: &str) -> Result<Option<Option<String>>, StoreError> {
     let Some(old) = live(txn, id)? else {
-        return Err(StoreError::Sqlite(format!("no live task {id}")));
+        return Ok(None);
     };
-    let previous: Option<String> = txn
-        .conn()
-        .prepare("SELECT id FROM task WHERE frog_day = ?1 AND id != ?2 AND deleted_at IS NULL ORDER BY updated_at DESC, id LIMIT 1")?
-        .query_map([day, id], |row| row.get(0))?
-        .next()
-        .transpose()?;
     let others: Vec<String> = txn
         .conn()
-        .prepare("SELECT id FROM task WHERE frog_day = ?1 AND id != ?2 AND deleted_at IS NULL")?
+        .prepare("SELECT id FROM task WHERE frog_day = ?1 AND id != ?2 AND deleted_at IS NULL ORDER BY updated_at DESC, id")?
         .query_map([day, id], |row| row.get(0))?
         .collect::<Result<_, _>>()?;
     for other in &others {
@@ -195,5 +190,5 @@ pub fn set_frog(txn: &mut Txn, id: &str, day: &str) -> Result<Option<String>, St
     let mut changes = Changes::default();
     changes.opt_text("frog_day", &Some(day.to_owned()), &old.frog_day);
     changes.write(txn, id)?;
-    Ok(previous)
+    Ok(Some(others.first().cloned()))
 }
