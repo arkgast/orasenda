@@ -206,10 +206,7 @@ export function RunView({ run, note, compact, onNavigate }: Props): ReactElement
         </div>
       ) : null}
       <div className="min-h-hit-min shrink-0">
-        <InlineNotice
-          variant="row"
-          tone={run.line || settingsFailed ? "attention" : "neutral"}
-        >
+        <InlineNotice variant="row" tone={run.line || settingsFailed ? "attention" : "neutral"}>
           {run.line ? LINES[run.line] : settingsFailed ? SETTINGS_FAILED : ""}
         </InlineNotice>
       </div>

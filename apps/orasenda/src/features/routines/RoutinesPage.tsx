@@ -158,7 +158,10 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
       {line.text}
     </InlineNotice>
   ) : (
-    <InlineNotice variant="row" tone={line === "writeFailed" || line === "startFailed" ? "attention" : "neutral"}>
+    <InlineNotice
+      variant="row"
+      tone={line === "writeFailed" || line === "startFailed" ? "attention" : "neutral"}
+    >
       {line ? LINES[line] : ""}
     </InlineNotice>
   );
