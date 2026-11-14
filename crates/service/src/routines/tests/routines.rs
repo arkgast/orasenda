@@ -7,7 +7,7 @@ use orasenda_store::routines as rows;
 use super::super::*;
 use super::*;
 use crate::api::{RoutineToday, RoutinesError};
-use crate::session::test_support::db;
+use crate::session::test_support::{T0, db};
 
 fn names(view: &RoutinesView) -> Vec<&str> {
     view.routines.iter().map(|r| r.name.as_str()).collect()
@@ -238,4 +238,67 @@ fn a_write_whose_read_back_fails_still_succeeds_without_an_event() {
     let guard = lock(&host.0.service);
     let stored = db(&guard).read(rows::list_live).unwrap();
     assert_eq!(stored[0].fields.name, "Saved");
+}
+
+/// Ruling 4: a finished run today reads Finished, an open one InProgress, even with no
+/// habit checked in. Runs can already arrive through an import.
+#[test]
+fn todays_runs_set_the_routine_today() {
+    use orasenda_store::routines::routine_runs::{self, NewRun, RunOutcome};
+    let host = host();
+    let routine_id = run_routine_create(&host, &routine("Morning")).unwrap();
+    let step = run_habit_create(&host, Some(&routine_id), &habit("Water")).unwrap();
+    run_habit_create(&host, Some(&routine_id), &habit("Walk")).unwrap();
+    let today_of = |host: &TestHost| {
+        let view = run_routines_list(host).unwrap();
+        (view.routines[0].today, view.routines[0].today_line.clone())
+    };
+    assert_eq!(today_of(&host).0, RoutineToday::NotStarted);
+    let run = NewRun {
+        id: "run-1".into(),
+        routine_id: routine_id.clone(),
+        day: "2026-11-07".into(),
+        step_ids: vec![step],
+    };
+    db(&lock(&host.0.service))
+        .write(T0, |txn| routine_runs::start(txn, &run))
+        .unwrap();
+    assert_eq!(
+        today_of(&host),
+        (RoutineToday::InProgress, "0 of 2 done today".to_owned()),
+        "an open run"
+    );
+    db(&lock(&host.0.service))
+        .write(T0, |txn| {
+            routine_runs::end(txn, "run-1", RunOutcome::Finished)
+        })
+        .unwrap();
+    assert_eq!(
+        today_of(&host),
+        (RoutineToday::Finished, "Done today, 0 of 2".to_owned()),
+        "a finished run"
+    );
+}
+
+/// A run stopped early leaves the routine as its habits say.
+#[test]
+fn a_stopped_run_does_not_finish_the_routine() {
+    use orasenda_store::routines::routine_runs::{self, NewRun, RunOutcome};
+    let host = host();
+    let routine_id = run_routine_create(&host, &routine("Morning")).unwrap();
+    let step = run_habit_create(&host, Some(&routine_id), &habit("Water")).unwrap();
+    let run = NewRun {
+        id: "run-1".into(),
+        routine_id,
+        day: "2026-11-07".into(),
+        step_ids: vec![step],
+    };
+    db(&lock(&host.0.service))
+        .write(T0, |txn| {
+            routine_runs::start(txn, &run)?;
+            routine_runs::end(txn, "run-1", RunOutcome::Stopped).map(|_| ())
+        })
+        .unwrap();
+    let view = run_routines_list(&host).unwrap();
+    assert_eq!(view.routines[0].today, RoutineToday::NotStarted);
 }

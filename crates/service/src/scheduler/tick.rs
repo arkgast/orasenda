@@ -26,11 +26,7 @@ fn tick_once<H: Host>(host: &H) {
     let (effects, clock, routines) = {
         let mut service = lock(service);
         let effects = service.tick(now_ms);
-        let routines = if service.routines_day_turned(now_ms) {
-            crate::routines::changed_view(&service, now_ms)
-        } else {
-            None
-        };
+        let routines = service.routines_day_view(now_ms);
         (effects, service.clock_tick(now_ms), routines)
     };
     host.emit_clock_tick(&clock);

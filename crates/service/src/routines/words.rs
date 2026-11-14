@@ -101,17 +101,18 @@ fn bare(text: &str) -> &str {
 }
 
 /// `text` as it continues a sentence, led by `prefix` unless its first word is one of `words`.
+/// Only a typed lead word is lowered ("Every morning"); any other text keeps its capitals, so
+/// "Monday mornings" and "London office" stay as typed.
 fn led(text: &str, words: &[&str], prefix: &str) -> String {
     let first = text
         .split_whitespace()
         .next()
         .unwrap_or_default()
         .to_lowercase();
-    let lowered = lower_first(text);
     if words.contains(&first.as_str()) {
-        lowered
+        lower_first(text)
     } else {
-        format!("{prefix}{lowered}")
+        format!("{prefix}{text}")
     }
 }
 

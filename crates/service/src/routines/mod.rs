@@ -157,6 +157,10 @@ pub(crate) fn changed_view(
 
 /// Locks the service, runs `op` in one write and reads the view back, then emits
 /// `routines-changed` after the lock is released.
+///
+/// When the write commits but the read-back fails, the command still answers `Ok` and no
+/// `routines-changed` follows (only a log line records it). The webview (R7) must re-list
+/// with `routines_list` after an `Ok` that brought no event, or its view can stay stale.
 fn write<H: Host, T>(
     host: &H,
     op: impl FnOnce(&mut Txn, Local) -> Answer<T>,

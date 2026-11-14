@@ -66,13 +66,23 @@ impl SessionService {
         Ok((value, super::changed_view(self, now_ms)))
     }
 
-    /// Records the local date of this tick; true when it differs from the last tick's (a
-    /// local midnight passed). The first tick only records it.
-    pub(crate) fn routines_day_turned(&mut self, now_ms: u64) -> bool {
+    /// The view for `routines-changed` when this tick's local date differs from the last
+    /// recorded one (a local midnight passed). The first tick only records the date. The new
+    /// date is recorded only once the view was read, so a failed read retries on the next tick.
+    pub(crate) fn routines_day_view(&mut self, now_ms: u64) -> Option<RoutinesView> {
         let today = self.routines_local(now_ms).today;
-        self.routines_day
-            .replace(today)
-            .is_some_and(|last| last != today)
+        match self.routines_day {
+            None => {
+                self.routines_day = Some(today);
+                None
+            }
+            Some(last) if last == today => None,
+            Some(_) => {
+                let view = super::changed_view(self, now_ms)?;
+                self.routines_day = Some(today);
+                Some(view)
+            }
+        }
     }
 }
 
@@ -241,7 +251,13 @@ pub fn checked_routine(draft: &RoutineDraft) -> Result<RoutineFields, RoutinesEr
 /// A habit draft trimmed and checked. A standalone habit with no days runs every day; a habit
 /// in a routine never keeps days of its own.
 pub fn checked_habit(draft: &HabitDraft, standalone: bool) -> Result<HabitFields, RoutinesError> {
+    // Ruling 5's order: name, when, where, anchor, 2-minute version, identity, then days.
     let name = required(&draft.name)?;
+    let when_text = optional(draft.when_text.as_deref(), MAX_SHORT)?;
+    let where_text = optional(draft.where_text.as_deref(), MAX_SHORT)?;
+    let anchor = optional(draft.anchor.as_deref(), MAX_LONG)?;
+    let two_minute = optional(draft.two_minute.as_deref(), MAX_LONG)?;
+    let identity = optional(draft.identity.as_deref(), MAX_LONG)?;
     let days = if standalone {
         let bits = draft.days.unwrap_or(Weekdays::EVERY_DAY.bits());
         if bits == 0 {
@@ -257,11 +273,11 @@ pub fn checked_habit(draft: &HabitDraft, standalone: bool) -> Result<HabitFields
     };
     Ok(HabitFields {
         name,
-        when_text: optional(draft.when_text.as_deref(), MAX_SHORT)?,
-        where_text: optional(draft.where_text.as_deref(), MAX_SHORT)?,
-        anchor: optional(draft.anchor.as_deref(), MAX_LONG)?,
-        two_minute: optional(draft.two_minute.as_deref(), MAX_LONG)?,
-        identity: optional(draft.identity.as_deref(), MAX_LONG)?,
+        when_text,
+        where_text,
+        anchor,
+        two_minute,
+        identity,
         optional: draft.optional,
         days,
     })

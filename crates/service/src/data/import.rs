@@ -18,7 +18,8 @@ use crate::session::{DB_FILE, lock};
 /// runs. Takes a `before-import` backup first, always, then merges in one write and keeps
 /// the preset library under its cap. Afterwards the service reloads and the host applies the
 /// theme and emits `settings-changed` and `presets-changed`, plus `inbox-changed` when notes
-/// were added or updated and `routines-changed` when routines, habits, check-ins or runs were. `dir` is the app data dir.
+/// were added or updated and `routines-changed` when routines, habits, check-ins or runs
+/// were. `dir` is the app data dir.
 ///
 /// The service stays locked from the copy until the reload, so no session can start between
 /// the check and the write.

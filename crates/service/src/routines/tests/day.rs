@@ -56,4 +56,11 @@ fn a_failed_read_at_midnight_emits_nothing() {
     iterate(&host);
     crate::session::test_support::db(&crate::session::lock(&host.0.service)).fail_reads(false);
     assert!(changed(&host).is_empty());
+    // The day is recorded only after a read worked, so the next tick still rolls over.
+    host.set_now(T0 + DAY + MINUTE);
+    iterate(&host);
+    assert_eq!(changed(&host).len(), 1, "the roll-over is not lost");
+    host.set_now(T0 + DAY + 2 * MINUTE);
+    iterate(&host);
+    assert!(changed(&host).is_empty(), "and then once only");
 }

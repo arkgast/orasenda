@@ -100,6 +100,13 @@ fn habit_refusals() {
         run_habit_create(&host, None, &long),
         Err(RoutinesError::Empty)
     );
+    long.where_text = Some("w".repeat(81));
+    assert_eq!(
+        run_habit_create(&host, None, &long),
+        Err(RoutinesError::TooLong),
+        "ruling 5: the field checks come before the days"
+    );
+    long.where_text = Some("w".repeat(80));
     long.days = Some(31);
     assert!(run_habit_create(&host, None, &long).is_ok());
     assert_eq!(

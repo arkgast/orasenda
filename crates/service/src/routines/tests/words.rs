@@ -49,6 +49,16 @@ fn intention_reads_as_one_sentence() {
         "I will NSDR afterwards outside."
     );
     assert_eq!(
+        intention("Walk", Some("Monday mornings"), Some("London office")),
+        "I will walk Monday mornings in London office.",
+        "a proper noun keeps its capital"
+    );
+    assert_eq!(
+        intention("Walk", Some("Every morning"), Some("At Kew Gardens")),
+        "I will walk every morning at Kew Gardens.",
+        "a typed lead word is lowered"
+    );
+    assert_eq!(
         intention("Walk", Some("  "), None),
         "I will walk.",
         "a blank part is left out"
