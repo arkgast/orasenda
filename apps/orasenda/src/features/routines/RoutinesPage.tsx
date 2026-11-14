@@ -51,7 +51,8 @@ type Props = {
 /** The Routines page: the routines as cards, the standalone habits, and Add. */
 export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   const { compact } = useWindowLayout();
-  const { routines, line, setLine, check, addTemplate, move, write, runCall, retry } = useRoutines();
+  const { routines, line, setLine, check, addTemplate, move, write, runCall, retry } =
+    useRoutines();
   const focus = useFocusAfter();
   const removal = useUndoRemove({ write, setLine, focus });
   const [templates, setTemplates] = useState(false);
