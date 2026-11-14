@@ -110,7 +110,9 @@ test("presets_changed_from_tray_updates_list", async () => {
     "radio",
   );
   expect(radios).toHaveLength(2);
-  expect(radios[0]?.closest("label")).toHaveTextContent("Morning40 / 5");
+  expect(radios[0]?.closest("label")).toHaveTextContent(/^Morning$/);
+  const cells = within(radios[0]?.closest("tr") as HTMLElement).getAllByRole("cell");
+  expect(cells.slice(1, 3).map((c) => c.textContent)).toEqual(["40", "5"]);
 });
 
 test("duplicate_and_blank_names_say_so", async () => {
@@ -163,7 +165,7 @@ test("undo_with_a_taken_name_asks_to_rename", async () => {
 test("the_last_preset_cannot_be_removed", async () => {
   const { backend } = await openIn({ presets_list: () => [STEADY] });
   const remove = screen.getByRole("button", { name: "Remove Steady Focus" });
-  expect(remove).toHaveAttribute("aria-disabled", "true");
+  expect(remove).toBeDisabled();
   expect(screen.getByText("At least one preset stays.")).toBeInTheDocument();
   fireEvent.click(remove);
   await settle();
@@ -262,4 +264,15 @@ test("focus_lands_on_a_control_that_stays", async () => {
   await emitPresetsChanged(PRESETS as PresetEntry[]);
   await later();
   expect(screen.getByRole("radio", { name: /Deep Work/ })).toHaveFocus();
+});
+
+test("edit_button_reports_whether_the_editor_is_open", async () => {
+  await openIn();
+  const btn = screen.getByRole("button", { name: "Edit Steady Focus" });
+  expect(btn).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(btn);
+  expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
 });
