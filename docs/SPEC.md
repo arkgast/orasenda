@@ -38,7 +38,7 @@ Orasenda is one calm, minimal app for planning time, managing tasks and protecti
 - **Menu-bar timer and floating mini timer:** time is always visible, which helps with time blindness.
 - **"Just start for 2 minutes" button:** lowers the cost of starting (the 2-minute rule).
 - **Flow extension:** at the end of a session, offer "+10 min" instead of a forced break. Capped at 2 by default.
-- **Session intent:** one line answering "What will be done?", linked to a kanban task. *Removed in H2 (2026-11-13, [spec](specs/2026-11-13-polish-structure-keys-focus-settings.md)); a session will pick a Board task instead, in the board sub-project.*
+- **Session intent:** one line answering "What will be done?", linked to a kanban task. *Removed in H2 (2026-11-13, [spec](specs/2026-11-13-polish-structure-keys-focus-settings.md)); a session picks a Board task instead ([Board spec](specs/2026-11-14-board.md)).*
 - **Capture pad:** a hotkey jots down a thought without leaving focus. This offloads open loops (Masicampo & Baumeister, 2011). Each note is tagged as an **internal or external interruption**, following the Pomodoro interruption protocol, and lands in the Inbox.
 - **2-minute warning** before a session or block ends, using a gentle cue.
 - **Break suggestions:** stand, rest your eyes on a distant point, hydrate, take a physiological sigh, walk. Breaks steer away from the phone.
@@ -53,7 +53,7 @@ Orasenda is one calm, minimal app for planning time, managing tasks and protecti
 - **Deep-hours cap:** a gentle notice past about 4 deep hours a day (Newport's guidance on sustainable depth) to discourage overwork.
 
 ### 2.2 Tasks: Kanban Board
-- **Columns (editable):** Inbox → Backlog → Today → Doing → Done.
+- **Columns:** Backlog → Today → Doing → Done. The user renames them and sets the limits. The Inbox page is the capture list; a note becomes a Backlog task with *Move to Board* ([Board spec](specs/2026-11-14-board.md), 2026-11-14).
 - **WIP limits** (from Personal Kanban, Benson & Barry): Doing allows 1, and Today warns past 3. The philosophy behind the limits is Burkeman's open and closed lists (*Four Thousand Weeks*).
 - **Task fields:**
   - title, notes, project or tags
@@ -168,7 +168,7 @@ Habits are recurring items, and routines are ordered groups of them that run at 
 
 ## 3. UX and Visual Direction
 To be refined later in Claude Design.
-- **Navigation:** a slim left rail (Today · Board · Calendar · Routines · Review · Settings), a menu-bar item, and a ⌘K command palette.
+- **Navigation:** a slim left rail (Today · Inbox · Board · Calendar · Routines · Review · Settings), a menu-bar item, and a ⌘K command palette.
 - **Today screen:** the current or next block, a large Start button, the Frog, 3 priorities and the realistic finish time.
 - **Palette:**
   - desaturated blues and teals for focus;
