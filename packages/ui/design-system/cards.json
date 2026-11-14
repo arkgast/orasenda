@@ -103,6 +103,10 @@
     "group": "Apps",
     "height": 160
   },
+  "RoutineCard": {
+    "group": "Routines",
+    "height": 360
+  },
   "RoutineItem": {
     "group": "Routines",
     "height": 330

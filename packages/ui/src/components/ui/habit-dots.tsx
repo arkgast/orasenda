@@ -7,6 +7,8 @@ export interface HabitDay {
   today?: boolean;
   /** A localised date, e.g. Monday 9 November. */
   label?: string;
+  /** 0 = Monday … 6 = Sunday. The first day's weekday sets the leading gap in the week layout. */
+  weekday?: number;
 }
 export interface HabitDotsProps {
   name?: string;
@@ -14,7 +16,22 @@ export interface HabitDotsProps {
   note?: string;
   legend?: boolean;
   restartNote?: string;
+  /** The run of days in words, e.g. "5 days kept". Shown under the grid. */
+  runLine?: string;
+  /** "week": rows of seven aligned to Monday under a weekday header. Unset: one wrapped line. */
+  columns?: "week";
 }
+
+// Monday first. The key is the weekday's name, since two weekdays share a letter.
+const WEEKDAY_LETTERS: Array<[string, string]> = [
+  ["mon", "M"],
+  ["tue", "T"],
+  ["wed", "W"],
+  ["thu", "T"],
+  ["fri", "F"],
+  ["sat", "S"],
+  ["sun", "S"],
+];
 
 const WORDS: Record<HabitState, string> = {
   done: "Done",
@@ -67,7 +84,7 @@ function Dot({
   );
 }
 
-/** The calm dot grid for a habit. A missed day is a hollow dot, not a break in a chain. */
+/** The calm dot grid for a habit. A day not done is a hollow dot, not a gap in a chain. */
 export function HabitDots(props: HabitDotsProps): ReactElement {
   const days = (props.days || []).map((d) => {
     const v: HabitDay = typeof d === "string" ? { state: d } : d;
@@ -77,6 +94,13 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
       label: v.label,
     };
   });
+  const week = props.columns === "week";
+  const first = (props.days || [])[0];
+  const weekday = typeof first === "object" && first ? first.weekday : undefined;
+  const offset =
+    week && typeof weekday === "number" && Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
+      ? weekday
+      : 0;
   const states = Object.keys(WORDS) as HabitState[];
   return (
     <div data-slot="habit-dots" className="@container flex flex-col gap-fluid-stack">
@@ -90,13 +114,43 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
         data-slot="habit-grid"
         role="group"
         aria-label={`${props.name || "Habit"}, daily record`}
-        className="flex flex-wrap gap-fluid-stack p-1"
+        data-columns={week ? "week" : undefined}
+        className={cn(
+          "gap-fluid-stack p-1",
+          week ? "grid w-max grid-cols-7 justify-items-center" : "flex flex-wrap",
+        )}
       >
+        {/* Each letter is hidden itself: a display: contents wrapper can lose aria-hidden in WebKit. */}
+        {week
+          ? WEEKDAY_LETTERS.map(([key, letter]) => (
+              <span
+                key={`head-${key}`}
+                data-slot="habit-weekday"
+                aria-hidden="true"
+                className="text-center text-label text-ink-muted"
+              >
+                {letter}
+              </span>
+            ))
+          : null}
+        {WEEKDAY_LETTERS.slice(0, offset).map(([key]) => (
+          <span
+            key={`gap-${key}`}
+            data-slot="habit-gap"
+            aria-hidden="true"
+            className="size-icon-md"
+          />
+        ))}
         {days.map((d, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: days have no id; the record is positional and static
           <Dot key={i} {...d} />
         ))}
       </div>
+      {props.runLine ? (
+        <div data-slot="habit-run-line" className="text-body-sm text-ink-muted">
+          {props.runLine}
+        </div>
+      ) : null}
       {props.legend ? (
         <div
           data-slot="habit-legend"

@@ -52,6 +52,7 @@ const PREVIOUS_SURFACE = [
   "InboxRow",
   "Choice",
   "ChoiceGroup",
+  "RoutineCard",
 ];
 
 // `just design-system-check` builds once and passes the folder in DS_OUT; alone, the test builds its own.
@@ -78,7 +79,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(41);
+  expect(components).toHaveLength(42);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -200,6 +201,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     onRemove: noop,
     removeName: "Remove note: A note",
   },
+  RoutineCard: { name: "Morning", today: "notStarted" },
 };
 
 /** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */

@@ -498,5 +498,17 @@
     "bg": "surface-raised",
     "kind": "mark",
     "where": "T5: FloatingTimer focus ring arc shape on its own fill"
+  },
+  {
+    "fg": "routine",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "R3: RoutineCard start edge"
+  },
+  {
+    "fg": "on-break",
+    "bg": "break",
+    "kind": "mark",
+    "where": "R3: RoutineCard finished check on its filled circle"
   }
 ]
