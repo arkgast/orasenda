@@ -66,7 +66,7 @@ function TodayShape({ today }: { today: RoutineToday }): ReactElement {
 /** One routine on the Routines page: its name, time and days, today's state and its steps. */
 export function RoutineCard(props: RoutineCardProps): ReactElement {
   const headingId = useId();
-  const today: RoutineToday = props.today in SHAPE ? props.today : "notStarted";
+  const today: RoutineToday = Object.hasOwn(SHAPE, props.today) ? props.today : "notStarted";
   const Heading = props.headingLevel === 3 ? "h3" : "h2";
   return (
     <article

@@ -54,6 +54,17 @@ test.each([
   expect(screen.getByText(words)).toBeTruthy();
 });
 
+test.each(["toString", "constructor", "__proto__"])(
+  "inherited_key_%s_reads_as_not_started",
+  (key) => {
+    const { container } = render(<RoutineCard name="R" today={key as never} />);
+    const row = container.querySelector("[data-slot='routine-card-today']");
+    expect(row?.getAttribute("data-today")).toBe("notStarted");
+    const mark = row?.querySelector("[data-slot='routine-card-shape']");
+    expect(mark?.getAttribute("data-shape")).toBe("ring");
+  },
+);
+
 test("unknown_today_reads_as_not_started", () => {
   const { container } = render(<RoutineCard name="R" today={"nope" as never} />);
   const row = container.querySelector("[data-slot='routine-card-today']");

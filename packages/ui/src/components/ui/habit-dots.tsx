@@ -120,15 +120,19 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
           week ? "grid w-max grid-cols-7 justify-items-center" : "flex flex-wrap",
         )}
       >
-        {week ? (
-          <div data-slot="habit-weekdays" aria-hidden="true" className="contents">
-            {WEEKDAY_LETTERS.map(([key, letter]) => (
-              <span key={key} className="text-center text-label text-ink-muted">
+        {/* Each letter is hidden itself: a display: contents wrapper can lose aria-hidden in WebKit. */}
+        {week
+          ? WEEKDAY_LETTERS.map(([key, letter]) => (
+              <span
+                key={`head-${key}`}
+                data-slot="habit-weekday"
+                aria-hidden="true"
+                className="text-center text-label text-ink-muted"
+              >
                 {letter}
               </span>
-            ))}
-          </div>
-        ) : null}
+            ))
+          : null}
         {WEEKDAY_LETTERS.slice(0, offset).map(([key]) => (
           <span
             key={`gap-${key}`}

@@ -98,25 +98,20 @@ test("renders_run_line_under_the_grid", () => {
 
 test("default_layout_has_no_weekday_header_or_gaps", () => {
   const { container } = render(<HabitDots days={[{ state: "done", weekday: 3 }]} />);
-  expect(container.querySelector("[data-slot='habit-weekdays']")).toBeNull();
+  expect(container.querySelector("[data-slot='habit-weekday']")).toBeNull();
   expect(container.querySelector("[data-slot='habit-gap']")).toBeNull();
   expect(container.querySelector("[data-slot='habit-grid']")?.className).toContain("flex-wrap");
 });
 
 test("week_layout_has_an_aria_hidden_monday_header", () => {
   const { container } = render(<HabitDots columns="week" days={["done", "rest"]} />);
-  const header = container.querySelector("[data-slot='habit-weekdays']");
-  expect(header?.getAttribute("aria-hidden")).toBe("true");
-  expect(Array.from(header?.children ?? []).map((c) => c.textContent)).toEqual([
-    "M",
-    "T",
-    "W",
-    "T",
-    "F",
-    "S",
-    "S",
-  ]);
+  const cells = Array.from(container.querySelectorAll("[data-slot='habit-weekday']"));
+  expect(cells.map((c) => c.textContent)).toEqual(["M", "T", "W", "T", "F", "S", "S"]);
+  // Each cell is hidden itself, not through a display: contents wrapper that WebKit may drop.
+  for (const cell of cells) expect(cell.getAttribute("aria-hidden")).toBe("true");
   const grid = container.querySelector("[data-slot='habit-grid']");
+  expect(Array.from(grid?.children ?? []).slice(0, 7)).toEqual(cells);
+  expect(container.querySelector("[data-slot='habit-weekdays']")).toBeNull();
   expect(grid?.getAttribute("data-columns")).toBe("week");
   expect(grid?.className).toContain("grid-cols-7");
 });
