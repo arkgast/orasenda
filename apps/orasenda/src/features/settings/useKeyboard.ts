@@ -5,16 +5,11 @@ import { commands } from "@shared/ipc/bindings";
 import { useRef, useState } from "react";
 import { toAccelerator } from "./shortcutKeys";
 
-/** Until H5, Settings shows the two rows it always had, with both slots each. */
-export type ShortcutId = Extract<ActionId, "startPause" | "capture">;
-
-export const SHORTCUT_ROWS: ReadonlyArray<ShortcutId> = ["startPause", "capture"];
-
-type Where = `${ShortcutId}.${Slot}`;
-const where = (id: ShortcutId, slot: Slot): Where => `${id}.${slot}`;
+type Where = `${ActionId}.${Slot}`;
+const where = (id: ActionId, slot: Slot): Where => `${id}.${slot}`;
 
 /** The save line: "Start or pause focus: ⌃⌥G." (*Everywhere*) or "Start or pause focus in Orasenda: ⌘U.". */
-function savedLine(view: KeyboardView, id: ShortcutId, slot: Slot): string {
+function savedLine(view: KeyboardView, id: ActionId, slot: Slot): string {
   const action = view.actions.find((a) => a.id === id);
   const label = action?.label ?? id;
   const name = slot === "app" ? ` ${SLOT_NAME.app}` : "";
@@ -44,7 +39,7 @@ function describe(error: unknown): KeyboardError {
 }
 
 /**
- * The shortcuts for Settings › Keyboard: `keyboard_state`, kept current by `keyboard-changed`, and the
+ * The shortcuts for Settings › Shortcuts: `keyboard_state`, kept current by `keyboard-changed`, and the
  * changes. Newest wins: a reply that a later change on the same slot has overtaken is dropped, and the
  * view only takes the reply of the latest change (the event brings the rest). `onSaved` gets the save line.
  * A `warning` error waits for the person: `confirmAnyway` sends the same keys again, confirmed, and
@@ -60,7 +55,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
   saved.current = onSaved;
 
   function run(
-    id: ShortcutId,
+    id: ActionId,
     slot: Slot,
     call: () => ReturnType<typeof commands.keyboardSetBinding>,
   ) {
@@ -88,7 +83,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
     );
   }
 
-  function send(id: ShortcutId, slot: Slot, keys: string | null, confirm: boolean) {
+  function send(id: ActionId, slot: Slot, keys: string | null, confirm: boolean) {
     tried.current[where(id, slot)] = keys;
     run(id, slot, () => commands.keyboardSetBinding(id, slot, keys, confirm));
   }
@@ -98,7 +93,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
     loadFailed,
     errors,
     /** `glyphs` is the recorder's output; `null` turns the shortcut off. */
-    set(id: ShortcutId, slot: Slot, glyphs: string | null) {
+    set(id: ActionId, slot: Slot, glyphs: string | null) {
       const keys = glyphs === null ? null : toAccelerator(glyphs);
       if (glyphs !== null && keys === null) {
         latest.current[where(id, slot)] = ++calls.current;
@@ -107,10 +102,10 @@ export function useKeyboard(onSaved: (text: string) => void) {
       }
       send(id, slot, keys, false);
     },
-    restore(id: ShortcutId, slot: Slot) {
+    restore(id: ActionId, slot: Slot) {
       run(id, slot, () => commands.keyboardRestoreDefault(id, slot));
     },
-    confirmAnyway(id: ShortcutId, slot: Slot) {
+    confirmAnyway(id: ActionId, slot: Slot) {
       const keys = tried.current[where(id, slot)];
       if (keys === undefined) {
         console.error("keyboard confirm without tried keys", where(id, slot));
@@ -118,7 +113,7 @@ export function useKeyboard(onSaved: (text: string) => void) {
       }
       send(id, slot, keys, true);
     },
-    pickAnother(id: ShortcutId, slot: Slot) {
+    pickAnother(id: ActionId, slot: Slot) {
       latest.current[where(id, slot)] = ++calls.current;
       setErrors((current) => ({ ...current, [where(id, slot)]: null }));
     },

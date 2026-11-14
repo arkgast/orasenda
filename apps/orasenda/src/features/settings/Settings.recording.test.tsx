@@ -24,7 +24,7 @@ afterEach(async () => {
 
 const field = () =>
   within(screen.getByRole("group", { name: "Start or pause focus" })).getByRole("button", {
-    name: /, everywhere/,
+    name: /, Everywhere/,
   });
 
 const recordingCalls = (backend: { calls: { cmd: string; args: unknown }[] }) =>

@@ -1,15 +1,19 @@
-import { bindingLine, SLOT_NAME } from "@domain/keyboard/bindings";
 import { KEY } from "@domain/keyboard/glyphs";
-import { Choice, SettingsRow, ShortcutList, ShortcutRecorder } from "@orasenda/ui";
-import type { ActionView, KeyboardView, Slot } from "@shared/ipc/bindings";
+import { Choice, SettingsRow, ShortcutList } from "@orasenda/ui";
+import type { Group } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { type Ref, useRef } from "react";
+import { ShortcutRow } from "../ShortcutRow";
 import { shortcutItems } from "../shortcutItems";
-import { SHORTCUT_ROWS, type ShortcutId, useKeyboard } from "../useKeyboard";
+import { useKeyboard } from "../useKeyboard";
 
 const SINGLE_KEY_HELP = `Space, F and P on Today, Space in Focus view. Shortcuts with ${KEY.command} always work.`;
-const SLOTS: ReadonlyArray<Slot> = ["app", "global"];
-const STATUS_WORD = { registered: "Registered", off: "Off", failed: "Not available" } as const;
+/** Where an action works, in the order the pane lists them. */
+const GROUPS: ReadonlyArray<{ group: Group; title: string }> = [
+  { group: "fullScreen", title: "Full screen" },
+  { group: "timer", title: "Timer" },
+  { group: "capture", title: "Capture" },
+];
 
 type Props = {
   headingRef: Ref<HTMLHeadingElement>;
@@ -43,35 +47,6 @@ export function Shortcuts({
         console.error("keyboard recording failed", error);
       });
   }
-  function recorder(action: ActionView, id: ShortcutId, slot: Slot, current: KeyboardView) {
-    const binding = action[slot];
-    const error = keyboard.errors[`${id}.${slot}`] ?? null;
-    const line = bindingLine(error, binding, current.voiceOver);
-    const ask = error !== null && typeof error === "object" && "warning" in error ? error : null;
-    return (
-      <ShortcutRecorder
-        key={slot}
-        appOnly={slot === "app"}
-        id={`keyboard-${id}-${slot}-field`}
-        label={`${action.label}, ${SLOT_NAME[slot]}`}
-        keys={binding.display ?? undefined}
-        spokenKeys={binding.spoken ?? undefined}
-        conflict={ask ? undefined : (line ?? undefined)}
-        warning={
-          ask?.warning
-            ? {
-                reason: ask.warning.reason,
-                onUseAnyway: () => keyboard.confirmAnyway(id, slot),
-                onPickAnother: () => keyboard.pickAnother(id, slot),
-              }
-            : undefined
-        }
-        onRecordingChange={suspend}
-        onRecord={(glyphs) => void suspension.current.then(() => keyboard.set(id, slot, glyphs))}
-        onRestoreDefault={() => keyboard.restore(id, slot)}
-      />
-    );
-  }
   return (
     <section id="settings-keyboard" aria-labelledby="settings-keyboard-heading">
       <h2
@@ -82,28 +57,6 @@ export function Shortcuts({
       >
         Shortcuts
       </h2>
-      {view ? (
-        SHORTCUT_ROWS.map((id) => {
-          const action = view.actions.find((a) => a.id === id);
-          if (!action) return null;
-          return (
-            <SettingsRow
-              key={id}
-              id={`keyboard-${id}`}
-              label={action.label}
-              helper="Works while another app is in front."
-              status={`Everywhere: ${STATUS_WORD[action.global.status]}`}
-              disabledReason={disabledReason}
-            >
-              <div className="flex flex-col gap-4">
-                {SLOTS.map((slot) => recorder(action, id, slot, view))}
-              </div>
-            </SettingsRow>
-          );
-        })
-      ) : keyboard.loadFailed ? (
-        <p className="app-muted">Orasenda can't read keyboard settings right now.</p>
-      ) : null}
       <SettingsRow
         id="keyboard-single"
         label="Single-key shortcuts"
@@ -121,6 +74,43 @@ export function Shortcuts({
           Use single keys (Space, F, P)
         </Choice>
       </SettingsRow>
+      {view ? (
+        GROUPS.map(({ group, title }) => {
+          const actions = view.actions.filter((a) => a.group === group);
+          if (actions.length === 0) return null;
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: a group named by its heading; a section would be a landmark, and the pane has one
+            <div key={group} role="group" aria-labelledby={`keyboard-group-${group}`}>
+              <h3 id={`keyboard-group-${group}`} className="m-0 pt-4 text-heading">
+                {title}
+              </h3>
+              {actions.map((action) => (
+                <ShortcutRow
+                  key={action.id}
+                  action={action}
+                  voiceOver={view.voiceOver}
+                  errors={{
+                    app: keyboard.errors[`${action.id}.app`],
+                    global: keyboard.errors[`${action.id}.global`],
+                  }}
+                  onSet={(slot, glyphs) =>
+                    void suspension.current.then(() => keyboard.set(action.id, slot, glyphs))
+                  }
+                  onRestore={() => {
+                    keyboard.restore(action.id, "app");
+                    keyboard.restore(action.id, "global");
+                  }}
+                  onConfirm={(slot) => keyboard.confirmAnyway(action.id, slot)}
+                  onPickAnother={(slot) => keyboard.pickAnother(action.id, slot)}
+                  onRecordingChange={suspend}
+                />
+              ))}
+            </div>
+          );
+        })
+      ) : keyboard.loadFailed ? (
+        <p className="app-muted">Orasenda can't read keyboard settings right now.</p>
+      ) : null}
       <div className="flex flex-col gap-2 py-4">
         <p className="m-0 font-semibold">All shortcuts</p>
         <ShortcutList items={shortcutItems(view, singleKey)} />

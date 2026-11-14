@@ -25,7 +25,7 @@ afterEach(async () => {
 });
 
 const group = (name: string) => screen.getByRole("group", { name });
-const field = (name: string) => within(group(name)).getByRole("button", { name: /, everywhere/ });
+const field = (name: string) => within(group(name)).getByRole("button", { name: /, Everywhere/ });
 
 function press(name: string, init: KeyboardEventInit) {
   const button = field(name);
@@ -51,7 +51,7 @@ test("keyboard_rows_order_and_copy", async () => {
   ]);
   const nav = within(screen.getByRole("navigation", { name: "Settings" }));
   expect(nav.getByRole("button", { name: "Shortcuts" })).toHaveAttribute("aria-current", "page");
-  const rows = ["Start or pause focus", "Capture a thought", "Single-key shortcuts"];
+  const rows = ["Single-key shortcuts", "Start or pause focus", "Capture a thought"];
   const nodes = rows.map(group);
   for (let i = 1; i < nodes.length; i++) {
     expect(
@@ -111,12 +111,13 @@ test("keyboard_delete_turns_off_and_restore_default", async () => {
     { id: "startPause", slot: "global", keys: null, confirmWarning: false },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: off.");
-  // The first button is the In Orasenda slot's, the second the Everywhere slot's.
+  // One Restore default for the row: it restores both slots.
   fireEvent.click(
-    within(group("Start or pause focus")).getAllByRole("button", { name: "Restore default" })[1],
+    within(group("Start or pause focus")).getByRole("button", { name: "Restore default" }),
   );
   await settle();
   expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([
+    { id: "startPause", slot: "app" },
     { id: "startPause", slot: "global" },
   ]);
   expect(saveLine()).toHaveTextContent("Start or pause focus: ⌃⌥F.");

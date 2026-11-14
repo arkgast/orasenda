@@ -5,7 +5,7 @@ import { argsOf, KEYBOARD, settle, withGlobal } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { openSettings, saveLine } from "./Settings.support";
+import { openPane, openSettings, saveLine } from "./Settings.support";
 
 const openIn = (replies: Replies = {}) => openSettings(replies, "Shortcuts");
 
@@ -24,9 +24,9 @@ afterEach(async () => {
 
 const group = (name: string) => screen.getByRole("group", { name });
 const everywhere = (row: string) =>
-  within(group(row)).getByRole("button", { name: /, everywhere/ });
+  within(group(row)).getByRole("button", { name: /, Everywhere/ });
 const inOrasenda = (row: string) =>
-  within(group(row)).getByRole("button", { name: /, in Orasenda/ });
+  within(group(row)).getByRole("button", { name: /, In Orasenda/ });
 
 function press(field: HTMLElement, init: KeyboardEventInit) {
   fireEvent.click(field);
@@ -39,8 +39,8 @@ const START = "Start or pause focus";
 test("shortcuts_rows_have_two_labelled_recorders_and_a_status_word", async () => {
   await openIn();
   for (const row of [START, "Capture a thought"]) {
-    expect(everywhere(row)).toHaveAccessibleName(new RegExp(`^${row}, everywhere`));
-    expect(inOrasenda(row)).toHaveAccessibleName(new RegExp(`^${row}, in Orasenda`));
+    expect(everywhere(row)).toHaveAccessibleName(new RegExp(`^${row}, Everywhere`));
+    expect(inOrasenda(row)).toHaveAccessibleName(new RegExp(`^${row}, In Orasenda`));
   }
   // The in-Orasenda slot of both actions is empty by default.
   expect(inOrasenda(START)).toHaveAccessibleName(/None/);
@@ -70,16 +70,59 @@ test("shortcuts_in_orasenda_slot_records_for_the_app_slot", async () => {
   expect(saveLine()).toHaveTextContent(/^Start or pause focus in Orasenda:/);
 });
 
-test("shortcuts_restore_default_per_slot", async () => {
+test("shortcuts_restore_default_restores_both_slots", async () => {
   const { backend } = await openIn({ keyboard_restore_default: () => KEYBOARD });
-  const row = group(START);
-  const buttons = within(row).getAllByRole("button", { name: "Restore default" });
-  expect(buttons).toHaveLength(2);
+  const buttons = within(group(START)).getAllByRole("button", { name: "Restore default" });
+  expect(buttons).toHaveLength(1);
   fireEvent.click(buttons[0]);
   await settle();
   expect(argsOf(backend.calls, "keyboard_restore_default")).toEqual([
     { id: "startPause", slot: "app" },
+    { id: "startPause", slot: "global" },
   ]);
+});
+
+test("every_registry_action_has_a_row", async () => {
+  await openIn();
+  for (const action of KEYBOARD.actions) {
+    expect(group(action.label)).toBeVisible();
+    expect(within(group(action.label)).getByText(action.description)).toBeVisible();
+  }
+});
+
+test("rows_grouped", async () => {
+  await openIn();
+  const heads = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+  expect(heads).toEqual(["Full screen", "Timer", "Capture"]);
+  const full = within(group("Full screen"));
+  expect(full.getAllByRole("group")).toHaveLength(3);
+  expect(full.getByRole("group", { name: "Leave full screen" })).toBeVisible();
+  expect(full.queryByRole("group", { name: START })).toBeNull();
+  const timer = within(group("Timer"));
+  expect(timer.getByRole("group", { name: START })).toBeVisible();
+});
+
+test("fixed_keys_read_only", async () => {
+  await openIn();
+  const table = screen.getByRole("table", { name: "All shortcuts" });
+  expect(within(table).getByRole("row", { name: /Commands.*Command-K/ })).toBeVisible();
+  expect(within(table).queryAllByRole("button")).toHaveLength(0);
+});
+
+test("single_key_switch_comes_first", async () => {
+  await openIn();
+  const single = screen.getByRole("group", { name: "Single-key shortcuts" });
+  const first = screen.getByRole("group", { name: START });
+  expect(single.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("pane_switch_stops_recording", async () => {
+  const { backend } = await openIn({ keyboard_recording: () => undefined });
+  fireEvent.click(everywhere(START));
+  await settle();
+  await openPane("General");
+  await settle();
+  expect(argsOf(backend.calls, "keyboard_recording")).toEqual([{ on: true }, { on: false }]);
 });
 
 test("shortcuts_needs_modifier_line_depends_on_the_slot", async () => {

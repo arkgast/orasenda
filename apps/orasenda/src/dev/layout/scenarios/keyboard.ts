@@ -40,5 +40,23 @@ export const KEYBOARD_SCENARIOS: Record<string, Handler> = {
         Promise.reject({ warning: { reason: "Other apps often use this key." } }),
     },
   }),
+  // A repaired app binding (the conflict line) and a global binding that is off.
+  keyboardRepaired: backend({
+    replies: {
+      keyboard_state: () => {
+        const view = withGlobal(KEYBOARD, "startPause", {
+          keys: null,
+          display: null,
+          spoken: null,
+        });
+        return {
+          ...view,
+          actions: view.actions.map((a) =>
+            a.id === "startPause" ? { ...a, app: { ...a.app, repaired: true } } : a,
+          ),
+        };
+      },
+    },
+  }),
   keyboardSingleOff: backend({ settings: { ...SETTINGS, singleKey: false } }),
 };
