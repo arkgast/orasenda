@@ -82,10 +82,10 @@ New CONTEXT.md terms:
 ### Core (`crates/core/src/routines/`, pure, time passed in)
 - `LocalDate` (year, month, day) with `from_epoch_ms(ms, offset_min)`, `weekday()`, `pred()`, `succ()`, `to_iso()` and `parse_iso()`.
 - `Weekdays(u8)` mask: `EVERY_DAY`, `WEEKDAYS`, `contains(weekday)`, and `label()` → "Every day", "Weekdays", "Weekends" or "Mon, Wed, Fri". The service words labels through core helpers (ADR-011).
-- `tracker::day_states(created: LocalDate, today: LocalDate, days: Weekdays, done: &BTreeSet<LocalDate>, window: u16) -> Vec<DayDot>`. `DayDot { date, state: Done | NotDone | Rest | Upcoming, today: bool }`. Days before `created` are left out. Today is `Done` if checked, otherwise `Upcoming`.
+- `tracker::day_states(created: LocalDate, today: LocalDate, days: Weekdays, done: &BTreeSet<LocalDate>, window: u16) -> Vec<DayDot>`. `DayDot { date, state: Done | NotDone | Rest | Upcoming, today: bool }`. Days before `created` are left out. A checked day is `Done`, even a rest day. Today, when not checked, is `Upcoming` on a scheduled day and `Rest` on an off day (Decision 15).
 - `tracker::run_of_days(...) -> u16` and `tracker::fresh_start(...) -> bool`, per the rules under Domain model. Only scheduled days count, and today never breaks a run.
-- `templates::all() -> &'static [Template]`. A `Template` has an `id`, `name`, `time_of_day`, `days`, `summary` and steps; each step has a `name`, an optional `two_minute`, `identity` and `anchor`, and `optional`. All five carry `wellness: true`. The copy is under [Templates](#templates).
-- `due::due_now(time_of_day, days, today_weekday, local_minute, finished_today, nudged_today) -> bool`. True from the minute of `time_of_day` up to 30 minutes after it, on a scheduled weekday, and only while the routine is neither finished nor already nudged today.
+- `templates::all() -> &'static [Template]` and `templates::get(TemplateId)`. A `Template` has an `id` (`TemplateId`), `name`, `time_of_day`, `days`, `summary`, `note` (the wellness note) and steps; each step has a `name`, an optional `two_minute`, `identity`, `anchor` and `detail`, and `optional`. All five carry `wellness: true`. The copy is under [Templates](#templates).
+- `due::due_now(time_of_day, days, today_weekday, local_minute, finished_today, nudged_today) -> bool`. True from the minute of `time_of_day` up to 30 minutes after it (clipped at local midnight), on a scheduled weekday, and only while the routine is neither finished nor already nudged today.
 
 ### Store (`crates/store/src/repo/routines/`)
 Repositories `routines`, `habits`, `habit_checks` and `routine_runs`, each with a module doc that says **Syncable**. Every write logs its fields to `change_log`. No `rusqlite` type appears in the public API. Removal is a tombstone, and removing a routine also tombstones its habits in the same transaction. `list_live` orders by `position`, then `id`. `checks_since(habit_ids, from_day)` returns the live checks. `open_run(routine_id)` returns the running run, if any.
@@ -186,6 +186,12 @@ Every ruling here was made by the controller under the owner's autonomy grant (2
 12. **New components: `RoutineCard`, `RoutineStep` and `DayPicker`; `HabitDots` gains `runLine` and `columns="week"`.** Everything else reuses existing components (`RoutineItem`, `WellnessNote`, `Dialog`, `Input`, `PopoverMenu`, `EmptyState`).
 13. **Canvas picks: page A (cards), run view A (one step), dot grid A (weeks).** See [Design canvas](#design-canvas).
 14. **ROADMAP:** P4 Routines runs now, alongside P2, and P3 comes later (owner, 2026-11-14).
+15. **Today on an off day is `Rest`, not `Upcoming`** (R1, #514). An unchecked today that isn't on the schedule draws as a rest day, so the grid never asks for a habit on a day off. A checked day is `Done` whatever the schedule.
+16. **A check-in on a rest day shows as `Done` but doesn't count toward the run of days** (R1, #514). Only scheduled days count, so an extra day never changes the run and a day off is never owed.
+17. **The due window is clipped at local midnight** (R1, #514). A routine at 23:50 is due until 23:59 and not after midnight, so the nudge never lands on the next local day.
+18. **`TemplateId` lives in core, and `TemplateId::as_str()` (camelCase, e.g. `morningLight`) is the text stored in `routine.template`** (R1, #514). Core owns the template data, so it owns the id; `TemplateId::parse` reads it back, and an unknown text means no template.
+19. **`TemplateStep` has a `detail` (the evidence line, e.g. "The evidence is contested.") and `Template` has a `note` (the full wellness note)** (R1, #514). Both are worded once in core, so the service and the webview never assemble them.
+20. **2-minute versions are written in lower case** ("one sip", "ten squats") (R1, #514), because the service words them into "2-minute version: one sip."
 
 ## Design canvas
 Canvas: https://claude.ai/artifact/3d9UTChLuhpUrBufwGzVPv (private to the owner; every option in light and dark side by side).

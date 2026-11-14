@@ -7,6 +7,7 @@ mod app_info;
 pub mod blocking;
 pub mod clock;
 pub mod platform;
+pub mod routines;
 pub mod timer;
 pub mod usage;
 
@@ -18,6 +19,9 @@ pub use clock::{Hlc, HlcStamp, ParseHlcStampError};
 pub use platform::{
     AppControl, ForegroundSource, HourCycle, IdleSource, KeepAwake, LocalTime, NoopKeepAwake,
     NoopNotifier, NotificationStatus, Notifier, PlatformError, UtcLocalTime,
+};
+pub use routines::{
+    DayDot, DayState, LocalDate, Template, TemplateId, TemplateStep, Weekday, Weekdays,
 };
 pub use timer::{
     BreakKind, DaySession, DefaultPreset, EndReason, EngineState, EngineView, Milestone, Phase,
