@@ -1,11 +1,14 @@
 import type { KeyboardView_Serialize } from "@shared/ipc/bindings";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import type { Replies } from "@shared/test/fixtures";
 import { argsOf, KEYBOARD, mockBackend, SETTINGS, settle, withGlobal } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { openSettings, saveLine, sets } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Shortcuts");
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -42,13 +45,12 @@ const G_VIEW = withStartPause({
 });
 
 test("keyboard_rows_order_and_copy", async () => {
-  await openSettings();
-  const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-  const at = headings.indexOf("Keyboard");
-  expect(headings[at - 1]).toBe("Notifications");
-  expect(headings[at + 1]).toBe("Apps and sites");
-  const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
-  expect(nav.getByRole("button", { name: /^Keyboard/ })).toBeInTheDocument();
+  await openIn();
+  expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+    "Shortcuts",
+  ]);
+  const nav = within(screen.getByRole("navigation", { name: "Settings" }));
+  expect(nav.getByRole("button", { name: "Shortcuts" })).toHaveAttribute("aria-current", "page");
   const rows = ["Start or pause focus", "Capture a thought", "Single-key shortcuts"];
   const nodes = rows.map(group);
   for (let i = 1; i < nodes.length; i++) {
@@ -77,7 +79,7 @@ test("keyboard_rows_order_and_copy", async () => {
 });
 
 test("keyboard_record_saves_with_line", async () => {
-  const { backend } = await openSettings({ keyboard_set_binding: () => G_VIEW });
+  const { backend } = await openIn({ keyboard_set_binding: () => G_VIEW });
   press("Start or pause focus", G);
   await settle();
   expect(argsOf(backend.calls, "keyboard_set_binding")).toEqual([
@@ -99,7 +101,7 @@ test("keyboard_record_saves_with_line", async () => {
 
 test("keyboard_delete_turns_off_and_restore_default", async () => {
   const off = withStartPause({ keys: null, display: null, spoken: null, status: "off" });
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     keyboard_set_binding: () => off,
     keyboard_restore_default: () => KEYBOARD,
   });
@@ -121,7 +123,7 @@ test("keyboard_delete_turns_off_and_restore_default", async () => {
 });
 
 test("keyboard_unavailable_keeps_old_and_shows_conflict", async () => {
-  await openSettings({ keyboard_set_binding: () => Promise.reject("unavailable") });
+  await openIn({ keyboard_set_binding: () => Promise.reject("unavailable") });
   press("Start or pause focus", G);
   await settle();
   const row = group("Start or pause focus");
@@ -133,7 +135,7 @@ test("keyboard_unavailable_keeps_old_and_shows_conflict", async () => {
 });
 
 test("keyboard_failed_status_shows_the_same_line", async () => {
-  await openSettings({ keyboard_state: () => withStartPause({ status: "failed" }) });
+  await openIn({ keyboard_state: () => withStartPause({ status: "failed" }) });
   expect(
     within(group("Start or pause focus")).getByText(
       "Another app uses this shortcut. Pick a different one.",
@@ -142,7 +144,7 @@ test("keyboard_failed_status_shows_the_same_line", async () => {
 });
 
 test("keyboard_in_use_by_orasenda_line", async () => {
-  await openSettings({
+  await openIn({
     keyboard_set_binding: () => Promise.reject({ inUse: { action: "Commands" } }),
   });
   press("Capture a thought", { code: "KeyK", metaKey: true });
@@ -155,7 +157,7 @@ test("keyboard_in_use_by_orasenda_line", async () => {
 });
 
 test("keyboard_other_errors_are_not_silent", async () => {
-  await openSettings({ keyboard_set_binding: () => Promise.reject("store") });
+  await openIn({ keyboard_set_binding: () => Promise.reject("store") });
   press("Capture a thought", G);
   await settle();
   expect(
@@ -164,7 +166,7 @@ test("keyboard_other_errors_are_not_silent", async () => {
 });
 
 test("keyboard_voice_over_line_only_when_on", async () => {
-  await openSettings({ keyboard_state: () => ({ ...KEYBOARD, voiceOver: true }) });
+  await openIn({ keyboard_state: () => ({ ...KEYBOARD, voiceOver: true }) });
   const line = "VoiceOver uses Control-Option keys. You may want a different shortcut.";
   expect(within(group("Start or pause focus")).getByText(line)).toBeVisible();
   expect(within(group("Capture a thought")).getByText(line)).toBeVisible();
@@ -173,7 +175,7 @@ test("keyboard_voice_over_line_only_when_on", async () => {
   clearMocks();
   resetSettingsQueueForTests();
   resetTimerQueueForTests();
-  await openSettings({
+  await openIn({
     keyboard_state: () => ({
       ...withStartPause({ keys: "Super+Period", display: "⌘.", spoken: "Command-Period" }),
       voiceOver: true,
@@ -183,7 +185,7 @@ test("keyboard_voice_over_line_only_when_on", async () => {
 });
 
 test("keyboard_single_key_toggle_saves", async () => {
-  const { backend } = await openSettings();
+  const { backend } = await openIn();
   const box = within(group("Single-key shortcuts")).getByRole("checkbox");
   expect(box).toBeChecked();
   fireEvent.click(box);
@@ -193,7 +195,7 @@ test("keyboard_single_key_toggle_saves", async () => {
 });
 
 test("keyboard_list_marks_single_keys_off", async () => {
-  await openSettings({ settings_get: () => ({ ...SETTINGS, singleKey: false }) });
+  await openIn({ settings_get: () => ({ ...SETTINGS, singleKey: false }) });
   const table = screen.getByRole("table", { name: "All shortcuts" });
   const today = within(table).getByRole("rowheader", { name: "On Today" });
   expect(today.closest("tr")).toHaveAttribute("data-off", "true");
@@ -204,7 +206,7 @@ test("keyboard_list_marks_single_keys_off", async () => {
   ).not.toHaveAttribute("data-off");
 });
 
-test("keyboard_target_focuses_the_section", async () => {
+test("keyboard_target_focuses_the_pane", async () => {
   const { Settings: Page } = await import("./Settings");
   mockBackend();
   render(
@@ -215,7 +217,7 @@ test("keyboard_target_focuses_the_section", async () => {
     />,
   );
   await settle();
-  expect(screen.getByRole("heading", { level: 2, name: "Keyboard" })).toHaveFocus();
+  expect(screen.getByRole("heading", { level: 2, name: "Shortcuts" })).toHaveFocus();
 });
 
 function later() {
@@ -239,7 +241,7 @@ test("keyboard_newest_wins", async () => {
   const first = later();
   const second = later();
   let calls = 0;
-  await openSettings({
+  await openIn({
     keyboard_set_binding: () => (++calls === 1 ? first.promise : second.promise),
   });
   press("Start or pause focus", G);
@@ -258,7 +260,7 @@ test("keyboard_older_failure_after_newer_success_shows_no_conflict", async () =>
   const first = later();
   const second = later();
   let calls = 0;
-  await openSettings({
+  await openIn({
     keyboard_set_binding: () => (++calls === 1 ? first.promise : second.promise),
   });
   press("Start or pause focus", G);
@@ -274,7 +276,7 @@ test("keyboard_older_failure_after_newer_success_shows_no_conflict", async () =>
 test("keyboard_single_key_failure_rolls_back_and_try_again_resends", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   let fail = true;
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     settings_set: () => (fail ? Promise.reject("write failed") : null),
   });
   const box = within(group("Single-key shortcuts")).getByRole("checkbox");

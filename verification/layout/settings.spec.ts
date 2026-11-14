@@ -63,7 +63,7 @@ for (const size of SIZES) {
   const at = `${size.width}x${size.height}`;
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
-    await openApp(page, "settingsInvalid", size, { page: "settings" });
+    await openApp(page, "settingsInvalid", size, { page: "settings", pane: "Timer" });
     await page.getByRole("radio", { name: /^Deep Work/ }).click();
     const line = page.getByText("Preset wasn't saved. Back to Steady Focus.");
     await expect(line).toBeVisible();
@@ -72,7 +72,7 @@ for (const size of SIZES) {
   });
 
   test(`settings_fits_${at}_notifications_denied_line`, async ({ page }) => {
-    await openApp(page, "notificationsDenied", size, { page: "settings" });
+    await openApp(page, "notificationsDenied", size, { page: "settings", pane: "Notifications" });
     await expect(
       page.getByText(/On here, but macOS has notifications off for Orasenda/),
     ).toBeVisible();
@@ -101,10 +101,10 @@ async function expectTabReach(page: Page): Promise<void> {
     [REGION, TAB_STOPS],
   );
   expect(expected.length).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Jump to section" }).focus();
+  await page.getByRole("button", { name: "Pages" }).focus();
   const seen = new Set<string>();
   const trail: string[] = [];
-  for (let i = 0; i < expected.length * 3 + 4; i++) {
+  for (let i = 0; i < expected.length * 3 + 14; i++) {
     // WebKit skips radios and checkboxes on a plain Tab (Safari default); Alt+Tab visits every control.
     await page.keyboard.press("Alt+Tab");
     const at = await page.evaluate((region) => {
@@ -138,10 +138,13 @@ for (const size of COMPACT) {
   const at = `${size.width}x${size.height}`;
 
   test(`settings_fits_${at}`, async ({ page }) => {
-    await openApp(page, "settingsInvalid", size, { page: "settings" });
+    await openApp(page, "settingsInvalid", size, { page: "settings", pane: "Timer" });
     await expect(page.getByRole("button", { name: "Pages" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Jump to section" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Settings sections" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Jump to section" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Settings" })).toHaveAttribute(
+      "data-orientation",
+      "horizontal",
+    );
     await expectSettingsFit(page);
     const region = await page
       .getByRole("region", { name: "Settings" })
@@ -151,7 +154,7 @@ for (const size of COMPACT) {
   });
 
   test(`settings_fits_${at}_longest_save_line`, async ({ page }) => {
-    await openApp(page, "settingsInvalid", size, { page: "settings" });
+    await openApp(page, "settingsInvalid", size, { page: "settings", pane: "Timer" });
     await page.getByRole("radio", { name: /^Deep Work/ }).click();
     await expect(page.getByText("Preset wasn't saved. Back to Steady Focus.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again saving preset" })).toBeVisible();
@@ -159,7 +162,7 @@ for (const size of COMPACT) {
   });
 
   test(`settings_fits_${at}_notifications_denied_line`, async ({ page }) => {
-    await openApp(page, "notificationsDenied", size, { page: "settings" });
+    await openApp(page, "notificationsDenied", size, { page: "settings", pane: "Notifications" });
     await expect(
       page.getByText(/On here, but macOS has notifications off for Orasenda/),
     ).toBeVisible();

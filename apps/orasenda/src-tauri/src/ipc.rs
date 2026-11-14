@@ -109,17 +109,20 @@ pub struct Navigate {
     pub target: Option<SettingsTarget>,
 }
 
-/// A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`.
+/// A place in Settings: a pane or a field. Matches the webview's `SettingsTarget`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SettingsTarget {
     General,
     Timer,
     Notifications,
-    /// Settings › Keyboard.
+    /// Settings › Shortcuts (the pane's id is `keyboard`).
     Keyboard,
-    AppsAndSites,
     About,
+    /// Settings › Your data.
+    Data,
+    /// Settings › Backups.
+    Backups,
     FocusMinutes,
     BreakMinutes,
     /// The *Keep going automatically* row in Timer.
@@ -362,10 +365,14 @@ mod tests {
         assert_eq!(
             serde_json::to_value(Navigate {
                 page: NavigatePage::Settings,
-                target: Some(SettingsTarget::AppsAndSites)
+                target: Some(SettingsTarget::Backups)
             })
             .unwrap(),
-            json!({ "page": "settings", "target": "appsAndSites" })
+            json!({ "page": "settings", "target": "backups" })
+        );
+        assert_eq!(
+            serde_json::to_value(SettingsTarget::Data).unwrap(),
+            json!("data")
         );
         assert_eq!(
             serde_json::to_value(SettingsTarget::Keyboard).unwrap(),

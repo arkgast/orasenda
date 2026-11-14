@@ -3,7 +3,7 @@ import { KEY } from "@domain/keyboard/glyphs";
 import { Choice, SettingsRow, ShortcutList, ShortcutRecorder } from "@orasenda/ui";
 import type { ActionView, KeyboardView, Slot } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
-import { useRef } from "react";
+import { type Ref, useRef } from "react";
 import { shortcutItems } from "../shortcutItems";
 import { SHORTCUT_ROWS, type ShortcutId, useKeyboard } from "../useKeyboard";
 
@@ -12,6 +12,7 @@ const SLOTS: ReadonlyArray<Slot> = ["app", "global"];
 const STATUS_WORD = { registered: "Registered", off: "Off", failed: "Not available" } as const;
 
 type Props = {
+  headingRef: Ref<HTMLHeadingElement>;
   singleKey: boolean;
   disabled: boolean;
   disabledReason?: string;
@@ -21,7 +22,8 @@ type Props = {
   onSaved: (text: string) => void;
 };
 
-export function Keyboard({
+export function Shortcuts({
+  headingRef,
   singleKey,
   disabled,
   disabledReason,
@@ -72,8 +74,13 @@ export function Keyboard({
   }
   return (
     <section id="settings-keyboard" aria-labelledby="settings-keyboard-heading">
-      <h2 id="settings-keyboard-heading" tabIndex={-1} className="settings-heading">
-        Keyboard
+      <h2
+        ref={headingRef}
+        id="settings-keyboard-heading"
+        tabIndex={-1}
+        className="settings-heading"
+      >
+        Shortcuts
       </h2>
       {view ? (
         SHORTCUT_ROWS.map((id) => {

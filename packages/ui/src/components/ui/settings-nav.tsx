@@ -1,6 +1,7 @@
 import { type KeyboardEvent, type ReactElement, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
+import { IconButton } from "./icon-button";
 
 export interface SettingsNavItem {
   id: string;
@@ -14,9 +15,6 @@ export interface SettingsNavProps {
   onSelect: (id: string, via: "pointer" | "keyboard") => void;
   orientation: "vertical" | "horizontal";
 }
-
-const edgeButton =
-  "inline-grid size-hit-min shrink-0 cursor-pointer place-items-center rounded-md border border-clear bg-surface-raised p-0 text-ink hover:bg-surface-sunken";
 
 /** The Settings pane list: a vertical side list, or a horizontal tab strip at compact width. */
 export function SettingsNav({
@@ -38,7 +36,9 @@ export function SettingsNav({
         ? current
         : (items[0]?.id ?? null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-observe the tabs whenever the items change
+  // Re-observe the tabs when the set of items changes (their ids, not the array's identity).
+  const itemIds = items.map((i) => i.id).join("\u0000");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: itemIds stands for the items' ids
   useEffect(() => {
     const el = strip.current;
     if (!horizontal || !el) return;
@@ -58,7 +58,7 @@ export function SettingsNav({
       window.removeEventListener("resize", measure);
       observer?.disconnect();
     };
-  }, [horizontal, items]);
+  }, [horizontal, itemIds]);
 
   function focusAt(index: number) {
     const item = items[(index + items.length) % items.length];
@@ -131,8 +131,13 @@ export function SettingsNav({
 
   if (!horizontal) {
     return (
-      <nav data-slot="settings-nav" data-orientation="vertical" aria-label="Settings">
-        <ul className="m-0 flex w-index-width list-none flex-none flex-col gap-1 p-0">{list}</ul>
+      <nav
+        data-slot="settings-nav"
+        data-orientation="vertical"
+        aria-label="Settings"
+        className="min-h-0 w-index-width overflow-y-auto p-1"
+      >
+        <ul className="m-0 flex w-full list-none flex-none flex-col gap-1 p-0">{list}</ul>
       </nav>
     );
   }
@@ -143,19 +148,22 @@ export function SettingsNav({
       aria-label="Settings"
       className="flex items-center gap-1"
     >
-      <button
-        type="button"
-        tabIndex={-1}
-        disabled={!overflow.before}
+      <span
+        className={cn("inline-flex", !overflow.before && "invisible")}
         aria-hidden={!overflow.before || undefined}
-        aria-label="Earlier panes"
-        onClick={() => scroll(-1)}
-        className={cn(edgeButton, !overflow.before && "invisible")}
       >
-        <span aria-hidden="true" className="inline-flex rotate-90">
-          <Icon name="chevron" />
-        </span>
-      </button>
+        <IconButton
+          label="Earlier panes"
+          tabIndex={-1}
+          disabled={!overflow.before}
+          onClick={() => scroll(-1)}
+          icon={
+            <span className="inline-flex rotate-90">
+              <Icon name="chevron" />
+            </span>
+          }
+        />
+      </span>
       <ul
         ref={strip}
         data-slot="settings-nav-strip"
@@ -163,19 +171,22 @@ export function SettingsNav({
       >
         {list}
       </ul>
-      <button
-        type="button"
-        tabIndex={-1}
-        disabled={!overflow.after}
+      <span
+        className={cn("inline-flex", !overflow.after && "invisible")}
         aria-hidden={!overflow.after || undefined}
-        aria-label="More panes"
-        onClick={() => scroll(1)}
-        className={cn(edgeButton, !overflow.after && "invisible")}
       >
-        <span aria-hidden="true" className="inline-flex -rotate-90">
-          <Icon name="chevron" />
-        </span>
-      </button>
+        <IconButton
+          label="More panes"
+          tabIndex={-1}
+          disabled={!overflow.after}
+          onClick={() => scroll(1)}
+          icon={
+            <span className="inline-flex -rotate-90">
+              <Icon name="chevron" />
+            </span>
+          }
+        />
+      </span>
     </nav>
   );
 }

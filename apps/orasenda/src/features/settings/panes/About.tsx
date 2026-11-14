@@ -1,6 +1,7 @@
 import { osLabel } from "@domain/timer/format";
 import { SettingsRow } from "@orasenda/ui";
 import type { AppInfo } from "@shared/ipc/bindings";
+import type { Ref } from "react";
 
 export type AboutInfo =
   | { status: "loading" }
@@ -12,12 +13,18 @@ export function aboutLine(info: AboutInfo): string | null {
   return info.status === "error" ? "Orasenda version unavailable" : null;
 }
 
-export function About({ info }: { info: AboutInfo }) {
+export function About({
+  info,
+  headingRef,
+}: {
+  info: AboutInfo;
+  headingRef: Ref<HTMLHeadingElement>;
+}) {
   const line = aboutLine(info);
   return (
     <section id="settings-about" aria-labelledby="settings-about-heading">
-      <h2 id="settings-about-heading" tabIndex={-1} className="settings-heading">
-        About and data
+      <h2 ref={headingRef} id="settings-about-heading" tabIndex={-1} className="settings-heading">
+        About
       </h2>
       <SettingsRow
         id="about"

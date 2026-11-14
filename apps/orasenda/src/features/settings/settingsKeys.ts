@@ -1,8 +1,7 @@
 import type { PresetEntry, Settings as SettingsValue } from "@shared/ipc/bindings";
-import type { SectionId } from "./SettingsHeader";
+import { themeLabel } from "./panes/General";
+import { presetLabel } from "./panes/Timer";
 import { CAPS } from "./sections/CadenceRows";
-import { themeLabel } from "./sections/General";
-import { presetLabel } from "./sections/Timer";
 
 /** The Timer cadence fields, each with its own failure line. */
 export const CADENCE_KEYS = [
@@ -16,19 +15,6 @@ export const CADENCE_KEYS = [
 export type CadenceKey = (typeof CADENCE_KEYS)[number];
 
 export type Key = "theme" | "preset" | CadenceKey | "notify" | "notifyTwo" | "singleKey";
-
-export const KEY_SECTION: Record<Key, SectionId> = {
-  theme: "general",
-  preset: "timer",
-  extensionCap: "timer",
-  autoContinue: "timer",
-  longestFocusMin: "timer",
-  deepCapOn: "timer",
-  deepCapHours: "timer",
-  notify: "notifications",
-  notifyTwo: "notifications",
-  singleKey: "keyboard",
-};
 
 export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
   const keys: Key[] = [];

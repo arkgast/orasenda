@@ -109,28 +109,44 @@ body {
 
 .settings-page {
   flex: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   min-block-size: 0;
 }
 
-.settings-page [data-slot="page-frame-body"] {
-  display: grid;
+.settings-page > [data-slot="page-frame"] {
+  flex: auto;
+  min-block-size: 0;
 }
 
 .settings-body {
-  display: grid;
-  grid-template-columns: var(--index-width) auto;
+  display: flex;
   gap: var(--space-4);
   min-block-size: 0;
+  min-inline-size: 0;
+}
+
+/* The pane list keeps its size; the open pane takes the rest and scrolls in its own region. */
+.settings-body > [data-slot="scroll-region"] {
+  flex: auto;
+  min-inline-size: 0;
+  min-block-size: 0;
+  /* Keep focused rows clear of the sticky pane title: space-6 is its line (24px) plus its two space-1 paddings. */
+  scroll-padding-block-start: var(--space-6);
 }
 
 .settings-content {
   max-inline-size: var(--content-width);
 }
 
+/* The pane title stays at the top of the region while the rows scroll under it. */
 .settings-heading {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-rail);
+  background: var(--surface);
   margin: 0;
-  padding-block-start: var(--space-4);
+  padding-block: var(--space-1);
   font-size: var(--type-heading-font-size);
   line-height: var(--type-heading-line-height);
   font-weight: var(--type-heading-font-weight);
@@ -146,7 +162,18 @@ body {
   gap: var(--space-4);
 }
 
-/* Compact: the section index is gone, so the content takes the whole width. */
+/* Compact: the scroll region is only about 96px tall, so a pinned title would leave no room for a
+   focused row. The title scrolls with the rows here and the extra scroll padding is dropped. */
+.settings-body-compact > [data-slot="scroll-region"] {
+  scroll-padding-block-start: var(--space-2);
+}
+
+.settings-body-compact .settings-heading {
+  position: static;
+}
+
+/* Compact: the pane list is a tab strip above the pane, which takes the whole width. */
 .settings-body-compact {
-  grid-template-columns: auto;
+  flex-direction: column;
+  gap: var(--space-2);
 }

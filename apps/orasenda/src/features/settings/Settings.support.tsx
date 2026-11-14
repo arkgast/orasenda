@@ -1,7 +1,7 @@
 import { App } from "@app/App";
 import type { Settings, TimerView_Serialize } from "@shared/ipc/bindings";
 import { argsOf, IDLE, mockBackend, type Replies, settle } from "@shared/test/fixtures";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 export const WRITE = { kind: "write", message: "disk full" };
 export const INVALID = { kind: "invalidSpec", message: "that preset isn't in the library" };
@@ -12,13 +12,26 @@ export function view(patch: Partial<TimerView_Serialize>) {
   return () => ({ view: { ...IDLE, ...patch }, pending: [] });
 }
 
-export async function openSettings(replies: Replies = {}) {
+/** Opens Settings (on General), then the named pane when one is given. */
+export async function openSettings(replies: Replies = {}, pane?: string) {
   const backend = mockBackend(replies);
   const result = render(<App />);
   await settle();
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
   await settle();
+  if (pane) await openPane(pane);
   return { backend, ...result };
+}
+
+/** Picks a pane in the nav with the pointer (no waiting). */
+export function pick(name: string) {
+  const nav = within(screen.getByRole("navigation", { name: "Settings" }));
+  fireEvent.click(nav.getByRole("button", { name }));
+}
+
+export async function openPane(name: string) {
+  pick(name);
+  await settle();
 }
 
 export const h1 = () => screen.getByRole("heading", { level: 1, name: "Settings" });

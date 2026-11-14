@@ -1,12 +1,15 @@
 import { resetPresetsForTests } from "@domain/presets/presets";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import type { Replies } from "@shared/test/fixtures";
 import { DEEP, SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { openSettings, saveLine, sets } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Timer");
 
 beforeEach(() => {
   resetPresetsForTests();
@@ -29,7 +32,7 @@ const caps = () =>
 const cap = (label: string) => caps().find((r) => r.closest("label")?.textContent === label);
 
 test("extension_cap_radios_save", async () => {
-  const { backend } = await openSettings();
+  const { backend } = await openIn();
   expect(caps().map((r) => r.closest("label")?.textContent)).toEqual([
     "Off",
     "Once",
@@ -48,7 +51,7 @@ test("extension_cap_radios_save", async () => {
 });
 
 test("longest_focus_helper_when_preset_reaches_it", async () => {
-  await openSettings();
+  await openIn();
   const longest = screen.getByLabelText("Longest focus");
   expect(document.getElementById(longest.getAttribute("aria-describedby") ?? "")).toHaveTextContent(
     "Steps stop here and the break starts.",
@@ -58,7 +61,7 @@ test("longest_focus_helper_when_preset_reaches_it", async () => {
   clearMocks();
   resetSettingsQueueForTests();
   resetTimerQueueForTests();
-  await openSettings({ settings_get: () => ({ ...SETTINGS, presetId: DEEP }) });
+  await openIn({ settings_get: () => ({ ...SETTINGS, presetId: DEEP }) });
   const reached = screen.getByLabelText("Longest focus");
   expect(document.getElementById(reached.getAttribute("aria-describedby") ?? "")).toHaveTextContent(
     "Deep Work already reaches this, so no steps are added.",
@@ -66,7 +69,7 @@ test("longest_focus_helper_when_preset_reaches_it", async () => {
 });
 
 test("auto_continue_and_longest_focus_save", async () => {
-  const { backend } = await openSettings();
+  const { backend } = await openIn();
   fireEvent.click(screen.getByRole("checkbox", { name: "Keep going automatically" }));
   await settle();
   expect(sets(backend).at(-1)?.settings.autoContinue).toBe(true);
@@ -85,7 +88,7 @@ test("auto_continue_and_longest_focus_save", async () => {
 });
 
 test("deep_hours_cap_saves", async () => {
-  const { backend } = await openSettings();
+  const { backend } = await openIn();
   const hours = screen.getByLabelText("Hours");
   fireEvent.change(hours, { target: { value: "1" } });
   fireEvent.blur(hours);
@@ -101,7 +104,7 @@ test("deep_hours_cap_saves", async () => {
 });
 
 test("break_suggestions_carry_the_wellness_note", async () => {
-  await openSettings();
+  await openIn();
   expect(
     screen.getAllByRole("note").some((n) => /not medical advice/.test(n.textContent ?? "")),
   ).toBe(true);

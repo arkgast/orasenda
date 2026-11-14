@@ -1,9 +1,10 @@
 import { Choice, SettingsRow } from "@orasenda/ui";
 import type { NotificationStatus } from "@shared/ipc/bindings";
+import type { Ref } from "react";
 
 export type NotificationsRow = {
   line: string | null;
-  /** The index value. */
+  /** The short state word. */
   value: string;
   action: "ask" | "open" | null;
 };
@@ -56,6 +57,7 @@ export function notificationsRow(
 }
 
 type Props = {
+  headingRef: Ref<HTMLHeadingElement>;
   checked: boolean;
   asking: boolean;
   disabled: boolean;
@@ -73,6 +75,7 @@ type Props = {
 };
 
 export function Notifications({
+  headingRef,
   checked,
   asking,
   disabled,
@@ -96,7 +99,12 @@ export function Notifications({
     .join(" ");
   return (
     <section id="settings-notifications" aria-labelledby="settings-notifications-heading">
-      <h2 id="settings-notifications-heading" tabIndex={-1} className="settings-heading">
+      <h2
+        ref={headingRef}
+        id="settings-notifications-heading"
+        tabIndex={-1}
+        className="settings-heading"
+      >
         Notifications
       </h2>
       <SettingsRow

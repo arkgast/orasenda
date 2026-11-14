@@ -29,7 +29,7 @@ for (const size of SIZES) {
 
   for (const scenario of ["idle", "keyboardLongest", "keyboardFresh", "keyboardSingleOff"]) {
     test(`settings_keyboard_fits_${at}_${scenario}`, async ({ page }) => {
-      await openApp(page, scenario, size, { page: "settings" });
+      await openApp(page, scenario, size, { page: "settings", pane: "Shortcuts" });
       const heading = page.locator("#settings-keyboard-heading");
       await heading.scrollIntoViewIfNeeded();
       await expect(heading).toBeVisible();
@@ -73,7 +73,7 @@ for (const size of SIZES) {
 
 for (const size of SIZES) {
   test(`settings_keyboard_warning_fits_${size.width}x${size.height}`, async ({ page }) => {
-    await openApp(page, "keyboardWarning", size, { page: "settings" });
+    await openApp(page, "keyboardWarning", size, { page: "settings", pane: "Shortcuts" });
     const field = page.locator("#keyboard-startPause-app-field");
     await field.scrollIntoViewIfNeeded();
     await field.click();
@@ -104,7 +104,7 @@ for (const size of SIZES) {
 }
 
 test("settings_keyboard_lines_are_words", async ({ page }) => {
-  await openApp(page, "keyboardLongest", SIZES[2], { page: "settings" });
+  await openApp(page, "keyboardLongest", SIZES[2], { page: "settings", pane: "Shortcuts" });
   await expect(
     page.getByText("Another app uses this shortcut. Pick a different one."),
   ).toBeVisible();
@@ -112,7 +112,7 @@ test("settings_keyboard_lines_are_words", async ({ page }) => {
 });
 
 test("settings_keyboard_fresh_shows_the_command_voiceover_line", async ({ page }) => {
-  await openApp(page, "keyboardFresh", SIZES[2], { page: "settings" });
+  await openApp(page, "keyboardFresh", SIZES[2], { page: "settings", pane: "Shortcuts" });
   await expect(
     page.getByText("VoiceOver uses this key while it's on. Pick another to use both."),
   ).toHaveCount(2);

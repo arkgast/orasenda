@@ -47,7 +47,7 @@ for (const size of SIZES) {
     const at = `${size.width}x${size.height}`;
 
     test(`presets_editor_open_${at}`, async ({ page }) => {
-      await openApp(page, "idle", size, { page: "settings" });
+      await openApp(page, "idle", size, { page: "settings", pane: "Timer" });
       const edit = page.getByRole("button", { name: "Edit Steady Focus" });
       await edit.click();
       await expect(page.getByLabel("Long break after")).toBeVisible();
@@ -60,7 +60,7 @@ for (const size of SIZES) {
     });
 
     test(`presets_twelve_${at}`, async ({ page }) => {
-      await openApp(page, "presetsTwelve", size, { page: "settings" });
+      await openApp(page, "presetsTwelve", size, { page: "settings", pane: "Timer" });
       const add = page.getByRole("button", { name: "Add preset" });
       await add.scrollIntoViewIfNeeded();
       await expect(add).toHaveAttribute("aria-disabled", "true");

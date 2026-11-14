@@ -2,6 +2,7 @@ import { resetPresetsForTests } from "@domain/presets/presets";
 import type { PresetEntry } from "@shared/ipc/bindings";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import type { Replies } from "@shared/test/fixtures";
 import {
   argsOf,
   deferred,
@@ -16,6 +17,8 @@ import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Timer");
 
 beforeEach(() => {
   resetPresetsForTests();
@@ -44,7 +47,7 @@ const updates = (backend: { calls: { cmd: string; args: unknown }[] }) =>
 const ok = (patch: Partial<PresetEntry>) => () => ({ ...STEADY, ...patch });
 
 test("editor_saves_on_blur_and_return", async () => {
-  const { backend } = await openSettings({ preset_update: ok({ focusMin: 30 }) });
+  const { backend } = await openIn({ preset_update: ok({ focusMin: 30 }) });
   edit("Steady Focus");
   type("Focus", "30");
   fireEvent.blur(field("Focus"));
@@ -64,7 +67,7 @@ test("editor_saves_on_blur_and_return", async () => {
 });
 
 test("editor_escape_restores", async () => {
-  const { backend } = await openSettings();
+  const { backend } = await openIn();
   edit("Steady Focus");
   type("Focus", "400");
   fireEvent.blur(field("Focus"));
@@ -81,7 +84,7 @@ test("editor_saves_chain_newest_wins", async () => {
   const first = deferred<PresetEntry>();
   const second = deferred<PresetEntry>();
   const holds = [first, second];
-  const { backend } = await openSettings({ preset_update: () => holds.shift()?.promise });
+  const { backend } = await openIn({ preset_update: () => holds.shift()?.promise });
   edit("Steady Focus");
   type("Focus", "30");
   fireEvent.blur(field("Focus"));
@@ -98,7 +101,7 @@ test("editor_saves_chain_newest_wins", async () => {
 });
 
 test("presets_changed_from_tray_updates_list", async () => {
-  await openSettings();
+  await openIn();
   await emitPresetsChanged([
     { ...STEADY, name: "Morning", focusMin: 40 },
     PRESETS[2] as PresetEntry,
@@ -111,7 +114,7 @@ test("presets_changed_from_tray_updates_list", async () => {
 });
 
 test("duplicate_and_blank_names_say_so", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     preset_update: () => {
       throw { kind: "duplicateName", field: null, message: "taken" };
     },
@@ -130,7 +133,7 @@ test("duplicate_and_blank_names_say_so", async () => {
 });
 
 test("remove_says_the_selection_moved_and_undo_restores", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     preset_remove: () => [PRESETS[0], PRESETS[2]],
     preset_undo_remove: () => PRESETS,
   });
@@ -144,7 +147,7 @@ test("remove_says_the_selection_moved_and_undo_restores", async () => {
 });
 
 test("undo_with_a_taken_name_asks_to_rename", async () => {
-  await openSettings({
+  await openIn({
     preset_remove: () => [PRESETS[0], PRESETS[2]],
     preset_undo_remove: () => {
       throw { kind: "duplicateName", field: null, message: "taken" };
@@ -158,7 +161,7 @@ test("undo_with_a_taken_name_asks_to_rename", async () => {
 });
 
 test("the_last_preset_cannot_be_removed", async () => {
-  const { backend } = await openSettings({ presets_list: () => [STEADY] });
+  const { backend } = await openIn({ presets_list: () => [STEADY] });
   const remove = screen.getByRole("button", { name: "Remove Steady Focus" });
   expect(remove).toHaveAttribute("aria-disabled", "true");
   expect(screen.getByText("At least one preset stays.")).toBeInTheDocument();
@@ -169,7 +172,7 @@ test("the_last_preset_cannot_be_removed", async () => {
 
 test("add_opens_the_editor_on_name_and_stops_at_twelve", async () => {
   const added = { ...STEADY, id: "new-1", name: "New preset", isDefault: false };
-  const { backend } = await openSettings({ preset_add: () => added });
+  const { backend } = await openIn({ preset_add: () => added });
   fireEvent.click(screen.getByRole("button", { name: "Add preset" }));
   await settle();
   await emitPresetsChanged([...PRESETS, added]);
@@ -188,7 +191,7 @@ test("add_opens_the_editor_on_name_and_stops_at_twelve", async () => {
 });
 
 test("restore_is_disabled_when_nothing_differs_and_works_when_something_does", async () => {
-  const { backend } = await openSettings({ presets_restore_defaults: () => PRESETS });
+  const { backend } = await openIn({ presets_restore_defaults: () => PRESETS });
   const restore = () => screen.getByRole("button", { name: "Restore default presets" });
   expect(restore()).toHaveAttribute("aria-disabled", "true");
   expect(screen.getByText("The default presets are all here.")).toBeInTheDocument();
@@ -205,7 +208,7 @@ test("restore_is_disabled_when_nothing_differs_and_works_when_something_does", a
 });
 
 test("a_degraded_store_makes_the_editing_read_only", async () => {
-  await openSettings({
+  await openIn({
     timer_state: () => ({ view: { ...(SETTINGS as object), store: "unavailable" }, pending: [] }),
   });
   await emitSettingsChanged(SETTINGS);
@@ -215,7 +218,7 @@ test("a_degraded_store_makes_the_editing_read_only", async () => {
 const later = () => new Promise((resolve) => setTimeout(resolve, 50));
 
 test("a_remove_after_a_settings_failure_shows_removed_with_undo", async () => {
-  await openSettings({
+  await openIn({
     settings_set: () => Promise.reject(INVALID),
     preset_remove: () => [PRESETS[0], PRESETS[2]],
   });
@@ -229,7 +232,7 @@ test("a_remove_after_a_settings_failure_shows_removed_with_undo", async () => {
 });
 
 test("a_failed_action_says_so_and_offers_try_again", async () => {
-  const { backend } = await openSettings({ preset_remove: () => Promise.reject(WRITE) });
+  const { backend } = await openIn({ preset_remove: () => Promise.reject(WRITE) });
   fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
   await settle();
   expect(saveLine()).toHaveTextContent("Deep Work wasn't removed.");
@@ -239,7 +242,7 @@ test("a_failed_action_says_so_and_offers_try_again", async () => {
 });
 
 test("focus_lands_on_a_control_that_stays", async () => {
-  await openSettings({
+  await openIn({
     preset_remove: () => [PRESETS[0], PRESETS[1]],
     preset_undo_remove: () => PRESETS,
   });

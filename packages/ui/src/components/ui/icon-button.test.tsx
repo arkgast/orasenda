@@ -156,3 +156,8 @@ test("icon_button_inline_svg_gets_the_same_wrapper_styling", () => {
   expect(wrap?.className).toContain("*:size-icon-lg");
   expect(wrap?.querySelector("svg")).not.toBeNull();
 });
+
+test("icon_button_tab_index_passes_through", () => {
+  render(<IconButton label="Earlier panes" icon={<span />} tabIndex={-1} />);
+  expect(screen.getByRole("button", { name: "Earlier panes" }).tabIndex).toBe(-1);
+});
