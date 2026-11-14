@@ -248,7 +248,7 @@ None blocking. The owner may overrule any decision above after reviewing the can
 - [x] R7 (#520): [#546](https://github.com/arkgast/orasenda/pull/546)
 - [x] R8 (#521): [#556](https://github.com/arkgast/orasenda/pull/556)
 - [x] R9 (#522): [#555](https://github.com/arkgast/orasenda/pull/555)
-- [x] R10 (#523): this close-out (CONTEXT terms, ROADMAP, common issues, follow-ups)
+- [x] R10 (#523): [#571](https://github.com/arkgast/orasenda/pull/571) (CONTEXT terms, ROADMAP, common issues, follow-ups)
 
 ## Follow-ups
 Filed at the close-out (R10, #523). Each is its own issue.
