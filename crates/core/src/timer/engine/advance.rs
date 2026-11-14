@@ -144,6 +144,7 @@ impl Live {
             end_reason,
             extensions: self.extensions,
             break_kind: None,
+            task_id: self.task_id.clone(),
         }
     }
 
@@ -168,6 +169,7 @@ impl Live {
             end_reason,
             extensions: 0,
             break_kind: self.break_kind,
+            task_id: None,
         }
     }
 

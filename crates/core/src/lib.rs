@@ -7,6 +7,7 @@ mod app_info;
 pub mod blocking;
 pub mod clock;
 pub mod platform;
+pub mod rank;
 pub mod routines;
 pub mod timer;
 pub mod usage;

@@ -64,6 +64,10 @@ pub struct SessionRecord {
     pub extensions: u8,
     /// Set on a break row only.
     pub break_kind: Option<BreakKind>,
+    /// The Board task a focus row was for; `None` when none was picked, and always on a break
+    /// row.
+    #[serde(default)]
+    pub task_id: Option<String>,
 }
 
 /// Whether the timer is idle, counting or paused.

@@ -23,6 +23,7 @@ fn row_a() -> SessionRecord {
         end_reason: EndReason::Stopped,
         extensions: 0,
         break_kind: None,
+        task_id: None,
     }
 }
 

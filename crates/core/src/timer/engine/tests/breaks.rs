@@ -96,7 +96,7 @@ fn no_warning_for_two_minutes_or_less() {
         rounds: 4,
     };
     let mut s = Session::Idle;
-    s.start(id("t"), tiny, 1, T0).unwrap();
+    s.start(id("t"), tiny, 1, None, T0).unwrap();
     assert_eq!(s.advance(T0 + 3 * MIN, None), vec![Milestone::Warned]);
     assert_eq!(s.advance(T0 + 5 * MIN, None), vec![Milestone::BreakStarted]);
     for t in (0..2 * 60).map(|k| T0 + 5 * MIN + k * S) {
@@ -108,7 +108,7 @@ fn no_warning_for_two_minutes_or_less() {
     let _ = ended(s.advance(T0 + 7 * MIN, None));
 
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     for t in (0..120).map(|k| T0 + k * S) {
         assert!(q.advance(t, None).is_empty(), "quick warned at {t}");
     }
@@ -117,7 +117,7 @@ fn no_warning_for_two_minutes_or_less() {
 #[test]
 fn quick_ends_without_a_break() {
     let mut q = Session::Idle;
-    q.start(id("q"), SessionPreset::Quick, 1, T0).unwrap();
+    q.start(id("q"), SessionPreset::Quick, 1, None, T0).unwrap();
     let ms = q.advance(T0 + QUICK_START_MS + 9 * MIN, None);
     assert_eq!(ms.len(), 1);
     let rs = records(ms);
