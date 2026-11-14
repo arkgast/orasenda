@@ -27,6 +27,7 @@ mod native;
 mod tests;
 
 #[cfg(desktop)]
+#[cfg_attr(not(target_os = "macos"), allow(unused_imports))]
 pub(crate) use capture::CAPTURE;
 pub(crate) use capture::open_capture_on;
 pub(crate) use floater::{FLOATER, Toggled, toggle_floater_on};

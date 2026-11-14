@@ -174,6 +174,14 @@ fn restore_rolls_back_when_safety_backup_fails() {
     host.log().take();
     let backups_dir = dir.0.join("Backups");
     std::fs::set_permissions(&backups_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    // Root (a Linux cloud container) ignores the mode, so the failure can't be staged there.
+    let probe = backups_dir.join("probe");
+    if std::fs::write(&probe, b"").is_ok() {
+        std::fs::remove_file(&probe).unwrap();
+        std::fs::set_permissions(&backups_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("skipped: a read-only folder is still writable here (running as root)");
+        return;
+    }
     let result = data::run_backups_restore(&host, &chosen.file);
     std::fs::set_permissions(&backups_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
     assert_eq!(result.unwrap_err().kind, DataErrorKind::Write);
