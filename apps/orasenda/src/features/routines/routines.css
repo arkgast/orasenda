@@ -17,8 +17,7 @@
 }
 
 .app-routines-list,
-.app-routines-steps,
-.app-routines-template-steps {
+.app-routines-steps {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -34,13 +33,19 @@
   gap: var(--space-2);
 }
 
-/* The template's steps read as a numbered list in the dialog. */
+/* The template's steps read as a numbered list in the dialog. A block list, not flex: flex items
+   don't keep their list markers in every engine. */
 .app-routines-template-steps {
-  list-style: decimal;
+  margin: 0;
+  padding: 0;
   padding-inline-start: var(--space-5);
-  gap: var(--space-1);
+  list-style: decimal;
   font-size: var(--type-body-sm-font-size);
   line-height: var(--type-body-sm-line-height);
+}
+
+.app-routines-template-steps > li + li {
+  margin-block-start: var(--space-1);
 }
 
 .app-routines-templates {

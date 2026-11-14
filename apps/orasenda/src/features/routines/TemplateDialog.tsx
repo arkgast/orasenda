@@ -20,7 +20,7 @@ const REFUSED: Partial<Record<RoutinesError | "unreachable", string>> = {
 const ADD_FAILED = "Couldn't add the routine. Your data is safe; try again in a moment.";
 const READ_FAILED = "Templates can't be read right now. Try again in a moment.";
 
-/** The five templates as `routine_templates` answers them. A failure is said, never an empty list. */
+/** The five templates as `routine_templates` answers them. A failure, or an empty answer, is said. */
 function useTemplates() {
   const [templates, setTemplates] = useState<Templates>({ status: "loading" });
   const [asks, setAsks] = useState(0);
@@ -34,6 +34,8 @@ function useTemplates() {
     };
     commands.routineTemplates().then((result) => {
       if (result.status === "error") return failed(result.error);
+      // An empty list would leave nothing to add, so it reads as a failure to say, not an empty dialog.
+      if (result.data.length === 0) return failed("routine_templates answered no templates");
       if (!cancelled) setTemplates({ status: "ok", templates: result.data });
     }, failed);
     return () => {
@@ -57,6 +59,8 @@ export function TemplateDialog({ onAdd, onClose }: Props): ReactElement {
   const [error, setError] = useState<string | null>(null);
   const list = templates.status === "ok" ? templates.templates : [];
   const current = list.find((t) => t.id === chosen) ?? list[0];
+  // One message line, always mounted so VoiceOver hears each change of its text.
+  const message = templates.status === "error" ? READ_FAILED : error;
 
   const add = () => {
     if (templates.status === "error") return retry();
@@ -79,7 +83,6 @@ export function TemplateDialog({ onAdd, onClose }: Props): ReactElement {
       onConfirm={add}
       onCancel={onClose}
     >
-      {templates.status === "error" ? <p className="app-routines-muted">{READ_FAILED}</p> : null}
       {current ? (
         <div className="app-routines-templates">
           <ChoiceGroup legend="Template">
@@ -105,11 +108,9 @@ export function TemplateDialog({ onAdd, onClose }: Props): ReactElement {
           <WellnessNote as="p">{current.note}</WellnessNote>
         </div>
       ) : null}
-      {error ? (
-        <InlineNotice variant="row" tone="attention">
-          {error}
-        </InlineNotice>
-      ) : null}
+      <InlineNotice variant="row" tone={message ? "attention" : "neutral"}>
+        {message}
+      </InlineNotice>
     </Dialog>
   );
 }

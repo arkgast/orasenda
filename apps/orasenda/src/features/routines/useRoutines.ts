@@ -38,6 +38,19 @@ type Write = {
 
 let writeSeq = 0;
 
+/**
+ * The last routines write sent from any mounted page. A page left while its writes are queued keeps
+ * sending them (they are the person's intents, already shown), and a page mounted after it chains
+ * behind them, so one write is in flight across navigation too.
+ */
+let lastWrite: Promise<unknown> = Promise.resolve();
+
+function sendInTurn(send: () => Promise<Answer>): Promise<Answer> {
+  const answer = lastWrite.then(send);
+  lastWrite = answer.catch(() => {});
+  return answer;
+}
+
 /** A view with the check-ins that have not been answered yet laid over it. */
 function withChecks(view: RoutinesView, checks: ReadonlyMap<string, boolean>): RoutinesView {
   if (checks.size === 0) return view;
@@ -126,7 +139,7 @@ export function useRoutines() {
       inFlight.current = write.key;
       let outcome: Outcome;
       try {
-        const answer = await write.send();
+        const answer = await sendInTurn(write.send);
         outcome = answer.status === "ok" ? { status: "ok" } : answer;
       } catch (error) {
         console.error(`${write.name} failed`, error);

@@ -1,3 +1,4 @@
+import { TEMPLATES } from "@shared/test/fixtures/templatesView";
 import type {
   HabitDayState,
   HabitView_Serialize,
@@ -101,7 +102,7 @@ const routinesBackend = (view: RoutinesView_Serialize): Handler =>
   backend({
     replies: {
       routines_list: () => view,
-      routine_templates: () => [],
+      routine_templates: () => TEMPLATES,
       routine_add_template: () => "routine-new",
       routine_move: () => null,
       habit_move: () => null,

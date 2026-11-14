@@ -183,3 +183,28 @@ test("habit_move_and_editors_from_the_habit_more_menu", async () => {
   fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
   expect(statusText(container)).toBe("Editing habits comes in the next update.");
 });
+
+test("a_write_after_navigating_away_and_back_waits_for_the_one_still_in_flight", async () => {
+  const first = deferred<null>();
+  let sent = 0;
+  const replies = {
+    habit_check: () => {
+      sent += 1;
+      return sent === 1 ? first.promise : null;
+    },
+  };
+  const { unmount } = await renderRoutines(replies);
+  fireEvent.click(box()); // sent, held
+  await settle();
+  expect(sent).toBe(1);
+  unmount();
+  const { backend } = await renderRoutines(replies);
+  fireEvent.click(box()); // the remounted page's write
+  await settle();
+  // Still one call: the new page's write waits for the old page's, one in flight across pages.
+  expect(sent).toBe(1);
+  await act(async () => first.resolve(null));
+  await settle();
+  expect(sent).toBe(2);
+  expect(argsOf(backend.calls, "habit_check")).toHaveLength(1);
+});

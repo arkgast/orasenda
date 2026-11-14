@@ -10,7 +10,8 @@ const STATES: Record<HabitDayState, HabitState> = {
 
 // Rust words each dot's date as "Monday 9 November" (English only for now). The week layout needs the
 // first day's column, and HabitDotView has no weekday field, so it is read from that word. An
-// unknown word gives no offset: the grid still shows every dot, just not aligned.
+// unknown word gives no offset: the grid still shows every dot, just not aligned. A weekday field
+// on HabitDotView replaces this: #547.
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 function weekdayOf(label: string): number | undefined {

@@ -8,16 +8,18 @@ import {
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { primaries, renderRoutines, statusText, within } from "./RoutinesPage.support";
 
 afterEach(async () => {
   cleanup();
   await settle();
   clearMocks();
+  vi.restoreAllMocks();
 });
 
 const dialog = () => screen.getByRole("dialog", { name: "Start from a template" });
+const line = () => within(dialog()).getByRole("status");
 
 test("empty_state_offers_a_template_first_and_making_your_own", async () => {
   const { container } = await renderRoutines({ routines_list: () => NO_ROUTINES });
@@ -79,13 +81,36 @@ test("a_refused_add_keeps_the_dialog_open_with_a_plain_line", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: /From a template/ }));
   await settle();
+  // The live line is in place, empty, before anything fails, so VoiceOver hears the text arrive.
+  const before = line();
+  expect(before).toHaveTextContent(/^$/);
   fireEvent.click(within(dialog()).getByRole("button", { name: "Add routine" }));
   await settle();
-  expect(
-    within(dialog()).getByText(
-      "You have 30 routines, the most Orasenda keeps. Remove one to add another.",
-    ),
-  ).toBeInTheDocument();
+  expect(line()).toBe(before);
+  expect(before).toHaveTextContent(
+    "You have 30 routines, the most Orasenda keeps. Remove one to add another.",
+  );
+});
+
+test("an_add_that_cannot_reach_rust_is_said_in_the_same_live_line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const held = deferred<unknown>();
+  await renderRoutines({
+    routines_list: () => NO_ROUTINES,
+    routine_templates: () => held.promise,
+    routine_add_template: () => {
+      throw new Error("ipc down");
+    },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Start from a template" }));
+  const before = line();
+  await act(async () => held.resolve(TEMPLATES));
+  fireEvent.click(within(dialog()).getByRole("button", { name: "Add routine" }));
+  await settle();
+  expect(line()).toBe(before);
+  expect(before).toHaveTextContent(
+    "Couldn't add the routine. Your data is safe; try again in a moment.",
+  );
 });
 
 test("templates_that_cannot_be_read_say_so_and_can_be_asked_again", async () => {
@@ -97,16 +122,33 @@ test("templates_that_cannot_be_read_say_so_and_can_be_asked_again", async () => 
       return TEMPLATES;
     },
   });
+  vi.spyOn(console, "error").mockImplementation(() => {});
   fireEvent.click(screen.getByRole("button", { name: "Start from a template" }));
   await settle();
-  expect(
-    within(dialog()).getByText("Templates can't be read right now. Try again in a moment."),
-  ).toBeInTheDocument();
+  expect(line()).toHaveTextContent("Templates can't be read right now. Try again in a moment.");
   fail = false;
   fireEvent.click(within(dialog()).getByRole("button", { name: "Try again" }));
   await settle();
   expect(argsOf(backend.calls, "routine_templates")).toHaveLength(2);
   expect(within(dialog()).getAllByRole("radio")).toHaveLength(5);
+});
+
+test("an_empty_template_list_reads_as_a_failure_and_can_be_asked_again", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let empty = true;
+  const { backend } = await renderRoutines({
+    routines_list: () => NO_ROUTINES,
+    routine_templates: () => (empty ? [] : TEMPLATES),
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Start from a template" }));
+  await settle();
+  expect(line()).toHaveTextContent("Templates can't be read right now. Try again in a moment.");
+  empty = false;
+  fireEvent.click(within(dialog()).getByRole("button", { name: "Try again" }));
+  await settle();
+  expect(argsOf(backend.calls, "routine_templates")).toHaveLength(2);
+  expect(within(dialog()).getAllByRole("radio")).toHaveLength(5);
+  expect(line()).toHaveTextContent(/^$/);
 });
 
 test("add_menu_offers_new_routine_a_template_and_new_habit", async () => {

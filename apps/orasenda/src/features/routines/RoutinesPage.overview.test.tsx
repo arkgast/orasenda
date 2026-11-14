@@ -154,3 +154,14 @@ test("with_start_wired_one_primary_start_goes_to_the_routine_in_progress_or_firs
   fireEvent.click(primary[0]);
   expect(onStart).toHaveBeenCalledWith("r-c");
 });
+
+test("an_optional_habit_says_so_by_its_name_not_on_its_check_in", async () => {
+  await renderRoutines({
+    routines_list: () => routinesView({ habits: [standaloneHabit({ optional: true })] }),
+  });
+  const habit = screen.getByRole("article", { name: "Stretch" });
+  const check = within(habit).getByRole("checkbox", { name: "Done today: Stretch" });
+  expect(check).not.toHaveTextContent("Optional");
+  const name = within(habit).getByRole("heading", { level: 3, name: "Stretch" }).parentElement;
+  expect(name).toHaveTextContent("Optional");
+});

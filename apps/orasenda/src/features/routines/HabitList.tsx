@@ -28,9 +28,10 @@ function Habit({
   onMore: Props["onMore"];
 }): ReactElement {
   const headingId = useId();
+  // The same raised ground as a routine card, without the routine edge.
   return (
     <article
-      aria-labelledby={headingId} // The same raised ground as a routine card, without the routine edge.
+      aria-labelledby={headingId}
       className="flex flex-col gap-3 rounded-md border border-line-strong bg-surface-raised p-4 shadow-raised wrap-anywhere"
     >
       <div className="app-routines-habit-top">
@@ -38,6 +39,10 @@ function Habit({
           <h3 id={headingId} className="app-routines-habit-heading">
             {habit.name}
           </h3>
+          {/* The word sits with the name, as RoutineItem shows it in a routine's list. */}
+          {habit.optional ? (
+            <p className="m-0 text-label text-routine uppercase">Optional</p>
+          ) : null}
           {habit.daysLabel ? <p className="app-routines-muted">{habit.daysLabel}</p> : null}
           <p className="app-routines-muted">{habit.anchorLine ?? habit.intention}</p>
         </div>
@@ -52,7 +57,6 @@ function Habit({
       <RoutineItem
         label="Done today"
         name={`Done today: ${habit.name}`}
-        optional={habit.optional}
         done={habit.doneToday}
         onChange={(done) => onCheck(habit.id, done)}
       />
