@@ -1,6 +1,6 @@
 import { Choice, ChoiceGroup, SettingsRow } from "@orasenda/ui";
 import type { Theme } from "@shared/ipc/bindings";
-import { useId } from "react";
+import { type Ref, useId } from "react";
 
 export const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
   { theme: "system", label: "Match system" },
@@ -13,6 +13,7 @@ export function themeLabel(theme: Theme): string {
 }
 
 type Props = {
+  headingRef: Ref<HTMLHeadingElement>;
   theme: Theme;
   disabled: boolean;
   /** Shown when the whole page is read-only. */
@@ -22,11 +23,11 @@ type Props = {
   onChange: (theme: Theme) => void;
 };
 
-export function General({ theme, disabled, disabledReason, status, onChange }: Props) {
+export function General({ headingRef, theme, disabled, disabledReason, status, onChange }: Props) {
   const name = useId();
   return (
     <section id="settings-general" aria-labelledby="settings-general-heading">
-      <h2 id="settings-general-heading" tabIndex={-1} className="settings-heading">
+      <h2 ref={headingRef} id="settings-general-heading" tabIndex={-1} className="settings-heading">
         General
       </h2>
       <SettingsRow

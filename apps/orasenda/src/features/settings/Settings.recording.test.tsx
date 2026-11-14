@@ -1,10 +1,13 @@
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import type { Replies } from "@shared/test/fixtures";
 import { argsOf, KEYBOARD, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { openSettings } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Shortcuts");
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -28,7 +31,7 @@ const recordingCalls = (backend: { calls: { cmd: string; args: unknown }[] }) =>
   argsOf(backend.calls, "keyboard_recording");
 
 test("bound_chord_while_recording_reaches_recorder", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     keyboard_recording: () => undefined,
     keyboard_set_binding: () => KEYBOARD,
   });
@@ -44,7 +47,7 @@ test("bound_chord_while_recording_reaches_recorder", async () => {
 });
 
 test("recorder_off_on_record", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     keyboard_recording: () => undefined,
     keyboard_set_binding: () => KEYBOARD,
   });
@@ -55,7 +58,7 @@ test("recorder_off_on_record", async () => {
 });
 
 test("recorder_off_on_esc", async () => {
-  const { backend } = await openSettings({ keyboard_recording: () => undefined });
+  const { backend } = await openIn({ keyboard_recording: () => undefined });
   fireEvent.click(field());
   fireEvent.keyDown(field(), { code: "Escape" });
   await settle();
@@ -63,7 +66,7 @@ test("recorder_off_on_esc", async () => {
 });
 
 test("recorder_off_on_blur", async () => {
-  const { backend } = await openSettings({ keyboard_recording: () => undefined });
+  const { backend } = await openIn({ keyboard_recording: () => undefined });
   fireEvent.click(field());
   fireEvent.blur(field());
   await settle();
@@ -71,7 +74,7 @@ test("recorder_off_on_blur", async () => {
 });
 
 test("recorder_off_on_unmount", async () => {
-  const { backend, unmount } = await openSettings({ keyboard_recording: () => undefined });
+  const { backend, unmount } = await openIn({ keyboard_recording: () => undefined });
   fireEvent.click(field());
   await settle();
   unmount();
@@ -85,7 +88,7 @@ test("recorder_off_waits_for_the_on_reply", async () => {
     release = resolve;
   });
   const seen: boolean[] = [];
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     keyboard_recording: async (args) => {
       seen.push((args as { on: boolean }).on);
       if (seen.length === 1) await gate;

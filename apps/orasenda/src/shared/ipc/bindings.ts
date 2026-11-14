@@ -814,10 +814,14 @@ export type SettingsError = {
 /**  Why saving settings failed. */
 export type SettingsErrorKind = "invalidSpec" | "unavailable" | "write";
 
-/**  A place on the Settings page: a section or a field. Matches the webview's `SettingsTarget`. */
+/**  A place in Settings: a pane or a field. Matches the webview's `SettingsTarget`. */
 export type SettingsTarget = "general" | "timer" | "notifications" | 
-/**  Settings › Keyboard. */
-"keyboard" | "appsAndSites" | "about" | "focusMinutes" | "breakMinutes" | 
+/**  Settings › Shortcuts (the pane's id is `keyboard`). */
+"keyboard" | "about" | 
+/**  Settings › Your data. */
+"data" | 
+/**  Settings › Backups. */
+"backups" | "focusMinutes" | "breakMinutes" | 
 /**  The *Keep going automatically* row in Timer. */
 "keepGoing";
 

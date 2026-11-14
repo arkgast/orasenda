@@ -18,6 +18,8 @@ export interface IconButtonProps {
   "aria-expanded"?: boolean;
   "aria-controls"?: string;
   "aria-describedby"?: string;
+  /** -1 takes the button out of the tab order (a scroll helper whose action the keyboard has another way to do). */
+  tabIndex?: -1 | 0;
 }
 
 // Hit targets (hit-min, control-lg) and the 1px border are the fixed sizes. The icon is a line icon at
@@ -61,6 +63,7 @@ export function IconButton({
         aria-haspopup={aria["aria-haspopup"]}
         aria-expanded={aria["aria-expanded"]}
         aria-controls={aria["aria-controls"]}
+        tabIndex={aria.tabIndex}
         disabled={disabled}
         onClick={onClick}
         className={cn(base, size === "round" ? round : medium, unavailable)}

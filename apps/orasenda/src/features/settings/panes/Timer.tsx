@@ -1,16 +1,18 @@
 import { selectedPreset } from "@domain/presets/presets";
 import { SettingsRow } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "@shared/ipc/bindings";
+import type { Ref } from "react";
+import { type CadenceChange, CadenceRows } from "../sections/CadenceRows";
+import { PresetList } from "../sections/PresetList";
 import type { PresetEditing } from "../usePresets";
-import { type CadenceChange, CadenceRows } from "./CadenceRows";
-import { PresetList } from "./PresetList";
 
-/** The selected preset's name: the Settings index value and the failure line's "Back to". */
+/** The selected preset's name, for the failure line's "Back to". */
 export function presetLabel(presets: PresetEntry[], settings: Pick<Settings, "presetId">): string {
   return selectedPreset(presets, settings)?.name ?? "";
 }
 
 type Props = {
+  headingRef: Ref<HTMLHeadingElement>;
   settings: Settings;
   /** The live presets, in order. */
   presets: PresetEntry[];
@@ -29,6 +31,7 @@ type Props = {
 };
 
 export function Timer({
+  headingRef,
   settings,
   presets,
   presetsFailed = false,
@@ -45,7 +48,7 @@ export function Timer({
   const selected = selectedPreset(presets, settings);
   return (
     <section id="settings-timer" aria-labelledby="settings-timer-heading">
-      <h2 id="settings-timer-heading" tabIndex={-1} className="settings-heading">
+      <h2 ref={headingRef} id="settings-timer-heading" tabIndex={-1} className="settings-heading">
         Timer
       </h2>
       {running ? (

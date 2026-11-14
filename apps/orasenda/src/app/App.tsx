@@ -1,8 +1,8 @@
 import { useShortcuts } from "@domain/keyboard/useShortcuts";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { onPaletteRequest } from "@domain/navigation/paletteRequest";
+import type { AboutInfo } from "@features/settings/panes/About";
 import type { Arrival, SettingsTarget } from "@features/settings/Settings";
-import type { AboutInfo } from "@features/settings/sections/About";
 import { type NavPage, NavRail } from "@orasenda/ui";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";

@@ -1,12 +1,15 @@
 import type { NotificationStatus } from "@shared/ipc/bindings";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
-import { argsOf, deferred, emitSettingsChanged, SETTINGS, settle } from "@shared/test/fixtures";
+import type { Replies } from "@shared/test/fixtures";
+import { argsOf, deferred, SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { openSettings, view } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Notifications");
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -48,8 +51,8 @@ const TABLE: Array<[NotificationStatus, boolean, string | null, string, boolean]
 ];
 
 test("notifications_row_per_status_and_preference", async () => {
-  for (const [notifications, pref, line, value, checked] of TABLE) {
-    await openSettings({
+  for (const [notifications, pref, line, , checked] of TABLE) {
+    await openIn({
       timer_state: view({ notifications }),
       settings_get: () => ({ ...SETTINGS, notifySessionEnd: pref }),
     });
@@ -60,8 +63,6 @@ test("notifications_row_per_status_and_preference", async () => {
       line ? "notifications-status notifications-help" : "notifications-help",
     );
     if (line) expect(document.getElementById("notifications-status")).toHaveTextContent(line);
-    const nav = within(screen.getByRole("navigation", { name: "Settings sections" }));
-    expect(nav.getByText(value)).toBeInTheDocument();
     cleanup();
     await settle();
     clearMocks();
@@ -72,7 +73,7 @@ test("notifications_row_per_status_and_preference", async () => {
 
 test("asking_shows_busy_and_waiting_line", async () => {
   const request = deferred<NotificationStatus>();
-  await openSettings({
+  await openIn({
     timer_state: view({ notifications: "notDetermined" }),
     settings_get: () => ({ ...SETTINGS, notifySessionEnd: false }),
     notifications_request: () => request.promise,
@@ -94,7 +95,7 @@ test("asking_shows_busy_and_waiting_line", async () => {
 });
 
 test("ask_macos_only_in_not_determined_on", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     timer_state: view({ notifications: "notDetermined" }),
   });
   fireEvent.click(screen.getByRole("button", { name: "Ask macOS" }));
@@ -110,7 +111,7 @@ test("ask_macos_only_in_not_determined_on", async () => {
     clearMocks();
     resetSettingsQueueForTests();
     resetTimerQueueForTests();
-    await openSettings({
+    await openIn({
       timer_state: view({ notifications: status }),
       settings_get: () => ({ ...SETTINGS, notifySessionEnd: pref }),
     });
@@ -120,7 +121,7 @@ test("ask_macos_only_in_not_determined_on", async () => {
 
 test("open_system_settings_calls_command", async () => {
   for (const pref of [false, true]) {
-    const { backend } = await openSettings({
+    const { backend } = await openIn({
       timer_state: view({ notifications: "denied" }),
       settings_get: () => ({ ...SETTINGS, notifySessionEnd: pref }),
     });
@@ -139,7 +140,7 @@ test("open_system_settings_calls_command", async () => {
 
 test("open_settings_failure_adds_find_line", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
-  await openSettings({
+  await openIn({
     timer_state: view({ notifications: "denied" }),
     notifications_open_settings: () => Promise.reject({ kind: "failed", message: "x" }),
   });
@@ -154,7 +155,7 @@ test("open_settings_failure_adds_find_line", async () => {
 });
 
 test("two_minutes_checkbox_asks_when_not_determined", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     timer_state: view({ notifications: "notDetermined" }),
     settings_get: () => ({ ...SETTINGS, notifySessionEnd: false }),
     notifications_request: () => Promise.resolve("granted"),
@@ -172,7 +173,7 @@ test("two_minutes_checkbox_asks_when_not_determined", async () => {
 });
 
 test("two_minutes_checkbox_saves_directly_when_granted_and_unticks", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     timer_state: view({ notifications: "granted" }),
     settings_get: () => ({ ...SETTINGS, notifyTwoMinutes: true }),
   });

@@ -73,7 +73,9 @@ if (page === "settings") {
   // page chord (Cmd+6) there, until the page is up (the shortcut listener mounts a tick later).
   const started = Date.now();
   const timer = setInterval(() => {
-    if (document.getElementById("settings-timer")) {
+    // The pane list marks the page as up on any pane: a spec may already have left General, and
+    // another Cmd+6 would be a new arrival that pulls focus back to the title.
+    if (document.querySelector('nav[aria-label="Settings"]')) {
       clearInterval(timer);
       return;
     }

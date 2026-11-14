@@ -149,3 +149,23 @@ test("settings_nav_edge_scroll_is_instant_under_reduced_motion", () => {
     window.matchMedia = original;
   }
 });
+
+test("settings_nav_edge_buttons_have_a_tooltip_and_stay_off_the_tab_order", () => {
+  setup("horizontal");
+  const more = document.querySelector("[aria-label='More panes']") as HTMLElement;
+  expect(more.getAttribute("data-slot")).toBe("icon-button");
+  expect(more.tabIndex).toBe(-1);
+});
+
+test("settings_nav_new_items_array_with_same_ids_keeps_the_strip", () => {
+  const listen = vi.spyOn(window, "addEventListener");
+  const resizes = () => listen.mock.calls.filter(([type]) => type === "resize").length;
+  const props = { current: "timer", onSelect: vi.fn(), orientation: "horizontal" as const };
+  const { rerender } = render(<SettingsNav items={ITEMS} {...props} />);
+  const first = resizes();
+  rerender(<SettingsNav items={ITEMS.map((i) => ({ ...i }))} {...props} />);
+  expect(resizes()).toBe(first);
+  rerender(<SettingsNav items={ITEMS.map((i) => ({ ...i, id: `${i.id}2` }))} {...props} />);
+  expect(resizes()).toBeGreaterThan(first);
+  listen.mockRestore();
+});

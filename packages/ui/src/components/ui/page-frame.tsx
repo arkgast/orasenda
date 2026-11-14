@@ -18,7 +18,7 @@ export interface PageFrameProps {
 export function PageFrame(props: PageFrameProps): ReactElement {
   const flow = props.variant === "flow";
   const title = props.compactPicker ? (
-    <div data-slot="page-frame-picker" className="flex items-center">
+    <div data-slot="page-frame-picker" className="flex min-w-0 flex-1 items-center">
       {props.compactPicker}
       <h1 tabIndex={-1} className="sr-only">
         {props.title}

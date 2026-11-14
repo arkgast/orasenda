@@ -1,10 +1,13 @@
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
+import type { Replies } from "@shared/test/fixtures";
 import { argsOf, KEYBOARD, settle, withGlobal } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { openSettings, saveLine } from "./Settings.support";
+
+const openIn = (replies: Replies = {}) => openSettings(replies, "Shortcuts");
 
 beforeEach(() => {
   resetTimerQueueForTests();
@@ -34,7 +37,7 @@ const U = { code: "KeyU", metaKey: true };
 const START = "Start or pause focus";
 
 test("shortcuts_rows_have_two_labelled_recorders_and_a_status_word", async () => {
-  await openSettings();
+  await openIn();
   for (const row of [START, "Capture a thought"]) {
     expect(everywhere(row)).toHaveAccessibleName(new RegExp(`^${row}, everywhere`));
     expect(inOrasenda(row)).toHaveAccessibleName(new RegExp(`^${row}, in Orasenda`));
@@ -51,14 +54,14 @@ test("shortcuts_status_word_off_and_failed", async () => {
     spoken: null,
     status: "off",
   });
-  await openSettings({ keyboard_state: () => withGlobal(off, "startPause", { status: "failed" }) });
+  await openIn({ keyboard_state: () => withGlobal(off, "startPause", { status: "failed" }) });
   expect(within(group("Capture a thought")).getByText("Everywhere: Off")).toBeVisible();
   expect(everywhere("Capture a thought")).toHaveAccessibleName(/None/);
   expect(within(group(START)).getByText("Everywhere: Not available")).toBeVisible();
 });
 
 test("shortcuts_in_orasenda_slot_records_for_the_app_slot", async () => {
-  const { backend } = await openSettings({ keyboard_set_binding: () => KEYBOARD });
+  const { backend } = await openIn({ keyboard_set_binding: () => KEYBOARD });
   press(inOrasenda(START), U);
   await settle();
   expect(argsOf(backend.calls, "keyboard_set_binding")).toEqual([
@@ -68,7 +71,7 @@ test("shortcuts_in_orasenda_slot_records_for_the_app_slot", async () => {
 });
 
 test("shortcuts_restore_default_per_slot", async () => {
-  const { backend } = await openSettings({ keyboard_restore_default: () => KEYBOARD });
+  const { backend } = await openIn({ keyboard_restore_default: () => KEYBOARD });
   const row = group(START);
   const buttons = within(row).getAllByRole("button", { name: "Restore default" });
   expect(buttons).toHaveLength(2);
@@ -80,7 +83,7 @@ test("shortcuts_restore_default_per_slot", async () => {
 });
 
 test("shortcuts_needs_modifier_line_depends_on_the_slot", async () => {
-  await openSettings({
+  await openIn({
     keyboard_set_binding: () => Promise.reject({ needsModifier: { slot: "app" } }),
   });
   press(inOrasenda(START), { code: "KeyU", altKey: true });
@@ -92,7 +95,7 @@ test("shortcuts_needs_modifier_line_depends_on_the_slot", async () => {
 
 test("shortcuts_store_error_line", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  await openSettings({ keyboard_set_binding: () => Promise.reject("store") });
+  await openIn({ keyboard_set_binding: () => Promise.reject("store") });
   press(everywhere(START), { code: "KeyG", ctrlKey: true, altKey: true });
   await settle();
   expect(
@@ -106,7 +109,7 @@ test("shortcuts_voice_over_line_for_ctrl_opt_cmd", async () => {
     display: "⌃⌥⌘G",
     spoken: "Control-Option-Command-G",
   });
-  await openSettings({ keyboard_state: () => ({ ...bound, voiceOver: true }) });
+  await openIn({ keyboard_state: () => ({ ...bound, voiceOver: true }) });
   expect(
     within(group(START)).getByText(
       "VoiceOver uses this key while it's on. Pick another to use both.",
@@ -130,7 +133,7 @@ test("warning_pick_another_first", async () => {
         spoken: "Control-Option-G",
       }),
   ];
-  const { backend } = await openSettings({ keyboard_set_binding: () => replies.shift()?.() });
+  const { backend } = await openIn({ keyboard_set_binding: () => replies.shift()?.() });
   press(everywhere(START), { code: "KeyG", ctrlKey: true, altKey: true });
   await settle();
   const row = within(group(START));
@@ -151,7 +154,7 @@ test("warning_pick_another_first", async () => {
 });
 
 test("warning_pick_another_sends_nothing", async () => {
-  const { backend } = await openSettings({
+  const { backend } = await openIn({
     keyboard_set_binding: () => Promise.reject({ warning: { reason: "Other apps use this." } }),
   });
   press(everywhere(START), { code: "KeyG", ctrlKey: true, altKey: true });
