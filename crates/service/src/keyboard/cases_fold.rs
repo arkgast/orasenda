@@ -102,9 +102,7 @@ fn setting(key: &str, value: &str) -> SettingRow {
 fn file(rows: &[SettingRow]) -> SyncRows {
     SyncRows {
         settings: rows.to_vec(),
-        presets: vec![],
-        sessions: vec![],
-        notes: vec![],
+        ..SyncRows::default()
     }
 }
 

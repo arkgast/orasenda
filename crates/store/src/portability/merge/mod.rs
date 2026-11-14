@@ -1,11 +1,12 @@
 //! Merges rows from another database file into this one, by id (spec: Merge rules).
 //!
 //! Each table has its own file. A row only in the file is inserted; on both sides the later
-//! `updated_at` wins and a tie keeps the local row. Every written row logs every field through
+//! `updated_at` wins (for check-ins, `checked_at`) and a tie keeps the local row. Every written row logs every field through
 //! `Txn::log_fields`; an unchanged row logs nothing.
 
 mod notes;
 mod presets;
+mod routines;
 mod sessions;
 mod settings;
 
@@ -55,6 +56,23 @@ pub fn merge(txn: &mut Txn, rows: &SyncRows) -> Result<MergeCounts, StoreError> 
     for row in &rows.notes {
         let (a, u) = (&mut counts.added.notes, &mut counts.updated.notes);
         notes::merge_row(txn, row)?.tally(a, u);
+    }
+    // Parents before children, so a reader never sees a habit before its routine.
+    for row in &rows.routines {
+        let (a, u) = (&mut counts.added.routines, &mut counts.updated.routines);
+        routines::merge_routine(txn, row)?.tally(a, u);
+    }
+    for row in &rows.habits {
+        let (a, u) = (&mut counts.added.habits, &mut counts.updated.habits);
+        routines::merge_habit(txn, row)?.tally(a, u);
+    }
+    for row in &rows.checks {
+        let (a, u) = (&mut counts.added.checks, &mut counts.updated.checks);
+        routines::merge_check(txn, row)?.tally(a, u);
+    }
+    for row in &rows.runs {
+        let (a, u) = (&mut counts.added.runs, &mut counts.updated.runs);
+        routines::merge_run(txn, row)?.tally(a, u);
     }
     Ok(counts)
 }

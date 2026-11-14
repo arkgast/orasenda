@@ -1,5 +1,6 @@
-//! Every row of the four syncable tables, tombstones included, as plain structs.
+//! Every row of the syncable tables, tombstones included, as plain structs.
 
+use super::routine_rows::{self, CheckRowAll, HabitRowAll, RoutineRowAll, RunRowAll};
 use crate::{StoreError, Txn};
 
 /// A `setting` row: `value` is the stored JSON text.
@@ -68,6 +69,10 @@ pub struct SyncRows {
     pub presets: Vec<PresetRowAll>,
     pub sessions: Vec<SessionRowAll>,
     pub notes: Vec<NoteRowAll>,
+    pub routines: Vec<RoutineRowAll>,
+    pub habits: Vec<HabitRowAll>,
+    pub checks: Vec<CheckRowAll>,
+    pub runs: Vec<RunRowAll>,
 }
 
 /// Reads every row of the syncable tables, removed ones included.
@@ -150,10 +155,15 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
             })
         })?
         .collect::<Result<_, _>>()?;
+    let (routines, habits, checks, runs) = routine_rows::read(conn)?;
     Ok(SyncRows {
         settings,
         presets,
         sessions,
         notes,
+        routines,
+        habits,
+        checks,
+        runs,
     })
 }

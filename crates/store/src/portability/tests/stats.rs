@@ -29,7 +29,8 @@ fn counts_skip_tombstones() {
             sessions: 1,
             presets: base + 1,
             notes: 1,
-            settings: fresh.settings + 2
+            settings: fresh.settings + 2,
+            ..Counts::default()
         }
     );
 }

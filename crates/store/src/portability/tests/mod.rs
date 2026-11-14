@@ -1,6 +1,7 @@
 //! Shared fixtures for the portability tests.
 
 mod merge;
+mod merge_routines;
 mod probe;
 mod rows;
 mod snapshot;
