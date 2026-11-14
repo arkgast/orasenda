@@ -1,5 +1,5 @@
 //! The Inbox commands. `capture_note` is for the capture panel (`capabilities/capture.json`);
-//! the rest are Board's.
+//! the rest are the Inbox page's.
 
 use orasenda_service::inbox;
 

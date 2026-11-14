@@ -68,8 +68,8 @@ test("rail_roving_focus_one_tab_stop", async ({ page }, info) => {
   await shoot(page, info, "nav-rail-focus");
   // Arrows move within the rail and the tab stop moves with focus.
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator(":focus")).toHaveText("Board");
-  await expect(stops).toHaveText("Board");
+  await expect(page.locator(":focus")).toHaveText("Inbox");
+  await expect(stops).toHaveText("Inbox");
   await expectFocusRingVisible(page.locator(":focus"));
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");
@@ -86,7 +86,7 @@ test("nav_rail_keyboard_activates_and_marks_current", async ({ page }) => {
   await rail.getByRole("button", { name: "Today" }).focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(current).toHaveText("Board");
+  await expect(current).toHaveText("Inbox");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Space");
   await expect(current).toHaveText("Calendar");
@@ -107,7 +107,7 @@ test("nav_rail_aria_snapshot", async ({ page }) => {
   await expect(page.locator("[data-state=nav-rail-today]")).toMatchAriaSnapshot(`
     - navigation "Main navigation":
       - button "Today"
-      - button "Board"
+      - button "Inbox"
       - button "Calendar"
       - button "Routines"
       - button "Review"

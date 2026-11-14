@@ -12,9 +12,9 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-const NAMES = ["Today", "Board", "Calendar", "Routines", "Review", "Settings", "Commands…"];
+const NAMES = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings", "Commands…"];
 
-function open(answer: string | null, current: "today" | "board" = "board") {
+function open(answer: string | null, current: "today" | "inbox" = "inbox") {
   const backend = mockBackend({ native_menu_popup: () => answer });
   const onNavigate = vi.fn();
   render(<PagesButton current={current} onNavigate={onNavigate} />);
@@ -59,7 +59,7 @@ test("pages_button_sends_six_items_current_checked", async () => {
   ]);
   expect(request.items.map((i) => i.id)).toEqual([
     "today",
-    "board",
+    "inbox",
     "calendar",
     "routines",
     "review",

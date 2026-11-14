@@ -41,7 +41,7 @@ test("icons_and_rail_aria_snapshot", async ({ page }) => {
   await expect(page.locator("[data-state=nav-rail-today]")).toMatchAriaSnapshot(`
     - navigation "Main navigation":
       - button "Today"
-      - button "Board"
+      - button "Inbox"
       - button "Calendar"
       - button "Routines"
       - button "Review"

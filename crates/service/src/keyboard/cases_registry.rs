@@ -87,7 +87,7 @@ fn fixed_page_keys_name_the_real_pages() {
     assert_eq!(
         labels,
         [
-            "Today", "Board", "Calendar", "Routines", "Review", "Settings"
+            "Today", "Inbox", "Calendar", "Routines", "Review", "Settings"
         ]
     );
 }

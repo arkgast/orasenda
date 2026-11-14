@@ -360,7 +360,7 @@ mod tests {
         assert_eq!(Navigate::NAME, "navigate");
         for (page, name) in [
             (NavigatePage::Today, "today"),
-            (NavigatePage::Board, "board"),
+            (NavigatePage::Inbox, "inbox"),
             (NavigatePage::Calendar, "calendar"),
             (NavigatePage::Routines, "routines"),
             (NavigatePage::Review, "review"),

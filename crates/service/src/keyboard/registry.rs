@@ -114,7 +114,7 @@ pub const FIXED: &[FixedKey] = &[
     fixed("Just 2 minutes", "Shift+Super+Enter"),
     fixed("End session", "Super+Period"),
     fixed("Today", "Super+Digit1"),
-    fixed("Board", "Super+Digit2"),
+    fixed("Inbox", "Super+Digit2"),
     fixed("Calendar", "Super+Digit3"),
     fixed("Routines", "Super+Digit4"),
     fixed("Review", "Super+Digit5"),

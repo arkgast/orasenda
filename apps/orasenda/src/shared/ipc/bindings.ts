@@ -614,7 +614,7 @@ export type NativeMenuRequest_Serialize = {
 export type Navigate = Navigate_Serialize | Navigate_Deserialize;
 
 /**  A page of the app shell. */
-export type NavigatePage = "today" | "board" | "calendar" | "routines" | "review" | "settings";
+export type NavigatePage = "today" | "inbox" | "calendar" | "routines" | "review" | "settings";
 
 /**  Asks the webview to show a page. */
 export type Navigate_Deserialize = {

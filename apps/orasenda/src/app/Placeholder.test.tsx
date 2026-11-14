@@ -14,7 +14,7 @@ afterEach(async () => {
 test("placeholder_compact_shows_pages", () => {
   mockBackend();
   const { container } = render(
-    <Placeholder title="Board" compact current="board" onNavigate={() => {}} />,
+    <Placeholder title="Inbox" compact current="inbox" onNavigate={() => {}} />,
   );
   const row = container.querySelector(".placeholder-top");
   const button = screen.getByRole("button", { name: "Pages" });
@@ -22,11 +22,11 @@ test("placeholder_compact_shows_pages", () => {
   expect(row?.compareDocumentPosition(screen.getByRole("heading", { level: 2 }))).toBe(
     Node.DOCUMENT_POSITION_FOLLOWING,
   );
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
 });
 
 test("placeholder_regular_has_no_pages_button", () => {
   mockBackend();
-  render(<Placeholder title="Board" compact={false} current="board" onNavigate={() => {}} />);
+  render(<Placeholder title="Inbox" compact={false} current="inbox" onNavigate={() => {}} />);
   expect(screen.queryByRole("button", { name: "Pages" })).toBeNull();
 });

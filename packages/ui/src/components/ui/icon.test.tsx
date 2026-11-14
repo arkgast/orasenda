@@ -19,6 +19,7 @@ const APPROVED: readonly IconName[] = [
   "jump",
   "today",
   "board",
+  "inbox",
   "calendar",
   "routines",
   "review",
@@ -48,7 +49,7 @@ test("icon_every_name_renders_aria_hidden_svg", () => {
 
 test("icon_name_union_matches_runtime_table", () => {
   expect([...ICON_NAMES].sort()).toEqual([...APPROVED].sort());
-  expect(ICON_NAMES.length).toBe(23);
+  expect(ICON_NAMES.length).toBe(24);
   expectTypeOf<IconName>().toEqualTypeOf<(typeof ICON_NAMES)[number]>();
 });
 

@@ -11,7 +11,7 @@ import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { NoteView } from "@shared/ipc/bindings";
 import { useLayoutEffect, useRef } from "react";
 import { type Line, useCaptureKeys, useInbox } from "./useInbox";
-import "./board.css";
+import "./inbox.css";
 
 const NAME_LENGTH = 40;
 
@@ -27,7 +27,7 @@ const LINES: Record<Exclude<Line, null>, string> = {
   restoreFailed: "Couldn't bring the note back.",
 };
 
-export function BoardPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
+export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
   const { compact } = useWindowLayout();
   const { inbox, line, remove, undo, retry } = useInbox();
   const keys = useCaptureKeys();
@@ -83,11 +83,11 @@ export function BoardPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
   );
 
   return (
-    <div ref={root} className="app-board-page">
+    <div ref={root} className="app-inbox-page">
       <PageFrame
         title="Inbox"
         compactPicker={
-          compact ? <PagesButton current="board" onNavigate={onNavigate} /> : undefined
+          compact ? <PagesButton current="inbox" onNavigate={onNavigate} /> : undefined
         }
         status={status}
       >
@@ -106,7 +106,7 @@ export function BoardPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
           ) : (
             // list-style none makes WebKit drop the list role, so it is stated.
             // biome-ignore lint/a11y/noRedundantRoles: keeps the list role for VoiceOver
-            <ul className="app-board-list" role="list">
+            <ul className="app-inbox-list" role="list">
               {notes.map((note) => (
                 <InboxRow
                   key={note.id}

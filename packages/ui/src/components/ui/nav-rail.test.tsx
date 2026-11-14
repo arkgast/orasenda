@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { NavRail } from "./nav-rail.tsx";
 
-const LABELS = ["Today", "Board", "Calendar", "Routines", "Review", "Settings"];
+const LABELS = ["Today", "Inbox", "Calendar", "Routines", "Review", "Settings"];
 
 test("nav_rail_exposes_navigation_with_name", () => {
   render(<NavRail current="today" onNavigate={() => {}} />);
@@ -45,7 +45,7 @@ test("nav_rail_current_follows_the_prop", () => {
 });
 
 test("nav_rail_current_label_is_semibold_like_legacy", () => {
-  render(<NavRail current="board" onNavigate={() => {}} />);
+  render(<NavRail current="inbox" onNavigate={() => {}} />);
   for (const button of screen.getAllByRole("button")) {
     const label = button.querySelector("span");
     expect(label?.classList.contains("font-semibold")).toBe(button.hasAttribute("aria-current"));
@@ -57,8 +57,8 @@ function tabStops(): HTMLElement[] {
 }
 
 test("nav_rail_is_one_roving_tab_stop", () => {
-  render(<NavRail current="board" onNavigate={() => {}} />);
-  expect(tabStops().map((b) => b.textContent)).toEqual(["Board"]);
+  render(<NavRail current="inbox" onNavigate={() => {}} />);
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Inbox"]);
 });
 
 test("nav_rail_tab_stop_follows_current_page", () => {
@@ -73,11 +73,11 @@ test("nav_rail_arrows_move_and_activation_navigates", () => {
   render(<NavRail current="today" onNavigate={onNavigate} />);
   screen.getByRole("button", { name: "Today" }).focus();
   fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
-  expect(document.activeElement?.textContent).toBe("Board");
-  expect(tabStops().map((b) => b.textContent)).toEqual(["Board"]);
+  expect(document.activeElement?.textContent).toBe("Inbox");
+  expect(tabStops().map((b) => b.textContent)).toEqual(["Inbox"]);
   fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
   fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
-  expect(document.activeElement?.textContent).toBe("Board");
+  expect(document.activeElement?.textContent).toBe("Inbox");
   fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
   fireEvent.keyDown(document.activeElement as Element, { key: "ArrowUp" });
   expect(document.activeElement?.textContent).toBe("Settings");

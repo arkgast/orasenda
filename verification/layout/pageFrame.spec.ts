@@ -96,7 +96,7 @@ test("page_frame_aria_snapshot", async ({ page }) => {
   await expect(
     page.locator('[data-frame][data-state="page-frame-list-1440x900"]'),
   ).toMatchAriaSnapshot(`
-    - heading "Board" [level=1]
+    - heading "Inbox" [level=1]
     - button "Plan the day"
   `);
 });

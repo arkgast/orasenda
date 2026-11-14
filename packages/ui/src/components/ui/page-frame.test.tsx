@@ -14,7 +14,7 @@ test("exposes_heading_with_name", () => {
 
 test("renders_list_header_status_and_region_in_order", () => {
   const { container } = render(
-    <PageFrame title="Board" primary={<button type="button">Plan the day</button>} status="Saved">
+    <PageFrame title="Inbox" primary={<button type="button">Plan the day</button>} status="Saved">
       Body
     </PageFrame>,
   );
@@ -50,7 +50,7 @@ test("renders_flow_with_footer_and_step_word", () => {
 
 test("renders_no_footer_in_list_variant", () => {
   const { container } = render(
-    <PageFrame title="Board" footer={<button type="button">Never</button>}>
+    <PageFrame title="Inbox" footer={<button type="button">Never</button>}>
       Body
     </PageFrame>,
   );

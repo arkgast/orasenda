@@ -42,7 +42,7 @@ pub struct MilestoneEvent {
 #[serde(rename_all = "lowercase")]
 pub enum NavigatePage {
     Today,
-    Board,
+    Inbox,
     Calendar,
     Routines,
     Review,

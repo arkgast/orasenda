@@ -1,4 +1,4 @@
-One frame for Board, Calendar, Routines, Review and Settings: a header, a reserved status row and a `ScrollRegion`.
+One frame for Inbox, Calendar, Routines, Review and Settings: a header, a reserved status row and a `ScrollRegion`.
 
 - **List variant:** three rows, `space-2` apart. Header (`hit-min`): the title or the compact picker, and at its end the page's one primary, or the `SessionSlot` while a session runs, or a step word. Status row (44px, reserved; Settings' save line): `InlineNotice` `variant="row"`. Then the `ScrollRegion`. Padding is `space-4` all round below the `sm` viewport, then `space-5` above and `space-6` at the sides and below; the region adds a 4px inset (`p-1`) so focus rings are not clipped. At 360 × 240 the region is 240 − 44 − 44 − 32 − 16 = 104px.
 - **Heading:** the title is the `h1`. When a compact picker replaces it, the `h1` is visually hidden. Either way it receives focus on arrival. The picker takes the header's free width (`flex-1`, `min-w-0`), so a picker that holds a scrolling strip (Settings' pane tabs) shrinks to fit instead of widening the page.
