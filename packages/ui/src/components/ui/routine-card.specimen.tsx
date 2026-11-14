@@ -15,7 +15,13 @@ function Steps(): ReactElement {
   return (
     <>
       {STEPS.map((s) => (
-        <RoutineItem key={s.label} label={s.label} detail={s.detail} optional={s.optional} />
+        <RoutineItem
+          key={s.label}
+          label={s.label}
+          detail={s.detail}
+          optional={s.optional}
+          readOnly
+        />
       ))}
     </>
   );

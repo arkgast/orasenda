@@ -4,6 +4,7 @@ import { DATA } from "./data";
 import { FOCUS } from "./focus";
 import { INBOX } from "./inbox";
 import { KEYBOARD_SCENARIOS } from "./keyboard";
+import { ROUTINES_SCENARIOS } from "./routines";
 import { SETTINGS_SCENARIOS } from "./settings";
 import { TIMER } from "./timer";
 import { TODAY } from "./today";
@@ -22,6 +23,7 @@ const SCENARIOS: Record<string, Handler> = {
   ...DATA,
   ...BACKUPS_SCENARIOS,
   ...YOUR_DATA,
+  ...ROUTINES_SCENARIOS,
 };
 
 export const SCENARIO_NAMES: readonly string[] = Object.keys(SCENARIOS);

@@ -64,3 +64,27 @@ test("enter_does_not_toggle_and_box_is_focusable", () => {
   fireEvent.keyDown(box, { key: "Enter" });
   expect(box.getAttribute("aria-checked")).toBe("false");
 });
+
+test("read_only_is_a_plain_row_with_no_checkbox_and_no_tab_stop", () => {
+  const { container } = render(
+    <RoutineItem label="Stretch" detail="2-minute version: one stretch." optional readOnly />,
+  );
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  expect(container.querySelector("button, [tabindex]")).toBeNull();
+  const row = container.querySelector("[data-slot=routine-item]");
+  expect(row).toHaveAttribute("data-read-only");
+  expect(row).toHaveTextContent("Stretch");
+  expect(row).toHaveTextContent("2-minute version: one stretch.");
+  expect(row).toHaveTextContent("Optional");
+  expect(row?.querySelector("[data-slot=routine-item-check]")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+});
+
+test("name_overrides_the_spoken_name", () => {
+  render(
+    <RoutineItem label="Done today" name="Done today: Stretch" done={false} onChange={() => {}} />,
+  );
+  expect(screen.getByRole("checkbox", { name: "Done today: Stretch" })).toBeInTheDocument();
+});
