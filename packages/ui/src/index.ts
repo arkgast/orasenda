@@ -90,7 +90,7 @@ export type { ScrollRegionProps } from "./components/ui/scroll-region";
 export type { SettingsIndexProps, SettingsIndexSection } from "./components/ui/settings-index";
 export type { SettingsRowProps } from "./components/ui/settings-row";
 export type { StartButtonProps } from "./components/ui/start-button";
-export type { TaskCardProps } from "./components/ui/task-card";
+export type { TaskCardMenu, TaskCardProps } from "./components/ui/task-card";
 export type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 export type { TextAreaProps } from "./components/ui/text-area";
 export type { TimeBlockProps } from "./components/ui/time-block";

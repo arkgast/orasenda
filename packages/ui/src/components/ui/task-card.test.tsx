@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { TaskCard } from "./task-card";
 
@@ -94,4 +94,148 @@ test("disabled_button_has_dashed_border_shape", () => {
 test("button_label_says_no_estimate_when_none", () => {
   render(<TaskCard title="Write" onOpen={() => {}} />);
   expect(screen.getByRole("button").getAttribute("aria-label")).toContain("no estimate");
+});
+
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+test("card_name_includes_due_priority_tags", () => {
+  render(
+    <TaskCard
+      title="Write"
+      frog
+      estimate={3}
+      done={1}
+      due="Due Friday"
+      priority="high"
+      tags={["book", "draft", "third"]}
+      checklist={{ done: 2, total: 5 }}
+      onOpen={() => {}}
+    />,
+  );
+  const name = screen.getByRole("button").getAttribute("aria-label") ?? "";
+  expect(name).toContain("Frog");
+  expect(name).toContain("Due Friday");
+  expect(name).toContain("High priority");
+  expect(name).toContain("book, draft");
+  expect(name).not.toContain("third");
+  expect(name).toContain("2 of 5 checklist items done");
+  expect(screen.getByText("High")).toBeTruthy();
+  expect(screen.getByText("2 of 5")).toBeTruthy();
+  expect(screen.getByText("Due Friday")).toBeTruthy();
+  expect(screen.queryByText("third")).toBeNull();
+});
+
+test("select_on_click_and_open_on_double_click_and_return", () => {
+  const onSelect = vi.fn();
+  const onOpen = vi.fn();
+  render(<TaskCard title="Write" onSelect={onSelect} onOpen={onOpen} />);
+  const card = screen.getByRole("button");
+  fireEvent.click(card);
+  expect(onSelect).toHaveBeenCalledTimes(1);
+  expect(onOpen).not.toHaveBeenCalled();
+  fireEvent.doubleClick(card);
+  expect(onOpen).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(card, { key: "Enter" });
+  expect(onOpen).toHaveBeenCalledTimes(2);
+});
+
+test("select_alone_makes_a_button_that_selects", () => {
+  const onSelect = vi.fn();
+  render(<TaskCard title="Write" onSelect={onSelect} selected />);
+  fireEvent.click(screen.getByRole("button"));
+  expect(onSelect).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button").getAttribute("aria-label")).toContain("Selected");
+  expect(screen.getByText("Selected")).toBeTruthy();
+});
+
+test("key_down_passes_through", () => {
+  const onKeyDown = vi.fn();
+  render(<TaskCard title="Write" onOpen={() => {}} onKeyDown={onKeyDown} />);
+  fireEvent.keyDown(screen.getByRole("button"), { key: "ArrowDown" });
+  expect(onKeyDown).toHaveBeenCalledTimes(1);
+});
+
+test("row_density_is_a_single_line", () => {
+  const { container } = render(
+    <TaskCard title="Write" density="row" estimate={3} done={1} onOpen={() => {}} />,
+  );
+  const card = container.querySelector("[data-slot=task-card]");
+  expect(card?.getAttribute("data-density")).toBe("row");
+  expect(card?.className).toContain("min-h-hit-min");
+  expect(container.querySelector("[data-slot=task-card-dots]")).toBeNull();
+  expect(screen.getByText("Deep")).toBeTruthy();
+  expect(screen.getByText("Est 3")).toBeTruthy();
+});
+
+test("row_read_only_has_no_button", () => {
+  const { container } = render(<TaskCard title="Write" density="row" />);
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(container.querySelector("[data-slot=task-card]")?.tagName).toBe("ARTICLE");
+});
+
+test("card_menu_offers_move_targets", () => {
+  const onMove = vi.fn();
+  const onFrog = vi.fn();
+  const onRemove = vi.fn();
+  render(
+    <TaskCard
+      title="Write"
+      onOpen={() => {}}
+      menu={{
+        moveTargets: [
+          { id: "today", label: "Today" },
+          { id: "doing", label: "Doing" },
+        ],
+        onMove,
+        onFrog,
+        onRemove,
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
+  const menu = screen.getByRole("menu");
+  const trigger = screen.getByRole("button", { name: "More actions for Write" });
+  expect(trigger.getAttribute("aria-controls")).toBe(menu.id);
+  expect(within(menu).getByRole("menuitem", { name: "Move to Today" })).toBeTruthy();
+  expect(within(menu).getByRole("menuitem", { name: "Move to Doing" })).toBeTruthy();
+  expect(within(menu).getByRole("menuitem", { name: "Make Frog" })).toBeTruthy();
+  fireEvent.keyDown(within(menu).getByRole("menuitem", { name: "Move to Doing" }), {
+    key: "Enter",
+  });
+  expect(onMove).toHaveBeenCalledWith("doing");
+});
+
+test("card_menu_remove_and_frog_call_back", () => {
+  const onFrog = vi.fn();
+  const onRemove = vi.fn();
+  render(
+    <TaskCard title="Write" frog menu={{ moveTargets: [], onMove: () => {}, onFrog, onRemove }} />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Unmark Frog" }), { key: "Enter" });
+  expect(onFrog).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Remove" }), { key: "Enter" });
+  expect(onRemove).toHaveBeenCalledTimes(1);
+});
+
+test("disabled_card_has_no_menu", () => {
+  render(
+    <TaskCard
+      title="Write"
+      disabled
+      onOpen={() => {}}
+      menu={{ moveTargets: [{ id: "today", label: "Today" }], onMove: () => {} }}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: "More actions for Write" })).toBeNull();
+});
+
+test("duplicate_tags_render_once", () => {
+  render(<TaskCard title="Write" tags={["home", "home", "work"]} />);
+  expect(screen.getAllByText("home")).toHaveLength(1);
 });

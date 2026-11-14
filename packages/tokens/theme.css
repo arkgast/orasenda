@@ -102,6 +102,7 @@
   --spacing-field-width: var(--field-width);
   --spacing-number-width: var(--number-width);
   --spacing-column-width: var(--column-width);
+  --spacing-column-wide-width: var(--column-wide-width);
   --spacing-column-min-width: var(--column-min-width);
   --spacing-column-strip-width: var(--column-strip-width);
   --spacing-hour-gutter: var(--hour-gutter);

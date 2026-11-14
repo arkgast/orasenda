@@ -11,6 +11,7 @@ import { HabitDotsSpecimen } from "../src/components/ui/habit-dots.specimen.tsx"
 import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { InboxRowSpecimen } from "../src/components/ui/inbox-row.specimen.tsx";
+import { KanbanColumnSpecimen } from "../src/components/ui/kanban-column.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
 import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specimen.tsx";
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
@@ -22,6 +23,7 @@ import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.
 import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
 import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen";
+import { TaskCardSpecimen } from "../src/components/ui/task-card.specimen.tsx";
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
@@ -53,4 +55,6 @@ export const specimens: Record<string, () => ReactElement> = {
   HabitDots: HabitDotsSpecimen,
   RoutineStep: RoutineStepSpecimen,
   DayPicker: DayPickerSpecimen,
+  KanbanColumn: KanbanColumnSpecimen,
+  TaskCard: TaskCardSpecimen,
 };

@@ -3,11 +3,9 @@
 import type * as React from "react";
 import type { DialogProps } from "./components/ui/dialog";
 import type { IntentPromptProps } from "./components/ui/intent-prompt";
-import type { KanbanColumnProps } from "./components/ui/kanban-column";
 import type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 import type { NowLineProps } from "./components/ui/now-line";
 import type { RoutineItemProps } from "./components/ui/routine-item";
-import type { TaskCardProps } from "./components/ui/task-card";
 
 /** The timer modes a chip or ring can show. */
 export type Mode = "focus" | "break" | "routine" | "warning" | "shallow" | "paused" | "idle";
@@ -77,12 +75,6 @@ declare global {
 
 /* Redesign pass, 2026-11-09: contracts documented with static previews. A contract below with no `declare function` (and each one marked "Not implemented in bundle.js yet") is not in bundle.js yet. The *NextProps are separate interfaces, not on the runtime-exported components above, so code using the bundle cannot pass them by mistake. Each *NextProps is the redesign contract for an existing component; it moves onto that component's Props when bundle.js implements it. */
 /** Not implemented in bundle.js yet. */
-export interface TaskCardNextProps extends TaskCardProps {
-  /** Click or arrow key selects; Return, double-click or Open opens. */
-  onSelect?: () => void;
-  /** 'row' is the 44px TaskRow. */
-  density?: "card" | "row";
-}
 /** Implemented: `readOnly` is on `RoutineItemProps` now (R7, #520). Kept as an alias for existing imports. */
 export type RoutineItemNextProps = RoutineItemProps;
 /** Not implemented in bundle.js yet. */
@@ -96,11 +88,6 @@ export interface IntentPromptNextProps extends IntentPromptProps {
 /** Not implemented in bundle.js yet. 'safe': cancel is the primary and the initial focus; used only for ending a Strong lock. */
 export interface DialogNextProps extends DialogProps {
   emphasis?: "default" | "safe";
-}
-/** Not implemented in bundle.js yet. Folds into a column-strip-width strip. */
-export interface KanbanColumnNextProps extends KanbanColumnProps {
-  collapsed?: boolean;
-  onToggle?: () => void;
 }
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps {
