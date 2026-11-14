@@ -12,6 +12,7 @@ use orasenda_store::routines::routine_runs::{self, RunOutcome, RunRow};
 use orasenda_store::routines::{self as routine_rows, RoutineRow};
 use orasenda_store::{StoreError, Txn};
 
+use super::run_view::{self, RunRows};
 use super::words;
 use crate::api::{HabitDayState, HabitDotView, HabitView, RoutineToday, RoutineView, RoutinesView};
 
@@ -33,10 +34,11 @@ pub struct Rows {
     habits: Vec<HabitRow>,
     checks: Vec<CheckRow>,
     runs_today: Vec<RunRow>,
+    run: Option<RunRows>,
 }
 
 /// Reads the live routines and habits, their live check-ins back to the oldest habit's first
-/// day (the run of days can be longer than the grid), and today's runs.
+/// day (the run of days can be longer than the grid), today's runs and today's open run.
 pub fn read(txn: &Txn, local: Local) -> Result<Rows, StoreError> {
     let routines = routine_rows::list_live(txn)?;
     let habits = habits::list_all_live(txn)?;
@@ -48,11 +50,13 @@ pub fn read(txn: &Txn, local: Local) -> Result<Rows, StoreError> {
         .unwrap_or(local.today);
     let checks = habit_checks::checks_since(txn, &ids, &from.to_iso())?;
     let runs_today = routine_runs::runs_on(txn, &local.today.to_iso())?;
+    let run = run_view::read_open(txn, local.today)?;
     Ok(Rows {
         routines,
         habits,
         checks,
         runs_today,
+        run,
     })
 }
 
@@ -97,7 +101,7 @@ pub fn build(rows: &Rows, local: Local) -> Result<RoutinesView, StoreError> {
     Ok(RoutinesView {
         routines,
         habits,
-        run: None,
+        run: rows.run.as_ref().map(run_view::view),
     })
 }
 

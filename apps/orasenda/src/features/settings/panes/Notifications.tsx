@@ -56,6 +56,24 @@ export function notificationsRow(
     : { line: "macOS has notifications off for Orasenda.", value: "Off in macOS", action: "open" };
 }
 
+/**
+ * The "When a routine is due" row's line: the session row's line for the same status and
+ * preference, except that "on and allowed" names routines and "on but off in macOS" stays short.
+ * Its actions stay on the session row, so the page has one "Ask macOS" and one "Open System
+ * Settings", and the long "Allow them in System Settings" line is said once, there.
+ */
+export function routineDueLine(
+  status: NotificationStatus,
+  preference: boolean,
+  asking: boolean,
+): string | null {
+  if (preference && !asking) {
+    if (status === "granted") return "On. A notification appears once when a routine's time comes.";
+    if (status === "denied") return "On here, but macOS has notifications off for Orasenda.";
+  }
+  return notificationsRow(status, preference, asking).line;
+}
+
 type Props = {
   headingRef: Ref<HTMLHeadingElement>;
   checked: boolean;
@@ -70,6 +88,11 @@ type Props = {
   twoMinutes: boolean;
   twoMinutesAsking: boolean;
   onTwoMinutes: (checked: boolean) => void;
+  /** "When a routine is due": its box, whether it is asking macOS, and its own line. */
+  routineDue: boolean;
+  routineAsking: boolean;
+  routineLine: string | null;
+  onRoutineDue: (checked: boolean) => void;
   onAsk: () => void;
   onOpen: () => void;
 };
@@ -86,6 +109,10 @@ export function Notifications({
   twoMinutes,
   twoMinutesAsking,
   onTwoMinutes,
+  routineDue,
+  routineAsking,
+  routineLine,
+  onRoutineDue,
   onAsk,
   onOpen,
 }: Props) {
@@ -110,7 +137,7 @@ export function Notifications({
       <SettingsRow
         id="notifications"
         label="Notifications"
-        helper="Orasenda only notifies you about your sessions. Never about stats or streaks."
+        helper="Orasenda only notifies you about your sessions and routines. Never about stats or streaks."
         status={line ?? undefined}
         actionLabel={
           action === "ask" ? "Ask macOS" : action === "open" ? "Open System Settings" : undefined
@@ -144,6 +171,30 @@ export function Notifications({
         <p id="notifications-two-help" className="app-muted">
           Only while Orasenda is in the background.
         </p>
+      </SettingsRow>
+      <SettingsRow
+        id="notifications-routines"
+        label="Routines"
+        helper="One notification when a routine's time comes, unless you've already started or finished it."
+        status={routineLine ?? undefined}
+        disabledReason={disabledReason}
+      >
+        <Choice
+          type="checkbox"
+          checked={routineDue}
+          disabled={disabled}
+          aria-describedby={[
+            routineLine ? "notifications-routines-status" : "",
+            "notifications-routines-help",
+            disabledReason ? "notifications-routines-why" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-busy={routineAsking ? "true" : undefined}
+          onChange={(event) => onRoutineDue(event.target.checked)}
+        >
+          When a routine is due
+        </Choice>
       </SettingsRow>
     </section>
   );

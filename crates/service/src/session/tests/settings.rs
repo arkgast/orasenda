@@ -61,6 +61,7 @@ fn every_new_key_round_trips() {
         deep_cap_hours: 6,
         notify_session_end: true,
         notify_two_minutes: true,
+        notify_routine_due: true,
         single_key: false,
     };
     s.set_settings(all.clone(), T0).expect("saves");

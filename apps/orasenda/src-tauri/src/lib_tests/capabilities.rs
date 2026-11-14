@@ -205,6 +205,9 @@ fn main_capability_exact() {
             "allow-habit-remove",
             "allow-habit-restore",
             "allow-habit-check",
+            "allow-run-start",
+            "allow-run-step",
+            "allow-run-end",
         ],
     );
     let (_, main) = capability("main.json");

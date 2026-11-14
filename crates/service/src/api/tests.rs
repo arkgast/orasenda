@@ -57,6 +57,7 @@ fn settings_json() -> serde_json::Value {
         "deepCapHours": 4,
         "notifySessionEnd": true,
         "notifyTwoMinutes": false,
+        "notifyRoutineDue": false,
         "singleKey": true
     })
 }
@@ -88,6 +89,10 @@ fn settings_default_is_steady_focus_with_the_spec_defaults() {
     assert_eq!(settings.deep_cap_hours, 4);
     assert!(!settings.notify_session_end);
     assert!(!settings.notify_two_minutes);
+    assert!(
+        !settings.notify_routine_due,
+        "the due nudge is off by default"
+    );
     let mut value = settings_json();
     value["notifySessionEnd"] = json!(false);
     assert_eq!(serde_json::to_value(&settings).unwrap(), value);

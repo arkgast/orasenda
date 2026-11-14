@@ -36,6 +36,8 @@ pub struct Settings {
     pub notify_session_end: bool,
     /// Notify two minutes before the end (`notify.two_minutes`).
     pub notify_two_minutes: bool,
+    /// Notify once when a routine's time comes (`notify.routine_due`). Off by default.
+    pub notify_routine_due: bool,
     /// Space and P on Today and Space in full screen act (`keys.single_key`).
     pub single_key: bool,
 }
@@ -52,6 +54,7 @@ impl Default for Settings {
             deep_cap_hours: 4,
             notify_session_end: false,
             notify_two_minutes: false,
+            notify_routine_due: false,
             single_key: true,
         }
     }

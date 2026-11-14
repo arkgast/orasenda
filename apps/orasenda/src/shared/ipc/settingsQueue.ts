@@ -38,6 +38,7 @@ export const SETTINGS_KEYS = [
   "deepCapHours",
   "notifySessionEnd",
   "notifyTwoMinutes",
+  "notifyRoutineDue",
   "singleKey",
 ] as const satisfies readonly (keyof Settings)[];
 

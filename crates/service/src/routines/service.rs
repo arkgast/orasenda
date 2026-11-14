@@ -69,8 +69,13 @@ impl SessionService {
     /// The view for `routines-changed` when this tick's local date differs from the last
     /// recorded one (a local midnight passed). The first tick only records the date. The new
     /// date is recorded only once the view was read, so a failed read retries on the next tick.
+    /// On a new date (the first tick included), runs left open on an earlier day are closed as
+    /// `stopped` first.
     pub(crate) fn routines_day_view(&mut self, now_ms: u64) -> Option<RoutinesView> {
         let today = self.routines_local(now_ms).today;
+        if self.routines_day != Some(today) {
+            self.close_stale_runs(now_ms, today);
+        }
         match self.routines_day {
             None => {
                 self.routines_day = Some(today);
@@ -82,6 +87,34 @@ impl SessionService {
                 self.routines_day = Some(today);
                 Some(view)
             }
+        }
+    }
+}
+
+impl SessionService {
+    /// Closes runs left open on an earlier day. A failure is logged; the run commands close
+    /// them again before they act, and the view never shows another day's run.
+    fn close_stale_runs(&self, now_ms: u64, today: LocalDate) {
+        let Some(store) = self.store() else {
+            return;
+        };
+        // A read first, so a day with nothing to close writes nothing.
+        let day = today.to_iso();
+        let stale = store.read(|txn| {
+            Ok(orasenda_store::routines::routine_runs::list_open(txn)?
+                .iter()
+                .any(|run| run.day != day))
+        });
+        match stale {
+            Ok(false) => return,
+            Ok(true) => {}
+            Err(error) => {
+                eprintln!("routines: could not read the open runs ({error})");
+                return;
+            }
+        }
+        if let Err(error) = store.write(now_ms, |txn| super::run::close_stale(txn, today)) {
+            eprintln!("routines: could not close an earlier day's run ({error})");
         }
     }
 }

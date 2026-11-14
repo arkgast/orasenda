@@ -3,7 +3,7 @@
 
 use super::*;
 
-const ROUTINES: [&str; 14] = [
+const ROUTINES: [&str; 17] = [
     "routines_list",
     "routine_templates",
     "routine_create",
@@ -18,6 +18,9 @@ const ROUTINES: [&str; 14] = [
     "habit_remove",
     "habit_restore",
     "habit_check",
+    "run_start",
+    "run_step",
+    "run_end",
 ];
 
 fn permission(command: &str) -> String {
@@ -68,6 +71,10 @@ fn bindings_carry_the_routines_contract() {
         "\"notDone\"",
         "todayLine: string",
         "run: RunView_Serialize | null",
+        "runStart: (routineId: string) => typedError<RunView_Serialize, RoutinesError>",
+        "runStep: (runId: string, outcome: StepOutcome) => typedError<RunView_Serialize, RoutinesError>",
+        "runEnd: (runId: string) => typedError<RunView_Serialize, RoutinesError>",
+        "notifyRoutineDue: boolean",
     ] {
         assert!(bindings.contains(needle), "bindings lack {needle}");
     }

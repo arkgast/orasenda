@@ -3,7 +3,9 @@
 
 mod day;
 mod habits;
+mod nudge;
 mod routines;
+mod runs;
 mod wire;
 mod words;
 

@@ -35,6 +35,8 @@ fn tick_once<H: Host>(host: &H) {
     if let Some(view) = routines {
         host.emit_routines_changed(&view);
     }
+    // Once per new local minute: the routines whose time has come.
+    crate::routines::nudge_due(host);
 }
 
 /// Emits one `clock-tick` now.

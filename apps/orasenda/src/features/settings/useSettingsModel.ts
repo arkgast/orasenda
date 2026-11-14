@@ -4,8 +4,8 @@ import type { Settings as SettingsValue } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { askingKey, pendingKeys, subscribeAsking } from "./notificationsToggle";
-import { notificationsRow } from "./panes/Notifications";
+import { askingKey, type NotifyKey, pendingKeys, subscribeAsking } from "./notificationsToggle";
+import { notificationsRow, routineDueLine } from "./panes/Notifications";
 import { changedKeys, type Key } from "./settingsKeys";
 import { buildNotice, type Line, READ_ONLY, WRITE_REASON } from "./settingsNotice";
 import { usePresetEditing } from "./usePresets";
@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS: SettingsValue = {
   deepCapHours: 4,
   notifySessionEnd: false,
   notifyTwoMinutes: false,
+  notifyRoutineDue: false,
   singleKey: true,
 };
 
@@ -105,18 +106,37 @@ export function useSettingsModel() {
   const reasonIf = (...keys: Key[]) =>
     keys.some((key) => failedKeys.includes(key)) ? WRITE_REASON : undefined;
 
+  // The session row's line speaks for its own two boxes only; its action ("Ask macOS", "Open
+  // System Settings") serves every box on the page, the routine one included.
+  const sessionOn = shown.notifySessionEnd || shown.notifyTwoMinutes;
+  const sessionAsking = askingFor === "notifySessionEnd" || askingFor === "notifyTwoMinutes";
   const row = notificationsRow(
     status,
-    askingFor !== null || shown.notifySessionEnd || shown.notifyTwoMinutes,
+    askingFor !== null || sessionOn || shown.notifyRoutineDue,
     askingFor !== null,
   );
+  const sessionLine = notificationsRow(status, sessionAsking || sessionOn, sessionAsking).line;
+  // "Ask macOS" asks on behalf of a box that is on, so only that box reads as busy.
+  const askKey: NotifyKey = shown.notifySessionEnd
+    ? "notifySessionEnd"
+    : shown.notifyTwoMinutes
+      ? "notifyTwoMinutes"
+      : "notifyRoutineDue";
   const notifyLine =
     [
       reasonIf("notify", "notifyTwo"),
-      row.line,
+      sessionLine,
       row.action === "open" && openFailed
         ? "Find Orasenda in System Settings, Notifications."
         : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ") || null;
+
+  const routineLine =
+    [
+      reasonIf("notifyRoutine"),
+      routineDueLine(status, shown.notifyRoutineDue, askingFor === "notifyRoutineDue"),
     ]
       .filter(Boolean)
       .join(" ") || null;
@@ -148,7 +168,9 @@ export function useSettingsModel() {
     askingFor,
     ticked,
     row,
+    askKey,
     notifyLine,
+    routineLine,
     notice,
     reasonIf,
     withLatest,

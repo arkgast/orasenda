@@ -1,11 +1,14 @@
 //! The Routines page's commands (spec 2026-11-14, §Service and IPC): routines, habits,
-//! check-ins and templates. `main`-window only. Each one runs the service on the blocking
+//! check-ins, templates and runs. `main`-window only. Each one runs the service on the blocking
 //! pool; a panicked task answers `Store`.
 
 use orasenda_service::routines;
 
 use super::on_blocking;
-use crate::ipc::{HabitDraft, RoutineDraft, RoutinesError, RoutinesView, TemplateId, TemplateView};
+use crate::ipc::{
+    HabitDraft, RoutineDraft, RoutinesError, RoutinesView, RunView, StepOutcome, TemplateId,
+    TemplateView,
+};
 use crate::runtime::ticker::AppHost;
 
 /// Runs `work` with the app's host on the blocking pool.
@@ -162,4 +165,35 @@ pub async fn habit_check(
     done: bool,
 ) -> Result<(), RoutinesError> {
     run(app, move |host| routines::run_habit_check(host, &id, done)).await
+}
+
+/// Starts a run of a routine, its steps frozen in their current order.
+#[tauri::command]
+#[specta::specta]
+pub async fn run_start(
+    app: tauri::AppHandle,
+    routine_id: String,
+) -> Result<RunView, RoutinesError> {
+    run(app, move |host| routines::run_run_start(host, &routine_id)).await
+}
+
+/// Answers the open run's current step: `done` checks its habit in, `skip` only counts.
+#[tauri::command]
+#[specta::specta]
+pub async fn run_step(
+    app: tauri::AppHandle,
+    run_id: String,
+    outcome: StepOutcome,
+) -> Result<RunView, RoutinesError> {
+    run(app, move |host| {
+        routines::run_run_step(host, &run_id, outcome)
+    })
+    .await
+}
+
+/// Ends the open run early, as stopped.
+#[tauri::command]
+#[specta::specta]
+pub async fn run_end(app: tauri::AppHandle, run_id: String) -> Result<RunView, RoutinesError> {
+    run(app, move |host| routines::run_run_end(host, &run_id)).await
 }
