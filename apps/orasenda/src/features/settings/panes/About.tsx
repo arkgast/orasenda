@@ -33,7 +33,7 @@ export function About({
       >
         <p className="settings-text">{line}</p>
         <p className="settings-text">
-          Your sessions and settings stay on this Mac. Orasenda doesn't use the network.
+          Your data stays on this Mac. Orasenda doesn't use the network.
         </p>
       </SettingsRow>
     </section>

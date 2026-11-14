@@ -95,7 +95,7 @@ export function PaneBody({ pane, headingRef, model, info }: Props) {
     case "about":
       return <About headingRef={headingRef} info={info} />;
     case "data":
-      return <YourData headingRef={headingRef} />;
+      return <YourData headingRef={headingRef} running={m.running} />;
     case "backups":
       return <Backups headingRef={headingRef} />;
   }
