@@ -7,6 +7,7 @@ mod events;
 mod frog;
 mod inbox_move;
 mod settings;
+mod task_link;
 mod view;
 
 use orasenda_core::NotificationStatus;
