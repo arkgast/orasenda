@@ -33,6 +33,8 @@ const NAMES = [
   "capLine",
   "captureError",
   "captureSaving",
+  "routinesOverview",
+  "routinesEmpty",
 ];
 
 const NEW_COMMANDS = [

@@ -83,10 +83,8 @@ export interface TaskCardNextProps extends TaskCardProps {
   /** 'row' is the 44px TaskRow. */
   density?: "card" | "row";
 }
-/** Not implemented in bundle.js yet. */
-export interface RoutineItemNextProps extends RoutineItemProps {
-  /** Overview list form: no checkbox, no tab stop. */ readOnly?: boolean;
-}
+/** Implemented: `readOnly` is on `RoutineItemProps` now (R7, #520). Kept as an alias for existing imports. */
+export type RoutineItemNextProps = RoutineItemProps;
 /** Not implemented in bundle.js yet. */
 export interface IntentPromptNextProps extends IntentPromptProps {
   variant?: "gentle" | "waiting" | "firm" | "strongLock" | "fallback";

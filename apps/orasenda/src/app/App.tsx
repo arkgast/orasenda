@@ -48,6 +48,9 @@ const settingsPage = load(() => import("@features/settings/Settings").then((m) =
 const inboxPage = load(() => import("@features/inbox/InboxPage").then((m) => m.InboxPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
 const focusPage = load(() => import("@features/focus/FocusPage").then((m) => m.FocusPage));
+const routinesPage = load(() =>
+  import("@features/routines/RoutinesPage").then((m) => m.RoutinesPage),
+);
 
 /** Settles when every page has loaded or failed; the test setup waits for it. */
 export const pagesReady = Promise.allSettled([
@@ -56,6 +59,7 @@ export const pagesReady = Promise.allSettled([
   inboxPage.ready,
   placeholderPage.ready,
   focusPage.ready,
+  routinesPage.ready,
 ]);
 
 function Today(props: ComponentProps<typeof import("@features/today/Today").Today>) {
@@ -72,6 +76,12 @@ function Inbox(props: ComponentProps<typeof import("@features/inbox/InboxPage").
 }
 function FocusPage(props: ComponentProps<typeof import("@features/focus/FocusPage").FocusPage>) {
   const Page = focusPage.use();
+  return <Page {...props} />;
+}
+function Routines(
+  props: ComponentProps<typeof import("@features/routines/RoutinesPage").RoutinesPage>,
+) {
+  const Page = routinesPage.use();
   return <Page {...props} />;
 }
 function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeholder>) {
@@ -239,7 +249,7 @@ export function App() {
     <div
       className={[
         "app",
-        current === "settings" || current === "inbox" ? "app-bound" : "",
+        current === "settings" || current === "inbox" || current === "routines" ? "app-bound" : "",
         compact ? "app-compact" : "",
       ]
         .filter(Boolean)
@@ -257,7 +267,11 @@ export function App() {
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}
               {current === "inbox" ? <Inbox onNavigate={(page) => navigate(page)} /> : null}
-              {current !== "today" && current !== "settings" && current !== "inbox" ? (
+              {current === "routines" ? <Routines onNavigate={(page) => navigate(page)} /> : null}
+              {current !== "today" &&
+              current !== "settings" &&
+              current !== "inbox" &&
+              current !== "routines" ? (
                 <Placeholder
                   title={TITLES[current]}
                   compact={compact}
