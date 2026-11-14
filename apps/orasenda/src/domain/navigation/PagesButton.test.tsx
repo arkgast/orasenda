@@ -1,6 +1,7 @@
+import { NavRail } from "@orasenda/ui";
 import { mockBackend, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { PagesButton } from "./PagesButton";
 import { onPaletteRequest } from "./paletteRequest";
@@ -130,4 +131,20 @@ test("pages_commands_opens_palette", async () => {
   expect(opened).toHaveBeenCalledTimes(1);
   expect(onNavigate).not.toHaveBeenCalled();
   stop();
+});
+
+test("pages_button_order_matches_rail", async () => {
+  const { backend } = open(null);
+  await settle();
+  const call = backend.calls.find((c) => c.cmd === "native_menu_popup");
+  const items = (call as { args: { request: { items: Array<{ label: string }> } } }).args.request
+    .items;
+  const menu = items.map((i) => i.label).filter((l) => l !== "Commands…");
+  cleanup();
+  render(<NavRail current="today" onNavigate={() => {}} />);
+  const rail = screen.getByRole("navigation", { name: "Main navigation" });
+  const names = within(rail)
+    .getAllByRole("button")
+    .map((b) => b.textContent?.trim());
+  expect(names).toEqual(menu);
 });
