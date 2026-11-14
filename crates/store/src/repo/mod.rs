@@ -7,4 +7,5 @@ pub mod meta;
 pub mod presets;
 pub mod routines;
 pub mod settings;
+pub mod tasks;
 pub mod window_frames;
