@@ -13,6 +13,7 @@ mod keep_awake;
 mod local_time;
 mod notifier;
 mod overlay;
+mod panel_swap;
 mod reveal;
 mod status_item;
 mod voice_over;

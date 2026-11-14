@@ -373,9 +373,16 @@ mod mac {
         }
 
         fn close(&self, label: &str) {
-            if let Some(window) = self.app.get_webview_window(label)
-                && let Err(error) = window.close()
-            {
+            let Some(window) = self.app.get_webview_window(label) else {
+                return;
+            };
+            // A panel gets its own class back first: tearing it down as a panel aborts the
+            // app (#503, #504). A refused release is logged (`window_error`) and the close
+            // goes ahead.
+            // SAFETY: as above.
+            let _released =
+                self.with_window(label, |pointer| unsafe { appkit::release_panel(pointer) });
+            if let Err(error) = window.close() {
                 eprintln!("windows: could not close {label}: {error}");
             }
         }

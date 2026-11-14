@@ -168,6 +168,7 @@ pub(crate) fn swap_to_panel_class(window: &NSWindow) -> Result<(), PlatformError
         return Ok(());
     }
     let target = panel_class_for(current)?;
+    crate::panel_swap::record(object, current, target);
     // SAFETY: this deviates from objc2's `set_class` precondition that the new class be a
     // subclass of the current one: like `tauri-nspanel`, `target` is a sibling of tao's
     // `TaoWindow` (both descend from `NSWindow`), not a subclass. It is sound here because:
