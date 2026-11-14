@@ -206,7 +206,12 @@ export function ShortcutRecorder({
         data-conflict={conflict ? "true" : undefined}
         aria-labelledby={`${fieldId}-${accessibleName ? "name" : "label"} ${fieldId}-keys ${fieldId}-hint`}
         aria-describedby={describedBy}
-        onClick={start}
+        onClick={() => {
+          // WebKit (the app's webview, Safari) doesn't focus a clicked button. Without focus the
+          // keys never reach onKeyDown and no blur ends recording when another field is clicked.
+          field.current?.focus({ preventScroll: true });
+          start();
+        }}
         onBlur={stop}
         onKeyDown={onKeyDown}
         className={cn(
