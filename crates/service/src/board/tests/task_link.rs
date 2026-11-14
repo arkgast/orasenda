@@ -352,3 +352,44 @@ fn roll_on_keeps_the_previous_sessions_task() {
     assert!(!rolled.quick, "the saved preset runs now");
     assert_eq!(linked(&rolled), Some((a.id.as_str(), "A")));
 }
+
+#[test]
+fn keep_going_keeps_the_previous_sessions_task() {
+    let host = host();
+    let a = add(&host, "A", Lane::Today);
+    let quick = StartRequest {
+        quick: true,
+        task_id: Some(a.id.clone()),
+    };
+    run_action_on(&host, Action::Start(quick)).expect("starts");
+    host.set_now(T0 + 2 * MINUTE);
+    let idle = run_state(&host).view;
+    assert_eq!(idle.offer, Some(crate::api::Offer::KeepGoing));
+    let again = start_on(&host, None).expect("starts again");
+    assert_eq!(linked(&again), Some((a.id.as_str(), "A")));
+}
+
+#[test]
+fn restoring_a_note_clears_the_chosen_task_and_publishes() {
+    let host = host();
+    let id = crate::inbox::run_capture_note(
+        &host,
+        crate::api::NewCapture {
+            text: "Call".into(),
+            kind: crate::api::NoteKind::Internal,
+        },
+    )
+    .expect("saves")
+    .id;
+    let task = run_inbox_to_task(&host, &id).expect("moves");
+    choose(&host, Some(&task.id)).expect("chooses");
+    host.log().take();
+    run_task_restore_note(&host, &task.id).expect("restores");
+    assert_eq!(crate::session::run_view(&host).task, None);
+    assert!(
+        host.log()
+            .count(|e| matches!(e, Event::Tick(v) if v.task.is_none()))
+            >= 1,
+        "the cleared choice is published"
+    );
+}

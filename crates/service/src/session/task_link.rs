@@ -13,6 +13,7 @@ use crate::api::{
 };
 
 const GONE: &str = "That task is gone. Pick another or start without one.";
+const NO_BOARD: &str = "Orasenda couldn't read the board. Try again.";
 const IN_DONE: &str = "Move it out of Done first.";
 
 fn refused(kind: TimerCommandErrorKind, message: &str) -> TimerCommandError {
@@ -27,7 +28,7 @@ impl SessionService {
     /// A title comes from the cache only, so a tick never reads the store.
     pub(super) fn task_view(&self) -> Option<TimerTask> {
         let id = if self.engine.is_idle() {
-            self.chosen_task.as_deref()
+            self.carry_task.as_deref().or(self.chosen_task.as_deref())
         } else {
             self.engine.task_id()
         }?;
@@ -46,7 +47,7 @@ impl SessionService {
     /// A live task that is not in Done, or why it can't be linked.
     fn check_task(&self, id: &str) -> Result<TaskRow, TimerCommandError> {
         let Some(store) = &self.store else {
-            return Err(refused(TimerCommandErrorKind::TaskNotFound, GONE));
+            return Err(refused(TimerCommandErrorKind::Store, NO_BOARD));
         };
         match store.read(|txn| tasks::get(txn, id)) {
             Ok(Some(row)) if row.deleted_at.is_none() && row.lane == Lane::Done => {
@@ -56,10 +57,7 @@ impl SessionService {
             Ok(_) => Err(refused(TimerCommandErrorKind::TaskNotFound, GONE)),
             Err(error) => {
                 eprintln!("session: could not read the task ({error})");
-                Err(refused(
-                    TimerCommandErrorKind::Store,
-                    "Orasenda couldn't read the board. Try again.",
-                ))
+                Err(refused(TimerCommandErrorKind::Store, NO_BOARD))
             }
         }
     }
@@ -73,8 +71,14 @@ impl SessionService {
     ) -> Result<Option<String>, TimerCommandError> {
         let carried = self.carry_task.take();
         if let Some(id) = &request.task_id {
-            let row = self.check_task(id)?;
-            self.task_titles.insert(row.id, row.title);
+            // The store can't say: link it by id, the move to Doing reports the failure.
+            match self.check_task(id) {
+                Ok(row) => {
+                    self.task_titles.insert(row.id, row.title);
+                }
+                Err(error) if error.kind == TimerCommandErrorKind::Store => {}
+                Err(error) => return Err(error),
+            }
             return Ok(Some(id.clone()));
         }
         let Some(id) = carried.or_else(|| self.chosen_task.clone()) else {
