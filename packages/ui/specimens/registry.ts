@@ -3,6 +3,7 @@ import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.ts
 import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx";
+import { DayPickerSpecimen } from "../src/components/ui/day-picker.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
@@ -16,6 +17,7 @@ import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
 import { RoutineCardSpecimen } from "../src/components/ui/routine-card.specimen.tsx";
+import { RoutineStepSpecimen } from "../src/components/ui/routine-step.specimen.tsx";
 import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.tsx";
 import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
@@ -49,4 +51,6 @@ export const specimens: Record<string, () => ReactElement> = {
   DataTable: DataTableSpecimen,
   RoutineCard: RoutineCardSpecimen,
   HabitDots: HabitDotsSpecimen,
+  RoutineStep: RoutineStepSpecimen,
+  DayPicker: DayPickerSpecimen,
 };
