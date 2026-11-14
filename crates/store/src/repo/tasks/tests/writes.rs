@@ -290,9 +290,21 @@ fn clear_frog_clears_a_frog_and_logs_it() {
     store
         .write(2_000, |txn| set_frog(txn, "a", "2026-11-14"))
         .expect("sets");
-    assert!(store.write(3_000, |txn| clear_frog(txn, "a")).expect("clears"));
+    assert!(
+        store
+            .write(3_000, |txn| clear_frog(txn, "a"))
+            .expect("clears")
+    );
     assert_eq!(get_row(&store, "a").frog_day, None);
     assert_eq!(log_of(&store, "a").last(), Some(&pair("frog_day", "null")));
-    assert!(!store.write(4_000, |txn| clear_frog(txn, "a")).expect("no-op"));
-    assert!(!store.write(5_000, |txn| clear_frog(txn, "nope")).expect("missing"));
+    assert!(
+        !store
+            .write(4_000, |txn| clear_frog(txn, "a"))
+            .expect("no-op")
+    );
+    assert!(
+        !store
+            .write(5_000, |txn| clear_frog(txn, "nope"))
+            .expect("missing")
+    );
 }

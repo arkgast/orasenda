@@ -3,6 +3,7 @@
 use orasenda_core::AppInfo;
 use tauri::PackageInfo;
 
+mod board;
 mod capture;
 mod data;
 mod data_files;
@@ -20,6 +21,7 @@ mod settings;
 mod timer;
 mod tips;
 
+pub use board::*;
 pub use capture::*;
 pub use data::*;
 pub use data_files::*;

@@ -172,6 +172,7 @@ export async function emitInboxChanged(notes: NoteView[]): Promise<void> {
   });
 }
 
+export * from "./board";
 export * from "./data";
 export * from "./fullScreen";
 export * from "./keyboard";

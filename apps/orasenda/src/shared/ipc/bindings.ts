@@ -164,6 +164,26 @@ export const commands = {
 	runStep: (runId: string, outcome: StepOutcome) => typedError<RunView_Serialize, RoutinesError>(__TAURI_INVOKE("run_step", { runId, outcome })),
 	/**  Ends the open run early, as stopped. */
 	runEnd: (runId: string) => typedError<RunView_Serialize, RoutinesError>(__TAURI_INVOKE("run_end", { runId })),
+	/**  The whole board. */
+	boardGet: () => typedError<BoardView_Serialize, BoardError>(__TAURI_INVOKE("board_get")),
+	/**  Adds a task at the end of its column (Backlog unless said). */
+	taskAdd: (draft: TaskDraft_Deserialize) => typedError<TaskView_Serialize, BoardError>(__TAURI_INVOKE("task_add", { draft })),
+	/**  Saves the fields of a patch. */
+	taskUpdate: (id: string, patch: TaskPatchView_Deserialize) => typedError<null, BoardError>(__TAURI_INVOKE("task_update", { id, patch })),
+	/**  Moves a task to a column at an index (past the end means last). */
+	taskMove: (id: string, lane: Lane, index: number) => typedError<null, BoardError>(__TAURI_INVOKE("task_move", { id, lane, index })),
+	/**  Sets or clears today's Frog; answers the Frog it replaced. */
+	taskSetFrog: (id: string, on: boolean) => typedError<string | null, BoardError>(__TAURI_INVOKE("task_set_frog", { id, on })),
+	/**  Removes a task (it can be brought back). */
+	taskRemove: (id: string) => typedError<null, BoardError>(__TAURI_INVOKE("task_remove", { id })),
+	/**  Brings a removed task back. */
+	taskRestore: (id: string) => typedError<null, BoardError>(__TAURI_INVOKE("task_restore", { id })),
+	/**  Moves an Inbox note to the Backlog as a task. */
+	inboxToTask: (noteId: string) => typedError<TaskView_Serialize, BoardError>(__TAURI_INVOKE("inbox_to_task", { noteId })),
+	/**  Undoes a move from the Inbox: the task goes, the note comes back. */
+	taskRestoreNote: (taskId: string) => typedError<null, BoardError>(__TAURI_INVOKE("task_restore_note", { taskId })),
+	/**  Saves the columns' names and limits. */
+	boardColumnsSet: (columns: ColumnSettings_Deserialize[]) => typedError<null, BoardError>(__TAURI_INVOKE("board_columns_set", { columns })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -183,6 +203,7 @@ export const commands = {
 /** Events */
 export const events = {
 	backupsChanged: makeEvent<DataOverview_Serialize, DataOverview_Deserialize>("backups-changed"),
+	boardChanged: makeEvent<BoardChanged_Serialize, BoardChanged_Deserialize>("board-changed"),
 	captureFocus: makeEvent<CaptureFocus, CaptureFocus>("capture-focus"),
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
 	inboxChanged: makeEvent<NoteView[], NoteView[]>("inbox-changed"),
@@ -326,6 +347,84 @@ export type BlockRule = {
 	action: BlockAction,
 };
 
+/**
+ *  `board-changed`: the whole board after any write, at local midnight and after an Inbox
+ *  move. The newest `seq` wins.
+ */
+export type BoardChanged = BoardChanged_Serialize | BoardChanged_Deserialize;
+
+/**
+ *  `board-changed`: the whole board after any write, at local midnight and after an Inbox
+ *  move. The newest `seq` wins.
+ */
+export type BoardChanged_Deserialize = {
+	/**  Exported as `number`: lossless below 2^53. */
+	seq: number,
+	board: BoardView_Deserialize,
+};
+
+/**
+ *  `board-changed`: the whole board after any write, at local midnight and after an Inbox
+ *  move. The newest `seq` wins.
+ */
+export type BoardChanged_Serialize = {
+	/**  Exported as `number`: lossless below 2^53. */
+	seq: number,
+	board: BoardView_Serialize,
+};
+
+/**  Why a board command did nothing. */
+export type BoardError = 
+/**  A title of nothing but whitespace. */
+"titleEmpty" | 
+/**  A title over 200 characters. */
+"titleTooLong" | 
+/**  Notes over 10 000 characters. */
+"notesTooLong" | 
+/**  More than 8 tags, or one that is empty, over 24 characters or repeated. */
+"badTags" | 
+/**  An estimate outside 1 to 16 sessions. */
+"badEstimate" | 
+/**  A due date that is not a real `YYYY-MM-DD`. */
+"badDue" | 
+/**  More than 30 checklist items, or one that is empty, over 200 characters or repeated. */
+"badChecklist" | 
+/**  Column names or limits outside their ranges, or not one entry per column. */
+"badColumns" | 
+/**  A Done task can't be made the Frog. */
+"doneCannotBeFrog" | 
+/**  No such task or note, or it is already in the state asked for. */
+"notFound" | 
+/**  The store is unavailable or the write failed. */
+"store";
+
+/**  Everything the Board page shows. */
+export type BoardView = BoardView_Serialize | BoardView_Deserialize;
+
+/**  Everything the Board page shows. */
+export type BoardView_Deserialize = {
+	/**  Backlog, Today, Doing, Done, in that order. */
+	columns: ColumnView_Deserialize[],
+	/**  The estimate buffer, whole percent. */
+	buffer: number,
+	/**  Today's local date, `YYYY-MM-DD`. */
+	today: string,
+	/**  The planned sessions of the Today tasks that have an estimate. */
+	todayPlanned: number,
+};
+
+/**  Everything the Board page shows. */
+export type BoardView_Serialize = {
+	/**  Backlog, Today, Doing, Done, in that order. */
+	columns: ColumnView_Serialize[],
+	/**  The estimate buffer, whole percent. */
+	buffer: number,
+	/**  Today's local date, `YYYY-MM-DD`. */
+	today: string,
+	/**  The planned sessions of the Today tasks that have an estimate. */
+	todayPlanned: number,
+};
+
 /**  Which break a [`Phase::Break`] is: the long one comes every `rounds` completed focus sessions. */
 export type BreakKind = "short" | "long";
 
@@ -340,6 +439,15 @@ export type CaptureError =
 
 /**  Sent to the capture panel when it is opened again: its page focuses the text area. */
 export type CaptureFocus = null;
+
+/**  One checklist line of a task. */
+export type ChecklistItemView = {
+	/**  Any non-empty id, unique within the task. The webview makes it. */
+	id: string,
+	/**  1 to 200 characters after trimming. */
+	text: string,
+	done: boolean,
+};
 
 /**  The wall clock, emitted as `clock-tick` on every whole second. */
 export type ClockTick = ClockTick_Serialize | ClockTick_Deserialize;
@@ -362,6 +470,52 @@ export type ClockTick_Serialize = {
 	clock: string,
 	/**  When the chosen preset would finish if started now, as text. Set only while idle. */
 	idleFinish: string | null,
+};
+
+/**  A column's name and limit as the person set them (`board.columns`). */
+export type ColumnSettings = ColumnSettings_Serialize | ColumnSettings_Deserialize;
+
+/**  A column's name and limit as the person set them (`board.columns`). */
+export type ColumnSettings_Deserialize = {
+	lane: Lane,
+	/**  1 to 24 characters after trimming. */
+	name: string,
+	/**  Today 1 to 9, Doing 1 to 3; Backlog and Done have none. */
+	limit?: number | null,
+};
+
+/**  A column's name and limit as the person set them (`board.columns`). */
+export type ColumnSettings_Serialize = {
+	lane: Lane,
+	/**  1 to 24 characters after trimming. */
+	name: string,
+	/**  Today 1 to 9, Doing 1 to 3; Backlog and Done have none. */
+	limit: number | null,
+};
+
+/**  One column with its tasks in order. */
+export type ColumnView = ColumnView_Serialize | ColumnView_Deserialize;
+
+/**  One column with its tasks in order. */
+export type ColumnView_Deserialize = {
+	lane: Lane,
+	name: string,
+	limit?: number | null,
+	/**  The tasks shown in it (Done counts the last 14 days only). */
+	count: number,
+	state: LimitState,
+	tasks: TaskView_Deserialize[],
+};
+
+/**  One column with its tasks in order. */
+export type ColumnView_Serialize = {
+	lane: Lane,
+	name: string,
+	limit: number | null,
+	/**  The tasks shown in it (Done counts the last 14 days only). */
+	count: number,
+	state: LimitState,
+	tasks: TaskView_Serialize[],
 };
 
 /**  How many live rows each syncable table holds. */
@@ -674,6 +828,15 @@ export type KeyboardView_Serialize = {
 	/**  VoiceOver is on, so its ⌃⌥ keys may take the shortcuts. */
 	voiceOver: boolean,
 };
+
+/**  The four fixed board columns. The UI says "column"; SQL says `lane`. */
+export type Lane = "backlog" | "today" | "doing" | "done";
+
+/**
+ *  Where a column stands against its limit. Drawn as a word and a shape, never as colour
+ *  alone and never as red. A column with no limit is always `Under`.
+ */
+export type LimitState = "under" | "at" | "over";
 
 /**  A session milestone, emitted as `timer-milestone`. */
 export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
@@ -1126,6 +1289,8 @@ export type Settings = {
 	notifyTwoMinutes: boolean,
 	/**  Notify once when a routine's time comes (`notify.routine_due`). Off by default. */
 	notifyRoutineDue: boolean,
+	/**  The planning buffer on estimates, whole percent in 25, 30 ... 50 (`board.estimate_buffer`). */
+	boardEstimateBuffer: number,
 	/**  Space and P on Today and Space in full screen act (`keys.single_key`). */
 	singleKey: boolean,
 };
@@ -1218,6 +1383,156 @@ export type SuggestionView_Serialize = {
 	text: string,
 	/**  `optional` or `experimental`; `None` for a line with a source or a product principle. */
 	label: SuggestionLabel | null,
+};
+
+/**  A task to add, as typed. The service trims it. Only the title is required. */
+export type TaskDraft = TaskDraft_Serialize | TaskDraft_Deserialize;
+
+/**  A task to add, as typed. The service trims it. Only the title is required. */
+export type TaskDraft_Deserialize = {
+	title: string,
+	/**  Backlog when absent. */
+	lane?: Lane | null,
+	notes?: string | null,
+	tags?: string[] | null,
+	/**  Deep when absent. */
+	kind?: TaskKind | null,
+	estimate?: number | null,
+	due?: string | null,
+	priority?: TaskPriority | null,
+};
+
+/**  A task to add, as typed. The service trims it. Only the title is required. */
+export type TaskDraft_Serialize = {
+	title: string,
+	/**  Backlog when absent. */
+	lane: Lane | null,
+	notes: string | null,
+	tags: string[] | null,
+	/**  Deep when absent. */
+	kind: TaskKind | null,
+	estimate: number | null,
+	due: string | null,
+	priority: TaskPriority | null,
+};
+
+/**  Whether a task needs deep focus or is light work. */
+export type TaskKind = "deep" | "shallow";
+
+/**
+ *  The fields of a task to change. A field left out stays; a nullable field set to `null`
+ *  clears. Only changed fields are written.
+ */
+export type TaskPatchView = TaskPatchView_Serialize | TaskPatchView_Deserialize;
+
+/**
+ *  The fields of a task to change. A field left out stays; a nullable field set to `null`
+ *  clears. Only changed fields are written.
+ */
+export type TaskPatchView_Deserialize = {
+	title?: string | null,
+	notes?: string | null,
+	tags?: string[] | null,
+	kind?: TaskKind | null,
+	estimate?: number | null,
+	due?: string | null,
+	priority?: TaskPriority | null,
+	checklist?: ChecklistItemView[] | null,
+	breakdownDismissed?: boolean | null,
+};
+
+/**
+ *  The fields of a task to change. A field left out stays; a nullable field set to `null`
+ *  clears. Only changed fields are written.
+ */
+export type TaskPatchView_Serialize = {
+	title: string | null,
+	notes: string | null,
+	tags: string[] | null,
+	kind: TaskKind | null,
+	estimate: number | null,
+	due: string | null,
+	priority: TaskPriority | null,
+	checklist: ChecklistItemView[] | null,
+	breakdownDismissed: boolean | null,
+};
+
+/**  How much a task matters. */
+export type TaskPriority = "high" | "medium" | "low";
+
+/**  A task as the board shows it. */
+export type TaskView = TaskView_Serialize | TaskView_Deserialize;
+
+/**  A task as the board shows it. */
+export type TaskView_Deserialize = {
+	/**  A UUIDv7. */
+	id: string,
+	title: string,
+	notes: string,
+	tags: string[],
+	kind: TaskKind,
+	/**  Sessions, 1 to 16; `None` is "No estimate". */
+	estimate?: number | null,
+	/**  The estimate with the buffer, rounded up; `None` without an estimate. */
+	planned?: number | null,
+	/**  A local date, `YYYY-MM-DD`. */
+	due?: string | null,
+	/**  "Due today", "Due yesterday", "Due tomorrow" or "Due Fri 20 Nov". Never "overdue". */
+	dueLabel?: string | null,
+	priority?: TaskPriority | null,
+	checklist: ChecklistItemView[],
+	lane: Lane,
+	/**  This task is today's Frog. */
+	isFrog: boolean,
+	/**  "Keep as is" was chosen on the breakdown prompt. */
+	breakdownDismissed: boolean,
+	/**  The Inbox note it came from. */
+	sourceNoteId?: string | null,
+	/**  When it moved to Done, in epoch milliseconds. */
+	doneAt?: number | null,
+	/**  Focused time on it, worded: "0h 41m". */
+	tracked: string,
+	trackedMs: number,
+	/**  Focus sessions linked to it. */
+	sessions: number,
+	/**  A session is running on it. */
+	active: boolean,
+};
+
+/**  A task as the board shows it. */
+export type TaskView_Serialize = {
+	/**  A UUIDv7. */
+	id: string,
+	title: string,
+	notes: string,
+	tags: string[],
+	kind: TaskKind,
+	/**  Sessions, 1 to 16; `None` is "No estimate". */
+	estimate: number | null,
+	/**  The estimate with the buffer, rounded up; `None` without an estimate. */
+	planned: number | null,
+	/**  A local date, `YYYY-MM-DD`. */
+	due: string | null,
+	/**  "Due today", "Due yesterday", "Due tomorrow" or "Due Fri 20 Nov". Never "overdue". */
+	dueLabel: string | null,
+	priority: TaskPriority | null,
+	checklist: ChecklistItemView[],
+	lane: Lane,
+	/**  This task is today's Frog. */
+	isFrog: boolean,
+	/**  "Keep as is" was chosen on the breakdown prompt. */
+	breakdownDismissed: boolean,
+	/**  The Inbox note it came from. */
+	sourceNoteId: string | null,
+	/**  When it moved to Done, in epoch milliseconds. */
+	doneAt: number | null,
+	/**  Focused time on it, worded: "0h 41m". */
+	tracked: string,
+	trackedMs: number,
+	/**  Focus sessions linked to it. */
+	sessions: number,
+	/**  A session is running on it. */
+	active: boolean,
 };
 
 /**  Which template a routine was copied from. Stored as its camelCase text (`as_str`). */

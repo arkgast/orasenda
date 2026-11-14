@@ -47,7 +47,7 @@ pub(super) fn changed(host: &TestHost) -> Vec<(u64, BoardView)> {
         .collect()
 }
 
-pub(super) fn lane<'a>(board: &'a BoardView, lane: Lane) -> &'a crate::api::ColumnView {
+pub(super) fn lane(board: &BoardView, lane: Lane) -> &crate::api::ColumnView {
     board
         .columns
         .iter()

@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::Notifier;
 
 use crate::api::{
-    BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView,
-    Settings, Theme, TimerView,
+    BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry,
+    RoutinesView, Settings, Theme, TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 

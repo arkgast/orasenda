@@ -19,7 +19,11 @@ fn add_trims_and_refuses_empty_title() {
         Err(BoardError::TitleTooLong)
     );
     let board = run_board_get(&host).expect("reads");
-    assert_eq!(titles(&board, Lane::Backlog), ["Write intro"], "refusals write nothing");
+    assert_eq!(
+        titles(&board, Lane::Backlog),
+        ["Write intro"],
+        "refusals write nothing"
+    );
 }
 
 #[test]
@@ -31,8 +35,14 @@ fn add_refuses_bad_fields() {
         run_task_add(&host, d)
     };
     assert_eq!(with(|d| d.estimate = Some(0)), Err(BoardError::BadEstimate));
-    assert_eq!(with(|d| d.estimate = Some(17)), Err(BoardError::BadEstimate));
-    assert_eq!(with(|d| d.due = Some("2026-02-30".into())), Err(BoardError::BadDue));
+    assert_eq!(
+        with(|d| d.estimate = Some(17)),
+        Err(BoardError::BadEstimate)
+    );
+    assert_eq!(
+        with(|d| d.due = Some("2026-02-30".into())),
+        Err(BoardError::BadDue)
+    );
     assert_eq!(
         with(|d| d.tags = Some(vec!["a".into(), "A".into()])),
         Err(BoardError::BadTags)
@@ -92,7 +102,11 @@ fn move_reorders_and_changes_lane() {
     let b = add(&host, "B", Lane::Backlog);
     let c = add(&host, "C", Lane::Backlog);
     let board = run_board_get(&host).expect("reads");
-    assert_eq!(titles(&board, Lane::Backlog), ["A", "B", "C"], "new tasks go last");
+    assert_eq!(
+        titles(&board, Lane::Backlog),
+        ["A", "B", "C"],
+        "new tasks go last"
+    );
     run_task_move(&host, &c.id, Lane::Backlog, 0).expect("moves");
     run_task_move(&host, &a.id, Lane::Today, 0).expect("moves");
     run_task_move(&host, &b.id, Lane::Today, 0).expect("moves");

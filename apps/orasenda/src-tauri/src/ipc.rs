@@ -112,6 +112,18 @@ impl Type for RoutinesChangedEvent {
     }
 }
 
+/// `board-changed`: the whole board after any write, at local midnight and after an Inbox
+/// move. The newest `seq` wins.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "board-changed")]
+pub struct BoardChanged {
+    /// Exported as `number`: lossless below 2^53.
+    #[specta(type = specta_typescript::Number)]
+    pub seq: u64,
+    pub board: BoardView,
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]

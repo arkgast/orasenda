@@ -3,7 +3,10 @@ use crate::api::{BoardError, InboxError, NewCapture, NoteKind};
 use crate::inbox::{run_capture_note, run_inbox_list};
 
 fn note(host: &TestHost, text: &str) -> String {
-    let n = NewCapture { text: text.into(), kind: NoteKind::Internal };
+    let n = NewCapture {
+        text: text.into(),
+        kind: NoteKind::Internal,
+    };
     run_capture_note(host, n).expect("saves").id
 }
 
@@ -20,12 +23,32 @@ fn inbox_to_task_moves_note_in_one_txn() {
     assert_eq!(task.title, "Call the dentist about the crown");
     assert_eq!(task.lane, Lane::Backlog);
     assert_eq!(task.source_note_id.as_deref(), Some(id.as_str()));
-    assert!(run_inbox_list(&host).unwrap().is_empty(), "the note is gone");
+    assert!(
+        run_inbox_list(&host).unwrap().is_empty(),
+        "the note is gone"
+    );
     let log = host.log().take();
-    assert_eq!(log.iter().filter(|e| matches!(e, Event::InboxChanged(_))).count(), 1);
-    assert_eq!(log.iter().filter(|e| matches!(e, Event::BoardChanged(..))).count(), 1);
-    assert_eq!(run_inbox_to_task(&host, &id), Err(BoardError::NotFound), "no second task");
-    assert_eq!(titles(&run_board_get(&host).unwrap(), Lane::Backlog).len(), 1);
+    assert_eq!(
+        log.iter()
+            .filter(|e| matches!(e, Event::InboxChanged(_)))
+            .count(),
+        1
+    );
+    assert_eq!(
+        log.iter()
+            .filter(|e| matches!(e, Event::BoardChanged(..)))
+            .count(),
+        1
+    );
+    assert_eq!(
+        run_inbox_to_task(&host, &id),
+        Err(BoardError::NotFound),
+        "no second task"
+    );
+    assert_eq!(
+        titles(&run_board_get(&host).unwrap(), Lane::Backlog).len(),
+        1
+    );
 }
 
 #[test]
@@ -53,9 +76,15 @@ fn restore_note_reverses_move() {
     assert_eq!(run_inbox_list(&host).unwrap().len(), 1, "the note is back");
     assert!(titles(&run_board_get(&host).unwrap(), Lane::Backlog).is_empty());
     assert_eq!(inbox_events(&host), 1);
-    assert_eq!(run_task_restore_note(&host, &task.id), Err(BoardError::NotFound));
+    assert_eq!(
+        run_task_restore_note(&host, &task.id),
+        Err(BoardError::NotFound)
+    );
     let plain = add(&host, "Plain", Lane::Backlog);
-    assert_eq!(run_task_restore_note(&host, &plain.id), Err(BoardError::NotFound));
+    assert_eq!(
+        run_task_restore_note(&host, &plain.id),
+        Err(BoardError::NotFound)
+    );
     let _ = InboxError::NotFound;
 }
 

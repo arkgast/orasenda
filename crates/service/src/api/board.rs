@@ -91,9 +91,11 @@ pub struct TaskView {
     /// The Inbox note it came from.
     pub source_note_id: Option<String>,
     /// When it moved to Done, in epoch milliseconds.
+    #[specta(type = Option<specta_typescript::Number>)]
     pub done_at: Option<u64>,
     /// Focused time on it, worded: "0h 41m".
     pub tracked: String,
+    #[specta(type = specta_typescript::Number)]
     pub tracked_ms: u64,
     /// Focus sessions linked to it.
     pub sessions: u32,

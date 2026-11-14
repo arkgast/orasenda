@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: SettingsValue = {
   notifySessionEnd: false,
   notifyTwoMinutes: false,
   notifyRoutineDue: false,
+  boardEstimateBuffer: 25,
   singleKey: true,
 };
 

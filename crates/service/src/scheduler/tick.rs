@@ -23,17 +23,22 @@ fn tick_once<H: Host>(host: &H) {
         return;
     };
     let now_ms = host.now_ms();
-    let (effects, clock, routines) = {
+    let (effects, clock, routines, board) = {
         let mut service = lock(service);
         let effects = service.tick(now_ms);
         let routines = service.routines_day_view(now_ms);
-        (effects, service.clock_tick(now_ms), routines)
+        let board = service.board_day_view(now_ms);
+        (effects, service.clock_tick(now_ms), routines, board)
     };
     host.emit_clock_tick(&clock);
     publish(host, effects);
     // Once at local midnight, so the dot grids and the today lines roll over.
     if let Some(view) = routines {
         host.emit_routines_changed(&view);
+    }
+    // Once at local midnight, so due words, the Frog and the Done window never go stale.
+    if let Some((seq, view)) = board {
+        host.emit_board_changed(seq, &view);
     }
     // Once per new local minute: the routines whose time has come.
     crate::routines::nudge_due(host);
