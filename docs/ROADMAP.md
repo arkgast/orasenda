@@ -34,6 +34,8 @@ Phases are grouped into releases. Each release goes to real users before the nex
 
 **Note (2026-11-14).** The owner changed the order after P1. P4's **routines and habits** run now, in parallel with P2 (Tasks, built by a separate session). P3 (Plan the Day) comes after them. P4's daily shutdown, weekly review and stats follow the routines part. See [the routines and habits spec](specs/2026-11-14-routines-and-habits.md) and [plan](plans/2026-11-14-routines-and-habits.md).
 
+**Note (2026-11-14, Board).** P2 runs now, with P4 Routines alongside and P3 later (owner, 2026-11-14). P2 is built as one sub-project, the Board: tasks, columns with WIP limits, Inbox → Board, and a session that picks a task. Task import (Apple Reminders, Todoist, Things) is a P2 follow-up after the Board. See [the Board spec](specs/2026-11-14-board.md) and [plan](plans/2026-11-14-board.md).
+
 **Note:** P1–P4 make a complete, useful product with no system permissions at all, so they are a safe base before the risky macOS work in P5–P7.
 
 ## P1 sub-projects
