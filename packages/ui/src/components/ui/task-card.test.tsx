@@ -198,6 +198,8 @@ test("card_menu_offers_move_targets", () => {
   );
   fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
   const menu = screen.getByRole("menu");
+  const trigger = screen.getByRole("button", { name: "More actions for Write" });
+  expect(trigger.getAttribute("aria-controls")).toBe(menu.id);
   expect(within(menu).getByRole("menuitem", { name: "Move to Today" })).toBeTruthy();
   expect(within(menu).getByRole("menuitem", { name: "Move to Doing" })).toBeTruthy();
   expect(within(menu).getByRole("menuitem", { name: "Make Frog" })).toBeTruthy();
@@ -219,4 +221,21 @@ test("card_menu_remove_and_frog_call_back", () => {
   fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
   fireEvent.keyDown(screen.getByRole("menuitem", { name: "Remove" }), { key: "Enter" });
   expect(onRemove).toHaveBeenCalledTimes(1);
+});
+
+test("disabled_card_has_no_menu", () => {
+  render(
+    <TaskCard
+      title="Write"
+      disabled
+      onOpen={() => {}}
+      menu={{ moveTargets: [{ id: "today", label: "Today" }], onMove: () => {} }}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: "More actions for Write" })).toBeNull();
+});
+
+test("duplicate_tags_render_once", () => {
+  render(<TaskCard title="Write" tags={["home", "home", "work"]} />);
+  expect(screen.getAllByText("home")).toHaveLength(1);
 });

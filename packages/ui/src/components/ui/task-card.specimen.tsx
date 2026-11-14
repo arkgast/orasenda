@@ -75,6 +75,19 @@ export function TaskCardSpecimen(): ReactElement {
           />
         </div>
       </Frame>
+      <Frame state="task-row-selected-no-estimate-217" width={217} height={160}>
+        <div className="flex flex-col gap-2">
+          <TaskCard title="Plan the week" density="row" selected onSelect={() => {}} menu={MENU} />
+          <TaskCard
+            title="Call the dentist"
+            density="row"
+            frog
+            active
+            onSelect={() => {}}
+            menu={MENU}
+          />
+        </div>
+      </Frame>
       <Frame state="task-row-read-only-360" width={360} height={100}>
         <TaskCard title="Shutdown preview" density="row" estimate={1} />
       </Frame>

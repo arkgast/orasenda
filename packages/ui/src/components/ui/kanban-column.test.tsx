@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { expect, test, vi } from "vitest";
 import { KanbanColumn } from "./kanban-column";
 
@@ -123,4 +124,42 @@ test("expanded_with_toggle_offers_a_fold_button", () => {
 test("id_lands_on_the_region_for_roving", () => {
   render(<KanbanColumn id="col-today" title="Today" count={0} />);
   expect(screen.getByRole("region", { name: "Today" }).id).toBe("col-today");
+});
+
+test("empty_array_children_show_empty_message", () => {
+  render(
+    <KanbanColumn title="Backlog" count={0}>
+      {[]}
+    </KanbanColumn>,
+  );
+  expect(screen.getByText("Nothing here yet. That's fine.")).toBeTruthy();
+});
+
+test("one_task_reads_singular", () => {
+  render(<KanbanColumn title="Done" count={1} collapsed onToggle={() => {}} />);
+  expect(screen.getByRole("button", { name: "Done, 1 task" })).toBeTruthy();
+});
+
+test("folded_over_limit_strip_shows_alert_shape_and_count", () => {
+  render(<KanbanColumn title="Today" count={4} limit={3} collapsed onToggle={() => {}} />);
+  const strip = screen.getByRole("button", { name: "Today, 4 of 3" });
+  expect(strip.querySelector("[data-slot=kanban-column-strip-over]")?.textContent).toContain("4");
+});
+
+function Host() {
+  const [folded, setFolded] = useState(false);
+  return (
+    <KanbanColumn
+      title="Done"
+      count={2}
+      collapsed={folded as true}
+      onToggle={() => setFolded(true)}
+    />
+  );
+}
+
+test("fold_moves_focus_to_the_strip", () => {
+  render(<Host />);
+  fireEvent.click(screen.getByRole("button", { name: "Fold Done" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Done, 2 tasks" }));
 });

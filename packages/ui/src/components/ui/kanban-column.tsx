@@ -1,10 +1,10 @@
-import { type ReactElement, type ReactNode, useId } from "react";
+import { Children, type ReactElement, type ReactNode, useEffect, useId, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { ModeChip } from "./mode-chip";
 
-export interface KanbanColumnProps {
+interface KanbanColumnBase {
   title: string;
   count: number;
   limit?: number;
@@ -16,12 +16,13 @@ export interface KanbanColumnProps {
   action?: ReactNode;
   /** "wide" grows to column-wide-width (Today and Doing in the Today-first board). */
   width?: "standard" | "wide";
-  /** Folds the column into a strip. Needs onToggle to be useful. */
-  collapsed?: boolean;
-  onToggle?: () => void;
   /** On the region, so the board can move focus between columns. */
   id?: string;
 }
+
+/** A folded column is a button, so it always has onToggle. */
+export type KanbanColumnProps = KanbanColumnBase &
+  ({ collapsed?: false; onToggle?: () => void } | { collapsed: true; onToggle: () => void });
 
 function whole(n: number): number {
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
@@ -29,7 +30,7 @@ function whole(n: number): number {
 
 /** "2 of 3" under the limit, "At limit" at it (both plain captions); over it the caption is a chip. */
 function caption(n: number, limit: number | null): { text: string; over: boolean } {
-  if (limit == null) return { text: `${n} tasks`, over: false };
+  if (limit == null) return { text: `${n} ${n === 1 ? "task" : "tasks"}`, over: false };
   if (n > limit) return { text: `${n} of ${limit}`, over: true };
   return { text: n === limit ? "At limit" : `${n} of ${limit}`, over: false };
 }
@@ -40,10 +41,18 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
   const n = whole(props.count);
   const limit = props.limit == null ? null : whole(props.limit);
   const { text, over } = caption(n, limit);
+  const strip = useRef<HTMLButtonElement>(null);
+  const foldedByUs = useRef(false);
+  // Folding unmounts the focused Fold button; put focus on the strip that replaces it.
+  useEffect(() => {
+    if (props.collapsed && foldedByUs.current) strip.current?.focus();
+    foldedByUs.current = false;
+  }, [props.collapsed]);
   if (props.collapsed) {
     return (
       <button
         type="button"
+        ref={strip}
         id={props.id}
         data-slot="kanban-column-strip"
         aria-expanded="false"
@@ -54,14 +63,21 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
         <span aria-hidden="true" className="text-ink-muted group-hover:text-ink">
           <Icon name="chevron" />
         </span>
-        <span aria-hidden="true" className="text-label wrap-anywhere">
+        <span aria-hidden="true" className="text-label break-words">
           {props.title}
         </span>
         <span
           aria-hidden="true"
           className="font-mono text-caption text-ink-muted tabular-nums group-hover:text-ink"
         >
-          {over ? text : n}
+          {over ? (
+            <span data-slot="kanban-column-strip-over" className="flex flex-col items-center">
+              <Icon name="alert" />
+              {n}
+            </span>
+          ) : (
+            n
+          )}
         </span>
       </button>
     );
@@ -72,8 +88,10 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
       id={props.id}
       aria-labelledby={headingId}
       className={cn(
-        "flex min-h-0 min-w-0 flex-1 basis-column-min-width flex-col gap-3 rounded-lg bg-surface-sunken p-3",
-        props.width === "wide" ? "max-w-column-wide-width" : "max-w-column-width",
+        "flex min-h-0 min-w-column-min-width flex-col gap-3 rounded-lg bg-surface-sunken p-3",
+        props.width === "wide"
+          ? "max-w-column-wide-width grow-2 basis-column-width"
+          : "max-w-column-width grow basis-column-min-width",
       )}
     >
       <header className="flex flex-wrap items-center justify-between gap-2">
@@ -92,7 +110,10 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
               label={`Fold ${props.title}`}
               icon={<Icon name="collapse" />}
               aria-expanded={true}
-              onClick={props.onToggle}
+              onClick={() => {
+                foldedByUs.current = true;
+                props.onToggle?.();
+              }}
             />
           ) : null}
         </span>
@@ -101,7 +122,9 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
         data-slot="kanban-column-cards"
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-1"
       >
-        {props.children || (
+        {Children.toArray(props.children).length > 0 ? (
+          props.children
+        ) : (
           <p className="m-0 text-body-sm text-ink-muted">
             {props.emptyMessage || "Nothing here yet. That's fine."}
           </p>

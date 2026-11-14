@@ -40,9 +40,17 @@ export function KanbanColumnSpecimen(): ReactElement {
         </KanbanColumn>
       </Frame>
       <Frame state="kanban-column-wide-scrolls-440" width={440} height={360}>
-        <KanbanColumn title="Today" count={6} limit={8} width="wide" onToggle={() => {}}>
-          <Cards n={6} />
-        </KanbanColumn>
+        <div className="flex h-full">
+          <KanbanColumn title="Today" count={6} limit={8} width="wide" onToggle={() => {}}>
+            <Cards n={6} />
+          </KanbanColumn>
+        </div>
+      </Frame>
+      <Frame state="kanban-board-folded-over-limit-300" width={300} height={200}>
+        <div className="flex h-full gap-2">
+          <KanbanColumn title="Today" count={4} limit={3} collapsed onToggle={() => {}} />
+          <KanbanColumn title="Backlog" count={2} collapsed onToggle={() => {}} />
+        </div>
       </Frame>
       <Frame state="kanban-column-empty-280" width={280} height={160}>
         <KanbanColumn title="Backlog" count={0} />

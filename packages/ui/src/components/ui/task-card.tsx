@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactElement, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactElement, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -104,6 +104,7 @@ function Dots({ est, done, hasEstimate }: { est: number; done: number; hasEstima
 function CardMenu({ title, menu, frog }: { title: string; menu: TaskCardMenu; frog?: boolean }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLSpanElement>(null);
+  const menuId = useId();
   const items: PopoverMenuItem[] = [
     ...menu.moveTargets.map((t) => ({
       id: `move:${t.id}`,
@@ -127,10 +128,12 @@ function CardMenu({ title, menu, frog }: { title: string; menu: TaskCardMenu; fr
         icon={<Icon name="menu" />}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((o) => !o)}
       />
       {open ? (
         <PopoverMenu
+          id={menuId}
           heading={title}
           items={items}
           anchor={anchor}
@@ -151,7 +154,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const done = count(props.done);
   const hasEstimate = props.estimate != null;
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
-  const tags = (props.tags ?? []).slice(0, MAX_TAGS);
+  const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
   const stateWords = [active ? "In progress" : "", selected ? "Selected" : ""]
     .filter(Boolean)
     .join(" · ");
@@ -159,33 +162,44 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const meta = `${estimateText} · Done ${done}${props.tracked ? ` · ${props.tracked}` : ""}`;
   const className = cn(
     "@container w-full max-w-full rounded-md border border-line-strong bg-surface-raised text-start text-ink shadow-raised wrap-anywhere",
-    row ? "flex min-h-hit-min items-center gap-3 px-3 py-2" : "flex flex-col gap-3 p-4",
+    row
+      ? "flex min-h-hit-min flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
+      : "flex flex-col gap-3 p-4",
     interactive &&
-      "cursor-pointer outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm focus-visible:outline-2 enabled:hover:bg-surface-sunken enabled:active:bg-selection disabled:cursor-default disabled:border-dashed motion-reduce:transition-none",
-    props.menu && "pe-hit-min",
-    selected && "bg-selection",
+      "cursor-pointer outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm focus-visible:outline-2 enabled:active:bg-selection disabled:cursor-default disabled:border-dashed motion-reduce:transition-none",
+    props.menu && !props.disabled && "pe-hit-min",
+    selected ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
     active && "border-s-4 border-s-focus",
   );
   const frogWord = props.frog ? (
-    <span data-slot="task-card-frog" className="text-break text-label uppercase">
+    <span
+      data-slot="task-card-frog"
+      className="flex-none whitespace-nowrap text-break text-label uppercase"
+    >
       Frog
     </span>
   ) : null;
   const body = row ? (
     <>
       <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
-      <span data-slot="task-card-title" className="min-w-0 flex-1 truncate text-body font-semibold">
+      <span
+        data-slot="task-card-title"
+        className="min-w-hit-min flex-1 truncate text-body font-semibold"
+      >
         {title}
       </span>
       {frogWord}
       {stateWords ? (
-        <span data-slot="task-card-state" className="flex-none text-body-sm text-focus">
+        <span
+          data-slot="task-card-state"
+          className="flex-none whitespace-nowrap text-body-sm text-focus"
+        >
           {stateWords}
         </span>
       ) : null}
       <span
         data-slot="task-card-meta"
-        className="flex-none font-mono text-timer-sm text-ink-muted tabular-nums"
+        className="flex-none whitespace-nowrap font-mono text-timer-sm text-ink-muted tabular-nums"
       >
         {estimateText}
       </span>
@@ -275,12 +289,12 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       {body}
     </article>
   );
-  if (!props.menu) return card;
+  if (!props.menu || props.disabled) return card;
   return (
     <div data-slot="task-card-frame" className="relative">
       {card}
       <span
-        className={cn("absolute end-1 flex", row ? "inset-y-0 items-center" : "top-1 items-start")}
+        className={cn("absolute end-0 flex", row ? "inset-y-0 items-center" : "top-1 items-start")}
       >
         <CardMenu title={title} menu={props.menu} frog={props.frog} />
       </span>
