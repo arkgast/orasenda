@@ -1,4 +1,4 @@
-//! Live row counts for the four syncable tables.
+//! Live row counts for the syncable tables.
 
 use crate::{StoreError, Txn};
 
@@ -9,9 +9,14 @@ pub struct Counts {
     pub presets: u32,
     pub notes: u32,
     pub settings: u32,
+    pub routines: u32,
+    pub habits: u32,
+    pub checks: u32,
+    pub runs: u32,
 }
 
-/// Counts live rows: tombstones (`deleted_at` set) are skipped. `setting` has no tombstones.
+/// Counts live rows: tombstones (`deleted_at` set) are skipped. `setting` and `routine_run`
+/// have no tombstones.
 pub fn counts(txn: &Txn) -> Result<Counts, StoreError> {
     let conn = txn.conn();
     let count =
@@ -21,5 +26,9 @@ pub fn counts(txn: &Txn) -> Result<Counts, StoreError> {
         presets: count("SELECT count(*) FROM preset WHERE deleted_at IS NULL")?,
         notes: count("SELECT count(*) FROM inbox_note WHERE deleted_at IS NULL")?,
         settings: count("SELECT count(*) FROM setting")?,
+        routines: count("SELECT count(*) FROM routine WHERE deleted_at IS NULL")?,
+        habits: count("SELECT count(*) FROM habit WHERE deleted_at IS NULL")?,
+        checks: count("SELECT count(*) FROM habit_check WHERE deleted_at IS NULL")?,
+        runs: count("SELECT count(*) FROM routine_run")?,
     })
 }

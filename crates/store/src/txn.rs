@@ -11,6 +11,10 @@ pub enum Entity {
     FocusSession,
     Preset,
     InboxNote,
+    Routine,
+    Habit,
+    HabitCheck,
+    RoutineRun,
 }
 
 impl Entity {
@@ -21,6 +25,10 @@ impl Entity {
             Entity::FocusSession => "focus_session",
             Entity::Preset => "preset",
             Entity::InboxNote => "inbox_note",
+            Entity::Routine => "routine",
+            Entity::Habit => "habit",
+            Entity::HabitCheck => "habit_check",
+            Entity::RoutineRun => "routine_run",
         }
     }
 }

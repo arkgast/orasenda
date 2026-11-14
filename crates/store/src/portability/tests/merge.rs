@@ -72,6 +72,7 @@ fn seed_rows() -> SyncRows {
         ],
         sessions: vec![session("s1", 400)],
         notes: vec![note("n1", None), note("n2", Some(700))],
+        ..SyncRows::default()
     }
 }
 
@@ -101,6 +102,7 @@ fn counts(sessions: u32, presets: u32, notes: u32, settings: u32) -> Counts {
         presets,
         notes,
         settings,
+        ..Counts::default()
     }
 }
 
@@ -280,6 +282,7 @@ fn merge_logs_each_field() {
         presets: vec![preset("p1", "Classic", 200, None)],
         sessions: vec![session("s1", 400)],
         notes: vec![note("n1", None)],
+        ..SyncRows::default()
     };
     run(&store, &file);
     let fields = |entity: &str| -> Vec<String> {
