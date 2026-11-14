@@ -18,7 +18,15 @@ const CONTROLS: readonly IconName[] = [
   "pages",
   "jump",
 ];
-const RAIL: readonly IconName[] = ["today", "inbox", "calendar", "routines", "review", "settings"];
+const RAIL: readonly IconName[] = [
+  "today",
+  "inbox",
+  "board",
+  "calendar",
+  "routines",
+  "review",
+  "settings",
+];
 
 function Sheet({ names }: { names: readonly IconName[] }): ReactElement {
   return (

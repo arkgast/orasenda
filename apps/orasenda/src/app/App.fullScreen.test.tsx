@@ -63,7 +63,7 @@ test("nav_key_leaves_full_screen_first", async () => {
   const backend = mockBackend({ window_view: () => fullScreenView() });
   render(<App />);
   await settle();
-  fireEvent.keyDown(document.body, { key: "3", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "4", metaKey: true });
   await settle();
   expect(argsOf(backend.calls, "full_screen_leave")).toHaveLength(1);
   // The navigation waited for the leave: when AppKit says so, the page is the one asked for.
@@ -162,7 +162,7 @@ test("the_window_view_event_before_the_leave_answer_still_focuses_the_heading", 
   });
   render(<App />);
   await settle();
-  fireEvent.keyDown(document.body, { key: "3", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "4", metaKey: true });
   await settle();
   await emitWindowView(WINDOWED);
   answer({ status: "ok", data: null });

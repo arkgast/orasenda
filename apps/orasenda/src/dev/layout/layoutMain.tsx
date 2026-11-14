@@ -58,11 +58,11 @@ if (page !== null && page !== "settings") {
 }
 if (page === "settings") {
   // Press the rail's Settings button as a person would; a compact window has no rail, so use the
-  // page chord (Cmd+6) there, until the page is up (the shortcut listener mounts a tick later).
+  // page chord (Cmd+7) there, until the page is up (the shortcut listener mounts a tick later).
   const started = Date.now();
   const timer = setInterval(() => {
     // The pane list marks the page as up on any pane: a spec may already have left General, and
-    // another Cmd+6 would be a new arrival that pulls focus back to the title.
+    // another Cmd+7 would be a new arrival that pulls focus back to the title.
     if (document.querySelector('nav[aria-label="Settings"]')) {
       clearInterval(timer);
       return;
@@ -75,9 +75,9 @@ if (page === "settings") {
       button.click();
     } else if (Date.now() - started > 5000) {
       clearInterval(timer);
-      throw new Error("Settings did not open (no rail button, and Cmd+6 did not open it)");
+      throw new Error("Settings did not open (no rail button, and Cmd+7 did not open it)");
     } else {
-      window.dispatchEvent(new KeyboardEvent("keydown", { key: "6", metaKey: true }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "7", metaKey: true }));
     }
   }, 50);
 }

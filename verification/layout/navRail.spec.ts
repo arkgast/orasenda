@@ -21,7 +21,7 @@ test("nav_rail_fits_and_hit_targets", async ({ page }, info) => {
       h: el.getBoundingClientRect().height,
     })),
   );
-  expect(sizes.length).toBe(12);
+  expect(sizes.length).toBe(14);
   for (const s of sizes) {
     expect(s.w).toBeGreaterThanOrEqual(60);
     expect(s.w).toBeLessThanOrEqual(68);
@@ -89,8 +89,8 @@ test("nav_rail_keyboard_activates_and_marks_current", async ({ page }) => {
   await expect(current).toHaveText("Inbox");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Space");
-  await expect(current).toHaveText("Calendar");
-  await expect(rail.locator("[data-slot=nav-rail-item][tabindex='0']")).toHaveText("Calendar");
+  await expect(current).toHaveText("Board");
+  await expect(rail.locator("[data-slot=nav-rail-item][tabindex='0']")).toHaveText("Board");
   await expect(page.locator("[data-state=nav-rail-settings] [aria-current=page]")).toHaveText(
     "Settings",
   );

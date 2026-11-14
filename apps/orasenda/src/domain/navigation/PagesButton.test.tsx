@@ -12,7 +12,16 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-const NAMES = ["Today", "Inbox", "Board", "Calendar", "Routines", "Review", "Settings", "Commands…"];
+const NAMES = [
+  "Today",
+  "Inbox",
+  "Board",
+  "Calendar",
+  "Routines",
+  "Review",
+  "Settings",
+  "Commands…",
+];
 
 function open(answer: string | null, current: "today" | "inbox" = "inbox") {
   const backend = mockBackend({ native_menu_popup: () => answer });
@@ -45,12 +54,13 @@ test("pages_button_sends_seven_items_current_checked", async () => {
   ).request;
   expect(request.items.map((i) => i.label)).toEqual(NAMES);
   expect(request.items.map((i) => i.accelerator)).toEqual([
-    ...[1, 2, 3, 4, 5, 6].map((n) => `Cmd+${n}`),
+    ...[1, 2, 3, 4, 5, 6, 7].map((n) => `Cmd+${n}`),
     "Cmd+K",
   ]);
   expect(request.items.map((i) => i.checked)).toEqual([
     false,
     true,
+    false,
     false,
     false,
     false,
@@ -78,7 +88,10 @@ test("pages_button_is_a_menu_trigger_with_shortcuts", async () => {
   // The chords come from the registry's fixed keys, so none show before keyboard_state answers.
   expect(button).not.toHaveAttribute("aria-keyshortcuts");
   await settle();
-  expect(button).toHaveAttribute("aria-keyshortcuts", "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6 Meta+7");
+  expect(button).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6 Meta+7",
+  );
 });
 
 test("pages_choice_navigates", async () => {

@@ -7,7 +7,7 @@ type Entry = { action: string; keys: string; spoken?: string; single?: boolean }
 /** Today's single keys besides the registry's own (F and P go with H4). */
 const TODAY_EXTRA = ["F", "P"];
 
-const PAGES = 6;
+const PAGES = 7;
 
 /** The fixed keys All shortcuts lists, by accelerator; the page keys fold into one row, the menu's standard items are left out. */
 const SHOWN_FIXED = new Set([

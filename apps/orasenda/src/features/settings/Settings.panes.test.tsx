@@ -176,7 +176,7 @@ test("compact_width_uses_the_tab_strip_and_still_opens_a_pane", async () => {
   mockBackend();
   render(<App />);
   await settle();
-  fireEvent.keyDown(document.body, { key: "6", metaKey: true });
+  fireEvent.keyDown(document.body, { key: "7", metaKey: true });
   await settle();
   expect(screen.getByRole("navigation", { name: "Settings" })).toHaveAttribute(
     "data-orientation",

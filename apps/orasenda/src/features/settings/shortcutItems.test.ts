@@ -13,7 +13,7 @@ test("each_action_is_listed_once_from_the_registry", () => {
 
 test("the_page_keys_fold_into_one_range_row", () => {
   const row = shortcutItems(KEYBOARD, true).find((item) => item.action === "Go to a page");
-  expect(row?.keys).toBe("⌘1–6");
+  expect(row?.keys).toBe("⌘1–7");
 });
 
 test("a_key_comes_from_fixed_not_from_code", () => {

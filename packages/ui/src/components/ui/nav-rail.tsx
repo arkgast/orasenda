@@ -10,6 +10,7 @@ export interface NavRailProps {
 const PAGES: ReadonlyArray<{ id: NavPage; label: string }> = [
   { id: "today", label: "Today" },
   { id: "inbox", label: "Inbox" },
+  { id: "board", label: "Board" },
   { id: "calendar", label: "Calendar" },
   { id: "routines", label: "Routines" },
   { id: "review", label: "Review" },

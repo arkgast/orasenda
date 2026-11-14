@@ -43,6 +43,7 @@ pub struct MilestoneEvent {
 pub enum NavigatePage {
     Today,
     Inbox,
+    Board,
     Calendar,
     Routines,
     Review,
