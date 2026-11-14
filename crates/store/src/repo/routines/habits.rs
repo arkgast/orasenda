@@ -99,11 +99,15 @@ pub fn list_live(txn: &Txn, routine_id: Option<&str>) -> Result<Vec<HabitRow>, S
     )
 }
 
-/// Every live habit, the standalone ones first, then by routine id, `position` and `id`. Habits
-/// of a removed routine are tombstoned with it, so none of them is listed.
+/// Every live habit, the standalone ones first, then by routine id, `position` and `id`. A
+/// habit whose routine is removed is never listed, even when the habit itself is live (a
+/// `restore` or a sync merge can make one). A habit whose routine row is not here yet (a sync
+/// may deliver the child first) is listed.
 pub fn list_all_live(txn: &Txn) -> Result<Vec<HabitRow>, StoreError> {
     let mut stmt = txn.conn().prepare(&format!(
         "SELECT {COLUMNS} FROM habit WHERE deleted_at IS NULL
+           AND NOT EXISTS (SELECT 1 FROM routine
+                           WHERE routine.id = habit.routine_id AND routine.deleted_at IS NOT NULL)
          ORDER BY routine_id IS NOT NULL, routine_id, position, id"
     ))?;
     let rows = stmt.query_map([], read_row)?;

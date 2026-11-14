@@ -150,7 +150,9 @@ pub fn remove(txn: &mut Txn, id: &str) -> Result<bool, StoreError> {
 
 /// Brings the removed routine `id` back, with the habits its removal tombstoned (those removed
 /// at the same moment). Habits removed earlier on their own stay removed. Returns whether the
-/// routine was removed.
+/// routine was removed. The routine keeps its old `position`: if the list was reordered while
+/// it was removed, it can share a position with a live routine. The order stays deterministic
+/// (ties fall to the `id`), and the next `move_to` renumbers the list from 0.
 pub fn restore(txn: &mut Txn, id: &str) -> Result<bool, StoreError> {
     let Some(removed_at) = get(txn, id)?.and_then(|row| row.deleted_at) else {
         return Ok(false);

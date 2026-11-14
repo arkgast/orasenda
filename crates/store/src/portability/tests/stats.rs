@@ -34,3 +34,36 @@ fn counts_skip_tombstones() {
         }
     );
 }
+
+#[test]
+fn counts_routines_tables_skip_tombstones() {
+    let store = Store::open_in_memory(DEVICE).expect("opens");
+    let fresh = store.read(counts).expect("counts");
+    exec(
+        &store,
+        "INSERT INTO routine (id, name, days, position, created_at, updated_at, deleted_at)
+           VALUES ('r1', 'Morning', 127, 0, 0, 0, NULL), ('r2', 'Evening', 127, 1, 0, 0, 5);
+         INSERT INTO habit (id, routine_id, position, name, created_at, updated_at, deleted_at)
+           VALUES ('h1', 'r1', 0, 'Water', 0, 0, NULL), ('h2', 'r1', 1, 'Stretch', 0, 0, NULL),
+                  ('h3', 'r2', 0, 'Read', 0, 0, 5);
+         INSERT INTO habit_check (id, habit_id, day, checked_at, deleted_at)
+           VALUES ('h1:2026-11-13', 'h1', '2026-11-13', 1, NULL),
+                  ('h1:2026-11-14', 'h1', '2026-11-14', 2, 3);
+         INSERT INTO routine_run (id, routine_id, day, started_at, ended_at, outcome, steps_total,
+             steps_done, steps_skipped, step_ids, answers, updated_at)
+           VALUES ('u1', 'r1', '2026-11-13', 1, 2, 'finished', 2, 1, 1, '[\"h1\",\"h2\"]',
+                   '[\"done\",\"skipped\"]', 2),
+                  ('u2', 'r1', '2026-11-14', 3, NULL, NULL, 2, 0, 0, '[\"h1\",\"h2\"]', '[]', 3);",
+    );
+    let got = store.read(counts).expect("counts");
+    assert_eq!(
+        got,
+        Counts {
+            routines: 1,
+            habits: 2,
+            checks: 1,
+            runs: 2,
+            ..fresh
+        }
+    );
+}

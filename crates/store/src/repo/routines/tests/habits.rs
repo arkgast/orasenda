@@ -107,6 +107,29 @@ fn habit_list_live_is_per_list_ordered_by_position_then_id() {
 }
 
 #[test]
+fn habit_list_all_live_skips_habits_of_a_removed_routine() {
+    // x1's routine r2 has not arrived yet (a sync may deliver a child first): it stays listed.
+    // A live habit under a tombstoned routine (a restore or a merge can make one) does not.
+    let store = seeded();
+    store
+        .write(2_000, |txn| {
+            crate::repo::routines::routines::insert(txn, &routine("r1", "Morning", 0))?;
+            crate::repo::routines::routines::remove(txn, "r1")?;
+            repo::restore(txn, "h1")
+        })
+        .expect("writes");
+    let all: Vec<String> = store
+        .read(|txn| {
+            Ok(repo::list_all_live(txn)?
+                .into_iter()
+                .map(|h| h.id)
+                .collect())
+        })
+        .expect("lists");
+    assert_eq!(all, ["s1", "x1"]);
+}
+
+#[test]
 fn habit_checks_refuse_bad_rows() {
     let store = store();
     let mut long_anchor = habit("a", None, 0);
