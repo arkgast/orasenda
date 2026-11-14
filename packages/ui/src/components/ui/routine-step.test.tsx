@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { createRef } from "react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { Button } from "./button";
 import { RoutineStep, type RoutineStepProps } from "./routine-step";
 import { RoutineStepSpecimen } from "./routine-step.specimen";
@@ -62,6 +62,17 @@ test("an_optional_step_says_so_in_words", () => {
   const name = screen.getByRole("heading", { level: 2 });
   expect(name).toHaveTextContent("Electrolytes");
   expect(within(name).getByText("Optional")).toBeVisible();
+  // The focused heading reads "Electrolytes, Optional", not "Electrolytes Optional".
+  expect(name.textContent).toBe("Electrolytes, Optional");
+});
+
+test("identical_detail_lines_both_render_without_a_key_warning", () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  renderStep({ step: { name: "Breathe", detail: ["In for four.", "In for four."] } });
+  const detail = screen.getAllByText("In for four.");
+  expect(detail).toHaveLength(2);
+  expect(error).not.toHaveBeenCalled();
+  error.mockRestore();
 });
 
 test("actions_slot_renders_the_hosts_buttons", () => {

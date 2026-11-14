@@ -95,6 +95,25 @@ test("the_last_day_on_cannot_be_turned_off_and_the_helper_says_so", () => {
   expect(screen.getByRole("button", { name: "Friday" })).not.toHaveAttribute("aria-disabled");
 });
 
+test("the_locked_day_carries_the_reason_itself", () => {
+  render(<Controlled initial={4} onChange={() => {}} />);
+  // VoiceOver may skip a group's description while focus moves inside it, so the button says why.
+  expect(screen.getByRole("button", { name: "Wednesday" })).toHaveAccessibleDescription(
+    "At least one day stays on.",
+  );
+  expect(screen.getByRole("button", { name: "Friday" })).not.toHaveAttribute("aria-describedby");
+});
+
+test("the_locked_day_keeps_its_fill_on_hover", () => {
+  render(<DayPicker label="Days" value={1} onChange={() => {}} />);
+  const cls = screen.getByRole("button", { name: "Monday" }).className;
+  // Hover changes only apply to a day that can be pressed, so a locked day never looks pressable.
+  expect(cls).toContain("aria-pressed:not-aria-disabled:hover:bg-focus-hover");
+  expect(cls).toContain("not-aria-disabled:hover:bg-surface-sunken");
+  expect(cls).not.toMatch(/(^|\s)aria-pressed:hover:/);
+  expect(cls).not.toMatch(/(^|\s)hover:bg-surface-sunken/);
+});
+
 test("helper_line_is_the_hosts_while_two_or_more_days_are_on", () => {
   const { rerender } = render(
     <DayPicker label="Days" value={WEEKDAYS} helper="Weekdays" onChange={() => {}} />,

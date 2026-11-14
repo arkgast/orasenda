@@ -140,13 +140,19 @@ export function RoutineStep({
           >
             {step.name}
             {step.optional ? (
-              <span className="ms-2 align-middle text-label text-routine uppercase">Optional</span>
+              <>
+                <span className="sr-only">, </span>
+                <span className="ms-2 align-middle text-label text-routine uppercase">
+                  Optional
+                </span>
+              </>
             ) : null}
           </h2>
           {step.detail?.length ? (
             <div data-slot="routine-step-detail" className="flex flex-col gap-1">
-              {step.detail.map((line) => (
-                <p key={line} className="m-0 text-body text-ink-muted">
+              {step.detail.map((line, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: lines are static text and may repeat
+                <p key={`${i}:${line}`} className="m-0 text-body text-ink-muted">
                   {line}
                 </p>
               ))}

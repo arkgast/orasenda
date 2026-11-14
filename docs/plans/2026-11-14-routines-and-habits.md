@@ -133,6 +133,7 @@ Each task that changes IPC regenerates `bindings.ts` with `just bindings` and ne
   - `RoutinesPage.tsx` (showing the run view while `view.run` is set);
   - `dev/layout/scenarios` (*routines-run*).
 - **Acceptance:** spec §Run view; the keyboard path Enter, S and Esc, with single keys off; focus and the live region; reduce motion.
+- **macOS check list:** with Reduce motion on in WebKit, the step change in `RoutineStep` does not cross-fade (jsdom only checks the class names).
 
 ### R9 (#522) Routines page: editors
 - **Owns:** `apps/orasenda/src/features/routines/RoutineEditor.tsx`, `HabitEditor.tsx`, `useUndoRemove.ts` and their tests.
