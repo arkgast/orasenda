@@ -6,6 +6,7 @@ export { Choice } from "./components/ui/choice";
 export { ChoiceGroup } from "./components/ui/choice";
 export { CommandPalette } from "./components/ui/command-palette";
 export { DataTable } from "./components/ui/data-table";
+export { DayPicker } from "./components/ui/day-picker";
 export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
@@ -30,6 +31,7 @@ export { PageFrame } from "./components/ui/page-frame";
 export { PopoverMenu } from "./components/ui/popover-menu";
 export { RoutineCard } from "./components/ui/routine-card";
 export { RoutineItem } from "./components/ui/routine-item";
+export { RoutineStep } from "./components/ui/routine-step";
 export { ScrollRegion } from "./components/ui/scroll-region";
 export { SettingsIndex } from "./components/ui/settings-index";
 export { SettingsNav } from "./components/ui/settings-nav";
@@ -70,6 +72,12 @@ export type { ShortcutListItem, ShortcutListProps } from "./components/ui/shortc
 export type { InboxRowProps } from "./components/ui/inbox-row";
 export type { RoutineCardProps, RoutineToday } from "./components/ui/routine-card";
 export type { RoutineItemProps } from "./components/ui/routine-item";
+export type {
+  RoutineStepItem,
+  RoutineStepProps,
+  RoutineStepState,
+} from "./components/ui/routine-step";
+export type { DayPickerProps } from "./components/ui/day-picker";
 export type { TooltipProps } from "./components/ui/tooltip";
 export type { WellnessNoteProps } from "./components/ui/wellness-note";
 export type { SettingsNavItem, SettingsNavProps } from "./components/ui/settings-nav";

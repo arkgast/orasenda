@@ -31,6 +31,10 @@
     "group": "Brand",
     "height": 288
   },
+  "DayPicker": {
+    "group": "Routines",
+    "height": 260
+  },
   "Dialog": {
     "group": "Overlays",
     "height": 380
@@ -110,6 +114,10 @@
   "RoutineItem": {
     "group": "Routines",
     "height": 330
+  },
+  "RoutineStep": {
+    "group": "Routines",
+    "height": 560
   },
   "ScrollRegion": {
     "group": "Layout",

@@ -67,6 +67,8 @@ Don'ts that would have caused real bugs: no `filter` or `opacity` to make states
 | TaskCard (with `onOpen`) | `surface-sunken` then `selection` | dashed border | `selected`: `selection` + "Selected"; `active`: `focus` bar + "In progress" |
 | TimeBlock (with `onSelect`) | title underlined | dashed border | `selected`: dashed border + "Selected"; `now`: `focus` bar + "Now" |
 | RoutineItem | `surface-sunken` then `selection` | dashed border | done: filled `break` check, `ink-muted` label, no strike-through |
+| DayPicker day | `surface-sunken` (off), `focus-hover` (on) | dashed ring; the last day on is `aria-disabled` with "At least one day stays on." | on: filled `focus` disc, bold `on-focus` letter, `aria-pressed`; off: hollow ring |
+| RoutineStep progress list | none (a record, not a control) | n/a | done: filled `break` tick disc + "Done"; skipped: hollow ring with a dash + "Skipped"; current: `focus` ring and dot + "Now" + `aria-current="step"`; upcoming: dotted ring + "Upcoming" |
 | Input, TextArea, radio and checkbox choice | `focus` border | `ink-muted` text, dashed border | checked choice: `selection` ground; a radio shows a filled `focus` dot in a circle, a checkbox an `on-focus` tick in a filled `focus` square |
 | NavRail item, command row | `surface-sunken` | omitted, not greyed | `selection` ground + `focus` side bar + `aria-current` or "Selected" |
 | Timers | none | none | `warning`: triangle + "Almost up"; `paused`: bars + frozen arc; `idle`: hollow circle + "No session" |
