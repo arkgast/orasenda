@@ -2,7 +2,6 @@ import { useBindings } from "@domain/keyboard/useBindings";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { usePresets } from "@domain/presets/presets";
 import { tick, untick } from "@features/settings/notificationsToggle";
-import { openFocusView } from "@features/today/focusView";
 import { CommandPalette, type NavPage } from "@orasenda/ui";
 import type { DisplayInfo, Settings, Theme, TimerView_Serialize } from "@shared/ipc/bindings";
 import { commands, events } from "@shared/ipc/bindings";
@@ -13,6 +12,8 @@ import { paletteCommands } from "./paletteCommands";
 
 type Props = {
   compact: boolean;
+  /** Only the *Full screen on <display>* commands (*Full screen on another display*). */
+  displaysOnly?: boolean;
   onClose(): void;
   onNavigate(page: NavPage): void;
 };
@@ -33,7 +34,12 @@ async function attempt<T>(name: string, promise: Promise<T>): Promise<boolean> {
  * The ⌘K palette (main window). Mounted fresh per opening, so it reads its own snapshot of the
  * timer, settings, presets and displays; each row runs the command its twin button runs.
  */
-export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
+export function Palette({
+  compact,
+  displaysOnly = false,
+  onClose,
+  onNavigate,
+}: Props): ReactElement {
   const presets = usePresets();
   const [view, setView] = useState<TimerView_Serialize | null>(null);
   const [settings, setSettings] = useState<Settings | null>(latest());
@@ -82,8 +88,9 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
         notifications: view?.notifications ?? "unavailable",
         actions,
         fixed,
+        displaysOnly,
       }),
-    [view, settings, presets, displays, actions, fixed],
+    [view, settings, presets, displays, actions, fixed, displaysOnly],
   );
 
   const change = (patch: Partial<Settings>): Promise<boolean> => {
@@ -113,11 +120,16 @@ export function Palette({ compact, onClose, onNavigate }: Props): ReactElement {
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));
       case "fullScreen":
-        return openFocusView({ kind: "fullScreen", displayId: arg }).then(
-          report("open the Focus view"),
-        );
+        // With one display it is the registry's action; with several, the display chosen.
+        return (
+          arg
+            ? attempt("full_screen_enter_on", commands.fullScreenEnterOn(arg))
+            : attempt("action_run", commands.actionRun("fullScreen"))
+        ).then(report("open full screen"));
       case "floater":
-        return openFocusView({ kind: "floater" }).then(report("open the Focus view"));
+        return attempt("action_run", commands.actionRun("floater")).then(
+          report("open the floating timer"),
+        );
       case "preset":
         return change({ presetId: arg }).then(report("change the preset"));
       case "theme":

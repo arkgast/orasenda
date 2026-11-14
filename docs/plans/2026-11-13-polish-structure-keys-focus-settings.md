@@ -659,7 +659,7 @@ Wave 3:  H5a ──> H6               H5a, HU2 ──> H7      (both may run bes
 - Notes:
   - sonnet, then opus code and design review. H4b merges before H5a (`App.tsx`).
   - `design`: `verification/layout/{fullScreenFocus,fullScreen,today.align,today.fits,today.focus,today.motion,today.popover,commandPalette}.spec.ts`.
-  - `designRules` (spec): "Full screen is `main` in native full screen with no nav rail or page header. Controls are centred between the ring's bottom and the view's bottom, with the gate's gap token between Pause and End. No leave dialog. Hints show on the first 3 entries only, keep their row height after fading, and never animate under reduce motion. Tokens only; both themes."
+  - `designRules` (spec): "Full screen is `main` in native full screen with no nav rail or page header. Controls are centred between the ring's bottom and the view's bottom, with the gate's gap token between Pause and End (the compact ring and the strips are exempt from both). No leave dialog. Hints show on the first 3 entries only, keep their row height after fading, and never animate under reduce motion. Tokens only; both themes."
 
 ### H4c: Remove the focus window  (#tbd)
 - Priority: 1

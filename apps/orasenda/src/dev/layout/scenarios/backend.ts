@@ -119,6 +119,8 @@ export const SETTINGS: Settings = {
 
 export { KEYBOARD };
 
+export const WINDOWED = { fullScreen: false, display: "1", hintsLeft: 3 };
+
 export const NOTE: NoteView = {
   id: "note-1",
   text: "Call the dentist",
@@ -165,6 +167,11 @@ export function backend({
     displays_list: () => displaysFor(1),
     focus_view_open: () => null,
     focus_view_close: () => null,
+    // `main`'s full screen (H4): windowed unless a scenario says otherwise.
+    window_view: () => WINDOWED,
+    full_screen_enter: () => null,
+    full_screen_enter_on: () => null,
+    full_screen_leave: () => null,
     main_show: () => null,
     preset_select: () => null,
     native_menu_popup: () => null,

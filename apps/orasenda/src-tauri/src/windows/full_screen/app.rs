@@ -142,7 +142,13 @@ mod mac {
             run_full_screen_entered(&AppHost::new(&self.app))
         }
 
+        fn note_opened(&self) {
+            crate::windows::note_opened(&self.app);
+        }
+
         fn publish(&self, view: &WindowView) {
+            #[cfg(desktop)]
+            crate::menu::set_leave_enabled(&self.app, view.full_screen);
             if let Err(error) = view.emit(&self.app) {
                 eprintln!("full screen: could not emit window-view: {error}");
             }

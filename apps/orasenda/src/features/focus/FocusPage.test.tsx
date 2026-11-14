@@ -138,6 +138,6 @@ test("focus_view_unreadable_line", async () => {
   render(<FocusPage />);
   await settle();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Orasenda can't reach the timer. Close this window and try again.",
+    "Orasenda can't reach the timer. Try again in a moment.",
   );
 });

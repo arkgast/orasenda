@@ -15,6 +15,7 @@ use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
 mod capture;
 mod displays;
 mod floater_toggle;
+mod frames;
 mod full_screen;
 const NO_INSETS: FocusInsets = FocusInsets {
     top: 0,
@@ -56,6 +57,8 @@ struct Fake {
     /// How many `exists` answers are false although the window is there (a lost race).
     blind: std::cell::Cell<u32>,
     on: Option<String>,
+    /// `main` is in native full screen.
+    full: std::cell::Cell<bool>,
 }
 
 impl Fake {
@@ -70,6 +73,7 @@ impl Fake {
             fail_on: None,
             blind: std::cell::Cell::new(0),
             on: None,
+            full: std::cell::Cell::new(false),
         }
     }
 
@@ -159,6 +163,9 @@ impl Ops for Fake {
     }
     fn hide_main(&self) -> Result<(), FocusViewError> {
         self.step("hide_main")
+    }
+    fn main_full_screen(&self) -> bool {
+        self.full.get()
     }
     fn migrate_frames(&self, screens: &[Screen]) {
         let pairs: Vec<String> = screens
@@ -449,52 +456,4 @@ fn open_close_never_touch_session() {
         "no tick, milestone, settings or theme was published: {}",
         events.len()
     );
-}
-
-#[test]
-fn frame_debounce_trailing_500ms() {
-    let mut trailing = Trailing::default();
-    assert_eq!(
-        trailing.touch(1_000),
-        Some(1_000 + DEBOUNCE_MS),
-        "the first move arms one wake-up"
-    );
-    for at in [1_050, 1_200, 1_499] {
-        assert_eq!(
-            trailing.touch(at),
-            None,
-            "moves inside the window schedule nothing"
-        );
-        assert!(!trailing.due(at));
-    }
-    assert!(!trailing.due(1_499));
-    assert!(trailing.due(1_500), "one save, 500 ms after the first move");
-    assert!(!trailing.due(1_501), "and only one");
-    assert_eq!(
-        trailing.touch(1_600),
-        Some(2_100),
-        "the next burst arms again"
-    );
-}
-
-#[test]
-fn floater_close_drops_the_pending_trailing_save() {
-    let mut trailing = Trailing::default();
-    trailing.touch(0);
-    trailing.cancel();
-    assert!(
-        !trailing.due(10_000),
-        "the pending trailing save is dropped"
-    );
-}
-
-#[test]
-fn focus_view_close_refused_for_main() {
-    use crate::commands::closable;
-    assert_eq!(
-        closable("main").unwrap_err().kind,
-        FocusViewErrorKind::Unavailable
-    );
-    assert!(closable("floater").is_ok());
-    assert!(closable("focus-1").is_ok());
 }

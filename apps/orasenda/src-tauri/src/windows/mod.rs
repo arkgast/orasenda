@@ -99,6 +99,8 @@ pub(crate) trait Ops {
     /// Gives the panel key focus without activating Orasenda.
     fn key(&self, label: &str) -> Result<(), FocusViewError>;
     fn hide_main(&self) -> Result<(), FocusViewError>;
+    /// Whether `main` is in native full screen (the floater then leaves it showing).
+    fn main_full_screen(&self) -> bool;
     /// The frame to reopen the floater at: `run_frame_load` over these display ids.
     fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)>;
     /// Moves floater frames stored under each screen's `legacy_id` to its `id`, once.
@@ -179,9 +181,26 @@ pub(crate) fn main_display(app: &AppHandle) -> Option<String> {
 /// Shows `main` and asks it to open the command palette.
 #[cfg(desktop)]
 pub(crate) fn open_palette(app: &AppHandle) {
+    emit_palette(app, false);
+}
+
+/// Shows `main` and asks it to open the palette with only the display commands. The floater
+/// stays as it is, and a `main` already in full screen gets the palette over it.
+#[cfg(desktop)]
+pub(crate) fn open_palette_displays(app: &AppHandle) {
+    emit_palette(app, true);
+}
+
+#[cfg(not(desktop))]
+pub(crate) fn open_palette_displays(_app: &AppHandle) {}
+
+#[cfg(desktop)]
+fn emit_palette(app: &AppHandle, displays_only: bool) {
     use tauri_specta::Event as _;
     crate::lifecycle::show_main(app);
-    if let Err(error) = crate::ipc::PaletteOpen.emit_to(app, crate::lifecycle::MAIN) {
+    if let Err(error) =
+        (crate::ipc::PaletteOpen { displays_only }).emit_to(app, crate::lifecycle::MAIN)
+    {
         eprintln!("windows: could not emit palette-open: {error}");
     }
 }

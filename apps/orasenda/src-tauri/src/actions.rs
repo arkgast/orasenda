@@ -3,8 +3,7 @@
 //! behaves the same wherever it was asked. A second request for the same action within
 //! [`DEDUP`] is dropped, so a key heard by two routes runs once.
 //!
-//! The full-screen ids run today's Focus window and its display choice until H4 swaps the
-//! implementation behind the same ids.
+//! The full-screen ids drive `main`'s native full screen (ADR-019, `windows::full_screen`).
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
@@ -15,7 +14,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::ipc::FocusViewError;
 use crate::runtime::session;
-use crate::windows::{self, AppOps, Ops, Toggled, focus, open_capture_on, toggle_floater_on};
+use crate::windows::{self, AppOps, Ops, Toggled, open_capture_on, toggle_floater_on};
 
 /// A repeat of the same action inside this window is the same press heard twice.
 pub(crate) const DEDUP: Duration = Duration::from_millis(300);
@@ -63,6 +62,32 @@ impl Recent {
 pub(crate) enum Route {
     StartPause,
     Window(WindowRoute),
+    FullScreen(FullScreenRoute),
+}
+
+/// The actions that change `main`'s full screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FullScreenRoute {
+    /// Full screen on the display `main` is on.
+    Enter,
+    /// With two or more displays the palette's display commands; with one, as [`Self::Enter`].
+    ChooseDisplay,
+    Leave,
+}
+
+/// What *Full screen on another display* does with `displays` connected displays.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DisplayChoice {
+    ThisDisplay,
+    Palette,
+}
+
+pub(crate) fn display_choice(displays: usize) -> DisplayChoice {
+    if displays >= 2 {
+        DisplayChoice::Palette
+    } else {
+        DisplayChoice::ThisDisplay
+    }
 }
 
 /// The actions that are a window change, which a fake platform can run.
@@ -70,11 +95,6 @@ pub(crate) enum Route {
 pub(crate) enum WindowRoute {
     Floater,
     Capture,
-    /// The Focus window of the main window's display, or (`other`) of the next display.
-    FocusWindow {
-        other: bool,
-    },
-    LeaveFocusWindow,
 }
 
 /// What a window route did, so the app can tell the session and the menus.
@@ -82,7 +102,6 @@ pub(crate) enum WindowRoute {
 pub(crate) enum Outcome {
     FloaterOpened,
     FloaterClosed,
-    FocusOpened,
     Done,
 }
 
@@ -91,28 +110,10 @@ pub(crate) fn route(id: ActionId) -> Route {
         ActionId::StartPause => Route::StartPause,
         ActionId::Floater => Route::Window(WindowRoute::Floater),
         ActionId::Capture => Route::Window(WindowRoute::Capture),
-        ActionId::FullScreen => Route::Window(WindowRoute::FocusWindow { other: false }),
-        ActionId::FullScreenOther => Route::Window(WindowRoute::FocusWindow { other: true }),
-        ActionId::LeaveFullScreen => Route::Window(WindowRoute::LeaveFocusWindow),
+        ActionId::FullScreen => Route::FullScreen(FullScreenRoute::Enter),
+        ActionId::FullScreenOther => Route::FullScreen(FullScreenRoute::ChooseDisplay),
+        ActionId::LeaveFullScreen => Route::FullScreen(FullScreenRoute::Leave),
     }
-}
-
-/// The display a Focus window opens on: the main window's, or the first other one.
-fn focus_display<O: Ops>(ops: &O, other: bool) -> Result<String, FocusViewError> {
-    let screens = ops.screens()?;
-    let main = ops
-        .main_display()
-        .filter(|id| screens.iter().any(|screen| &screen.id == id))
-        .or_else(|| screens.first().map(|screen| screen.id.clone()))
-        .ok_or_else(|| FocusViewError::no_display("No display is connected."))?;
-    if !other {
-        return Ok(main);
-    }
-    screens
-        .into_iter()
-        .map(|screen| screen.id)
-        .find(|id| *id != main)
-        .ok_or_else(|| FocusViewError::no_display("There is no other display."))
 }
 
 /// Runs a window route on the platform `ops`.
@@ -123,17 +124,29 @@ pub(crate) fn perform_on<O: Ops>(ops: &O, route: WindowRoute) -> Result<Outcome,
             Toggled::Closed => Outcome::FloaterClosed,
         }),
         WindowRoute::Capture => open_capture_on(ops).map(|()| Outcome::Done),
-        WindowRoute::FocusWindow { other } => {
-            let display = focus_display(ops, other)?;
-            focus::open_focus_on(ops, &display).map(|()| Outcome::FocusOpened)
-        }
-        WindowRoute::LeaveFocusWindow => {
-            for label in ops.focus_labels() {
-                ops.close(&label);
-            }
-            Ok(Outcome::Done)
-        }
     }
+}
+
+/// Runs a full-screen route. The state is `windows::full_screen`'s (one transition at a time).
+fn run_full_screen(app: &AppHandle, route: FullScreenRoute) -> Result<(), String> {
+    let result = match route {
+        FullScreenRoute::Enter => windows::full_screen::enter(app, None),
+        FullScreenRoute::Leave => windows::full_screen::leave(app),
+        FullScreenRoute::ChooseDisplay => {
+            let displays = AppOps::new(app)
+                .screens()
+                .map_err(|error| error.message)?
+                .len();
+            match display_choice(displays) {
+                DisplayChoice::ThisDisplay => windows::full_screen::enter(app, None),
+                DisplayChoice::Palette => {
+                    windows::open_palette_displays(app);
+                    Ok(())
+                }
+            }
+        }
+    };
+    result.map_err(|error| error.message)
 }
 
 /// Runs `id` now, on this (blocking) thread. Failures are returned, never swallowed.
@@ -142,13 +155,14 @@ fn perform(app: &AppHandle, id: ActionId) -> Result<(), String> {
         Route::StartPause => session::run_action(app, Action::StartPauseToggle)
             .map(|_| ())
             .map_err(|error| error.message),
+        Route::FullScreen(route) => run_full_screen(app, route),
         Route::Window(window) => {
             let ops = AppOps::new(app);
             let result = match app.try_state::<Recent>() {
                 Some(recent) => recent.serialized(|| perform_on(&ops, window)),
                 None => perform_on(&ops, window),
             };
-            if matches!(result, Ok(Outcome::FloaterOpened | Outcome::FocusOpened)) {
+            if matches!(result, Ok(Outcome::FloaterOpened)) {
                 windows::note_opened(app);
             }
             if window == WindowRoute::Floater {

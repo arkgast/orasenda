@@ -83,10 +83,19 @@ fn start_frame<'a, O: Ops>(
     ))
 }
 
-/// Gives the open floater key focus and hides `main`.
+/// Hides `main`, unless it is in full screen: there it stays (spec H4, Leaving).
+fn hide_main_unless_full_screen<O: Ops>(ops: &O) -> Result<(), FocusViewError> {
+    if ops.main_full_screen() {
+        Ok(())
+    } else {
+        ops.hide_main()
+    }
+}
+
+/// Gives the open floater key focus and hides `main` (not in full screen).
 fn refocus<O: Ops>(ops: &O) -> Result<(), FocusViewError> {
     ops.key(FLOATER)?;
-    ops.hide_main()
+    hide_main_unless_full_screen(ops)
 }
 
 /// Opens the floater at its frame, shows it with key focus without activating, then hides
@@ -114,7 +123,7 @@ pub(crate) fn open_floater_on<O: Ops>(ops: &O) -> Result<(), FocusViewError> {
         ops.close(FLOATER);
         return Err(error);
     }
-    ops.hide_main()
+    hide_main_unless_full_screen(ops)
 }
 
 /// Closes the floater, if any. `CloseRequested` saves its frame (`frames.rs`).

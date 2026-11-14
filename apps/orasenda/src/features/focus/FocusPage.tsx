@@ -1,5 +1,5 @@
 import { cadenceActions } from "@domain/cadence/cadenceActions";
-import { singleKeyName } from "@domain/keyboard/bindings";
+import { FIXED_KEYS, singleKeyName } from "@domain/keyboard/bindings";
 import { useBindings } from "@domain/keyboard/useBindings";
 import { useShortcuts } from "@domain/keyboard/useShortcuts";
 import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
@@ -14,11 +14,13 @@ import type { Settings, TimerCommandError, TimerView_Serialize } from "@shared/i
 import { commands } from "@shared/ipc/bindings";
 import { watchSettingsChanged } from "@shared/ipc/settingsQueue";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { hintText, useEntryHint } from "./keyHint";
 import { useInsets } from "./useInsets";
+import { useLeaveKey } from "./useLeaveKey";
 import "./focus.css";
 
 const isRace = (error: TimerCommandError) => commandFailure(error) === "race";
-const UNREADABLE = "Orasenda can't reach the timer. Close this window and try again.";
+const UNREADABLE = "Orasenda can't reach the timer. Try again in a moment.";
 
 type Result<E extends { kind: string }> =
   | { status: "ok"; data: unknown }
@@ -54,13 +56,16 @@ function useSavedSettings(): { settings: Settings | null; failed: boolean } {
 }
 
 /**
- * The full-screen Focus window's page (`focus.html?display=<id>&insets=t,r,b,l`). It only
- * displays the timer (`useSurfaceTimer`: `timer_view`, ticks and the end milestone, never
- * `timer_state`) and sends the commands a person gives it. ⌘↩ starts the saved preset while idle
- * or ended and ⌘. ends a session, and Space starts, pauses or resumes while the single-key setting is on; Esc opens the leave dialog and only its confirm closes the
- * window. A failed command shows one line in the status row, cleared by the next change of state.
+ * `main`'s full-screen view (ADR-019): the page App renders in place of the rail and the page
+ * while `main` is in native full screen. It only displays the timer (`useSurfaceTimer`:
+ * `timer_view`, ticks and the end milestone, never `timer_state`) and sends the commands a person
+ * gives it. ⌘↩ starts the saved preset while idle or ended and ⌘. ends a session, and Space
+ * starts, pauses or resumes while the single-key setting is on. Esc and the Leave button leave at
+ * once (`full_screen_leave`, no dialog); an open overlay takes Esc first. `hintsLeft` is the
+ * count Rust took at this entry's start: the key hint shows for `duration-hint` while it is above
+ * 0. A failed command shows one line in the status row, cleared by the next change of state.
  */
-export function FocusPage() {
+export function FocusPage({ hintsLeft = 0 }: { hintsLeft?: number }) {
   useTheme();
   const insets = useInsets();
   const clock = useClock();
@@ -149,7 +154,8 @@ export function FocusPage() {
     else if (state === "running") pause();
     else if (state === "paused") resume();
   };
-  const space = singleKeyName(useBindings().byId("startPause"));
+  const bindings = useBindings();
+  const space = singleKeyName(bindings.byId("startPause"));
   useSingleKeys(space ? { [space]: toggle } : {}, singleKeys);
 
   const choosePreset = (presetId: string) =>
@@ -160,7 +166,24 @@ export function FocusPage() {
       isRace,
     );
   const leave = () =>
-    void run("focus_view_close", "This window didn't close.", commands.focusViewClose);
+    void run(
+      "full_screen_leave",
+      "Orasenda couldn't leave full screen. Try again.",
+      commands.fullScreenLeave,
+    );
+  useLeaveKey(leave);
+  const showHint = useEntryHint(hintsLeft);
+  const { fixedHint } = bindings;
+  const hint = {
+    text: hintText({
+      singleKeys,
+      idle,
+      paused: state === "paused",
+      start: fixedHint(FIXED_KEYS.start),
+      end: fixedHint(FIXED_KEYS.end),
+    }),
+    visible: showHint,
+  };
 
   const shown: TimerView_Serialize | null = view;
   const style = {
@@ -189,6 +212,7 @@ export function FocusPage() {
         ended={ended}
         status={failed && !view ? UNREADABLE : (problem ?? undefined)}
         singleKeys={singleKeys}
+        hint={hint}
         summary={
           idle ? (
             <PresetSummary

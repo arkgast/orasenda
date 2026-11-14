@@ -48,13 +48,6 @@ test("space_ignored_in_field_and_on_button", async () => {
   expect(argsOf(backend.calls, "timer_start")).toEqual([]);
 });
 
-test("f_opens_focus_view_menu", async () => {
-  const { backend } = await renderToday({ native_menu_popup: () => null });
-  key("f");
-  await settle();
-  expect(argsOf(backend.calls, "native_menu_popup")).toHaveLength(1);
-});
-
 test("p_opens_preset_popover", async () => {
   await renderToday();
   key("p");
@@ -63,24 +56,20 @@ test("p_opens_preset_popover", async () => {
 });
 
 test("keys_off_do_nothing", async () => {
-  const { backend } = await renderToday({
-    ...savedSettings({ singleKey: false }),
-    native_menu_popup: () => null,
-  });
+  const { backend } = await renderToday(savedSettings({ singleKey: false }));
   expect(key(" ")).toBe(true);
-  key("f");
   key("p");
   await settle();
   expect(argsOf(backend.calls, "timer_start")).toEqual([]);
-  expect(argsOf(backend.calls, "native_menu_popup")).toEqual([]);
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 });
 
 test("captions_drop_single_keys_when_off", async () => {
   const on = await renderToday();
-  expect(screen.getByRole("button", { name: "Focus view" })).toHaveAttribute(
+  // The focus buttons name their registry keys, never a single key.
+  expect(screen.getByRole("button", { name: "Full screen" })).toHaveAttribute(
     "aria-keyshortcuts",
-    "F",
+    "Meta+F",
   );
   expect(screen.getByRole("button", { name: /Start focus/ })).toHaveAttribute(
     "aria-keyshortcuts",
@@ -92,8 +81,9 @@ test("captions_drop_single_keys_when_off", async () => {
   );
   on.unmount();
   await renderToday(savedSettings({ singleKey: false }));
-  expect(screen.getByRole("button", { name: "Focus view" })).not.toHaveAttribute(
+  expect(screen.getByRole("button", { name: "Full screen" })).toHaveAttribute(
     "aria-keyshortcuts",
+    "Meta+F",
   );
   expect(screen.getByRole("button", { name: /Start focus/ })).toHaveAttribute(
     "aria-keyshortcuts",

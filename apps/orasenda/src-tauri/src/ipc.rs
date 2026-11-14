@@ -267,12 +267,16 @@ pub struct WindowView {
     pub hints_left: u8,
 }
 
-/// Asks `main` to open the command palette. No payload.
+/// Asks `main` to open the command palette. With `displays_only` it lists only the
+/// *Full screen on <display>* commands (*Full screen on another display*).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event,
 )]
 #[tauri_specta(event_name = "palette-open")]
-pub struct PaletteOpen;
+#[serde(rename_all = "camelCase")]
+pub struct PaletteOpen {
+    pub displays_only: bool,
+}
 
 /// Sent to the capture panel when it is opened again: its page focuses the text area.
 #[derive(

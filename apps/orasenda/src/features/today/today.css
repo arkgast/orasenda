@@ -61,9 +61,16 @@
 .today-top {
   grid-area: top;
   display: grid;
-  grid-template-columns: var(--hit-min) minmax(0, 1fr) var(--hit-min);
+  /* The end holds two buttons (Full screen, Floating timer); the start mirrors it, so the summary stays centred. */
+  grid-template-columns: calc(var(--hit-min) * 2) minmax(0, 1fr) calc(var(--hit-min) * 2);
   align-items: center;
   min-inline-size: 0;
+}
+
+/* Compact: the start holds only Pages, so the summary takes the room the second button would. It is then
+   centred between Pages and the buttons, not on the window (it would not fit its text otherwise). */
+.today[data-compact] .today-top {
+  grid-template-columns: var(--hit-min) minmax(0, 1fr) calc(var(--hit-min) * 2);
 }
 
 .today-top-start {
@@ -91,6 +98,9 @@
 }
 
 .today-top-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   min-block-size: var(--hit-min);
 }
 

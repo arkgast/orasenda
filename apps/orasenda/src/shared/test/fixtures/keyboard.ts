@@ -19,8 +19,8 @@ export async function emitFocusInsets(insets: Partial<FocusInsets> = {}): Promis
   });
 }
 
-export async function emitPaletteOpen(): Promise<void> {
+export async function emitPaletteOpen(displaysOnly = false): Promise<void> {
   await act(async () => {
-    await events.paletteOpen.emit();
+    await events.paletteOpen.emit({ displaysOnly });
   });
 }

@@ -33,6 +33,7 @@ struct Fake {
     /// The first `set_full_screen` waits for this before it answers.
     gate: Mutex<Option<Receiver<()>>>,
     entries: Mutex<u8>,
+    opened: Mutex<u32>,
 }
 
 impl Fake {
@@ -47,6 +48,7 @@ impl Fake {
             reply: Mutex::new(Reply::Ack),
             gate: Mutex::default(),
             entries: Mutex::default(),
+            opened: Mutex::default(),
         })
     }
 
@@ -134,6 +136,9 @@ impl FsOps for Fake {
             *entries += 1;
         }
         left
+    }
+    fn note_opened(&self) {
+        *self.opened.lock().unwrap() += 1;
     }
     fn publish(&self, view: &WindowView) {
         self.published.lock().unwrap().push(view.clone());
@@ -352,4 +357,34 @@ fn window_view_getter_matches_event() {
     fs.handle(&*ops, Observed::Exited);
     assert!(!fs.view(&*ops).full_screen);
     assert_eq!(fs.view(&*ops), ops.last_published());
+}
+
+#[test]
+fn view_between_did_enter_and_the_count_reads_the_store() {
+    let (fs, ops) = setup();
+    // The notification block recorded the entry; the events thread has not counted it yet.
+    fs.observe(Observed::Entered);
+    let before = fs.view(&*ops);
+    assert!(before.full_screen);
+    assert_eq!(before.hints_left, 3, "the store's count, not a stale one");
+    fs.after_event(&*ops, Observed::Entered);
+    assert_eq!(fs.view(&*ops).hints_left, 3, "the count of this entry");
+    assert_eq!(ops.last_published().hints_left, 3);
+    // The next entry reads the store (2 left) in the same gap.
+    fs.handle(&*ops, Observed::Exited);
+    fs.observe(Observed::Entered);
+    assert_eq!(fs.view(&*ops).hints_left, 2);
+}
+
+#[test]
+fn every_entry_ends_the_focus_view_tip() {
+    let (fs, ops) = setup();
+    for entry in 1..=5 {
+        fs.enter(&*ops, None).expect("enters");
+        assert_eq!(*ops.opened.lock().unwrap(), entry, "entry {entry}");
+        fs.leave(&*ops).expect("leaves");
+    }
+    // A did-fail and a did-exit do not count as an open.
+    fs.handle(&*ops, Observed::Failed);
+    assert_eq!(*ops.opened.lock().unwrap(), 5);
 }

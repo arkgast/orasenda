@@ -49,6 +49,13 @@ fn view_menu_other_display_only_with_two() {
     }
     let two = view_menu::entries(&view, 2);
     let other = items(&two).nth(1).expect("the second item");
+    let leave = items(&two).nth(2).expect("the third item");
+    assert_eq!(leave.id, view_menu::LEAVE_FULL_SCREEN_ID);
+    assert_eq!(leave.action, Some(ActionId::LeaveFullScreen));
+    assert_eq!(
+        view_menu::action_of(leave.id),
+        Some(ActionId::LeaveFullScreen)
+    );
     assert_eq!(other.label, "Full Screen on Another Display…");
     assert_eq!(other.accelerator.as_deref(), Some("Shift+Super+KeyF"));
 }

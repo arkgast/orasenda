@@ -24,7 +24,8 @@ fn append_entries(
                 app,
                 item.id,
                 item.label,
-                true,
+                // Leave Full Screen starts disabled; `set_leave_enabled` follows `window-view`.
+                item.id != view_menu::LEAVE_FULL_SCREEN_ID,
                 item.accelerator.as_deref(),
             )?)?,
             Entry::Separator => append(&PredefinedMenuItem::separator(app)?)?,
@@ -77,7 +78,31 @@ pub(crate) fn rebuild_view(
     }
     append_entries(app, &view_menu::entries(view, displays), &mut |c| {
         submenu.append(c)
-    })
+    })?;
+    // The rebuilt item starts disabled: bring it back in line with the window.
+    set_leave_item(&menu, crate::windows::full_screen::is_on(app));
+    Ok(())
+}
+
+fn set_leave_item(menu: &Menu<Wry>, enabled: bool) {
+    if let Some(MenuItemKind::MenuItem(item)) = find_item(menu, view_menu::LEAVE_FULL_SCREEN_ID)
+        && let Err(error) = item.set_enabled(enabled)
+    {
+        eprintln!("menu: could not update Leave Full Screen: {error}");
+    }
+}
+
+/// Enables Leave Full Screen only while `main` is in full screen. Queued on the main thread.
+pub(crate) fn set_leave_enabled(app: &AppHandle, enabled: bool) {
+    let handle = app.clone();
+    let queued = app.run_on_main_thread(move || {
+        if let Some(menu) = handle.menu() {
+            set_leave_item(&menu, enabled);
+        }
+    });
+    if let Err(error) = queued {
+        eprintln!("menu: could not reach the main thread: {error}");
+    }
 }
 
 /// `Menu::get` only searches the top level; every registry item sits in a submenu.
