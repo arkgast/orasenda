@@ -46,9 +46,7 @@ export const commands = {
 	nativeMenuPopup: (request: NativeMenuRequest_Deserialize) => __TAURI_INVOKE<string | null>("native_menu_popup", { request }),
 	/**  The connected displays. */
 	displaysList: () => __TAURI_INVOKE<DisplayInfo[]>("displays_list"),
-	/**  Opens a display's Focus window (or focuses it), or the floater (then hides `main`). */
-	focusViewOpen: (target: FocusViewTarget) => typedError<null, FocusViewError>(__TAURI_INVOKE("focus_view_open", { target })),
-	/**  Closes the calling Focus window or floater; refused for `main`. */
+	/**  Closes the calling floater; refused for `main`. */
 	focusViewClose: () => typedError<null, FocusViewError>(__TAURI_INVOKE("focus_view_close")),
 	/**  Open Orasenda: shows `main`, then closes the floater. */
 	mainShow: () => typedError<null, FocusViewError>(__TAURI_INVOKE("main_show")),
@@ -153,7 +151,6 @@ export const events = {
 	backupsChanged: makeEvent<DataOverview_Serialize, DataOverview_Deserialize>("backups-changed"),
 	captureFocus: makeEvent<CaptureFocus, CaptureFocus>("capture-focus"),
 	clockTick: makeEvent<ClockTick_Serialize, ClockTick_Deserialize>("clock-tick"),
-	focusInsets: makeEvent<FocusInsets, FocusInsets>("focus-insets"),
 	inboxChanged: makeEvent<NoteView[], NoteView[]>("inbox-changed"),
 	keyboardChanged: makeEvent<KeyboardView_Serialize, KeyboardView_Deserialize>("keyboard-changed"),
 	navigate: makeEvent<Navigate_Serialize, Navigate_Deserialize>("navigate"),
@@ -379,7 +376,7 @@ export type DataOverview_Serialize = {
 
 /**  A connected display, as the Focus menu and the Focus view buttons list it. */
 export type DisplayInfo = {
-	/**  The label-safe display key; the Focus window is `focus-<id>`. */
+	/**  The label-safe display key. */
 	id: string,
 	name: string,
 	/**  Whether the main window is on this display. */
@@ -403,18 +400,7 @@ export type FixedKeyView = {
 	spoken: string,
 };
 
-/**
- *  The part of a Focus window's display that the menu bar and the Dock cover, in points.
- *  Sent to that one window, which pads its body by it.
- */
-export type FocusInsets = {
-	top: number,
-	right: number,
-	bottom: number,
-	left: number,
-};
-
-/**  A failed `focus_view_open` or `focus_view_close`. */
+/**  A failed `focus_view_close` or `main_show`. */
 export type FocusViewError = {
 	kind: FocusViewErrorKind,
 	message: string,
@@ -426,9 +412,6 @@ export type FocusViewErrorKind =
 "unavailable" | 
 /**  The display is not connected. */
 "noDisplay";
-
-/**  Which Focus view to open. */
-export type FocusViewTarget = { kind: "fullScreen"; displayId: string } | { kind: "floater" };
 
 /**  A failed `full_screen_enter`, `full_screen_enter_on` or `full_screen_leave`. */
 export type FullScreenError = {

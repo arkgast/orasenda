@@ -30,7 +30,7 @@ export type StatusInput = {
   startError: boolean;
   /** `timer_pause`, `timer_resume` or `timer_stop` answered an error that is not a race. */
   controlError: boolean;
-  /** `focus_view_open` failed and nothing newer has happened. */
+  /** Opening a Focus view failed and nothing newer has happened. */
   openFailed?: boolean;
   /** `timer_state` failed: no view will come this launch. */
   timerUnavailable: boolean;

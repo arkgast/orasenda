@@ -35,18 +35,11 @@ describe("vite dev server", () => {
 });
 
 describe("vite build inputs", () => {
-  it("builds one page per window, the Focus window, the floater and the capture panel included", async () => {
+  it("builds one page per window, the floater and the capture panel included", async () => {
     vi.resetModules();
     const config = (await import("./vite.config")).default;
     const input = config.build?.rolldownOptions?.input as Record<string, string>;
-    expect(Object.keys(input).sort()).toEqual([
-      "capture",
-      "dev",
-      "floater",
-      "focus",
-      "main",
-      "overlay",
-    ]);
+    expect(Object.keys(input).sort()).toEqual(["capture", "dev", "floater", "main", "overlay"]);
     for (const [name, page] of Object.entries(input)) {
       expect(page.endsWith(name === "main" ? "index.html" : `${name}.html`), name).toBe(true);
     }

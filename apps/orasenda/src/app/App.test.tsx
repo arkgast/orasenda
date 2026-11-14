@@ -288,7 +288,7 @@ test("palette_open_ignored_while_modal_open", async () => {
 });
 
 test("no_webview_binding_for_focus_shortcuts", async () => {
-  const backend = mockBackend();
+  mockBackend();
   render(<App />);
   await settle();
   fireEvent.keyDown(document.body, { key: "k", metaKey: true });
@@ -296,5 +296,4 @@ test("no_webview_binding_for_focus_shortcuts", async () => {
   fireEvent.keyDown(document.body, { key: "T", metaKey: true, shiftKey: true });
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(backend.calls.some((c) => c.cmd === "focus_view_open")).toBe(false);
 });

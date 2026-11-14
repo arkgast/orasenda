@@ -205,7 +205,6 @@ fn windows_fns_refuse_off_main_thread() {
     let refused = Err(WindowError::NotOnMainThread);
     // SAFETY: null is allowed by the contract; the main-thread check runs first.
     unsafe {
-        assert_eq!(configure_focus_window(null_mut(), "x"), refused);
         assert_eq!(configure_floater(null_mut()), refused);
         assert_eq!(key_without_activation(null_mut()), refused);
         assert_eq!(

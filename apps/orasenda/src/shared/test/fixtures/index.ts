@@ -83,7 +83,6 @@ const DEFAULTS: Replies = {
   notifications_open_settings: () => null,
   timer_view: () => IDLE,
   displays_list: () => DISPLAYS,
-  focus_view_open: () => null,
   focus_view_close: () => null,
   main_show: () => null,
   preset_select: () => null,

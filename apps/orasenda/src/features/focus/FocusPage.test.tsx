@@ -1,7 +1,6 @@
 import { resetPresetsForTests } from "@domain/presets/presets";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
-  emitFocusInsets,
   emitMilestone,
   emitTimer,
   mockBackend,
@@ -29,8 +28,6 @@ afterEach(async () => {
   window.history.replaceState({}, "", "/");
 });
 
-const page = () => document.querySelector<HTMLElement>('[data-slot="focus-page"]') as HTMLElement;
-
 test("focus_page_follows_the_saved_theme", async () => {
   mockBackend({ settings_get: () => ({ ...SETTINGS, theme: "dark" }) });
   render(<FocusPage />);
@@ -51,29 +48,6 @@ test("focus_page_reads_timer_view_not_state", async () => {
   await emitTimer({ ...PAUSED, remaining: "20:00", remainingLabel: "20 minutes" });
   expect(screen.getByRole("timer")).toHaveAccessibleName(/20 minutes remaining/);
   expect(screen.getByRole("button", { name: "Resume session" })).toBeInTheDocument();
-});
-
-test("focus_page_insets_from_query_and_event", async () => {
-  window.history.replaceState({}, "", "/focus.html?display=1&insets=10,20,30,40");
-  mockBackend();
-  render(<FocusPage />);
-  await settle();
-  const style = page().style;
-  expect(style.getPropertyValue("--focus-inset-top")).toBe("10px");
-  expect(style.getPropertyValue("--focus-inset-right")).toBe("20px");
-  expect(style.getPropertyValue("--focus-inset-bottom")).toBe("30px");
-  expect(style.getPropertyValue("--focus-inset-left")).toBe("40px");
-  await emitFocusInsets({ top: 0, right: 0, bottom: 0, left: 8 });
-  expect(style.getPropertyValue("--focus-inset-top")).toBe("0px");
-  expect(style.getPropertyValue("--focus-inset-left")).toBe("8px");
-});
-
-test("focus_page_without_insets_pads_nothing", async () => {
-  window.history.replaceState({}, "", "/focus.html?display=1&insets=nonsense");
-  mockBackend();
-  render(<FocusPage />);
-  await settle();
-  expect(page().style.getPropertyValue("--focus-inset-top")).toBe("0px");
 });
 
 test("focus_page_summary_only_while_idle_or_ended", async () => {

@@ -45,9 +45,6 @@ mod other {
         fn main_display(&self) -> Option<String> {
             None
         }
-        fn focus_labels(&self) -> Vec<String> {
-            Vec::new()
-        }
         fn window_display(&self, _label: &str) -> Option<String> {
             None
         }
@@ -55,9 +52,6 @@ mod other {
             false
         }
         fn create(&self, _spec: &WindowSpec) -> Result<(), FocusViewError> {
-            Err(unavailable())
-        }
-        fn cover_display(&self, _label: &str, _display_id: &str) -> Result<(), FocusViewError> {
             Err(unavailable())
         }
         fn make_floater(&self, _label: &str) -> Result<(), FocusViewError> {
@@ -95,7 +89,6 @@ mod other {
             None
         }
         fn migrate_frames(&self, _screens: &[Screen]) {}
-        fn emit_insets(&self, _label: &str, _insets: crate::ipc::FocusInsets) {}
         fn close(&self, _label: &str) {}
     }
 }
@@ -111,11 +104,9 @@ mod mac {
     use tauri_specta::Event as _;
 
     use super::{FocusViewError, unavailable};
-    use crate::ipc::FocusInsets;
     use crate::lifecycle::MAIN;
     use crate::runtime::ticker::AppHost;
     use crate::windows::floater_keys;
-    use crate::windows::focus::insets_of;
     use crate::windows::frames::Frames;
     use crate::windows::{CAPTURE, FLOATER, Ops, Screen, WindowSpec};
 
@@ -246,7 +237,6 @@ mod mac {
                         name: display.name,
                         size,
                         visible,
-                        insets: insets_of(size, visible),
                     }
                 })
                 .collect())
@@ -258,17 +248,6 @@ mod mac {
 
         fn exists(&self, label: &str) -> bool {
             self.app.get_webview_window(label).is_some()
-        }
-
-        fn focus_labels(&self) -> Vec<String> {
-            let mut labels: Vec<String> = self
-                .app
-                .webview_windows()
-                .into_keys()
-                .filter(|label| label.starts_with("focus-"))
-                .collect();
-            labels.sort();
-            labels
         }
 
         fn window_display(&self, label: &str) -> Option<String> {
@@ -305,14 +284,6 @@ mod mac {
                 builder = builder.max_inner_size(width, height);
             }
             builder.build().map(|_| ()).map_err(tauri_error)
-        }
-
-        fn cover_display(&self, label: &str, display_id: &str) -> Result<(), FocusViewError> {
-            let display = display_id.to_owned();
-            // SAFETY: `pointer` is the live NSWindow of the window, on the main thread.
-            self.with_window(label, move |pointer| unsafe {
-                appkit::configure_focus_window(pointer, &display)
-            })
         }
 
         fn make_floater(&self, label: &str) -> Result<(), FocusViewError> {
@@ -399,12 +370,6 @@ mod mac {
 
         fn load_frame(&self, displays: &[&str]) -> Option<(String, Frame)> {
             crate::runtime::session::run_frame_load(&AppHost::new(&self.app), FLOATER, displays)
-        }
-
-        fn emit_insets(&self, label: &str, insets: FocusInsets) {
-            if let Err(error) = insets.emit_to(&self.app, label) {
-                eprintln!("windows: could not emit focus-insets: {error}");
-            }
         }
 
         fn close(&self, label: &str) {

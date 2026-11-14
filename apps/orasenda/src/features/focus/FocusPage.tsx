@@ -13,9 +13,8 @@ import { useTheme } from "@shared/hooks/useTheme";
 import type { Settings, TimerCommandError, TimerView_Serialize } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { watchSettingsChanged } from "@shared/ipc/settingsQueue";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { hintText, useEntryHint } from "./keyHint";
-import { useInsets } from "./useInsets";
 import { useLeaveKey } from "./useLeaveKey";
 import "./focus.css";
 
@@ -67,7 +66,6 @@ function useSavedSettings(): { settings: Settings | null; failed: boolean } {
  */
 export function FocusPage({ hintsLeft = 0 }: { hintsLeft?: number }) {
   useTheme();
-  const insets = useInsets();
   const clock = useClock();
   const { view, ended, failed } = useSurfaceTimer();
   const { settings, failed: settingsFailed } = useSavedSettings();
@@ -186,20 +184,8 @@ export function FocusPage({ hintsLeft = 0 }: { hintsLeft?: number }) {
   };
 
   const shown: TimerView_Serialize | null = view;
-  const style = {
-    "--focus-inset-top": `${insets.top}px`,
-    "--focus-inset-right": `${insets.right}px`,
-    "--focus-inset-bottom": `${insets.bottom}px`,
-    "--focus-inset-left": `${insets.left}px`,
-  } as CSSProperties;
-
   return (
-    <main
-      data-slot="focus-page"
-      aria-label="Focus session"
-      className="app-focus-page"
-      style={style}
-    >
+    <main data-slot="focus-page" aria-label="Focus session" className="app-focus-page">
       <FullScreenFocus
         remaining={shown?.remaining ?? ""}
         remainingLabel={shown?.remainingLabel ?? ""}

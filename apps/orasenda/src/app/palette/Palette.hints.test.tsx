@@ -64,5 +64,4 @@ test("palette_floater_runs_through_action_run", async () => {
   expect(backend.calls.filter((c) => c.cmd === "action_run").map((c) => c.args)).toEqual([
     { id: "floater" },
   ]);
-  expect(backend.calls.some((c) => c.cmd === "focus_view_open")).toBe(false);
 });

@@ -20,7 +20,6 @@ pub const COMMANDS: &[&str] = &[
     "presets_list",
     "native_menu_popup",
     "displays_list",
-    "focus_view_open",
     "focus_view_close",
     "main_show",
     "full_screen_enter",

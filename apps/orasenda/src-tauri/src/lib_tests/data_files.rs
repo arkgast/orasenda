@@ -116,7 +116,6 @@ fn start_session(host: &TestHost) {
 fn no_dialog_permission_in_capabilities() {
     for file in [
         "main.json",
-        "focus.json",
         "floater.json",
         "capture.json",
         "dev.json",

@@ -270,7 +270,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
 
 ## ADR-019: Full screen is the main window in native macOS full screen
 - **Date:** 2026-11-13
-- **Status:** proposed (spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Amends ADR-016.
+- **Status:** accepted (2026-11-14; built by H4a, H4b and H4c, #457, #458 and #459; spec [Structure, keys, focus and Settings](specs/2026-11-13-polish-structure-keys-focus-settings.md)). Amends ADR-016.
 - **Context:** ADR-016 made full screen a second, borderless `focus-<display>` window and rejected macOS native full screen, because native full screen blacks out the other displays when "Displays have separate Spaces" is off. In use, the second window means two copies of the timer page, a display menu on Today's button, a "Leave full screen?" dialog, and a window to create, place and close for every entry. The owner asked for full screen to be the main window itself, entered at once (sub-project H, 2026-11-13).
 - **Options considered:**
   1. **The main window in native full screen (`setFullscreen`), with the nav rail and page chrome hidden:** one window, one page tree, macOS draws the transition and the Space, and the green button and the Globe-F key mean the same thing. With "Displays have separate Spaces" off, the other displays go blank while it is full screen.

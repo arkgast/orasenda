@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn menu_popup_targets_calling_window() {
-        for label in ["main", "floater", "focus-1"] {
+        for label in ["main", "floater", "capture"] {
             let asked = std::cell::RefCell::new(Vec::new());
             let found = target_window(
                 |l| {

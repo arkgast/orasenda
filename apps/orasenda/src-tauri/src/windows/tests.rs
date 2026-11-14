@@ -8,21 +8,14 @@ use orasenda_service::session::{run_frame_load, run_frame_save};
 use orasenda_service::windows::Frame;
 
 use super::floater::{self, LIMITS, close_floater_on, floater_window_spec, open_floater_on};
-use super::focus::{self, focus_label, focus_window_spec, insets_of, open_focus_on};
 use super::frames::{DEBOUNCE_MS, Trailing};
 use super::{FLOATER, Ops, Screen, WindowSpec};
-use crate::ipc::{FocusInsets, FocusViewError, FocusViewErrorKind};
+use crate::ipc::{FocusViewError, FocusViewErrorKind};
 mod capture;
 mod displays;
 mod floater_toggle;
 mod frames;
 mod full_screen;
-const NO_INSETS: FocusInsets = FocusInsets {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-};
 
 fn rect(x: i32, y: i32, width: u32, height: u32) -> Frame {
     Frame {
@@ -41,7 +34,6 @@ fn screen(id: &str, width: u32, height: u32) -> Screen {
         name: format!("Display {id}"),
         size: (width, height),
         visible,
-        insets: insets_of((width, height), visible),
     }
 }
 
@@ -111,11 +103,6 @@ impl Ops for Fake {
         }
         self.windows.borrow().iter().any(|l| l == label)
     }
-    fn focus_labels(&self) -> Vec<String> {
-        let mut all = self.windows.borrow().clone();
-        all.retain(|l| l.starts_with("focus-"));
-        all
-    }
     fn window_display(&self, _label: &str) -> Option<String> {
         let on = self.on.as_ref()?;
         self.screens.iter().any(|s| &s.id == on).then(|| on.clone())
@@ -127,9 +114,6 @@ impl Ops for Fake {
         }
         self.windows.borrow_mut().push(spec.label.clone());
         Ok(())
-    }
-    fn cover_display(&self, label: &str, display_id: &str) -> Result<(), FocusViewError> {
-        self.step(&format!("cover {label} {display_id}"))
     }
     fn make_floater(&self, label: &str) -> Result<(), FocusViewError> {
         self.step(&format!("make_floater {label}"))
@@ -186,9 +170,6 @@ impl Ops for Fake {
             None => self.stored.clone(),
         }
     }
-    fn emit_insets(&self, label: &str, _insets: FocusInsets) {
-        self.calls.borrow_mut().push(format!("insets {label}"));
-    }
     fn close(&self, label: &str) {
         self.calls.borrow_mut().push(format!("close {label}"));
         self.windows.borrow_mut().retain(|l| l != label);
@@ -221,24 +202,6 @@ fn collect(value: &serde_json::Value, name: &str, found: &mut Option<u32>) {
 }
 
 #[test]
-fn focus_window_spec_matches_spec() {
-    let spec = focus_window_spec(
-        "1234",
-        (1440, 900),
-        FocusInsets {
-            top: 24,
-            right: 0,
-            bottom: 60,
-            left: 0,
-        },
-    );
-    assert_eq!(spec.label, "focus-1234");
-    assert_eq!(spec.page, "focus.html?display=1234&insets=24,0,60,0");
-    assert!(!spec.decorations && !spec.resizable && spec.skip_taskbar && !spec.visible);
-    assert_eq!((spec.width, spec.height), (1440.0, 900.0));
-}
-
-#[test]
 fn floater_window_spec_uses_tokens() {
     let spec = floater_window_spec();
     assert_eq!(spec.label, "floater");
@@ -262,88 +225,6 @@ fn floater_window_spec_uses_tokens() {
     assert_eq!(floater::EDGE_INSET, token_px("space-6"));
     assert_eq!(LIMITS.max_width, token_px("floater-max-width"));
     assert!(!spec.decorations && spec.skip_taskbar && !spec.visible);
-}
-
-#[test]
-fn focus_label_is_valid_for_any_display_id() {
-    for id in [
-        "69732992",
-        "a-b",
-        "i0",
-        "",
-        "---",
-        "é ü/..:x",
-        "a--b",
-        "-lead",
-        "trail-",
-    ] {
-        let label = focus_label(id);
-        assert!(
-            label.starts_with("focus-") && label.len() > "focus-".len(),
-            "{id:?} -> {label}"
-        );
-        assert!(
-            label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'),
-            "{label}"
-        );
-        assert!(!label.ends_with('-') && !label.contains("--"), "{label}");
-    }
-    assert_eq!(focus_label("69732992"), "focus-69732992");
-}
-
-#[test]
-fn insets_are_the_menu_bar_and_dock() {
-    assert_eq!(
-        insets_of((1440, 900), rect(0, 24, 1440, 816)),
-        FocusInsets {
-            top: 24,
-            right: 0,
-            bottom: 60,
-            left: 0
-        }
-    );
-    assert_eq!(insets_of((100, 100), rect(0, 0, 200, 200)), NO_INSETS);
-}
-
-#[test]
-fn focus_view_open_unknown_display_is_no_display() {
-    let ops = Fake::new(vec![screen("1", 1440, 900)]);
-    let error = open_focus_on(&ops, "nope").unwrap_err();
-    assert_eq!(error.kind, FocusViewErrorKind::NoDisplay);
-    assert!(ops.calls().is_empty(), "no window was touched");
-}
-
-#[test]
-fn focus_view_open_creates_frames_then_shows() {
-    let ops = Fake::new(vec![screen("1", 1440, 900)]);
-    open_focus_on(&ops, "1").unwrap();
-    assert_eq!(
-        ops.calls(),
-        vec![
-            "create focus-1",
-            "cover focus-1 1",
-            "show focus-1",
-            "focus focus-1",
-            "insets focus-1"
-        ]
-    );
-}
-
-#[test]
-fn focus_view_open_existing_window_is_focused_not_created() {
-    let ops = Fake::new(vec![screen("1", 1440, 900)]);
-    open_focus_on(&ops, "1").unwrap();
-    open_focus_on(&ops, "1").unwrap();
-    assert_eq!(ops.count("create"), 1);
-    assert_eq!(ops.count("focus focus-1"), 2);
-}
-
-#[test]
-fn focus_view_open_failed_frame_closes_the_window() {
-    let mut ops = Fake::new(vec![screen("1", 1440, 900)]);
-    ops.fail_on = Some("cover");
-    assert!(open_focus_on(&ops, "1").is_err());
-    assert!(!ops.exists("focus-1"));
 }
 
 #[test]
@@ -392,7 +273,7 @@ fn floater_opens_at_the_stored_frame_clamped() {
 }
 
 #[test]
-fn focus_view_open_floater_twice_one_window() {
+fn floater_open_twice_one_window() {
     let ops = Fake::new(vec![screen("1", 1440, 900)]);
     open_floater_on(&ops).unwrap();
     open_floater_on(&ops).unwrap();
@@ -445,7 +326,6 @@ fn open_close_never_touch_session() {
     ops.host = Some(host.clone());
     // A remembered frame goes through the same service functions the windows module uses.
     run_frame_save(&host, FLOATER, "1", rect(100, 100, 280, 64));
-    open_focus_on(&ops, "1").unwrap();
     open_floater_on(&ops).unwrap();
     open_floater_on(&ops).unwrap();
     close_floater_on(&ops);

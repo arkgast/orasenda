@@ -21,7 +21,7 @@ pub(crate) enum KeyAction {
     OpenOrasenda,
     /// Esc: close the floater (`focus_view_close`).
     Close,
-    /// ⇧⌘F: the Focus window on the main window's display.
+    /// ⇧⌘F: full screen in main.
     FullScreen,
     /// ⇧⌘T: the floater itself, which gets key focus again.
     FloatingTimer,
@@ -150,17 +150,9 @@ mod mac {
             KeyAction::FloatingTimer => {
                 crate::actions::run(app, ActionId::Floater, Source::Monitor);
             }
-            KeyAction::FullScreen => match windows::main_display(app) {
-                Some(display) => {
-                    if let Err(error) = windows::open_focus(app, &display) {
-                        eprintln!(
-                            "floater keys: could not open full screen: {}",
-                            error.message
-                        );
-                    }
-                }
-                None => eprintln!("floater keys: no display to open full screen on"),
-            },
+            KeyAction::FullScreen => {
+                crate::actions::run(app, ActionId::FullScreen, Source::Monitor);
+            }
             KeyAction::TogglePause => {
                 let view = session::run_view(app);
                 if let Err(error) = session::run_action(app, toggle_action(view.state)) {

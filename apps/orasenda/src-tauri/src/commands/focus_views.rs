@@ -1,4 +1,4 @@
-//! The Focus view commands: the displays, opening and closing a Focus window or the floater,
+//! The Focus view commands: the displays, closing the floater, opening Orasenda from it,
 //! the timer view the Focus surfaces read, and the next-preset choice.
 //!
 //! Every window call runs on a `spawn_blocking` thread (creating a window waits on the main
@@ -8,8 +8,7 @@ use orasenda_core::NotificationStatus;
 
 use super::on_blocking;
 use crate::ipc::{
-    DisplayInfo, FocusViewError, FocusViewTarget, StoreStatus, TimerCommandError,
-    TimerCommandErrorKind, TimerView,
+    DisplayInfo, FocusViewError, StoreStatus, TimerCommandError, TimerCommandErrorKind, TimerView,
 };
 use crate::lifecycle::MAIN;
 use crate::runtime::session;
@@ -53,21 +52,6 @@ pub async fn displays_list(app: tauri::AppHandle) -> Vec<DisplayInfo> {
         .unwrap_or_default()
 }
 
-/// Opens a display's Focus window (or focuses it), or the floater (then hides `main`).
-#[tauri::command]
-#[specta::specta]
-pub async fn focus_view_open(
-    app: tauri::AppHandle,
-    target: FocusViewTarget,
-) -> Result<(), FocusViewError> {
-    on_blocking(move || match target {
-        FocusViewTarget::FullScreen { display_id } => windows::open_focus(&app, &display_id),
-        FocusViewTarget::Floater => windows::open_floater(&app),
-    })
-    .await
-    .unwrap_or_else(|| Err(task_failed()))
-}
-
 /// Whether the calling window may close itself as a Focus view: every window but `main`.
 pub(crate) fn closable(label: &str) -> Result<(), FocusViewError> {
     if label == MAIN {
@@ -79,7 +63,7 @@ pub(crate) fn closable(label: &str) -> Result<(), FocusViewError> {
     }
 }
 
-/// Closes the calling Focus window or floater; refused for `main`.
+/// Closes the calling floater; refused for `main`.
 #[tauri::command]
 #[specta::specta]
 pub async fn focus_view_close(

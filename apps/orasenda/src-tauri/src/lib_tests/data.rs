@@ -108,7 +108,6 @@ fn data_commands_in_main_capability_only() {
     ];
     for file in [
         "main.json",
-        "focus.json",
         "floater.json",
         "capture.json",
         "dev.json",
