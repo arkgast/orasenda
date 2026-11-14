@@ -203,4 +203,14 @@ None blocking. The owner may overrule any decision above after reviewing the can
 
 ## Implementation status
 - Plan: [docs/plans/2026-11-14-routines-and-habits.md](../plans/2026-11-14-routines-and-habits.md)
-- Issues are listed in the plan once the backlog is filed.
+- Epic #513
+- [ ] R1 (#514)
+- [ ] R2 (#515)
+- [ ] R3 (#516)
+- [ ] R4 (#517)
+- [ ] R5 (#518)
+- [ ] R6 (#519)
+- [ ] R7 (#520)
+- [ ] R8 (#521)
+- [ ] R9 (#522)
+- [ ] R10 (#523)
