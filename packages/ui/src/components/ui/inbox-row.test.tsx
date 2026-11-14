@@ -50,7 +50,11 @@ test("inbox_row_text_is_never_truncated", () => {
 
 function withMenu(over: Partial<InboxRowProps> = {}) {
   const onMoveToBoard = vi.fn();
-  const kit = setup({ onMoveToBoard, moreName: "More actions for Ask Sam about the invoice", ...over });
+  const kit = setup({
+    onMoveToBoard,
+    moreName: "More actions for Ask Sam about the invoice",
+    ...over,
+  });
   return { onMoveToBoard, ...kit };
 }
 
@@ -67,7 +71,9 @@ test("inbox_row_menu_offers_move_to_board", async () => {
     .getAllByRole("menuitem")
     .map((i) => i.textContent);
   expect(items).toEqual(["Move to Board", "Remove"]);
-  fireEvent.keyDown(within(menu).getByRole("menuitem", { name: "Move to Board" }), { key: "Enter" });
+  fireEvent.keyDown(within(menu).getByRole("menuitem", { name: "Move to Board" }), {
+    key: "Enter",
+  });
   expect(onMoveToBoard).toHaveBeenCalledTimes(1);
   expect(onRemove).not.toHaveBeenCalled();
 });

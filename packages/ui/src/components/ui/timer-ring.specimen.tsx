@@ -15,6 +15,13 @@ const SIZES: Array<[number, number]> = [
   [1200, 900],
 ];
 
+const TASK = "Draft the chapter 3 outline and send it round for comments";
+const TASK_SIZES: Array<[number, number]> = [
+  [160, 160],
+  [360, 240],
+  [560, 560],
+];
+
 const LONG = {
   remaining: "1:29:59",
   remainingLabel: "1 hour 29 minutes 59 seconds",
@@ -110,6 +117,14 @@ export function TimerRingSpecimen(): ReactElement {
           remainingLabel="1 minute 48 seconds"
           progress={0.93}
         />
+      </Frame>
+      {TASK_SIZES.map(([w, h]) => (
+        <Frame key={`task-${w}x${h}`} state={`timer-ring-task-${w}x${h}`} width={w} height={h}>
+          <TimerRing size="fluid" mode="focus" {...RUN} clock="09:41" task={TASK} />
+        </Frame>
+      ))}
+      <Frame state="timer-ring-task-idle" width={400} height={400}>
+        <TimerRing size="fluid" mode="idle" task={TASK} />
       </Frame>
       <Frame state="timer-ring-fluid-idle" width={400} height={400}>
         <TimerRing size="fluid" mode="idle" />

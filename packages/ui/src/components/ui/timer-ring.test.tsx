@@ -108,7 +108,9 @@ test("digits_length_attr_long_for_h_mm_ss", () => {
 });
 
 test("timer_ring_names_the_task", () => {
-  const { container } = render(<TimerRing size={280} mode="focus" {...RUN} task="Draft the chapter 3 outline" />);
+  const { container } = render(
+    <TimerRing size={280} mode="focus" {...RUN} task="Draft the chapter 3 outline" />,
+  );
   expect(screen.getByRole("timer")).toHaveAccessibleName(
     "Focus, 18 minutes 42 seconds remaining, Draft the chapter 3 outline",
   );

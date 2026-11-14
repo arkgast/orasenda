@@ -106,7 +106,7 @@ export function FloatingTimer({
         <div
           className={cn(
             "flex min-w-0 items-center gap-1-5",
-            // The timer sits in the panel: the panel owns the fill and the edge, and the task line joins in P2.
+            // The timer sits in the panel: the panel owns the fill and the edge, and the task stays in the name only.
             "*:data-[slot=menu-bar-timer]:border-clear *:data-[slot=menu-bar-timer]:bg-clear *:data-[slot=menu-bar-timer]:p-0 *:data-[slot=menu-bar-timer]:shadow-none *:data-[slot=menu-bar-timer]:**:data-[slot=menu-bar-timer-task]:hidden",
           )}
         >

@@ -159,6 +159,10 @@
     "group": "Tasks",
     "height": 320
   },
+  "TaskPicker": {
+    "group": "Tasks",
+    "height": 520
+  },
   "TextArea": {
     "group": "Fields",
     "height": 230
