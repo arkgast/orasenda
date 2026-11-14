@@ -1,5 +1,11 @@
 import { act } from "@testing-library/react";
-import { type BoardView_Serialize, events } from "../../ipc/bindings";
+import {
+  type BoardView_Serialize,
+  type ColumnView_Serialize,
+  events,
+  type Lane,
+  type TaskView_Serialize,
+} from "../../ipc/bindings";
 
 const COLUMNS = [
   ["backlog", "Backlog", null],
@@ -27,4 +33,51 @@ export async function emitBoardChanged(seq: number, board: BoardView_Serialize):
   await act(async () => {
     await events.boardChanged.emit({ seq, board });
   });
+}
+
+/** A task as the board shows it; `over` changes any field. */
+export function boardTask(
+  id: string,
+  title: string,
+  lane: Lane,
+  over: Partial<TaskView_Serialize> = {},
+): TaskView_Serialize {
+  return {
+    id,
+    title,
+    notes: "",
+    tags: [],
+    kind: "deep",
+    estimate: null,
+    planned: null,
+    due: null,
+    dueLabel: null,
+    priority: null,
+    checklist: [],
+    lane,
+    isFrog: false,
+    breakdownDismissed: false,
+    sourceNoteId: null,
+    doneAt: null,
+    tracked: "0h 00m",
+    trackedMs: 0,
+    sessions: 0,
+    active: false,
+    ...over,
+  };
+}
+
+/** A board holding `tasks`, each in its own lane in the order given; counts and limit states follow. */
+export function boardOf(
+  tasks: TaskView_Serialize[],
+  over: Partial<BoardView_Serialize> = {},
+): BoardView_Serialize {
+  const columns: ColumnView_Serialize[] = BOARD.columns.map((column) => {
+    const here = tasks.filter((t) => t.lane === column.lane);
+    const limit = column.limit;
+    const state =
+      limit === null || here.length < limit ? "under" : here.length === limit ? "at" : "over";
+    return { ...column, tasks: here, count: here.length, state };
+  });
+  return { ...BOARD, columns, ...over };
 }
