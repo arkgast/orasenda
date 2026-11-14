@@ -3,6 +3,7 @@ import {
   events,
   type RoutinesError,
   type RoutinesView_Serialize,
+  type RunView_Serialize,
   type TemplateId,
 } from "@shared/ipc/bindings";
 import { subscribe } from "@shared/ipc/subscribe";
@@ -23,7 +24,7 @@ export type Notice = {
 };
 
 /** The status row's line: the answer to the person's last action. Every new action clears it. */
-export type Line = "writeFailed" | "readFailed" | Notice | null;
+export type Line = "writeFailed" | "readFailed" | "startFailed" | Notice | null;
 
 /** What a write answered: ok (with Rust's data, such as a new id), a refusal, or no answer. */
 export type Outcome =
@@ -32,6 +33,13 @@ export type Outcome =
 
 /** Sends one routines command through the page's chain and resolves with what it answered. */
 export type WriteFn = (name: string, send: () => Promise<Answer>) => Promise<Outcome>;
+
+export type RunView = RunView_Serialize;
+
+/** What a `run_*` call answered: the run it acted on (even when that just ended), or why not. */
+export type RunAnswer =
+  | { status: "ok"; run: RunView }
+  | { status: "error"; error: RoutinesError | "unreachable" };
 
 type Answer = { status: "ok"; data: unknown } | { status: "error"; error: RoutinesError };
 
@@ -239,6 +247,35 @@ export function useRoutines() {
     [push],
   );
 
+  /** Sends a `run_*` call in turn with the page's other writes and answers with Rust's run. */
+  const runCall = useCallback(
+    (
+      name: string,
+      send: () => Promise<
+        { status: "ok"; data: RunView } | { status: "error"; error: RoutinesError }
+      >,
+    ): Promise<RunAnswer> =>
+      new Promise((resolve) => {
+        let run: RunView | null = null;
+        push({
+          key: `run:${++writeSeq}`,
+          name,
+          send: async () => {
+            const answer = await send();
+            if (answer.status === "ok") run = answer.data;
+            return answer;
+          },
+          settle: (outcome) => {
+            if (outcome.status === "error") resolve(outcome);
+            else if (run) resolve({ status: "ok", run });
+            // An Ok with no run is not success: it reads as a failure to reach Rust.
+            else resolve({ status: "error", error: "unreachable" });
+          },
+        });
+      }),
+    [push],
+  );
+
   const retry = useCallback(() => {
     setLine(null);
     setRoutines((current) => (current.status === "error" ? { status: "loading" } : current));
@@ -253,5 +290,5 @@ export function useRoutines() {
     [routines, checks],
   );
 
-  return { routines: shown, line, setLine, check, addTemplate, move, write, retry };
+  return { routines: shown, line, setLine, check, addTemplate, move, write, runCall, retry };
 }
