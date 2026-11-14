@@ -94,7 +94,9 @@ test("wide_width_uses_the_wide_token", () => {
 });
 
 test("action_slot_renders_in_header", () => {
-  render(<KanbanColumn title="Today" count={0} action={<button type="button">Column menu</button>} />);
+  render(
+    <KanbanColumn title="Today" count={0} action={<button type="button">Column menu</button>} />,
+  );
   expect(screen.getByRole("button", { name: "Column menu" })).toBeTruthy();
 });
 

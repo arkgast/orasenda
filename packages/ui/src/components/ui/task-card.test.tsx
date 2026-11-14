@@ -211,11 +211,7 @@ test("card_menu_remove_and_frog_call_back", () => {
   const onFrog = vi.fn();
   const onRemove = vi.fn();
   render(
-    <TaskCard
-      title="Write"
-      frog
-      menu={{ moveTargets: [], onMove: () => {}, onFrog, onRemove }}
-    />,
+    <TaskCard title="Write" frog menu={{ moveTargets: [], onMove: () => {}, onFrog, onRemove }} />,
   );
   fireEvent.click(screen.getByRole("button", { name: "More actions for Write" }));
   fireEvent.keyDown(screen.getByRole("menuitem", { name: "Unmark Frog" }), { key: "Enter" });
