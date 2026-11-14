@@ -139,3 +139,45 @@ test("a_second_press_while_an_answer_is_in_flight_is_not_a_second_answer", async
   expect(argsOf(backend.calls, "run_step")).toHaveLength(1);
   expect(progress()).toBe("Step 2 of 3");
 });
+
+test("when_the_settings_cant_be_read_single_keys_stay_off_and_the_row_says_so", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { backend } = await startRun({
+    ...runBackend(),
+    settings_get: () => {
+      throw "store";
+    },
+  });
+  const row = document.querySelector("[data-slot=routine-run] [data-slot=inline-notice]");
+  expect(row?.textContent).toBe(
+    "Your settings can't be read right now, so Enter and S work only on the buttons.",
+  );
+  expect(row).toHaveAttribute("data-tone", "attention");
+  await press("Enter");
+  expect(argsOf(backend.calls, "run_step")).toEqual([]);
+  fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  await flush();
+  expect(argsOf(backend.calls, "run_step")).toEqual([{ runId: "run-1", outcome: "done" }]);
+});
+
+test("esc_with_an_overlay_open_closes_the_overlay_and_does_not_end_the_run", async () => {
+  const { backend } = await startRun();
+  // An overlay that closes itself on Esc, as the command palette does.
+  const overlay = document.createElement("div");
+  overlay.setAttribute("role", "dialog");
+  const field = document.createElement("input");
+  overlay.append(field);
+  overlay.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") overlay.remove();
+  });
+  document.body.append(overlay);
+  field.focus();
+  await press("Escape");
+  expect(document.body.contains(overlay)).toBe(false);
+  expect(argsOf(backend.calls, "run_end")).toEqual([]);
+  expect(progress()).toBe("Step 1 of 3");
+
+  // With the overlay gone, Esc ends the routine.
+  await press("Escape");
+  expect(argsOf(backend.calls, "run_end")).toHaveLength(1);
+});

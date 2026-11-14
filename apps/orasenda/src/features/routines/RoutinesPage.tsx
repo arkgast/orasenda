@@ -72,8 +72,11 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
   useEffect(() => {
     // Back from a run: focus returns to the page's heading.
     if (wasRunning.current && !running) page.current?.querySelector<HTMLElement>("h1")?.focus();
+    // The run view takes over: a line meant for the overview (a refused start, which shows the
+    // run already open) would be stale once the person comes back.
+    if (!wasRunning.current && running) setLine(null);
     wasRunning.current = running;
-  }, [running]);
+  }, [running, setLine]);
 
   // Opening an editor is the next action: it clears the status row, Undo included.
   const edit = (next: Editing) => {

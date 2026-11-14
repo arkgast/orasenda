@@ -23,6 +23,10 @@ const LINES: Record<Exclude<RunLine, null>, string> = {
   endFailed: "The routine couldn't end just now. Your data is safe; try again in a moment.",
 };
 
+/** The row's line when `settings_get` failed: single keys stay off, so only the buttons work. */
+const SETTINGS_FAILED =
+  "Your settings can't be read right now, so Enter and S work only on the buttons.";
+
 const answered = (run: Run) => run.done + run.skipped;
 
 /**
@@ -35,12 +39,15 @@ const answered = (run: Run) => run.done + run.skipped;
 export function useRun(open: Run | null, runCall: RunCall, onStartFailed: () => void) {
   const [answer, setAnswer] = useState<{ run: Run; ended: boolean } | null>(null);
   const [line, setLine] = useState<RunLine>(null);
+  // The run a call answered as stopped. `view.run` can still hold it when the read-back after
+  // `run_end` failed; after Back it must not show as open again (every call on it is NotFound).
+  const [stopped, setStopped] = useState<string | null>(null);
   // One answer at a time: a press while a run call is in flight is not a second answer.
   const busy = useRef(false);
 
   let shown: { run: Run; ended: boolean } | null = null;
   if (answer?.ended) shown = answer;
-  else if (open) {
+  else if (open && open.id !== stopped) {
     const newer = answer && answer.run.id === open.id && answered(answer.run) > answered(open);
     shown = newer && answer ? answer : { run: open, ended: false };
   }
@@ -57,8 +64,11 @@ export function useRun(open: Run | null, runCall: RunCall, onStartFailed: () => 
       setLine(null);
       const result = await runCall(name, call);
       busy.current = false;
-      if (result.status === "ok") setAnswer({ run: result.run, ended: ended(result.run) });
-      else setLine(failed);
+      if (result.status === "ok") {
+        const over = ended(result.run);
+        setAnswer({ run: result.run, ended: over });
+        if (over) setStopped(result.run.id);
+      } else setLine(failed);
       return result;
     },
     [runCall],
@@ -128,7 +138,7 @@ function announcement(run: Run, ended: boolean): string {
  * moves to the step name after each answer, and to Back to routines once the run has ended.
  */
 export function RunView({ run, note, compact, onNavigate }: Props): ReactElement | null {
-  const singleKeys = useSingleKeySetting();
+  const { on: singleKeys, failed: settingsFailed } = useSingleKeySetting();
   const stepName = useRef<HTMLHeadingElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const shown = run.shown;
@@ -196,8 +206,11 @@ export function RunView({ run, note, compact, onNavigate }: Props): ReactElement
         </div>
       ) : null}
       <div className="min-h-hit-min shrink-0">
-        <InlineNotice variant="row" tone={run.line ? "attention" : "neutral"}>
-          {run.line ? LINES[run.line] : ""}
+        <InlineNotice
+          variant="row"
+          tone={run.line || settingsFailed ? "attention" : "neutral"}
+        >
+          {run.line ? LINES[run.line] : settingsFailed ? SETTINGS_FAILED : ""}
         </InlineNotice>
       </div>
       <div className="flex min-h-0 flex-1 flex-col *:flex-1">

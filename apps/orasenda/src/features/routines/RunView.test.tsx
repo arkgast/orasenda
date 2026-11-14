@@ -162,3 +162,65 @@ test("finished_today_routines_have_no_start", async () => {
   });
   expect(screen.queryByRole("button", { name: "Start Morning Light & Movement" })).toBeNull();
 });
+
+test("a_refused_start_shows_the_open_run_and_its_line_is_gone_after_back", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let other: ReturnType<typeof runView> | null = null;
+  const { container } = await startRun({
+    routines_list: () => routinesView({ run: other }),
+    run_start: () => {
+      // Another run is already open (another window started it): Rust refuses this one.
+      other = runView();
+      throw "running";
+    },
+    run_end: () => {
+      other = null;
+      return runView({ current: null, line: "Routine ended. 0 of 2 done today." });
+    },
+  });
+  // The read-back shows the open run.
+  expect(stepName()).toHaveTextContent("Drink a glass of water");
+  fireEvent.click(screen.getByRole("button", { name: "End routine" }));
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "Back to routines" }));
+  await flush();
+  expect(screen.getByRole("heading", { level: 1, name: "Routines" })).toBeTruthy();
+  expect(statusText(container)).not.toContain("couldn't start");
+});
+
+test("an_ended_run_stays_ended_when_the_read_back_fails", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const backend = runBackend();
+  let reads = true;
+  await startRun({
+    ...backend,
+    routines_list: (args) => {
+      if (!reads) throw "store";
+      return (backend.routines_list as (a: unknown) => unknown)(args);
+    },
+    run_end: (args) => {
+      reads = false;
+      return (backend.run_end as (a: unknown) => unknown)(args);
+    },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "End routine" }));
+  await flush();
+  expect(screen.getByRole("button", { name: "Back to routines" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Back to routines" }));
+  await flush();
+  // The view still holds the stopped run, but it is not shown as open again.
+  expect(screen.getByRole("heading", { level: 1, name: "Routines" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+});
+
+test("a_failed_start_line_reads_as_a_failure", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { container } = await startRun({
+    ...runBackend(),
+    run_start: () => {
+      throw "store";
+    },
+  });
+  const notice = container.querySelector("[data-slot=page-frame-status] [data-slot=inline-notice]");
+  expect(notice).toHaveAttribute("data-tone", "attention");
+});
