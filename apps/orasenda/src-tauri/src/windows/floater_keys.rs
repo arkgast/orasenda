@@ -55,7 +55,7 @@ pub(crate) fn toggle_action(state: EngineState) -> Action {
     match state {
         EngineState::Running => Action::Pause,
         EngineState::Paused => Action::Resume,
-        EngineState::Idle => Action::Start(StartRequest { quick: false }),
+        EngineState::Idle => Action::Start(StartRequest::default()),
     }
 }
 
@@ -251,7 +251,7 @@ mod tests {
         assert_eq!(toggle_action(EngineState::Paused), Action::Resume);
         assert_eq!(
             toggle_action(EngineState::Idle),
-            Action::Start(StartRequest { quick: false })
+            Action::Start(StartRequest::default())
         );
     }
 }

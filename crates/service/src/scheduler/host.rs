@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use orasenda_core::Notifier;
 
 use crate::api::{
-    BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry,
-    RoutinesView, Settings, Theme, TimerView,
+    BoardNotice, BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView,
+    PresetEntry, RoutinesView, Settings, Theme, TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 
@@ -55,4 +55,7 @@ pub trait Host: Clone + Send + Sync + 'static {
     /// Emits `board-changed`: the whole board and a sequence number, the newest wins. Never
     /// called under the service lock. An emit error is logged, never fatal.
     fn emit_board_changed(&self, seq: u64, board: &BoardView);
+    /// Emits `board-notice`: a toast line after a start moved or failed to move a task. Never
+    /// called under the service lock. An emit error is logged, never fatal.
+    fn emit_board_notice(&self, notice: &BoardNotice);
 }

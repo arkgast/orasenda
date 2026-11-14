@@ -124,6 +124,19 @@ pub struct BoardChanged {
     pub board: BoardView,
 }
 
+/// `board-notice`: a toast line after a start moved a task back to Today, or the board write
+/// at a start failed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "board-notice")]
+pub struct BoardNoticeEvent(pub BoardNotice);
+
+impl Type for BoardNoticeEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <BoardNotice as Type>::definition(types)
+    }
+}
+
 /// Asks the webview to show a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
@@ -325,6 +338,7 @@ mod tests {
                 "hint": null,
                 "tip": null,
                 "welcome": false,
+                "task": null,
             })
         );
         assert_eq!(TimerTickEvent::NAME, "timer-tick");

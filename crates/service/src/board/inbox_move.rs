@@ -15,6 +15,7 @@ struct Moved<T> {
     value: T,
     board: Option<Changed>,
     notes: Option<Vec<NoteView>>,
+    timer: Option<(u64, crate::api::TimerView)>,
 }
 
 /// `inbox_to_task`: makes a Backlog task from a live note and tombstones the note. Emits
@@ -84,17 +85,20 @@ fn moved<H: Host, T>(
         value,
         board,
         notes,
+        timer,
     } = {
-        let guard = lock(service);
+        let mut guard = lock(service);
         let (value, board) = guard.board_write(now_ms, op)?;
         let notes = guard
             .inbox_live(now_ms)
             .map_err(|error| eprintln!("board: could not read the notes back ({error})"))
             .ok();
+        let timer = guard.take_link_view(now_ms);
         Moved {
             value,
             board,
             notes,
+            timer,
         }
     };
     if let Some(notes) = notes {
@@ -102,6 +106,9 @@ fn moved<H: Host, T>(
     }
     if let Some((seq, view)) = board {
         host.emit_board_changed(seq, &view);
+    }
+    if let Some((seq, view)) = timer {
+        crate::scheduler::publish_view(host, seq, &view);
     }
     Ok(value)
 }

@@ -52,6 +52,7 @@ fn main_capability_grants_timer_and_settings_commands() {
         "allow-timer-extend",
         "allow-timer-dismiss-offer",
         "allow-timer-take-break",
+        "allow-timer-set-task",
         "allow-hint-shown",
         "allow-tip-seen",
         "allow-settings-get",
@@ -218,6 +219,7 @@ fn main_capability_exact() {
             "allow-inbox-to-task",
             "allow-task-restore-note",
             "allow-board-columns-set",
+            "allow-timer-set-task",
         ],
     );
     let (_, main) = capability("main.json");

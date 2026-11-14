@@ -11,7 +11,7 @@ use orasenda_core::{
 };
 use orasenda_store::Store;
 
-use crate::api::{BoardView, ClockTick, DataOverview};
+use crate::api::{BoardNotice, BoardView, ClockTick, DataOverview};
 use crate::api::{
     KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView, Settings, StartRequest,
     Theme, TimerView,
@@ -50,6 +50,7 @@ pub enum Event {
     Restarted,
     RoutinesChanged(RoutinesView),
     BoardChanged(u64, BoardView),
+    BoardNotice(BoardNotice),
 }
 
 #[derive(Clone, Default)]
@@ -238,12 +239,15 @@ pub fn service() -> SessionService {
 
 /// Starts the selected preset.
 pub fn start() -> Action {
-    Action::Start(StartRequest { quick: false })
+    Action::Start(StartRequest::default())
 }
 
 /// Starts the built-in two-minute focus.
 pub fn start_quick() -> Action {
-    Action::Start(StartRequest { quick: true })
+    Action::Start(StartRequest {
+        quick: true,
+        ..StartRequest::default()
+    })
 }
 
 /// The id of default `index`: 0 Gentle Start, 1 Steady Focus, 2 Deep Work.
@@ -448,5 +452,10 @@ impl Host for TestHost {
     fn emit_board_changed(&self, seq: u64, board: &BoardView) {
         self.note_unlocked();
         self.0.log.push(Event::BoardChanged(seq, board.clone()));
+    }
+
+    fn emit_board_notice(&self, notice: &BoardNotice) {
+        self.note_unlocked();
+        self.0.log.push(Event::BoardNotice(notice.clone()));
     }
 }

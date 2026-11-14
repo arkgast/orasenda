@@ -18,6 +18,7 @@ mod recovery;
 mod run;
 mod service;
 mod settings;
+mod task_link;
 #[cfg(test)]
 mod tests;
 mod tips;

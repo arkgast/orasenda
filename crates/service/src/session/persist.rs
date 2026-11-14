@@ -32,6 +32,7 @@ impl SessionService {
         let auto = self.auto_longest_ms();
         // The id a break takes if the unread row held a focus whose end has passed.
         let break_id = row_unread.then(|| (self.ids)());
+        let had_task = self.unsaved.iter().any(|r| r.task_id.is_some());
         let (unsaved, engine) = (&self.unsaved, &self.engine);
         let written = store.write(now_ms, |txn| {
             // The launch read of the row failed: whatever session it holds predates this
@@ -72,6 +73,8 @@ impl SessionService {
             Ok(()) => {
                 self.unsaved.clear();
                 self.snapshot_dirty = false;
+                // A focus row for a task was written: its tracked time grew.
+                self.board_dirty |= had_task;
                 // Rows may have been added: read today's again, and let the read say whether
                 // the store works.
                 self.day_cache.bump();
@@ -105,7 +108,13 @@ impl SessionService {
     pub fn snapshot(&mut self, now_ms: u64) -> (u64, TimerView) {
         self.view_seq += 1;
         let view = self.view(now_ms);
-        self.shown_idle = (view.cap_line.clone(), view.offer, view.tip, view.welcome);
+        self.shown_idle = (
+            view.cap_line.clone(),
+            view.offer,
+            view.tip,
+            view.welcome,
+            view.task.clone(),
+        );
         (self.view_seq, view)
     }
 }

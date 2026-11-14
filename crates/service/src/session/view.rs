@@ -97,6 +97,7 @@ impl SessionService {
             hint: self.hint_due(),
             tip: self.tip_due(idle),
             welcome: self.welcome_due(idle),
+            task: self.task_view(),
         };
         // Read last: the reads above decide whether today's rows could be read.
         if self.day_read_failed.get() {

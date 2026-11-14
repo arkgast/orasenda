@@ -25,6 +25,8 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
         apply_theme,
         seq,
         idle_changed,
+        board,
+        board_notice,
         ..
     } = effects;
     if !was_idle || view.state != EngineState::Idle || store_changed || idle_changed {
@@ -39,6 +41,12 @@ pub fn publish<H: Host>(host: &H, effects: Effects) {
     }
     if let Some(settings) = &settings_changed {
         host.emit_settings_changed(settings);
+    }
+    if let Some((seq, board)) = &board {
+        host.emit_board_changed(*seq, board);
+    }
+    if let Some(board_notice) = &board_notice {
+        host.emit_board_notice(board_notice);
     }
     // Read now, not under the lock: the answer is the app's, and it may change any time.
     if let Some(notice) = notice

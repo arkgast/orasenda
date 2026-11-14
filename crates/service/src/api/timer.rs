@@ -60,6 +60,14 @@ pub enum Offer {
     KeepGoing,
 }
 
+/// The task a session (or the next start) is for: its id and title.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TimerTask {
+    pub id: String,
+    pub title: String,
+}
+
 /// Everything the webview shows about the timer, emitted as `timer-tick`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -108,6 +116,9 @@ pub struct TimerView {
     pub tip: Option<TipId>,
     /// The first-run welcome line shows: no session was ever started on this device.
     pub welcome: bool,
+    /// The task the running session is for, or while idle the one chosen for the next start.
+    /// Read from a cache, never from the store per tick.
+    pub task: Option<TimerTask>,
 }
 
 impl TimerView {
@@ -140,6 +151,7 @@ impl TimerView {
             hint: None,
             tip: None,
             welcome: false,
+            task: None,
         }
     }
 }
@@ -153,9 +165,12 @@ pub struct TimerState {
 }
 
 /// Asks to start a session.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StartRequest {
     /// Start the built-in two-minute focus; otherwise the selected preset.
     pub quick: bool,
+    /// The task to link; overrides the chosen task. Absent starts with the choice, if any.
+    #[serde(default)]
+    pub task_id: Option<String>,
 }

@@ -207,7 +207,7 @@ fn overview_keeps_store_state_without_data_dir() {
 #[test]
 fn delete_all_busy_refused() {
     let (dir, host) = live();
-    run_action_on(&host, Action::Start(StartRequest { quick: false })).unwrap();
+    run_action_on(&host, Action::Start(StartRequest::default())).unwrap();
     assert!(data::busy(&host));
     host.log().take();
     let error = data::run_data_delete_all(&host).unwrap_err();
@@ -266,7 +266,7 @@ fn restore_order_stage_backup_restart() {
     assert_eq!(kinds(&dir.0), [BackupKind::BeforeRestore]);
     assert_eq!(host.log().take().last(), Some(&Event::Restarted));
     // Busy comes before everything.
-    run_action_on(&host, Action::Start(StartRequest { quick: false })).unwrap();
+    run_action_on(&host, Action::Start(StartRequest::default())).unwrap();
     assert_eq!(
         data::run_backups_restore(&host, "x").unwrap_err().kind,
         DataErrorKind::Busy

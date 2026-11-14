@@ -64,11 +64,7 @@ fn leftovers(dir: &Path) -> Vec<String> {
 
 fn start_session(host: &TestHost) {
     let ids = || orasenda_core::SessionId("s1".into());
-    lock(host.service().unwrap()).apply(
-        Action::Start(StartRequest { quick: false }),
-        host.now_ms(),
-        ids,
-    );
+    lock(host.service().unwrap()).apply(Action::Start(StartRequest::default()), host.now_ms(), ids);
 }
 
 #[test]
