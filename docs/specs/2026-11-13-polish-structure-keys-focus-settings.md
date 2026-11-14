@@ -1,6 +1,6 @@
 # Structure, keys, focus and Settings (P1 sub-project H) — Spec
 
-- Status: draft
+- Status: implemented (2026-11-14)
 - Date: 2026-11-13
 - Owner: Arnold Gandarillas Castillo
 - Related:
@@ -364,12 +364,12 @@ Learning the keys happens on one Mac, and syncing a count that changes on every 
 
 ## Implementation status
 Updated by the PRs that implement this spec.
-- [ ] Plan and backlog
-- [ ] H1 React structure (H1a, H1b move-only PRs)
+- [x] Plan and backlog
+- [x] H1 React structure (H1a, H1b move-only PRs)
 - [x] H2 Remove the session intent
-- [ ] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
+- [x] H3 Keyboard layer and bugs (debug, key-route spike, then the model)
 - [x] Design gate (Settings, presets and backup table, Shortcuts pane, Your data, full screen): 5A 4A 3A 2A 1B
 - [x] H4 Full screen in the main window (Esc and floater spikes first)
-- [ ] H5 Settings shell, seven pane ids, first four panes
-- [ ] H6 About and Your data (supersedes #419)
-- [ ] H7 Backups (supersedes #420)
+- [x] H5 Settings shell, seven pane ids, first four panes
+- [x] H6 About and Your data (supersedes #419)
+- [x] H7 Backups (supersedes #420)
