@@ -103,3 +103,24 @@ fn v7_snapshot_loads_without_task_id() {
     let text = serde_json::to_string(&s).unwrap();
     assert_eq!(serde_json::from_str::<Session>(&text).unwrap(), s);
 }
+
+#[test]
+fn auto_step_and_quick_roll_on_keep_task() {
+    let limit = Some(60 * MIN);
+    let mut s = with_task("t1");
+    s.advance(T0 + 25 * MIN, limit);
+    assert_eq!(s.task_id(), Some("t1"));
+    let rs = records(s.advance(T0 + 60 * MIN, limit));
+    assert_eq!(rs[0].task_id.as_deref(), Some("t1"));
+
+    let mut q = Session::Idle;
+    q.start(id("q"), SessionPreset::Quick, 1, Some("t1".into()), T0)
+        .unwrap();
+    let ms = q.advance(T0 + QUICK_START_MS, limit);
+    assert_eq!(ms.len(), 2);
+    match &ms[0] {
+        Milestone::Ended(rs) => assert_eq!(rs[0].task_id.as_deref(), Some("t1")),
+        other => panic!("expected Ended, got {other:?}"),
+    }
+    assert_eq!(ms[1], Milestone::RollOn);
+}

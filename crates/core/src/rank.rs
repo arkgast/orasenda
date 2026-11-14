@@ -8,6 +8,16 @@
 const DIGITS: &[u8; 62] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const BASE: usize = DIGITS.len();
 
+/// A rank above `b` (the top of the lane).
+pub fn before(b: &str) -> String {
+    between(None, Some(b))
+}
+
+/// A rank below `a` (the end of the lane).
+pub fn after(a: &str) -> String {
+    between(Some(a), None)
+}
+
 /// The rank of the first card in an empty lane.
 pub fn first() -> String {
     between(None, None)
@@ -15,6 +25,9 @@ pub fn first() -> String {
 
 /// A rank strictly between `a` (above, `None` for the top) and `b` (below, `None` for the
 /// end), when `a < b`.
+///
+/// Bounds outside the alphabet `0-9A-Za-z` still give a valid rank, but its position between
+/// them is not guaranteed.
 ///
 /// Precondition: `a < b`. If it does not hold (two devices produced equal ranks), the result
 /// is still a valid rank, placed after `a`.
@@ -46,7 +59,7 @@ fn midpoint(a: &[u8], b: Option<&[u8]>) -> String {
     }
     let low = digit(a, 0);
     let high = b.map_or(BASE, |b| digit(b, 0));
-    if high - low > 1 {
+    if high.saturating_sub(low) > 1 {
         return char::from(DIGITS[(low + high).div_ceil(2)]).to_string();
     }
     // Neighbouring digits: either cut `b` short, or step into the next place.

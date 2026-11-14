@@ -62,3 +62,18 @@ fn a_reversed_pair_still_returns_a_rank_after_the_first() {
     let r = between(Some("b"), Some("a"));
     assert!(r.as_str() > "b");
 }
+
+#[test]
+fn out_of_alphabet_bounds_never_panic() {
+    let r = between(Some("z"), Some("~"));
+    assert!(r.as_str() > "z", "{r}");
+    let _ = between(Some("~"), Some("\u{7f}"));
+    let _ = between(Some("~"), None);
+}
+
+#[test]
+fn before_and_after_wrap_between() {
+    let m = first();
+    assert!(before(&m) < m);
+    assert!(after(&m) > m);
+}
