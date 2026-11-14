@@ -32,6 +32,8 @@ Phases are grouped into releases. Each release goes to real users before the nex
 | **P9** | Music Integration | Local library and playlists, royalty-free sources, optional yt-dlp personal plugin | |
 | **P10** | Sync and Multi-platform | Accounts, paid end-to-end encrypted sync (ADR-002, ADR-006), web app, iOS companion with Screen Time blocking, Android, Windows builds, two-way external calendars, body-doubling and status sharing, template gallery | Paying sync users on at least two platforms |
 
+**Note (2026-11-14).** The owner changed the order after P1. P4's **routines and habits** run now, in parallel with P2 (Tasks, built by a separate session). P3 (Plan the Day) comes after them. P4's daily shutdown, weekly review and stats follow the routines part. See [the routines and habits spec](specs/2026-11-14-routines-and-habits.md) and [plan](plans/2026-11-14-routines-and-habits.md).
+
 **Note:** P1–P4 make a complete, useful product with no system permissions at all, so they are a safe base before the risky macOS work in P5–P7.
 
 ## P1 sub-projects
