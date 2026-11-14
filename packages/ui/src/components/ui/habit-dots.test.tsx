@@ -86,3 +86,70 @@ test("legend_dots_are_decorative", () => {
   render(<HabitDots days={["done"]} legend />);
   expect(screen.getAllByRole("img")).toHaveLength(1);
 });
+
+test("renders_run_line_under_the_grid", () => {
+  const { container } = render(<HabitDots days={["done", "done"]} runLine="5 days kept" />);
+  const line = screen.getByText("5 days kept");
+  expect(line.getAttribute("data-slot")).toBe("habit-run-line");
+  expect(line.className).toContain("text-ink-muted");
+  const grid = container.querySelector("[data-slot='habit-grid']");
+  expect(grid?.nextElementSibling).toBe(line);
+});
+
+test("default_layout_has_no_weekday_header_or_gaps", () => {
+  const { container } = render(<HabitDots days={[{ state: "done", weekday: 3 }]} />);
+  expect(container.querySelector("[data-slot='habit-weekdays']")).toBeNull();
+  expect(container.querySelector("[data-slot='habit-gap']")).toBeNull();
+  expect(container.querySelector("[data-slot='habit-grid']")?.className).toContain("flex-wrap");
+});
+
+test("week_layout_has_an_aria_hidden_monday_header", () => {
+  const { container } = render(<HabitDots columns="week" days={["done", "rest"]} />);
+  const header = container.querySelector("[data-slot='habit-weekdays']");
+  expect(header?.getAttribute("aria-hidden")).toBe("true");
+  expect(Array.from(header?.children ?? []).map((c) => c.textContent)).toEqual([
+    "M",
+    "T",
+    "W",
+    "T",
+    "F",
+    "S",
+    "S",
+  ]);
+  const grid = container.querySelector("[data-slot='habit-grid']");
+  expect(grid?.getAttribute("data-columns")).toBe("week");
+  expect(grid?.className).toContain("grid-cols-7");
+});
+
+test("week_layout_leaves_a_leading_gap_for_the_first_weekday", () => {
+  const days = Array.from({ length: 28 }, (_, i) => ({
+    state: "done" as const,
+    weekday: (2 + i) % 7,
+  }));
+  const { container } = render(<HabitDots name="Walk" columns="week" days={days} />);
+  const gaps = container.querySelectorAll("[data-slot='habit-gap']");
+  expect(gaps).toHaveLength(2);
+  for (const gap of Array.from(gaps)) expect(gap.getAttribute("aria-hidden")).toBe("true");
+  const group = screen.getByRole("group", { name: "Walk, daily record" });
+  expect(within(group).getAllByRole("img", { name: "Done" })).toHaveLength(28);
+});
+
+test("week_layout_without_a_weekday_starts_on_monday", () => {
+  const { container } = render(<HabitDots columns="week" days={["done"]} />);
+  expect(container.querySelectorAll("[data-slot='habit-gap']")).toHaveLength(0);
+});
+
+test("week_layout_ignores_an_out_of_range_weekday", () => {
+  const { container } = render(<HabitDots columns="week" days={[{ state: "done", weekday: 9 }]} />);
+  expect(container.querySelectorAll("[data-slot='habit-gap']")).toHaveLength(0);
+});
+
+test("week_layout_dots_keep_their_labels", () => {
+  render(
+    <HabitDots
+      columns="week"
+      days={[{ state: "skipped", weekday: 0, label: "Monday 9 November" }]}
+    />,
+  );
+  expect(screen.getByRole("img", { name: "Monday 9 November, Not done" })).toBeTruthy();
+});

@@ -6,6 +6,7 @@ import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx"
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
+import { HabitDotsSpecimen } from "../src/components/ui/habit-dots.specimen.tsx";
 import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
 import { InboxRowSpecimen } from "../src/components/ui/inbox-row.specimen.tsx";
@@ -14,6 +15,7 @@ import { MenuBarTimerSpecimen } from "../src/components/ui/menu-bar-timer.specim
 import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
+import { RoutineCardSpecimen } from "../src/components/ui/routine-card.specimen.tsx";
 import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.tsx";
 import { ShortcutListSpecimen } from "../src/components/ui/shortcut-list.specimen.tsx";
 import { ShortcutRecorderSpecimen } from "../src/components/ui/shortcut-recorder.specimen.tsx";
@@ -45,4 +47,6 @@ export const specimens: Record<string, () => ReactElement> = {
   ShortcutList: ShortcutListSpecimen,
   InboxRow: InboxRowSpecimen,
   DataTable: DataTableSpecimen,
+  RoutineCard: RoutineCardSpecimen,
+  HabitDots: HabitDotsSpecimen,
 };
