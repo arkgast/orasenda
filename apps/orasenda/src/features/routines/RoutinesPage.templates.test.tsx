@@ -34,12 +34,6 @@ test("empty_state_offers_a_template_first_and_making_your_own", async () => {
   expect(screen.queryByRole("button", { name: "Add" })).toBeNull();
 });
 
-test("make_your_own_says_the_editor_comes_next_rather_than_doing_nothing", async () => {
-  const { container } = await renderRoutines({ routines_list: () => NO_ROUTINES });
-  fireEvent.click(screen.getByRole("button", { name: "Make your own" }));
-  expect(statusText(container)).toBe("Making your own routine comes in the next update.");
-});
-
 test("template_dialog_lists_the_five_templates_with_steps_and_the_wellness_note", async () => {
   const { backend } = await renderRoutines({ routines_list: () => NO_ROUTINES });
   fireEvent.click(screen.getByRole("button", { name: "Start from a template" }));
@@ -176,4 +170,16 @@ test("cancel_closes_the_dialog_without_writing", async () => {
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(argsOf(backend.calls, "routine_add_template")).toEqual([]);
+});
+
+test("opening_the_templates_clears_the_removed_row", async () => {
+  const { container } = await renderRoutines();
+  fireEvent.click(screen.getByRole("button", { name: "More for Stretch" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
+  await settle();
+  expect(statusText(container)).toContain("Removed Stretch.");
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "From a template…" }));
+  await settle();
+  expect(statusText(container)).toBe("");
 });

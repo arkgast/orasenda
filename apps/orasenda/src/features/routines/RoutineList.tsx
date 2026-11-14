@@ -1,7 +1,7 @@
 import { Button, HabitDots, RoutineCard, RoutineItem, WellnessNote } from "@orasenda/ui";
 import type { RoutineView_Serialize } from "@shared/ipc/bindings";
 import type { ReactElement } from "react";
-import { ActionMenu, type MoreAction, moreItems } from "./ActionMenu";
+import { ActionMenu, type MoreAction, moreId, moreItems } from "./ActionMenu";
 import { toHabitDays } from "./dots";
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
   /** The routine whose Start is the page's one primary action. */
   primaryStart: string | null;
   onMore(id: string, index: number, action: MoreAction): void;
+  /** A step's own More menu: Edit, Move up, Move down, Remove within its routine. */
+  onStepMore(id: string, index: number, action: MoreAction): void;
 };
 
 /** The routines as cards: name, time and days, today's line, the steps and the record. */
@@ -47,10 +49,11 @@ export function RoutineList(props: Props): ReactElement {
                     </Button>
                   ) : null}
                   <ActionMenu
+                    id={moreId(routine.id)}
                     label="More"
                     name={`More for ${routine.name}`}
                     heading={routine.name}
-                    items={moreItems(index, routines.length)}
+                    items={moreItems(index, routines.length, true)}
                     onSelect={(id) => props.onMore(routine.id, index, id as MoreAction)}
                   />
                 </>
@@ -65,13 +68,21 @@ export function RoutineList(props: Props): ReactElement {
                 <>
                   {/* biome-ignore lint/a11y/noRedundantRoles: keeps the list role for VoiceOver */}
                   <ol className="app-routines-steps" role="list" aria-label="Steps">
-                    {routine.habits.map((habit) => (
-                      <li key={habit.id}>
+                    {routine.habits.map((habit, at) => (
+                      <li key={habit.id} className="app-routines-step">
                         <RoutineItem
                           readOnly
                           label={habit.name}
                           detail={habit.anchorLine ?? undefined}
                           optional={habit.optional}
+                        />
+                        <ActionMenu
+                          id={moreId(habit.id)}
+                          label="More"
+                          name={`More for ${habit.name}`}
+                          heading={habit.name}
+                          items={moreItems(at, routine.habits.length)}
+                          onSelect={(id) => props.onStepMore(habit.id, at, id as MoreAction)}
                         />
                       </li>
                     ))}

@@ -1,7 +1,7 @@
 import { HabitDots, RoutineItem } from "@orasenda/ui";
 import type { HabitView_Serialize } from "@shared/ipc/bindings";
 import { type ReactElement, useId } from "react";
-import { ActionMenu, type MoreAction, moreItems } from "./ActionMenu";
+import { ActionMenu, type MoreAction, moreId, moreItems } from "./ActionMenu";
 import { toHabitDays } from "./dots";
 
 type Props = {
@@ -47,6 +47,7 @@ function Habit({
           <p className="app-routines-muted">{habit.anchorLine ?? habit.intention}</p>
         </div>
         <ActionMenu
+          id={moreId(habit.id)}
           label="More"
           name={`More for ${habit.name}`}
           heading={habit.name}

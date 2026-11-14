@@ -99,3 +99,40 @@
 .app-routines-menu {
   display: inline-flex;
 }
+
+/* A step in a routine card: its read-only row, then its own More. */
+.app-routines-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.app-routines-step > [data-slot="routine-item"] {
+  flex: auto;
+  min-inline-size: 0;
+}
+
+/* The editors' fields, one column with the card gap. */
+.app-routines-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The time field, then *Any time* under it, start-aligned so the chip keeps its own width. */
+.app-routines-editor-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.app-routines-editor-time > [data-slot="field"] {
+  align-self: stretch;
+}
+
+.app-routines-editor-reads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
