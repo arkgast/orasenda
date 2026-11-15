@@ -95,3 +95,22 @@ test("checklist_caps_text_at_200", () => {
   expect(screen.getByRole("textbox", { name: "Add an item" })).toHaveAttribute("maxlength", "200");
   expect(screen.getByRole("textbox", { name: "Edit Draft" })).toHaveAttribute("maxlength", "200");
 });
+
+test("tab_from_a_remove_button_goes_to_the_next_row_then_the_add_field", () => {
+  setup();
+  const removes = screen.getAllByRole("button", { name: /^Remove item/ });
+  (removes[0] as HTMLElement).focus();
+  fireEvent.keyDown(removes[0] as HTMLElement, { key: "Tab" });
+  expect(screen.getByRole("checkbox", { name: "Draft" })).toHaveFocus();
+  (removes[2] as HTMLElement).focus();
+  fireEvent.keyDown(removes[2] as HTMLElement, { key: "Tab" });
+  expect(screen.getByRole("textbox", { name: "Add an item" })).toHaveFocus();
+});
+
+test("shift_tab_from_a_remove_button_goes_back_to_its_text", () => {
+  setup();
+  const remove = screen.getByRole("button", { name: "Remove item Draft" });
+  remove.focus();
+  fireEvent.keyDown(remove, { key: "Tab", shiftKey: true });
+  expect(screen.getByRole("textbox", { name: "Edit Draft" })).toHaveFocus();
+});

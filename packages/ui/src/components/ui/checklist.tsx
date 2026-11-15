@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactElement, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -34,6 +34,8 @@ interface RowProps extends Pick<ChecklistProps, "onToggle" | "onRename" | "disab
   /** Called with the row's element after a removal so focus can move to a neighbour. */
   onBackspaceEmpty: (id: string, row: HTMLElement) => void;
   onRemoveClick: (id: string, row: HTMLElement) => void;
+  /** Tab from a row's remove button: focus the next row's checkbox, or the add field after the last row. Shift+Tab goes back to the row's text. */
+  onTabOut: (row: HTMLElement) => void;
 }
 
 /** One item: a checkbox, an editable text kept as a draft until Enter or blur, and a remove button. */
@@ -43,6 +45,7 @@ function Row({
   onRename,
   onBackspaceEmpty,
   onRemoveClick,
+  onTabOut,
   disabled,
 }: RowProps): ReactElement {
   const rowRef = useRef<HTMLLIElement>(null);
@@ -58,6 +61,23 @@ function Row({
     if (!text) setDraft(item.text);
     else if (text !== item.text) onRename(item.id, text);
   };
+  // A native listener: the row is a list item, not a control, so it takes no React key prop.
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    // The remove button's tooltip mounts as focus leaves; WebKit then drops the move to the next row (or back to
+    // its text) and the focus trap lands on the dialog. Take that one Tab step by code, each way.
+    const onTab = (event: globalThis.KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (event.key !== "Tab" || event.ctrlKey || event.metaKey || target.tagName !== "BUTTON")
+        return;
+      event.preventDefault();
+      if (event.shiftKey) row.querySelector<HTMLElement>("input[type=text]")?.focus();
+      else onTabOut(row);
+    };
+    row.addEventListener("keydown", onTab);
+    return () => row.removeEventListener("keydown", onTab);
+  }, [onTabOut]);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -151,6 +171,10 @@ export function Checklist({
     onRemove(itemId);
     (previous ?? addRef.current)?.focus();
   };
+  const tabOut = (row: HTMLElement) => {
+    const next = row.nextElementSibling?.querySelector<HTMLElement>("input[type=checkbox]");
+    (next ?? addRef.current)?.focus();
+  };
   return (
     <fieldset
       data-slot="checklist"
@@ -172,6 +196,7 @@ export function Checklist({
               onRename={onRename}
               onBackspaceEmpty={removeEmpty}
               onRemoveClick={removeButtonFocus}
+              onTabOut={tabOut}
             />
           ))}
         </ul>

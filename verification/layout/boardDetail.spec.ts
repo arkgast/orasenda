@@ -235,31 +235,76 @@ for (const size of SIZES) {
 
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
-    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
-    // Plain Tab (WebKit skips buttons) then Alt+Tab (reaches them), each way; every body stop keeps its ring.
-    const walk = async (key: string) => {
-      const stops = new Set<string>();
-      for (let i = 0; i < 40; i++) {
-        if ((await body.locator(":focus").count()) === 1) {
-          await expectFocusRingVisible(page.locator(":focus"));
-          stops.add(
-            await page.locator(":focus").evaluate((el) => {
-              const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
-              const label = el.getAttribute("aria-label") ?? labels?.[0]?.textContent;
-              return `${label ?? el.tagName}#${[...document.querySelectorAll(el.tagName)].indexOf(el)}`;
-            }),
-          );
-        }
-        await page.keyboard.press(key);
-      }
-      return stops;
+    // Plain Tab (WebKit skips buttons) then Alt+Tab (reaches them), each way. Every stop is named, in order, and keeps its ring.
+    const stop = async () => {
+      // Let the sheet's own frame-late focus moves (the text-field wrap) land before reading the focus.
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+      const focused = page.locator(":focus");
+      await expect(focused).toHaveCount(1);
+      await expectFocusRingVisible(focused);
+      return focused.evaluate((el) => {
+        const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
+        const name = el.getAttribute("aria-label") ?? labels?.[0]?.textContent ?? el.textContent;
+        return (name ?? el.tagName).replace(/, worded.*$/, "").trim();
+      });
     };
-    for (const key of ["Tab", "Shift+Tab", "Alt+Tab", "Alt+Shift+Tab"]) {
-      // Alt+Tab starts from Title: the scope wraps only on a plain Tab, so a walk that ended on Done would stay there (#636).
-      if (key === "Alt+Tab") await dialog.getByRole("textbox", { name: "Title" }).focus();
-      const stops = await walk(key);
-      expect(stops.size, key).toBeGreaterThanOrEqual(4);
-    }
+    const walk = async (key: string, steps: number) => {
+      const seen = [await stop()];
+      for (let i = 0; i < steps; i++) {
+        await page.keyboard.press(key);
+        seen.push(await stop());
+      }
+      return seen;
+    };
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    const rows = Array.from({ length: 14 }, (_, i) => `Checklist step ${i + 1}`);
+    const fields = ["Title", "2 sessions", "Due", "Due", "Due", "Priority", "Column", "Tags"];
+    const plain = [...fields, ...rows.map((r) => `Edit ${r}`), "Add an item", "Notes"];
+    // Forward from Title round the text fields and back to Title; backward is the same ring the other way.
+    expect(await walk("Tab", plain.length), "Tab").toEqual([...plain, "Title"]);
+    await title.focus();
+    expect(await walk("Shift+Tab", plain.length), "Shift+Tab").toEqual([
+      "Title",
+      ...[...plain].reverse().slice(0, -1),
+      "Title",
+    ]);
+    // Alt+Tab visits every control, ending on Done: the scope wraps only on a plain Tab (#643).
+    await title.focus();
+    const tags = [
+      "writing",
+      "client",
+      "draft",
+      "review",
+      "chapter-one",
+      "research",
+      "outline",
+      "edits",
+    ];
+    const all = [
+      "Title",
+      "Deep",
+      "2 sessions",
+      "Due",
+      "Due",
+      "Due",
+      "Priority",
+      "Column",
+      "Today's Frog",
+      ...tags.map((t) => `Remove tag ${t}`),
+      "Tags",
+      ...rows.flatMap((r) => [r, `Edit ${r}`, `Remove item ${r}`]),
+      "Add an item",
+      "Notes",
+      "Close",
+      "Done",
+    ];
+    expect(await walk("Alt+Tab", all.length - 1), "Alt+Tab").toEqual(all);
+    await dialog.getByRole("button", { name: "Done" }).focus();
+    expect(await walk("Alt+Shift+Tab", all.length - 1), "Alt+Shift+Tab").toEqual(
+      [...all].reverse(),
+    );
   });
 
   test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {
