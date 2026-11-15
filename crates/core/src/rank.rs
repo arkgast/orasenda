@@ -23,6 +23,36 @@ pub fn first() -> String {
     between(None, None)
 }
 
+/// `n` increasing ranks after `after` (`None` for an empty lane), spaced evenly across the room.
+///
+/// Each rank is `after` plus the fewest digits that fit `n` ranks (one digit up to 61, two up
+/// to 3782), so for `n <= 3000` it is at most `after.len() + 2` long. Repeating [`after`]
+/// instead halves the gap each time and grows the string. No rank ends in `0`.
+pub fn spread(after: Option<&str>, n: usize) -> Vec<String> {
+    let head = after.unwrap_or("");
+    let (mut places, mut room) = (1, BASE - 1);
+    while room < n {
+        places += 1;
+        room *= BASE;
+    }
+    // Space the ranks across the whole room, so a card dropped between two of them still fits
+    // at the same length.
+    let step = room / n.max(1);
+    (0..n)
+        .map(|i| {
+            // Skip every value that ends in digit 0, then write it in base 62.
+            let j = i * step + step / 2;
+            let mut v = j / (BASE - 1) * BASE + j % (BASE - 1) + 1;
+            let mut tail = vec![DIGITS[0]; places];
+            for slot in tail.iter_mut().rev() {
+                *slot = DIGITS[v % BASE];
+                v /= BASE;
+            }
+            head.to_owned() + &String::from_utf8_lossy(&tail)
+        })
+        .collect()
+}
+
 /// A rank strictly between `a` (above, `None` for the top) and `b` (below, `None` for the
 /// end), when `a < b`.
 ///
