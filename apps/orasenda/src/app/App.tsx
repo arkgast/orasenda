@@ -246,10 +246,11 @@ export function App() {
   }, [navigate]);
 
   useEffect(() => {
-    if (!importPending || current !== "board") return;
+    // In full screen the Board isn't mounted yet: wait until it is shown.
+    if (!importPending || current !== "board" || fullScreen) return;
     setImportPending(false);
     setImportAsked((count) => count + 1);
-  }, [importPending, current]);
+  }, [importPending, current, fullScreen]);
 
   useShortcuts(
     PAGE_ORDER.map(({ id }, index) => ({
