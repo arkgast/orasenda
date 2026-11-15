@@ -1,3 +1,4 @@
+import { useSingleKeySetting } from "@domain/keyboard/useSingleKeySetting";
 import { PagesButton } from "@domain/navigation/PagesButton";
 import { EmptyState, InboxRow, type NavPage, PageFrame, ScrollRegion } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
@@ -6,7 +7,6 @@ import { type KeyboardEvent, useRef } from "react";
 import { InboxStatus } from "./InboxStatus";
 import { useCaptureKeys, useInbox } from "./useInbox";
 import { useRovingRows } from "./useRovingRows";
-import { useSingleKeyOn } from "./useSingleKeyOn";
 import "./inbox.css";
 
 const NAME_LENGTH = 40;
@@ -21,7 +21,7 @@ export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
   const { compact } = useWindowLayout();
   const { inbox, line, remove, undo, move, undoMove, retry } = useInbox();
   const keys = useCaptureKeys();
-  const singleKey = useSingleKeyOn();
+  const singleKey = useSingleKeySetting().on;
   const root = useRef<HTMLDivElement>(null);
   const notes: NoteView[] = inbox.status === "ok" ? inbox.notes : [];
   const roving = useRovingRows(

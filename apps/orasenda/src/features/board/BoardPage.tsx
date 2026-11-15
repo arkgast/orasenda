@@ -1,4 +1,5 @@
 import { useBoardNotice } from "@domain/board/useBoardNotice";
+import { useSingleKeySetting } from "@domain/keyboard/useSingleKeySetting";
 import { PagesButton } from "@domain/navigation/PagesButton";
 import {
   Button,
@@ -19,7 +20,6 @@ import { useBoardActions } from "./useBoardActions";
 import { useBoardKeys } from "./useBoardKeys";
 import { useFolds } from "./useFolds";
 import { useRoom } from "./useRoom";
-import { useSingleKeyOn } from "./useSingleKeyOn";
 import "./board.css";
 
 /** Anything that takes keys for itself: the palette, a dialog, an open menu or list. */
@@ -40,7 +40,7 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
   const columns = ok?.columns ?? [];
   const name = (lane: Lane) => columns.find((c) => c.lane === lane)?.name ?? lane;
   const actions = useBoardActions(api, columns, name);
-  const singleKeys = useSingleKeyOn();
+  const singleKeys = useSingleKeySetting().on;
   // A start from anywhere may move a task back to Today or fail to write the board: say so here.
   const { show } = actions;
   useBoardNotice((notice) =>
