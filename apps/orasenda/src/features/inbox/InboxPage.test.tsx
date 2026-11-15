@@ -38,7 +38,12 @@ async function renderInbox(replies: Replies = {}) {
 }
 const rowTexts = () =>
   screen.queryAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
-const removeButton = (text: string) => screen.getByRole("button", { name: `Remove note: ${text}` });
+/** Remove lives in the row menu once a note can move: open "More actions", choose Remove. */
+const removeNote = (text: string) => {
+  fireEvent.click(screen.getByRole("button", { name: `More actions for ${text}` }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Remove" }));
+};
+const row = (text: string) => screen.getByText(text).closest("li") as HTMLElement;
 
 test("inbox_lists_newest_first", async () => {
   await renderInbox();
@@ -57,7 +62,7 @@ test("inbox_updates_on_inbox_changed", async () => {
 
 test("inbox_remove_then_undo", async () => {
   const { backend } = await renderInbox();
-  fireEvent.click(removeButton("Email the landlord about the lease"));
+  removeNote("Email the landlord about the lease");
   expect(rowTexts()).toEqual(["Try the smaller timer ring"]);
   expect(screen.getByText("Note removed.")).toBeInTheDocument();
   expect(argsOf(backend.calls, "inbox_remove")).toEqual([{ id: "note-2" }]);
@@ -73,16 +78,16 @@ test("inbox_remove_then_undo", async () => {
 test("inbox_undo_line_ends_after_ten_seconds_or_the_next_removal", async () => {
   await renderInbox({ inbox_list: () => THREE });
   vi.useFakeTimers();
-  fireEvent.click(removeButton("Call the dentist"));
+  removeNote("Call the dentist");
   act(() => vi.advanceTimersByTime(10_001));
   expect(screen.queryByText("Note removed.")).not.toBeInTheDocument();
-  fireEvent.click(removeButton("Try the smaller timer ring"));
+  removeNote("Try the smaller timer ring");
   expect(screen.getByText("Note removed.")).toBeInTheDocument();
 });
 
 test("inbox_remove_failure_line", async () => {
   await renderInbox({ inbox_remove: () => Promise.reject("store") });
-  fireEvent.click(removeButton("Email the landlord about the lease"));
+  removeNote("Email the landlord about the lease");
   await settle();
   expect(rowTexts()).toHaveLength(2);
   expect(
@@ -93,7 +98,7 @@ test("inbox_remove_failure_line", async () => {
 
 test("inbox_restore_failure_line", async () => {
   await renderInbox({ inbox_restore: () => Promise.reject("store") });
-  fireEvent.click(removeButton("Email the landlord about the lease"));
+  removeNote("Email the landlord about the lease");
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
   });
@@ -154,14 +159,14 @@ test("inbox_empty_copy_follows_keyboard_changed", async () => {
 
 test("inbox_focus_after_remove", async () => {
   await renderInbox({ inbox_list: () => THREE });
-  // The first row: focus goes to the next row's Remove.
-  fireEvent.click(removeButton("Email the landlord about the lease"));
-  expect(removeButton("Call the dentist")).toHaveFocus();
-  // The last row: focus goes to the previous row's Remove.
-  fireEvent.click(removeButton("Try the smaller timer ring"));
-  expect(removeButton("Call the dentist")).toHaveFocus();
+  // The first row: focus goes to the next row.
+  removeNote("Email the landlord about the lease");
+  expect(row("Call the dentist")).toHaveFocus();
+  // The last row: focus goes to the previous row.
+  removeNote("Try the smaller timer ring");
+  expect(row("Call the dentist")).toHaveFocus();
   // The only row: focus goes to the heading.
-  fireEvent.click(removeButton("Call the dentist"));
+  removeNote("Call the dentist");
   expect(screen.getByRole("heading", { name: "Inbox" })).toHaveFocus();
 });
 
@@ -171,7 +176,7 @@ test("inbox_undo_waits_for_the_remove_and_keeps_focus", async () => {
     inbox_list: () => THREE,
     inbox_remove: () => gate.promise,
   });
-  fireEvent.click(removeButton("Call the dentist"));
+  removeNote("Call the dentist");
   fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
   await settle();
   // The restore has not run: the remove is still in flight.
@@ -186,7 +191,7 @@ test("inbox_undo_failure_focuses_the_heading", async () => {
     inbox_list: () => THREE,
     inbox_restore: () => Promise.reject("store"),
   });
-  fireEvent.click(removeButton("Call the dentist"));
+  removeNote("Call the dentist");
   fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
   await settle();
   expect(screen.getByText("Couldn't bring the note back.")).toBeInTheDocument();
