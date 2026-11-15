@@ -5,12 +5,12 @@ use orasenda_store::tasks::ChecklistItem;
 
 use crate::api::{BoardError, ChecklistItemView};
 
-const MAX_TITLE: usize = 200;
-const MAX_NOTES: usize = 10_000;
-const MAX_TAGS: usize = 8;
-const MAX_TAG: usize = 24;
-const MAX_CHECKLIST: usize = 30;
-const MAX_ITEM: usize = 200;
+pub(crate) const MAX_TITLE: usize = 200;
+pub(crate) const MAX_NOTES: usize = 10_000;
+pub(crate) const MAX_TAGS: usize = 8;
+pub(crate) const MAX_TAG: usize = 24;
+pub(crate) const MAX_CHECKLIST: usize = 30;
+pub(crate) const MAX_ITEM: usize = 200;
 
 /// A title trimmed, or why it is refused.
 pub(super) fn title(text: &str) -> Result<String, BoardError> {
@@ -91,7 +91,7 @@ pub(super) fn checklist(items: &[ChecklistItemView]) -> Result<Vec<ChecklistItem
 
 /// The title and the notes of a note moved to the Board: the text up to 200 characters, cut at
 /// a line end or a word, and the rest in the notes.
-pub(super) fn split_note(text: &str) -> (String, String) {
+pub(crate) fn split_note(text: &str) -> (String, String) {
     let text = text.trim();
     let limit = text
         .char_indices()

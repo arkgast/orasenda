@@ -16,10 +16,10 @@ test-support = ["orasenda-store/test-hooks"]
 orasenda-core = { path = "../core" }
 orasenda-store = { path = "../store" }
 serde.workspace = true
+serde_json.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
 orasenda-store = { path = "../store", features = ["test-hooks"] }
-serde_json.workspace = true

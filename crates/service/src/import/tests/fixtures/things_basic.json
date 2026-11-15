@@ -1,0 +1,22 @@
+[
+  {
+    "id": "A1b2",
+    "name": "Draft Q1 plan",
+    "notes": "Outline first",
+    "project": "Work",
+    "area": null,
+    "tagNames": "planning, q1",
+    "dueDate": "2026-11-20",
+    "activationDate": null
+  },
+  {
+    "id": "C3d4",
+    "name": "Book dentist",
+    "notes": "",
+    "project": null,
+    "area": "Home",
+    "tagNames": "",
+    "dueDate": null,
+    "activationDate": "2026-11-18"
+  }
+]
