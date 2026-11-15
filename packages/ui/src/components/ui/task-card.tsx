@@ -30,6 +30,8 @@ export interface TaskCardProps {
   frog?: boolean;
   active?: boolean;
   selected?: boolean;
+  /** The card is being dragged: a dashed edge and the word "Moving" (never opacity). */
+  moving?: boolean;
   disabled?: boolean;
   onOpen?: () => void;
   /** A click selects (selection ground + "Selected"); with onOpen, Return or a double-click opens. */
@@ -79,6 +81,7 @@ function accessibleName(props: TaskCardProps, tags: string[]): string {
       : "",
     props.active ? "In progress" : "",
     props.selected ? "Selected" : "",
+    props.moving ? "Moving" : "",
   ];
   return parts.filter(Boolean).join(", ");
 }
@@ -183,13 +186,18 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const hasEstimate = props.estimate != null;
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
   const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
-  const stateWords = [active ? "In progress" : "", selected ? "Selected" : ""]
+  const stateWords = [
+    active ? "In progress" : "",
+    selected ? "Selected" : "",
+    props.moving ? "Moving" : "",
+  ]
     .filter(Boolean)
     .join(" · ");
   const estimateText = hasEstimate ? `Est ${est}` : "No estimate";
   const meta = `${estimateText} · Done ${done}${props.tracked ? ` · ${props.tracked}` : ""}`;
   const className = cn(
-    "@container w-full max-w-full rounded-md border border-line-strong bg-surface-raised text-start text-ink shadow-raised wrap-anywhere",
+    "@container w-full max-w-full rounded-md border border-line-strong bg-surface-raised text-start text-ink wrap-anywhere",
+    !props.moving && "shadow-raised",
     row
       ? "flex min-h-hit-min flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
       : "flex flex-col gap-3 p-4",
@@ -198,6 +206,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     props.menu && !props.disabled && "pe-hit-min",
     selected ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
     active && "border-s-4 border-s-focus",
+    props.moving && "border-dashed",
   );
   const frogWord = props.frog ? (
     <span

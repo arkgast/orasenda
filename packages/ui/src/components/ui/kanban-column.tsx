@@ -18,6 +18,24 @@ interface KanbanColumnBase {
   width?: "standard" | "wide";
   /** On the region, so the board can move focus between columns. */
   id?: string;
+  /**
+   * A drag is over this column: a dashed slot at `index` (children counted with the dragged
+   * card left out; clamped), reading `label`. On a folded strip `index` is ignored.
+   */
+  drop?: { index: number; label: string };
+}
+
+/** The dashed well where the dragged card will land. The board's status line says it aloud. */
+function DropSlot({ label }: { label: string }) {
+  return (
+    <div
+      data-slot="kanban-column-drop"
+      aria-hidden="true"
+      className="flex min-h-hit-min items-center rounded-md border-2 border-dashed border-line-strong px-3 py-2 text-body-sm text-ink wrap-anywhere"
+    >
+      {label}
+    </div>
+  );
 }
 
 /** A folded column is a button, so it always has onToggle. */
@@ -48,6 +66,11 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
     if (props.collapsed && foldedByUs.current) strip.current?.focus();
     foldedByUs.current = false;
   }, [props.collapsed]);
+  const kids: ReactNode[] = Children.toArray(props.children);
+  if (props.drop && !props.collapsed) {
+    const at = Math.min(kids.length, whole(props.drop.index));
+    kids.splice(at, 0, <DropSlot key="kanban-column-drop" label={props.drop.label} />);
+  }
   if (props.collapsed) {
     return (
       <button
@@ -56,9 +79,12 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
         id={props.id}
         data-slot="kanban-column-strip"
         aria-expanded="false"
-        aria-label={`${props.title}, ${text}`}
+        aria-label={`${props.title}, ${text}${props.drop ? ", Move here" : ""}`}
         onClick={props.onToggle}
-        className="group flex w-column-strip-width flex-none cursor-pointer flex-col items-center gap-3 self-stretch rounded-lg border-0 bg-surface-sunken p-3 text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm hover:inset-ring-1 hover:inset-ring-line-strong focus-visible:outline-2 active:bg-selection motion-reduce:transition-none"
+        className={cn(
+          "group flex w-column-strip-width flex-none cursor-pointer flex-col items-center gap-3 self-stretch rounded-lg border-0 p-3 text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm hover:inset-ring-1 hover:inset-ring-line-strong focus-visible:outline-2 active:bg-selection motion-reduce:transition-none",
+          props.drop ? "bg-selection inset-ring-1 inset-ring-line-strong" : "bg-surface-sunken",
+        )}
       >
         <span aria-hidden="true" className="text-ink-muted group-hover:text-ink">
           <Icon name="chevron" />
@@ -79,6 +105,11 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
             n
           )}
         </span>
+        {props.drop ? (
+          <span aria-hidden="true" className="text-label break-words">
+            Move here
+          </span>
+        ) : null}
       </button>
     );
   }
@@ -122,8 +153,8 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
         data-slot="kanban-column-cards"
         className="flex min-h-0 flex-1 flex-col gap-2 scroll-py-1 overflow-y-auto p-1"
       >
-        {Children.toArray(props.children).length > 0 ? (
-          props.children
+        {kids.length > 0 ? (
+          kids
         ) : (
           <p className="m-0 text-body-sm text-ink-muted">
             {props.emptyMessage || "Nothing here yet. That's fine."}
