@@ -13,6 +13,7 @@ import {
 import { layerContainer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Kbd } from "./kbd";
+import { tokenPx, useMenuSide } from "./popover-menu.placement";
 
 export interface PopoverMenuItem {
   id: string;
@@ -45,15 +46,6 @@ export interface PopoverMenuProps {
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-// A token read as a number of pixels (Radix places in numbers): "4px" gives 4, a missing token gives 0.
-function tokenPx(name: string): number {
-  if (typeof document === "undefined") return 0;
-  const n = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
-  );
-  return Number.isFinite(n) ? n : 0;
-}
 
 // The panel never outgrows the room Radix leaves it. Tailwind's arbitrary-value syntax is not allowed here, so
 // the cap is an inline style on the Radix variable (as timer-ring does with its CSS functions).
@@ -208,6 +200,8 @@ export function PopoverMenu({
   const themed = trigger?.closest("[data-theme]") ?? null;
   const theme =
     themed && themed !== document.documentElement ? themed.getAttribute("data-theme") : null;
+  const [panel, setPanel] = useState<HTMLElement | null>(null);
+  const side = useMenuSide(trigger, panel, [items, heading, description]);
   const checkedRadio = items.find((i) => i.kind === "radio" && i.checked);
 
   const back = () => {
@@ -299,7 +293,8 @@ export function PopoverMenu({
           data-theme={theme ?? undefined}
           aria-labelledby={headingId}
           aria-describedby={description ? descId : undefined}
-          side="bottom"
+          ref={setPanel}
+          side={side}
           align="start"
           sideOffset={tokenPx("--space-1")}
           collisionPadding={tokenPx("--space-2")}
