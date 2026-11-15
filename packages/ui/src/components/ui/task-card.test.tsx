@@ -270,3 +270,101 @@ test("no_estimate_and_nothing_done_draws_no_dots", () => {
   rerender(<TaskCard title="Write" done={1} />);
   expect(container.querySelector("[data-slot=task-card-dots]")).not.toBeNull();
 });
+
+const MENU = {
+  moveTargets: [{ id: "doing", label: "Doing" }],
+  onMove: () => {},
+  onRemove: () => {},
+};
+
+function pressOnCard(init: KeyboardEventInit) {
+  const card = screen.getByRole("button", { name: /^Write/ });
+  card.focus();
+  fireEvent.keyDown(card, init);
+  return card;
+}
+
+test("roving_card_more_button_is_not_a_tab_stop", () => {
+  const { rerender } = render(
+    <TaskCard title="Write" onOpen={() => {}} menu={MENU} menuTabIndex={-1} />,
+  );
+  expect(screen.getByRole("button", { name: "More actions for Write" })).toHaveAttribute(
+    "tabindex",
+    "-1",
+  );
+  rerender(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  expect(screen.getByRole("button", { name: "More actions for Write" })).toHaveAttribute(
+    "tabindex",
+    "0",
+  );
+});
+
+test("more_button_names_shift_f10", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const more = screen.getByRole("button", { name: "More actions for Write" });
+  expect(more).toHaveAttribute("aria-keyshortcuts", "Shift+F10");
+  fireEvent.focus(more);
+  expect(screen.getByRole("tooltip")).toHaveTextContent("⇧F10");
+});
+
+test("shift_f10_opens_card_menu", () => {
+  const onKeyDown = vi.fn();
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} onKeyDown={onKeyDown} />);
+  pressOnCard({ key: "F10", shiftKey: true });
+  const menu = screen.getByRole("menu");
+  expect(within(menu).getByRole("menuitem", { name: "Move to Doing" })).toHaveFocus();
+});
+
+test("context_menu_key_opens_card_menu", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  pressOnCard({ key: "ContextMenu" });
+  expect(
+    within(screen.getByRole("menu")).getByRole("menuitem", { name: "Move to Doing" }),
+  ).toHaveFocus();
+});
+
+test("esc_returns_focus_to_card_after_key_open", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const card = pressOnCard({ key: "F10", shiftKey: true });
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Move to Doing" }), { key: "Escape" });
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(card).toHaveFocus();
+});
+
+test("choose_returns_focus_to_card_after_key_open", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const card = pressOnCard({ key: "ContextMenu" });
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Remove" }), { key: "Enter" });
+  expect(card).toHaveFocus();
+});
+
+test("click_open_returns_focus_to_more_button", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const more = screen.getByRole("button", { name: "More actions for Write" });
+  fireEvent.click(more);
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Move to Doing" }), { key: "Escape" });
+  expect(more).toHaveFocus();
+});
+
+test("native_contextmenu_prevented_after_key_open", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const card = pressOnCard({ key: "F10", shiftKey: true });
+  expect(fireEvent.contextMenu(card)).toBe(false);
+});
+
+test("menu_key_while_open_does_nothing", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  const card = pressOnCard({ key: "F10", shiftKey: true });
+  fireEvent.keyDown(card, { key: "F10", shiftKey: true });
+  expect(screen.getAllByRole("menu")).toHaveLength(1);
+});
+
+test("disabled_or_menuless_card_ignores_menu_key", () => {
+  const { rerender } = render(<TaskCard title="Write" onOpen={() => {}} />);
+  pressOnCard({ key: "F10", shiftKey: true });
+  expect(screen.queryByRole("menu")).toBeNull();
+  rerender(<TaskCard title="Write" onOpen={() => {}} menu={MENU} disabled />);
+  const card = screen.getByRole("button", { name: /^Write/ });
+  fireEvent.keyDown(card, { key: "ContextMenu" });
+  expect(screen.queryByRole("menu")).toBeNull();
+});

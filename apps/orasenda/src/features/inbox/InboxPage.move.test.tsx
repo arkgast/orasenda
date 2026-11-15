@@ -11,7 +11,7 @@ import {
   settle,
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { InboxPage } from "./InboxPage";
 import { UNDO_MS } from "./useInbox";
@@ -246,12 +246,35 @@ test("a_failed_undo_of_a_move_says_so_and_focus_goes_to_the_heading", async () =
 test("the_move_failed_line_does_not_expire", async () => {
   await renderInbox({ replies: { inbox_to_task: () => Promise.reject("store") } });
   row("Call the dentist").focus();
+  vi.useFakeTimers();
   await act(async () => {
     fireEvent.keyDown(row("Call the dentist"), { key: "b" });
   });
-  await settle();
-  vi.useFakeTimers();
   act(() => vi.advanceTimersByTime(UNDO_MS * 3));
   vi.useRealTimers();
   expect(screen.getByText("That didn't move. Try again.")).toBeInTheDocument();
+});
+
+test("move_to_board_by_menu_key_with_single_keys_off", async () => {
+  const backend = await renderInbox({ singleKey: false });
+  row("Call the dentist").focus();
+  fireEvent.keyDown(row("Call the dentist"), { key: "F10", shiftKey: true });
+  await act(async () => {
+    fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to Board" }), {
+      key: "Enter",
+    });
+  });
+  await settle();
+  expect(argsOf(backend.calls, "inbox_to_task")).toEqual([{ noteId: "note-3" }]);
+  expect(rowTexts()).not.toContain("Call the dentist");
+});
+
+test("the_more_button_of_a_roving_row_is_not_a_tab_stop", async () => {
+  await renderInbox();
+  for (const name of ["Ask Sam about the invoice", "Call the dentist"]) {
+    expect(within(row(name)).getByRole("button", { name: /^More actions for/ })).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+  }
 });

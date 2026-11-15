@@ -30,6 +30,11 @@ test("describe_shortcut_control_option_f", () => {
   expect(describeShortcut("⌃⌥F")).toEqual({ aria: "Control+Alt+F", spoken: "Control-Option-F" });
 });
 
+test("describe_shortcut_f10", () => {
+  expect(describeShortcut("F10")).toEqual({ aria: "F10", spoken: "F10" });
+  expect(describeShortcut("⇧F10")).toEqual({ aria: "Shift+F10", spoken: "Shift-F10" });
+});
+
 test("describe_shortcut_command_period", () => {
   expect(describeShortcut("⌘.")).toEqual({ aria: "Meta+Period", spoken: "Command-Period" });
   expect(describeShortcut("⇧⌘P")).toEqual({ aria: "Shift+Meta+P", spoken: "Shift-Command-P" });

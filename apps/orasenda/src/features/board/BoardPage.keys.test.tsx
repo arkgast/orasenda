@@ -200,3 +200,27 @@ test("failed_save_line_clears_after_quiet_reorder_succeeds", async () => {
   await settle();
   expect(screen.queryByText("That didn't save. Try again.")).not.toBeInTheDocument();
 });
+
+test("shift_f10_opens_card_menu_on_board", async () => {
+  await renderBoard();
+  key("Write intro", { key: "F10", shiftKey: true });
+  expect(await screen.findByRole("menuitem", { name: "Move to Backlog" })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Move to Backlog" }), {
+    key: "Escape",
+  });
+  expect(card("Write intro")).toHaveFocus();
+});
+
+test("context_menu_key_reaches_card_through_board_capture", async () => {
+  await renderBoard();
+  key("Write intro", { key: "ContextMenu" });
+  expect(await screen.findByRole("menu")).toBeInTheDocument();
+});
+
+test("the_more_button_of_a_board_card_is_not_a_tab_stop", async () => {
+  await renderBoard();
+  expect(screen.getByRole("button", { name: "More actions for Write intro" })).toHaveAttribute(
+    "tabindex",
+    "-1",
+  );
+});
