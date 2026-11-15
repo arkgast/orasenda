@@ -22,6 +22,16 @@ pub fn access_from(status: EKAuthorizationStatus) -> SourceAccess {
     }
 }
 
+/// The answer after an access request: an error with the status still undecided is
+/// `Unavailable`, so a failed ask is not read as one never made.
+pub fn after_request(had_error: bool, now: SourceAccess) -> SourceAccess {
+    if had_error && now == SourceAccess::NotAsked {
+        SourceAccess::Unavailable
+    } else {
+        now
+    }
+}
+
 /// The origin key: the external id, else `local-` + the local one.
 pub fn item_id(external: Option<&str>, local: &str) -> String {
     match external {
@@ -65,6 +75,22 @@ mod tests {
         assert_eq!(
             access_from(EKAuthorizationStatus(99)),
             SourceAccess::Unavailable
+        );
+    }
+
+    #[test]
+    fn after_request_error_while_undecided_is_unavailable() {
+        assert_eq!(
+            after_request(true, SourceAccess::NotAsked),
+            SourceAccess::Unavailable
+        );
+        assert_eq!(
+            after_request(true, SourceAccess::Granted),
+            SourceAccess::Granted
+        );
+        assert_eq!(
+            after_request(false, SourceAccess::NotAsked),
+            SourceAccess::NotAsked
         );
     }
 

@@ -18,7 +18,7 @@ use objc2_foundation::{NSArray, NSDate, NSError, NSString, NSURL};
 use orasenda_core::platform::PlatformError;
 use orasenda_core::platform::import::{ReminderItem, RemindersSource, SourceAccess};
 
-pub use map::{access_from, due_parts, item_id};
+pub use map::{access_from, after_request, due_parts, item_id};
 
 /// How long a read waits for EventKit before it is cancelled.
 const READ_TIMEOUT: Duration = Duration::from_secs(30);
@@ -35,6 +35,7 @@ pub struct MacReminders;
 
 impl RemindersSource for MacReminders {
     fn access(&self) -> SourceAccess {
+        // SAFETY: a class method that reads the OS's status and takes no object.
         access_from(unsafe {
             EKEventStore::authorizationStatusForEntityType(EKEntityType::Reminder)
         })
@@ -46,15 +47,21 @@ impl RemindersSource for MacReminders {
         let (tx, rx) = mpsc::channel();
         let handler = RcBlock::new(move |granted: Bool, error: *mut NSError| {
             // SAFETY: the framework passes null or a valid error that lives for the call.
-            if let Some(error) = unsafe { error.as_ref() } {
+            let had_error = if let Some(error) = unsafe { error.as_ref() } {
                 eprintln!(
                     "platform-macos: reminders access request failed: {}",
                     error.localizedDescription()
                 );
-            }
-            // The receiver outlives the wait; a send error would only mean it is gone.
-            let _ = tx.send(granted.as_bool());
+                true
+            } else {
+                false
+            };
+            let _ = granted;
+            // The request waits with no timeout, so the receiver is there; the send error is
+            // ignored on purpose.
+            let _ = tx.send(had_error);
         });
+        // SAFETY: `new` takes no input and returns an owned store.
         let store = unsafe { EKEventStore::new() };
         // SAFETY: the handler is a valid block and lives until EventKit has copied it.
         unsafe {
@@ -62,7 +69,7 @@ impl RemindersSource for MacReminders {
         };
         match rx.recv() {
             // Re-read the OS's own answer: it is the truth, the flag is only a hint.
-            Ok(_) => self.access(),
+            Ok(had_error) => after_request(had_error, self.access()),
             Err(_) => SourceAccess::Unavailable,
         }
     }
@@ -73,6 +80,7 @@ impl RemindersSource for MacReminders {
         if self.access() != SourceAccess::Granted {
             return Err(PlatformError::Refused);
         }
+        // SAFETY: `new` takes no input and returns an owned store.
         let store = unsafe { EKEventStore::new() };
         let (tx, rx) = mpsc::channel();
         let handler = RcBlock::new(move |found: *mut NSArray<EKReminder>| {
@@ -82,6 +90,8 @@ impl RemindersSource for MacReminders {
                     .map(|reminder| map_reminder(&reminder))
                     .collect()
             });
+            // A late answer after the timeout is not needed: the send error is ignored on
+            // purpose.
             let _ = tx.send(items);
         });
         // SAFETY: nil bounds and calendars mean every incomplete reminder.
@@ -90,6 +100,7 @@ impl RemindersSource for MacReminders {
                 None, None, None,
             )
         };
+        // SAFETY: the predicate and the handler are valid for the call; EventKit copies the block.
         let fetch =
             unsafe { store.fetchRemindersMatchingPredicate_completion(&predicate, &handler) };
         match rx.recv_timeout(READ_TIMEOUT) {
