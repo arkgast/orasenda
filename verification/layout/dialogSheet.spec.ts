@@ -4,7 +4,7 @@ import { openSpecimen } from "./support/specimen.ts";
 const SIZES = [
   { width: 1440, height: 900, columns: 2 },
   { width: 900, height: 600, columns: 2 },
-  { width: 640, height: 480, columns: 2 },
+  { width: 640, height: 480, columns: 1 }, // container-sheet-stack is 600px (#542 ruling)
   { width: 390, height: 844, columns: 1 },
 ];
 
