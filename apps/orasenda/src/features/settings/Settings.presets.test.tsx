@@ -13,7 +13,7 @@ import {
   settle,
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetNotificationsToggleForTests } from "./notificationsToggle";
 import { INVALID, openSettings, saveLine, WRITE } from "./Settings.support";
@@ -217,8 +217,6 @@ test("a_degraded_store_makes_the_editing_read_only", async () => {
   expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toBeDisabled();
 });
 
-const later = () => new Promise((resolve) => setTimeout(resolve, 50));
-
 test("a_remove_after_a_settings_failure_shows_removed_with_undo", async () => {
   await openIn({
     settings_set: () => Promise.reject(INVALID),
@@ -255,15 +253,14 @@ test("focus_lands_on_a_control_that_stays", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
   await settle();
   await emitPresetsChanged([PRESETS[0] as PresetEntry, STEADY]);
-  await later();
-  const undo = screen.getByRole("button", { name: "Undo removing Deep Work" });
-  expect(undo).toHaveFocus();
+  // Focus moves on a deferred timer after the row goes; wait for it, not a fixed pause.
+  const undo = await screen.findByRole("button", { name: "Undo removing Deep Work" });
+  await waitFor(() => expect(undo).toHaveFocus());
 
   fireEvent.click(undo);
   await settle();
   await emitPresetsChanged(PRESETS as PresetEntry[]);
-  await later();
-  expect(screen.getByRole("radio", { name: /Deep Work/ })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole("radio", { name: /Deep Work/ })).toHaveFocus());
 });
 
 test("edit_button_reports_whether_the_editor_is_open", async () => {
