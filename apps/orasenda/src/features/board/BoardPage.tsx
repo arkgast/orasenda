@@ -138,12 +138,18 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
     const closed = wasImporting.current && !importing;
     wasImporting.current = importing;
     if (!closed) return;
-    const at = document.activeElement;
-    if (at && at !== document.body) return;
-    const again = [...document.querySelectorAll<HTMLElement>("button")].find(
-      (b) => b.textContent === "Import tasks…",
-    );
-    (again ?? document.querySelector<HTMLElement>("h1"))?.focus();
+    // Radix gives focus back a timer tick after the sheet unmounts, to whatever had it when the sheet opened.
+    // Opened from the palette or Settings, that is outside the Board: check after that tick and bring it home.
+    const tick = window.setTimeout(() => {
+      const at = document.activeElement;
+      const main = document.querySelector("h1")?.closest("main");
+      if (at && at !== document.body && main?.contains(at)) return;
+      const again = [...document.querySelectorAll<HTMLElement>("button")].find(
+        (b) => b.textContent === "Import tasks…",
+      );
+      (again ?? document.querySelector<HTMLElement>("h1"))?.focus();
+    }, 0);
+    return () => window.clearTimeout(tick);
   }, [importing]);
   const askImport = () => {
     actions.show(null);
