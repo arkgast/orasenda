@@ -12,7 +12,7 @@ export type Inbox =
   | { status: "ok"; notes: NoteView[] };
 
 /** The line under the heading: the answer to the person's last action. */
-export type Line = "removed" | "removeFailed" | "restoreFailed" | null;
+export type Line = "removed" | "removeFailed" | "restoreFailed" | "moved" | "moveFailed" | null;
 
 function insertAt(notes: NoteView[], note: NoteView, index: number): NoteView[] {
   if (notes.some((n) => n.id === note.id)) return notes;
@@ -30,6 +30,7 @@ export function useInbox() {
   const [inbox, setInbox] = useState<Inbox>({ status: "loading" });
   const [line, setLine] = useState<Line>(null);
   const removed = useRef<{ note: NoteView; index: number; done: Promise<void> } | null>(null);
+  const moved = useRef<{ note: NoteView; index: number; taskId: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fresh = useRef(false);
 
@@ -70,7 +71,8 @@ export function useInbox() {
   const showLine = useCallback((next: Line) => {
     clearTimeout(timer.current);
     setLine(next);
-    if (next === "removed") timer.current = setTimeout(() => setLine(null), UNDO_MS);
+    if (next === "removed" || next === "moved")
+      timer.current = setTimeout(() => setLine(null), UNDO_MS);
   }, []);
 
   const put = useCallback((note: NoteView, index: number) => {
@@ -148,7 +150,59 @@ export function useInbox() {
     [put, showLine],
   );
 
-  return { inbox, line, remove, undo, retry };
+  /**
+   * Moves a note to the Board. The note stays until the service says it moved; a failure of any kind
+   * leaves it in the list and says so. `focus` is told the row to focus (-1 for the heading) just
+   * before the render that drops the note.
+   */
+  const move = useCallback(
+    async (id: string, focus: (row: number) => void): Promise<void> => {
+      if (inbox.status !== "ok") return;
+      const index = inbox.notes.findIndex((n) => n.id === id);
+      const note = inbox.notes[index];
+      if (!note) return;
+      try {
+        const result = await commands.inboxToTask(id);
+        if (result.status === "error") throw new Error(String(result.error));
+        moved.current = { note, index, taskId: result.data.id };
+        removed.current = null;
+        focus(index < inbox.notes.length - 1 ? index : index - 1);
+        setInbox((current) =>
+          current.status === "ok"
+            ? { status: "ok", notes: current.notes.filter((n) => n.id !== id) }
+            : current,
+        );
+        showLine("moved");
+      } catch (error) {
+        console.error("inbox_to_task failed", error);
+        showLine("moveFailed");
+      }
+    },
+    [inbox, showLine],
+  );
+
+  /** Undo of a move: the task goes, the note comes back where it was. */
+  const undoMove = useCallback(
+    async (focus: (row: number) => void): Promise<void> => {
+      const last = moved.current;
+      if (!last) return;
+      showLine(null);
+      try {
+        const result = await commands.taskRestoreNote(last.taskId);
+        if (result.status === "error") throw new Error(String(result.error));
+        if (moved.current === last) moved.current = null;
+        focus(last.index);
+        put(last.note, last.index);
+      } catch (error) {
+        console.error("task_restore_note failed", error);
+        focus(-1);
+        showLine("restoreFailed");
+      }
+    },
+    [put, showLine],
+  );
+
+  return { inbox, line, remove, undo, move, undoMove, retry };
 }
 
 /** The capture shortcut's keys as shown, null when it is off or failed, undefined until known. */
