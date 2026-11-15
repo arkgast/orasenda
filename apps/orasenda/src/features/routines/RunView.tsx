@@ -1,3 +1,4 @@
+import { useSingleKeySetting } from "@domain/keyboard/useSingleKeySetting";
 import { PagesButton } from "@domain/navigation/PagesButton";
 import {
   Button,
@@ -11,7 +12,7 @@ import {
 import { commands } from "@shared/ipc/bindings";
 import { type ReactElement, useCallback, useEffect, useRef, useState } from "react";
 import type { RunView as Run, RunAnswer, useRoutines } from "./useRoutines";
-import { useRunKeys, useSingleKeySetting } from "./useRunKeys";
+import { useRunKeys } from "./useRunKeys";
 
 type RunCall = ReturnType<typeof useRoutines>["runCall"];
 

@@ -1,45 +1,9 @@
 import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
-import { commands } from "@shared/ipc/bindings";
-import { watchSettingsChanged } from "@shared/ipc/settingsQueue";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /** Anything that takes Esc for itself: the palette, a dialog, an open menu or list. */
 const OVERLAY =
   '[role="dialog"], [role="alertdialog"], dialog[open], [role="menu"], [role="listbox"]';
-
-/**
- * `Settings.singleKey`: one `settings_get`, then every `settings-changed`. Until the settings are
- * read, or when they can't be, single keys stay off: only the buttons work (the failure side).
- * `failed` says the read failed, so the run view can say so (conventions, "Failures are never
- * silent success"); the next `settings-changed` clears it.
- */
-export function useSingleKeySetting(): { on: boolean; failed: boolean } {
-  const [on, setOn] = useState(false);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    let eventSeen = false;
-    const stop = watchSettingsChanged((settings) => {
-      eventSeen = true;
-      setOn(settings.singleKey === true);
-      setFailed(false);
-    });
-    commands.settingsGet().then(
-      (settings) => {
-        if (!cancelled && !eventSeen) setOn(settings.singleKey === true);
-      },
-      (error: unknown) => {
-        console.error("settings_get failed: the run view keeps single keys off", error);
-        if (!cancelled && !eventSeen) setFailed(true);
-      },
-    );
-    return () => {
-      cancelled = true;
-      stop();
-    };
-  }, []);
-  return { on, failed };
-}
 
 type Keys = {
   /** `Settings.singleKey`: Enter and S at rest work only while it is on. */
