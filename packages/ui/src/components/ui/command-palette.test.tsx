@@ -288,3 +288,16 @@ test("command_palette_stays_open_when_the_promise_rejects", async () => {
   expect(onClose).not.toHaveBeenCalled();
   expect(console.error).toHaveBeenCalled();
 });
+
+test("compact_close_button_tab_leaves_without_a_stuck_tooltip", () => {
+  const frames: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  setup({ compact: true });
+  const close = screen.getByRole("button", { name: "Close" });
+  fireEvent.keyDown(close, { key: "Tab" });
+  close.focus();
+  close.blur();
+  for (const cb of frames.splice(0)) cb(0);
+  expect(document.querySelector("[data-slot=tooltip]")).toBeNull();
+  vi.unstubAllGlobals();
+});
