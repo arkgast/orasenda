@@ -244,7 +244,7 @@ const LONG = `${"A task title that goes on and on, ".repeat(9)}`.trim();
 
 test("long_title_keeps_full_accessible_name", () => {
   const { container, rerender } = render(<TaskCard title={LONG} onOpen={() => {}} />);
-  expect(screen.getByRole("button").getAttribute("aria-label")?.startsWith(`${LONG},`)).toBe(true);
+  expect(screen.getByRole("button", { name: (n) => n.startsWith(`${LONG},`) })).toBeTruthy();
   let title = container.querySelector("[data-slot=task-card-title]");
   expect(title?.className).toContain("line-clamp-3");
 
@@ -252,11 +252,21 @@ test("long_title_keeps_full_accessible_name", () => {
   title = container.querySelector("[data-slot=task-card-title]");
   expect(title?.getAttribute("aria-hidden")).toBe("true");
   expect(title?.className).toContain("line-clamp-3");
-  const full = container.querySelector("[data-slot=task-card] .sr-only");
-  expect(full?.textContent).toBe(LONG);
+  expect(
+    within(screen.getByRole("article")).getByText(LONG, { ignore: "[aria-hidden=true]" }),
+  ).toBeTruthy();
 
   rerender(<TaskCard title={LONG} density="row" />);
   expect(container.querySelector("[data-slot=task-card-title]")?.className).not.toContain(
     "line-clamp",
   );
+});
+
+test("no_estimate_and_nothing_done_draws_no_dots", () => {
+  const { container, rerender } = render(<TaskCard title="Write" />);
+  expect(container.querySelector("[data-slot=task-card-dots]")).toBeNull();
+  rerender(<TaskCard title="Write" estimate={2} />);
+  expect(container.querySelector("[data-slot=task-card-dots]")).not.toBeNull();
+  rerender(<TaskCard title="Write" done={1} />);
+  expect(container.querySelector("[data-slot=task-card-dots]")).not.toBeNull();
 });
