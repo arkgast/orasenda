@@ -2,6 +2,7 @@ import { commandFailure } from "@domain/timer/commandFailure";
 import {
   type ColumnView,
   commands,
+  type ImportDone,
   type Lane,
   type TaskView,
   type TimerCommandErrorKind,
@@ -172,6 +173,31 @@ export function useBoardActions(
     [failed, show],
   );
 
+  /** The sheet imported: say how many, with Undo for the whole import. */
+  const imported = useCallback(
+    (done: ImportDone) => {
+      const undo = async (): Promise<void> => {
+        try {
+          const result = await commands.taskImportUndo(done.importId);
+          if (result.status === "ok") {
+            show({ text: "Import undone.", tone: "neutral" });
+            return;
+          }
+        } catch (error) {
+          console.error("task_import_undo failed", error);
+        }
+        failed("store", () => void undo());
+      };
+      const n = `${done.count} ${done.count === 1 ? "task" : "tasks"}`;
+      show({
+        text: `Imported ${n} to Backlog.`,
+        tone: "neutral",
+        action: { label: "Undo", name: `Undo importing ${n}`, run: () => void undo() },
+      });
+    },
+    [failed, show],
+  );
+
   const remove = useCallback(
     async (task: TaskView): Promise<boolean> => {
       const result = await latest.current.api.remove(task.id);
@@ -230,5 +256,5 @@ export function useBoardActions(
     [show],
   );
 
-  return { line, show, add, moveToColumn, reorder, toggleFrog, remove, startOn };
+  return { line, show, add, moveToColumn, reorder, toggleFrog, remove, imported, startOn };
 }

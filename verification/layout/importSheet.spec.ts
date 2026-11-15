@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openApp } from "./support/app.ts";
 import { openSpecimen } from "./support/specimen.ts";
 
 const SIZES = [
@@ -82,3 +83,41 @@ test("import_sheet_space_toggles_focused_row", async ({ page }) => {
   await page.keyboard.press("Space");
   expect(await first.isChecked()).toBe(!before);
 });
+
+for (const size of SIZES) {
+  test(`board_import_sheet_fits_${size.width}x${size.height}`, async ({ page }) => {
+    await openApp(page, "boardImport", size);
+    await page.keyboard.press("Meta+3");
+    // A narrow window folds Backlog; its footer is there once the column is open.
+    const folded = page.getByRole("button", { name: /^Backlog, \d+ tasks?$/ });
+    if (await folded.isVisible()) await folded.click();
+    await page.getByRole("button", { name: "Import tasks…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Import tasks" });
+    await expect(dialog.getByRole("button", { name: "Apple Reminders" })).toBeFocused();
+    await dialog.getByRole("button", { name: "Apple Reminders" }).click();
+    await expect(dialog.getByRole("checkbox").first()).toBeFocused();
+    const m = await dialog.evaluate((el) => {
+      const body = el.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
+      const actions = el.querySelector("[data-slot=dialog-actions]") as HTMLElement;
+      const box = el.getBoundingClientRect();
+      const rows = [...el.querySelectorAll("[data-slot=choice]")].map(
+        (r) => r.getBoundingClientRect().height,
+      );
+      return {
+        overflow: Math.max(box.bottom - window.innerHeight, -box.top, 0),
+        sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        listScrolls: body.scrollHeight > body.clientHeight,
+        actionsInside: actions.getBoundingClientRect().bottom <= box.bottom + 0.5,
+        minRow: Math.min(...rows),
+        hitMin: Number.parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue("--hit-min"),
+        ),
+      };
+    });
+    expect(m.overflow).toBeLessThanOrEqual(0.5);
+    expect(m.sideways).toBeLessThanOrEqual(0);
+    expect(m.listScrolls).toBe(true);
+    expect(m.actionsInside).toBe(true);
+    expect(m.minRow).toBeGreaterThanOrEqual(m.hitMin - 0.5);
+  });
+}

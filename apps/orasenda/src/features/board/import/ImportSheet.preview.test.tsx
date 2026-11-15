@@ -2,8 +2,8 @@ import { argsOf, deferred, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
-import { resetImportAsk } from "./importAsk";
 import { item, picked, previewOf, renderImport, row, THREE } from "./ImportSheet.support";
+import { resetImportAsk } from "./importAsk";
 
 afterEach(async () => {
   cleanup();

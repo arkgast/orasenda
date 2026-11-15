@@ -1,9 +1,8 @@
+import { events } from "@shared/ipc/bindings";
 import { argsOf, deferred, RUNNING, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen, act } from "@testing-library/react";
-import { events } from "@shared/ipc/bindings";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
-import { resetImportAsk } from "./importAsk";
 import {
   BUSY_REASON,
   item,
@@ -14,6 +13,7 @@ import {
   SOURCES,
   THREE,
 } from "./ImportSheet.support";
+import { resetImportAsk } from "./importAsk";
 
 afterEach(async () => {
   cleanup();
@@ -56,7 +56,7 @@ test("stale_answer_dropped_after_close", async () => {
   slow.resolve(picked(previewOf("reminders", THREE)));
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(argsOf(backend.calls, "import_discard").length).toBeGreaterThanOrEqual(0);
+  expect(argsOf(backend.calls, "import_discard")).toEqual([{ previewId: 7 }]);
 });
 
 test("close_discards_preview", async () => {
@@ -94,7 +94,10 @@ test("session_active_rows_show_reason", async () => {
 test("denied_shows_open_settings", async () => {
   const backend = await renderImport({
     import_preview: () => {
-      throw { kind: "denied", message: "Orasenda can't read your reminders. You can allow it in System Settings." };
+      throw {
+        kind: "denied",
+        message: "Orasenda can't read your reminders. You can allow it in System Settings.",
+      };
     },
   });
   await pick("Apple Reminders");
@@ -131,7 +134,8 @@ test("things_denied_try_again", async () => {
   const backend = await renderImport({
     import_preview: () => {
       calls += 1;
-      if (calls === 1) throw { kind: "denied", message: "Orasenda can't ask Things for your to-dos." };
+      if (calls === 1)
+        throw { kind: "denied", message: "Orasenda can't ask Things for your to-dos." };
       return picked(previewOf("things", THREE));
     },
   });

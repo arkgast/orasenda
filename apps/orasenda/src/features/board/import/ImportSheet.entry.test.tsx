@@ -4,8 +4,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { BoardPage } from "../BoardPage";
 import { renderBoard } from "../BoardPage.support";
-import { resetImportAsk } from "./importAsk";
 import { renderImport, SOURCES } from "./ImportSheet.support";
+import { resetImportAsk } from "./importAsk";
 
 afterEach(async () => {
   cleanup();
