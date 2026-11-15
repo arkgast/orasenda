@@ -159,6 +159,17 @@ for (const size of SIZES) {
     await expect(() => expectFocusRingVisible(notes)).toPass();
   });
 
+  // Known gap, follow-up issue #612: moving by keyboard to Notes scrolls the sheet body only to the
+  // field's own box, so the focus ring's bottom edge is clipped. Remove test.fail when it lands.
+  test.fail(`board_detail_full_task_tab_to_notes_ring_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    await dialog.getByRole("checkbox").last().focus();
+    await page.keyboard.press("Tab");
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await expect(notes).toBeFocused();
+    await expectFocusRingVisible(notes);
+  });
+
   test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardSaveFails");
     const priority = dialog.getByRole("combobox", { name: "Priority" });
@@ -176,7 +187,10 @@ for (const size of SIZES) {
       let box = text ?? null;
       while (box && Number.parseFloat(getComputedStyle(box).marginBottom) === 0)
         box = box.parentElement;
-      const field = el.querySelector("label")?.getBoundingClientRect();
+      const input = [...el.querySelectorAll("input")].find(
+        (i) => i.labels?.[0]?.textContent === "Title",
+      );
+      const field = input?.labels?.[0]?.getBoundingClientRect();
       return box && field ? field.top - box.getBoundingClientRect().bottom : Number.NaN;
     });
     expect(gap).toBeCloseTo(16, 0);

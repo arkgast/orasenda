@@ -19,27 +19,28 @@ export async function smallTargets(
       }
       const out: string[] = [];
       for (const el of Array.from(root.querySelectorAll(args.selector))) {
-        // A control is as big as the larger of its own box and the box it gets its hit size from:
-        // the label of a checkbox or radio, or a positioned ::before / ::after.
+        // A control is as big as the largest whole box it can get its hit size from: its own box,
+        // the label of a checkbox or radio, or a positioned ::before. Boxes are compared whole,
+        // never width from one and height from another.
         const own = el.getBoundingClientRect();
         let w = own.width;
         let h = own.height;
-        const grow = (bw: number, bh: number) => {
-          if (Number.isFinite(bw)) w = Math.max(w, bw);
-          if (Number.isFinite(bh)) h = Math.max(h, bh);
+        const consider = (bw: number, bh: number) => {
+          if (Number.isFinite(bw) && Number.isFinite(bh) && bw * bh > w * h) {
+            w = bw;
+            h = bh;
+          }
         };
         const type = (el as HTMLInputElement).type;
         const choice = el instanceof HTMLInputElement && (type === "checkbox" || type === "radio");
         for (const label of choice ? Array.from((el as HTMLInputElement).labels ?? []) : []) {
           const box = label.getBoundingClientRect();
-          grow(box.width, box.height);
+          consider(box.width, box.height);
         }
-        for (const which of ["::before", "::after"]) {
-          const style = getComputedStyle(el, which);
-          const out = style.position === "absolute" || style.position === "fixed";
-          if (out && style.content !== "none" && style.content !== "normal") {
-            grow(Number.parseFloat(style.width), Number.parseFloat(style.height));
-          }
+        const style = getComputedStyle(el, "::before");
+        const positioned = style.position === "absolute" || style.position === "fixed";
+        if (positioned && style.content !== "none" && style.content !== "normal") {
+          consider(Number.parseFloat(style.width), Number.parseFloat(style.height));
         }
         const r = { width: w, height: h };
         if (r.width < width || r.height < height) {
