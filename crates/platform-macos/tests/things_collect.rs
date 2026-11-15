@@ -36,6 +36,7 @@ fn run(caller: &str) -> String {
     let script = format!("{THINGS_COLLECT_JS}\n{caller}");
     let out = Command::new("/usr/bin/osascript")
         .env_clear()
+        .env("TZ", "Pacific/Kiritimati")
         .args(["-l", "JavaScript", "-e", &script])
         .output()
         .expect("osascript runs");

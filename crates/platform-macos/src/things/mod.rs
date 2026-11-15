@@ -70,11 +70,11 @@ fn run(script: &str, timeout: Duration, cap: usize) -> Result<String, ThingsRead
     let out = child
         .stdout
         .take()
-        .map(|s| read_capped(s, cap, too_large.clone()));
+        .map(|s| read_capped(s, cap, too_large.clone(), false));
     let err = child
         .stderr
         .take()
-        .map(|s| read_capped(s, MAX_STDERR as usize, Arc::default()));
+        .map(|s| read_capped(s, MAX_STDERR as usize, Arc::default(), true));
 
     let started = Instant::now();
     let status = loop {
@@ -124,13 +124,18 @@ fn read_capped<R: Read + Send + 'static>(
     mut source: R,
     cap: usize,
     too_large: Arc<AtomicBool>,
+    keep_head: bool,
 ) -> JoinHandle<Vec<u8>> {
     thread::spawn(move || {
         let mut buf = Vec::new();
         let _ = (&mut source).take(cap as u64 + 1).read_to_end(&mut buf);
         if buf.len() > cap {
-            too_large.store(true, Ordering::Relaxed);
-            buf.clear();
+            if keep_head {
+                buf.truncate(cap);
+            } else {
+                too_large.store(true, Ordering::Relaxed);
+                buf.clear();
+            }
         }
         buf
     })

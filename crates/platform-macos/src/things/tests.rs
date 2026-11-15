@@ -51,3 +51,18 @@ fn script_has_no_shell_or_file_access() {
     assert!(js.contains("function collect(app)"));
     assert_eq!(js.matches("function ").count(), 1);
 }
+
+#[test]
+fn stderr_2700_script_error_is_failed() {
+    let text = "execution error: Error: TypeError: null is not an object (-2700)";
+    assert!(matches!(
+        error_from_stderr(text),
+        ThingsReadError::Failed(_)
+    ));
+}
+
+#[test]
+fn stderr_application_cant_be_found_is_not_installed() {
+    let text = "execution error: Error: Application can't be found. (-2700)";
+    assert_eq!(error_from_stderr(text), ThingsReadError::NotInstalled);
+}
