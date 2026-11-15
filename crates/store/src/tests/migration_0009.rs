@@ -35,7 +35,10 @@ fn migration_0009_keeps_tasks() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
     assert_eq!(version, 9);
-    assert_eq!(columns(&conn, "task").last().map(String::as_str), Some("origin"));
+    assert_eq!(
+        columns(&conn, "task").last().map(String::as_str),
+        Some("origin")
+    );
     assert_eq!(count(&conn, "SELECT count(*) FROM task"), 2);
     assert_eq!(
         count(&conn, "SELECT count(*) FROM task WHERE origin IS NULL"),
@@ -63,7 +66,11 @@ fn origin_check_refuses_bad_values() {
         let refused = conn.execute("UPDATE task SET origin = ?1 WHERE id = 't1'", [bad]);
         assert!(refused.is_err(), "{bad:?} must be refused");
     }
-    for good in ["reminders:x1", "things:A1b2", &format!("a:{}", "k".repeat(298))] {
+    for good in [
+        "reminders:x1",
+        "things:A1b2",
+        &format!("a:{}", "k".repeat(298)),
+    ] {
         conn.execute("UPDATE task SET origin = ?1 WHERE id = 't1'", [good])
             .expect("a well-formed origin is accepted");
     }

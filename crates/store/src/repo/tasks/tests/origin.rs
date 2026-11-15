@@ -7,9 +7,9 @@ fn with_origin(id: &str, lane: Lane, rank: &str, origin: &str) -> NewTask {
     }
 }
 
-fn ask(store: &Store, origins: &[&str]) -> Vec<(String, Lane, bool)> {
-    let asked: Vec<String> = origins.iter().map(|o| (*o).to_owned()).collect();
-    store.read(|txn| origins_of(txn, &asked)).expect("reads")
+fn ask(store: &Store, wanted: &[&str]) -> Vec<(String, Lane, bool)> {
+    let asked: Vec<String> = wanted.iter().map(|o| (*o).to_owned()).collect();
+    store.read(|txn| origins(txn, &asked)).expect("reads")
 }
 
 #[test]
@@ -57,7 +57,10 @@ fn origins_includes_old_done() {
             Ok(())
         })
         .expect("ages the task");
-    assert_eq!(ask(&store, &["a:1"]), [("a:1".to_owned(), Lane::Done, true)]);
+    assert_eq!(
+        ask(&store, &["a:1"]),
+        [("a:1".to_owned(), Lane::Done, true)]
+    );
 }
 
 #[test]

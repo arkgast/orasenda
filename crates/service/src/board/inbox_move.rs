@@ -44,6 +44,7 @@ pub fn run_inbox_to_task<H: Host>(host: &H, note_id: &str) -> Result<TaskView, B
             rank: rank_at(txn, ApiLane::Backlog, usize::MAX, None)?,
             frog_day: None,
             source_note_id: Some(note.id.clone()),
+            origin: None,
             created_at: txn.now_ms(),
         };
         tasks::insert(txn, &new)?;

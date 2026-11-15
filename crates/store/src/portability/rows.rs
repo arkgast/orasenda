@@ -84,6 +84,8 @@ pub struct TaskRowAll {
     pub created_at: i64,
     pub updated_at: i64,
     pub deleted_at: Option<i64>,
+    /// Where an imported task came from; NULL in a file older than schema 9.
+    pub origin: Option<String>,
 }
 
 /// Everything import merges.
@@ -185,7 +187,7 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
         .prepare(
             "SELECT id, title, notes, tags, kind, estimate, due, priority, checklist, lane, rank,
                  frog_day, breakdown_dismissed, source_note_id, done_at, created_at, updated_at,
-                 deleted_at
+                 deleted_at, origin
              FROM task ORDER BY id",
         )?
         .query_map([], |row| {
@@ -208,6 +210,7 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
                 created_at: row.get(15)?,
                 updated_at: row.get(16)?,
                 deleted_at: row.get(17)?,
+                origin: row.get(18)?,
             })
         })?
         .collect::<Result<_, _>>()?;

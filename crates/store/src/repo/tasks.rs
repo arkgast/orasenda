@@ -82,6 +82,8 @@ pub struct NewTask {
     pub rank: String,
     pub frog_day: Option<String>,
     pub source_note_id: Option<String>,
+    /// Where an imported task came from, `<source>:<key>`; set once at insert.
+    pub origin: Option<String>,
     pub created_at: u64,
 }
 
@@ -102,6 +104,7 @@ pub struct TaskRow {
     pub frog_day: Option<String>,
     pub breakdown_dismissed: bool,
     pub source_note_id: Option<String>,
+    pub origin: Option<String>,
     pub done_at: Option<u64>,
     pub created_at: u64,
     pub updated_at: u64,
@@ -119,7 +122,7 @@ pub struct Tracked {
 
 const COLUMNS: &str = "id, title, notes, tags, kind, estimate, due, priority, checklist, lane,
     rank, frog_day, breakdown_dismissed, source_note_id, done_at, created_at, updated_at,
-    deleted_at";
+    deleted_at, origin";
 
 /// Inserts a live task in the given lane and logs every field. `updated_at` is the write time.
 /// A task inserted straight into `Done` gets `done_at` = the write time (and it is logged).
@@ -132,8 +135,8 @@ pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
     txn.conn().execute(
         "INSERT INTO task (id, title, notes, tags, kind, estimate, due, priority, checklist,
              lane, rank, frog_day, breakdown_dismissed, source_note_id, done_at, created_at,
-             updated_at, deleted_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, ?13, ?16, ?14, ?15, NULL)",
+             updated_at, deleted_at, origin)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, ?13, ?16, ?14, ?15, NULL, ?17)",
         rusqlite::params![
             task.id,
             task.title,
@@ -151,6 +154,7 @@ pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
             sql_int(task.created_at)?,
             sql_int(now)?,
             done_at.map(sql_int).transpose()?,
+            task.origin,
         ],
     )?;
     let mut fields = vec![
@@ -181,6 +185,9 @@ pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
     ];
     if let Some(done_at) = done_at {
         fields.push(("done_at", Value::from(done_at)));
+    }
+    if let Some(origin) = &task.origin {
+        fields.push(("origin", Value::from(origin.clone())));
     }
     txn.log_fields(Entity::Task, &task.id, &fields)
 }
@@ -213,6 +220,43 @@ pub fn list_done_since(txn: &Txn, since_ms: u64) -> Result<Vec<TaskRow>, StoreEr
     ))?;
     let rows = stmt.query_map([sql_int(since_ms)?], read_row)?;
     Ok(rows.collect::<Result<_, _>>()?)
+}
+
+/// Every task holding one of `asked`, as `(origin, lane, live)`: removed tasks (`live` false)
+/// and Done tasks of any age included. Ordered by origin, then board lane order, then id. An
+/// origin nobody holds is absent.
+pub fn origins(txn: &Txn, asked: &[String]) -> Result<Vec<(String, Lane, bool)>, StoreError> {
+    let mut stmt = txn.conn().prepare(
+        "SELECT lane, deleted_at IS NULL FROM task WHERE origin = ?1
+         ORDER BY CASE lane WHEN 'backlog' THEN 0 WHEN 'today' THEN 1 WHEN 'doing' THEN 2
+                  ELSE 3 END, id",
+    )?;
+    let mut found = Vec::new();
+    let mut sorted: Vec<&String> = asked.iter().collect();
+    sorted.sort();
+    sorted.dedup();
+    for origin in sorted {
+        let rows = stmt.query_map([origin], |row| {
+            let lane: String = row.get(0)?;
+            Ok((lane, row.get::<_, bool>(1)?))
+        })?;
+        for row in rows {
+            let (lane, live) = row?;
+            let lane = Lane::parse(&lane).ok_or_else(|| bad(0, format!("unknown value {lane}")))?;
+            found.push((origin.clone(), lane, live));
+        }
+    }
+    Ok(found)
+}
+
+/// The greatest rank in the Backlog, removed tasks included (as the merge's `end_of_lane`), so
+/// a rank placed after it never ties one. `None` when the lane has never held a task.
+pub fn last_backlog_rank(txn: &Txn) -> Result<Option<String>, StoreError> {
+    Ok(txn.conn().query_row(
+        "SELECT max(rank) FROM task WHERE lane = 'backlog'",
+        [],
+        |row| row.get(0),
+    )?)
 }
 
 /// Tombstones a live task at `at` and logs `deleted_at`. Returns whether a row changed: a
@@ -321,6 +365,7 @@ fn read_row(row: &rusqlite::Row) -> rusqlite::Result<TaskRow> {
         created_at: unsigned(15, row.get(15)?)?,
         updated_at: unsigned(16, row.get(16)?)?,
         deleted_at: opt_ms(17)?,
+        origin: row.get(18)?,
     })
 }
 
