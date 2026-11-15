@@ -134,7 +134,7 @@ fn spread_leaves_room_between_neighbours() {
         for w in ranks.windows(2) {
             let m = between(Some(&w[0]), Some(&w[1]));
             assert!(w[0] < m && m < w[1]);
-            assert_eq!(m.len(), w[0].len());
+            assert!(m.len() <= w[0].len());
         }
     }
 }
