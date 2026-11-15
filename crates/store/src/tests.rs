@@ -9,6 +9,7 @@ use std::sync::Arc;
 mod migration_0006;
 mod migration_0007;
 mod migration_0008;
+mod migration_0009;
 
 const DEVICE: &str = "device-a";
 

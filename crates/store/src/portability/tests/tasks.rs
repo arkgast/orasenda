@@ -19,6 +19,7 @@ fn task(id: &str, title: &str, at: i64, deleted: Option<i64>) -> TaskRowAll {
         frog_day: Some("2026-11-14".into()),
         breakdown_dismissed: 1,
         source_note_id: Some("n1".into()),
+        origin: Some("things:A1b2".into()),
         done_at: None,
         created_at: 10,
         updated_at: at,
@@ -303,4 +304,65 @@ fn v7_export_imports_into_v8() {
     let all = live.read(rows).expect("reads");
     assert_eq!(all.sessions[0].task_id, None);
     assert!(all.tasks.is_empty());
+}
+
+#[test]
+fn portability_round_trips_origin() {
+    let a = Store::open_in_memory("device-a").expect("opens");
+    // A tombstoned task keeps its origin; a task without one stays without.
+    let bare = TaskRowAll {
+        origin: None,
+        ..task("t3", "Plain", 50, None)
+    };
+    let source = only(vec![
+        task("t1", "Write", 50, None),
+        task("t2", "Gone", 60, Some(70)),
+        bare,
+    ]);
+    merged(&a, &source);
+    let exported = read_tasks(&a);
+    assert_eq!(exported, source.tasks);
+    assert_eq!(exported[1].origin.as_deref(), Some("things:A1b2"));
+    let logged = a
+        .read(|txn| {
+            Ok(count(
+                txn.conn(),
+                "SELECT count(*) FROM change_log WHERE entity = 'task' AND field = 'origin'
+                   AND value = '\"things:A1b2\"'",
+            ))
+        })
+        .expect("reads");
+    assert_eq!(logged, 2);
+    // A file copy (the export, a backup) carries it, and merging it into another store does too.
+    let dir = TempDir::new("round-trip-origin");
+    let path = dir.path().join("export.db");
+    a.snapshot_to(&path).expect("copies");
+    let copy = Store::open(&path, "device-b").expect("opens");
+    let copied = copy.read(rows).expect("reads");
+    assert_eq!(copied.tasks, source.tasks);
+    let b = Store::open_in_memory("device-b").expect("opens");
+    b.write(9, |txn| merge(txn, &copied)).expect("merges");
+    assert_eq!(read_tasks(&b), source.tasks);
+}
+
+#[test]
+fn v8_file_imports_without_origin() {
+    let dir = TempDir::new("import-v8");
+    let path = dir.path().join("v8.db");
+    super::file_at_version(&path, 8);
+    let conn = rusqlite::Connection::open(&path).expect("opens");
+    conn.execute(
+        "INSERT INTO task (id, title, lane, rank, created_at, updated_at)
+         VALUES ('t1', 'Write', 'today', 'V', 1, 5)",
+        [],
+    )
+    .expect("task inserts");
+    drop(conn);
+    let incoming = Store::open(&path, "other").expect("migrates");
+    let file_rows = incoming.read(rows).expect("reads");
+    assert_eq!(file_rows.tasks.len(), 1);
+    assert_eq!(file_rows.tasks[0].origin, None);
+    let live = Store::open_in_memory("device-a").expect("opens");
+    live.write(1, |txn| merge(txn, &file_rows)).expect("merges");
+    assert_eq!(read_tasks(&live)[0].origin, None);
 }
