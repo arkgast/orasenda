@@ -29,3 +29,10 @@
   line-height: var(--type-body-sm-line-height);
   color: var(--ink-muted);
 }
+
+/* A card is being dragged: no text selection while the pointer travels. */
+.app-board-dragging {
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grabbing;
+}

@@ -7,6 +7,8 @@ type Props = {
   density: "card" | "row";
   columns: readonly ColumnView[];
   selected: boolean;
+  /** The card is being dragged: it stays in place, marked Moving. */
+  moving: boolean;
   onSelect(id: string): void;
   onOpen(id: string): void;
   onMove(task: TaskView, lane: Lane): void;
@@ -15,7 +17,7 @@ type Props = {
 };
 
 /** One task: the wrapper carries the id and lane the board's keys look for. */
-export function BoardCard({ task, density, columns, selected, ...on }: Props) {
+export function BoardCard({ task, density, columns, selected, moving, ...on }: Props) {
   const done = task.checklist.filter((item) => item.done).length;
   return (
     <div data-task-id={task.id} data-lane={task.lane}>
@@ -28,6 +30,7 @@ export function BoardCard({ task, density, columns, selected, ...on }: Props) {
         frog={task.isFrog}
         active={task.active}
         selected={selected}
+        moving={moving || undefined}
         density={density}
         tags={task.tags}
         due={task.dueLabel ?? undefined}

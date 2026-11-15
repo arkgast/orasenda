@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { capacity } from "./useFolds";
 
 /** A px token (`--column-min-width`) as a number, or null when the token CSS is not loaded. */
-function px(name: string): number | null {
+export function px(name: string): number | null {
   const value = Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue(name),
   );

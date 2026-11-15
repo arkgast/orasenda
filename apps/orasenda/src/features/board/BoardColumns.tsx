@@ -3,6 +3,7 @@ import type { BoardView, Lane, TaskView } from "@shared/ipc/bindings";
 import { BoardCard } from "./BoardCard";
 import { columnId, sessions } from "./lanes";
 import { NewTaskField } from "./NewTaskField";
+import type { DragView } from "./useCardDrag";
 
 export type ColumnHandlers = {
   selected: string | null;
@@ -40,10 +41,13 @@ export function BoardColumns({
   board,
   open,
   on,
+  drag,
 }: {
   board: BoardView;
   open: readonly Lane[];
   on: ColumnHandlers;
+  /** A card is being dragged: the slot and the Moving card. */
+  drag?: DragView | null;
 }) {
   return board.columns.map((column) => {
     const folded = !open.includes(column.lane);
@@ -52,6 +56,10 @@ export function BoardColumns({
       title: column.name,
       count: column.count,
       limit: column.limit ?? undefined,
+      drop:
+        drag?.drop?.lane === column.lane
+          ? { index: drag.drop.index, label: drag.drop.label }
+          : undefined,
       width: column.lane === "today" || column.lane === "doing" ? ("wide" as const) : undefined,
     };
     if (folded) {
@@ -79,6 +87,7 @@ export function BoardColumns({
             density={column.lane === "backlog" ? "row" : "card"}
             columns={board.columns}
             selected={on.selected === task.id}
+            moving={drag?.id === task.id}
             onSelect={on.select}
             onOpen={on.openTask}
             onMove={on.move}

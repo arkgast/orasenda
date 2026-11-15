@@ -180,3 +180,56 @@ for (const size of [
     await expect(card).toBeFocused();
   });
 }
+
+// Pointer drag: the dashed slot in a regular and a compact board, and a real mouse drop.
+for (const size of [
+  { width: 900, height: 600 },
+  { width: 480, height: 480 },
+]) {
+  test(`board_drag_slot_is_hit_min_tall_and_fits_${size.width}`, async ({ page }) => {
+    await openBoard(page, "boardDrag", size);
+    const from = await page.getByRole("button", { name: /^Backlog task 1/ }).boundingBox();
+    const over = await page.getByRole("button", { name: /^Backlog task 3/ }).boundingBox();
+    if (!from || !over) throw new Error("cards are not on the page");
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 + 20, { steps: 4 });
+    await page.mouse.move(over.x + over.width / 2, over.y + over.height * 0.8, { steps: 6 });
+    await expect(page.getByText("Moving Backlog task 1. Esc puts it back.")).toBeVisible();
+    const slot = page.locator('[data-slot="kanban-column-drop"]');
+    await expect(slot).toBeVisible();
+    const box = await slot.boundingBox();
+    const hit = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.height = "var(--hit-min)";
+      document.body.append(probe);
+      const height = probe.getBoundingClientRect().height;
+      probe.remove();
+      return height;
+    });
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(hit - 0.5);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      size.width,
+    );
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(slot).toHaveCount(0);
+    await expect(page.getByText("Backlog task 1 stayed in Backlog.")).toBeVisible();
+  });
+}
+
+test("board_drag_moves_card_between_columns", async ({ page }) => {
+  await openBoard(page, "boardDrag", { width: 900, height: 600 });
+  const card = await page.getByRole("button", { name: /^Write the intro/ }).boundingBox();
+  const doing = await page.getByRole("button", { name: /^Fix the sync bug/ }).boundingBox();
+  if (!card || !doing) throw new Error("cards are not on the page");
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(card.x + card.width / 2 + 20, card.y + card.height / 2 + 20, { steps: 4 });
+  await page.mouse.move(doing.x + doing.width / 2, doing.y + doing.height + 30, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByText("Moved Write the intro to Doing.")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Doing" }).getByRole("button", { name: /^Write the intro/ }),
+  ).toBeVisible();
+});

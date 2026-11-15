@@ -40,14 +40,18 @@ const moves = (backend: Awaited<ReturnType<typeof renderBoard>>) =>
   argsOf(backend.calls, "task_move");
 
 test("click_below_threshold_selects", async () => {
-  await renderBoard();
+  const onOpenTask = vi.fn();
+  await renderBoard({ onOpenTask });
   const el = card("Write intro");
   pointer("pointerdown", el, 300, 60);
   pointer("pointermove", el, 303, 62);
   pointer("pointerup", el, 303, 62);
   fireEvent.click(el);
+  fireEvent.doubleClick(el);
+  // A press that stayed put is a plain click and double click.
+  expect(onOpenTask).toHaveBeenCalledWith("t1");
   expect(screen.queryByText(/Esc puts it back/)).toBeNull();
-  expect(el).toHaveAttribute("aria-pressed", "true");
+  expect(el).toHaveAccessibleName(/Selected/);
 });
 
 test("touch_is_ignored", async () => {
@@ -157,7 +161,6 @@ test("click_after_drag_swallowed", async () => {
   pointer("pointerup", el, 300, 95);
   fireEvent.click(el);
   fireEvent.doubleClick(el);
-  expect(el).not.toHaveAttribute("aria-pressed", "true");
   expect(onOpenTask).not.toHaveBeenCalled();
 });
 
@@ -193,7 +196,8 @@ test("no_drag_under_open_sheet", async () => {
   fireEvent.keyDown(card("Reply to Ana"), { key: "Enter" });
   await settle();
   expect(screen.getByRole("dialog")).toBeInTheDocument();
-  const el = card("Write intro");
+  // The dialog makes the board inert to the accessibility tree; the button is still there.
+  const el = screen.getByRole("button", { name: /^Write intro/, hidden: true });
   pointer("pointerdown", el, 300, 60);
   pointer("pointermove", el, 300, 90);
   expect(screen.queryByText(/Esc puts it back/)).toBeNull();

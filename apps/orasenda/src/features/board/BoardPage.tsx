@@ -20,6 +20,7 @@ import { NEW_TASK_ID } from "./NewTaskField";
 import { useBoard } from "./useBoard";
 import { useBoardActions } from "./useBoardActions";
 import { useBoardKeys } from "./useBoardKeys";
+import { useCardDrag } from "./useCardDrag";
 import { useFolds } from "./useFolds";
 import { useRoom } from "./useRoom";
 import "./board.css";
@@ -151,6 +152,15 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
     }, 0);
     return () => window.clearTimeout(tick);
   }, [importing]);
+  // A card can be dragged by mouse or pen unless a sheet is open over the board.
+  const cardDrag = useCardDrag({
+    root: box,
+    columns,
+    enabled: !sheetTask && !importing,
+    name,
+    say: (text) => actions.show({ text, tone: "neutral" }),
+    drop: (task, lane, index) => void keys.dropAt(task, lane, index),
+  });
   const askImport = () => {
     actions.show(null);
     setImporting(true);
@@ -185,13 +195,15 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
   const board = ok ? (
     <div
       ref={setBox}
-      className={compact ? "app-board-stack" : "app-board"}
+      className={`${compact ? "app-board-stack" : "app-board"}${cardDrag.drag ? " app-board-dragging" : ""}`}
+      onPointerDown={cardDrag.pointerDown}
       onKeyDownCapture={keys.onKeyDownCapture}
       onFocusCapture={keys.onFocusCapture}
     >
       <BoardColumns
         board={ok}
         open={folds.open}
+        drag={cardDrag.drag}
         on={{
           selected: keys.selected,
           select: keys.select,
