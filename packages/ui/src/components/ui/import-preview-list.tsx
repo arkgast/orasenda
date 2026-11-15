@@ -1,4 +1,5 @@
-import { type JSX, useId, useRef } from "react";
+import { type JSX, type Ref, useId, useRef } from "react";
+import { setRef } from "../../lib/set-ref";
 import { useRoving } from "../../lib/use-roving";
 import { Button } from "./button";
 import { Choice } from "./choice";
@@ -21,6 +22,8 @@ export interface ImportPreviewListProps {
   onSetAll: (checked: boolean) => void;
   /** Plain lines under the count ("Showing 500 of 812 tasks."). */
   summary?: string[];
+  /** The checkbox that holds the tab stop; pass it to Dialog's initialFocusRef. */
+  ref?: Ref<HTMLElement>;
 }
 
 function describedBy(entry: ImportPreviewItem, meta: string, why: string): string | undefined {
@@ -35,10 +38,11 @@ export function ImportPreviewList({
   onToggle,
   onSetAll,
   summary,
+  ref: focusRef,
 }: ImportPreviewListProps): JSX.Element {
   const id = useId();
   const ref = useRef<HTMLFieldSetElement>(null);
-  const { item } = useRoving(ref, items.length);
+  const { item, active } = useRoving(ref, items.length);
   const selected = items.filter((i) => i.checked).length;
   const all = items.length > 0 && selected === items.length;
   return (
@@ -74,6 +78,7 @@ export function ImportPreviewList({
               aria-labelledby={title}
               aria-describedby={describedBy(entry, meta, why)}
               {...item(index)}
+              ref={index === active ? (el) => setRef(focusRef, el) : undefined}
               description={
                 entry.meta || entry.why ? (
                   <>

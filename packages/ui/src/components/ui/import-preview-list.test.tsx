@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { createRef } from "react";
 import { expect, test, vi } from "vitest";
+import { Dialog } from "./dialog";
 import { type ImportPreviewItem, ImportPreviewList } from "./import-preview-list";
 
 const items: ImportPreviewItem[] = [
@@ -104,4 +106,20 @@ test("preview_list_keeps_one_tab_stop_when_items_shrink", () => {
   );
   const stops = screen.getAllByRole("checkbox").filter((r) => r.tabIndex === 0);
   expect(stops).toHaveLength(1);
+});
+
+test("preview_list_initial_focus_ref_focuses_active_row", () => {
+  const ref = createRef<HTMLElement>();
+  render(
+    <Dialog title="Import tasks" cancelLabel="Cancel" onCancel={() => {}} initialFocusRef={ref}>
+      <ImportPreviewList
+        ref={ref}
+        label="Tasks from Reminders"
+        items={items}
+        onToggle={() => {}}
+        onSetAll={() => {}}
+      />
+    </Dialog>,
+  );
+  expect(document.activeElement).toBe(screen.getAllByRole("checkbox")[0]);
 });

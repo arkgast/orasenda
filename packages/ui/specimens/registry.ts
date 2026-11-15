@@ -6,6 +6,7 @@ import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.spe
 import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx";
 import { DayPickerSpecimen } from "../src/components/ui/day-picker.specimen.tsx";
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
+import { EmptyStateSpecimen } from "../src/components/ui/empty-state.specimen.tsx";
 import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
 import { HabitDotsSpecimen } from "../src/components/ui/habit-dots.specimen.tsx";
@@ -69,6 +70,7 @@ export const specimens: Record<string, () => ReactElement> = {
   Checklist: ChecklistSpecimen,
   TagField: TagFieldSpecimen,
   Stepper: StepperSpecimen,
+  EmptyState: EmptyStateSpecimen,
   ImportSourcePicker: ImportSourcePickerSpecimen,
   ImportPreviewList: ImportPreviewListSpecimen,
 };

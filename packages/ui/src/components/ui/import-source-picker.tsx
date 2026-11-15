@@ -1,4 +1,5 @@
-import { type JSX, useId, useRef } from "react";
+import { type JSX, type Ref, useId, useRef } from "react";
+import { setRef } from "../../lib/set-ref";
 import { useRoving } from "../../lib/use-roving";
 
 export interface ImportSource {
@@ -14,20 +15,23 @@ export interface ImportSourcePickerProps {
   /** The kind being read: that row shows "Reading…" and is busy. */
   reading?: string;
   onPick: (kind: string) => void;
+  /** The row that holds the tab stop; pass it to Dialog's initialFocusRef. */
+  ref?: Ref<HTMLElement>;
 }
 
 const ROW =
-  "flex min-h-hit-min w-full cursor-pointer flex-col items-start gap-1 rounded-sm border border-line-strong bg-surface-raised px-3 py-2 text-start text-ink hover:bg-selection focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-default aria-disabled:border-dashed aria-disabled:bg-surface-sunken aria-disabled:hover:bg-surface-sunken aria-busy:cursor-progress";
+  "flex min-h-hit-min w-full cursor-pointer flex-col items-start gap-1 rounded-sm border border-line-strong bg-surface-raised px-3 py-2 text-start text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-default aria-disabled:border-dashed aria-disabled:bg-surface-sunken aria-busy:cursor-progress";
 
 /** The import sheet's first step: one bordered row per source, one tab stop, Up and Down to move. */
 export function ImportSourcePicker({
   sources,
   reading,
   onPick,
+  ref: focusRef,
 }: ImportSourcePickerProps): JSX.Element {
   const id = useId();
   const ref = useRef<HTMLUListElement>(null);
-  const { item } = useRoving(ref, sources.length);
+  const { item, active } = useRoving(ref, sources.length);
   return (
     <ul
       ref={ref}
@@ -46,6 +50,7 @@ export function ImportSourcePicker({
             <button
               type="button"
               {...item(index)}
+              ref={index === active ? (el) => setRef(focusRef, el) : undefined}
               data-slot="import-source"
               aria-labelledby={name}
               aria-describedby={blocked ? `${detail} ${reason}` : detail}

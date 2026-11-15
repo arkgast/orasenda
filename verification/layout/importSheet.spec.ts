@@ -71,3 +71,14 @@ for (const size of SIZES) {
     expect(ring.width).toBeGreaterThan(0);
   });
 }
+
+test("import_sheet_space_toggles_focused_row", async ({ page }) => {
+  await openSpecimen(page, "ImportPreviewList");
+  await page.getByRole("button", { name: "Open the import sheet" }).click();
+  const dialog = page.getByRole("dialog", { name: "Import tasks from Reminders" });
+  const first = dialog.getByRole("checkbox").first();
+  await first.focus();
+  const before = await first.isChecked();
+  await page.keyboard.press("Space");
+  expect(await first.isChecked()).toBe(!before);
+});
