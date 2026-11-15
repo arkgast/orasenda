@@ -81,7 +81,10 @@ fn reminders_order_is_list_created_id() {
     let mut d = item("z");
     d.list = "Home".into();
     d.created_ms = Some(10);
-    let order: Vec<String> = map(vec![a, b, c, d]).into_iter().map(|r| r.origin).collect();
+    let order: Vec<String> = map(vec![a, b, c, d])
+        .into_iter()
+        .map(|r| r.origin)
+        .collect();
     assert_eq!(
         order,
         ["reminders:z", "reminders:a", "reminders:c", "reminders:b"]

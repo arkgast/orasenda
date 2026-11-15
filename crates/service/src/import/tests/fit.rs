@@ -27,7 +27,10 @@ fn plain_item_passes_through() {
     assert_eq!(task.priority, Some(TaskPriority::High));
     assert_eq!(task.due.as_deref(), Some("2026-11-20"));
     assert_eq!(task.checklist, ["One"]);
-    assert_eq!(Summary::from_fitted(&[fitted]).lines(), Vec::<String>::new());
+    assert_eq!(
+        Summary::from_fitted(&[fitted]).lines(),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
@@ -43,7 +46,9 @@ fn title_over_200_splits_into_notes() {
     let rest = task.notes.trim_end_matches("\nSource notes");
     assert!(!rest.is_empty());
     assert_eq!(
-        format!("{} {}", task.title, rest).split_whitespace().count(),
+        format!("{} {}", task.title, rest)
+            .split_whitespace()
+            .count(),
         60
     );
 }
@@ -119,14 +124,15 @@ fn notes_are_composed_in_order() {
 #[test]
 fn notes_cut_takes_last_part_first() {
     let mut item = raw("Task");
-    item.notes = format!("{}\n{}", "a".repeat(5000), "b".repeat(4000));
-    item.date_lines = vec!["Reminders time: 15:00".into(), "Repeats in Reminders".into()];
+    item.notes = format!("{}\n{}", "a".repeat(5500), "b".repeat(4000));
+    item.date_lines = vec!["d".repeat(300); 3];
     let fitted = fit(item);
     assert!(fitted.notes_cut);
     let task = fitted.task.clone().expect("kept");
     assert!(task.notes.chars().count() <= 10_000);
-    assert!(task.notes.ends_with(&"b".repeat(4000)), "date lines go first");
-    assert!(!task.notes.contains("Reminders"));
+    assert!(task.notes.contains(&"b".repeat(4000)), "source notes stay");
+    assert_eq!(task.notes.matches(&"d".repeat(300)).count(), 1);
+    assert!(task.notes.ends_with(&"d".repeat(300)), "cut on a line end");
     assert_eq!(
         Summary::from_fitted(&[fitted]).lines(),
         ["1 note was cut to fit."]
