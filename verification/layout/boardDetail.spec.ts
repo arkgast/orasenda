@@ -183,7 +183,8 @@ for (const size of SIZES) {
           await expectFocusRingVisible(page.locator(":focus"));
           stops.add(
             await page.locator(":focus").evaluate((el) => {
-              const label = el.getAttribute("aria-label") ?? el.labels?.[0]?.textContent;
+              const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
+              const label = el.getAttribute("aria-label") ?? labels?.[0]?.textContent;
               return `${label ?? el.tagName}#${[...document.querySelectorAll(el.tagName)].indexOf(el)}`;
             }),
           );
