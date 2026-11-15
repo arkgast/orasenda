@@ -11,6 +11,8 @@ import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.
 import { HabitDotsSpecimen } from "../src/components/ui/habit-dots.specimen.tsx";
 import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
 import { IconButtonSpecimen } from "../src/components/ui/icon-button.specimen.tsx";
+import { ImportPreviewListSpecimen } from "../src/components/ui/import-preview-list.specimen.tsx";
+import { ImportSourcePickerSpecimen } from "../src/components/ui/import-source-picker.specimen.tsx";
 import { InboxRowSpecimen } from "../src/components/ui/inbox-row.specimen.tsx";
 import { KanbanColumnSpecimen } from "../src/components/ui/kanban-column.specimen.tsx";
 import { KbdSpecimen } from "../src/components/ui/kbd.specimen.tsx";
@@ -67,4 +69,6 @@ export const specimens: Record<string, () => ReactElement> = {
   Checklist: ChecklistSpecimen,
   TagField: TagFieldSpecimen,
   Stepper: StepperSpecimen,
+  ImportSourcePicker: ImportSourcePickerSpecimen,
+  ImportPreviewList: ImportPreviewListSpecimen,
 };

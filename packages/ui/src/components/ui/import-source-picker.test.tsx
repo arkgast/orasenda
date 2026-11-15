@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { ImportSourcePicker, type ImportSource } from "./import-source-picker";
+import { type ImportSource, ImportSourcePicker } from "./import-source-picker";
 
 const sources: ImportSource[] = [
   { kind: "reminders", name: "Reminders", description: "Open reminders on this Mac." },

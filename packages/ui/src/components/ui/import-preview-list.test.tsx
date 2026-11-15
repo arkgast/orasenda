@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { ImportPreviewList, type ImportPreviewItem } from "./import-preview-list";
+import { type ImportPreviewItem, ImportPreviewList } from "./import-preview-list";
 
 const items: ImportPreviewItem[] = [
   { key: "a", title: "Buy stamps", meta: "Due 20 Nov", checked: true },

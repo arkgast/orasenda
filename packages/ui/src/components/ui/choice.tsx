@@ -96,7 +96,8 @@ export interface ChoiceProps
   type?: "radio" | "checkbox";
   /** A full-width chip with a bold title and one sentence of description. */
   long?: boolean;
-  description?: string;
+  /** The `long` chip's lines under the title; pass block spans for more than one. */
+  description?: ReactNode;
   className?: string;
   children: ReactNode;
 }

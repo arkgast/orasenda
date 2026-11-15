@@ -16,6 +16,8 @@ export { FullScreenFocus } from "./components/ui/full-screen-focus";
 export { HabitDots } from "./components/ui/habit-dots";
 export { Icon } from "./components/ui/icon";
 export { IconButton } from "./components/ui/icon-button";
+export { ImportPreviewList } from "./components/ui/import-preview-list";
+export { ImportSourcePicker } from "./components/ui/import-source-picker";
 export { InboxRow } from "./components/ui/inbox-row";
 export { InlineNotice } from "./components/ui/inline-notice";
 export { Input } from "./components/ui/input";
@@ -66,6 +68,11 @@ export type {
 } from "./components/ui/data-table";
 export type { DialogProps } from "./components/ui/dialog";
 export type { EmptyStateProps } from "./components/ui/empty-state";
+export type {
+  ImportPreviewItem,
+  ImportPreviewListProps,
+} from "./components/ui/import-preview-list";
+export type { ImportSource, ImportSourcePickerProps } from "./components/ui/import-source-picker";
 export type { FloatingTimerProps } from "./components/ui/floating-timer";
 export type { FullScreenFocusProps } from "./components/ui/full-screen-focus";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";

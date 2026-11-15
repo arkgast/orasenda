@@ -8,6 +8,8 @@ export type EmptyStateProps =
       message?: string;
       actionLabel?: string;
       onAction?: () => void;
+      /** One ghost button after the quiet action, for a second way on ("Import tasks…"). */
+      secondaryAction?: { label: string; onAction: () => void };
       variant?: "default";
     }
   | {
@@ -16,9 +18,10 @@ export type EmptyStateProps =
       variant: "inline";
       actionLabel?: never;
       onAction?: never;
+      secondaryAction?: never;
     };
 
-/** An empty Inbox, Today or Review: a heading, one kind sentence and at most one quiet action. */
+/** An empty Inbox, Today or Review: a heading, one kind sentence and one quiet action and at most one ghost action. */
 export function EmptyState(props: EmptyStateProps): ReactElement {
   if (props.variant === "inline") {
     return (
@@ -37,8 +40,17 @@ export function EmptyState(props: EmptyStateProps): ReactElement {
       <p className="m-0 text-body text-ink-muted">
         {props.message || "That's fine. Start when you're ready."}
       </p>
-      {props.actionLabel && props.onAction ? (
-        <Button onClick={props.onAction}>{props.actionLabel}</Button>
+      {(props.actionLabel && props.onAction) || props.secondaryAction ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {props.actionLabel && props.onAction ? (
+            <Button onClick={props.onAction}>{props.actionLabel}</Button>
+          ) : null}
+          {props.secondaryAction ? (
+            <Button variant="ghost" onClick={props.secondaryAction.onAction}>
+              {props.secondaryAction.label}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
