@@ -5,7 +5,7 @@
 //! for the store write and its read-back, then emits `board-changed` after the lock is
 //! released. A store that can't be read is an error, never an empty board.
 
-mod check;
+pub(crate) mod check;
 mod columns;
 mod doing;
 mod inbox_move;

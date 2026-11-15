@@ -7,6 +7,8 @@ pub mod api;
 pub mod board;
 pub mod data;
 pub mod inbox;
+#[allow(dead_code)] // consumed by the import service (I7a)
+mod import;
 pub mod keyboard;
 pub mod routines;
 pub mod scheduler;
