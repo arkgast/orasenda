@@ -188,3 +188,15 @@ test("the_panel_opens_above_when_there_is_no_room_below", () => {
   spy.mockRestore();
   document.documentElement.removeAttribute("style");
 });
+
+test("task_picker_clear_returns_focus_to_the_quiet_text", () => {
+  const onPick = vi.fn();
+  const task = { id: "t1", title: "Write the report" };
+  const view = render(<TaskPicker options={OPTIONS} task={task} onPick={onPick} />);
+  const clear = screen.getByRole("button", { name: "Clear task" });
+  clear.focus();
+  fireEvent.click(clear);
+  expect(onPick).toHaveBeenCalledWith(null);
+  view.rerender(<TaskPicker options={OPTIONS} onPick={onPick} />);
+  expect(quiet()).toHaveFocus();
+});

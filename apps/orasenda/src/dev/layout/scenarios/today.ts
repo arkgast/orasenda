@@ -40,7 +40,15 @@ const ended = (phase: "focus" | "break", endReason: "completed" | "stopped") => 
   endReason,
 });
 
+// A linked task, with a title that goes on: the picker's line, the ring's line, the strip's.
+const LONG_TASK = {
+  id: "t1",
+  title: "Write the quarterly planning document for the whole regional team",
+};
+
 export const TODAY: Record<string, Handler> = {
+  idleTask: backend({ view: { ...IDLE, task: LONG_TASK } }),
+  runningTask: backend({ view: { ...RUNNING, task: LONG_TASK } }),
   // Session cadence: Today's new rows and states.
   warning: backend({ view: WARNING }),
   warningAuto: backend({ view: { ...WARNING, canExtend: false, checkIn: AUTO_STEP.checkIn } }),

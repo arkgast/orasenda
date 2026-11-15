@@ -186,10 +186,17 @@
 /* The task control sits above the time and takes one quiet line: the time keeps the rest. */
 .today-time:has(.today-task) {
   grid-template-rows: auto minmax(0, 1fr);
+  row-gap: var(--space-3);
 }
 
+/* In the strip the time cell reaches the top row: it keeps space-3 below it. */
+.today[data-layout="strip"] .today-time:has(.today-task) {
+  padding-block-start: var(--space-3);
+}
+
+/* The line stays caption-quiet: it is held to about the ring's width, never the whole column. */
 .today-task {
   justify-self: center;
-  max-inline-size: 100%;
+  max-inline-size: min(100%, var(--timer-size));
   min-inline-size: 0;
 }

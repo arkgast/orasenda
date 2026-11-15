@@ -41,7 +41,9 @@ async function centres(page: Page): Promise<Centres> {
     const right = Math.max(...buttons.map((b) => b.right));
     const column = q(".app-column").getBoundingClientRect();
     const today = q(".today").getBoundingClientRect();
-    const timeBox = q(".today-time").firstElementChild?.getBoundingClientRect() as DOMRect;
+    const timeBox = q(
+      '[data-slot="timer-ring"], [data-slot="timer-strip"]',
+    ).getBoundingClientRect() as DOMRect;
     return {
       controlsLeft: left,
       controlsRight: right,
@@ -50,7 +52,9 @@ async function centres(page: Page): Promise<Centres> {
       layout: q(".today").dataset.layout ?? "",
       column: mid(column),
       controls: (left + right) / 2,
-      time: mid(q(".today-time").firstElementChild?.getBoundingClientRect() as DOMRect),
+      time: mid(
+        q('[data-slot="timer-ring"], [data-slot="timer-strip"]').getBoundingClientRect() as DOMRect,
+      ),
       summary: mid(q('[data-slot="preset-summary"] button').getBoundingClientRect()),
       cell: mid(q(".today-summary").getBoundingClientRect()),
       compact: q(".today").dataset.compact !== undefined,

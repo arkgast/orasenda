@@ -77,7 +77,7 @@ export function Today({ onNavigate }: Props) {
   const [failedOpen, setFailedOpen] = useState<FocusButtonId | null>(null);
   const bindings = useBindings();
   const [boardLine, setBoardLine] = useBoardLine();
-  useBoardNotice((n) => setBoardLine(n.message));
+  useBoardNotice((n) => setBoardLine(n.message, n.kind === "notSaved" ? "attention" : "neutral"));
 
   useEffect(() => {
     const unregister = register({
@@ -130,7 +130,8 @@ export function Today({ onNavigate }: Props) {
     controlError,
     openFailed: failedOpen !== null,
     timerUnavailable: timer.status === "error",
-    notice: notice?.text ?? boardLine,
+    notice: notice?.text ?? boardLine?.text ?? null,
+    noticeTone: notice ? undefined : boardLine?.tone,
     store: view?.store ?? "ok",
     cadence: view,
     capNotice: notice?.persist === true,
@@ -346,7 +347,7 @@ export function Today({ onNavigate }: Props) {
           idleLength={nextMinutes}
           task={view?.task?.title}
           slot={
-            layout.timer === "stackedStrip" ? null : (
+            layout.timer === "stackedStrip" || (layout.timer === "ring" && layout.short) ? null : (
               <TaskSlot task={view?.task ?? null} onPick={pickTask} />
             )
           }

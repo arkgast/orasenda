@@ -62,8 +62,32 @@ test("clear_calls_set_task_null", async () => {
   expect(screen.queryByRole("button", { name: "Clear task" })).toBeNull();
 });
 
+test("clear_task_returns_focus_to_add_a_task", async () => {
+  await renderToday({
+    board_get: () => BOARD,
+    timer_state: () => ({ view: { ...RUNNING, task: CHOSEN }, pending: [] }),
+    timer_set_task: () => ({ ...RUNNING, task: null }),
+  });
+  const clear = screen.getByRole("button", { name: "Clear task" });
+  clear.focus();
+  fireEvent.click(clear);
+  await settle();
+  await emitTimer({ ...RUNNING, task: null });
+  expect(screen.getByRole("button", { name: "Add a task" })).toHaveFocus();
+});
+
 test("board_notice_shows_line", async () => {
   await renderToday({ board_get: () => BOARD });
   await emitBoardNotice("movedBack", "Moved Fix sync bug back to Today.");
   expect(screen.getByText("Moved Fix sync bug back to Today.")).toBeInTheDocument();
+});
+
+test("board_notice_not_saved_reads_as_attention", async () => {
+  await renderToday({ board_get: () => BOARD });
+  await emitBoardNotice("notSaved", "The board didn't update. Try again.");
+  const line = screen.getByText("The board didn't update. Try again.");
+  expect(line.closest("[data-slot=inline-notice]")).toHaveAttribute("data-tone", "attention");
+  await emitBoardNotice("movedBack", "Moved Fix sync bug back to Today.");
+  const moved = screen.getByText("Moved Fix sync bug back to Today.");
+  expect(moved.closest("[data-slot=inline-notice]")).toHaveAttribute("data-tone", "neutral");
 });

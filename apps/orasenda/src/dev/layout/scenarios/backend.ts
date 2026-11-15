@@ -9,6 +9,7 @@ import type {
   Settings,
   TimerView_Serialize,
 } from "../../../shared/ipc/bindings";
+import { board, task } from "./boardData";
 
 /**
  * Backend replies for the layout harness (verification/layout, `layout.html?scenario=<name>`).
@@ -105,6 +106,13 @@ export function displaysFor(count: number): DisplayInfo[] {
   );
 }
 
+/** A few live tasks for Today's picker. */
+const PICKABLE = [
+  task("d1", "Fix the sync bug", "doing"),
+  task("t1", "Write the intro", "today", { isFrog: true }),
+  task("b1", "Plan the offsite", "backlog"),
+];
+
 export const SETTINGS: Settings = {
   theme: "system",
   presetId: STEADY,
@@ -183,6 +191,9 @@ export function backend({
     capture_close: () => null,
     keyboard_recording: () => null,
     capture_note: () => NOTE,
+    // Today's task picker lists the board: a small week by default.
+    board_get: () => board(PICKABLE),
+    timer_set_task: () => view,
     ...replies,
   };
   return (cmd) => {

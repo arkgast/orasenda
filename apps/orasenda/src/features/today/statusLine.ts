@@ -36,6 +36,8 @@ export type StatusInput = {
   timerUnavailable: boolean;
   /** The one-shot milestone line ("Session ended."), or `null`. */
   notice: string | null;
+  /** The tone of a board line used as the notice; a milestone is neutral. */
+  noticeTone?: "neutral" | "attention";
   store: StoreStatus;
   /** The cadence fields of the view; `null` before the first view. */
   cadence?: CadenceInput | null;
@@ -204,7 +206,10 @@ export function statusLine(input: StatusInput): StatusLine | null {
     if (input.tip && !input.strip && input.notice === SESSION_ENDED && !store)
       return tipLine(input.tip, SESSION_ENDED);
     const joined = store ? `${input.notice} ${store}` : null;
-    return line(joined && joined.length <= JOIN_LIMIT ? joined : input.notice, "neutral");
+    return line(
+      joined && joined.length <= JOIN_LIMIT ? joined : input.notice,
+      input.noticeTone ?? "neutral",
+    );
   }
   if (store) return line(store, "attention");
   // Above every other quiet line. One action only: with a second action beside it the text

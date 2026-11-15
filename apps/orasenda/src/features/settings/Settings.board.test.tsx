@@ -1,4 +1,4 @@
-import { settle } from "@shared/test/fixtures";
+import { SETTINGS, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
@@ -36,17 +36,23 @@ test("shortcuts_lists_board_keys", async () => {
   const rows = within(table)
     .getAllByRole("row")
     .map((row) => row.textContent ?? "");
-  const text = rows.join("|");
-  for (const action of [
-    "Add task",
-    "Move to another column",
-    "Reorder in a column",
-    "Remove task",
-    "Make Frog",
-    "Open task",
-    "Start focus on task",
-    "Move note to Board (Inbox)",
-  ]) {
-    expect(text).toContain(action);
-  }
+  expect(rows.slice(1)).toEqual([
+    "Add task⌘NCommand-N",
+    "Move to another column⌥⌘←⌥⌘→Option-Command-Left Arrow, Option-Command-Right Arrow",
+    "Reorder in a column⌥⌘↑⌥⌘↓Option-Command-Up Arrow, Option-Command-Down Arrow",
+    "Remove task⌘⌫Command-Delete",
+    "Make FrogFF key",
+    "Open task↩Return",
+    "Start focus on task⌘↩Command-Return",
+    "Move note to Board (Inbox)BB key",
+  ]);
+});
+
+test("shortcuts_board_keys_read_off_when_single_keys_are_off", async () => {
+  await openSettings({ settings_get: () => ({ ...SETTINGS, singleKey: false }) }, "Shortcuts");
+  const table = screen.getByRole("table", { name: "On the Board" });
+  const row = (action: string) => within(table).getByRole("row", { name: new RegExp(action) });
+  expect(row("Make Frog")).toHaveTextContent(/Off$/);
+  expect(row("Move note to Board")).toHaveTextContent(/Off$/);
+  expect(row("Add task")).not.toHaveTextContent(/Off$/);
 });

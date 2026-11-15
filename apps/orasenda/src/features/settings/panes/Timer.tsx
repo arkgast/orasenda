@@ -153,6 +153,7 @@ export function Timer({
         <Select
           label="Estimate buffer"
           labelHidden
+          aria-describedby="board-buffer-help"
           value={String(settings.boardEstimateBuffer)}
           disabled={disabled}
           options={BUFFERS}
