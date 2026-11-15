@@ -77,3 +77,51 @@ fn before_and_after_wrap_between() {
     assert!(before(&m) < m);
     assert!(after(&m) > m);
 }
+
+#[test]
+fn spread_is_increasing_and_after_bound() {
+    for after in [None, Some("V"), Some("Vz1")] {
+        for n in [1, 2, 61, 62, 63, 500, 3000] {
+            let ranks = spread(after, n);
+            assert_eq!(ranks.len(), n);
+            let mut prev = after.unwrap_or("").to_owned();
+            for r in &ranks {
+                assert!(*r > prev, "{r} > {prev}");
+                assert!(!r.ends_with('0'));
+                prev = r.clone();
+            }
+        }
+    }
+}
+
+#[test]
+fn spread_stays_short_at_3000() {
+    let after = "Vz1";
+    for n in 1..=3000 {
+        let ranks = spread(Some(after), n);
+        assert_eq!(ranks.len(), n);
+        assert!(ranks.iter().all(|r| r.len() <= after.len() + 2));
+        assert!(ranks.windows(2).all(|w| w[0] < w[1]));
+        assert!(ranks[0].as_str() > after);
+    }
+}
+
+#[test]
+fn spread_on_empty_lane() {
+    assert!(spread(None, 0).is_empty());
+    let ranks = spread(None, 500);
+    assert_eq!(ranks.len(), 500);
+    assert!(ranks.windows(2).all(|w| w[0] < w[1]));
+    assert!(ranks[0].as_str() > "");
+}
+
+#[test]
+fn spread_after_tombstone_rank() {
+    let tomb = after("zzzz");
+    let ranks = spread(Some(&tomb), 500);
+    assert!(ranks.iter().all(|r| r.as_str() > tomb.as_str()));
+    assert!(ranks.iter().all(|r| r.len() <= tomb.len() + 2));
+    // A card can still be placed between the bound and the first spread rank.
+    let m = between(Some(&tomb), Some(&ranks[0]));
+    assert!(tomb < m && m < ranks[0]);
+}
