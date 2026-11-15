@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
 import { Button } from "./button.tsx";
 import { Dialog } from "./dialog.tsx";
@@ -15,8 +15,14 @@ const REASON = "Available between sessions, so nothing interrupts your focus.";
 
 const blocked = sources.map((s) => (s.kind === "todoist" ? s : { ...s, disabledReason: REASON }));
 
+/** The sheet's source step: Things is unavailable, with its reason. */
+const sheetSources = sources.map((s) =>
+  s.kind === "things" ? { ...s, disabledReason: REASON } : s,
+);
+
 export function ImportSourcePickerSpecimen(): ReactElement {
   const [open, setOpen] = useState(false);
+  const first = useRef<HTMLElement>(null);
   return (
     <>
       <Frame state="import-source-picker-default" width={420} height={260}>
@@ -33,17 +39,16 @@ export function ImportSourcePickerSpecimen(): ReactElement {
       </Frame>
       {open ? (
         <Dialog
+          size="sheet"
           title="Import tasks"
           description="Where are your tasks now?"
-          cancelLabel="Cancel"
+          cancelLabel="Close"
           onCancel={() => setOpen(false)}
+          initialFocusRef={first}
         >
-          <ImportSourcePicker
-            sources={[sources[0], { ...sources[1], disabledReason: REASON }, sources[2]].flatMap(
-              (s) => (s ? [s] : []),
-            )}
-            onPick={() => setOpen(false)}
-          />
+          <div className="@sheet-stack:col-span-2">
+            <ImportSourcePicker ref={first} sources={sheetSources} onPick={() => setOpen(false)} />
+          </div>
         </Dialog>
       ) : null}
     </>
