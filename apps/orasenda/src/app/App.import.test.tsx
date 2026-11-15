@@ -40,6 +40,13 @@ async function goToYourData() {
   await settle();
 }
 
+const boardHeading = () => screen.getByRole("heading", { level: 1, name: "Board", hidden: true });
+// Close leaves focus in the Board (its heading, or on an empty Board its own Import button),
+// never on the rail control or the palette opener.
+function expectFocusOnBoard() {
+  const main = boardHeading().closest("main");
+  expect(main?.contains(document.activeElement)).toBe(true);
+}
 const sheet = () => screen.queryByRole("dialog", { name: "Import tasks" });
 
 test("your_data_import_opens_board_sheet", async () => {
@@ -51,10 +58,15 @@ test("your_data_import_opens_board_sheet", async () => {
     screen.getByRole("heading", { level: 1, name: "Board", hidden: true }),
   ).toBeInTheDocument();
   expect(sheet()).toBeInTheDocument();
+  expect(sheet()?.contains(document.activeElement)).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  await settle();
+  expectFocusOnBoard();
 });
 
 test("palette_import_tasks_opens_sheet", async () => {
   await start();
+  screen.getByRole("button", { name: "Today" }).focus();
   await emitPaletteOpen();
   fireEvent.click(screen.getByRole("option", { name: /Import tasks…/ }));
   await settle();
@@ -63,6 +75,10 @@ test("palette_import_tasks_opens_sheet", async () => {
     screen.getByRole("heading", { level: 1, name: "Board", hidden: true }),
   ).toBeInTheDocument();
   expect(sheet()).toBeInTheDocument();
+  expect(sheet()?.contains(document.activeElement)).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  await settle();
+  expectFocusOnBoard();
 });
 
 test("palette_import_is_not_first", async () => {

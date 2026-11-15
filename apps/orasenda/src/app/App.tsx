@@ -112,7 +112,10 @@ export function App() {
   const currentRef = useRef<NavPage>("today");
   // Counts the asks for the import sheet. The Board opens it once per value (importAsk.ts), so
   // coming back to the Board later does not open it again.
+  // It only goes up and is never reset: importAsk.ts keeps the value it consumed at module level.
   const [importAsked, setImportAsked] = useState(0);
+  // An ask waits here until the Board is shown, so a failed full-screen leave opens nothing.
+  const [importPending, setImportPending] = useState(false);
   const main = useRef<HTMLElement>(null);
 
   const { compact } = useWindowLayout();
@@ -175,6 +178,7 @@ export function App() {
   const navigate = useCallback((page: NavPage, target?: SettingsTarget, fromShell = false) => {
     // A page the shell delivers twice (event and take) navigates once; the rail always moves focus.
     if (fromShell && !fullScreenRef.current && page === currentRef.current && !target) return;
+    setImportPending(false);
     const show = () => {
       currentRef.current = page;
       // Render the new page now so its heading exists, then move focus to it (NavRail README).
@@ -235,9 +239,17 @@ export function App() {
   }, [navigate]);
 
   const askImport = useCallback(() => {
-    setImportAsked((count) => count + 1);
+    // The sheet and the Board heading own focus now, not the control the palette came from.
+    paletteOpener.current = null;
     navigate("board");
+    setImportPending(true);
   }, [navigate]);
+
+  useEffect(() => {
+    if (!importPending || current !== "board") return;
+    setImportPending(false);
+    setImportAsked((count) => count + 1);
+  }, [importPending, current]);
 
   useShortcuts(
     PAGE_ORDER.map(({ id }, index) => ({

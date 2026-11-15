@@ -22,7 +22,7 @@ type Props = {
   onClose(): void;
   onNavigate(page: NavPage): void;
   /** *Import tasks…*: the host goes to the Board and asks for the import sheet. */
-  onImportTasks?(): void;
+  onImportTasks(): void;
 };
 
 /** Runs a command; resolves to whether it worked. Failures are logged here, shown by the caller. */
@@ -142,7 +142,7 @@ export function Palette({
           report("choose that task"),
         );
       case "importTasks":
-        onImportTasks?.();
+        onImportTasks();
         return;
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));

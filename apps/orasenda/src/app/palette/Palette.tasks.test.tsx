@@ -36,6 +36,7 @@ async function open(replies = {}, tasksOnly = false) {
       onMode={onMode}
       onClose={onClose}
       onNavigate={vi.fn()}
+      onImportTasks={vi.fn()}
     />,
   );
   await settle();
