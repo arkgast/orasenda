@@ -113,8 +113,8 @@ jobs:
         if: steps.scope.outputs.docs_only == 'true'
         run: gitleaks git --no-banner --redact --log-opts="${CI_BASE_REF}..HEAD"
 
-  # The real-engine WebKit checks, split four ways. Shards split by file group, not evenly: if one
-  # goes over 20 minutes, raise the shard count, not the timeout.
+  # The real-engine WebKit checks, split four ways. On CI the shards split by test (fullyParallel
+  # under CI, #616), so they are even: if one goes over 20 minutes, raise the shard count, not the timeout.
   layout:
     name: layout (${{ matrix.shard }}/4)
     runs-on: macos-26
