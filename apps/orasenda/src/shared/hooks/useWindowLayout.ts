@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 export type WindowLayout = {
   /** Under the compact width or height: no rail, a Pages button instead. */
   compact: boolean;
+  /** Under the compact height: a ring here has no room for a row above the time. */
+  short: boolean;
   timer: TimerLayout;
   width: number;
   height: number;
@@ -41,6 +43,7 @@ export function useWindowLayout(): WindowLayout {
   }, []);
   return {
     compact: size.width < limits.width || size.height < limits.height,
+    short: size.height < limits.height,
     timer: timerLayout({
       contentWidth: size.width,
       contentHeight: size.height,

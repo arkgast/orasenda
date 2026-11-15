@@ -1,6 +1,6 @@
 import { type TimerLayout, TimerRing, TimerStrip } from "@orasenda/ui";
 import type { TimerView_Serialize } from "@shared/ipc/bindings";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 type Props = {
   /** `null` before the first view, or when the timer is unavailable: the idle face. */
@@ -10,16 +10,39 @@ type Props = {
   clock?: string;
   /** The next session's length ("25 min"), shown by the strip while idle. */
   idleLength?: string;
+  /** The linked task's title, shown under the time. */
+  task?: string;
+  /** The optional task control, above the time. */
+  slot?: ReactNode;
 };
 
 /** The time: a fluid ring, or a strip (stacked in a narrow one). Switches on resize only. */
-export function TimeView({ view, layout, clock, idleLength }: Props): ReactElement {
+export function TimeView({ view, layout, clock, idleLength, task, slot }: Props): ReactElement {
   const shown = {
     remaining: view?.remaining ?? "",
     remainingLabel: view?.remainingLabel ?? "",
     progress: view?.progress ?? 0,
     mode: view?.mode ?? "idle",
   } as const;
-  if (layout === "ring") return <TimerRing size="fluid" clock={clock} {...shown} />;
-  return <TimerStrip stacked={layout === "stackedStrip"} idleLength={idleLength} {...shown} />;
+  // The picker already shows the task when the slot is present: no second title under the digits.
+  const shownTask = slot ? undefined : task;
+  // The stacked strip has no room for the task line (TimerStrip README): it is whole in the name only.
+  const time =
+    layout === "ring" ? (
+      <TimerRing size="fluid" clock={clock} task={shownTask} {...shown} />
+    ) : (
+      <TimerStrip
+        stacked={layout === "stackedStrip"}
+        idleLength={idleLength}
+        task={layout === "stackedStrip" ? undefined : shownTask}
+        {...shown}
+      />
+    );
+  if (!slot) return time;
+  return (
+    <>
+      {slot}
+      {time}
+    </>
+  );
 }

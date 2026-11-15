@@ -47,6 +47,7 @@ export function PaneBody({ pane, headingRef, model, info }: Props) {
           disabledReason={m.reason}
           presetStatus={m.reasonIf("preset")}
           cadenceStatus={m.reasonIf(...CADENCE_KEYS)}
+          bufferStatus={m.reasonIf("boardBuffer")}
           editor={m.editor}
           onPreset={(presetId: string) => m.withLatest({ presetId })}
           onCadence={m.changeCadence}

@@ -182,3 +182,35 @@
 .today:not([data-layout="strip"]) .today-controls [data-slot="start-button-row"] {
   justify-content: center;
 }
+
+/* The task control sits above the time and takes one quiet line: the time keeps the rest. */
+.today-time:has(.today-task) {
+  grid-template-rows: auto minmax(0, 1fr);
+  row-gap: var(--space-3);
+}
+
+/* In the strip the time cell reaches the top row: it keeps space-3 below it. */
+.today[data-layout="strip"] .today-time:has(.today-task) {
+  padding-block-start: var(--space-3);
+}
+
+/* The line stays caption-quiet: it is held to about the ring's width, never the whole column. */
+.today-task {
+  justify-self: center;
+  max-inline-size: min(100%, var(--timer-size));
+  min-inline-size: 0;
+}
+
+/* In the ring layout the ring takes the time track's height less the picker row, so the line is held
+   to that diameter (never below timer-min-size) and never wider than the ring under it. */
+.today[data-layout="ring"] .today-time:has(.today-task) {
+  container-type: size;
+}
+
+.today[data-layout="ring"] .today-task {
+  max-inline-size: min(
+    100%,
+    var(--timer-size),
+    max(var(--timer-min-size), calc(100cqb - var(--hit-min) - var(--space-3)))
+  );
+}

@@ -89,16 +89,56 @@ test("today_break_row_actions_and_stacked_strip", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Skip break" }).first()).toBeVisible();
 });
 
-test("today_has_no_task_slot_in_any_layout", async ({ page }) => {
+// B13: the task control rests as quiet text in the ring and the strip; the stacked strip has no room for it.
+// A short ring window (under the compact height) drops it too: its track is under timer-min-size plus a row.
+test("today_task_slot_rests_as_add_a_task", async ({ page }) => {
   for (const size of [
-    { width: 900, height: 600 },
-    { width: 640, height: 330 },
-    { width: 360, height: 240 },
+    { width: 900, height: 600, layout: "ring", slot: true },
+    { width: 640, height: 480, layout: "ring", slot: true },
+    { width: 800, height: 300, layout: "strip", slot: true },
+    { width: 360, height: 400, layout: "ring", slot: false },
+    { width: 1000, height: 440, layout: "ring", slot: false },
+    { width: 360, height: 240, layout: "stackedStrip", slot: false },
   ]) {
     await openApp(page, "running", size);
-    await expect(page.locator('[data-slot$="-task"]')).toHaveCount(0);
+    const slot = page.locator('[data-slot="today-task"]');
+    await expect(slot, `${size.width}x${size.height}`).toHaveCount(size.slot ? 1 : 0);
+    if (size.slot) await expect(slot.getByRole("button", { name: "Add a task" })).toBeVisible();
+    // The ring never overflows into the controls row.
+    await expectTodayGaps(page, size, "running");
   }
 });
+
+// A long title in the picker, the ring and the strip: the gaps hold and the line stays within the ring's width.
+for (const size of [
+  { width: 900, height: 600, layout: "ring" },
+  { width: 640, height: 480, layout: "ring" },
+  { width: 360, height: 640, layout: "ring" },
+  { width: 360, height: 480, layout: "ring" },
+  { width: 800, height: 300, layout: "strip" },
+  { width: 1024, height: 400, layout: "strip" },
+]) {
+  for (const scenario of ["idleTask", "runningTask"]) {
+    test(`today_long_task_title_${size.width}x${size.height}_${scenario}`, async ({ page }) => {
+      await openApp(page, scenario, size);
+      await expectTodayFits(page, size, scenario === "idleTask" ? /Start focus/ : /Pause session/);
+      await expectTodayGaps(page, size, scenario);
+      const task = await page.locator('[data-slot="today-task"]').boundingBox();
+      if (task) {
+        expect(task.width, "the picker stays quiet").toBeLessThanOrEqual(size.width);
+        const face = await page
+          .locator('[data-slot="timer-ring"], [data-slot="timer-strip"]')
+          .first()
+          .boundingBox();
+        if (face) {
+          expect(task.width, "the picker is no wider than the ring or strip").toBeLessThanOrEqual(
+            face.width + 1,
+          );
+        }
+      }
+    });
+  }
+}
 
 // Goal 1 on Today: Deep Work's "1:29:59" inside the ring at every ring size. The long face is held to the
 // inner square, except where the timer-md floor binds (about 160 to 190px), where it is held to the circle.

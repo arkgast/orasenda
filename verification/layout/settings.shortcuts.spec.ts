@@ -39,7 +39,15 @@ for (const size of SIZES) {
       const heading = page.locator("#settings-keyboard-heading");
       await heading.scrollIntoViewIfNeeded();
       await expect(heading).toBeVisible();
-      await page.locator(`${SECTION} table`).scrollIntoViewIfNeeded();
+      await page.getByRole("table", { name: "All shortcuts" }).scrollIntoViewIfNeeded();
+      // The read-only Board list sits inside the window too.
+      const board = page.getByRole("table", { name: "On the Board" });
+      await board.scrollIntoViewIfNeeded();
+      const box = await board.boundingBox();
+      expect(box?.x, "the Board list starts inside the window").toBeGreaterThanOrEqual(0);
+      expect((box?.x ?? 0) + (box?.width ?? 0), "the Board list ends inside").toBeLessThanOrEqual(
+        size.width,
+      );
 
       const m = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,

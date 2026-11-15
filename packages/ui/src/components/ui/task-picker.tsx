@@ -33,7 +33,7 @@ export interface TaskPickerProps {
 
 const ORDER = { doing: 0, today: 1, backlog: 2 } as const;
 const QUIET =
-  "min-h-hit-min max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
+  "min-h-hit-min min-w-0 max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
 
 /** A length token in px, read from its CSS variable on the root. */
 function tokenPx(name: string): number {
@@ -66,6 +66,8 @@ export function TaskPicker({
   const listId = `${base}-list`;
   const quiet = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+  // Clear task unmounts once the task is gone: focus then goes to the quiet text, not the body.
+  const clearing = useRef(false);
   const wrap = useRef<HTMLDivElement>(null);
   // The panel shows once the person types, or after an arrow key asks for the list.
   const [armed, setArmed] = useState(false);
@@ -82,6 +84,20 @@ export function TaskPicker({
     }
   }, [editing]);
 
+  const hasTask = task !== undefined;
+  useEffect(() => {
+    if (!clearing.current) return;
+    clearing.current = false;
+    // Clear failed (the task is still there): nothing to restore. Otherwise only take focus when it was lost.
+    if (hasTask) return;
+    const active = document.activeElement;
+    if (!active || active === document.body) quiet.current?.focus();
+  }, [hasTask]);
+  // A failed Clear leaves hasTask unchanged, so the effect above never runs: drop the flag on the next render.
+  useEffect(() => {
+    if (hasTask) clearing.current = false;
+  });
+
   const [room, setRoom] = useState<number | undefined>(undefined);
   const [above, setAbove] = useState(false);
   // Cap the panel at the room available, and open it above the input when the room below is under two
@@ -92,7 +108,9 @@ export function TaskPicker({
     const measure = () => {
       const box = wrap.current?.getBoundingClientRect();
       if (!box) return;
-      const margin = tokenPx("--space-2");
+      // The panel sits space-1 off the input, and keeps space-2 from the window edge.
+      const gap = tokenPx("--space-1");
+      const margin = tokenPx("--space-2") + gap;
       const below = window.innerHeight - box.bottom - margin;
       const over = box.top - margin;
       const flip = below < 2 * tokenPx("--hit-min") && over > below;
@@ -161,7 +179,10 @@ export function TaskPicker({
           <IconButton
             label="Clear task"
             icon={<Icon name="close" />}
-            onClick={() => onPick(null)}
+            onClick={() => {
+              clearing.current = true;
+              onPick(null);
+            }}
           />
         ) : null}
       </div>

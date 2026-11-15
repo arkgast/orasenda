@@ -170,6 +170,7 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
       top: union(controls(".today-top").map(rectOf)) ?? union(all(".today-top").map(rectOf)),
       // An empty status row has no message, button or field: it is skipped, not measured.
       status: union(statusRects),
+      task: union(controls(".today-task").map(rectOf)),
       ring: union(all('[data-slot="timer-ring"] svg').map(rectOf)),
       time:
         union(all('[data-slot="timer-strip"]').map(rectOf)) ??
@@ -197,14 +198,23 @@ export async function expectTodayGaps(page: Page, size: TodaySize, state: string
     const rows: Array<[string, Box | null]> = [
       ["top", m.top],
       ["status", m.status],
+      ["task", m.task],
       ["ring", m.ring],
       ["controls", m.controls],
     ];
     const present = rows.filter(([, b]) => b !== null);
     for (let i = 0; i + 1 < present.length; i++) {
-      down(present[i][1], present[i + 1][1], `${present[i][0]}→${present[i + 1][0]}`, min);
+      // The picker sits space-3 above the ring it belongs to.
+      const next = present[i + 1][0];
+      down(
+        present[i][1],
+        present[i + 1][1],
+        `${present[i][0]}→${next}`,
+        next === "ring" && present[i][0] === "task" ? 12 : min,
+      );
     }
   } else if (size.layout === "strip") {
+    down(m.top, m.task, "top→task", 12);
     across(m.status, m.time, "status→time", 16);
     across(m.time, m.controls, "time→controls", 16);
   } else {

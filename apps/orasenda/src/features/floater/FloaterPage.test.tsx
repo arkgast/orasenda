@@ -49,6 +49,15 @@ test("floater_renders_the_view_as_a_floating_timer_with_a_drag_region", async ()
   expect(screen.getByRole("main", { name: "Floating timer" })).toBeVisible();
 });
 
+test("floater_names_task", async () => {
+  await mount({
+    timer_view: () => ({ ...RUNNING, task: { id: "t1", title: "Write the report" } }),
+  });
+  expect(
+    screen.getByLabelText("Focus, 24 minutes 59 seconds remaining, Write the report"),
+  ).toBeInTheDocument();
+});
+
 test("floater_never_calls_timer_state", async () => {
   const backend = await mount({ timer_view: () => IDLE });
   await emitTimer(RUNNING);
