@@ -104,20 +104,22 @@ export function TaskSheet({
       onCancel={close}
       initialFocusRef={titleRef}
     >
-      {/* The live region stays mounted; when empty it is 0 high, so -mb-4 cancels its grid row gap. */}
-      <div className={d.line || boardLine ? WIDE : `${WIDE} -mb-4`}>
-        <InlineNotice
-          variant="row"
-          collapseEmpty
-          tone={d.line || boardLine?.tone === "attention" ? "attention" : "rest"}
-          actionLabel={d.line ? (d.line.retry ? "Try again" : undefined) : boardLine?.action?.label}
-          actionName={d.line ? "Try again saving" : boardLine?.action?.name}
-          onAction={d.line ? d.line.retry : boardLine?.action?.run}
-        >
-          {d.line?.text ?? boardLine?.text ?? ""}
-        </InlineNotice>
-      </div>
-      <div className={WIDE}>
+      {/* Notice and Title share one grid cell so an empty (0 high) live region leaves no grid row gap; mb-4 only while it has text. */}
+      <div className={`${WIDE} flex flex-col`}>
+        <div className={d.line || boardLine ? "mb-4" : undefined}>
+          <InlineNotice
+            variant="row"
+            collapseEmpty
+            tone={d.line || boardLine?.tone === "attention" ? "attention" : "rest"}
+            actionLabel={
+              d.line ? (d.line.retry ? "Try again" : undefined) : boardLine?.action?.label
+            }
+            actionName={d.line ? "Try again saving" : boardLine?.action?.name}
+            onAction={d.line ? d.line.retry : boardLine?.action?.run}
+          >
+            {d.line?.text ?? boardLine?.text ?? ""}
+          </InlineNotice>
+        </div>
         <Input
           ref={titleRef}
           label="Title"

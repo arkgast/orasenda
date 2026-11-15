@@ -44,6 +44,13 @@ for (const size of SIZES) {
     expect(m.sideways).toBeLessThanOrEqual(0);
     // The sheet body is wider than container-sheet-stack except at 640: one column there.
     expect(m.columns).toBe(size.width === 640 ? 1 : 2);
+    // An empty save line takes no room: the Title field sits one title-to-field gap under the heading.
+    const gap = await dialog.evaluate((el) => {
+      const h = el.querySelector("h2")?.getBoundingClientRect();
+      const f = el.querySelector("label")?.getBoundingClientRect();
+      return h && f ? f.top - h.bottom : Number.NaN;
+    });
+    expect(gap).toBeLessThanOrEqual(24.5);
     // The actions row is pinned: Done is on screen without scrolling.
     await expect(dialog.getByRole("button", { name: "Done" })).toBeInViewport({ ratio: 1 });
   });
