@@ -1,7 +1,7 @@
 import { argsOf, boardOf, emitBoardChanged, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { card, renderBoard, TASKS } from "./BoardPage.support";
 
 afterEach(async () => {
@@ -158,4 +158,45 @@ test("a menu move keeps focus on the moved card", async () => {
   const moved = TASKS.map((t) => (t.id === "b1" ? { ...t, lane: "today" as const } : t));
   await emitBoardChanged(1, boardOf(moved));
   expect(card("Draft outline")).toHaveFocus();
+});
+
+test("start_failure_line_clears_after_successful_retry", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let fail = true;
+  await renderBoard({
+    replies: {
+      timer_start: () => {
+        if (fail) throw new Error("down");
+        return null;
+      },
+    },
+  });
+  key("Write intro", { key: "Enter", metaKey: true });
+  await settle();
+  expect(screen.getByText(/Focus didn't start/)).toBeInTheDocument();
+  fail = false;
+  fireEvent.click(screen.getByRole("button", { name: "Try again starting focus" }));
+  await settle();
+  expect(screen.queryByText(/Focus didn't start/)).not.toBeInTheDocument();
+});
+
+test("failed_save_line_clears_after_quiet_reorder_succeeds", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let fail = true;
+  await renderBoard({
+    replies: {
+      task_move: () => {
+        if (fail) throw new Error("store");
+        return null;
+      },
+    },
+  });
+  const reorder = { key: "ArrowDown", metaKey: true, altKey: true };
+  key("Write intro", reorder);
+  await settle();
+  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+  fail = false;
+  key("Write intro", reorder);
+  await settle();
+  expect(screen.queryByText("That didn't save. Try again.")).not.toBeInTheDocument();
 });

@@ -31,6 +31,8 @@ export function useBoardActions(
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const latest = useRef({ api, columns, name });
   latest.current = { api, columns, name };
+  const shown = useRef<BoardLine>(null);
+  shown.current = line;
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const show = useCallback((next: BoardLine) => {
@@ -76,6 +78,7 @@ export function useBoardActions(
       if (result.status !== "ok") return failed(result.error);
       if (say)
         show({ text: `Moved ${task.title} to ${latest.current.name(lane)}.`, tone: "neutral" });
+      else if (shown.current?.tone === "attention") show(null);
       return true;
     },
     [failed, show],
@@ -183,7 +186,10 @@ export function useBoardActions(
     async function startOn(task: TaskView): Promise<boolean> {
       try {
         const result = await commands.timerStart({ quick: false });
-        if (result.status === "ok") return true;
+        if (result.status === "ok") {
+          show(null);
+          return true;
+        }
         if (commandFailure(result.error) === "race") {
           // Another surface got there first: say what is true, no failure.
           show({ text: "A session is already running.", tone: "neutral" });
