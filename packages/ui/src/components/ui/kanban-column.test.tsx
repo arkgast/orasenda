@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { expect, test, vi } from "vitest";
 import { KanbanColumn } from "./kanban-column";
+import { TaskCard } from "./task-card";
 
 test("exposes_region_with_name", () => {
   render(<KanbanColumn title="Today" count={1} limit={3} />);
@@ -178,8 +179,8 @@ test("fold_moves_focus_to_the_strip", () => {
 test("drop_slot_at_index", () => {
   const { container } = render(
     <KanbanColumn title="Today" count={2} drop={{ index: 1, label: "Moving Plan here" }}>
-      <p>one</p>
-      <p>two</p>
+      <TaskCard title="one" onOpen={() => {}} />
+      <TaskCard title="two" onOpen={() => {}} />
     </KanbanColumn>,
   );
   const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
@@ -195,7 +196,7 @@ test("drop_slot_at_index", () => {
 test("drop_slot_index_is_clamped_and_replaces_empty_message", () => {
   const { container, rerender } = render(
     <KanbanColumn title="Today" count={1} drop={{ index: 9, label: "Moving A here" }}>
-      <p>one</p>
+      <TaskCard title="one" onOpen={() => {}} />
     </KanbanColumn>,
   );
   const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
@@ -220,5 +221,32 @@ test("drop_on_strip_reads_move_here", () => {
   expect(strip.className).toContain("inset-ring-line-strong");
   expect(screen.getByText("Move here")).toBeTruthy();
   expect(container.querySelector("[data-slot=kanban-column-drop]")).toBeNull();
-  expect(strip.getAttribute("aria-label")).toBe("Done, 5 tasks, Move here");
+  expect(screen.getByRole("button", { name: "Done, 5 tasks, Move here" })).toBe(strip);
+});
+
+test("drop_index_leaves_out_the_moving_card_and_skips_leading_fields", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={3} drop={{ index: 1, label: "Moving A here" }}>
+      <input aria-label="New task" />
+      <TaskCard title="A" moving onOpen={() => {}} />
+      <TaskCard title="B" onOpen={() => {}} />
+      <TaskCard title="C" onOpen={() => {}} />
+    </KanbanColumn>,
+  );
+  const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
+  const order = Array.from(cards.children).map((el) =>
+    el.getAttribute("data-slot") === "kanban-column-drop"
+      ? "slot"
+      : (el.textContent?.match(/[ABC]/)?.[0] ?? "field"),
+  );
+  expect(order).toEqual(["field", "A", "B", "slot", "C"]);
+});
+
+test("drop_slot_never_shrinks", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={0} drop={{ index: 0, label: "Moving a long title here" }} />,
+  );
+  expect(container.querySelector("[data-slot=kanban-column-drop]")?.className).toContain(
+    "shrink-0",
+  );
 });

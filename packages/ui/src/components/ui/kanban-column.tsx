@@ -1,8 +1,17 @@
-import { Children, type ReactElement, type ReactNode, useEffect, useId, useRef } from "react";
+import {
+  Children,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+} from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { ModeChip } from "./mode-chip";
+import { TaskCard } from "./task-card";
 
 interface KanbanColumnBase {
   title: string;
@@ -31,7 +40,7 @@ function DropSlot({ label }: { label: string }) {
     <div
       data-slot="kanban-column-drop"
       aria-hidden="true"
-      className="flex min-h-hit-min items-center rounded-md border-2 border-dashed border-line-strong px-3 py-2 text-body-sm text-ink wrap-anywhere"
+      className="flex min-h-hit-min shrink-0 items-center rounded-md border-2 border-dashed border-line-strong px-3 py-2 text-body-sm text-ink wrap-anywhere"
     >
       {label}
     </div>
@@ -68,7 +77,20 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
   }, [props.collapsed]);
   const kids: ReactNode[] = Children.toArray(props.children);
   if (props.drop && !props.collapsed) {
-    const at = Math.min(kids.length, whole(props.drop.index));
+    // Only TaskCards count, and not the dragged one; other children (a leading new-task field) are skipped.
+    const stays = (k: ReactNode) =>
+      isValidElement<{ moving?: boolean }>(k) && k.type === TaskCard && !k.props.moving;
+    const want = whole(props.drop.index);
+    let seen = 0;
+    let at = -1;
+    let last = -1;
+    kids.forEach((k, i) => {
+      if (!stays(k)) return;
+      if (seen === want) at = i;
+      seen += 1;
+      last = i;
+    });
+    if (at < 0) at = last < 0 ? kids.length : last + 1;
     kids.splice(at, 0, <DropSlot key="kanban-column-drop" label={props.drop.label} />);
   }
   if (props.collapsed) {

@@ -186,11 +186,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const hasEstimate = props.estimate != null;
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
   const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
-  const stateWords = [
-    active ? "In progress" : "",
-    selected ? "Selected" : "",
-    props.moving ? "Moving" : "",
-  ]
+  const stateWords = [active ? "In progress" : "", selected ? "Selected" : ""]
     .filter(Boolean)
     .join(" · ");
   const estimateText = hasEstimate ? `Est ${est}` : "No estimate";
@@ -208,6 +204,15 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     active && "border-s-4 border-s-focus",
     props.moving && "border-dashed",
   );
+  // Inline in an existing line, so starting a drag never makes the card taller.
+  const movingWord = props.moving ? (
+    <span
+      data-slot="task-card-moving"
+      className="flex-none whitespace-nowrap text-body-sm text-focus"
+    >
+      Moving
+    </span>
+  ) : null;
   const frogWord = props.frog ? (
     <span
       data-slot="task-card-frog"
@@ -226,6 +231,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
         {title}
       </span>
       {frogWord}
+      {movingWord}
       {stateWords ? (
         <span
           data-slot="task-card-state"
@@ -246,6 +252,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       <span data-slot="task-card-top" className="flex flex-wrap items-center gap-2">
         <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
         {frogWord}
+        {movingWord}
         {props.priority ? (
           <span data-slot="task-card-priority" className="text-label uppercase text-ink-muted">
             {PRIORITY[props.priority]}

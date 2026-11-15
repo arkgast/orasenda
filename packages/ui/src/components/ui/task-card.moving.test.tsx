@@ -9,7 +9,7 @@ test("moving_card_word_and_edge", () => {
   expect(card.classList.contains("border-dashed")).toBe(true);
   expect(card.className).toContain("border-line-strong");
   expect(card.className).not.toMatch(/opacity|shadow-raised/);
-  expect(card.getAttribute("aria-label")).toContain("Moving");
+  expect(screen.getByRole("button", { name: /Moving/ })).toBe(card);
 });
 
 test("moving_word_in_row_density_and_read_only", () => {
@@ -26,4 +26,11 @@ test("not_moving_has_no_word_or_dashed_edge", () => {
   expect(
     container.querySelector("[data-slot=task-card]")?.classList.contains("border-dashed"),
   ).toBe(false);
+});
+
+test("moving_word_sits_in_an_existing_line", () => {
+  const { container } = render(<TaskCard title="Write" onOpen={() => {}} moving />);
+  const word = container.querySelector("[data-slot=task-card-moving]") as HTMLElement;
+  expect(word.parentElement?.getAttribute("data-slot")).toBe("task-card-top");
+  expect(container.querySelector("[data-slot=task-card-state]")).toBeNull();
 });
