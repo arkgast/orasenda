@@ -212,8 +212,12 @@ for (const size of SIZES) {
     await notes.focus();
     await page.keyboard.press("Tab");
     await expect(title).toBeFocused();
+    await expectFocusRingVisible(title);
+    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(0);
     await page.keyboard.press("Shift+Tab");
     await expect(notes).toBeFocused();
+    await expectFocusRingVisible(notes);
   });
 
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {

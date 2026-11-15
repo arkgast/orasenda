@@ -50,7 +50,20 @@ const TEXT_FIELD =
 // Shift, the last) like native text-field cycling. Forward, with full keyboard access the Tab lands on the next
 // control inside the sheet, so it only acts when focus is still where it started a frame later. Backward, Radix
 // itself wraps Shift+Tab from the first field to the actions, so the wrap is made at once and Radix never sees it.
-function wrapTextFields(body: HTMLElement, event: KeyboardEvent): number | undefined {
+// `fullAccess.on` is set once a plain Tab has landed on a non-text control in the body (full keyboard access is on),
+// after which Shift+Tab keeps the browser's own order.
+function focusFirst(body: HTMLElement, to: HTMLElement): void {
+  to.focus();
+  if (to instanceof HTMLInputElement) to.select();
+  // The first field's ring and its label fit at the top: show them whole, not just the input.
+  body.scrollTop = 0;
+}
+
+function wrapTextFields(
+  body: HTMLElement,
+  event: KeyboardEvent,
+  fullAccess: { on: boolean },
+): number | undefined {
   if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
   const origin = document.activeElement;
   if (!(origin instanceof HTMLElement)) return;
@@ -60,17 +73,21 @@ function wrapTextFields(body: HTMLElement, event: KeyboardEvent): number | undef
   const edge = event.shiftKey ? fields[0] : fields[fields.length - 1];
   if (fields.length < 2 || origin !== edge) return;
   const to = event.shiftKey ? fields[fields.length - 1] : fields[0];
+  if (!to) return;
   if (event.shiftKey) {
+    if (fullAccess.on) return;
     event.preventDefault();
     event.stopPropagation();
-    to?.focus();
+    to.focus();
+    if (to instanceof HTMLInputElement) to.select();
     return;
   }
   return requestAnimationFrame(() => {
+    if (event.defaultPrevented) return;
     const now = document.activeElement;
     const scope = body.closest("[role=dialog], [role=alertdialog]");
     // Stuck on the field, or sent out of the sheet (nothing focused): wrap.
-    if (now === origin || !(now instanceof Node && scope?.contains(now))) to?.focus();
+    if (now === origin || !(now instanceof Node && scope?.contains(now))) focusFirst(body, to);
   });
 }
 
@@ -163,10 +180,13 @@ export function Dialog({
       });
     };
     let wrapFrame: number | undefined;
+    const fullAccess = { on: false };
+    let plainTab = false;
     const onKeyDown = (event: KeyboardEvent) => {
       clear();
+      plainTab = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
       if (wrapFrame !== undefined) cancelAnimationFrame(wrapFrame);
-      wrapFrame = wrapTextFields(body, event);
+      wrapFrame = wrapTextFields(body, event, fullAccess);
     };
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
@@ -175,6 +195,9 @@ export function Dialog({
         (pressed instanceof Node && target instanceof Node && target.contains(pressed)) ||
         (label !== null && label.control === target);
       clear();
+      if (plainTab && target instanceof HTMLElement && !target.matches(TEXT_FIELD))
+        fullAccess.on = true;
+      plainTab = false;
       if (!fromPointer && target instanceof HTMLElement) keepFocusClear(body, target);
     };
     body.addEventListener("pointerdown", onPointerDown, true);
