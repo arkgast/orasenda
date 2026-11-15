@@ -28,6 +28,11 @@ if (typeof document !== "undefined") {
   );
 }
 
+// Controls WebKit makes a Tab stop only under full keyboard access. Selects, date inputs and tabindex=0 are Tab stops
+// either way, so they say nothing about the setting.
+const FULL_ACCESS_ONLY =
+  'button, a[href], summary, input[type="checkbox"], input[type="radio"], input[type="button"], input[type="submit"], input[type="reset"], input[type="range"], input[type="color"]';
+
 // WebKit scrolls a focused field into view to its own box and ignores scroll padding, which clips the focus ring.
 // After focus moves inside the sheet body, nudge the body (instantly) so the field keeps the body's scroll padding.
 function keepFocusClear(body: HTMLElement, target: HTMLElement): void {
@@ -50,7 +55,7 @@ const TEXT_FIELD =
 // Shift, the last) like native text-field cycling. Forward, with full keyboard access the Tab lands on the next
 // control inside the sheet, so it only acts when focus is still where it started a frame later. Backward, Radix
 // itself wraps Shift+Tab from the first field to the actions, so the wrap is made at once and Radix never sees it.
-// `fullAccess.on` is set once a plain Tab has landed on a non-text control in the body (full keyboard access is on),
+// `fullAccess.on` is set once a plain Tab has landed on a button-like control in the body (full keyboard access is on),
 // after which Shift+Tab keeps the browser's own order.
 function focusFirst(body: HTMLElement, to: HTMLElement): void {
   to.focus();
@@ -167,6 +172,7 @@ export function Dialog({
     };
     const onPointerDown = (event: PointerEvent) => {
       clear();
+      plainTab = false;
       pressed = event.target;
       frame = requestAnimationFrame(() => {
         pressed = null;
@@ -182,9 +188,14 @@ export function Dialog({
     let wrapFrame: number | undefined;
     const fullAccess = { on: false };
     let plainTab = false;
+    let tabFrame = 0;
     const onKeyDown = (event: KeyboardEvent) => {
       clear();
       plainTab = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
+      cancelAnimationFrame(tabFrame);
+      tabFrame = requestAnimationFrame(() => {
+        plainTab = false;
+      });
       if (wrapFrame !== undefined) cancelAnimationFrame(wrapFrame);
       wrapFrame = wrapTextFields(body, event, fullAccess);
     };
@@ -195,7 +206,7 @@ export function Dialog({
         (pressed instanceof Node && target instanceof Node && target.contains(pressed)) ||
         (label !== null && label.control === target);
       clear();
-      if (plainTab && target instanceof HTMLElement && !target.matches(TEXT_FIELD))
+      if (plainTab && target instanceof HTMLElement && target.matches(FULL_ACCESS_ONLY))
         fullAccess.on = true;
       plainTab = false;
       if (!fromPointer && target instanceof HTMLElement) keepFocusClear(body, target);
@@ -209,6 +220,7 @@ export function Dialog({
       body.removeEventListener("pointerup", onPointerUp, true);
       body.removeEventListener("keydown", onKeyDown, true);
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(tabFrame);
       if (wrapFrame !== undefined) cancelAnimationFrame(wrapFrame);
       body.removeEventListener("focusin", onFocusIn);
     };

@@ -220,6 +220,19 @@ for (const size of SIZES) {
     await expectFocusRingVisible(notes);
   });
 
+  // Date and select stops are Tab stops without full keyboard access, so they must not turn the wrap off (#636).
+  test(`board_detail_full_task_shift_tab_still_wraps_after_date_and_select_stops_${at}`, async ({
+    page,
+  }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    await title.focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press("Tab");
+    await title.focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(dialog.getByRole("textbox", { name: "Notes" })).toBeFocused();
+  });
+
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const body = dialog.locator('[data-slot="dialog-sheet-body"]');

@@ -435,3 +435,29 @@ test("dialog_sheet_shift_tab_wraps_to_notes_unless_full_keyboard_access_is_on", 
   fireEvent.keyDown(title, { key: "Tab", shiftKey: true });
   expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Notes" }));
 });
+
+test("dialog_sheet_shift_tab_keeps_browser_order_once_a_plain_tab_landed_on_a_button", () => {
+  frames();
+  render(
+    <Dialog title="Task" size="sheet" confirmLabel="Done" onConfirm={() => {}} onCancel={() => {}}>
+      <label>
+        Title
+        <input type="text" />
+      </label>
+      <button type="button">Remove item</button>
+      <label>
+        Notes
+        <textarea />
+      </label>
+    </Dialog>,
+  );
+  showFields();
+  const title = screen.getByRole("textbox", { name: "Title" });
+  title.focus();
+  fireEvent.keyDown(title, { key: "Tab" });
+  screen.getByRole("button", { name: "Remove item" }).focus();
+  title.focus();
+  fireEvent.keyDown(title, { key: "Tab", shiftKey: true });
+  // Our wrap stays out of it: Notes is not reached (Radix's own scope sends it on to the actions).
+  expect(document.activeElement).not.toBe(screen.getByRole("textbox", { name: "Notes" }));
+});
