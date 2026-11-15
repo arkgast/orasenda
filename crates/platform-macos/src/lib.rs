@@ -16,6 +16,7 @@ mod overlay;
 mod panel_swap;
 mod reveal;
 mod status_item;
+mod things;
 mod voice_over;
 pub mod windows;
 
@@ -30,6 +31,7 @@ pub use notifier::{MacNotifier, notification_settings_url};
 pub use overlay::{configure_overlay, cover_main_screen, focus_overlay};
 pub use reveal::reveal_in_finder;
 pub use status_item::set_status_item_accessibility_label;
+pub use things::{MacThings, THINGS_COLLECT_JS, error_from_stderr};
 pub use voice_over::{is_voice_over_enabled, observe_voice_over};
 
 use objc2::MainThreadMarker;
