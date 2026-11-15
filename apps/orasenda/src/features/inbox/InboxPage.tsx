@@ -94,6 +94,7 @@ export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
                   onMoveToBoard={() => onMove(note.id)}
                   moreName={`More actions for ${noteName(note.text)}`}
                   tabIndex={roving.tabIndex(index)}
+                  menuTabIndex={-1}
                   onKeyDown={(event) => onKeyDown(event, index, note.id)}
                 />
               ))}

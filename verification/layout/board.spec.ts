@@ -151,3 +151,23 @@ test("board_long_title_fits_640x480", async ({ page }) => {
   expect(problem).toBe("");
   await expectFocusRingVisible(card);
 });
+
+test("board_tab_from_card_leaves_the_columns", async ({ page }) => {
+  await openBoard(page, "boardWeek", { width: 900, height: 600 });
+  await page.getByRole("button", { name: /^Write the intro/ }).focus();
+  await page.keyboard.press("Tab");
+  const inCards = await page.evaluate(
+    () => document.activeElement?.closest("[data-task-id]") != null,
+  );
+  expect(inCards).toBe(false);
+});
+
+test("board_shift_f10_opens_the_card_menu_and_esc_returns_to_the_card", async ({ page }) => {
+  await openBoard(page, "boardWeek", { width: 900, height: 600 });
+  const card = page.getByRole("button", { name: /^Write the intro/ });
+  await card.focus();
+  await page.keyboard.press("Shift+F10");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(card).toBeFocused();
+});

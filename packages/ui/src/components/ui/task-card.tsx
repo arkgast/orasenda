@@ -1,4 +1,11 @@
-import { type KeyboardEvent, type ReactElement, useId, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type ReactElement,
+  type RefObject,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -37,6 +44,8 @@ export interface TaskCardProps {
   /** Passed through, so the board can move selection with the arrow keys. */
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
   menu?: TaskCardMenu;
+  /** The More actions button's tab index. A card that roves passes -1, so the card is one tab stop and ⇧F10 or ContextMenu opens its menu. Default 0. */
+  menuTabIndex?: 0 | -1;
 }
 
 const PRIORITY: Record<"high" | "medium" | "low", string> = {
@@ -101,8 +110,18 @@ function Dots({ est, done, hasEstimate }: { est: number; done: number; hasEstima
 }
 
 /** The ⋯ button and its menu. A sibling of the card, never inside its button. */
-function CardMenu({ title, menu, frog }: { title: string; menu: TaskCardMenu; frog?: boolean }) {
-  const [open, setOpen] = useState(false);
+function CardMenu(props: {
+  title: string;
+  menu: TaskCardMenu;
+  frog?: boolean;
+  tabIndex: 0 | -1;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  /** Where focus goes when the menu was opened by key: the card. Omitted for a click. */
+  returnFocus?: RefObject<HTMLElement | null>;
+  onToggle: () => void;
+}) {
+  const { title, menu, frog, open, setOpen } = props;
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const items: PopoverMenuItem[] = [
@@ -126,10 +145,12 @@ function CardMenu({ title, menu, frog }: { title: string; menu: TaskCardMenu; fr
       <IconButton
         label={`More actions for ${title}`}
         icon={<Icon name="menu" />}
+        shortcut="⇧F10"
+        tabIndex={props.tabIndex}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((o) => !o)}
+        onClick={props.onToggle}
       />
       {open ? (
         <PopoverMenu
@@ -137,6 +158,7 @@ function CardMenu({ title, menu, frog }: { title: string; menu: TaskCardMenu; fr
           heading={title}
           items={items}
           anchor={anchor}
+          returnFocus={props.returnFocus}
           onSelect={choose}
           onClose={() => setOpen(false)}
         />
@@ -150,6 +172,12 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const { title, onOpen, onSelect, active, selected } = props;
   const row = props.density === "row";
   const interactive = Boolean(onOpen || onSelect);
+  const hasMenu = Boolean(props.menu) && !props.disabled;
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Opened by key: focus returns to the card, and the native contextmenu that follows is swallowed.
+  const [byKey, setByKey] = useState(false);
+  const keyOpened = useRef(false);
+  const cardRef = useRef<HTMLButtonElement>(null);
   const est = count(props.estimate);
   const done = count(props.done);
   const hasEstimate = props.estimate != null;
@@ -273,16 +301,33 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       event.preventDefault();
       onOpen();
     }
+    const menuKey =
+      event.key === "ContextMenu" ||
+      (event.key === "F10" && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey);
+    if (hasMenu && menuKey) {
+      event.preventDefault();
+      keyOpened.current = true;
+      if (!menuOpen) {
+        setByKey(true);
+        setMenuOpen(true);
+      }
+    }
     props.onKeyDown?.(event);
   };
   const card = interactive ? (
     <button
+      ref={cardRef}
       type="button"
       data-slot="task-card"
       data-density={row ? "row" : "card"}
       onClick={onSelect ?? onOpen}
       onDoubleClick={onSelect ? onOpen : undefined}
       onKeyDown={onKeyDown}
+      onContextMenu={(event) => {
+        if (!keyOpened.current) return;
+        keyOpened.current = false;
+        event.preventDefault();
+      }}
       disabled={props.disabled}
       aria-label={accessibleName(props, tags)}
       className={className}
@@ -294,14 +339,30 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       {body}
     </article>
   );
-  if (!props.menu || props.disabled) return card;
+  if (!props.menu || !hasMenu) return card;
   return (
     <div data-slot="task-card-frame" className="relative">
       {card}
       <span
         className={cn("absolute end-0 flex", row ? "inset-y-0 items-center" : "top-1 items-start")}
       >
-        <CardMenu title={title} menu={props.menu} frog={props.frog} />
+        <CardMenu
+          title={title}
+          menu={props.menu}
+          frog={props.frog}
+          tabIndex={props.menuTabIndex ?? 0}
+          open={menuOpen}
+          setOpen={(open) => {
+            setMenuOpen(open);
+            if (!open) setByKey(false);
+          }}
+          returnFocus={byKey ? cardRef : undefined}
+          onToggle={() => {
+            keyOpened.current = false;
+            setByKey(false);
+            setMenuOpen(!menuOpen);
+          }}
+        />
       </span>
     </div>
   );

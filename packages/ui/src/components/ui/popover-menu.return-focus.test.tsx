@@ -10,13 +10,13 @@ const ITEMS = [
 
 function Host({ withReturn }: { withReturn: boolean }) {
   const anchor = useRef<HTMLSpanElement>(null);
-  const home = useRef<HTMLDivElement>(null);
+  const home = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(true);
   return (
     <div>
-      <div ref={home} tabIndex={0} data-testid="home">
+      <button type="button" ref={home} data-testid="home">
         row
-      </div>
+      </button>
       <span ref={anchor}>
         <button type="button">Trigger</button>
       </span>

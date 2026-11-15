@@ -26,6 +26,7 @@ const KEY_NAMES: Readonly<Record<string, readonly [aria: string, spoken: string]
   "→": ["ArrowRight", "Right Arrow"],
   "↓": ["ArrowDown", "Down Arrow"],
   Tab: ["Tab", "Tab"],
+  F10: ["F10", "F10"],
 };
 
 /** Strict mode is a flag on window.Orasenda, read at every call, so a host can set it before or after the bundle runs. */
@@ -42,7 +43,7 @@ function unknownShortcut(glyphs: string): ShortcutDescription {
   return { aria: glyphs, spoken: glyphs };
 }
 
-/** The ARIA and spoken forms of one canonical glyph string (Kbd README, "Shortcut glyphs"): modifiers in the order ⌃⌥⇧⌘, then one key from A-Z, 0-9, '.', ',', the return arrow, 'Space', 'Esc', '⌫', '←', '↑', '→', '↓', 'Tab'. '⌃⌥F' gives { aria: 'Control+Alt+F', spoken: 'Control-Option-F' }; '⌘.' gives { aria: 'Meta+Period', spoken: 'Command-Period' }. An unknown string throws when window.Orasenda.strictShortcuts is true; otherwise it returns { aria: glyphs, spoken: glyphs } and logs one console.warn. */
+/** The ARIA and spoken forms of one canonical glyph string (Kbd README, "Shortcut glyphs"): modifiers in the order ⌃⌥⇧⌘, then one key from A-Z, 0-9, '.', ',', the return arrow, 'Space', 'Esc', '⌫', '←', '↑', '→', '↓', 'Tab', 'F10'. '⌃⌥F' gives { aria: 'Control+Alt+F', spoken: 'Control-Option-F' }; '⌘.' gives { aria: 'Meta+Period', spoken: 'Command-Period' }. An unknown string throws when window.Orasenda.strictShortcuts is true; otherwise it returns { aria: glyphs, spoken: glyphs } and logs one console.warn. */
 export function describeShortcut(glyphs: string): ShortcutDescription {
   const text = typeof glyphs === "string" ? glyphs : String(glyphs);
   const aria: string[] = [];

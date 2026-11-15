@@ -271,7 +271,7 @@ test("move_to_board_by_menu_key_with_single_keys_off", async () => {
 
 test("the_more_button_of_a_roving_row_is_not_a_tab_stop", async () => {
   await renderInbox();
-  for (const name of ["Ask Sam about the invoice", "Call the dentist"]) {
+  for (const name of rowTexts() as string[]) {
     expect(within(row(name)).getByRole("button", { name: /^More actions for/ })).toHaveAttribute(
       "tabindex",
       "-1",

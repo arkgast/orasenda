@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { InboxRow, type InboxRowProps } from "./inbox-row";
 
@@ -130,8 +130,13 @@ test("more_button_names_shift_f10", () => {
     "aria-keyshortcuts",
     "Shift+F10",
   );
-  fireEvent.focus(screen.getByRole("button", { name: MORE }));
-  expect(screen.getByRole("tooltip")).toHaveTextContent("⇧F10");
+  vi.useFakeTimers();
+  fireEvent.pointerEnter(screen.getByRole("button", { name: MORE }));
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⇧F10");
+  vi.useRealTimers();
 });
 
 function pressOnRow(init: KeyboardEventInit) {

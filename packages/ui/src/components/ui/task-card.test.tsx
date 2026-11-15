@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { TaskCard } from "./task-card";
 
@@ -303,8 +303,13 @@ test("more_button_names_shift_f10", () => {
   render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
   const more = screen.getByRole("button", { name: "More actions for Write" });
   expect(more).toHaveAttribute("aria-keyshortcuts", "Shift+F10");
-  fireEvent.focus(more);
-  expect(screen.getByRole("tooltip")).toHaveTextContent("⇧F10");
+  vi.useFakeTimers();
+  fireEvent.pointerEnter(more);
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⇧F10");
+  vi.useRealTimers();
 });
 
 test("shift_f10_opens_card_menu", () => {

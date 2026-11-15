@@ -39,6 +39,8 @@ export interface PopoverMenuProps {
   anchor: RefObject<HTMLElement | null>;
   /** true: the heading row shows P as an aria-hidden Kbd, and the host adds P to the trigger's aria-keyshortcuts. Omitted or false: neither. Pass it only while single-key shortcuts are on; the menu never listens for P. */
   singleKeys?: boolean;
+  /** Where focus goes on close, choose and Esc, in place of the first focusable in `anchor`. A menu opened by key from a row or card passes that row or card; a menu opened by click passes nothing. */
+  returnFocus?: RefObject<HTMLElement | null>;
 }
 
 const FOCUSABLE =
@@ -193,6 +195,7 @@ export function PopoverMenu({
   id,
   anchor,
   singleKeys,
+  returnFocus,
 }: PopoverMenuProps): JSX.Element {
   const generated = useId();
   const menuId = id || generated;
@@ -208,7 +211,7 @@ export function PopoverMenu({
   const checkedRadio = items.find((i) => i.kind === "radio" && i.checked);
 
   const back = () => {
-    const t = focusTarget(anchor.current);
+    const t = returnFocus?.current ?? focusTarget(anchor.current);
     if (t?.isConnected) t.focus();
   };
   // Focus goes back to the trigger when the host closes the menu while focus is still inside it; every path

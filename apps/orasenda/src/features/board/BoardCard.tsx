@@ -35,6 +35,7 @@ export function BoardCard({ task, density, columns, selected, ...on }: Props) {
         checklist={task.checklist.length ? { done, total: task.checklist.length } : undefined}
         onSelect={() => on.onSelect(task.id)}
         onOpen={() => on.onOpen(task.id)}
+        menuTabIndex={-1}
         menu={{
           moveTargets: columns
             .filter((c) => c.lane !== task.lane)

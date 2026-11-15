@@ -18,7 +18,7 @@ export interface IconButtonProps {
   "aria-expanded"?: boolean;
   "aria-controls"?: string;
   "aria-describedby"?: string;
-  /** -1 takes the button out of the tab order (a scroll helper whose action the keyboard has another way to do). */
+  /** -1 takes the button out of the tab order, only when the keyboard has another way to do its action: a scroll helper, or a row's More actions button (the row opens the same menu with ⇧F10 or ContextMenu). */
   tabIndex?: -1 | 0;
 }
 
