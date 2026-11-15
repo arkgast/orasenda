@@ -71,6 +71,8 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Chosen task | The optional task a session is linked to (`focus_session.task_id`). Never defaulted; tracked time is derived from it. | A required field |
 | Move to Board | The Inbox note action that makes a Backlog task and removes the note, with Undo. | Dragging |
 | TaskPicker | The type-to-filter combobox that chooses or clears a session's task; options show after typing or ↓. | A menu button |
+| Task import | Reading open tasks from Apple Reminders, a Todoist CSV or Things into a preview, then adding the rows the user keeps to the end of Backlog in one write, with Undo. Never automatic. | Merge import (a whole Orasenda data file) |
+| Origin | `task.origin`, `<source>:<key>` (`reminders:`, `todoist:`, `things:`): where an imported task came from. A live task with the same origin makes a preview row read "Already on the Board". | `source_note_id` (the Inbox note a task came from) |
 | Tip | A one-time neutral status line on idle Today ("Tip: …" with Got it), seen on Got it, on use, or after its second showing. | The keep-going hint (running, once) |
 | Shortcut registry | The one table of actions (id, label, description, where it works, both defaults) that feeds the app menu, the global registrar, single-key handlers, palette hints and Settings › Shortcuts (ADR-020). | A hard-coded key in a component |
 | In Orasenda binding | An action's key as a native app-menu accelerator: works in any Orasenda window while Orasenda is frontmost. Needs ⌘ or ⌃. May be empty. | An Everywhere binding |
