@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use zip::CompressionMethod;
+use zip::unstable::write::FileOptionsExt;
 use zip::write::{SimpleFileOptions, ZipWriter};
 
 use super::todoist::Scratch;
@@ -17,7 +18,13 @@ fn build(dir: &Scratch, entries: &[(&str, Vec<u8>)]) -> std::path::PathBuf {
     let path = dir.0.join("Backup.zip");
     let mut zip = ZipWriter::new(std::fs::File::create(&path).expect("create"));
     for (name, bytes) in entries {
-        if name.ends_with('/') {
+        if let Some(plain) = name.strip_prefix("secret:") {
+            let locked = options()
+                .with_deprecated_encryption(b"pw")
+                .expect("encrypt");
+            zip.start_file(plain, locked).expect("start");
+            zip.write_all(bytes).expect("write");
+        } else if name.ends_with('/') {
             zip.add_directory(*name, options()).expect("dir");
         } else {
             zip.start_file(*name, options()).expect("start");
@@ -45,6 +52,7 @@ fn zip_skips_macosx_nested_and_dirs() {
             ("folder/Deep.csv", task("Deep")),
             ("inner.zip", task("Nested")),
             ("notes.txt", task("Text")),
+            ("secret:Locked.csv", task("Hidden")),
         ],
     );
     let items = parse_file(&path).expect("parses");

@@ -2,6 +2,7 @@
 //! found by header name, so their order and any extra columns do not matter.
 
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::Path;
 
 use csv::StringRecord;
@@ -36,7 +37,14 @@ pub(crate) fn parse_file(path: &Path) -> Result<Vec<RawItem>, ParseError> {
     if meta.len() > MAX_FILE {
         return Err(ParseError::TooLarge);
     }
-    let bytes = std::fs::read(path).map_err(|_| ParseError::Unreadable)?;
+    // Read through a cap too: the file may have grown since the metadata was read.
+    let mut bytes = Vec::new();
+    std::fs::File::open(path)
+        .and_then(|f| f.take(MAX_FILE + 1).read_to_end(&mut bytes))
+        .map_err(|_| ParseError::Unreadable)?;
+    if bytes.len() as u64 > MAX_FILE {
+        return Err(ParseError::TooLarge);
+    }
     let mut seen = Seen::new();
     let is_zip = path
         .extension()
@@ -127,6 +135,9 @@ pub(crate) fn parse_csv(
     let mut section = String::new();
     // The indent of the last top-level task; a deeper task is its checklist item.
     let mut parent_indent: Option<u32> = None;
+    // The last top-level task pushed; cleared by a section row, so a note never lands on
+    // the previous section's task.
+    let mut current: Option<usize> = None;
     for row in reader.records() {
         let row = row.map_err(|_| ParseError::NotAnExport)?;
         let content = cell(&row, Some(columns.content));
@@ -134,9 +145,11 @@ pub(crate) fn parse_csv(
             "section" => {
                 section = content.to_owned();
                 parent_indent = None;
+                current = None;
             }
             "note" => {
-                if let (Some(item), false) = (items.last_mut(), content.is_empty()) {
+                let item = current.and_then(|at| items.get_mut(at));
+                if let (Some(item), false) = (item, content.is_empty()) {
                     if !item.notes.is_empty() {
                         item.notes.push_str("\n\n");
                     }
@@ -145,17 +158,19 @@ pub(crate) fn parse_csv(
             }
             "task" if !content.is_empty() => {
                 let indent: u32 = cell(&row, columns.indent).parse().unwrap_or(1);
-                let n = seen
-                    .entry((project.to_owned(), content.to_owned()))
-                    .or_insert(0);
-                let count = *n;
-                *n += 1;
-                match (parent_indent, items.last_mut()) {
+                match (parent_indent, current.and_then(|at| items.get_mut(at))) {
                     (Some(parent), Some(item)) if indent > parent => {
                         item.checklist.push(content.to_owned());
+                        keep_subtask_text(item, content, &row, &columns);
                     }
                     _ => {
+                        let n = seen
+                            .entry((project.to_owned(), content.to_owned()))
+                            .or_insert(0);
+                        let count = *n;
+                        *n += 1;
                         parent_indent = Some(indent);
+                        current = Some(items.len());
                         items.push(task(project, &section, content, count, &row, &columns));
                     }
                 }
@@ -164,6 +179,27 @@ pub(crate) fn parse_csv(
         }
     }
     Ok(items)
+}
+
+/// A subtask becomes a checklist item, which holds only a title, so its description and
+/// date text are kept in the parent's notes and date lines, prefixed with its title.
+fn keep_subtask_text(item: &mut RawItem, title: &str, row: &StringRecord, columns: &Columns) {
+    let description = cell(row, columns.description);
+    if !description.is_empty() {
+        if !item.notes.is_empty() {
+            item.notes.push_str("\n\n");
+        }
+        item.notes.push_str(&format!("{title}: {description}"));
+    }
+    for (label, text) in [
+        ("deadline", cell(row, columns.deadline)),
+        ("date", cell(row, columns.date)),
+    ] {
+        if !text.is_empty() {
+            item.date_lines
+                .push(format!("Todoist {label} ({title}): {text}"));
+        }
+    }
 }
 
 fn task(

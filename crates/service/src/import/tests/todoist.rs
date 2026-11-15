@@ -185,10 +185,31 @@ fn same_title_gets_distinct_origins() {
             .bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
     );
+    // Known answer: printf 'Home\x1fSame\x1f0' | shasum -a 256 | cut -c1-32
+    assert_eq!(o, "todoist:511eb5df6eb46d563b40643a12a907d8");
     assert_ne!(origin::todoist("A", "bc", 0), origin::todoist("Ab", "c", 0));
 }
 
 #[test]
 fn csv_header_only_is_empty() {
     assert_eq!(csv(HEAD).expect("parses"), []);
+}
+
+#[test]
+fn note_after_section_is_not_attached_to_previous_task() {
+    let text = format!("{HEAD}task,A,,,,,\nsection,Next,,,,,\nnote,Orphan,,,,,\ntask,B,,,,,\n");
+    let items = csv(&text).expect("parses");
+    assert_eq!(items[0].notes, "");
+    assert_eq!(items[1].notes, "");
+}
+
+#[test]
+fn subtask_text_kept_and_does_not_shift_origins() {
+    let text = format!("{HEAD}task,Same,,,1,,\ntask,Same,Why,,2,2026-11-20,\ntask,Same,,,1,,\n");
+    let items = csv(&text).expect("parses");
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0].checklist, ["Same"]);
+    assert_eq!(items[0].notes, "Same: Why");
+    assert_eq!(items[0].date_lines, ["Todoist date (Same): 2026-11-20"]);
+    assert_eq!(items[1].origin, origin::todoist("Home", "Same", 1));
 }
