@@ -37,6 +37,10 @@ export function TaskPickerSpecimen(): ReactElement {
       <Frame state="task-picker-rest-900" width={900} height={80}>
         <Live />
       </Frame>
+      {/* Last on the page, so a test can scroll it to the bottom of a small window. */}
+      <Frame state="task-picker-bottom" width={300} height={80}>
+        <Live />
+      </Frame>
     </>
   );
 }

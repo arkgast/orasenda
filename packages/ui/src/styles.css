@@ -16,6 +16,10 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* A focusable list row draws the same 2px ring inside itself, so a scrolling list never clips it. */
+[data-slot="inbox-row"]:focus-visible {
+  outline-offset: -2px;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

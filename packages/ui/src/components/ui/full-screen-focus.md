@@ -10,7 +10,7 @@ The full-screen view (`full-screen-focus.tsx`): the time, one quiet way out, and
 ## The cases the harness checks
 
 - 1280 × 720 (ring, 460px track), 1920 × 1080 (ring 560), the phone 390 × 844 and xl 1440 × 900 (both ring), the strip frame 1000 × 440 (strip, 276px track) and the minimum 360 × 240 (stacked strip), each in focus, paused, idle, break, warning and ended.
-- At the minimum window (360 × 240) the box is 344 × 224 and the result is `stackedStrip`. The fixed tracks and gaps take 148, which leaves a 76px time track for the stacked strip's head (the chip and the digits, about 30px here), `space-1` and the 10px bar, and a `task` line of 18px with its `space-1` under that fits the same track (66px of 76). `task` is the optional chosen task: one ellipsised `ink-muted` line, whole in the timer's accessible name in every layout.
+- At the minimum window (360 × 240) the box is 344 × 224 and the result is `stackedStrip`. The fixed tracks and gaps take 148, which leaves a 76px time track for the stacked strip's head (the chip and the digits, about 30px here), `space-1` and the 10px bar, and a `task` line of 18px with `space-1` above and below fits the same track (76px of 76), so the line sits `space-2` from the controls. `task` is the optional chosen task: one ellipsised `ink-muted` line, whole in the timer's accessible name in every layout.
 
 ## Controls and keys
 

@@ -23,9 +23,36 @@ function Row(props: { text: string; kind: "internal" | "external"; menu?: boolea
   );
 }
 
+// A scrolling list of focusable rows: the focus ring must stay inside the rows.
+function ScrollingList(): ReactElement {
+  return (
+    <ul className="m-0 h-full overflow-auto p-0">
+      {["Ask Sam about the invoice", "Book the dentist", "Water the plants", "Call Mum"].map(
+        (text) => (
+          <InboxRow
+            key={text}
+            onMoveToBoard={undefined}
+            moreName={undefined}
+            text={text}
+            kind="internal"
+            time="09:41"
+            timeLabel="Captured at 9:41 AM"
+            onRemove={() => {}}
+            removeName={`Remove note: ${text}`}
+            tabIndex={0}
+          />
+        ),
+      )}
+    </ul>
+  );
+}
+
 export function InboxRowSpecimen(): ReactElement {
   return (
     <>
+      <Frame state="inbox-row-scrolling-list" width={360} height={160}>
+        <ScrollingList />
+      </Frame>
       <Frame state="inbox-row-internal" width={420} height={110}>
         <Row text="Ask Sam about the invoice" kind="internal" />
       </Frame>

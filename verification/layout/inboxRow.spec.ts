@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { openSpecimen } from "./support/specimen.ts";
 
 for (const theme of ["light", "dark"] as const) {
@@ -47,4 +48,24 @@ test("inbox_row_kind_words_visible", async ({ page }) => {
   await openSpecimen(page, "InboxRow");
   await expect(page.locator('[data-state="inbox-row-internal"]')).toContainText("Internal");
   await expect(page.locator('[data-state="inbox-row-external"]')).toContainText("External");
+});
+
+test("inbox_row_focus_is_one_ring_drawn_inside_a_scrolling_list", async ({ page }) => {
+  await openSpecimen(page, "InboxRow");
+  const list = page.locator('[data-state="inbox-row-scrolling-list"] ul');
+  const rows = list.locator('[data-slot="inbox-row"]');
+  for (const index of [0, 1]) {
+    const row = rows.nth(index);
+    await row.focus();
+    await expect(row).toBeFocused();
+    await expect(row).toHaveCSS("outline-style", "solid");
+    await expect(row).toHaveCSS("outline-width", "2px");
+    await expect(row).toHaveCSS("outline-offset", "-2px");
+    await expect(row).toHaveCSS("box-shadow", "none");
+    await expectFocusRingVisible(row);
+    // The ring sits inside the scrolling list: the row itself is within the list's box.
+    const r = await row.boundingBox();
+    const l = await list.boundingBox();
+    expect(r && l && r.x >= l.x - 0.5 && r.x + r.width <= l.x + l.width + 0.5).toBe(true);
+  }
 });

@@ -33,6 +33,12 @@ test("task_picker_opens_a_combobox_with_options_in_lane_order", () => {
   fireEvent.click(quiet());
   const box = screen.getByRole("combobox");
   expect(box).toHaveFocus();
+  // Nothing is listed until the person types or presses an arrow.
+  expect(box).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("listbox")).toBeNull();
+  press("Enter");
+  expect(screen.getByRole("combobox")).toBeInTheDocument();
+  press("ArrowDown");
   expect(box).toHaveAttribute("aria-expanded", "true");
   expect(box).toHaveAttribute("aria-autocomplete", "list");
   const list = screen.getByRole("listbox");
@@ -69,6 +75,7 @@ test("task_picker_arrows_move_and_enter_picks", () => {
   fireEvent.click(quiet());
   press("ArrowDown");
   press("ArrowDown");
+  press("ArrowDown");
   const active = screen.getAllByRole("option")[2] as HTMLElement;
   expect(screen.getByRole("combobox").getAttribute("aria-activedescendant")).toBe(active.id);
   expect(active).toHaveAttribute("aria-selected", "true");
@@ -76,6 +83,7 @@ test("task_picker_arrows_move_and_enter_picks", () => {
   expect(onPick).toHaveBeenCalledWith("t1");
   expect(screen.queryByRole("combobox")).toBeNull();
   fireEvent.click(quiet());
+  press("ArrowDown");
   press("ArrowUp");
   expect(screen.getAllByRole("option")[3]).toHaveAttribute("aria-selected", "true");
 });
@@ -83,6 +91,7 @@ test("task_picker_arrows_move_and_enter_picks", () => {
 test("task_picker_click_on_an_option_picks_it", () => {
   const { onPick } = setup();
   fireEvent.click(quiet());
+  type("report");
   fireEvent.click(screen.getByRole("option", { name: /Write the report/ }));
   expect(onPick).toHaveBeenCalledWith("t1");
 });
@@ -134,15 +143,48 @@ test("task_picker_quiet_label_is_settable", () => {
 test("task_picker_an_empty_options_list_says_so", () => {
   setup({ options: [] });
   fireEvent.click(quiet());
+  type("a");
   expect(screen.getByText("No matching tasks")).toBeVisible();
 });
 
 test("the_active_option_is_scrolled_into_view_and_marked_in_words", () => {
   const scroll = vi.fn();
+  const original = Element.prototype.scrollIntoView;
   Element.prototype.scrollIntoView = scroll;
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Add a task" }));
   press("ArrowDown");
+  press("ArrowDown");
   expect(scroll).toHaveBeenCalledWith({ block: "nearest" });
   expect(screen.getAllByText("Selected")).toHaveLength(1);
+  if (original) Element.prototype.scrollIntoView = original;
+  else Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+});
+
+test("the_panel_opens_above_when_there_is_no_room_below", () => {
+  const rect = (top: number, bottom: number) => () =>
+    ({
+      top,
+      bottom,
+      left: 0,
+      right: 100,
+      width: 100,
+      height: bottom - top,
+      x: 0,
+      y: top,
+    }) as DOMRect;
+  const spy = vi
+    .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+    .mockImplementation(rect(700, 740));
+  document.documentElement.style.setProperty("--hit-min", "44px");
+  document.documentElement.style.setProperty("--space-2", "8px");
+  setup();
+  fireEvent.click(quiet());
+  type("a");
+  expect(document.querySelector("[data-slot=task-picker-panel]")).toHaveAttribute(
+    "data-placement",
+    "above",
+  );
+  spy.mockRestore();
+  document.documentElement.removeAttribute("style");
 });
