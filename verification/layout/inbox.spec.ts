@@ -109,3 +109,24 @@ test("inbox_moved_status_line_fits_at_360", async ({ page }) => {
   const box = await row.boundingBox();
   expect(box?.height).toBeGreaterThanOrEqual(44);
 });
+
+test("inbox_tab_from_row_leaves_the_list", async ({ page }) => {
+  await openInbox(page, "inboxFifty", { width: 900, height: 600 });
+  await page.getByRole("listitem").first().focus();
+  await page.keyboard.press("Tab");
+  // The row is the last tab stop on the page, so focus leaves the document body-ward; it never lands in the list.
+  const inList = await page.evaluate(() => document.activeElement?.closest("ul") != null);
+  expect(inList).toBe(false);
+  const tag = await page.evaluate(() => document.activeElement?.tagName);
+  expect(tag === "BODY" || tag === "HTML").toBe(true);
+});
+
+test("inbox_shift_f10_opens_the_row_menu_and_esc_returns_to_the_row", async ({ page }) => {
+  await openInbox(page, "inboxOne", { width: 900, height: 600 });
+  const row = page.getByRole("listitem").first();
+  await row.focus();
+  await page.keyboard.press("Shift+F10");
+  await expect(page.getByRole("menuitem", { name: "Move to Board" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(row).toBeFocused();
+});

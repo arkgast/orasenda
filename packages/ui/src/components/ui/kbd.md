@@ -29,6 +29,7 @@ Every shortcut in the app is one canonical glyph string: the modifiers in macOS 
 | `⌫` | `Backspace` | Delete |
 | `←` `↑` `→` `↓` | `ArrowLeft` `ArrowUp` `ArrowRight` `ArrowDown` | Left Arrow, Up Arrow, Right Arrow, Down Arrow |
 | `Tab` | `Tab` | Tab |
+| `F10` | `F10` | F10 (`⇧F10` gives `Shift+F10`, "Shift-F10") |
 
 The parts join with `+` in `aria` and `-` in `spoken`, modifiers first in the order `⌃⌥⇧⌘`:
 - `⌃⌥F` gives `{ aria: "Control+Alt+F", spoken: "Control-Option-F" }`.
