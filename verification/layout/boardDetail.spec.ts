@@ -175,18 +175,26 @@ for (const size of SIZES) {
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const body = dialog.locator('[data-slot="dialog-sheet-body"]');
-    for (let i = 0; i < 40; i++) {
-      const focused = page.locator(":focus");
-      if ((await body.locator(":focus").count()) === 1) {
-        await expectFocusRingVisible(focused);
+    // Plain Tab (WebKit skips buttons) then Alt+Tab (reaches them), each way; every body stop keeps its ring.
+    const walk = async (key: string) => {
+      const stops = new Set<string>();
+      for (let i = 0; i < 40; i++) {
+        if ((await body.locator(":focus").count()) === 1) {
+          await expectFocusRingVisible(page.locator(":focus"));
+          stops.add(
+            await page.locator(":focus").evaluate((el) => {
+              const label = el.getAttribute("aria-label") ?? el.labels?.[0]?.textContent;
+              return `${label ?? el.tagName}#${[...document.querySelectorAll(el.tagName)].indexOf(el)}`;
+            }),
+          );
+        }
+        await page.keyboard.press(key);
       }
-      await page.keyboard.press("Tab");
-    }
-    for (let i = 0; i < 40; i++) {
-      if ((await body.locator(":focus").count()) === 1) {
-        await expectFocusRingVisible(page.locator(":focus"));
-      }
-      await page.keyboard.press("Shift+Tab");
+      return stops;
+    };
+    for (const key of ["Tab", "Shift+Tab", "Alt+Tab", "Alt+Shift+Tab"]) {
+      const stops = await walk(key);
+      expect(stops.size, key).toBeGreaterThanOrEqual(4);
     }
   });
 

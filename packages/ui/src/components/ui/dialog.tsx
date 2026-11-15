@@ -36,7 +36,9 @@ function keepFocusClear(body: HTMLElement, target: HTMLElement): void {
   const r = target.getBoundingClientRect();
   const below = r.bottom + pad - box.bottom;
   const above = box.top - (r.top - pad);
-  if (below > 0) body.scrollTop += below;
+  // A field taller than the body cannot show both ends: keep its top (and ring) in view.
+  if (r.height + 2 * pad > box.height) body.scrollTop -= above;
+  else if (below > 0) body.scrollTop += below;
   else if (above > 0) body.scrollTop -= above;
 }
 
@@ -104,7 +106,27 @@ export function Dialog({
   // and it is a scroll container, not a control, so it takes no React event prop.
   const watchFocus = useCallback((body: HTMLDivElement | null) => {
     if (!body) return;
-    body.addEventListener("focusin", (event) => keepFocusClear(body, event.target as HTMLElement));
+    // Pointer focus is left to the browser, so a click never moves the field under the pointer.
+    let pointer = false;
+    const onPointerDown = () => {
+      pointer = true;
+    };
+    const onKeyDown = () => {
+      pointer = false;
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      const wasPointer = pointer;
+      pointer = false;
+      if (!wasPointer && event.target instanceof HTMLElement) keepFocusClear(body, event.target);
+    };
+    body.addEventListener("pointerdown", onPointerDown, true);
+    body.addEventListener("keydown", onKeyDown, true);
+    body.addEventListener("focusin", onFocusIn);
+    return () => {
+      body.removeEventListener("pointerdown", onPointerDown, true);
+      body.removeEventListener("keydown", onKeyDown, true);
+      body.removeEventListener("focusin", onFocusIn);
+    };
   }, []);
   return (
     <Prim.Root open={open} onOpenChange={(next) => !next && onCancel()}>
