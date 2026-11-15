@@ -204,6 +204,18 @@ for (const size of SIZES) {
     await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
   });
 
+  // Plain Tab from the last text field wraps to the first, and Shift+Tab back, as native cycling does (#636).
+  test(`board_detail_full_task_plain_tab_wraps_through_text_fields_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await page.keyboard.press("Tab");
+    await expect(title).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(notes).toBeFocused();
+  });
+
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const body = dialog.locator('[data-slot="dialog-sheet-body"]');
