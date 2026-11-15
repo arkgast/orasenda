@@ -165,7 +165,10 @@ const OPEN = [
 
 test("choose_task_hidden_without_open_tasks", () => {
   expect(labels(base)).not.toContain("Choose a task…");
-  expect(labels({ ...base, tasks: OPEN })[2]).toBe("Choose a task…");
+  const idle = labels({ ...base, tasks: OPEN });
+  expect(idle.indexOf("Choose a task…")).toBe(idle.indexOf("Just 2 minutes") + 1);
+  const running = labels({ ...base, view: RUNNING, tasks: OPEN });
+  expect(running.indexOf("Choose a task…")).toBe(running.indexOf("End session") + 1);
   expect(labels({ ...base, tasks: OPEN })).not.toContain("Clear task");
 });
 

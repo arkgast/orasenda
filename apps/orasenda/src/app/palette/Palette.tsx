@@ -18,7 +18,7 @@ type Props = {
   /** Only the tasks that aren't Done (*Choose a task…*). */
   tasksOnly?: boolean;
   /** Asks the host to remount the palette in another mode, with an empty query. */
-  onMode?(mode: "tasks"): void;
+  onMode(mode: "tasks"): void;
   onClose(): void;
   onNavigate(page: NavPage): void;
 };
@@ -128,7 +128,7 @@ export function Palette({
       case "end":
         return attempt("timer_stop", commands.timerStop()).then(report("end the session"));
       case "chooseTask":
-        onMode?.("tasks");
+        onMode("tasks");
         return false;
       case "clearTask":
         return attempt("timer_set_task", commands.timerSetTask(null)).then(

@@ -31,6 +31,7 @@ test("choose_task_remounts_with_empty_query", async () => {
   await settle();
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(screen.getByRole("combobox")).toHaveValue("");
+  expect(screen.getByRole("combobox")).toHaveFocus();
   const options = screen.getAllByRole("option");
   expect(options).toHaveLength(1);
   expect(options[0]).toHaveTextContent("Fix the build");
