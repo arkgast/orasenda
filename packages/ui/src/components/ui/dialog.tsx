@@ -95,7 +95,10 @@ export function Dialog({
             data-slot="dialog-content"
             ref={contentRef}
             data-size={size}
-            className={cn(content, sheet ? `${SHEET_WIDTH} overflow-hidden` : `${PANEL_WIDTH} overflow-auto`)}
+            className={cn(
+              content,
+              sheet ? `${SHEET_WIDTH} overflow-hidden` : `${PANEL_WIDTH} overflow-auto`,
+            )}
             onOpenAutoFocus={(event) => {
               // There is no Trigger part (the host owns the trigger), so remember what had focus.
               const active = document.activeElement as HTMLElement | null;

@@ -43,7 +43,9 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
         data-tone={tone}
         className={cn(
           "flex min-w-0 items-center gap-3",
-          props.collapseEmpty && !props.children && !hasAction ? "h-0 overflow-hidden" : "h-hit-min",
+          props.collapseEmpty && !props.children && !hasAction
+            ? "h-0 overflow-hidden"
+            : "h-hit-min",
         )}
       >
         <p
