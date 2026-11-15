@@ -318,6 +318,8 @@ test("shift_f10_opens_card_menu", () => {
   pressOnCard({ key: "F10", shiftKey: true });
   const menu = screen.getByRole("menu");
   expect(within(menu).getByRole("menuitem", { name: "Move to Doing" })).toHaveFocus();
+  expect(onKeyDown).toHaveBeenCalledTimes(1);
+  expect(onKeyDown.mock.calls[0][0].defaultPrevented).toBe(true);
 });
 
 test("context_menu_key_opens_card_menu", () => {
@@ -353,15 +355,28 @@ test("click_open_returns_focus_to_more_button", () => {
 
 test("native_contextmenu_prevented_after_key_open", () => {
   render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
+  pressOnCard({ key: "F10", shiftKey: true });
+  // The key-opened menu holds focus, so the native event arrives on the focused item.
+  const item = document.activeElement as HTMLElement;
+  expect(item).toHaveAttribute("role", "menuitem");
+  expect(fireEvent.contextMenu(item)).toBe(false);
+});
+
+test("right_click_after_esc_is_not_prevented", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
   const card = pressOnCard({ key: "F10", shiftKey: true });
-  expect(fireEvent.contextMenu(card)).toBe(false);
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Move to Doing" }), { key: "Escape" });
+  expect(fireEvent.contextMenu(card)).toBe(true);
 });
 
 test("menu_key_while_open_does_nothing", () => {
   render(<TaskCard title="Write" onOpen={() => {}} menu={MENU} />);
-  const card = pressOnCard({ key: "F10", shiftKey: true });
+  const more = screen.getByRole("button", { name: "More actions for Write" });
+  fireEvent.click(more);
+  const card = screen.getByRole("button", { name: /^Write/ });
   fireEvent.keyDown(card, { key: "F10", shiftKey: true });
-  expect(screen.getAllByRole("menu")).toHaveLength(1);
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Move to Doing" }), { key: "Escape" });
+  expect(more).toHaveFocus();
 });
 
 test("disabled_or_menuless_card_ignores_menu_key", () => {

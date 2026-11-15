@@ -114,8 +114,11 @@ test("inbox_tab_from_row_leaves_the_list", async ({ page }) => {
   await openInbox(page, "inboxFifty", { width: 900, height: 600 });
   await page.getByRole("listitem").first().focus();
   await page.keyboard.press("Tab");
-  const inList = await page.evaluate(() => document.activeElement?.closest("ul") !== null);
+  // The row is the last tab stop on the page, so focus leaves the document body-ward; it never lands in the list.
+  const inList = await page.evaluate(() => document.activeElement?.closest("ul") != null);
   expect(inList).toBe(false);
+  const tag = await page.evaluate(() => document.activeElement?.tagName);
+  expect(tag === "BODY" || tag === "HTML").toBe(true);
 });
 
 test("inbox_shift_f10_opens_the_row_menu_and_esc_returns_to_the_row", async ({ page }) => {

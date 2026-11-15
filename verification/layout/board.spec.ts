@@ -162,12 +162,21 @@ test("board_tab_from_card_leaves_the_columns", async ({ page }) => {
   expect(inCards).toBe(false);
 });
 
-test("board_shift_f10_opens_the_card_menu_and_esc_returns_to_the_card", async ({ page }) => {
-  await openBoard(page, "boardWeek", { width: 900, height: 600 });
-  const card = page.getByRole("button", { name: /^Write the intro/ });
-  await card.focus();
-  await page.keyboard.press("Shift+F10");
-  await expect(page.getByRole("menu")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(card).toBeFocused();
-});
+for (const size of [
+  { width: 1440, height: 900 },
+  { width: 900, height: 600 },
+  { width: 640, height: 480 },
+]) {
+  test(`board_shift_f10_opens_the_card_menu_and_esc_returns_to_the_card_${size.width}`, async ({
+    page,
+  }) => {
+    await openBoard(page, "boardWeek", size);
+    const card = page.getByRole("button", { name: /^Write the intro/ });
+    await card.focus();
+    await page.keyboard.press("Shift+F10");
+    await expect(page.getByRole("menu")).toBeVisible();
+    await expect(page.getByRole("menuitem").first()).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(card).toBeFocused();
+  });
+}

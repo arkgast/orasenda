@@ -125,6 +125,7 @@ export function InboxRow({
               onClose={() => {
                 setOpen(false);
                 setByKey(false);
+                keyOpened.current = false;
               }}
               anchor={anchor}
               returnFocus={byKey ? row : undefined}

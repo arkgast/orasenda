@@ -153,6 +153,8 @@ test("shift_f10_opens_row_menu", async () => {
   const menu = await screen.findByRole("menu");
   expect(within(menu).getByRole("menuitem", { name: "Move to Board" })).toHaveFocus();
   expect(screen.getByRole("button", { name: MORE })).toHaveAttribute("aria-expanded", "true");
+  expect(onKeyDown).toHaveBeenCalledTimes(1);
+  expect(onKeyDown.mock.calls[0][0].defaultPrevented).toBe(true);
 });
 
 test("context_menu_key_opens_row_menu", async () => {
@@ -202,17 +204,30 @@ test("click_open_returns_focus_to_more_button", async () => {
 
 test("native_contextmenu_prevented_after_key_open", async () => {
   withMenu({ tabIndex: 0, menuTabIndex: -1 });
+  pressOnRow({ key: "F10", shiftKey: true });
+  await screen.findByRole("menu");
+  const item = document.activeElement as HTMLElement;
+  expect(item).toHaveAttribute("role", "menuitem");
+  expect(fireEvent.contextMenu(item)).toBe(false);
+});
+
+test("right_click_after_esc_is_not_prevented", async () => {
+  withMenu({ tabIndex: 0, menuTabIndex: -1 });
   const row = pressOnRow({ key: "F10", shiftKey: true });
   await screen.findByRole("menu");
-  expect(fireEvent.contextMenu(row)).toBe(false);
+  fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+  expect(fireEvent.contextMenu(row)).toBe(true);
 });
 
 test("menu_key_while_open_does_nothing", async () => {
   withMenu({ tabIndex: 0, menuTabIndex: -1 });
-  const row = pressOnRow({ key: "F10", shiftKey: true });
+  const more = screen.getByRole("button", { name: MORE });
+  fireEvent.click(more);
   await screen.findByRole("menu");
+  const row = more.closest("li") as HTMLElement;
   fireEvent.keyDown(row, { key: "F10", shiftKey: true });
-  expect(screen.getAllByRole("menu")).toHaveLength(1);
+  fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+  expect(more).toHaveFocus();
 });
 
 test("row_without_a_menu_ignores_the_menu_key", () => {

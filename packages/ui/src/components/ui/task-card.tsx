@@ -323,11 +323,6 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       onClick={onSelect ?? onOpen}
       onDoubleClick={onSelect ? onOpen : undefined}
       onKeyDown={onKeyDown}
-      onContextMenu={(event) => {
-        if (!keyOpened.current) return;
-        keyOpened.current = false;
-        event.preventDefault();
-      }}
       disabled={props.disabled}
       aria-label={accessibleName(props, tags)}
       className={className}
@@ -341,7 +336,17 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   );
   if (!props.menu || !hasMenu) return card;
   return (
-    <div data-slot="task-card-frame" className="relative">
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: only marks a keyboard-opened menu's native contextmenu as handled; not a control
+    <div
+      data-slot="task-card-frame"
+      className="relative"
+      onContextMenu={(event) => {
+        // The key-opened menu has focus on an item, a sibling of the card, so listen on the frame.
+        if (!keyOpened.current) return;
+        keyOpened.current = false;
+        event.preventDefault();
+      }}
+    >
       {card}
       <span
         className={cn("absolute end-0 flex", row ? "inset-y-0 items-center" : "top-1 items-start")}
@@ -354,7 +359,10 @@ export function TaskCard(props: TaskCardProps): ReactElement {
           open={menuOpen}
           setOpen={(open) => {
             setMenuOpen(open);
-            if (!open) setByKey(false);
+            if (!open) {
+              setByKey(false);
+              keyOpened.current = false;
+            }
           }}
           returnFocus={byKey ? cardRef : undefined}
           onToggle={() => {
