@@ -5,7 +5,7 @@ import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import { emitPaletteOpen, mockBackend, settle } from "@shared/test/fixtures";
 import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./App";
 
@@ -43,9 +43,12 @@ async function goToYourData() {
 const boardHeading = () => screen.getByRole("heading", { level: 1, name: "Board", hidden: true });
 // Close leaves focus in the Board (its heading, or on an empty Board its own Import button),
 // never on the rail control or the palette opener.
-function expectFocusOnBoard() {
-  const main = boardHeading().closest("main");
-  expect(main?.contains(document.activeElement)).toBe(true);
+// Radix restores focus a timer tick after the sheet closes; wait for it rather than read it at once.
+async function expectFocusOnBoard() {
+  await waitFor(() => {
+    const main = boardHeading().closest("main");
+    expect(main?.contains(document.activeElement)).toBe(true);
+  });
 }
 const sheet = () => screen.queryByRole("dialog", { name: "Import tasks" });
 
@@ -61,7 +64,7 @@ test("your_data_import_opens_board_sheet", async () => {
   expect(sheet()?.contains(document.activeElement)).toBe(true);
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   await settle();
-  expectFocusOnBoard();
+  await expectFocusOnBoard();
 });
 
 test("palette_import_tasks_opens_sheet", async () => {
@@ -78,7 +81,7 @@ test("palette_import_tasks_opens_sheet", async () => {
   expect(sheet()?.contains(document.activeElement)).toBe(true);
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   await settle();
-  expectFocusOnBoard();
+  await expectFocusOnBoard();
 });
 
 test("palette_import_is_not_first", async () => {
