@@ -22,6 +22,8 @@ export type InlineNoticeProps = {
       tone?: "neutral" | "attention" | "rest" | "warning";
       /** Defaults to 'ghost'. */
       actionVariant?: "quiet" | "ghost";
+      /** The row takes no height while it is empty (no message and no action); the live region stays mounted. */
+      collapseEmpty?: boolean;
     }
 );
 
@@ -39,7 +41,12 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
         data-slot="inline-notice"
         data-variant="row"
         data-tone={tone}
-        className="flex h-hit-min min-w-0 items-center gap-3"
+        className={cn(
+          "flex min-w-0 items-center gap-3",
+          props.collapseEmpty && !props.children && !hasAction
+            ? "h-0 overflow-hidden"
+            : "h-hit-min",
+        )}
       >
         <p
           data-slot="inline-notice-message"

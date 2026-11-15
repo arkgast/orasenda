@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, type ReactElement, useId } from "react";
+import { type InputHTMLAttributes, type ReactElement, type Ref, useId } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 
@@ -8,6 +8,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   /** Adds a suffix ("min") after a number field sized to number-width. */
   unit?: string;
+  /** The field element (React 19 passes `ref` as a prop). */
+  ref?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -44,6 +46,8 @@ export function Input({
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
         "aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-line-strong",
         "disabled:cursor-default disabled:border-dashed disabled:text-ink-muted",
+        // WebKit never matches :focus-visible on a date field, so its ring follows :focus.
+        rest.type === "date" && "focus:outline-2 focus:outline-offset-2 focus:outline-focus-ring",
         unit ? "w-number-width max-w-full" : "w-full",
       )}
     />

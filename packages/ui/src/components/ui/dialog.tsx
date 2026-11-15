@@ -1,5 +1,5 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
-import type { JSX, ReactNode } from "react";
+import type { JSX, ReactNode, RefObject } from "react";
 import { useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
@@ -42,12 +42,14 @@ export interface DialogProps {
   loading?: boolean;
   /** "sheet" is the wide task sheet: capped at sheet-width, always over the scrim, with a two-column body. */
   size?: "panel" | "sheet";
+  /** The element that takes focus on open instead of the cancel action; the sheet uses it for its first field. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
 const content =
-  "flex max-h-full w-full flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+  "flex max-h-full w-full scroll-py-3 flex-col gap-5 rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
 
 const PANEL_WIDTH = "max-w-panel-width";
 const SHEET_WIDTH = "max-w-sheet-width";
@@ -69,6 +71,7 @@ export function Dialog({
   scrim,
   loading,
   size = "panel",
+  initialFocusRef,
 }: DialogProps): JSX.Element {
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -92,7 +95,10 @@ export function Dialog({
             data-slot="dialog-content"
             ref={contentRef}
             data-size={size}
-            className={cn(content, sheet ? SHEET_WIDTH : PANEL_WIDTH)}
+            className={cn(
+              content,
+              sheet ? `${SHEET_WIDTH} overflow-hidden` : `${PANEL_WIDTH} overflow-auto`,
+            )}
             onOpenAutoFocus={(event) => {
               // There is no Trigger part (the host owns the trigger), so remember what had focus.
               const active = document.activeElement as HTMLElement | null;
@@ -100,8 +106,11 @@ export function Dialog({
                 lastPress && Date.now() - lastPress.at <= PRESS_TTL_MS ? lastPress.el : null;
               opener.current = active && active !== document.body ? active : press;
               event.preventDefault();
-              // The cancel action is the first button of the actions row.
-              actionsRef.current?.querySelector<HTMLElement>("button")?.focus();
+              // The cancel action is the first button of the actions row, unless the host named a field.
+              const target =
+                initialFocusRef?.current ??
+                actionsRef.current?.querySelector<HTMLElement>("button");
+              target?.focus();
             }}
             onCloseAutoFocus={(event) => {
               event.preventDefault();
@@ -126,7 +135,10 @@ export function Dialog({
               </Prim.Description>
             ) : null}
             {sheet ? (
-              <div data-slot="dialog-sheet-body" className="@container">
+              <div
+                data-slot="dialog-sheet-body"
+                className="@container -m-2 min-h-0 flex-1 scroll-py-3 overflow-auto p-2"
+              >
                 <div className="grid grid-cols-1 gap-x-5 gap-y-4 @sheet-stack:grid-cols-2">
                   {children}
                 </div>
