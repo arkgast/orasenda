@@ -14,4 +14,4 @@ A task on the board. Sessions beyond the estimate are information, never a warni
 
 Do: let the column set the width. Don't: colour anything amber here, or show ratios of done to estimated.
 
-- `moving`: the card is being dragged. It stays in place with a dashed `line-strong` edge, no shadow, never reduced opacity, and the word "Moving" (also in its accessible name). The word sits in an existing line (beside the type chip, or in the row's own line), so the card never grows when a drag starts; in a very narrow row it may still wrap.
+- `moving`: the card is being dragged. It stays in place with a dashed `line-strong` edge, no shadow, never reduced opacity, and the word "Moving" (also in its accessible name). The word sits in an existing line (beside the type chip, or in the row's own line), so the card never grows when a drag starts; in a very narrow row it may still wrap. In card density the top line can wrap at the narrowest width when a card has a chip, Frog, Moving and a priority; the board measures card rects after the moving render.

@@ -224,22 +224,22 @@ test("drop_on_strip_reads_move_here", () => {
   expect(screen.getByRole("button", { name: "Done, 5 tasks, Move here" })).toBe(strip);
 });
 
-test("drop_index_leaves_out_the_moving_card_and_skips_leading_fields", () => {
+function Wrap({ n }: { n: string }) {
+  return <div>{n}</div>;
+}
+
+test("drop_index_counts_children_as_passed", () => {
   const { container } = render(
-    <KanbanColumn title="Today" count={3} drop={{ index: 1, label: "Moving A here" }}>
-      <input aria-label="New task" />
-      <TaskCard title="A" moving onOpen={() => {}} />
-      <TaskCard title="B" onOpen={() => {}} />
-      <TaskCard title="C" onOpen={() => {}} />
+    <KanbanColumn title="Today" count={2} drop={{ index: 1, label: "Moving A here" }}>
+      <Wrap n="one" />
+      <Wrap n="two" />
     </KanbanColumn>,
   );
   const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
   const order = Array.from(cards.children).map((el) =>
-    el.getAttribute("data-slot") === "kanban-column-drop"
-      ? "slot"
-      : (el.textContent?.match(/[ABC]/)?.[0] ?? "field"),
+    el.getAttribute("data-slot") === "kanban-column-drop" ? "slot" : el.textContent,
   );
-  expect(order).toEqual(["field", "A", "B", "slot", "C"]);
+  expect(order).toEqual(["one", "slot", "two"]);
 });
 
 test("drop_slot_never_shrinks", () => {

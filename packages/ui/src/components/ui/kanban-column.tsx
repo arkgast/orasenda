@@ -1,17 +1,8 @@
-import {
-  Children,
-  isValidElement,
-  type ReactElement,
-  type ReactNode,
-  useEffect,
-  useId,
-  useRef,
-} from "react";
+import { Children, type ReactElement, type ReactNode, useEffect, useId, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { ModeChip } from "./mode-chip";
-import { TaskCard } from "./task-card";
 
 interface KanbanColumnBase {
   title: string;
@@ -28,8 +19,9 @@ interface KanbanColumnBase {
   /** On the region, so the board can move focus between columns. */
   id?: string;
   /**
-   * A drag is over this column: a dashed slot at `index` (children counted with the dragged
-   * card left out; clamped), reading `label`. On a folded strip `index` is ignored.
+   * A drag is over this column: a dashed slot reading `label`, inserted before the child at
+   * `index` in `children` as passed (past the end appends). The caller counts; on a folded strip
+   * `index` is ignored.
    */
   drop?: { index: number; label: string };
 }
@@ -77,20 +69,8 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
   }, [props.collapsed]);
   const kids: ReactNode[] = Children.toArray(props.children);
   if (props.drop && !props.collapsed) {
-    // Only TaskCards count, and not the dragged one; other children (a leading new-task field) are skipped.
-    const stays = (k: ReactNode) =>
-      isValidElement<{ moving?: boolean }>(k) && k.type === TaskCard && !k.props.moving;
-    const want = whole(props.drop.index);
-    let seen = 0;
-    let at = -1;
-    let last = -1;
-    kids.forEach((k, i) => {
-      if (!stays(k)) return;
-      if (seen === want) at = i;
-      seen += 1;
-      last = i;
-    });
-    if (at < 0) at = last < 0 ? kids.length : last + 1;
+    // The caller works out the index into the children as passed; past the end appends.
+    const at = Math.min(whole(props.drop.index), kids.length);
     kids.splice(at, 0, <DropSlot key="kanban-column-drop" label={props.drop.label} />);
   }
   if (props.collapsed) {
