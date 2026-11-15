@@ -104,10 +104,16 @@ fn checklist_over_30_spills_into_notes() {
     let task = fitted.task.clone().expect("kept");
     assert_eq!(task.checklist.len(), 30);
     assert_eq!(task.checklist[0].chars().count(), 200);
-    assert_eq!(task.notes, "Notes\n- item 31\n- item 32");
+    assert_eq!(
+        task.notes,
+        format!("Notes\n- {}\n- item 31\n- item 32", "y".repeat(250))
+    );
     assert_eq!(
         Summary::from_fitted(&[fitted]).lines(),
-        ["1 checklist was longer than 30 items; the rest is in its notes."]
+        [
+            "1 checklist was longer than 30 items; the rest is in its notes.",
+            "1 checklist item was shortened; the rest is in its notes."
+        ]
     );
 }
 
@@ -132,7 +138,11 @@ fn notes_cut_takes_last_part_first() {
     assert!(task.notes.chars().count() <= 10_000);
     assert!(task.notes.contains(&"b".repeat(4000)), "source notes stay");
     assert_eq!(task.notes.matches(&"d".repeat(300)).count(), 1);
-    assert!(task.notes.ends_with(&"d".repeat(300)), "cut on a line end");
+    assert_eq!(
+        task.notes.chars().count(),
+        10_000,
+        "the crossing line is cut"
+    );
     assert_eq!(
         Summary::from_fitted(&[fitted]).lines(),
         ["1 note was cut to fit."]
@@ -180,4 +190,29 @@ fn notes_cut_keeps_the_remainder_and_hard_cuts_one_long_line() {
         task.notes.contains('\n'),
         "remainder stays before the cut line"
     );
+}
+
+#[test]
+fn long_checklist_item_is_cut_with_full_text_in_notes() {
+    let long = "word ".repeat(52);
+    let mut item = raw("Task");
+    item.checklist = vec![long.trim().to_owned()];
+    let fitted = fit(item);
+    assert!(fitted.items_cut && !fitted.checklist_over);
+    let task = fitted.task.clone().unwrap();
+    assert!(task.checklist[0].ends_with("word…"));
+    assert!(task.checklist[0].chars().count() <= 200);
+    assert_eq!(task.notes, format!("- {}", long.trim()));
+    assert_eq!(Summary::from_fitted(&[fitted]).items_cut, 1);
+}
+
+#[test]
+fn notes_cut_hard_cuts_a_long_line_after_a_short_one() {
+    let mut item = raw("Task");
+    item.notes = format!("short\n{}", "q".repeat(12_000));
+    let fitted = fit(item);
+    assert!(fitted.notes_cut);
+    let notes = fitted.task.unwrap().notes;
+    assert_eq!(notes.chars().count(), 10_000);
+    assert!(notes.starts_with("short\nqqq"));
 }
