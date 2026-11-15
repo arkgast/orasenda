@@ -27,8 +27,9 @@ use crate::api::{
 };
 use crate::scheduler::Host;
 use crate::session::lock;
+pub(crate) use service::Answer;
 pub(crate) use service::Changed;
-use service::{Answer, live, rank_at};
+use service::{live, rank_at};
 use view::{Ctx, stored_lane};
 
 /// `board_get`: the whole board.
@@ -195,7 +196,7 @@ pub fn run_board_columns_set<H: Host>(
     })
 }
 
-fn stored_priority(priority: TaskPriority) -> tasks::Priority {
+pub(crate) fn stored_priority(priority: TaskPriority) -> tasks::Priority {
     match priority {
         TaskPriority::High => tasks::Priority::High,
         TaskPriority::Medium => tasks::Priority::Medium,
@@ -209,7 +210,7 @@ fn stored_priority(priority: TaskPriority) -> tasks::Priority {
 /// When the write commits but the read-back fails, the command still answers `Ok`, no event
 /// follows and the failure is logged at error level (`board_changed`). `useBoard` re-reads
 /// with `board_get` when an ok answer brings no event.
-fn write<H: Host, T>(
+pub(crate) fn write<H: Host, T>(
     host: &H,
     op: impl FnOnce(&mut Txn, Ctx) -> Answer<T>,
 ) -> Result<T, BoardError> {

@@ -88,19 +88,17 @@ fn preview_reminders(host: &TestHost, n: usize) -> crate::api::ImportPreview {
     let items = (0..n)
         .map(|i| reminder(&format!("r{i}"), &format!("T{i}")))
         .collect();
-    host.0.imports.set_reminders(crate::session::test_support::FakeReminders::new(
-        orasenda_core::platform::import::SourceAccess::Granted,
-        items,
-    ));
+    host.0
+        .imports
+        .set_reminders(crate::session::test_support::FakeReminders::new(
+            orasenda_core::platform::import::SourceAccess::Granted,
+            items,
+        ));
     crate::import::run_import_preview(host, crate::api::PreviewRequest::Reminders).unwrap()
 }
 
 /// Every live task, in lane then rank order.
 fn live_tasks(host: &TestHost) -> Vec<tasks::TaskRow> {
     let guard = lock(host.service().unwrap());
-    guard
-        .store()
-        .unwrap()
-        .read(tasks::list_live)
-        .unwrap()
+    guard.store().unwrap().read(tasks::list_live).unwrap()
 }

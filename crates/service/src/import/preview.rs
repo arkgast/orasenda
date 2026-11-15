@@ -81,6 +81,10 @@ pub fn run_import_preview<H: Host>(
         return Err(ImportError::session_active());
     }
     let id = next_id();
+    {
+        let mut guard = lock(service);
+        guard.import_last_issued = guard.import_last_issued.max(id);
+    }
     let read = match request {
         PreviewRequest::Reminders => read_reminders(host)?,
         PreviewRequest::Things => read_things(host)?,
@@ -131,13 +135,10 @@ pub fn run_import_preview<H: Host>(
         ));
         kept.push((key, task));
     }
-    // A slower, older read must not replace a newer preview that finished first.
-    if guard.import_pending.as_ref().is_none_or(|p| p.id < id) {
-        guard.import_pending = Some(PendingPreview {
-            id,
-            source: kind,
-            tasks: kept,
-        });
+    // Only the newest read installs: an older one finishing late must not bring back a
+    // preview that a newer read replaced, or that was discarded or imported meanwhile.
+    if guard.import_last_issued == id {
+        guard.import_pending = Some(PendingPreview { id, tasks: kept });
     }
     Ok(ImportPreview {
         id,

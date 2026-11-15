@@ -138,8 +138,8 @@ fn todoist_import_while_session_active() {
     let path = std::env::temp_dir().join(format!("orasenda-i7b-{}.csv", std::process::id()));
     std::fs::write(
         &path,
-        "TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT,AUTHOR,RESPONSIBLE,DATE,DATE_LANG,TIMEZONE\\n\\
-         task,Pay rent,,4,1,,,,en,\\n",
+        "TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT,AUTHOR,RESPONSIBLE,DATE,DATE_LANG,TIMEZONE\n\\
+         task,Pay rent,,4,1,,,,en,\n",
     )
     .unwrap();
     let p = run_import_preview(&host, crate::api::PreviewRequest::Todoist(path.clone())).unwrap();

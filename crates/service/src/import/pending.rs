@@ -3,7 +3,6 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::api::ImportSourceKind;
 use crate::import::fit::FittedTask;
 use crate::scheduler::Host;
 use crate::session::lock;
@@ -16,17 +15,14 @@ pub(crate) fn next_id() -> u64 {
 
 /// The rows shown in a preview, kept to be written when the user chooses.
 #[derive(Debug, Clone)]
-#[expect(dead_code, reason = "read by the import write (I7b)")]
 pub(crate) struct PendingPreview {
     pub id: u64,
-    pub source: ImportSourceKind,
     /// `(key, task)` for the rows the preview shows, in source order.
     pub tasks: Vec<(u32, FittedTask)>,
 }
 
 /// The tasks the last committed import made, for Undo.
 #[derive(Debug, Clone)]
-#[expect(dead_code, reason = "written by the import write (I7b)")]
 pub(crate) struct LastImport {
     pub id: u64,
     pub task_ids: Vec<String>,
