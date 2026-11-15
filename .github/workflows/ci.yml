@@ -9,9 +9,10 @@ permissions:
   contents: read
 
 concurrency:
-  # PRs: one run per ref, a new push cancels the old run. Pushes to main: one group per SHA, so
-  # no main run is cancelled or dropped while pending.
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  # One group per ref. PRs: a new push cancels the old run on that branch. Main: a running run
+  # always finishes, and GitHub keeps only the newest pending run, so the latest commit is always
+  # tested without a queue of dozens of macOS runs (#587, #634).
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
