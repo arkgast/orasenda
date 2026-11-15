@@ -93,8 +93,9 @@ pub struct SessionService {
     /// The one import preview waiting for the user's choice, replaced by the next one.
     pub(crate) import_pending: Option<crate::import::PendingPreview>,
     /// The last committed import, for its Undo.
-    #[expect(dead_code, reason = "read by Undo (I7b)")]
     pub(crate) import_last: Option<crate::import::LastImport>,
+    /// The newest preview id handed out: a slower, older read installs nothing.
+    pub(crate) import_last_issued: u64,
     /// True once `timer_state` has drained `pending`: a webview is listening, so a
     /// `recovered` event created later (a retried read, an idle flush) goes out with the next
     /// [`Effects`] as a `timer-milestone` instead of waiting there. One recorded by a
@@ -190,6 +191,7 @@ impl SessionService {
             pending: Vec::new(),
             import_pending: None,
             import_last: None,
+            import_last_issued: 0,
             listening: false,
             platform,
             recover_owed: RecoverOwed::default(),

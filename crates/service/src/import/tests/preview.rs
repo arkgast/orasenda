@@ -178,16 +178,22 @@ fn older_preview_finishing_later_does_not_replace_newer() {
     let host = host();
     reminders(&host, SourceAccess::Granted, 1);
     let first = run_import_preview(&host, PreviewRequest::Reminders).unwrap();
-    // A preview whose id was taken earlier than the pending one must not replace it.
-    let stale = crate::import::PendingPreview {
-        id: first.id + 10,
-        source: ImportSourceKind::Todoist,
-        tasks: Vec::new(),
-    };
-    lock(host.service().unwrap()).import_pending = Some(stale);
+    // A newer id was handed out meanwhile: a read finishing now is the older one.
+    lock(host.service().unwrap()).import_last_issued = first.id + 10;
     run_import_preview(&host, PreviewRequest::Reminders).unwrap();
-    // The second request took an id below the pending one, so the pending one stays.
-    assert_eq!(pending_id(&host), Some(first.id + 10));
+    // The second request is older than the newest id, so it installs nothing.
+    assert_eq!(pending_id(&host), Some(first.id));
+}
+
+#[test]
+fn older_read_does_not_bring_back_a_discarded_preview() {
+    let host = host();
+    reminders(&host, SourceAccess::Granted, 1);
+    let first = run_import_preview(&host, PreviewRequest::Reminders).unwrap();
+    lock(host.service().unwrap()).import_last_issued = first.id + 10;
+    run_import_discard(&host, first.id);
+    run_import_preview(&host, PreviewRequest::Reminders).unwrap();
+    assert_eq!(pending_id(&host), None);
 }
 
 #[test]
