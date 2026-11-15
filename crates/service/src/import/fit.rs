@@ -94,9 +94,11 @@ impl Summary {
         }
         match self.items_cut {
             0 => {}
-            1 => lines.push("1 checklist item was shortened; the rest is in its notes.".to_owned()),
+            1 => lines.push(
+                "1 task had a checklist item shortened; the full text is in its notes.".to_owned(),
+            ),
             n => lines.push(format!(
-                "{n} checklist items were shortened; the rest is in their notes."
+                "{n} tasks had a checklist item shortened; the full text is in their notes."
             )),
         }
         match self.notes_cut {

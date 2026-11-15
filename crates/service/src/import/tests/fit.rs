@@ -112,7 +112,7 @@ fn checklist_over_30_spills_into_notes() {
         Summary::from_fitted(&[fitted]).lines(),
         [
             "1 checklist was longer than 30 items; the rest is in its notes.",
-            "1 checklist item was shortened; the rest is in its notes."
+            "1 task had a checklist item shortened; the full text is in its notes."
         ]
     );
 }
