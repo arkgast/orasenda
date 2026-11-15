@@ -39,8 +39,15 @@ fn run(caller: &str) -> String {
         .args(["-l", "JavaScript", "-e", &script])
         .output()
         .expect("osascript runs");
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
-    String::from_utf8(out.stdout).expect("utf-8").trim_end().to_string()
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8(out.stdout)
+        .expect("utf-8")
+        .trim_end()
+        .to_string()
 }
 
 #[test]
