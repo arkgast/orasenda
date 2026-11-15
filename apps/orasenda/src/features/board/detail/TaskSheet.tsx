@@ -13,6 +13,7 @@ import {
 import type { ColumnView, Lane, TaskPriority, TaskView } from "@shared/ipc/bindings";
 import { useRef, useState } from "react";
 import type { Outcome } from "../useBoard";
+import type { BoardLine } from "../useBoardActions";
 import { recordLine } from "./recordLine";
 import { useTaskDraft } from "./useTaskDraft";
 
@@ -21,7 +22,12 @@ type Props = {
   columns: readonly ColumnView[];
   update: Parameters<typeof useTaskDraft>[1];
   move(id: string, lane: Lane, index: number): Promise<Outcome>;
-  setFrog(id: string, on: boolean): Promise<Outcome<string | null>>;
+  /** The Board's Frog toggle: a Frog that moved says so, with Undo, on the Board's line. */
+  toggleFrog(task: TaskView): Promise<boolean>;
+  /** The Board's line, shown in the sheet because the sheet covers the board. */
+  boardLine: BoardLine;
+  /** A save that failed after the sheet closed. */
+  onSaveFailed(text: string): void;
   onClose(): void;
 };
 
@@ -36,20 +42,23 @@ const WIDE = "@sheet-stack:col-span-2";
 const sessions = (n: number) => `${n} ${n === 1 ? "session" : "sessions"}`;
 
 /** The task detail (owner pick 2B): a sheet over the board whose fields save as they change. */
-export function TaskSheet({ task, columns, update, move, setFrog, onClose }: Props) {
-  const d = useTaskDraft(task, update);
-  // The title field is inside the Input component: the dialog gets a ref that finds it.
-  const titleBox = useRef<HTMLDivElement>(null);
-  const titleRef = {
-    get current() {
-      return titleBox.current?.querySelector<HTMLInputElement>("input") ?? null;
-    },
-  };
+export function TaskSheet({
+  task,
+  columns,
+  update,
+  move,
+  toggleFrog,
+  boardLine,
+  onSaveFailed,
+  onClose,
+}: Props) {
+  const d = useTaskDraft(task, update, onSaveFailed);
+  const titleRef = useRef<HTMLInputElement>(null);
   const [dismissed, setDismissed] = useState(false);
   const checklistRef = useRef<HTMLDivElement>(null);
   const { draft } = d;
   const close = () => {
-    d.flushAll();
+    d.leave();
     onClose();
   };
 
@@ -61,23 +70,26 @@ export function TaskSheet({ task, columns, update, move, setFrog, onClose }: Pro
     const length = target ? target.tasks.filter((t) => t.id !== task.id).length : 0;
     const outcome = await move(task.id, lane, length);
     if (outcome.status !== "ok") d.setLine({ text: "That didn't save. Try again." });
-    else d.setLine(null);
   };
 
-  const toggleFrog = async () => {
-    if (task.lane === "done") {
+  const frog = () => {
+    // Only setting the Frog is refused in Done; clearing it is allowed.
+    if (task.lane === "done" && !task.isFrog) {
       d.setLine({ text: "A finished task can't be the Frog." });
       return;
     }
-    const outcome = await setFrog(task.id, !task.isFrog);
-    if (outcome.status === "ok") d.setLine(null);
-    else
-      d.setLine({
-        text:
-          outcome.error === "doneCannotBeFrog"
-            ? "A finished task can't be the Frog."
-            : "That didn't save. Try again.",
-      });
+    d.setLine(null);
+    void toggleFrog(task);
+  };
+
+  const keepAsIs = async () => {
+    if (!(await d.save({ breakdownDismissed: true }))) return;
+    setDismissed(true);
+    // The notice leaves with the button that has focus: hand focus to the field above it.
+    titleRef.current
+      ?.closest("[data-slot=dialog-content]")
+      ?.querySelector<HTMLElement>("[role=spinbutton]")
+      ?.focus();
   };
 
   const breakdown = draft.estimate > 4 && !task.breakdownDismissed && !dismissed;
@@ -95,16 +107,17 @@ export function TaskSheet({ task, columns, update, move, setFrog, onClose }: Pro
       <div className={WIDE}>
         <InlineNotice
           variant="row"
-          tone={d.line ? "attention" : "rest"}
-          actionLabel={d.line?.retry ? "Try again" : undefined}
-          actionName="Try again saving"
-          onAction={d.line?.retry}
+          tone={d.line || boardLine?.tone === "attention" ? "attention" : "rest"}
+          actionLabel={d.line ? (d.line.retry ? "Try again" : undefined) : boardLine?.action?.label}
+          actionName={d.line ? "Try again saving" : boardLine?.action?.name}
+          onAction={d.line ? d.line.retry : boardLine?.action?.run}
         >
-          {d.line?.text ?? ""}
+          {d.line?.text ?? boardLine?.text ?? ""}
         </InlineNotice>
       </div>
-      <div ref={titleBox} className={WIDE}>
+      <div className={WIDE}>
         <Input
+          ref={titleRef}
           label="Title"
           maxLength={200}
           value={draft.title}
@@ -137,6 +150,24 @@ export function TaskSheet({ task, columns, update, move, setFrog, onClose }: Pro
           d.change({ estimate }, { estimate: estimate === 0 ? null : estimate })
         }
       />
+      {breakdown ? (
+        <div className={WIDE}>
+          <InlineNotice
+            actionLabel="Add a checklist"
+            onAction={() =>
+              checklistRef.current
+                ?.querySelector<HTMLInputElement>("[data-slot=checklist] > input[type=text]")
+                ?.focus()
+            }
+            secondaryAction={{
+              label: "Keep as is",
+              onAction: () => void keepAsIs(),
+            }}
+          >
+            This looks big. Could it be a few smaller tasks?
+          </InlineNotice>
+        </div>
+      ) : null}
       <Input
         label="Due"
         type="date"
@@ -159,29 +190,10 @@ export function TaskSheet({ task, columns, update, move, setFrog, onClose }: Pro
         onChange={(e) => void changeLane(e.target.value as Lane)}
       />
       <ChoiceGroup legend="Frog">
-        <Choice type="checkbox" checked={task.isFrog} onChange={() => void toggleFrog()}>
+        <Choice type="checkbox" checked={task.isFrog} onChange={frog}>
           Today's Frog
         </Choice>
       </ChoiceGroup>
-      {breakdown ? (
-        <div className={WIDE}>
-          <InlineNotice
-            actionLabel="Add a checklist"
-            onAction={() =>
-              checklistRef.current
-                ?.querySelector<HTMLInputElement>("input[type=text]:last-of-type")
-                ?.focus()
-            }
-            secondaryAction={{
-              label: "Keep as is",
-              onAction: () =>
-                void d.save({ breakdownDismissed: true }).then((ok) => ok && setDismissed(true)),
-            }}
-          >
-            This looks big. Could it be a few smaller tasks?
-          </InlineNotice>
-        </div>
-      ) : null}
       <div className={WIDE}>
         <TagField
           label="Tags"

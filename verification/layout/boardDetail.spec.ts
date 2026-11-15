@@ -55,6 +55,47 @@ for (const size of SIZES) {
     );
     expect(small).toEqual([]);
     await expectFocusRingVisible(dialog.getByRole("textbox", { name: "Title" }));
+    // WebKit gives a date field :focus but never :focus-visible: its ring must still show.
+    const due = dialog.getByLabel("Due");
+    await due.focus();
+    await expectFocusRingVisible(due);
+  });
+
+  test(`board_detail_breakdown_notice_is_visible_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size);
+    const estimate = dialog.getByRole("spinbutton", { name: "Estimate" });
+    await estimate.focus();
+    for (const _ of [1, 2, 3]) await page.keyboard.press("ArrowUp");
+    const notice = dialog.getByText("This looks big. Could it be a few smaller tasks?");
+    await expect(notice).toBeVisible();
+    const m = await notice.evaluate((el) => {
+      const panel = el.closest("[data-slot=dialog-content]") as HTMLElement;
+      const due = document.querySelector("input[type=date]") as HTMLElement;
+      const n = el.getBoundingClientRect();
+      const p = panel.getBoundingClientRect();
+      // It sits above the Due field, so it lands next to the Estimate that raised it.
+      return {
+        gap: due.getBoundingClientRect().top - n.bottom,
+        top: n.top,
+        bottom: n.bottom,
+        panelTop: p.top,
+        panelBottom: p.bottom,
+      };
+    });
+    expect(m.gap).toBeGreaterThan(0);
+    expect(m.top).toBeGreaterThanOrEqual(m.panelTop);
+    expect(m.bottom).toBeLessThanOrEqual(m.panelBottom);
+  });
+
+  test(`board_detail_scrolled_focus_ring_is_not_clipped_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size);
+    // From the top of the scroll to the last field, then back: the ring clears the panel edge.
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await expect(() => expectFocusRingVisible(notes)).toPass();
+    const priority = dialog.getByRole("combobox", { name: "Priority" });
+    await priority.focus();
+    await expect(() => expectFocusRingVisible(priority)).toPass();
   });
 
   test(`board_detail_escape_returns_focus_to_the_card_${at}`, async ({ page }) => {

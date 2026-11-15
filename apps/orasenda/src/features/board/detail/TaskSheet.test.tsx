@@ -92,7 +92,8 @@ test("an empty title is refused and not saved", async () => {
   fireEvent.blur(title);
   await settle();
   expect(patches(backend)).toEqual([]);
-  expect(screen.getByText("A task needs a title.")).toBeInTheDocument();
+  expect(screen.getByText("A task needs a title. Still using Write intro.")).toBeInTheDocument();
+  expect(screen.getByText("The title wasn't saved.")).toBeInTheDocument();
   expect(title).toHaveAttribute("aria-invalid", "true");
 });
 
@@ -160,4 +161,89 @@ test("keep_as_is_dismisses_for_good", async () => {
   cleanup();
   await openSheet({ board: withTask({ estimate: 5, planned: 7, breakdownDismissed: true }) });
   expect(screen.queryByText(/This looks big/)).toBeNull();
+});
+
+const ITEM = { id: "c1", text: "Outline", done: false };
+
+test("Add a checklist focuses the add field when items already exist", async () => {
+  await openSheet({ board: withTask({ estimate: 5, planned: 7, checklist: [ITEM] }) });
+  fireEvent.click(screen.getByRole("button", { name: "Add a checklist" }));
+  expect(screen.getByRole("textbox", { name: "Add an item" })).toHaveFocus();
+});
+
+test("Keep as is hands focus to the estimate", async () => {
+  await openSheet({ board: withTask({ estimate: 5, planned: 7 }) });
+  fireEvent.click(screen.getByRole("button", { name: "Keep as is" }));
+  await settle();
+  expect(screen.getByRole("spinbutton", { name: "Estimate" })).toHaveFocus();
+});
+
+test("a Frog that moves says so, with Undo, inside the sheet", async () => {
+  const backend = await openSheet({
+    replies: { task_update: () => null, task_set_frog: () => "t2" },
+  });
+  fireEvent.click(screen.getByRole("checkbox", { name: "Today's Frog" }));
+  await settle();
+  expect(
+    within(screen.getByRole("dialog")).getByText("Frog moved to Write intro."),
+  ).toBeInTheDocument();
+  fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", { name: "Undo moving the Frog" }),
+  );
+  await settle();
+  expect(argsOf(backend.calls, "task_set_frog").at(-1)).toEqual({ id: "t2", on: true });
+});
+
+test("a failure stays on screen when another field then saves", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let calls = 0;
+  const backend = await openSheet({
+    replies: {
+      task_update: () => {
+        calls += 1;
+        if (calls === 1) throw new Error("store");
+        return null;
+      },
+    },
+  });
+  const dialog = within(screen.getByRole("dialog"));
+  fireEvent.change(dialog.getByRole("combobox", { name: "Priority" }), {
+    target: { value: "high" },
+  });
+  await settle();
+  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+  fireEvent.click(dialog.getByRole("radio", { name: "Shallow" }));
+  await settle();
+  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+  // Try again sends both the failed priority and nothing newer to clear it.
+  fireEvent.click(screen.getByRole("button", { name: "Try again saving" }));
+  await settle();
+  expect(patches(backend).at(-1)).toEqual({ id: "t1", patch: { priority: "high" } });
+  expect(screen.queryByText("That didn't save. Try again.")).toBeNull();
+});
+
+test("notes save after a pause, and tags and checklist items save at once", async () => {
+  const backend = await openSheet();
+  const dialog = within(screen.getByRole("dialog"));
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    fireEvent.change(dialog.getByRole("textbox", { name: "Notes" }), { target: { value: "Hi" } });
+    await vi.advanceTimersByTimeAsync(799);
+    expect(patches(backend)).toEqual([]);
+    await vi.advanceTimersByTimeAsync(2);
+  } finally {
+    vi.useRealTimers();
+  }
+  await settle();
+  expect(patches(backend)).toEqual([{ id: "t1", patch: { notes: "Hi" } }]);
+  const tag = dialog.getByRole("textbox", { name: "Tags" });
+  fireEvent.change(tag, { target: { value: "writing" } });
+  fireEvent.keyDown(tag, { key: "Enter" });
+  const item = dialog.getByRole("textbox", { name: "Add an item" });
+  fireEvent.change(item, { target: { value: "Outline" } });
+  fireEvent.keyDown(item, { key: "Enter" });
+  await settle();
+  const sent = patches(backend).slice(1) as { patch: Record<string, unknown> }[];
+  expect(sent[0]?.patch).toEqual({ tags: ["writing"] });
+  expect(sent[1]?.patch).toMatchObject({ checklist: [{ text: "Outline", done: false }] });
 });

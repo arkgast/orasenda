@@ -49,7 +49,7 @@ export interface DialogProps {
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
 const content =
-  "flex max-h-full w-full flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
+  "flex max-h-full w-full scroll-py-3 flex-col gap-5 overflow-auto rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
 
 const PANEL_WIDTH = "max-w-panel-width";
 const SHEET_WIDTH = "max-w-sheet-width";

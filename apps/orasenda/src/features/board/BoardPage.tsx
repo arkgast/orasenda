@@ -202,7 +202,9 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
           columns={columns}
           update={api.update}
           move={api.move}
-          setFrog={api.setFrog}
+          toggleFrog={actions.toggleFrog}
+          boardLine={line}
+          onSaveFailed={(text) => actions.show({ text, tone: "attention" })}
           onClose={() => setSheetId(null)}
         />
       ) : null}

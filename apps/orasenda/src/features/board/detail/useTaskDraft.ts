@@ -51,22 +51,35 @@ const wording = (error: BoardError | "unreachable") =>
 export function useTaskDraft(
   task: TaskView,
   update: (id: string, patch: Patch) => Promise<Outcome>,
+  /** Told when a save fails after the sheet is gone, so the Board can say so. */
+  onSaveFailed?: (text: string) => void,
 ) {
   const [draft, setDraft] = useState<Draft>(() => fromTask(task));
   const [titleError, setTitleError] = useState("");
   const [line, setLine] = useState<SaveLine>(null);
-  const live = useRef({ task, draft, update });
-  live.current = { task, draft, update };
+  const live = useRef({ task, draft, update, onSaveFailed });
+  live.current = { task, draft, update, onSaveFailed };
+  // Patches that did not save yet: a later success clears the line only when none are left.
+  const failed = useRef<Patch>({});
+  const gone = useRef(false);
   const timers = useRef<Partial<Record<Key, ReturnType<typeof setTimeout>>>>({});
 
   const save = useCallback(async (patch: Patch): Promise<boolean> => {
     const { task: current, update: write } = live.current;
     const outcome = await write(current.id, patch);
     if (outcome.status === "ok") {
-      setLine(null);
+      for (const key of Object.keys(patch)) delete failed.current[key as keyof Patch];
+      if (Object.keys(failed.current).length === 0) setLine(null);
       return true;
     }
-    setLine({ text: wording(outcome.error), retry: () => void save(patch) });
+    failed.current = { ...failed.current, ...patch };
+    const text = wording(outcome.error);
+    if (gone.current) live.current.onSaveFailed?.(text);
+    else
+      setLine({
+        text,
+        retry: outcome.error === "notFound" ? undefined : () => void save({ ...failed.current }),
+      });
     return false;
   }, []);
 
@@ -86,7 +99,8 @@ export function useTaskDraft(
       if (key === "title") {
         const title = now.title.trim();
         if (!title) {
-          setTitleError("A task needs a title.");
+          setTitleError(`A task needs a title. Still using ${current.title}.`);
+          setLine({ text: "The title wasn't saved." });
           return;
         }
         setTitleError("");
@@ -110,8 +124,14 @@ export function useTaskDraft(
     for (const key of ["title", "notes"] as const) if (timers.current[key]) flush(key);
   }, [flush]);
 
-  // A pending pause does not outlive the sheet: whatever was typed is saved on the way out.
-  useEffect(() => flushAll, [flushAll]);
+  /** The sheet is closing: save what is pending, and report any failure to the Board instead. */
+  const leave = useCallback(() => {
+    gone.current = true;
+    flushAll();
+  }, [flushAll]);
 
-  return { draft, titleError, line, setLine, save, change, text, flush, flushAll };
+  // A pending pause does not outlive the sheet: whatever was typed is saved on the way out.
+  useEffect(() => leave, [leave]);
+
+  return { draft, titleError, line, setLine, save, change, text, flush, leave };
 }

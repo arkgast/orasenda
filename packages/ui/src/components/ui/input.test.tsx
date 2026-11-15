@@ -85,3 +85,16 @@ test("the field keeps its font sizes next to colours", () => {
   expect(screen.getByLabelText("Name").className).toContain("text-body");
   expect(screen.getByText("Name").className).toContain("text-body-sm");
 });
+
+test("ref reaches the field element", () => {
+  let el: HTMLInputElement | null = null;
+  render(
+    <Input
+      label="Title"
+      ref={(node) => {
+        el = node;
+      }}
+    />,
+  );
+  expect(el).toBe(screen.getByLabelText("Title"));
+});
