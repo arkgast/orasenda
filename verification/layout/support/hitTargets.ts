@@ -25,8 +25,12 @@ export async function smallTargets(
         const own = el.getBoundingClientRect();
         let w = own.width;
         let h = own.height;
+        // Passes when ANY whole box meets both minimums. For the message, keep the largest box.
+        let ok = w >= width && h >= height;
         const consider = (bw: number, bh: number) => {
-          if (Number.isFinite(bw) && Number.isFinite(bh) && bw * bh > w * h) {
+          if (!Number.isFinite(bw) || !Number.isFinite(bh)) return;
+          if (bw >= width && bh >= height) ok = true;
+          if (bw * bh > w * h) {
             w = bw;
             h = bh;
           }
@@ -43,7 +47,7 @@ export async function smallTargets(
           consider(Number.parseFloat(style.width), Number.parseFloat(style.height));
         }
         const r = { width: w, height: h };
-        if (r.width < width || r.height < height) {
+        if (!ok) {
           const name = el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "";
           out.push(
             `${el.tagName.toLowerCase()} "${name}" is ${r.width}x${r.height}, needs ${width}x${height}`,

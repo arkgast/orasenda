@@ -56,3 +56,15 @@ test("before_hit_area_counts", async ({ page }) => {
   );
   expect(await smallTargets(flat, MIN)).toHaveLength(1);
 });
+
+test("one_box_meeting_both_minimums_is_enough", async ({ page }) => {
+  const scope = await fixture(
+    page,
+    `<style>
+      input.both { appearance: none; position: relative; width: 16px; height: 16px; margin: 0; }
+      input.both::before { content: ""; position: absolute; top: 0; left: 0; width: 44px; height: 44px; }
+      label.wide { display: block; width: 300px; height: 20px; }
+    </style><label class="wide"><input class="both" type="checkbox" aria-label="Both"></label>`,
+  );
+  expect(await smallTargets(scope, MIN)).toEqual([]);
+});
