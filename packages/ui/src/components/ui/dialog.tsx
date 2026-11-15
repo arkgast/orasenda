@@ -1,5 +1,5 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
-import type { JSX, ReactNode, RefObject } from "react";
+import type { FocusEvent, JSX, ReactNode, RefObject } from "react";
 import { useId, useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
@@ -26,6 +26,20 @@ if (typeof document !== "undefined") {
     },
     true,
   );
+}
+
+// WebKit scrolls a focused field into view to its own box and ignores scroll padding, which clips the focus ring.
+// After focus moves inside the sheet body, nudge the body (instantly) so the field keeps the body's scroll padding.
+function keepFocusClear(event: FocusEvent<HTMLDivElement>): void {
+  const body = event.currentTarget;
+  const target = event.target as HTMLElement;
+  const pad = Number.parseFloat(getComputedStyle(body).scrollPaddingTop) || 0;
+  const box = body.getBoundingClientRect();
+  const r = target.getBoundingClientRect();
+  const below = r.bottom + pad - box.bottom;
+  const above = box.top - (r.top - pad);
+  if (below > 0) body.scrollTop += below;
+  else if (above > 0) body.scrollTop -= above;
 }
 
 interface DialogBaseProps {
@@ -146,6 +160,7 @@ export function Dialog({
             {sheet ? (
               <div
                 data-slot="dialog-sheet-body"
+                onFocus={keepFocusClear}
                 className="@container -m-2 min-h-0 flex-1 scroll-py-3 overflow-auto p-2"
               >
                 <div className="grid grid-cols-1 gap-x-5 gap-y-4 @sheet-stack:grid-cols-2">
