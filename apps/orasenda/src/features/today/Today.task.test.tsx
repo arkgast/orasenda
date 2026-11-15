@@ -54,7 +54,6 @@ test("clear_calls_set_task_null", async () => {
     timer_state: () => ({ view: { ...RUNNING, task: CHOSEN }, pending: [] }),
     timer_set_task: () => ({ ...RUNNING, task: null }),
   });
-  expect(screen.getByRole("timer")).toHaveAccessibleName(/Fix sync bug/);
   fireEvent.click(screen.getByRole("button", { name: "Clear task" }));
   await settle();
   expect(argsOf(backend.calls, "timer_set_task")).toEqual([{ taskId: null }]);
@@ -74,6 +73,16 @@ test("clear_task_returns_focus_to_add_a_task", async () => {
   await settle();
   await emitTimer({ ...RUNNING, task: null });
   expect(screen.getByRole("button", { name: "Add a task" })).toHaveFocus();
+});
+
+test("today_shows_task_once", async () => {
+  await renderToday({
+    board_get: () => BOARD,
+    timer_state: () => ({ view: { ...RUNNING, task: CHOSEN }, pending: [] }),
+  });
+  expect(screen.getByRole("button", { name: /Task: Fix sync bug/ })).toBeInTheDocument();
+  expect(screen.getByRole("timer")).not.toHaveAccessibleName(/Fix sync bug/);
+  expect(screen.getAllByText("Fix sync bug")).toHaveLength(1);
 });
 
 test("board_notice_shows_line", async () => {

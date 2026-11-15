@@ -24,15 +24,17 @@ export function TimeView({ view, layout, clock, idleLength, task, slot }: Props)
     progress: view?.progress ?? 0,
     mode: view?.mode ?? "idle",
   } as const;
+  // The picker already shows the task when the slot is present: no second title under the digits.
+  const shownTask = slot ? undefined : task;
   // The stacked strip has no room for the task line (TimerStrip README): it is whole in the name only.
   const time =
     layout === "ring" ? (
-      <TimerRing size="fluid" clock={clock} task={task} {...shown} />
+      <TimerRing size="fluid" clock={clock} task={shownTask} {...shown} />
     ) : (
       <TimerStrip
         stacked={layout === "stackedStrip"}
         idleLength={idleLength}
-        task={layout === "stackedStrip" ? undefined : task}
+        task={layout === "stackedStrip" ? undefined : shownTask}
         {...shown}
       />
     );

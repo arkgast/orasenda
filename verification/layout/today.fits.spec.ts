@@ -124,7 +124,18 @@ for (const size of [
       await expectTodayFits(page, size, scenario === "idleTask" ? /Start focus/ : /Pause session/);
       await expectTodayGaps(page, size, scenario);
       const task = await page.locator('[data-slot="today-task"]').boundingBox();
-      if (task) expect(task.width, "the picker stays quiet").toBeLessThanOrEqual(size.width);
+      if (task) {
+        expect(task.width, "the picker stays quiet").toBeLessThanOrEqual(size.width);
+        const face = await page
+          .locator('[data-slot="timer-ring"], [data-slot="timer-strip"]')
+          .first()
+          .boundingBox();
+        if (face) {
+          expect(task.width, "the picker is no wider than the ring or strip").toBeLessThanOrEqual(
+            face.width + 1,
+          );
+        }
+      }
     });
   }
 }

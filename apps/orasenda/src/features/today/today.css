@@ -200,3 +200,17 @@
   max-inline-size: min(100%, var(--timer-size));
   min-inline-size: 0;
 }
+
+/* In the ring layout the ring takes the time track's height less the picker row, so the line is held
+   to that diameter (never below timer-min-size) and never wider than the ring under it. */
+.today[data-layout="ring"] .today-time:has(.today-task) {
+  container-type: size;
+}
+
+.today[data-layout="ring"] .today-task {
+  max-inline-size: min(
+    100%,
+    var(--timer-size),
+    max(var(--timer-min-size), calc(100cqb - var(--hit-min) - var(--space-3)))
+  );
+}

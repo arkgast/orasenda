@@ -200,3 +200,22 @@ test("task_picker_clear_returns_focus_to_the_quiet_text", () => {
   view.rerender(<TaskPicker options={OPTIONS} onPick={onPick} />);
   expect(quiet()).toHaveFocus();
 });
+
+test("task_picker_failed_clear_does_not_leak_into_a_later_removal", () => {
+  const onPick = vi.fn();
+  const task = { id: "t1", title: "Write the report" };
+  const tree = (t?: { id: string; title: string }) => (
+    <>
+      <button type="button">Elsewhere</button>
+      <TaskPicker options={OPTIONS} task={t} onPick={onPick} />
+    </>
+  );
+  const view = render(tree(task));
+  fireEvent.click(screen.getByRole("button", { name: "Clear task" }));
+  // Clear failed: the task is still there.
+  view.rerender(tree({ ...task }));
+  const other = screen.getByRole("button", { name: "Elsewhere" });
+  other.focus();
+  view.rerender(tree());
+  expect(other).toHaveFocus();
+});

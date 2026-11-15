@@ -86,11 +86,17 @@ export function TaskPicker({
 
   const hasTask = task !== undefined;
   useEffect(() => {
-    if (!hasTask && clearing.current) {
-      clearing.current = false;
-      quiet.current?.focus();
-    }
+    if (!clearing.current) return;
+    clearing.current = false;
+    // Clear failed (the task is still there): nothing to restore. Otherwise only take focus when it was lost.
+    if (hasTask) return;
+    const active = document.activeElement;
+    if (!active || active === document.body) quiet.current?.focus();
   }, [hasTask]);
+  // A failed Clear leaves hasTask unchanged, so the effect above never runs: drop the flag on the next render.
+  useEffect(() => {
+    if (hasTask) clearing.current = false;
+  });
 
   const [room, setRoom] = useState<number | undefined>(undefined);
   const [above, setAbove] = useState(false);
