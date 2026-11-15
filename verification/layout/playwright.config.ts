@@ -10,6 +10,10 @@ const appURL = `http://localhost:${APP_PORT}`;
 export default defineConfig({
   testDir: ".",
   testMatch: "*.spec.ts",
+  // Shard by test, not by file, so the CI shards are even. The CI runner gets one
+  // worker by default (half of its 3 cores), so concurrency does not change;
+  // locally it stays file-parallel off.
+  fullyParallel: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: "list",
   use: { baseURL, browserName: "webkit", trace: "on-first-retry" },

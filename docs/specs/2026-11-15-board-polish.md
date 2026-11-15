@@ -191,7 +191,7 @@ Boxes can only grow, so no current caller's result gets worse. The filters at `b
   - A failure in any shard fails `ci`, and so does a cancelled `checks` job.
   - On docs-only changes, all three jobs pass quickly.
   - Each shard starts its own vite servers. `reuseExistingServer` is false under CI (`playwright.config.ts:21-32`).
-  - Shards split by file group, not evenly. If a shard goes over 20 minutes, raise the shard count, not the timeout.
+  - On CI, shards split by test (fullyParallel under CI, #616), so they are even. If a shard goes over 20 minutes, raise the shard count, not the timeout.
   - CI keeps `retries: 1`.
   - Four shards plus `checks` is five macOS jobs per run, so two PR runs at once will queue. That is accepted.
 - **Single keys:** while the settings are unread, single keys stay off. A `settings-changed` event wins over a late `settings_get`, as today.
