@@ -137,7 +137,7 @@ fn preview_caps_at_500_new_first() {
         "Showing 500 of 812. Import these, then choose Import tasks again for the rest."
     );
     assert!(p.items.iter().all(|i| i.selected));
-    assert_eq!(p.items[0].key, 5);
+    assert!(p.items.iter().all(|i| i.on_board.is_none()));
     let keys: Vec<u32> = p.items.iter().map(|i| i.key).collect();
     assert!(keys.windows(2).all(|w| w[0] < w[1]));
 }
