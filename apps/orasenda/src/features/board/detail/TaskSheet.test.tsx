@@ -17,7 +17,7 @@ async function openSheet(options: Parameters<typeof renderBoard>[0] = {}) {
   card("Write intro").focus();
   fireEvent.keyDown(card("Write intro"), { key: "Enter" });
   await settle();
-  // Radix moves focus into the sheet on a later tick than a microtask flush, so wait for it.
+  // Guard: confirm focus is inside the sheet before the test goes on.
   await waitFor(() =>
     expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true),
   );
