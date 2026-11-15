@@ -159,11 +159,8 @@ for (const size of SIZES) {
     await expect(() => expectFocusRingVisible(notes)).toPass();
   });
 
-  // Known gap, follow-up issue #612: moving by keyboard to Notes scrolls the sheet body only to the
-  // field's own box, so the focus ring's bottom edge is clipped. At 1440x900 the ring is not clipped,
-  // so only the smaller sizes are expected to fail. Remove the expected failure when #612 lands.
+  // Tab scrolls the sheet body so the focused field keeps its whole ring in view (#612).
   test(`board_detail_full_task_tab_to_notes_ring_${at}`, async ({ page }) => {
-    test.fail(size.width < 1440, "#612: Tab to Notes clips the focus ring");
     const dialog = await openSheet(page, size, "boardFullTask");
     await dialog.getByRole("checkbox").last().focus();
     const notes = dialog.getByRole("textbox", { name: "Notes" });
@@ -173,6 +170,33 @@ for (const size of SIZES) {
     }
     await expect(notes).toBeFocused();
     await expectFocusRingVisible(notes);
+  });
+
+  test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
+    // Plain Tab (WebKit skips buttons) then Alt+Tab (reaches them), each way; every body stop keeps its ring.
+    const walk = async (key: string) => {
+      const stops = new Set<string>();
+      for (let i = 0; i < 40; i++) {
+        if ((await body.locator(":focus").count()) === 1) {
+          await expectFocusRingVisible(page.locator(":focus"));
+          stops.add(
+            await page.locator(":focus").evaluate((el) => {
+              const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
+              const label = el.getAttribute("aria-label") ?? labels?.[0]?.textContent;
+              return `${label ?? el.tagName}#${[...document.querySelectorAll(el.tagName)].indexOf(el)}`;
+            }),
+          );
+        }
+        await page.keyboard.press(key);
+      }
+      return stops;
+    };
+    for (const key of ["Tab", "Shift+Tab", "Alt+Tab", "Alt+Shift+Tab"]) {
+      const stops = await walk(key);
+      expect(stops.size, key).toBeGreaterThanOrEqual(4);
+    }
   });
 
   test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {

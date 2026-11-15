@@ -1,6 +1,6 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
 import type { JSX, ReactNode, RefObject } from "react";
-import { useId, useRef } from "react";
+import { useCallback, useId, useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -26,6 +26,20 @@ if (typeof document !== "undefined") {
     },
     true,
   );
+}
+
+// WebKit scrolls a focused field into view to its own box and ignores scroll padding, which clips the focus ring.
+// After focus moves inside the sheet body, nudge the body (instantly) so the field keeps the body's scroll padding.
+function keepFocusClear(body: HTMLElement, target: HTMLElement): void {
+  const pad = Number.parseFloat(getComputedStyle(body).scrollPaddingTop) || 0;
+  const box = body.getBoundingClientRect();
+  const r = target.getBoundingClientRect();
+  const below = r.bottom + pad - box.bottom;
+  const above = box.top - (r.top - pad);
+  // A field taller than the body cannot show both ends: keep its top (and ring) in view.
+  if (r.height + 2 * pad > box.height) body.scrollTop -= above;
+  else if (below > 0) body.scrollTop += below;
+  else if (above > 0) body.scrollTop -= above;
 }
 
 interface DialogBaseProps {
@@ -88,6 +102,32 @@ export function Dialog({
   const Prim = destructive ? AlertDialog : DialogPrimitive;
   const sheet = size === "sheet";
   const showScrim = !!(scrim || destructive || sheet);
+  // A native listener on a callback ref: the body mounts inside the portal, after this component's own effects,
+  // and it is a scroll container, not a control, so it takes no React event prop.
+  const watchFocus = useCallback((body: HTMLDivElement | null) => {
+    if (!body) return;
+    // Pointer focus is left to the browser, so a click never moves the field under the pointer.
+    let pointer = false;
+    const onPointerDown = () => {
+      pointer = true;
+    };
+    const onKeyDown = () => {
+      pointer = false;
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      const wasPointer = pointer;
+      pointer = false;
+      if (!wasPointer && event.target instanceof HTMLElement) keepFocusClear(body, event.target);
+    };
+    body.addEventListener("pointerdown", onPointerDown, true);
+    body.addEventListener("keydown", onKeyDown, true);
+    body.addEventListener("focusin", onFocusIn);
+    return () => {
+      body.removeEventListener("pointerdown", onPointerDown, true);
+      body.removeEventListener("keydown", onKeyDown, true);
+      body.removeEventListener("focusin", onFocusIn);
+    };
+  }, []);
   return (
     <Prim.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Prim.Portal>
@@ -146,6 +186,7 @@ export function Dialog({
             {sheet ? (
               <div
                 data-slot="dialog-sheet-body"
+                ref={watchFocus}
                 className="@container -m-2 min-h-0 flex-1 scroll-py-3 overflow-auto p-2"
               >
                 <div className="grid grid-cols-1 gap-x-5 gap-y-4 @sheet-stack:grid-cols-2">
