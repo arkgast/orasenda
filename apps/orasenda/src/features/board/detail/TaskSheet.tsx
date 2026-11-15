@@ -104,7 +104,8 @@ export function TaskSheet({
       onCancel={close}
       initialFocusRef={titleRef}
     >
-      <div className={WIDE}>
+      {/* The live region stays mounted; when empty it is 0 high, so -mb-4 cancels its grid row gap. */}
+      <div className={d.line || boardLine ? WIDE : `${WIDE} -mb-4`}>
         <InlineNotice
           variant="row"
           collapseEmpty

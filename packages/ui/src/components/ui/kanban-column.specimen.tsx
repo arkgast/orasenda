@@ -20,14 +20,16 @@ export function KanbanColumnSpecimen(): ReactElement {
   return (
     <>
       <Frame state="kanban-column-under-limit-280" width={280} height={420}>
-        <KanbanColumn
-          title="Today"
-          count={2}
-          limit={3}
-          footer={<Button variant="quiet">Add task</Button>}
-        >
-          <Cards n={2} />
-        </KanbanColumn>
+        <div className="flex h-full">
+          <KanbanColumn
+            title="Today"
+            count={2}
+            limit={3}
+            footer={<Button variant="quiet">Add task</Button>}
+          >
+            <Cards n={2} />
+          </KanbanColumn>
+        </div>
       </Frame>
       <Frame state="kanban-column-at-limit-280" width={280} height={300}>
         <KanbanColumn title="Doing" count={1} limit={1}>
@@ -35,9 +37,11 @@ export function KanbanColumnSpecimen(): ReactElement {
         </KanbanColumn>
       </Frame>
       <Frame state="kanban-column-over-limit-280" width={280} height={460}>
-        <KanbanColumn title="Today" count={4} limit={3}>
-          <Cards n={4} />
-        </KanbanColumn>
+        <div className="flex h-full">
+          <KanbanColumn title="Today" count={4} limit={3}>
+            <Cards n={4} />
+          </KanbanColumn>
+        </div>
       </Frame>
       <Frame state="kanban-column-wide-scrolls-440" width={440} height={360}>
         <div className="flex h-full">

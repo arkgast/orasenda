@@ -85,19 +85,19 @@ test("icon_button_shortcut_array_joins_aria_and_label_overrides_kbd", () => {
     <IconButton
       label="Pages"
       icon={icon}
-      shortcut={["⌘1", "⌘2", "⌘3", "⌘4", "⌘5", "⌘6"]}
-      shortcutLabel="⌘1–6"
+      shortcut={["⌘1", "⌘2", "⌘3", "⌘4", "⌘5", "⌘6", "⌘7"]}
+      shortcutLabel="⌘1–7"
     />,
   );
   const button = screen.getByRole("button", { name: "Pages" });
   expect(button.getAttribute("aria-keyshortcuts")).toBe(
-    "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6",
+    "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6 Meta+7",
   );
   fireEvent.pointerEnter(button);
   act(() => {
     vi.advanceTimersByTime(1000);
   });
-  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⌘1–6");
+  expect(document.querySelector("[data-slot=tooltip] [data-slot=kbd]")?.textContent).toBe("⌘1–7");
 });
 
 test("icon_button_shortcut_array_without_label_shows_chords_joined", () => {
