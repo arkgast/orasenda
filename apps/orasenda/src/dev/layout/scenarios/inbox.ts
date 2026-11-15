@@ -1,4 +1,8 @@
-import type { KeyboardView_Serialize, NoteView } from "../../../shared/ipc/bindings";
+import type {
+  KeyboardView_Serialize,
+  NoteView,
+  TaskView_Serialize,
+} from "../../../shared/ipc/bindings";
 import type { Handler } from "./backend";
 import { backend, KEYBOARD } from "./backend";
 
@@ -17,12 +21,36 @@ const inboxNotes = (count: number): NoteView[] =>
   Array.from({ length: count }, (_, i) =>
     inboxNote(count - i, i === 1 ? "Wordy".repeat(200) : `Note ${count - i}: email the landlord`),
   );
+const MOVED_TASK: TaskView_Serialize = {
+  id: "task-1",
+  title: "Moved",
+  notes: "",
+  tags: [],
+  kind: "deep",
+  estimate: null,
+  planned: null,
+  due: null,
+  dueLabel: null,
+  priority: null,
+  checklist: [],
+  lane: "backlog",
+  isFrog: false,
+  breakdownDismissed: false,
+  sourceNoteId: null,
+  doneAt: null,
+  tracked: "0h 00m",
+  trackedMs: 0,
+  sessions: 0,
+  active: false,
+};
 const inboxBackend = (notes: () => unknown): Handler =>
   backend({
     replies: {
       inbox_list: notes,
       inbox_remove: () => null,
       inbox_restore: () => null,
+      inbox_to_task: () => MOVED_TASK,
+      task_restore_note: () => null,
       keyboard_state: () => INBOX_KEYBOARD,
     },
   });

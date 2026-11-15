@@ -93,3 +93,19 @@ test("inbox_remove_shows_undo", async ({ page }) => {
   await expect(page.getByText("Note removed.")).toBeVisible();
   await expect(page.getByRole("button", { name: /Undo/ })).toBeVisible();
 });
+
+test("inbox_moved_status_line_fits_at_360", async ({ page }) => {
+  const size = { width: 360, height: 240 };
+  await openInbox(page, "inboxOne", size);
+  await page.getByRole("button", { name: /^More actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Move to Board" }).click();
+  const moved = page.getByText("Moved to Board");
+  await expect(moved).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open Board/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    size.width,
+  );
+  const row = page.getByRole("button", { name: /Undo/ }).locator("xpath=ancestor::*[self::div][1]");
+  const box = await row.boundingBox();
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+});

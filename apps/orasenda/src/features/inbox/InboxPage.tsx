@@ -11,10 +11,10 @@ import "./inbox.css";
 
 const NAME_LENGTH = 40;
 
-/** "Remove note: " and the note's first 40 characters. */
-function removeName(text: string): string {
+/** The note's first 40 characters, for a button's name. */
+export function noteName(text: string): string {
   const chars = Array.from(text.replace(/\s+/g, " ").trim());
-  return `Remove note: ${chars.slice(0, NAME_LENGTH).join("")}${chars.length > NAME_LENGTH ? "…" : ""}`;
+  return `${chars.slice(0, NAME_LENGTH).join("")}${chars.length > NAME_LENGTH ? "…" : ""}`;
 }
 
 export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
@@ -89,10 +89,10 @@ export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
                   kind={note.kind}
                   time={note.createdAt}
                   timeLabel={note.createdAtLabel}
-                  removeName={removeName(note.text)}
+                  removeName={`Remove note: ${noteName(note.text)}`}
                   onRemove={() => onRemove(note.id)}
                   onMoveToBoard={() => onMove(note.id)}
-                  moreName={`More actions for ${note.text}`}
+                  moreName={`More actions for ${noteName(note.text)}`}
                   tabIndex={roving.tabIndex(index)}
                   onKeyDown={(event) => onKeyDown(event, index, note.id)}
                 />

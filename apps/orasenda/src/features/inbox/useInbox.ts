@@ -33,6 +33,7 @@ export function useInbox() {
   const moved = useRef<{ note: NoteView; index: number; taskId: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fresh = useRef(false);
+  const moving = useRef(new Set<string>());
 
   const load = useCallback(() => {
     commands.inboxList().then(
@@ -160,7 +161,8 @@ export function useInbox() {
       if (inbox.status !== "ok") return;
       const index = inbox.notes.findIndex((n) => n.id === id);
       const note = inbox.notes[index];
-      if (!note) return;
+      if (!note || moving.current.has(id)) return;
+      moving.current.add(id);
       try {
         const result = await commands.inboxToTask(id);
         if (result.status === "error") throw new Error(String(result.error));
@@ -176,6 +178,8 @@ export function useInbox() {
       } catch (error) {
         console.error("inbox_to_task failed", error);
         showLine("moveFailed");
+      } finally {
+        moving.current.delete(id);
       }
     },
     [inbox, showLine],

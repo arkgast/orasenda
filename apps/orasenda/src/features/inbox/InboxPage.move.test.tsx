@@ -14,6 +14,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { InboxPage } from "./InboxPage";
+import { UNDO_MS } from "./useInbox";
 
 const THREE: NoteView[] = [
   NOTES[0],
@@ -171,7 +172,7 @@ test("a_move_error_from_the_service_is_not_success", async () => {
   expect(screen.getByText("That didn't move. Try again.")).toBeInTheDocument();
 });
 
-test("arrows_rove_focus_with_one_tab_stop", async () => {
+test("arrows_rove_focus_between_rows", async () => {
   await renderInbox();
   const rows = screen.getAllByRole("listitem");
   expect(rows.map((r) => r.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
@@ -190,4 +191,67 @@ test("a_note_from_inbox_changed_leaves_the_stop_on_a_row", async () => {
   await renderInbox();
   await emitInboxChanged(THREE.slice(1));
   expect(screen.getAllByRole("listitem")[0]).toHaveAttribute("tabindex", "0");
+});
+
+test("b_twice_moves_once", async () => {
+  let release: (v: unknown) => void = () => {};
+  const backend = await renderInbox({
+    replies: {
+      inbox_to_task: (args) =>
+        new Promise((resolve) => {
+          release = () =>
+            resolve(
+              boardTask("task-9", "Moved", "backlog", {
+                sourceNoteId: (args as { noteId: string }).noteId,
+              }),
+            );
+        }),
+    },
+  });
+  row("Call the dentist").focus();
+  fireEvent.keyDown(row("Call the dentist"), { key: "b" });
+  fireEvent.keyDown(row("Call the dentist"), { key: "b" });
+  await act(async () => {
+    release(null);
+  });
+  await settle();
+  expect(argsOf(backend.calls, "inbox_to_task")).toEqual([{ noteId: "note-3" }]);
+  expect(screen.getByText("Moved to Board")).toBeInTheDocument();
+});
+
+test("a_long_note_gives_a_short_button_name", async () => {
+  const long = "Remember to ".concat("water the plants ".repeat(60));
+  await renderInbox({ replies: { inbox_list: () => [{ ...NOTES[0], id: "note-9", text: long }] } });
+  const more = screen.getByRole("button", { name: /^More actions for/ });
+  const name = more.getAttribute("aria-label") ?? "";
+  expect(name.length).toBeLessThan(80);
+  expect(name.endsWith("…")).toBe(true);
+});
+
+test("a_failed_undo_of_a_move_says_so_and_focus_goes_to_the_heading", async () => {
+  await renderInbox({ replies: { task_restore_note: () => Promise.reject("store") } });
+  row("Call the dentist").focus();
+  await act(async () => {
+    fireEvent.keyDown(row("Call the dentist"), { key: "b" });
+  });
+  await settle();
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /Undo/ }));
+  });
+  await settle();
+  expect(screen.getByText("Couldn't bring the note back.")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Inbox" })).toHaveFocus();
+});
+
+test("the_move_failed_line_does_not_expire", async () => {
+  await renderInbox({ replies: { inbox_to_task: () => Promise.reject("store") } });
+  row("Call the dentist").focus();
+  await act(async () => {
+    fireEvent.keyDown(row("Call the dentist"), { key: "b" });
+  });
+  await settle();
+  vi.useFakeTimers();
+  act(() => vi.advanceTimersByTime(UNDO_MS * 3));
+  vi.useRealTimers();
+  expect(screen.getByText("That didn't move. Try again.")).toBeInTheDocument();
 });

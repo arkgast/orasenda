@@ -1,4 +1,5 @@
 import {
+  type FocusEvent,
   type KeyboardEvent,
   type RefObject,
   useCallback,
@@ -61,7 +62,7 @@ export function useRovingRows(root: RefObject<HTMLElement | null>, ids: string[]
   return {
     tabIndex: (index: number): 0 | -1 => (index === active ? 0 : -1),
     /** Call from the list's `onFocus`: the focused row takes the stop. */
-    onFocus: (event: React.FocusEvent<HTMLElement>) => {
+    onFocus: (event: FocusEvent<HTMLElement>) => {
       const id = ids[rows().indexOf(event.target.closest("li") as HTMLElement)];
       if (id) setActiveId(id);
     },
