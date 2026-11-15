@@ -220,7 +220,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # Mirrors the `ci` job: docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh.
+      # Mirrors the `checks` job: docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh.
       # This job is advisory, so nothing requires it; it still reports a result either way.
       - name: Decide whether this PR only changes docs
         id: scope
