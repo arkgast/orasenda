@@ -34,11 +34,8 @@ fn migration_0009_keeps_tasks() {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
-    assert_eq!(version, 9);
-    assert_eq!(
-        columns(&conn, "task").last().map(String::as_str),
-        Some("origin")
-    );
+    assert_eq!(version, SCHEMA_VERSION);
+    assert!(columns(&conn, "task").iter().any(|c| c == "origin"));
     assert_eq!(count(&conn, "SELECT count(*) FROM task"), 2);
     assert_eq!(
         count(&conn, "SELECT count(*) FROM task WHERE origin IS NULL"),

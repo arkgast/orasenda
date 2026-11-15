@@ -237,12 +237,10 @@ pub fn origins(txn: &Txn, asked: &[String]) -> Result<Vec<(String, Lane, bool)>,
     sorted.dedup();
     for origin in sorted {
         let rows = stmt.query_map([origin], |row| {
-            let lane: String = row.get(0)?;
-            Ok((lane, row.get::<_, bool>(1)?))
+            Ok((parsed(row, 0, Lane::parse)?, row.get::<_, bool>(1)?))
         })?;
         for row in rows {
             let (lane, live) = row?;
-            let lane = Lane::parse(&lane).ok_or_else(|| bad(0, format!("unknown value {lane}")))?;
             found.push((origin.clone(), lane, live));
         }
     }

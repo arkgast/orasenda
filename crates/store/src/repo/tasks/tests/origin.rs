@@ -47,6 +47,22 @@ fn origins_reports_lane_and_live() {
 }
 
 #[test]
+fn origins_orders_by_lane_and_dedups() {
+    let store = store();
+    insert_one(&store, &with_origin("t6", Lane::Done, "V", "a:1"));
+    insert_one(&store, &with_origin("t7", Lane::Today, "V", "a:1"));
+    insert_one(&store, &with_origin("t8", Lane::Backlog, "V", "a:2"));
+    assert_eq!(
+        ask(&store, &["a:2", "a:1", "a:2"]),
+        [
+            ("a:1".to_owned(), Lane::Today, true),
+            ("a:1".to_owned(), Lane::Done, true),
+            ("a:2".to_owned(), Lane::Backlog, true),
+        ]
+    );
+}
+
+#[test]
 fn origins_includes_old_done() {
     let store = store();
     insert_one(&store, &with_origin("t1", Lane::Done, "V", "a:1"));
