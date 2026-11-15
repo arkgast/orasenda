@@ -59,7 +59,6 @@ export function Tooltip({
   const children = isValidElement(given) ? given : <span>{given}</span>;
   const anchor = useRef<HTMLElement | null>(null);
   const timer = useRef(0);
-  const blurFrame = useRef(0);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -87,13 +86,6 @@ export function Tooltip({
   };
   const leave = () => afterQuick(() => setHover(false));
 
-  const cancelBlur = useCallback(() => {
-    if (blurFrame.current) {
-      cancelAnimationFrame(blurFrame.current);
-      blurFrame.current = 0;
-    }
-  }, []);
-  useEffect(() => cancelBlur, [cancelBlur]);
   useEffect(() => cancel, [cancel]);
   useEffect(() => {
     if (!hover && !focus && dismissed) setDismissed(false);
@@ -138,18 +130,11 @@ export function Tooltip({
     onFocus: (e: FocusEvent) => {
       own.onFocus?.(e);
       anchor.current = e.currentTarget as HTMLElement;
-      cancelBlur();
       if (modality.keyboard) setFocus(true);
     },
     onBlur: (e: unknown) => {
       own.onBlur?.(e);
-      // Hide one frame later: a panel portaled inside a Radix focus trap must not be removed while focus is in
-      // transit, or FocusScope pulls focus back to the dialog.
-      cancelBlur();
-      blurFrame.current = requestAnimationFrame(() => {
-        blurFrame.current = 0;
-        setFocus(false);
-      });
+      setFocus(false);
     },
   });
 

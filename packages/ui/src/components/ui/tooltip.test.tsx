@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { IconButton, Kbd } from "../../index";
-import { Dialog } from "./dialog";
 import { Tooltip } from "./tooltip";
 
 const panel = () => document.querySelector<HTMLElement>("[data-slot=tooltip]");
@@ -17,7 +16,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 function Preset() {
@@ -137,70 +135,4 @@ test("tooltip_adds_no_live_region", () => {
   advance(160);
   expect(panel()).not.toBeNull();
   expect(document.querySelectorAll('[role="status"],[role="alert"],[aria-live]').length).toBe(0);
-});
-
-test("tooltip_hides_one_frame_after_blur_and_focus_leaves_a_dialog_trap_cleanly", () => {
-  const frames: FrameRequestCallback[] = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
-  vi.stubGlobal("cancelAnimationFrame", () => {});
-  render(
-    <Dialog title="Sheet" confirmLabel="Done" onConfirm={() => {}} onCancel={() => {}}>
-      <IconButton label="Remove item" icon={<span>x</span>} />
-      <button type="button">Next</button>
-    </Dialog>,
-  );
-  const remove = screen.getByRole("button", { name: "Remove item" });
-  const next = screen.getByRole("button", { name: "Next" });
-  fireEvent.keyDown(remove, { key: "Tab" });
-  act(() => remove.focus());
-  expect(panel()).not.toBeNull();
-  act(() => next.focus());
-  // Still mounted while focus is in transit; the frame removes it.
-  expect(panel()).not.toBeNull();
-  expect(document.activeElement).toBe(next);
-  act(() => {
-    for (const cb of frames.splice(0)) cb(0);
-  });
-  expect(panel()).toBeNull();
-  expect(document.activeElement).toBe(next);
-});
-
-test("tooltip_stays_when_focus_returns_before_the_frame", () => {
-  const frames: FrameRequestCallback[] = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => {
-    frames[id - 1] = () => {};
-  });
-  render(<Preset />);
-  const trigger = screen.getByRole("button");
-  fireEvent.keyDown(trigger, { key: "Tab" });
-  act(() => trigger.focus());
-  act(() => trigger.blur());
-  act(() => trigger.focus());
-  act(() => {
-    for (const cb of frames.splice(0)) cb(0);
-  });
-  expect(panel()).not.toBeNull();
-});
-
-test("tooltip_hover_during_the_blur_frame_does_not_keep_it_open", () => {
-  const frames: FrameRequestCallback[] = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => {
-    frames[id - 1] = () => {};
-  });
-  render(<Preset />);
-  const trigger = screen.getByRole("button");
-  fireEvent.keyDown(trigger, { key: "Tab" });
-  act(() => trigger.focus());
-  act(() => trigger.blur());
-  fireEvent.pointerEnter(trigger);
-  act(() => {
-    for (const cb of frames.splice(0)) cb(0);
-  });
-  fireEvent.pointerLeave(trigger);
-  act(() => {
-    vi.advanceTimersByTime(400);
-  });
-  expect(panel()).toBeNull();
 });
