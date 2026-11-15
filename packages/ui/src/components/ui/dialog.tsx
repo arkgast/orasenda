@@ -106,25 +106,49 @@ export function Dialog({
   // and it is a scroll container, not a control, so it takes no React event prop.
   const watchFocus = useCallback((body: HTMLDivElement | null) => {
     if (!body) return;
-    // Pointer focus is left to the browser, so a click never moves the field under the pointer.
-    let pointer = false;
-    const onPointerDown = () => {
-      pointer = true;
+    // Pointer focus is left to the browser, so a click never moves the field under the pointer. Only the
+    // element that holds the pressed target, or the control of the label that was pressed, counts: WebKit does
+    // not focus a pressed button, so the focus that follows (moved by code) is not the pointer's. A label hands
+    // focus on click, after pointerup, so the press ends a frame after pointerup, on a key press or the next frame.
+    let pressed: EventTarget | null = null;
+    let frame = 0;
+    const clear = () => {
+      pressed = null;
+      cancelAnimationFrame(frame);
     };
-    const onKeyDown = () => {
-      pointer = false;
+    const onPointerDown = (event: PointerEvent) => {
+      clear();
+      pressed = event.target;
+      frame = requestAnimationFrame(() => {
+        pressed = null;
+      });
     };
+    const onPointerUp = (event: PointerEvent) => {
+      clear();
+      pressed = event.target;
+      frame = requestAnimationFrame(() => {
+        pressed = null;
+      });
+    };
+    const onKeyDown = clear;
     const onFocusIn = (event: FocusEvent) => {
-      const wasPointer = pointer;
-      pointer = false;
-      if (!wasPointer && event.target instanceof HTMLElement) keepFocusClear(body, event.target);
+      const target = event.target;
+      const label = pressed instanceof Element ? pressed.closest("label") : null;
+      const fromPointer =
+        (pressed instanceof Node && target instanceof Node && target.contains(pressed)) ||
+        (label !== null && label.control === target);
+      clear();
+      if (!fromPointer && target instanceof HTMLElement) keepFocusClear(body, target);
     };
     body.addEventListener("pointerdown", onPointerDown, true);
+    body.addEventListener("pointerup", onPointerUp, true);
     body.addEventListener("keydown", onKeyDown, true);
     body.addEventListener("focusin", onFocusIn);
     return () => {
       body.removeEventListener("pointerdown", onPointerDown, true);
+      body.removeEventListener("pointerup", onPointerUp, true);
       body.removeEventListener("keydown", onKeyDown, true);
+      cancelAnimationFrame(frame);
       body.removeEventListener("focusin", onFocusIn);
     };
   }, []);

@@ -172,6 +172,38 @@ for (const size of SIZES) {
     await expectFocusRingVisible(notes);
   });
 
+  // Notes is the last body field: Alt+Tab (WebKit reaches buttons with Alt) moves on to Close, then Done (#628).
+  test(`board_detail_full_task_tab_out_of_notes_reaches_close_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await page.keyboard.press("Alt+Tab");
+    await expect(notes).not.toBeFocused();
+    await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
+    await page.keyboard.press("Alt+Tab");
+    await expect(dialog.getByRole("button", { name: "Done" })).toBeFocused();
+  });
+
+  // Clicking a field's label focuses its control without moving it under the pointer (#628).
+  test(`board_detail_full_task_label_click_does_not_scroll_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
+    const label = dialog.locator("label", { hasText: "Notes" }).first();
+    await label.scrollIntoViewIfNeeded();
+    const before = await body.evaluate((el) => el.scrollTop);
+    await label.click();
+    await expect(dialog.getByRole("textbox", { name: "Notes" })).toBeFocused();
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(before);
+  });
+
+  // The focus trap wraps only on a plain Tab: from Done it returns to Title (#628).
+  test(`board_detail_full_task_tab_from_done_wraps_to_title_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    await dialog.getByRole("button", { name: "Done" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
+  });
+
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const body = dialog.locator('[data-slot="dialog-sheet-body"]');
