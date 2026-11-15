@@ -1,5 +1,6 @@
 //! The import's pure parts: dates, fitting and the Reminders and Things mappings and the Todoist parser.
 
+mod commit;
 mod dates;
 mod fit;
 mod matching;
@@ -9,6 +10,7 @@ mod sources;
 mod things;
 mod todoist;
 mod todoist_zip;
+mod undo;
 
 use orasenda_core::NotificationStatus;
 use orasenda_core::platform::import::ReminderItem;
@@ -79,4 +81,26 @@ fn start_session(host: &TestHost) {
         host.now_ms(),
         ids,
     );
+}
+
+/// Sets up Reminders with `n` open reminders `r0..`, previews them and answers the preview.
+fn preview_reminders(host: &TestHost, n: usize) -> crate::api::ImportPreview {
+    let items = (0..n)
+        .map(|i| reminder(&format!("r{i}"), &format!("T{i}")))
+        .collect();
+    host.0.imports.set_reminders(crate::session::test_support::FakeReminders::new(
+        orasenda_core::platform::import::SourceAccess::Granted,
+        items,
+    ));
+    crate::import::run_import_preview(host, crate::api::PreviewRequest::Reminders).unwrap()
+}
+
+/// Every live task, in lane then rank order.
+fn live_tasks(host: &TestHost) -> Vec<tasks::TaskRow> {
+    let guard = lock(host.service().unwrap());
+    guard
+        .store()
+        .unwrap()
+        .read(tasks::list_live)
+        .unwrap()
 }
