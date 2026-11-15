@@ -42,8 +42,16 @@ fn import_logs_origin_and_emits_after_lock() {
     let before = changed(&host);
     run_task_import(&host, p.id, vec![0, 1]).unwrap();
     assert_eq!(changed(&host), before + 1);
-    assert!(host.log().count(|_| true) > 0);
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
     let rows = live_tasks(&host);
+    let logged = lock(host.service().unwrap())
+        .store()
+        .unwrap()
+        .change_log_ids();
+    assert!(rows.iter().all(|r| logged.contains(&r.id)));
     assert_eq!(rows[0].origin.as_deref(), Some("reminders:r0"));
     assert_eq!(rows[1].origin.as_deref(), Some("reminders:r1"));
 }
@@ -114,6 +122,7 @@ fn failed_write_keeps_preview() {
     crate::session::test_support::db(&lock(host.service().unwrap())).fail_writes(true);
     let error = run_task_import(&host, p.id, vec![0]).unwrap_err();
     assert_eq!(error.kind, ImportErrorKind::Store);
+    assert_eq!(error.message, "The tasks weren't imported. Try again.");
     crate::session::test_support::db(&lock(host.service().unwrap())).fail_writes(false);
     assert_eq!(pending_id(&host), Some(p.id));
     assert!(lock(host.service().unwrap()).import_last.is_none());
@@ -149,4 +158,14 @@ fn todoist_import_while_session_active() {
     assert_eq!(done.count, 1);
     let _ = std::fs::remove_file(path);
     assert_eq!(live_tasks(&host)[0].title, "Pay rent");
+}
+
+#[test]
+fn a_second_call_for_the_same_preview_is_stale() {
+    let host = host();
+    let p = preview_reminders(&host, 1);
+    run_task_import(&host, p.id, vec![0]).unwrap();
+    let error = run_task_import(&host, p.id, vec![0]).unwrap_err();
+    assert_eq!(error.kind, ImportErrorKind::Stale);
+    assert_eq!(live_tasks(&host).len(), 1);
 }

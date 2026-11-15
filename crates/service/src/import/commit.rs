@@ -17,7 +17,7 @@ use crate::import::pending::{LastImport, next_id};
 use crate::scheduler::Host;
 use crate::session::lock;
 
-const WRITE_LINE: &str = "Orasenda couldn't save those tasks. Try again.";
+const WRITE_LINE: &str = "The tasks weren't imported. Try again.";
 const UNDO_LINE: &str = "Orasenda couldn't undo that import. Try again.";
 
 /// `task_import`: appends the rows of preview `preview_id` named by `keys`, in source order,
@@ -30,8 +30,10 @@ pub fn run_task_import<H: Host>(
     let service = host
         .service()
         .ok_or_else(|| ImportError::store(WRITE_LINE))?;
-    let chosen = {
-        let guard = lock(service);
+    // The preview is taken under the first lock, so a second overlapping call answers stale;
+    // a failed write puts it back for Try again.
+    let (taken, chosen) = {
+        let mut guard = lock(service);
         let pending = guard
             .import_pending
             .as_ref()
@@ -45,12 +47,16 @@ pub fn run_task_import<H: Host>(
         {
             return Err(ImportError::stale());
         }
-        pending
+        let chosen = pending
             .tasks
             .iter()
             .filter(|(key, _)| wanted.contains(key))
             .map(|(_, task)| task.clone())
-            .collect::<Vec<FittedTask>>()
+            .collect::<Vec<FittedTask>>();
+        (
+            guard.import_pending.take().ok_or_else(ImportError::stale)?,
+            chosen,
+        )
     };
     let ids = board::write(host, |txn, _| {
         let ranks = rank::spread(tasks::last_backlog_rank(txn)?.as_deref(), chosen.len());
@@ -62,17 +68,16 @@ pub fn run_task_import<H: Host>(
         }
         Ok(Ok(ids))
     })
-    .map_err(|_| ImportError::store(WRITE_LINE))?;
+    .map_err(|_| {
+        let mut guard = lock(service);
+        if guard.import_pending.is_none() && guard.import_last_issued == preview_id {
+            guard.import_pending = Some(taken);
+        }
+        ImportError::store(WRITE_LINE)
+    })?;
     let import_id = next_id();
     let count = u32::try_from(ids.len()).unwrap_or(u32::MAX);
     let mut guard = lock(service);
-    if guard
-        .import_pending
-        .as_ref()
-        .is_some_and(|p| p.id == preview_id)
-    {
-        guard.import_pending = None;
-    }
     guard.import_last = Some(LastImport {
         id: import_id,
         task_ids: ids,

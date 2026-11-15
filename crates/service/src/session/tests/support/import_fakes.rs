@@ -52,6 +52,8 @@ pub struct FakeReminders {
     pub read: Mutex<Result<Vec<ReminderItem>, PlatformError>>,
     pub requests: AtomicUsize,
     pub reads: AtomicUsize,
+    pub opened: AtomicUsize,
+    pub open_error: Mutex<Option<PlatformError>>,
 }
 
 impl FakeReminders {
@@ -62,6 +64,8 @@ impl FakeReminders {
             read: Mutex::new(Ok(items)),
             requests: AtomicUsize::new(0),
             reads: AtomicUsize::new(0),
+            opened: AtomicUsize::new(0),
+            open_error: Mutex::new(None),
         })
     }
 }
@@ -86,7 +90,16 @@ impl RemindersSource for FakeReminders {
     }
 
     fn open_settings(&self) -> Result<(), PlatformError> {
-        Ok(())
+        self.opened.fetch_add(1, Ordering::SeqCst);
+        match self
+            .open_error
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+        {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     }
 }
 
@@ -95,6 +108,8 @@ pub struct FakeThings {
     pub installed: bool,
     pub read: Result<String, ThingsReadError>,
     pub reads: AtomicUsize,
+    pub opened: AtomicUsize,
+    pub open_error: Mutex<Option<PlatformError>>,
 }
 
 impl FakeThings {
@@ -103,6 +118,8 @@ impl FakeThings {
             installed: true,
             read,
             reads: AtomicUsize::new(0),
+            opened: AtomicUsize::new(0),
+            open_error: Mutex::new(None),
         })
     }
 }
@@ -118,6 +135,15 @@ impl ThingsSource for FakeThings {
     }
 
     fn open_settings(&self) -> Result<(), PlatformError> {
-        Ok(())
+        self.opened.fetch_add(1, Ordering::SeqCst);
+        match self
+            .open_error
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+        {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     }
 }

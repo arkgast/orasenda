@@ -40,15 +40,11 @@ fn undo_other_id_is_stale() {
     let error = run_task_import_undo(&host, done.import_id + 1000).unwrap_err();
     assert_eq!(error.kind, ImportErrorKind::Stale);
     assert_eq!(live_tasks(&host).len(), 1);
-    let fresh = host_without_import();
+    let fresh = super::host();
     assert_eq!(
         run_task_import_undo(&fresh, 1).unwrap_err().kind,
         ImportErrorKind::Stale
     );
-}
-
-fn host_without_import() -> TestHost {
-    host()
 }
 
 #[test]
@@ -61,10 +57,22 @@ fn open_settings_todoist_unavailable() {
 #[test]
 fn open_settings_calls_the_source() {
     let host = host();
-    preview_reminders(&host, 1);
+    let source = crate::session::test_support::FakeReminders::new(
+        orasenda_core::platform::import::SourceAccess::Granted,
+        Vec::new(),
+    );
+    host.0.imports.set_reminders(source.clone());
     assert_eq!(
         run_import_open_settings(&host, ImportSourceKind::Reminders),
         Ok(())
+    );
+    assert_eq!(source.opened.load(std::sync::atomic::Ordering::SeqCst), 1);
+    *source.open_error.lock().unwrap() = Some(orasenda_core::PlatformError::Refused);
+    assert_eq!(
+        run_import_open_settings(&host, ImportSourceKind::Reminders)
+            .unwrap_err()
+            .kind,
+        ImportErrorKind::Unavailable
     );
     // No Things on this host: nothing to open.
     assert_eq!(
