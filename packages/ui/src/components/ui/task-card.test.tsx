@@ -239,3 +239,24 @@ test("duplicate_tags_render_once", () => {
   render(<TaskCard title="Write" tags={["home", "home", "work"]} />);
   expect(screen.getAllByText("home")).toHaveLength(1);
 });
+
+const LONG = `${"A task title that goes on and on, ".repeat(9)}`.trim();
+
+test("long_title_keeps_full_accessible_name", () => {
+  const { container, rerender } = render(<TaskCard title={LONG} onOpen={() => {}} />);
+  expect(screen.getByRole("button").getAttribute("aria-label")?.startsWith(`${LONG},`)).toBe(true);
+  let title = container.querySelector("[data-slot=task-card-title]");
+  expect(title?.className).toContain("line-clamp-3");
+
+  rerender(<TaskCard title={LONG} />);
+  title = container.querySelector("[data-slot=task-card-title]");
+  expect(title?.getAttribute("aria-hidden")).toBe("true");
+  expect(title?.className).toContain("line-clamp-3");
+  const full = container.querySelector("[data-slot=task-card] .sr-only");
+  expect(full?.textContent).toBe(LONG);
+
+  rerender(<TaskCard title={LONG} density="row" />);
+  expect(container.querySelector("[data-slot=task-card-title]")?.className).not.toContain(
+    "line-clamp",
+  );
+});

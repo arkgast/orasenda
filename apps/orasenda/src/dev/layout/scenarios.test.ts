@@ -39,6 +39,7 @@ const NAMES = [
   "boardWeek",
   "boardOver",
   "boardLong",
+  "boardLongTitle",
   "boardEmpty",
   "boardUnreadable",
 ];
