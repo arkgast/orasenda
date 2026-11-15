@@ -9,6 +9,7 @@ import {
   settle,
 } from "@shared/test/fixtures";
 import { render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { BoardPage } from "./BoardPage";
 
 /** Backlog two, Today two, Doing one, Done one. */
@@ -26,6 +27,8 @@ type Options = {
   singleKey?: boolean;
   replies?: Replies;
   onOpenTask?: (id: string) => void;
+  /** Other props of the page (the import entry points). */
+  page?: Partial<ComponentProps<typeof BoardPage>>;
 };
 
 export async function renderBoard(options: Options = {}): Promise<Backend> {
@@ -41,7 +44,7 @@ export async function renderBoard(options: Options = {}): Promise<Backend> {
     task_restore: () => null,
     ...options.replies,
   });
-  render(<BoardPage onNavigate={() => {}} onOpenTask={options.onOpenTask} />);
+  render(<BoardPage onNavigate={() => {}} onOpenTask={options.onOpenTask} {...options.page} />);
   await settle();
   return backend;
 }

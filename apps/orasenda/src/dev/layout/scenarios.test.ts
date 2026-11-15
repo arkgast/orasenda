@@ -44,6 +44,7 @@ const NAMES = [
   "boardUnreadable",
   "boardFullTask",
   "boardSaveFails",
+  "boardImport",
 ];
 
 const NEW_COMMANDS = [

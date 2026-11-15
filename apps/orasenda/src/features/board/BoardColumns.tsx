@@ -1,4 +1,4 @@
-import { KanbanColumn } from "@orasenda/ui";
+import { Button, KanbanColumn } from "@orasenda/ui";
 import type { BoardView, Lane, TaskView } from "@shared/ipc/bindings";
 import { BoardCard } from "./BoardCard";
 import { columnId, sessions } from "./lanes";
@@ -14,7 +14,26 @@ export type ColumnHandlers = {
   toggle(lane: Lane): void;
   add(title: string): Promise<boolean>;
   leaveField(): void;
+  /** Opens the import sheet. */
+  import(): void;
 };
+
+function footerOf(lane: Lane, board: BoardView, on: ColumnHandlers) {
+  if (lane === "backlog")
+    return (
+      <Button variant="ghost" onClick={on.import}>
+        Import tasks…
+      </Button>
+    );
+  if (lane === "today" && board.todayPlanned > 0) {
+    return (
+      <p className="app-board-planned">
+        Planned {sessions(board.todayPlanned)} with a {board.buffer}% buffer
+      </p>
+    );
+  }
+  return undefined;
+}
 
 /** The four columns, Today-first (owner pick 1B): Backlog a narrow row list, Today and Doing wide. */
 export function BoardColumns({
@@ -50,13 +69,7 @@ export function BoardColumns({
         key={column.lane}
         {...shared}
         onToggle={() => on.toggle(column.lane)}
-        footer={
-          column.lane === "today" && board.todayPlanned > 0 ? (
-            <p className="app-board-planned">
-              Planned {sessions(board.todayPlanned)} with a {board.buffer}% buffer
-            </p>
-          ) : undefined
-        }
+        footer={footerOf(column.lane, board, on)}
       >
         {column.lane === "backlog" ? <NewTaskField add={on.add} leave={on.leaveField} /> : null}
         {column.tasks.map((task) => (

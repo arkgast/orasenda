@@ -14,6 +14,8 @@ import type { Lane } from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardColumns } from "./BoardColumns";
 import { TaskSheet } from "./detail/TaskSheet";
+import { ImportSheet } from "./import/ImportSheet";
+import { takeImportAsk } from "./import/importAsk";
 import { NEW_TASK_ID } from "./NewTaskField";
 import { useBoard } from "./useBoard";
 import { useBoardActions } from "./useBoardActions";
@@ -30,10 +32,14 @@ type Props = {
   onNavigate(page: NavPage): void;
   /** Return on a card (B11 opens the detail here). */
   onOpenTask?: (id: string) => void;
+  /** A counter the app bumps to open the import sheet; it opens once per new value. */
+  importAsked?: number;
+  /** Called when the sheet opened for `importAsked`. */
+  onImportOpened?: () => void;
 };
 
 /** Board page: Backlog, Today, Doing and Done, kept by keyboard and by menu (spec "Board page"). */
-export function BoardPage({ onNavigate, onOpenTask }: Props) {
+export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened }: Props) {
   const { compact } = useWindowLayout();
   const api = useBoard();
   const ok = api.board.status === "ok" ? api.board.board : null;
@@ -116,6 +122,33 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
     onOpenTask?.(id);
   };
   const line = actions.line;
+
+  // The import sheet opens on a click or when the app asks; nothing opens it by itself.
+  const [importing, setImporting] = useState(false);
+  useEffect(() => {
+    if (takeImportAsk(importAsked)) {
+      actions.show(null);
+      setImporting(true);
+      onImportOpened?.();
+    }
+  }, [importAsked, onImportOpened, actions.show]);
+  // The sheet closing leaves focus nowhere when its trigger is gone (the empty Board's button).
+  const wasImporting = useRef(false);
+  useEffect(() => {
+    const closed = wasImporting.current && !importing;
+    wasImporting.current = importing;
+    if (!closed) return;
+    const at = document.activeElement;
+    if (at && at !== document.body) return;
+    const again = [...document.querySelectorAll<HTMLElement>("button")].find(
+      (b) => b.textContent === "Import tasks…",
+    );
+    (again ?? document.querySelector<HTMLElement>("h1"))?.focus();
+  }, [importing]);
+  const askImport = () => {
+    actions.show(null);
+    setImporting(true);
+  };
   const status =
     api.board.status === "error" ? (
       <InlineNotice
@@ -168,6 +201,7 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
           },
           add: actions.add,
           leaveField,
+          import: askImport,
         }}
       />
     </div>
@@ -192,9 +226,10 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
         {empty ? (
           <EmptyState
             title="No tasks yet."
-            message="Add one, or move a note from the Inbox."
+            message="Add one, move a note from the Inbox, or import tasks."
             actionLabel="Add task"
             onAction={addTask}
+            secondaryAction={{ label: "Import tasks…", onAction: askImport }}
           />
         ) : compact ? (
           <ScrollRegion label="Board">{board}</ScrollRegion>
@@ -202,6 +237,9 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
           board
         )}
       </PageFrame>
+      {importing ? (
+        <ImportSheet onImported={actions.imported} onClose={() => setImporting(false)} />
+      ) : null}
       {sheetTask ? (
         <TaskSheet
           key={sheetTask.id}
