@@ -215,15 +215,20 @@ export function TaskCard(props: TaskCardProps): ReactElement {
           </span>
         ) : null}
       </span>
-      <span data-slot="task-card-title" className="text-body font-semibold">
+      <span
+        data-slot="task-card-title"
+        aria-hidden={interactive ? undefined : "true"}
+        className="line-clamp-3 text-body font-semibold"
+      >
         {title}
       </span>
+      {interactive ? null : <span className="sr-only">{title}</span>}
       {stateWords ? (
         <span data-slot="task-card-state" className="text-body-sm text-focus">
           {stateWords}
         </span>
       ) : null}
-      <Dots est={est} done={done} hasEstimate={hasEstimate} />
+      {Math.max(est, done) > 0 ? <Dots est={est} done={done} hasEstimate={hasEstimate} /> : null}
       <span
         data-slot="task-card-meta"
         className="font-mono text-body-sm text-ink-muted tabular-nums"

@@ -135,7 +135,7 @@ test("board_scrolled_card_keeps_its_ring_900x600", async ({ page }) => {
 
 test("board_long_title_fits_640x480", async ({ page }) => {
   await openBoard(page, "boardLongTitle", { width: 640, height: 480 });
-  const card = page.getByRole("button", { name: /^A task title/ });
+  const card = page.getByRole("button", { name: /^Plan the whole/ });
   await card.focus();
   const problem = await card.evaluate((node) => {
     let port: HTMLElement | null = node.parentElement;

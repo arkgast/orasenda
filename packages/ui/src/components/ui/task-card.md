@@ -1,8 +1,9 @@
 A task on the board. Sessions beyond the estimate are information, never a warning.
 
 - `title`, `type` (`deep` default or `shallow`), `project`, `frog` (the one hardest task of the day, shown as the word "Frog").
-- `estimate` and `done` in sessions, `tracked` as a duration ("0h 41m"). The meta line reads "Est 3 · Done 1 · 0h 25m"; with no estimate it reads "No estimate". Dots cap at twelve; sessions past the estimate are the same `focus` dot with a thin halo.
+- `estimate` and `done` in sessions, `tracked` as a duration ("0h 41m"). The meta line reads "Est 3 · Done 1 · 0h 25m"; with no estimate it reads "No estimate". Dots cap at twelve, and are left out when there is no estimate and nothing done; sessions past the estimate are the same `focus` dot with a thin halo.
 - `due` (worded by the host: "Due Friday"), `priority` (`high`, `medium`, `low`, shown as a word), `tags` (up to two shown) and `checklist` ("2 of 5") sit on the card. All of them are in the accessible name, so VoiceOver reads the same facts.
+- In `density="card"` the title shows at most three lines, then an ellipsis. The full title stays in the accessible name (the button's label, or hidden text in the read-only form, where the visible title is `aria-hidden`).
 - `onOpen` makes the card a native button. Without `onOpen` or `onSelect` the card is a read-only article with no tab stop.
 - `onSelect` beside `onOpen`: a click selects (`selection` + "Selected"); Return or a double-click opens. Arrow keys come through `onKeyDown` (passed through untouched after the card's own Return rule), so the board moves the selection. `onSelect` alone makes a button that selects. Hover is `surface-sunken` only, never the selection ground.
 - `density="row"` (TaskRow): a single line that wraps onto a second line, never letter by letter, when the column is too narrow for the type shape, state words and estimate together, at least `hit-min` tall, with the type shape, the title (ellipsis, kept whole in the name), the Frog and state words and the estimate in `timer-sm`. It drops the dots, tags and checklist. A read-only form (no button) serves the shutdown preview.
