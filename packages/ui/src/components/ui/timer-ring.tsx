@@ -10,6 +10,8 @@ export interface TimerRingProps {
   /** The elapsed fraction [0,1]; the arc shows what is left. */
   progress?: number;
   mode?: "focus" | "break" | "routine" | "warning" | "paused" | "idle";
+  /** The chosen task: one ellipsised line, whole in the accessible name. Optional. */
+  task?: string;
   /**
    * A number renders that diameter in px, as before. "fluid" fills the host's slot: the diameter is
    * the slot's shorter side clamped to [timer-min-size, timer-full-size] (container query), digits
@@ -72,9 +74,9 @@ function clamp(n: number | undefined): number {
 }
 
 function label(p: TimerRingProps, mode: Mode): string {
-  if (mode === "idle") return WORD.idle;
+  if (mode === "idle") return p.task ? `${WORD.idle}, ${p.task}` : WORD.idle;
   const spoken = p.remainingLabel || p.remaining || "25:00";
-  return `${WORD[mode]}, ${spoken} remaining${p.clock ? `, Wall clock, ${p.clock}` : ""}`;
+  return `${WORD[mode]}, ${spoken} remaining${p.task ? `, ${p.task}` : ""}${p.clock ? `, Wall clock, ${p.clock}` : ""}`;
 }
 
 /** The countdown ring. The arc shows what is left: full at the start, empty at the end. */
@@ -146,6 +148,17 @@ export function TimerRing(p: TimerRingProps): ReactElement {
             className="font-light font-mono text-ink leading-none tabular-nums"
           >
             {text}
+          </div>
+        ) : null}
+        {p.task ? (
+          <div
+            data-slot="timer-ring-task"
+            className={cn(
+              "max-w-3/5 truncate text-body-sm text-ink-muted",
+              fluid && p.clock && "hidden @ring-clock:block",
+            )}
+          >
+            {p.task}
           </div>
         ) : null}
         {p.clock ? (

@@ -44,6 +44,7 @@ export { StartButton } from "./components/ui/start-button";
 export { Stepper } from "./components/ui/stepper";
 export { TagField } from "./components/ui/tag-field";
 export { TaskCard } from "./components/ui/task-card";
+export { TaskPicker } from "./components/ui/task-picker";
 export { TextArea } from "./components/ui/text-area";
 export { TimeBlock } from "./components/ui/time-block";
 export { timerLayout } from "./lib/timer-layout";
@@ -99,6 +100,7 @@ export type { SettingsIndexProps, SettingsIndexSection } from "./components/ui/s
 export type { SettingsRowProps } from "./components/ui/settings-row";
 export type { StartButtonProps } from "./components/ui/start-button";
 export type { TaskCardMenu, TaskCardProps } from "./components/ui/task-card";
+export type { TaskPickerOption, TaskPickerProps } from "./components/ui/task-picker";
 export type { MenuBarTimerProps } from "./components/ui/menu-bar-timer";
 export type { TextAreaProps } from "./components/ui/text-area";
 export type { TimeBlockProps } from "./components/ui/time-block";

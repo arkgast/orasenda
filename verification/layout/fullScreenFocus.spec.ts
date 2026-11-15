@@ -94,7 +94,7 @@ test("full_screen_focus_strip_in_strip_frame", async ({ page }) => {
   }
 });
 
-test("full_screen_focus_has_no_task_slot_in_any_frame", async ({ page }) => {
+test("full_screen_focus_frames_without_a_task_have_no_task_line", async ({ page }) => {
   await openSpecimen(page, "FullScreenFocus");
   for (const { w, h } of SIZES) {
     for (const mode of MODES) {
@@ -290,5 +290,50 @@ test("full_screen_focus_status_line_stays_one_row", async ({ page }) => {
     );
     const over = (await overflows(f)).filter((l) => !l.includes("sr-only") && !l.includes(own));
     expect(over, `${w}x${h}`).toEqual([]);
+  }
+});
+
+const LONG_TASK =
+  "Finish the chapter outline and send it round for comments, then book the review with the whole editorial team now please";
+
+test("full_screen_focus_task_line_is_one_ellipsised_line_in_the_track", async ({ page }) => {
+  await openSpecimen(page, "FullScreenFocus");
+  expect(LONG_TASK).toHaveLength(120);
+  for (const { w, h, layout } of SIZES) {
+    for (const mode of ["focus", "idle"] as const) {
+      const f = page.locator(`[data-frame][data-state="full-screen-focus-task-${mode}-${w}x${h}"]`);
+      const label = `${mode} ${w}x${h}`;
+      const name = await f.locator("[role=timer]").getAttribute("aria-label");
+      // The ring appends the wall clock after the task; the strip ends with the task.
+      expect(
+        layout === "ring" ? name?.includes(LONG_TASK) : name?.endsWith(LONG_TASK),
+        `${label} name`,
+      ).toBe(true);
+      const task = f.locator("[data-slot$=-task]");
+      await expect(task, label).toHaveCount(1);
+      // The ring beside a clock hides the visible line when the ring is narrow; the name still has it.
+      if (layout === "ring" && !(await task.isVisible())) continue;
+      await expect(task, label).toBeVisible();
+      await expect(task, label).toHaveCSS("text-overflow", "ellipsis");
+      await expect(task, label).toHaveCSS("white-space", "nowrap");
+      const t = await task.boundingBox();
+      const track = await f.locator("[data-slot=full-screen-focus-ring]").boundingBox();
+      if (!(t && track)) throw new Error(`${label}: missing box`);
+      expect(t.height, `${label} one line`).toBeLessThanOrEqual(18.5);
+      expect(t.x, `${label} left`).toBeGreaterThanOrEqual(track.x - 0.5);
+      expect(t.x + t.width, `${label} right`).toBeLessThanOrEqual(track.x + track.width + 0.5);
+      expect(t.y, `${label} top`).toBeGreaterThanOrEqual(track.y - 0.5);
+      expect(t.y + t.height, `${label} bottom`).toBeLessThanOrEqual(track.y + track.height + 0.5);
+      const actions = await f.locator("[data-slot=full-screen-focus-controls]").boundingBox();
+      if (!actions) throw new Error(`${label}: no actions`);
+      expect(actions.y - (t.y + t.height), `${label} gap to actions`).toBeGreaterThanOrEqual(
+        8 - 0.5,
+      );
+      if (layout !== "ring" && mode === "focus") {
+        const bar = await f.locator("[data-slot=timer-strip-bar]").boundingBox();
+        if (!bar) throw new Error(`${label}: no bar`);
+        expect(t.y - (bar.y + bar.height), `${label} gap to bar`).toBeGreaterThanOrEqual(8 - 0.5);
+      }
+    }
   }
 });

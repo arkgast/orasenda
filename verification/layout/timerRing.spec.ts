@@ -127,7 +127,14 @@ test("timer_faces_aria_snapshot (TimerRing)", async ({ page }) => {
   await expect(page.locator("[data-state='timer-ring-fluid-idle']")).toMatchAriaSnapshot(`
     - timer "No session"
   `);
-  await expect(page.locator("[data-slot=timer-ring-task]")).toHaveCount(0);
+  await expect(
+    page.locator("[data-frame]:not([data-state*='-task-']) [data-slot=timer-ring-task]"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("[data-state='timer-ring-task-idle']").locator("[role=timer]"),
+  ).toHaveAttribute("aria-label", /^No session, /);
+  const task = page.locator("[data-state='timer-ring-task-idle'] [data-slot=timer-ring-task]");
+  await expect(task).toHaveCSS("text-overflow", "ellipsis");
 });
 
 test("timer_faces_no_motion_when_reduced (TimerRing)", async ({ page }, info) => {
@@ -151,7 +158,11 @@ test("seed_states_fit_their_frames", async ({ page }, info) => {
     const state = await frame.getAttribute("data-state");
     if (state === "seeded-overflow") continue;
     // Frames with the visually hidden clock span use the visible-box check.
-    if (state?.startsWith("timer-ring-fluid") || state === "timer-ring-viewport") {
+    if (
+      state?.startsWith("timer-ring-fluid") ||
+      state?.startsWith("timer-ring-task-") ||
+      state === "timer-ring-viewport"
+    ) {
       await expectVisibleFits(frame);
       continue;
     }

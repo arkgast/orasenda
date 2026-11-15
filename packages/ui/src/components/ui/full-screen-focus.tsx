@@ -222,6 +222,7 @@ export function FullScreenFocus({
               remainingLabel={ring.remainingLabel}
               progress={ring.progress}
               mode={mode}
+              task={ring.task}
               stacked={layout === "stackedStrip"}
             />
           )}

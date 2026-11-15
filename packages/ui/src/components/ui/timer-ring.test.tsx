@@ -106,3 +106,27 @@ test("digits_length_attr_long_for_h_mm_ss", () => {
     five.container.querySelector("[data-slot=timer-ring-digits]")?.getAttribute("data-length"),
   ).toBe("short");
 });
+
+test("timer_ring_names_the_task", () => {
+  const { container } = render(
+    <TimerRing size={280} mode="focus" {...RUN} task="Draft the chapter 3 outline" />,
+  );
+  expect(screen.getByRole("timer")).toHaveAccessibleName(
+    "Focus, 18 minutes 42 seconds remaining, Draft the chapter 3 outline",
+  );
+  const line = container.querySelector("[data-slot=timer-ring-task]") as HTMLElement;
+  expect(line).toHaveTextContent("Draft the chapter 3 outline");
+  expect(line.className).toMatch(/truncate/);
+  expect(line.className).toMatch(/text-ink-muted/);
+  expect(line.className).not.toMatch(/line-clamp/);
+});
+
+test("timer_ring_idle_names_the_task_too", () => {
+  render(<TimerRing size={280} mode="idle" task="Draft the outline" />);
+  expect(screen.getByRole("timer")).toHaveAccessibleName("No session, Draft the outline");
+});
+
+test("timer_ring_without_a_task_has_no_task_line", () => {
+  const { container } = render(<TimerRing size={280} mode="focus" {...RUN} />);
+  expect(container.querySelector("[data-slot=timer-ring-task]")).toBeNull();
+});

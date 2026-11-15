@@ -28,6 +28,7 @@ import { StartButtonSpecimen } from "../src/components/ui/start-button.specimen"
 import { StepperSpecimen } from "../src/components/ui/stepper.specimen.tsx";
 import { TagFieldSpecimen } from "../src/components/ui/tag-field.specimen.tsx";
 import { TaskCardSpecimen } from "../src/components/ui/task-card.specimen.tsx";
+import { TaskPickerSpecimen } from "../src/components/ui/task-picker.specimen.tsx";
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
@@ -54,6 +55,7 @@ export const specimens: Record<string, () => ReactElement> = {
   ShortcutRecorder: ShortcutRecorderSpecimen,
   ShortcutList: ShortcutListSpecimen,
   InboxRow: InboxRowSpecimen,
+  TaskPicker: TaskPickerSpecimen,
   DataTable: DataTableSpecimen,
   RoutineCard: RoutineCardSpecimen,
   HabitDots: HabitDotsSpecimen,

@@ -39,6 +39,11 @@ const STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
   ],
 ];
 
+const TASK_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
+  ["focus", { mode: "focus" }],
+  ["idle", { mode: "idle", summary: <p className="m-0 text-body-sm">Classic · ends 15:20</p> }],
+];
+
 const noop = () => {};
 // The host's break actions (E11): each state the issue names, at every frame.
 const ACTION_STATES: Array<[string, Partial<FullScreenFocusProps>]> = [
@@ -132,6 +137,9 @@ const SIZES = [
   [1440, 900],
 ] as const;
 
+const LONG_TASK =
+  "Finish the chapter outline and send it round for comments, then book the review with the whole editorial team now please";
+
 // Marks the frame when the view asks to leave, so a layout test can see that one Esc reached it.
 function Marked({ props }: { props: FullScreenFocusProps }): ReactElement {
   const [left, setLeft] = useState(false);
@@ -154,6 +162,18 @@ export function FullScreenFocusSpecimen(): ReactElement {
             height={h}
           >
             <Marked props={{ ...RUN, singleKeys: name === "focus", ...props }} />
+          </Frame>
+        )),
+      )}
+      {SIZES.flatMap(([w, h]) =>
+        TASK_STATES.map(([name, props]) => (
+          <Frame
+            key={`task-${name}-${w}x${h}`}
+            state={`full-screen-focus-task-${name}-${w}x${h}`}
+            width={w}
+            height={h}
+          >
+            <Marked props={{ ...RUN, task: LONG_TASK, ...props }} />
           </Frame>
         )),
       )}

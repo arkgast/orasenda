@@ -56,7 +56,16 @@ test("timer_strip_adds_no_live_region", () => {
     expect(el.getAttribute("aria-live")).toBe("off");
 });
 
-test("timer_strip_has_no_task_line", () => {
+test("timer_strip_has_no_task_line_without_a_task", () => {
   const { container } = render(<TimerStrip mode="focus" {...run} />);
   expect(container.querySelector("[data-slot=timer-strip-task]")).toBeNull();
+});
+
+test("timer_strip_names_the_task_on_one_ellipsised_line", () => {
+  const { container } = render(<TimerStrip mode="focus" {...run} task="Draft the outline" />);
+  expect(screen.getByRole("timer")).toHaveAccessibleName(/remaining, Draft the outline$/);
+  const line = container.querySelector("[data-slot=timer-strip-task]") as HTMLElement;
+  expect(line).toHaveTextContent("Draft the outline");
+  expect(line.className).toMatch(/truncate/);
+  expect(line.className).not.toMatch(/line-clamp/);
 });
