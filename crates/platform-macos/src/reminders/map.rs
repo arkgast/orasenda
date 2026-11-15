@@ -8,17 +8,39 @@ pub(super) const UNDEFINED: isize = isize::MAX;
 
 /// What the OS's authorization status means for reading reminders.
 pub fn access_from(status: EKAuthorizationStatus) -> SourceAccess {
-    todo!("{status:?}")
+    match status {
+        EKAuthorizationStatus::FullAccess => SourceAccess::Granted,
+        EKAuthorizationStatus::WriteOnly
+        | EKAuthorizationStatus::Denied
+        | EKAuthorizationStatus::Restricted => SourceAccess::Denied,
+        EKAuthorizationStatus::NotDetermined => SourceAccess::NotAsked,
+        // A status added by a later macOS: whether reading is allowed is unknown.
+        EKAuthorizationStatus(raw) => {
+            eprintln!("platform-macos: unknown reminders authorization status {raw}");
+            SourceAccess::Unavailable
+        }
+    }
 }
 
 /// The origin key: the external id, else `local-` + the local one.
 pub fn item_id(external: Option<&str>, local: &str) -> String {
-    todo!("{external:?} {local}")
+    match external {
+        Some(id) if !id.is_empty() => id.to_string(),
+        _ => format!("local-{local}"),
+    }
 }
 
 /// A due date from date components; `None` unless year, month and day are all set.
 pub fn due_parts(y: isize, m: isize, d: isize, h: isize, min: isize) -> Option<DueParts> {
-    todo!("{y} {m} {d} {h} {min}")
+    let set = |v: isize| v != UNDEFINED;
+    if !(set(y) && set(m) && set(d)) {
+        return None;
+    }
+    let time = (set(h) && set(min)).then(|| format!("{h:02}:{min:02}"));
+    Some(DueParts {
+        date: Some(format!("{y:04}-{m:02}-{d:02}")),
+        time,
+    })
 }
 
 #[cfg(test)]
