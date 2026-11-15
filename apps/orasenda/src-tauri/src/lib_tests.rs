@@ -8,6 +8,7 @@ mod capabilities;
 mod capture;
 mod data;
 mod data_files;
+mod plist;
 mod routines;
 
 use capabilities::{assert_capability, capability};

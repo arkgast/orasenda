@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Orasenda reads your open reminders when you choose to import them. Nothing in Reminders changes.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Orasenda asks Things for your open to-dos when you choose to import them. Nothing in Things changes.</string>
+</dict>
+</plist>
