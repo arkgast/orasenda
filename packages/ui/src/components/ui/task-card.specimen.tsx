@@ -88,6 +88,12 @@ export function TaskCardSpecimen(): ReactElement {
           />
         </div>
       </Frame>
+      <Frame state="task-card-long-title-360" width={360} height={200}>
+        <TaskCard
+          title="Plan the whole of the autumn writing project, including the outline, the interviews, the first draft and every round of edits that follows, until nothing is left to say"
+          onOpen={() => {}}
+        />
+      </Frame>
       <Frame state="task-row-read-only-360" width={360} height={100}>
         <TaskCard title="Shutdown preview" density="row" estimate={1} />
       </Frame>

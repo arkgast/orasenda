@@ -49,8 +49,8 @@ for (const size of SIZES) {
     await page.keyboard.press("Tab");
     const card = page.getByRole("button", { name: /^Write the intro/ });
     await card.focus();
-    // In a 480px-high window the Write the intro card is taller than its column (a TaskCard
-    // follow-up: clamp long cards), so its ring is judged from 600px up.
+    // At 640x480 a full card (Frog, priority, due date, tags) is 236px tall against a 202px
+    // scrollport, so its ring is judged from 600px up. Not a title problem (follow-up #589).
     if (size.height >= 600) await expectFocusRingVisible(card);
     await page.keyboard.press("Meta+n");
     // Focusing the field scrolls the stacked region back up; the ring is judged once it settles.
@@ -131,4 +131,23 @@ test("board_scrolled_card_keeps_its_ring_900x600", async ({ page }) => {
   await first.focus();
   for (let i = 0; i < 12; i++) await page.keyboard.press("ArrowDown");
   await expectFocusRingVisible(page.locator(":focus"));
+});
+
+test("board_long_title_fits_640x480", async ({ page }) => {
+  await openBoard(page, "boardLongTitle", { width: 640, height: 480 });
+  const card = page.getByRole("button", { name: /^Plan the whole/ });
+  await card.focus();
+  const problem = await card.evaluate((node) => {
+    let port: HTMLElement | null = node.parentElement;
+    while (port && !/(auto|scroll)/.test(getComputedStyle(port).overflowY))
+      port = port.parentElement;
+    if (!port) return "no scrollport";
+    const c = node.getBoundingClientRect();
+    const p = port.getBoundingClientRect();
+    return c.top >= p.top && c.bottom <= p.bottom
+      ? ""
+      : `card ${c.top}-${c.bottom} outside ${p.top}-${p.bottom}`;
+  });
+  expect(problem).toBe("");
+  await expectFocusRingVisible(card);
 });
