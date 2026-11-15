@@ -37,7 +37,7 @@ fn migration_7_to_8_keeps_rows() {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
-    assert_eq!(version, 8);
+    assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(
         columns(&conn, "task"),
         [
@@ -58,7 +58,8 @@ fn migration_7_to_8_keeps_rows() {
             "done_at",
             "created_at",
             "updated_at",
-            "deleted_at"
+            "deleted_at",
+            "origin"
         ]
     );
     assert!(columns(&conn, "focus_session").contains(&"task_id".to_owned()));

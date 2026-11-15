@@ -67,6 +67,7 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
             rank: rank_at(txn, lane, usize::MAX, None)?,
             frog_day: None,
             source_note_id: None,
+            origin: None,
             created_at: txn.now_ms(),
         };
         tasks::insert(txn, &new)?;

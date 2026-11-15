@@ -19,8 +19,9 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
     txn.conn().execute(
         "INSERT OR REPLACE INTO task (id, title, notes, tags, kind, estimate, due, priority,
              checklist, lane, rank, frog_day, breakdown_dismissed, source_note_id, done_at,
-             created_at, updated_at, deleted_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+             created_at, updated_at, deleted_at, origin)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
+             ?19)",
         rusqlite::params![
             row.id,
             row.title,
@@ -40,6 +41,7 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
             row.created_at,
             row.updated_at,
             row.deleted_at,
+            row.origin,
         ],
     )?;
     let mut fields = vec![
@@ -64,6 +66,7 @@ pub(super) fn merge_row(txn: &mut Txn, row: &TaskRowAll) -> Result<Outcome, Stor
         ("frog_day", opt(row.frog_day.clone())),
         ("source_note_id", opt(row.source_note_id.clone())),
         ("done_at", opt(row.done_at)),
+        ("origin", opt(row.origin.clone())),
     ];
     fields.extend(
         optional

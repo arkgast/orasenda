@@ -4,6 +4,7 @@ use super::*;
 use crate::Store;
 
 mod checks;
+mod origin;
 mod tracked;
 mod writes;
 
@@ -26,6 +27,7 @@ pub(super) fn new_task(id: &str, lane: Lane, rank: &str) -> NewTask {
         rank: rank.to_owned(),
         frog_day: None,
         source_note_id: None,
+        origin: None,
         created_at: 500,
     }
 }
