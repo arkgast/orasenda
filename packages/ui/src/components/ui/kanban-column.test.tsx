@@ -174,3 +174,51 @@ test("fold_moves_focus_to_the_strip", () => {
   fireEvent.click(screen.getByRole("button", { name: "Fold Done" }));
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Done, 2 tasks" }));
 });
+
+test("drop_slot_at_index", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={2} drop={{ index: 1, label: "Moving Plan here" }}>
+      <p>one</p>
+      <p>two</p>
+    </KanbanColumn>,
+  );
+  const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
+  const kids = Array.from(cards.children);
+  const slot = cards.querySelector("[data-slot=kanban-column-drop]") as HTMLElement;
+  expect(kids.indexOf(slot)).toBe(1);
+  expect(slot.textContent).toBe("Moving Plan here");
+  expect(slot.classList.contains("border-dashed")).toBe(true);
+  expect(slot.className).toContain("border-line-strong");
+  expect(slot.className).toContain("min-h-hit-min");
+});
+
+test("drop_slot_index_is_clamped_and_replaces_empty_message", () => {
+  const { container, rerender } = render(
+    <KanbanColumn title="Today" count={1} drop={{ index: 9, label: "Moving A here" }}>
+      <p>one</p>
+    </KanbanColumn>,
+  );
+  const cards = container.querySelector("[data-slot=kanban-column-cards]") as HTMLElement;
+  expect(cards.lastElementChild?.getAttribute("data-slot")).toBe("kanban-column-drop");
+  rerender(<KanbanColumn title="Today" count={0} drop={{ index: 0, label: "Moving A here" }} />);
+  expect(screen.queryByText("Nothing here yet. That's fine.")).toBeNull();
+  expect(screen.getByText("Moving A here")).toBeTruthy();
+});
+
+test("drop_on_strip_reads_move_here", () => {
+  const { container } = render(
+    <KanbanColumn
+      title="Done"
+      count={5}
+      collapsed
+      onToggle={() => {}}
+      drop={{ index: 3, label: "Moving A here" }}
+    />,
+  );
+  const strip = container.querySelector("[data-slot=kanban-column-strip]") as HTMLElement;
+  expect(strip.className).toContain("bg-selection");
+  expect(strip.className).toContain("inset-ring-line-strong");
+  expect(screen.getByText("Move here")).toBeTruthy();
+  expect(container.querySelector("[data-slot=kanban-column-drop]")).toBeNull();
+  expect(strip.getAttribute("aria-label")).toBe("Done, 5 tasks, Move here");
+});
