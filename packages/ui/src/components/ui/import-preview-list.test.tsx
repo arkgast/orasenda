@@ -91,3 +91,17 @@ test("preview_list_renders_five_hundred_rows", () => {
   expect(screen.getAllByRole("checkbox")).toHaveLength(500);
   expect(screen.getByText("250 of 500 selected")).toBeVisible();
 });
+
+test("preview_list_keeps_one_tab_stop_when_items_shrink", () => {
+  const mk = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ key: `k${i}`, title: `Task ${i}`, checked: false }));
+  const { rerender } = render(
+    <ImportPreviewList label="Tasks" items={mk(4)} onToggle={() => {}} onSetAll={() => {}} />,
+  );
+  screen.getAllByRole("checkbox")[3]?.focus();
+  rerender(
+    <ImportPreviewList label="Tasks" items={mk(2)} onToggle={() => {}} onSetAll={() => {}} />,
+  );
+  const stops = screen.getAllByRole("checkbox").filter((r) => r.tabIndex === 0);
+  expect(stops).toHaveLength(1);
+});

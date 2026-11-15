@@ -87,9 +87,9 @@ export interface IntentPromptNextProps extends IntentPromptProps {
   strengthLine?: string;
 }
 /** Not implemented in bundle.js yet. 'safe': cancel is the primary and the initial focus; used only for ending a Strong lock. */
-export interface DialogNextProps extends DialogProps {
+export type DialogNextProps = DialogProps & {
   emphasis?: "default" | "safe";
-}
+};
 /** Not implemented in bundle.js yet. Week lanes: the rule without the label. */
 export interface NowLineNextProps extends NowLineProps {
   compact?: boolean;

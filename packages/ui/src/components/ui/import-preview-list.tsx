@@ -38,7 +38,7 @@ export function ImportPreviewList({
 }: ImportPreviewListProps): JSX.Element {
   const id = useId();
   const ref = useRef<HTMLFieldSetElement>(null);
-  const { item } = useRoving(ref);
+  const { item } = useRoving(ref, items.length);
   const selected = items.filter((i) => i.checked).length;
   const all = items.length > 0 && selected === items.length;
   return (
@@ -46,13 +46,12 @@ export function ImportPreviewList({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="m-0 text-body-sm text-ink">{`${selected} of ${items.length} selected`}</p>
         {items.length > 0 ? (
-          <Button variant="ghost" onClick={() => onSetAll(!all)}>
-            {all ? "Select none" : "Select all"}
-          </Button>
+          <Button onClick={() => onSetAll(!all)}>{all ? "Select none" : "Select all"}</Button>
         ) : null}
       </div>
-      {summary?.map((line) => (
-        <p key={line} className="m-0 text-body-sm text-ink-muted">
+      {summary?.map((line, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: lines can repeat, so the line alone is not a key
+        <p key={`${index}-${line}`} className="m-0 text-body-sm text-ink-muted">
           {line}
         </p>
       ))}

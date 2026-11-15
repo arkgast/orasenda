@@ -50,3 +50,12 @@ test("source_picker_reading_is_busy", () => {
   expect(row).toHaveTextContent("Reading…");
   expect(screen.getByRole("button", { name: "Todoist" })).not.toHaveAttribute("aria-busy");
 });
+
+test("source_picker_reading_blocks_other_rows", () => {
+  const onPick = vi.fn();
+  render(<ImportSourcePicker sources={sources} reading="reminders" onPick={onPick} />);
+  const todoist = screen.getByRole("button", { name: "Todoist" });
+  expect(todoist.getAttribute("aria-disabled")).toBe("true");
+  fireEvent.click(todoist);
+  expect(onPick).not.toHaveBeenCalled();
+});

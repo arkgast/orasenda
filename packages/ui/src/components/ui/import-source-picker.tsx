@@ -17,7 +17,7 @@ export interface ImportSourcePickerProps {
 }
 
 const ROW =
-  "flex min-h-hit-min w-full cursor-pointer flex-col items-start gap-1 rounded-sm border border-line-strong bg-surface-raised px-3 py-2 text-start text-ink hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-default aria-disabled:border-dashed aria-disabled:bg-surface-sunken aria-busy:cursor-progress";
+  "flex min-h-hit-min w-full cursor-pointer flex-col items-start gap-1 rounded-sm border border-line-strong bg-surface-raised px-3 py-2 text-start text-ink hover:bg-selection focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-default aria-disabled:border-dashed aria-disabled:bg-surface-sunken aria-disabled:hover:bg-surface-sunken aria-busy:cursor-progress";
 
 /** The import sheet's first step: one bordered row per source, one tab stop, Up and Down to move. */
 export function ImportSourcePicker({
@@ -27,7 +27,7 @@ export function ImportSourcePicker({
 }: ImportSourcePickerProps): JSX.Element {
   const id = useId();
   const ref = useRef<HTMLUListElement>(null);
-  const { item } = useRoving(ref);
+  const { item } = useRoving(ref, sources.length);
   return (
     <ul
       ref={ref}
@@ -37,6 +37,7 @@ export function ImportSourcePicker({
       {sources.map((source, index) => {
         const busy = reading === source.kind;
         const blocked = !!source.disabledReason;
+        const waiting = !!reading && !busy;
         const name = `${id}-${index}-name`;
         const detail = `${id}-${index}-detail`;
         const reason = `${id}-${index}-reason`;
@@ -48,10 +49,10 @@ export function ImportSourcePicker({
               data-slot="import-source"
               aria-labelledby={name}
               aria-describedby={blocked ? `${detail} ${reason}` : detail}
-              aria-disabled={blocked || undefined}
+              aria-disabled={blocked || waiting || undefined}
               aria-busy={busy || undefined}
               onClick={() => {
-                if (!blocked && !reading) onPick(source.kind);
+                if (!blocked && !waiting && !busy) onPick(source.kind);
               }}
               className={ROW}
             >

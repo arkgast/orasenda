@@ -11,7 +11,10 @@ export interface RovingItemProps {
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
 }
 
-export function useRoving(container: RefObject<HTMLElement | null>): {
+export function useRoving(
+  container: RefObject<HTMLElement | null>,
+  count: number,
+): {
   item: (index: number) => RovingItemProps;
   active: number;
 } {
@@ -40,9 +43,9 @@ export function useRoving(container: RefObject<HTMLElement | null>): {
   /** Props for item `index` (including the key handler); focus moving to it by pointer or script also makes it the stop. */
   const item = (index: number) => ({
     "data-roving": "",
-    tabIndex: index === active ? 0 : -1,
+    tabIndex: index === Math.min(active, count - 1) ? 0 : -1,
     onFocus: () => setActive(index),
     onKeyDown,
   });
-  return { item, active };
+  return { item, active: Math.min(active, count - 1) };
 }

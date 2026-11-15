@@ -28,18 +28,15 @@ if (typeof document !== "undefined") {
   );
 }
 
-export interface DialogProps {
+interface DialogBaseProps {
   open?: boolean;
   title: string;
   description?: string;
   children?: ReactNode;
-  /** Without it there is no confirm button (the import sheet's source step). */
-  confirmLabel?: string;
   /** Disables the confirm and shows this reason under the actions, linked to it. */
   confirmDisabledReason?: string;
   cancelLabel?: string;
   onCancel: () => void;
-  onConfirm?: () => void;
   destructive?: boolean;
   scrim?: boolean;
   loading?: boolean;
@@ -51,6 +48,13 @@ export interface DialogProps {
 
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
+/** Without a confirm label there is no confirm button (the import sheet's source step); with one, a handler is required. */
+type DialogConfirmProps =
+  | { confirmLabel: string; onConfirm: () => void }
+  | { confirmLabel?: undefined; onConfirm?: undefined };
+
+export type DialogProps = DialogBaseProps & DialogConfirmProps;
+
 const content =
   "flex max-h-full w-full scroll-py-3 flex-col gap-5 rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
 
