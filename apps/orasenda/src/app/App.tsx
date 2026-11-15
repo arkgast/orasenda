@@ -119,10 +119,15 @@ export function App() {
 
   // A fresh palette per opening; ignored while any modal is open (command-palette.md). The event
   // can ask for the display commands only (*Full screen on another display*).
-  const [palette, setPalette] = useState<"closed" | "all" | "displays">("closed");
+  const [palette, setPalette] = useState<"closed" | "all" | "displays" | "tasks">("closed");
+  // The element focused when the palette opened. A mode change remounts the palette, so App
+  // keeps the opener and gives focus back once the palette closes.
+  const paletteOpener = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const openPalette = (mode: "all" | "displays") => {
       if (document.querySelector('[role="dialog"], dialog[open]')) return;
+      const active = document.activeElement as HTMLElement | null;
+      paletteOpener.current = active && active !== document.body ? active : null;
       setPalette(mode);
     };
     const stopEvent = subscribe("palette-open", events.paletteOpen.listen, (open) =>
@@ -134,6 +139,13 @@ export function App() {
       stopRequest();
     };
   }, []);
+
+  useEffect(() => {
+    if (palette !== "closed") return;
+    const opener = paletteOpener.current;
+    paletteOpener.current = null;
+    if (opener?.isConnected) opener.focus();
+  }, [palette]);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,8 +243,11 @@ export function App() {
   const paletteView =
     palette === "closed" ? null : (
       <Palette
+        key={palette}
         compact={compact}
         displaysOnly={palette === "displays"}
+        tasksOnly={palette === "tasks"}
+        onMode={setPalette}
         onClose={() => setPalette("closed")}
         onNavigate={(page) => navigate(page)}
       />

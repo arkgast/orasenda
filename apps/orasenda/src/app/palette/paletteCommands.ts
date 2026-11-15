@@ -1,7 +1,7 @@
 import { FIXED_KEYS, fixedDisplay, hintFor, pageAccelerator } from "@domain/keyboard/bindings";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { presetChoices, presetMeta, presetName, selectedPreset } from "@domain/presets/presets";
-import type { Command } from "@orasenda/ui";
+import type { Command, TaskPickerOption } from "@orasenda/ui";
 import type {
   ActionView,
   DisplayInfo,
@@ -25,7 +25,13 @@ export type PaletteInput = {
   fixed?: ReadonlyArray<FixedKeyView>;
   /** Only the *Full screen on <display>* commands: *Full screen on another display* opened it. */
   displaysOnly?: boolean;
+  /** Only the tasks that aren't Done: *Choose a task…* opened it. */
+  tasksOnly?: boolean;
+  /** The tasks that aren't Done, in board order (`useTaskOptions`). */
+  tasks: TaskPickerOption[];
 };
+
+const LANE_ORDER: ReadonlyArray<TaskPickerOption["lane"]> = ["doing", "today", "backlog"];
 
 const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
   { theme: "system", label: "Match system" },
@@ -128,8 +134,26 @@ function preferenceCommands(input: PaletteInput): Command[] {
   return rows;
 }
 
+/** One row per task that isn't Done: Doing, then Today, then Backlog, each in board order. */
+function taskRows(tasks: TaskPickerOption[]): Command[] {
+  return LANE_ORDER.flatMap((lane) => tasks.filter((task) => task.lane === lane)).map((task) => ({
+    id: `task:${task.id}`,
+    label: task.title,
+    hint: `${task.laneLabel}${task.frog ? " · Frog" : ""}`,
+  }));
+}
+
+/** *Choose a task…* when some task isn't Done, then *Clear task* when one is linked. */
+function taskCommands(input: PaletteInput): Command[] {
+  const rows: Command[] = [];
+  if (input.tasks.length > 0) rows.push({ id: "chooseTask", label: "Choose a task…" });
+  if (input.view?.task) rows.push({ id: "clearTask", label: "Clear task" });
+  return rows;
+}
+
 /** The commands available now, in the order the palette shows them (command-palette.md). */
 export function paletteCommands(input: PaletteInput): Command[] {
+  if (input.tasksOnly) return taskRows(input.tasks);
   if (input.displaysOnly) return focusViewCommands(input);
   const pages = PAGE_ORDER.map(({ id, label }, index) => ({
     id: `page:${id}`,
@@ -138,6 +162,7 @@ export function paletteCommands(input: PaletteInput): Command[] {
   }));
   return [
     ...sessionCommands(input),
+    ...taskCommands(input),
     captureCommand(input),
     ...focusViewCommands(input),
     ...settingsCommands(input),
