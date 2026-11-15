@@ -1,6 +1,6 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
-import type { FocusEvent, JSX, ReactNode, RefObject } from "react";
-import { useId, useRef } from "react";
+import type { JSX, ReactNode, RefObject } from "react";
+import { useCallback, useId, useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -30,9 +30,7 @@ if (typeof document !== "undefined") {
 
 // WebKit scrolls a focused field into view to its own box and ignores scroll padding, which clips the focus ring.
 // After focus moves inside the sheet body, nudge the body (instantly) so the field keeps the body's scroll padding.
-function keepFocusClear(event: FocusEvent<HTMLDivElement>): void {
-  const body = event.currentTarget;
-  const target = event.target as HTMLElement;
+function keepFocusClear(body: HTMLElement, target: HTMLElement): void {
   const pad = Number.parseFloat(getComputedStyle(body).scrollPaddingTop) || 0;
   const box = body.getBoundingClientRect();
   const r = target.getBoundingClientRect();
@@ -102,6 +100,12 @@ export function Dialog({
   const Prim = destructive ? AlertDialog : DialogPrimitive;
   const sheet = size === "sheet";
   const showScrim = !!(scrim || destructive || sheet);
+  // A native listener on a callback ref: the body mounts inside the portal, after this component's own effects,
+  // and it is a scroll container, not a control, so it takes no React event prop.
+  const watchFocus = useCallback((body: HTMLDivElement | null) => {
+    if (!body) return;
+    body.addEventListener("focusin", (event) => keepFocusClear(body, event.target as HTMLElement));
+  }, []);
   return (
     <Prim.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Prim.Portal>
@@ -160,7 +164,7 @@ export function Dialog({
             {sheet ? (
               <div
                 data-slot="dialog-sheet-body"
-                onFocus={keepFocusClear}
+                ref={watchFocus}
                 className="@container -m-2 min-h-0 flex-1 scroll-py-3 overflow-auto p-2"
               >
                 <div className="grid grid-cols-1 gap-x-5 gap-y-4 @sheet-stack:grid-cols-2">
