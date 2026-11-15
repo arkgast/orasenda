@@ -97,7 +97,7 @@ export const FIXED_KEYS = {
   settings: "Super+Comma",
 } as const;
 
-/** The accelerator of page `n` (1 to 6) in the nav order. */
+/** The accelerator of page `n` (1 to 7) in the nav order. */
 export const pageAccelerator = (n: number) => `Super+Digit${n}`;
 
 /** The glyphs of the fixed key with `keys` (a canonical accelerator), or null before the registry answers. */

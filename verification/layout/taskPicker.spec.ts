@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { expectFocusRingVisible } from "./support/focusRing.ts";
-import { openSpecimen, pressTab } from "./support/specimen.ts";
+import { openSpecimen } from "./support/specimen.ts";
 
 const WINDOWS = [
   { w: 360, h: 240 },
@@ -38,6 +38,5 @@ for (const { w, h } of WINDOWS) {
     await page.keyboard.press("Escape");
     await expect(rest).toBeFocused();
     await expectFocusRingVisible(rest);
-    void pressTab;
   });
 }

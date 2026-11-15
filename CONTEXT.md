@@ -62,7 +62,15 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Registration status | Whether a global shortcut is `registered`, `off` or `failed` on this device right now. In memory only. | The saved setting |
 | Single-key shortcut | A one-key binding inside one surface (Space and P on Today; Space in Focus view), honouring the *Single-key shortcuts* setting (WCAG 2.1.4). Not rebindable. | A binding, which needs a modifier |
 | Capture panel | The small non-activating panel (⌃⌥N) that saves a thought to the Inbox without leaving the current app. | The floater |
-| Inbox note | One captured thought: text, Internal or External, a time. Syncable (`inbox_note`), removed by tombstone. Listed on Board. | A task card (Kanban, later) |
+| Inbox note | One captured thought: text, Internal or External, a time. Syncable (`inbox_note`), removed by tombstone. Listed on Inbox; Move to Board turns it into a task. | A task |
+| Board | The page of tasks in four lanes (Backlog, Today, Doing, Done), reached with ⌘3. Task data lives in the syncable `task` table. | The Inbox, which holds captured notes |
+| Lane | A task's column on the Board (`lane` in SQL, "column" in the UI). Names and the Today and Doing limits are editable; limits inform and never block. | A routine's step |
+| Frog | The one task a day the user marks as the hardest. Setting a second moves the flag, with Undo. | A priority |
+| Estimate buffer | Padding on planned time (25% by default, 25–50%), applied to planning only and never to the stored estimate. | The estimate itself |
+| Planned sessions | The estimate padded by the estimate buffer, rounded up to whole focus sessions. Used for planning and never stored. | The estimate, which stays as written |
+| Chosen task | The optional task a session is linked to (`focus_session.task_id`). Never defaulted; tracked time is derived from it. | A required field |
+| Move to Board | The Inbox note action that makes a Backlog task and removes the note, with Undo. | Dragging |
+| TaskPicker | The type-to-filter combobox that chooses or clears a session's task; options show after typing or ↓. | A menu button |
 | Tip | A one-time neutral status line on idle Today ("Tip: …" with Got it), seen on Got it, on use, or after its second showing. | The keep-going hint (running, once) |
 | Shortcut registry | The one table of actions (id, label, description, where it works, both defaults) that feeds the app menu, the global registrar, single-key handlers, palette hints and Settings › Shortcuts (ADR-020). | A hard-coded key in a component |
 | In Orasenda binding | An action's key as a native app-menu accelerator: works in any Orasenda window while Orasenda is frontmost. Needs ⌘ or ⌃. May be empty. | An Everywhere binding |

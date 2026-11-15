@@ -312,13 +312,20 @@ test("full_screen_focus_task_line_is_one_ellipsised_line_in_the_track", async ({
       const task = f.locator("[data-slot$=-task]");
       await expect(task, label).toHaveCount(1);
       // The ring beside a clock hides the visible line when the ring is narrow; the name still has it.
-      if (layout === "ring" && !(await task.isVisible())) continue;
+      const track = await f.locator("[data-slot=full-screen-focus-ring]").boundingBox();
+      if (!track) throw new Error(`${label}: missing track`);
+      const ring =
+        layout === "ring" ? await f.locator("[data-slot=timer-ring]").boundingBox() : null;
+      // container-ring-clock is 480px: below it the ring hides the line; from it the line must show.
+      if (ring && ring.width < 480) {
+        await expect(task, label).toBeHidden();
+        continue;
+      }
       await expect(task, label).toBeVisible();
       await expect(task, label).toHaveCSS("text-overflow", "ellipsis");
       await expect(task, label).toHaveCSS("white-space", "nowrap");
       const t = await task.boundingBox();
-      const track = await f.locator("[data-slot=full-screen-focus-ring]").boundingBox();
-      if (!(t && track)) throw new Error(`${label}: missing box`);
+      if (!t) throw new Error(`${label}: missing box`);
       expect(t.height, `${label} one line`).toBeLessThanOrEqual(18.5);
       expect(t.x, `${label} left`).toBeGreaterThanOrEqual(track.x - 0.5);
       expect(t.x + t.width, `${label} right`).toBeLessThanOrEqual(track.x + track.width + 0.5);

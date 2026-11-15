@@ -34,8 +34,8 @@ export function IconButtonSpecimen(): ReactElement {
         <IconButton
           label="Pages"
           icon={<Icon name="menu" />}
-          shortcut={["⌘1", "⌘2", "⌘3", "⌘4", "⌘5", "⌘6"]}
-          shortcutLabel="⌘1–6"
+          shortcut={["⌘1", "⌘2", "⌘3", "⌘4", "⌘5", "⌘6", "⌘7"]}
+          shortcutLabel="⌘1–7"
           aria-haspopup="menu"
           aria-expanded={false}
         />

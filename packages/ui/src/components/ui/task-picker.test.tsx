@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { TaskPicker, type TaskPickerOption, type TaskPickerProps } from "./task-picker";
 
 const OPTIONS: TaskPickerOption[] = [
@@ -19,6 +19,14 @@ const type = (value: string) =>
   fireEvent.change(screen.getByRole("combobox"), { target: { value } });
 const press = (key: string) => fireEvent.keyDown(screen.getByRole("combobox"), { key });
 const quiet = () => screen.getByRole("button", { name: "Add a task" });
+
+const scrollIntoView = Element.prototype.scrollIntoView;
+afterEach(() => {
+  vi.restoreAllMocks();
+  document.documentElement.removeAttribute("style");
+  if (scrollIntoView) Element.prototype.scrollIntoView = scrollIntoView;
+  else Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+});
 
 test("task_picker_rests_as_quiet_text", () => {
   setup();
@@ -149,7 +157,6 @@ test("task_picker_an_empty_options_list_says_so", () => {
 
 test("the_active_option_is_scrolled_into_view_and_marked_in_words", () => {
   const scroll = vi.fn();
-  const original = Element.prototype.scrollIntoView;
   Element.prototype.scrollIntoView = scroll;
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Add a task" }));
@@ -157,8 +164,6 @@ test("the_active_option_is_scrolled_into_view_and_marked_in_words", () => {
   press("ArrowDown");
   expect(scroll).toHaveBeenCalledWith({ block: "nearest" });
   expect(screen.getAllByText("Selected")).toHaveLength(1);
-  if (original) Element.prototype.scrollIntoView = original;
-  else Reflect.deleteProperty(Element.prototype, "scrollIntoView");
 });
 
 test("the_panel_opens_above_when_there_is_no_room_below", () => {
@@ -173,9 +178,7 @@ test("the_panel_opens_above_when_there_is_no_room_below", () => {
       x: 0,
       y: top,
     }) as DOMRect;
-  const spy = vi
-    .spyOn(HTMLElement.prototype, "getBoundingClientRect")
-    .mockImplementation(rect(700, 740));
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(rect(700, 740));
   document.documentElement.style.setProperty("--hit-min", "44px");
   document.documentElement.style.setProperty("--space-2", "8px");
   setup();
@@ -185,8 +188,6 @@ test("the_panel_opens_above_when_there_is_no_room_below", () => {
     "data-placement",
     "above",
   );
-  spy.mockRestore();
-  document.documentElement.removeAttribute("style");
 });
 
 test("task_picker_clear_returns_focus_to_the_quiet_text", () => {

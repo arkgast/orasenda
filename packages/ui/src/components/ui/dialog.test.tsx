@@ -211,6 +211,19 @@ test("dialog_sheet_body_is_two_columns_that_stack_when_narrow", () => {
   expect(body.firstElementChild?.className).toContain("@sheet-stack:grid-cols-2");
 });
 
+test("dialog_sheet_pins_the_actions_and_scrolls_only_the_body", () => {
+  render(
+    <Dialog {...base} size="sheet" onCancel={() => {}}>
+      <p>Fields</p>
+    </Dialog>,
+  );
+  const panel = document.querySelector("[data-slot=dialog-content]") as HTMLElement;
+  const body = document.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
+  expect(panel).toHaveClass("overflow-hidden");
+  expect(panel).not.toHaveClass("overflow-auto");
+  expect(body).toHaveClass("overflow-auto", "min-h-0", "flex-1");
+});
+
 test("dialog_default_size_keeps_the_panel_width_and_a_clear_backdrop", () => {
   render(<Dialog {...base} onCancel={() => {}} />);
   expect(screen.getByRole("dialog").className).toContain("max-w-panel-width");
