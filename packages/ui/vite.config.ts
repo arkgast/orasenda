@@ -204,7 +204,9 @@ for (const theme of ["light", "dark"]) {
         async resolveId(source, importer, options) {
           if (!importer || !source.startsWith(".")) return undefined;
           const found = await this.resolve(source, importer, { ...options, skipSelf: true });
-          return importSpecifier(found?.id ?? "") === importSpecifier(resolve(src, "index.ts")) ? "\0virtual:ui-shim" : undefined;
+          return importSpecifier(found?.id ?? "") === importSpecifier(resolve(src, "index.ts"))
+            ? "\0virtual:ui-shim"
+            : undefined;
         },
         load: (id) => (id === "\0virtual:ui-shim" ? shim : undefined),
       },
