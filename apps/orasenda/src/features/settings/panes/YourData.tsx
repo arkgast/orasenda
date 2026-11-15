@@ -10,6 +10,8 @@ type Props = {
   headingRef: Ref<HTMLHeadingElement>;
   /** A session is running: Delete all data says so and opens nothing. */
   running?: boolean;
+  /** Goes to the Board and opens the import sheet. */
+  onImportTasks?: () => void;
 };
 
 function kindOf(failure: unknown): DataErrorKind | null {
@@ -20,7 +22,7 @@ function kindOf(failure: unknown): DataErrorKind | null {
 const live = (text: string | undefined): ReactNode =>
   text ? <span role="status">{text}</span> : undefined;
 
-export function YourData({ headingRef, running = false }: Props) {
+export function YourData({ headingRef, running = false, onImportTasks }: Props) {
   const { overview, error, refresh } = useDataOverview();
   const [line, setLine] = useState<Line>(null);
   const [working, setWorking] = useState<"export" | "import" | null>(null);
@@ -166,6 +168,15 @@ export function YourData({ headingRef, running = false }: Props) {
             {working === "import" ? "Importing…" : "Import data…"}
           </Button>
         </div>
+      </SettingsRow>
+      <SettingsRow
+        id="tasks-import"
+        label="Tasks from other apps"
+        helper="Bring tasks from Reminders, Todoist or Things into your Backlog. You choose which ones first."
+        actionLabel="Import tasks…"
+        onAction={onImportTasks}
+      >
+        {null}
       </SettingsRow>
       <SettingsRow
         id="start-over"

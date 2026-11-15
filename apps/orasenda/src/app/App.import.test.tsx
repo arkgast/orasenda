@@ -1,3 +1,5 @@
+import { picked, previewOf, SOURCES, THREE } from "@features/board/import/ImportSheet.support";
+import { resetImportAsk } from "@features/board/import/importAsk";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import { emitPaletteOpen, mockBackend, settle } from "@shared/test/fixtures";
@@ -5,8 +7,6 @@ import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetImportAsk } from "../features/board/import/importAsk";
-import { picked, previewOf, SOURCES, THREE } from "../features/board/import/ImportSheet.support";
 import { App } from "./App";
 
 beforeEach(() => {
@@ -47,7 +47,9 @@ test("your_data_import_opens_board_sheet", async () => {
   await goToYourData();
   fireEvent.click(screen.getByRole("button", { name: "Import tasks…" }));
   await settle();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Board", hidden: true }),
+  ).toBeInTheDocument();
   expect(sheet()).toBeInTheDocument();
 });
 
@@ -57,7 +59,9 @@ test("palette_import_tasks_opens_sheet", async () => {
   fireEvent.click(screen.getByRole("option", { name: /Import tasks…/ }));
   await settle();
   expect(screen.queryByRole("combobox")).toBeNull();
-  expect(screen.getByRole("heading", { level: 1, name: "Board" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Board", hidden: true }),
+  ).toBeInTheDocument();
   expect(sheet()).toBeInTheDocument();
 });
 

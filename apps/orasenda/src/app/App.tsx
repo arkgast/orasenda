@@ -110,6 +110,9 @@ export function App() {
   const [current, setCurrent] = useState<NavPage>("today");
   const [arrival, setArrival] = useState<Arrival>({ seq: 0 });
   const currentRef = useRef<NavPage>("today");
+  // Counts the asks for the import sheet. The Board opens it once per value (importAsk.ts), so
+  // coming back to the Board later does not open it again.
+  const [importAsked, setImportAsked] = useState(0);
   const main = useRef<HTMLElement>(null);
 
   const { compact } = useWindowLayout();
@@ -231,6 +234,11 @@ export function App() {
     };
   }, [navigate]);
 
+  const askImport = useCallback(() => {
+    setImportAsked((count) => count + 1);
+    navigate("board");
+  }, [navigate]);
+
   useShortcuts(
     PAGE_ORDER.map(({ id }, index) => ({
       key: String(index + 1),
@@ -250,6 +258,7 @@ export function App() {
         onMode={setPalette}
         onClose={() => setPalette("closed")}
         onNavigate={(page) => navigate(page)}
+        onImportTasks={askImport}
       />
     );
 
@@ -291,10 +300,17 @@ export function App() {
                 <Today onNavigate={(page, target) => navigate(page, target)} />
               ) : null}
               {current === "settings" ? (
-                <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
+                <Settings
+                  info={info}
+                  arrival={arrival}
+                  onNavigate={(page) => navigate(page)}
+                  onImportTasks={askImport}
+                />
               ) : null}
               {current === "inbox" ? <Inbox onNavigate={(page) => navigate(page)} /> : null}
-              {current === "board" ? <Board onNavigate={(page) => navigate(page)} /> : null}
+              {current === "board" ? (
+                <Board onNavigate={(page) => navigate(page)} importAsked={importAsked} />
+              ) : null}
               {current === "routines" ? <Routines onNavigate={(page) => navigate(page)} /> : null}
               {current !== "today" &&
               current !== "settings" &&

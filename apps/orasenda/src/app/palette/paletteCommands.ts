@@ -151,6 +151,13 @@ function taskCommands(input: PaletteInput): Command[] {
   return rows;
 }
 
+/** Quiet and never promoted: it sits after the task commands and the capture pad. */
+const IMPORT_TASKS: Command = {
+  id: "importTasks",
+  label: "Import tasks…",
+  hint: "From Reminders, Todoist or Things into Backlog",
+};
+
 /** The commands available now, in the order the palette shows them (command-palette.md). */
 export function paletteCommands(input: PaletteInput): Command[] {
   if (input.tasksOnly) return taskRows(input.tasks);
@@ -164,6 +171,7 @@ export function paletteCommands(input: PaletteInput): Command[] {
     ...sessionCommands(input),
     ...taskCommands(input),
     captureCommand(input),
+    IMPORT_TASKS,
     ...focusViewCommands(input),
     ...settingsCommands(input),
     ...pages,

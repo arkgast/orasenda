@@ -21,6 +21,8 @@ type Props = {
   onMode(mode: "tasks"): void;
   onClose(): void;
   onNavigate(page: NavPage): void;
+  /** *Import tasks…*: the host goes to the Board and asks for the import sheet. */
+  onImportTasks?(): void;
 };
 
 /** Runs a command; resolves to whether it worked. Failures are logged here, shown by the caller. */
@@ -46,6 +48,7 @@ export function Palette({
   onMode,
   onClose,
   onNavigate,
+  onImportTasks,
 }: Props): ReactElement {
   const presets = usePresets();
   const [view, setView] = useState<TimerView_Serialize | null>(null);
@@ -138,6 +141,9 @@ export function Palette({
         return attempt("timer_set_task", commands.timerSetTask(arg ?? null)).then(
           report("choose that task"),
         );
+      case "importTasks":
+        onImportTasks?.();
+        return;
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));
       case "fullScreen":
