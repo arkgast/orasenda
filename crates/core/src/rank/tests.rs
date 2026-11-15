@@ -125,3 +125,16 @@ fn spread_after_tombstone_rank() {
     let m = between(Some(&tomb), Some(&ranks[0]));
     assert!(tomb < m && m < ranks[0]);
 }
+
+#[test]
+fn spread_leaves_room_between_neighbours() {
+    for n in [1, 2, 61, 62, 500, 3000] {
+        let ranks = spread(None, n);
+        assert!(ranks.iter().all(|r| !r.ends_with('0')));
+        for w in ranks.windows(2) {
+            let m = between(Some(&w[0]), Some(&w[1]));
+            assert!(w[0] < m && m < w[1]);
+            assert_eq!(m.len(), w[0].len());
+        }
+    }
+}
