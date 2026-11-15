@@ -160,7 +160,7 @@ pub(crate) fn stored_lane(lane: Lane) -> tasks::Lane {
 
 /// "Due today", "Due yesterday", "Due tomorrow" or "Due Fri 20 Nov" (the year when it is not
 /// this one). Never "overdue". A stored date that doesn't parse has no label.
-fn due_label(due: &str, today: LocalDate) -> Option<String> {
+pub(crate) fn due_label(due: &str, today: LocalDate) -> Option<String> {
     let date = LocalDate::parse_iso(due)?;
     Some(if date == today {
         "Due today".to_owned()

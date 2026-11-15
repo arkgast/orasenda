@@ -6,13 +6,13 @@
 //! released. A store that can't be read is an error, never an empty board.
 
 pub(crate) mod check;
-mod columns;
+pub(crate) mod columns;
 mod doing;
 mod inbox_move;
 mod service;
 #[cfg(test)]
 mod tests;
-mod view;
+pub(crate) mod view;
 
 pub(crate) use doing::move_to_doing;
 pub use inbox_move::{run_inbox_to_task, run_task_restore_note};

@@ -4,7 +4,9 @@
 mod fakes;
 #[cfg(test)]
 mod helpers;
+mod import_fakes;
 
 pub use fakes::*;
 #[cfg(test)]
 pub(crate) use helpers::*;
+pub use import_fakes::*;

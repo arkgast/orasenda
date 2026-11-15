@@ -29,7 +29,14 @@ pub(crate) enum ParseError {
 pub(crate) type Seen = HashMap<(String, String), u32>;
 
 /// The open tasks of a Todoist CSV, or of every project CSV in a backup `.zip`.
+#[cfg(test)]
 pub(crate) fn parse_file(path: &Path) -> Result<Vec<RawItem>, ParseError> {
+    parse_file_counted(path).map(|(items, _)| items)
+}
+
+/// As [`parse_file`], with how many CSV files in a `.zip` were not Todoist exports (always 0
+/// for a plain CSV).
+pub(crate) fn parse_file_counted(path: &Path) -> Result<(Vec<RawItem>, u32), ParseError> {
     let meta = std::fs::metadata(path).map_err(|_| ParseError::Unreadable)?;
     if !meta.is_file() {
         return Err(ParseError::Unreadable);
@@ -56,7 +63,7 @@ pub(crate) fn parse_file(path: &Path) -> Result<Vec<RawItem>, ParseError> {
         .file_stem()
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
-    parse_csv(&project_name(&stem), &bytes, &mut seen)
+    parse_csv(&project_name(&stem), &bytes, &mut seen).map(|items| (items, 0))
 }
 
 /// The project's name from a file or entry stem, without a trailing ` [id]`, ` (n)` or

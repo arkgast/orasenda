@@ -24,7 +24,7 @@ fn default_for(lane: Lane) -> ColumnSettings {
 
 /// The four columns in board order. A missing, unreadable or incomplete row falls back to the
 /// defaults, per column.
-pub(super) fn read(txn: &Txn) -> Result<Vec<ColumnSettings>, StoreError> {
+pub(crate) fn read(txn: &Txn) -> Result<Vec<ColumnSettings>, StoreError> {
     let stored = match settings::get::<Vec<ColumnSettings>>(txn, KEY) {
         Ok(stored) => stored.unwrap_or_default(),
         Err(StoreError::Json(error)) => {
