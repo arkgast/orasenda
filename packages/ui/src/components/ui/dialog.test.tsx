@@ -273,3 +273,53 @@ test("dialog_confirm_disabled_reason", () => {
   fireEvent.click(confirm);
   expect(onConfirm).not.toHaveBeenCalled();
 });
+
+function rect(top: number, bottom: number): DOMRect {
+  return { top, bottom, left: 0, right: 0, width: 0, height: bottom - top, x: 0, y: top } as DOMRect;
+}
+
+function NudgeHost() {
+  return (
+    <Dialog {...base} size="sheet" onCancel={() => {}}>
+      <button type="button">Remove item</button>
+      <label>
+        Next
+        <input aria-label="Next" />
+      </label>
+    </Dialog>
+  );
+}
+
+function nudgeSetup() {
+  render(<NudgeHost />);
+  const body = document.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
+  const next = screen.getByLabelText("Next");
+  vi.spyOn(body, "getBoundingClientRect").mockReturnValue(rect(0, 100));
+  vi.spyOn(next, "getBoundingClientRect").mockReturnValue(rect(110, 130));
+  body.scrollTop = 0;
+  return { body, next };
+}
+
+test("dialog_sheet_nudges_when_a_pointerdown_elsewhere_left_focus_to_code", () => {
+  const { body, next } = nudgeSetup();
+  // WebKit does not focus the pressed button; the code then moves focus to another field.
+  fireEvent.pointerDown(screen.getByRole("button", { name: "Remove item" }));
+  next.focus();
+  expect(body.scrollTop).toBeGreaterThan(0);
+});
+
+test("dialog_sheet_leaves_pointer_focus_alone_when_the_focused_element_holds_the_press", () => {
+  const { body, next } = nudgeSetup();
+  fireEvent.pointerDown(next);
+  next.focus();
+  expect(body.scrollTop).toBe(0);
+});
+
+test("dialog_sheet_pointerup_clears_the_press", () => {
+  const { body, next } = nudgeSetup();
+  fireEvent.pointerDown(next);
+  fireEvent.pointerUp(next);
+  next.blur();
+  next.focus();
+  expect(body.scrollTop).toBeGreaterThan(0);
+});
