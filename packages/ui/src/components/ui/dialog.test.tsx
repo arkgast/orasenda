@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { expect, test, vi } from "vitest";
 import { Dialog } from "./dialog";
 
@@ -219,4 +219,18 @@ test("dialog_default_size_keeps_the_panel_width_and_a_clear_backdrop", () => {
     "data-scrim",
     "false",
   );
+});
+
+function FocusHost() {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <Dialog {...base} size="sheet" initialFocusRef={ref} onCancel={() => {}}>
+      <input ref={ref} aria-label="Title" />
+    </Dialog>
+  );
+}
+
+test("dialog_initial_focus_ref_takes_focus_instead_of_cancel", async () => {
+  render(<FocusHost />);
+  await vi.waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
 });

@@ -10,8 +10,7 @@ afterEach(async () => {
   clearMocks();
 });
 
-const withTask = (over = {}) =>
-  boardOf(TASKS.map((t) => (t.id === "t1" ? { ...t, ...over } : t)));
+const withTask = (over = {}) => boardOf(TASKS.map((t) => (t.id === "t1" ? { ...t, ...over } : t)));
 
 async function openSheet(options: Parameters<typeof renderBoard>[0] = {}) {
   const backend = await renderBoard({ replies: { task_update: () => null }, ...options });
@@ -79,7 +78,9 @@ test("edits_save_on_change", async () => {
 
 test("the column select moves the task", async () => {
   const backend = await openSheet({ replies: { task_update: () => null, task_move: () => null } });
-  fireEvent.change(screen.getByRole("combobox", { name: "Column" }), { target: { value: "doing" } });
+  fireEvent.change(screen.getByRole("combobox", { name: "Column" }), {
+    target: { value: "doing" },
+  });
   await settle();
   expect(argsOf(backend.calls, "task_move")).toEqual([{ id: "t1", lane: "doing", index: 1 }]);
 });
@@ -126,6 +127,8 @@ test("the record line says No estimate", async () => {
 
 test("the Frog cannot be set on a Done task", async () => {
   const backend = await renderBoard({ replies: { task_update: () => null } });
+  fireEvent.click(screen.getByRole("button", { name: /^Done/ }));
+  await settle();
   card("Ship release").focus();
   fireEvent.keyDown(card("Ship release"), { key: "Enter" });
   await settle();

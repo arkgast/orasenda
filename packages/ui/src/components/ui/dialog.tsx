@@ -1,5 +1,5 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
-import type { JSX, ReactNode } from "react";
+import type { JSX, ReactNode, RefObject } from "react";
 import { useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
@@ -42,6 +42,8 @@ export interface DialogProps {
   loading?: boolean;
   /** "sheet" is the wide task sheet: capped at sheet-width, always over the scrim, with a two-column body. */
   size?: "panel" | "sheet";
+  /** The element that takes focus on open instead of the cancel action; the sheet uses it for its first field. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
@@ -69,6 +71,7 @@ export function Dialog({
   scrim,
   loading,
   size = "panel",
+  initialFocusRef,
 }: DialogProps): JSX.Element {
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -100,8 +103,11 @@ export function Dialog({
                 lastPress && Date.now() - lastPress.at <= PRESS_TTL_MS ? lastPress.el : null;
               opener.current = active && active !== document.body ? active : press;
               event.preventDefault();
-              // The cancel action is the first button of the actions row.
-              actionsRef.current?.querySelector<HTMLElement>("button")?.focus();
+              // The cancel action is the first button of the actions row, unless the host named a field.
+              const target =
+                initialFocusRef?.current ??
+                actionsRef.current?.querySelector<HTMLElement>("button");
+              target?.focus();
             }}
             onCloseAutoFocus={(event) => {
               event.preventDefault();

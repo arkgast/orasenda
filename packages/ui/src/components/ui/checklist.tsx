@@ -29,7 +29,7 @@ const FIELD =
 const BOX =
   "m-0 grid size-icon-md shrink-0 cursor-pointer appearance-none place-content-center rounded-none border-2 border-line-strong bg-surface-raised checked:border-focus checked:bg-focus before:hidden checked:before:block before:h-2 before:w-1 before:-mt-px before:rotate-45 before:border-0 before:border-r-2 before:border-b-2 before:border-solid before:border-on-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-default disabled:border-dashed";
 
-interface RowProps extends Pick<ChecklistProps, "onToggle" | "onRemove" | "onRename" | "disabled"> {
+interface RowProps extends Pick<ChecklistProps, "onToggle" | "onRename" | "disabled"> {
   item: ChecklistItem;
   /** Called with the row's element after a removal so focus can move to a neighbour. */
   onBackspaceEmpty: (id: string, row: HTMLElement) => void;
@@ -40,7 +40,6 @@ interface RowProps extends Pick<ChecklistProps, "onToggle" | "onRemove" | "onRen
 function Row({
   item,
   onToggle,
-  onRemove,
   onRename,
   onBackspaceEmpty,
   onRemoveClick,
@@ -170,7 +169,6 @@ export function Checklist({
               item={item}
               disabled={disabled}
               onToggle={onToggle}
-              onRemove={onRemove}
               onRename={onRename}
               onBackspaceEmpty={removeEmpty}
               onRemoveClick={removeButtonFocus}

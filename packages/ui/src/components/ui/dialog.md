@@ -7,5 +7,6 @@ A confirmation. Escape always does the safe thing.
 - Radix Dialog (`role="dialog"`), or AlertDialog (`role="alertdialog"`) when `destructive`: background inert, focus contained, focus restored to whatever had it when the dialog opened (the trigger). Backdrop clicks never dismiss. Esc closes only the topmost layer (`src/lib/layer.ts`).
 - Sizes: the panel is capped at `panel-width` and shrinks to the window with a `space-3` gutter; padding and gaps are token steps.
 - `size="sheet"` is the task sheet: capped at `sheet-width` (720px), always over the `scrim`, and `children` sit in a two-column field grid that stacks to one column when the sheet body is narrower than `container-sheet-stack` (560px). A field that needs the full width spans both columns (`@sheet-stack:col-span-2`). Edits in a sheet save on change, so its confirm reads "Done" and its cancel "Close"; Esc closes it and focus returns to the opener. The panel scrolls inside the window when it is taller.
+- `initialFocusRef` (optional) names the element that takes focus when the dialog opens instead of the cancel action. The task sheet passes its title field, because editing is its purpose; Esc and Close still return focus to the opener.
 
 Do: mount one dialog at a time and keep the trigger mounted. Don't: perform the deletion in the component; the host does, after `onConfirm`.

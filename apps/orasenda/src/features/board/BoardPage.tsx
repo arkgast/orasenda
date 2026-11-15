@@ -11,6 +11,7 @@ import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { Lane } from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardColumns } from "./BoardColumns";
+import { TaskSheet } from "./detail/TaskSheet";
 import { NEW_TASK_ID } from "./NewTaskField";
 import { useBoard } from "./useBoard";
 import { useBoardActions } from "./useBoardActions";
@@ -100,7 +101,13 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
     (stop ?? document.querySelector<HTMLElement>("h1"))?.focus();
   };
 
-  const openTask = (id: string) => onOpenTask?.(id);
+  // The sheet is the Board's own; the prop only lets a host know. A task that goes away closes it.
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  const sheetTask = columns.flatMap((c) => c.tasks).find((t) => t.id === sheetId);
+  const openTask = (id: string) => {
+    setSheetId(id);
+    onOpenTask?.(id);
+  };
   const line = actions.line;
   const status =
     api.board.status === "error" ? (
@@ -188,6 +195,17 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
           board
         )}
       </PageFrame>
+      {sheetTask ? (
+        <TaskSheet
+          key={sheetTask.id}
+          task={sheetTask}
+          columns={columns}
+          update={api.update}
+          move={api.move}
+          setFrog={api.setFrog}
+          onClose={() => setSheetId(null)}
+        />
+      ) : null}
     </div>
   );
 }
