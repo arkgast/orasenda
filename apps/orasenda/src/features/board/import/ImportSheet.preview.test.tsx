@@ -96,13 +96,13 @@ test("failed_import_try_again_keeps_preview", async () => {
   const backend = await open({
     task_import: () => {
       calls += 1;
-      if (calls === 1) throw { kind: "store", message: "That didn't save. Try again." };
+      if (calls === 1) throw { kind: "store", message: "The tasks weren't imported. Try again." };
       return { importId: 3, count: 3 };
     },
   });
   fireEvent.click(confirm("Import 3 tasks"));
   await settle();
-  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+  expect(screen.getByText("The tasks weren't imported. Try again.")).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: "Renew passport" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   await settle();

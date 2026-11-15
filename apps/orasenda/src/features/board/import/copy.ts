@@ -18,7 +18,7 @@ export const SOURCE_COPY: Record<ImportSourceKind, { name: string; description: 
 export const STALE_LINE = "That preview is out of date. Choose the source again.";
 export const SOURCES_FAILED_LINE =
   "Orasenda couldn't list the places to import from. Close this and try again.";
-export const FAILED_LINE = "That didn't save. Try again.";
+export const FAILED_LINE = "The tasks weren't imported. Try again.";
 export const READ_FAILED_LINE = "Orasenda couldn't read that source. Try again.";
 export const NO_SELECTION = "Select at least one task to import.";
 

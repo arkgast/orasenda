@@ -132,6 +132,19 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
       onImportOpened?.();
     }
   }, [importAsked, onImportOpened, actions.show]);
+  // The sheet closing leaves focus nowhere when its trigger is gone (the empty Board's button).
+  const wasImporting = useRef(false);
+  useEffect(() => {
+    const closed = wasImporting.current && !importing;
+    wasImporting.current = importing;
+    if (!closed) return;
+    const at = document.activeElement;
+    if (at && at !== document.body) return;
+    const again = [...document.querySelectorAll<HTMLElement>("button")].find(
+      (b) => b.textContent === "Import tasks…",
+    );
+    (again ?? document.querySelector<HTMLElement>("h1"))?.focus();
+  }, [importing]);
   const askImport = () => {
     actions.show(null);
     setImporting(true);

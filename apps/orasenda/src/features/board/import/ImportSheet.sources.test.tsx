@@ -28,22 +28,28 @@ const pick = async (name: RegExp | string) => {
 };
 
 test("stale_answer_dropped", async () => {
-  const first = deferred<unknown>();
+  const late = deferred<unknown>();
   let calls = 0;
-  await renderImport({
+  const backend = await renderImport({
     import_preview: () => {
       calls += 1;
-      return calls === 1 ? first.promise : picked(previewOf("todoist", [item(5, "From Todoist")]));
+      if (calls === 1) throw { kind: "denied", message: "Orasenda can't read your reminders." };
+      if (calls === 2) return late.promise;
+      return picked(previewOf("todoist", [item(5, "From Todoist")]));
     },
   });
-  fireEvent.click(row("Apple Reminders"));
-  await settle();
-  // Reading holds the other rows; once the first is answered with nothing the user picks again.
-  first.resolve({ cancelled: {} });
-  await settle();
+  await pick("Apple Reminders");
+  // The quiet re-read on focus is still out when the user picks Todoist.
+  await act(async () => {
+    window.dispatchEvent(new Event("focus"));
+  });
   await pick("Todoist");
   expect(screen.getByRole("checkbox", { name: "From Todoist" })).toBeInTheDocument();
+  late.resolve(picked(previewOf("reminders", THREE, { id: 9 })));
+  await settle();
+  expect(screen.getByRole("checkbox", { name: "From Todoist" })).toBeInTheDocument();
   expect(screen.queryByRole("checkbox", { name: "Renew passport" })).toBeNull();
+  expect(argsOf(backend.calls, "import_discard")).toContainEqual({ previewId: 9 });
 });
 
 test("stale_answer_dropped_after_close", async () => {
@@ -165,10 +171,35 @@ test("every_error_kind_shows_its_line", async () => {
 });
 
 test("empty_source_choose_another", async () => {
-  await renderImport({ import_preview: () => picked(previewOf("reminders", [])) });
+  const backend = await renderImport({ import_preview: () => picked(previewOf("reminders", [])) });
   await pick("Apple Reminders");
   expect(screen.getByText("No open tasks in Reminders.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Choose another source" }));
   await settle();
   expect(row("Todoist")).toBeInTheDocument();
+  expect(argsOf(backend.calls, "import_discard")).toEqual([{ previewId: 7 }]);
+});
+
+test("sources_failure_has_no_choose_another", async () => {
+  await renderImport({
+    import_sources: () => {
+      throw { kind: "store", message: "x" };
+    },
+  });
+  expect(screen.getByText(/couldn't list the places/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Choose another source" })).toBeNull();
+});
+
+test("empty_step_focuses_choose_another", async () => {
+  await renderImport({ import_preview: () => picked(previewOf("reminders", [])) });
+  await pick("Apple Reminders");
+  expect(screen.getByRole("button", { name: "Choose another source" })).toHaveFocus();
+});
+
+test("choose_another_focuses_first_source", async () => {
+  await renderImport({ import_preview: () => picked(previewOf("reminders", [])) });
+  await pick("Apple Reminders");
+  fireEvent.click(screen.getByRole("button", { name: "Choose another source" }));
+  await settle();
+  expect(row("Apple Reminders")).toHaveFocus();
 });

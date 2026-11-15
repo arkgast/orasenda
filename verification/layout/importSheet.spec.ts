@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
+import { expectFocusRingVisible } from "./support/focusRing.ts";
 import { openSpecimen } from "./support/specimen.ts";
 
 const SIZES = [
@@ -94,8 +95,15 @@ for (const size of SIZES) {
     await page.getByRole("button", { name: "Import tasks…" }).click();
     const dialog = page.getByRole("dialog", { name: "Import tasks" });
     await expect(dialog.getByRole("button", { name: "Apple Reminders" })).toBeFocused();
+    // The sheet opened by a click: move away and back by keyboard so the focus ring applies.
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expectFocusRingVisible(page.locator(":focus"));
     await dialog.getByRole("button", { name: "Apple Reminders" }).click();
     await expect(dialog.getByRole("checkbox").first()).toBeFocused();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expectFocusRingVisible(page.locator(":focus"));
     const m = await dialog.evaluate((el) => {
       const body = el.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
       const actions = el.querySelector("[data-slot=dialog-actions]") as HTMLElement;
@@ -119,5 +127,12 @@ for (const size of SIZES) {
     expect(m.listScrolls).toBe(true);
     expect(m.actionsInside).toBe(true);
     expect(m.minRow).toBeGreaterThanOrEqual(m.hitMin - 0.5);
+    // Scrolled to the end, the title and the actions are still on screen.
+    await dialog.evaluate((el) => {
+      const body = el.querySelector("[data-slot=dialog-sheet-body]") as HTMLElement;
+      body.scrollTop = body.scrollHeight;
+    });
+    await expect(dialog.getByRole("button", { name: /^Import \d+ tasks?$/ })).toBeInViewport();
+    await expect(dialog.getByRole("heading").first()).toBeInViewport();
   });
 }

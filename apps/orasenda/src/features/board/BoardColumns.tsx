@@ -19,7 +19,12 @@ export type ColumnHandlers = {
 };
 
 function footerOf(lane: Lane, board: BoardView, on: ColumnHandlers) {
-  if (lane === "backlog") return <Button onClick={on.import}>Import tasks…</Button>;
+  if (lane === "backlog")
+    return (
+      <Button variant="ghost" onClick={on.import}>
+        Import tasks…
+      </Button>
+    );
   if (lane === "today" && board.todayPlanned > 0) {
     return (
       <p className="app-board-planned">

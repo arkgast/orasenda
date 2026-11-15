@@ -183,6 +183,10 @@ export function useBoardActions(
             show({ text: "Import undone.", tone: "neutral" });
             return;
           }
+          if (result.error.kind === "stale") {
+            show({ text: "That import can't be undone any more.", tone: "attention" });
+            return;
+          }
         } catch (error) {
           console.error("task_import_undo failed", error);
         }

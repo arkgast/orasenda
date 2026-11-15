@@ -8,13 +8,19 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FAILED_LINE, READ_FAILED_LINE, SOURCES_FAILED_LINE, STALE_LINE } from "./copy";
 
+/** The same line again keeps its object, so a re-read does not remount (and re-announce) it. */
+const keep = (next: Problem) => (now: Problem | null) =>
+  now && now.text === next.text && now.source === next.source && now.denied === next.denied
+    ? now
+    : next;
+
 export type Step = "source" | "preview" | "empty";
 
 /** What the sheet says under the heading, with the way on it offers. */
 export type Problem = {
   text: string;
   source?: ImportSourceKind;
-  kind: "read" | "write" | "stale";
+  kind: "read" | "write" | "stale" | "sources";
   /** The OS said no: the sheet offers System Settings. */
   denied?: boolean;
 };
@@ -45,7 +51,6 @@ export function useImport({
   const [importing, setImporting] = useState(false);
   const latest = useRef(0);
   const held = useRef<ImportPreview_Serialize | null>(null);
-  held.current = preview;
 
   useEffect(() => {
     // `active` is a dependency on purpose: the sources are asked again when it flips.
@@ -60,7 +65,7 @@ export function useImport({
       (error: unknown) => {
         console.error("import_sources failed", error);
         if (!current) return;
-        setProblem({ text: SOURCES_FAILED_LINE, kind: "stale" });
+        setProblem({ text: SOURCES_FAILED_LINE, kind: "sources" });
         setReady(true);
       },
     );
@@ -79,13 +84,24 @@ export function useImport({
     }
   }, []);
 
+  // The sheet going away: an answer still on its way no longer counts and a held preview is let go.
+  useEffect(
+    () => () => {
+      latest.current += 1;
+      discard();
+    },
+    [discard],
+  );
+
   const read = useCallback(
     async (kind: ImportSourceKind, quiet = false) => {
       discard();
       setPreview(null);
       const mine = ++latest.current;
-      if (!quiet) setReading(kind);
-      setProblem(null);
+      if (!quiet) {
+        setReading(kind);
+        setProblem(null);
+      }
       setStep("source");
       let answer: Awaited<ReturnType<typeof commands.importPreview>>;
       try {
@@ -94,26 +110,31 @@ export function useImport({
         console.error("import_preview failed", error);
         if (mine !== latest.current) return;
         setReading(null);
-        setProblem({ text: READ_FAILED_LINE, source: kind, kind: "read" });
+        setProblem(keep({ text: READ_FAILED_LINE, source: kind, kind: "read" }));
         return;
       }
       if (mine !== latest.current) {
         // An answer nobody waits for: let its preview go.
         if (answer.status === "ok" && answer.data.picked) {
-          commands.importDiscard(answer.data.picked.id).catch(() => {});
+          commands.importDiscard(answer.data.picked.id).catch((error: unknown) => {
+            console.error("import_discard failed", error);
+          });
         }
         return;
       }
       setReading(null);
       if (answer.status === "error") {
-        setProblem({
-          text: answer.error.message,
-          source: kind,
-          kind: "read",
-          denied: answer.error.kind === "denied",
-        });
+        setProblem(
+          keep({
+            text: answer.error.message,
+            source: kind,
+            kind: "read",
+            denied: answer.error.kind === "denied",
+          }),
+        );
         return;
       }
+      setProblem(null);
       if (answer.data.cancelled) return;
       const next = answer.data.picked;
       if (!next) return;
