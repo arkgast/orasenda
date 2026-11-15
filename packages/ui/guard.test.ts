@@ -8,7 +8,7 @@ const literals = (source: string) => source.match(LITERAL) ?? [];
 
 // ---- code-first guards (#187) ----
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { arbitraryValues, scan } from "../../tools/tailwind-strict.ts";
 
 function tsFiles(folder: string, ext = /\.(ts|tsx)$/): string[] {
@@ -19,6 +19,8 @@ function tsFiles(folder: string, ext = /\.(ts|tsx)$/): string[] {
     return ext.test(name) ? [path] : [];
   });
 }
+/** A path relative to src with "/" separators, so the checks read the same on Windows. */
+const rel = (f: string) => relative(dir, f).replaceAll("\\", "/");
 const here = (name: string) => resolve(import.meta.dirname, name);
 const typed = tsFiles(dir).filter((f) => !/\.(test|test-d|d)\.tsx?$/.test(f));
 
@@ -40,9 +42,7 @@ function copyProblems(text: string): { exclamation: string[]; emoji: string[] } 
   };
 }
 
-const typedSources = Object.fromEntries(
-  typed.map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
-);
+const typedSources = Object.fromEntries(typed.map((f) => [rel(f), readFileSync(f, "utf8")]));
 
 test("rel_normalises_backslashes", () => {
   expect(rel(`${dir}/a\\b.tsx`)).toBe("a/b.tsx");
@@ -50,9 +50,7 @@ test("rel_normalises_backslashes", () => {
 });
 
 test("guard_rejects_create_element", () => {
-  const all = Object.fromEntries(
-    tsFiles(dir).map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
-  );
+  const all = Object.fromEntries(tsFiles(dir).map((f) => [rel(f), readFileSync(f, "utf8")]));
   expect(createElementHits(all)).toEqual([]);
   // The scan bites on a seeded file.
   expect(
@@ -76,9 +74,9 @@ test("source_copy_has_no_exclamation_mark_or_emoji", () => {
 test("source_critical_only_in_dialog_destructive_and_button_critical", () => {
   const allowed = /(^|\/)(dialog|button)(\.specimen)?\.tsx$/;
   const hits = typed
-    .filter((f) => !allowed.test(f))
+    .filter((f) => !allowed.test(rel(f)))
     .filter((f) => /critical|destructive/i.test(readFileSync(f, "utf8")))
-    .map((f) => f.replace(`${dir}/`, ""));
+    .map(rel);
   // types.ts and index.ts name the Dialog prop and the Button variant; nothing else may.
   expect(hits.filter((f) => !/^(types|index)\.tsx?$/.test(f))).toEqual([]);
 });

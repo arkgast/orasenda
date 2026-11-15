@@ -86,6 +86,8 @@ ci:
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
     @echo "==> docs-only classifier (tests)"
     ./scripts/docs-only.test.sh
+    @echo "==> layout skip switch (tests)"
+    ./scripts/layout-skip.test.sh
     @echo "==> file size guard (tests)"
     ./scripts/file-size.test.sh
     @echo "==> install (pnpm, frozen lockfile)"
@@ -131,7 +133,7 @@ ci:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
-    @echo "==> layout (real-engine WebKit checks, macOS only)"
+    @echo "==> layout (real-engine WebKit checks, macOS only; skipped when ORASENDA_LAYOUT=skip)"
     "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
@@ -146,19 +148,25 @@ specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
 
 # Real-engine layout checks: runs every spec in verification/layout with Playwright WebKit. macOS only
-# (other hosts skip); fails with the install command when WebKit is missing.
+# (other hosts skip); fails with the install command when WebKit is missing. Extra args go to
+# Playwright (the GitHub layout job passes --shard=i/4). ORASENDA_LAYOUT=skip skips the run when no
+# args are given: the GitHub checks job sets it because the layout job runs the specs.
 [script]
-layout:
+layout *args:
+    if [ "${ORASENDA_LAYOUT:-}" = skip ] && [ -z "{{ args }}" ]; then
+        echo "layout: skipped (ORASENDA_LAYOUT=skip; the layout job runs it)"
+        exit 0
+    fi
     host="$(uname -s)"
     if [ "$host" != Darwin ]; then
-        echo "layout: skipped on $host; the required macOS ci job runs the WebKit checks"
+        echo "layout: skipped on $host; the required macOS layout job runs the WebKit checks"
         exit 0
     fi
     if ! node -e "const {webkit}=require('@playwright/test'); process.exit(require('fs').existsSync(webkit.executablePath()) ? 0 : 1)"; then
         echo "layout: Playwright's WebKit is not installed. Run: pnpm exec playwright install webkit" >&2
         exit 1
     fi
-    pnpm exec playwright test --config verification/layout/playwright.config.ts
+    pnpm exec playwright test --config verification/layout/playwright.config.ts {{ args }}
 
 # Fail on a tracked source file over 500 lines that is not on the allowlist.
 file-size:
