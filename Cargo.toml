@@ -31,3 +31,9 @@ rusqlite = { version = "0.41.1", default-features = false, features = ["bundled"
 # App crate only: UUIDv7 session ids and the UUIDv4 device id. Unifies with the copy
 # Tauri already pulls.
 uuid = { version = "1.29.2", features = ["v7", "v4", "serde"] }
+# crates/service only, the Todoist import (spec Decision 14). flate2 is direct only to
+# select zip's rust_backend; keep it. No zopfli, aes or time may enter the tree.
+csv = "1.4.0"
+sha2 = "0.10.9"
+zip = { version = "9.6.0", default-features = false, features = ["deflate-flate2"] }
+flate2 = { version = "1.1.11", default-features = false, features = ["rust_backend"] }

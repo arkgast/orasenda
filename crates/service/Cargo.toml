@@ -20,6 +20,10 @@ serde_json.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 uuid.workspace = true
+csv.workspace = true
+flate2.workspace = true
+sha2.workspace = true
+zip.workspace = true
 
 [dev-dependencies]
 orasenda-store = { path = "../store", features = ["test-hooks"] }
