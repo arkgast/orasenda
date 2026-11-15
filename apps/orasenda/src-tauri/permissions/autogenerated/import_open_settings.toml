@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-import-open-settings"
+description = "Enables the import_open_settings command without any pre-configured scope."
+commands.allow = ["import_open_settings"]
+
+[[permission]]
+identifier = "deny-import-open-settings"
+description = "Denies the import_open_settings command without any pre-configured scope."
+commands.deny = ["import_open_settings"]

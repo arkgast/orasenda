@@ -5,11 +5,9 @@ use std::sync::Arc;
 
 use orasenda_core::NotificationStatus;
 use orasenda_core::platform::import::SourceAccess;
-use orasenda_service::api::{
-    DataError, DataErrorKind, ImportErrorKind, ImportSourceKind,
-};
-use orasenda_service::session::test_support::{TestHost, fakes};
+use orasenda_service::api::{DataError, DataErrorKind, ImportErrorKind, ImportSourceKind};
 use orasenda_service::session::SessionService;
+use orasenda_service::session::test_support::{TestHost, fakes};
 
 use super::capabilities::capability;
 use super::data_files::FakePicker;

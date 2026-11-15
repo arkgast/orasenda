@@ -8,6 +8,7 @@ use std::time::SystemTime;
 
 use orasenda_core::Notifier;
 use orasenda_core::clock::delay_to_next_second;
+use orasenda_core::platform::import::{RemindersSource, ThingsSource};
 use orasenda_service::api::{
     BoardView, DataOverview, KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView,
     Settings, Theme, TimerView,
@@ -18,6 +19,7 @@ use tauri::{AppHandle, Manager};
 pub use orasenda_service::scheduler::*;
 
 use crate::ipc::ClockTick;
+use crate::platform::ImportSources;
 
 /// The running app as the service's [`Host`]. A newtype: the trait lives in
 /// `orasenda-service`, `AppHandle` in Tauri, so the app can't implement one for the other.
@@ -50,6 +52,18 @@ impl Host for AppHost {
             Some(notifier) => Arc::clone(notifier.inner()),
             None => Arc::new(orasenda_core::NoopNotifier),
         }
+    }
+
+    fn reminders(&self) -> Option<Arc<dyn RemindersSource>> {
+        self.0
+            .try_state::<ImportSources>()
+            .and_then(|sources| sources.reminders.clone())
+    }
+
+    fn things(&self) -> Option<Arc<dyn ThingsSource>> {
+        self.0
+            .try_state::<ImportSources>()
+            .and_then(|sources| sources.things.clone())
     }
 
     fn now_ms(&self) -> u64 {

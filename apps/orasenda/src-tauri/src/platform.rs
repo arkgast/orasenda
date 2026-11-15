@@ -1,11 +1,13 @@
 //! The per-OS choice of the session's platform services (ADR-010): the only place in the app
 //! crate that picks a `KeepAwake`, `LocalTime` and `Notifier` implementation.
 
-#[cfg(target_os = "macos")]
 use std::sync::Arc;
 
 #[cfg(target_os = "macos")]
 use orasenda_core::Notifier;
+#[cfg(any(target_os = "macos", test))]
+use orasenda_core::platform::import::UnbundledReminders;
+use orasenda_core::platform::import::{RemindersSource, ThingsSource};
 
 use crate::runtime::session::Platform;
 
@@ -24,8 +26,6 @@ pub fn current() -> Platform {
     }
     #[cfg(not(target_os = "macos"))]
     {
-        use std::sync::Arc;
-
         use orasenda_core::{NoopKeepAwake, NoopNotifier, UtcLocalTime};
         Platform {
             keep_awake: Box::new(NoopKeepAwake),
@@ -44,6 +44,43 @@ pub(crate) fn choose_notifier(in_bundle: bool) -> Arc<dyn Notifier> {
     } else {
         Arc::new(orasenda_core::NoopNotifier)
     }
+}
+
+/// What the Board can import from beyond a file: the OS sources, separate from the service's
+/// `Platform` (spec 2026-11-15, Platform wiring). `None` off macOS.
+pub struct ImportSources {
+    pub reminders: Option<Arc<dyn RemindersSource>>,
+    pub things: Option<Arc<dyn ThingsSource>>,
+}
+
+/// On macOS Reminders (inside an `.app` bundle only) and Things; elsewhere neither.
+pub fn import_sources() -> ImportSources {
+    #[cfg(target_os = "macos")]
+    {
+        ImportSources {
+            reminders: Some(choose_reminders(orasenda_platform_macos::is_app_bundle())),
+            things: Some(Arc::new(orasenda_platform_macos::MacThings)),
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        ImportSources {
+            reminders: None,
+            things: None,
+        }
+    }
+}
+
+/// `MacReminders` only inside an `.app` bundle: outside one (`tauri dev`, `cargo test`) the OS
+/// would attribute the access to the terminal (Decision 21), so nothing is read.
+#[cfg(any(target_os = "macos", test))]
+pub(crate) fn choose_reminders(in_bundle: bool) -> Arc<dyn RemindersSource> {
+    #[cfg(target_os = "macos")]
+    if in_bundle {
+        return Arc::new(orasenda_platform_macos::MacReminders);
+    }
+    let _ = in_bundle;
+    Arc::new(UnbundledReminders)
 }
 
 /// Shows `path` in the file manager. A no-op off macOS, where there is no implementation yet.

@@ -189,6 +189,21 @@ export const commands = {
 	 *  `None` clears it. Picking a task is always optional.
 	 */
 	timerSetTask: (taskId: string | null) => typedError<TimerView_Serialize, TimerCommandError>(__TAURI_INVOKE("timer_set_task", { taskId })),
+	/**  The sources the picker lists, and why one can't be chosen now. */
+	importSources: () => __TAURI_INVOKE<ImportSourcesView_Serialize>("import_sources"),
+	/**
+	 *  Reads a source and keeps the result as the one pending preview. Writes nothing. Todoist
+	 *  shows the Open panel first.
+	 */
+	importPreview: (source: ImportSourceKind) => typedError<ImportPreviewOutcome_Serialize, ImportError>(__TAURI_INVOKE("import_preview", { source })),
+	/**  Drops the pending preview when it is `preview_id`. */
+	importDiscard: (previewId: ImportRef) => __TAURI_INVOKE<void>("import_discard", { previewId }),
+	/**  Adds the chosen rows of the pending preview to the Backlog. */
+	taskImport: (previewId: ImportRef, keys: number[]) => typedError<ImportDone, ImportError>(__TAURI_INVOKE("task_import", { previewId, keys })),
+	/**  Removes the tasks of the last import that are still on the Board; answers how many. */
+	taskImportUndo: (importId: ImportRef) => typedError<number, ImportError>(__TAURI_INVOKE("task_import_undo", { importId })),
+	/**  Opens the System Settings pane for a source's permission, on the main thread. */
+	importOpenSettings: (source: ImportSourceKind) => typedError<null, ImportError>(__TAURI_INVOKE("import_open_settings", { source })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
@@ -779,13 +794,141 @@ export type Hint =
 /**  After the first manual "+10 min": *Keep going automatically* lives in Settings › Timer. */
 "keepGoing";
 
+/**  A committed import. */
+export type ImportDone = {
+	/**  Exported as `number`: lossless below 2^53. */
+	importId: number,
+	count: number,
+};
+
+/**  An import failure and the line the UI shows for it. */
+export type ImportError = {
+	kind: ImportErrorKind,
+	message: string,
+};
+
+/**  Why an import step did not happen. */
+export type ImportErrorKind = "denied" | "notInstalled" | "unavailable" | "sessionActive" | "notAnExport" | "unreadable" | "tooLarge" | "timedOut" | "stale" | "store";
+
+/**  One row of the preview. */
+export type ImportItemView = ImportItemView_Serialize | ImportItemView_Deserialize;
+
+/**  One row of the preview. */
+export type ImportItemView_Deserialize = {
+	/**  The row's place in the source's order; `task_import` takes these back. */
+	key: number,
+	title: string,
+	/**  `Work · Planning · Due Fri 20 Nov · 4 checklist items`; empty when there is nothing to say. */
+	meta: string,
+	/**  "Already on the Board, in Today"; set only for a row with a live match. */
+	why?: string | null,
+	selected: boolean,
+	onBoard?: Lane | null,
+};
+
+/**  One row of the preview. */
+export type ImportItemView_Serialize = {
+	/**  The row's place in the source's order; `task_import` takes these back. */
+	key: number,
+	title: string,
+	/**  `Work · Planning · Due Fri 20 Nov · 4 checklist items`; empty when there is nothing to say. */
+	meta: string,
+	/**  "Already on the Board, in Today"; set only for a row with a live match. */
+	why: string | null,
+	selected: boolean,
+	onBoard: Lane | null,
+};
+
 /**  What `data_import` did: what it merged, or nothing when the panel was cancelled. */
 export type ImportOutcome = { kind: "imported"; report: ImportReport } | { kind: "cancelled" };
+
+/**  What a source holds, shown before anything is written. */
+export type ImportPreview = ImportPreview_Serialize | ImportPreview_Deserialize;
+
+/**  What `import_preview` did: the preview, or nothing when the Open panel was cancelled. */
+export type ImportPreviewOutcome = ImportPreviewOutcome_Serialize | ImportPreviewOutcome_Deserialize;
+
+/**  What `import_preview` did: the preview, or nothing when the Open panel was cancelled. */
+export type ImportPreviewOutcome_Deserialize = { picked: ImportPreview_Deserialize } | "cancelled";
+
+/**  What `import_preview` did: the preview, or nothing when the Open panel was cancelled. */
+export type ImportPreviewOutcome_Serialize = { picked: ImportPreview_Serialize } | "cancelled";
+
+/**  What a source holds, shown before anything is written. */
+export type ImportPreview_Deserialize = {
+	/**  A per-process counter. Exported as `number`: lossless below 2^53. */
+	id: number,
+	source: ImportSourceKind,
+	sourceName: string,
+	/**  At most 500 rows, in the source's order. */
+	items: ImportItemView_Deserialize[],
+	/**  Open items the source holds, before the 500-row cap. */
+	total: number,
+	/**  Reserved for a line above the list. The cap's line is the first of `summary`. */
+	line?: string | null,
+	summary: string[],
+};
+
+/**  What a source holds, shown before anything is written. */
+export type ImportPreview_Serialize = {
+	/**  A per-process counter. Exported as `number`: lossless below 2^53. */
+	id: number,
+	source: ImportSourceKind,
+	sourceName: string,
+	/**  At most 500 rows, in the source's order. */
+	items: ImportItemView_Serialize[],
+	/**  Open items the source holds, before the 500-row cap. */
+	total: number,
+	/**  Reserved for a line above the list. The cap's line is the first of `summary`. */
+	line: string | null,
+	summary: string[],
+};
+
+/**
+ *  A preview or import id as the webview sends it back: a plain number, lossless below 2^53
+ *  (specta forbids `u64` in a command argument, so the id is wrapped).
+ */
+export type ImportRef = number;
 
 /**  What an import wrote: rows only in the file, and rows the file replaced. */
 export type ImportReport = {
 	added: DataCounts,
 	updated: DataCounts,
+};
+
+/**  Where tasks can be imported from. */
+export type ImportSourceKind = "reminders" | "todoist" | "things";
+
+/**  One source in the picker. */
+export type ImportSourceView = ImportSourceView_Serialize | ImportSourceView_Deserialize;
+
+/**  One source in the picker. */
+export type ImportSourceView_Deserialize = {
+	kind: ImportSourceKind,
+	available: boolean,
+	/**  Why it can't be picked now; set only when `available` is false. */
+	reason?: string | null,
+};
+
+/**  One source in the picker. */
+export type ImportSourceView_Serialize = {
+	kind: ImportSourceKind,
+	available: boolean,
+	/**  Why it can't be picked now; set only when `available` is false. */
+	reason: string | null,
+};
+
+/**  The sources this build offers, in the order Reminders, Todoist, Things. */
+export type ImportSourcesView = ImportSourcesView_Serialize | ImportSourcesView_Deserialize;
+
+/**  The sources this build offers, in the order Reminders, Todoist, Things. */
+export type ImportSourcesView_Deserialize = {
+	sources: ImportSourceView_Deserialize[],
+};
+
+/**  The sources this build offers, in the order Reminders, Todoist, Things. */
+export type ImportSourcesView_Serialize = {
+	sources: ImportSourceView_Serialize[],
 };
 
 /**  Why removing or restoring a note failed. */

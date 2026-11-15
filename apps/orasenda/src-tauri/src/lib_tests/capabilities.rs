@@ -220,6 +220,12 @@ fn main_capability_exact() {
             "allow-task-restore-note",
             "allow-board-columns-set",
             "allow-timer-set-task",
+            "allow-import-sources",
+            "allow-import-preview",
+            "allow-import-discard",
+            "allow-task-import",
+            "allow-task-import-undo",
+            "allow-import-open-settings",
         ],
     );
     let (_, main) = capability("main.json");

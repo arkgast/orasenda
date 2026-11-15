@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-task-import-undo"
+description = "Enables the task_import_undo command without any pre-configured scope."
+commands.allow = ["task_import_undo"]
+
+[[permission]]
+identifier = "deny-task-import-undo"
+description = "Denies the task_import_undo command without any pre-configured scope."
+commands.deny = ["task_import_undo"]
