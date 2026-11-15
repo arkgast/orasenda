@@ -201,7 +201,7 @@ export function PopoverMenu({
   const theme =
     themed && themed !== document.documentElement ? themed.getAttribute("data-theme") : null;
   const [panel, setPanel] = useState<HTMLElement | null>(null);
-  const side = useMenuSide(trigger, panel, [items, heading, description]);
+  const side = useMenuSide(trigger, panel);
   const checkedRadio = items.find((i) => i.kind === "radio" && i.checked);
 
   const back = () => {

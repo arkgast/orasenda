@@ -30,17 +30,15 @@ export function chooseSide(o: {
   const before = anchor.left - gap - pad;
   const [endRoom, startRoom] = rtl ? [before, after] : [after, before];
   const [endSide, startSide]: [MenuSide, MenuSide] = rtl ? ["left", "right"] : ["right", "left"];
+  // Beside only helps when the whole panel fits the window's height; otherwise it stays below and scrolls.
+  if (panel.height > viewport.height - 2 * pad) return "bottom";
   if (panel.width <= endRoom) return endSide;
   if (panel.width <= startRoom) return startSide;
   return "bottom";
 }
 
-/** The side to place `panel` on against `trigger`, measured again on resize, scroll and when `deps` change. */
-export function useMenuSide(
-  trigger: HTMLElement | null,
-  panel: HTMLElement | null,
-  deps: readonly unknown[],
-): MenuSide {
+/** The side to place `panel` on against `trigger`, measured again on resize, scroll and when the panel's size changes. */
+export function useMenuSide(trigger: HTMLElement | null, panel: HTMLElement | null): MenuSide {
   const [side, setSide] = useState<MenuSide>("bottom");
   useLayoutEffect(() => {
     if (!trigger || !panel) return;
@@ -49,8 +47,11 @@ export function useMenuSide(
       setSide(
         chooseSide({
           anchor: trigger.getBoundingClientRect(),
-          // scrollHeight is the natural height, whatever the cap leaves visible.
-          panel: { width: panel.offsetWidth, height: panel.scrollHeight },
+          // scrollHeight is the natural height, whatever the cap leaves visible; add the border it leaves out.
+          panel: {
+            width: panel.offsetWidth,
+            height: panel.scrollHeight + panel.offsetHeight - panel.clientHeight,
+          },
           viewport: { width: root.clientWidth, height: root.clientHeight },
           gap: tokenPx("--space-1"),
           pad: tokenPx("--space-2"),
@@ -61,10 +62,13 @@ export function useMenuSide(
     place();
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    observer?.observe(panel);
     return () => {
+      observer?.disconnect();
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [trigger, panel, ...deps]);
+  }, [trigger, panel]);
   return side;
 }

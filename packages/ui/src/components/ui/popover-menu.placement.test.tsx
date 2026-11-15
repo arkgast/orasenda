@@ -109,3 +109,12 @@ test("popover_menu_falls_back_to_below_when_nothing_fits", async () => {
   });
   await waitFor(() => expect(side()).toBe("bottom"));
 });
+
+test("popover_menu_stays_below_in_a_short_wide_window", async () => {
+  const side = setup({
+    viewport: [640, 240],
+    anchor: { left: 20, top: 100, width: 44, height: 44 },
+    panel: [272, 270],
+  });
+  await waitFor(() => expect(side()).toBe("bottom"));
+});
