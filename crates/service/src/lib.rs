@@ -6,11 +6,7 @@
 pub mod api;
 pub mod board;
 pub mod data;
-#[expect(
-    dead_code,
-    reason = "consumed by the import service (I7a), which removes this"
-)]
-mod import;
+pub mod import;
 pub mod inbox;
 pub mod keyboard;
 pub mod routines;

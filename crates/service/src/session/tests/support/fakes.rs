@@ -286,6 +286,8 @@ pub struct HostInner {
     pub active: std::sync::atomic::AtomicBool,
     /// What `Host::data_dir` answers; none by default.
     pub data_dir: Mutex<Option<PathBuf>>,
+    /// The import sources the host offers; none by default.
+    pub imports: super::ImportFakes,
 }
 
 /// A recording [`Host`]: emits and renders go to the log.
@@ -330,6 +332,7 @@ impl TestHost {
             under_lock: std::sync::atomic::AtomicUsize::new(0),
             active: std::sync::atomic::AtomicBool::new(false),
             data_dir: Mutex::new(None),
+            imports: super::ImportFakes::default(),
         }))
     }
 
@@ -457,5 +460,13 @@ impl Host for TestHost {
     fn emit_board_notice(&self, notice: &BoardNotice) {
         self.note_unlocked();
         self.0.log.push(Event::BoardNotice(notice.clone()));
+    }
+
+    fn reminders(&self) -> Option<Arc<dyn orasenda_core::platform::import::RemindersSource>> {
+        self.0.imports.reminders()
+    }
+
+    fn things(&self) -> Option<Arc<dyn orasenda_core::platform::import::ThingsSource>> {
+        self.0.imports.things()
     }
 }

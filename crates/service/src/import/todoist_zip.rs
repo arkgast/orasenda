@@ -13,9 +13,10 @@ const MAX_UNPACKED: u64 = 50 * 1024 * 1024;
 /// Entries in the archive, of any kind.
 const MAX_ENTRIES: usize = 500;
 
-/// Items of every top-level `*.csv` entry, entries in name order. Entries that are not
-/// exports are skipped; an archive with no export at all is not an export.
-pub(crate) fn parse_zip(bytes: &[u8], seen: &mut Seen) -> Result<Vec<RawItem>, ParseError> {
+/// Items of every top-level `*.csv` entry, entries in name order, and how many of those
+/// entries were not exports. Such entries are skipped; an archive with no export at all is
+/// not an export.
+pub(crate) fn parse_zip(bytes: &[u8], seen: &mut Seen) -> Result<(Vec<RawItem>, u32), ParseError> {
     let mut archive = ZipArchive::new(Cursor::new(bytes)).map_err(|_| ParseError::Unreadable)?;
     if archive.len() > MAX_ENTRIES {
         return Err(ParseError::TooLarge);
@@ -37,6 +38,7 @@ pub(crate) fn parse_zip(bytes: &[u8], seen: &mut Seen) -> Result<Vec<RawItem>, P
     let mut left = MAX_UNPACKED;
     let mut items = Vec::new();
     let mut exports = 0;
+    let mut skipped = 0;
     for (_, stem, index) in csvs {
         let entry = archive
             .by_index(index)
@@ -56,14 +58,14 @@ pub(crate) fn parse_zip(bytes: &[u8], seen: &mut Seen) -> Result<Vec<RawItem>, P
                 exports += 1;
                 items.append(&mut found);
             }
-            Err(ParseError::NotAnExport) => {}
+            Err(ParseError::NotAnExport) => skipped += 1,
             Err(other) => return Err(other),
         }
     }
     if exports == 0 {
         return Err(ParseError::NotAnExport);
     }
-    Ok(items)
+    Ok((items, skipped))
 }
 
 /// The entry's name without `.csv`, when it is a top-level CSV outside `__MACOSX/`.

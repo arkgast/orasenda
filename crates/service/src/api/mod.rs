@@ -7,6 +7,7 @@ mod data;
 mod errors;
 mod events;
 mod hint;
+mod import;
 mod inbox;
 mod keyboard;
 mod presets;
@@ -31,6 +32,10 @@ pub use errors::{
 };
 pub use events::{MilestoneEvent, MilestoneKind, NavigatePage};
 pub use hint::Hint;
+pub use import::{
+    ImportDone, ImportError, ImportErrorKind, ImportItemView, ImportPreview, ImportSourceKind,
+    ImportSourceView, ImportSourcesView, PreviewRequest, REMINDERS_UNBUNDLED, SESSION_ACTIVE,
+};
 pub use inbox::{CaptureError, InboxError, NewCapture, NoteKind, NoteView};
 pub use keyboard::{
     ActionView, BindingView, FixedKeyView, GlobalBindingView, KeyboardError, KeyboardView,

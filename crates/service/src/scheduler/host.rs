@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use orasenda_core::Notifier;
+use orasenda_core::platform::import::{RemindersSource, ThingsSource};
 
 use crate::api::{
     BoardNotice, BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView,
@@ -58,4 +59,12 @@ pub trait Host: Clone + Send + Sync + 'static {
     /// Emits `board-notice`: a toast line after a start moved or failed to move a task. Never
     /// called under the service lock. An emit error is logged, never fatal.
     fn emit_board_notice(&self, notice: &BoardNotice);
+    /// Apple Reminders as an import source; `None` off macOS.
+    fn reminders(&self) -> Option<Arc<dyn RemindersSource>> {
+        None
+    }
+    /// Things as an import source; `None` off macOS.
+    fn things(&self) -> Option<Arc<dyn ThingsSource>> {
+        None
+    }
 }
