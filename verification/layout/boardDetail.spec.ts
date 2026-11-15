@@ -238,6 +238,8 @@ for (const size of SIZES) {
       return stops;
     };
     for (const key of ["Tab", "Shift+Tab", "Alt+Tab", "Alt+Shift+Tab"]) {
+      // Alt+Tab starts from Title: the scope wraps only on a plain Tab, so a walk that ended on Done would stay there (#636).
+      if (key === "Alt+Tab") await dialog.getByRole("textbox", { name: "Title" }).focus();
       const stops = await walk(key);
       expect(stops.size, key).toBeGreaterThanOrEqual(4);
     }

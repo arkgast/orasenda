@@ -42,6 +42,38 @@ function keepFocusClear(body: HTMLElement, target: HTMLElement): void {
   else if (above > 0) body.scrollTop -= above;
 }
 
+const TEXT_FIELD =
+  'textarea, [contenteditable=""], [contenteditable="true"], input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="url"], input[type="tel"], input[type="password"], input[type="number"]';
+
+// With macOS keyboard navigation off, WebKit's plain Tab visits only text fields. From the last one it leaves the
+// Radix scope and the trap puts focus back, so focus would never move. Wrap to the first field (or, with
+// Shift, the last) like native text-field cycling. Forward, with full keyboard access the Tab lands on the next
+// control inside the sheet, so it only acts when focus is still where it started a frame later. Backward, Radix
+// itself wraps Shift+Tab from the first field to the actions, so the wrap is made at once and Radix never sees it.
+function wrapTextFields(body: HTMLElement, event: KeyboardEvent): number | undefined {
+  if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+  const origin = document.activeElement;
+  if (!(origin instanceof HTMLElement)) return;
+  const fields = [...body.querySelectorAll<HTMLElement>(TEXT_FIELD)].filter(
+    (f) => !f.hasAttribute("disabled") && f.tabIndex >= 0 && f.getClientRects().length > 0,
+  );
+  const edge = event.shiftKey ? fields[0] : fields[fields.length - 1];
+  if (fields.length < 2 || origin !== edge) return;
+  const to = event.shiftKey ? fields[fields.length - 1] : fields[0];
+  if (event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    to?.focus();
+    return;
+  }
+  return requestAnimationFrame(() => {
+    const now = document.activeElement;
+    const scope = body.closest("[role=dialog], [role=alertdialog]");
+    // Stuck on the field, or sent out of the sheet (nothing focused): wrap.
+    if (now === origin || !(now instanceof Node && scope?.contains(now))) to?.focus();
+  });
+}
+
 interface DialogBaseProps {
   open?: boolean;
   title: string;
@@ -130,7 +162,12 @@ export function Dialog({
         pressed = null;
       });
     };
-    const onKeyDown = clear;
+    let wrapFrame: number | undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      clear();
+      if (wrapFrame !== undefined) cancelAnimationFrame(wrapFrame);
+      wrapFrame = wrapTextFields(body, event);
+    };
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       const label = pressed instanceof Element ? pressed.closest("label") : null;
@@ -149,6 +186,7 @@ export function Dialog({
       body.removeEventListener("pointerup", onPointerUp, true);
       body.removeEventListener("keydown", onKeyDown, true);
       cancelAnimationFrame(frame);
+      if (wrapFrame !== undefined) cancelAnimationFrame(wrapFrame);
       body.removeEventListener("focusin", onFocusIn);
     };
   }, []);
