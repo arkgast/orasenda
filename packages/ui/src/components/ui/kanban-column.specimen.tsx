@@ -16,6 +16,12 @@ function Cards({ n }: { n: number }): ReactElement {
   );
 }
 
+const DROP_CARDS = [
+  <TaskCard key="a" title="Outline" moving estimate={2} onOpen={() => {}} />,
+  <TaskCard key="b" title="Draft" estimate={2} onOpen={() => {}} />,
+  <TaskCard key="c" title="Edit" estimate={1} onOpen={() => {}} />,
+];
+
 export function KanbanColumnSpecimen(): ReactElement {
   return (
     <>
@@ -55,6 +61,39 @@ export function KanbanColumnSpecimen(): ReactElement {
           <KanbanColumn title="Today" count={4} limit={3} collapsed onToggle={() => {}} />
           <KanbanColumn title="Backlog" count={2} collapsed onToggle={() => {}} />
         </div>
+      </Frame>
+      <Frame state="kanban-column-drop-slot-280" width={280} height={460}>
+        <div className="flex h-full">
+          <KanbanColumn
+            title="Today"
+            count={3}
+            limit={5}
+            drop={{ index: 2, label: "Moving Outline here" }}
+          >
+            {DROP_CARDS}
+          </KanbanColumn>
+        </div>
+      </Frame>
+      <Frame state="kanban-column-drop-empty-280" width={280} height={160}>
+        <KanbanColumn title="Doing" count={0} drop={{ index: 0, label: "Moving Outline here" }} />
+      </Frame>
+      <Frame state="kanban-board-strip-move-here-300" width={300} height={200}>
+        <div className="flex h-full gap-2">
+          <KanbanColumn title="Today" count={4} limit={5} collapsed onToggle={() => {}} />
+          <KanbanColumn
+            title="Done"
+            count={5}
+            collapsed
+            onToggle={() => {}}
+            drop={{ index: 0, label: "Moving Outline here" }}
+          />
+        </div>
+      </Frame>
+      <Frame state="task-card-moving-card-280" width={280} height={220}>
+        <TaskCard title="Outline" moving estimate={2} done={1} onOpen={() => {}} />
+      </Frame>
+      <Frame state="task-card-moving-row-280" width={280} height={100}>
+        <TaskCard title="Outline" density="row" moving estimate={2} onOpen={() => {}} />
       </Frame>
       <Frame state="kanban-column-empty-280" width={280} height={160}>
         <KanbanColumn title="Backlog" count={0} />

@@ -30,6 +30,8 @@ export interface TaskCardProps {
   frog?: boolean;
   active?: boolean;
   selected?: boolean;
+  /** The card is being dragged: a dashed edge and the word "Moving" (never opacity). */
+  moving?: boolean;
   disabled?: boolean;
   onOpen?: () => void;
   /** A click selects (selection ground + "Selected"); with onOpen, Return or a double-click opens. */
@@ -79,6 +81,7 @@ function accessibleName(props: TaskCardProps, tags: string[]): string {
       : "",
     props.active ? "In progress" : "",
     props.selected ? "Selected" : "",
+    props.moving ? "Moving" : "",
   ];
   return parts.filter(Boolean).join(", ");
 }
@@ -189,7 +192,8 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const estimateText = hasEstimate ? `Est ${est}` : "No estimate";
   const meta = `${estimateText} · Done ${done}${props.tracked ? ` · ${props.tracked}` : ""}`;
   const className = cn(
-    "@container w-full max-w-full rounded-md border border-line-strong bg-surface-raised text-start text-ink shadow-raised wrap-anywhere",
+    "@container w-full max-w-full rounded-md border border-line-strong bg-surface-raised text-start text-ink wrap-anywhere",
+    !props.moving && "shadow-raised",
     row
       ? "flex min-h-hit-min flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
       : "flex flex-col gap-3 p-4",
@@ -198,7 +202,17 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     props.menu && !props.disabled && "pe-hit-min",
     selected ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
     active && "border-s-4 border-s-focus",
+    props.moving && "border-dashed",
   );
+  // Inline in an existing line, so starting a drag never makes the card taller.
+  const movingWord = props.moving ? (
+    <span
+      data-slot="task-card-moving"
+      className="flex-none whitespace-nowrap text-body-sm text-focus"
+    >
+      Moving
+    </span>
+  ) : null;
   const frogWord = props.frog ? (
     <span
       data-slot="task-card-frog"
@@ -217,6 +231,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
         {title}
       </span>
       {frogWord}
+      {movingWord}
       {stateWords ? (
         <span
           data-slot="task-card-state"
@@ -237,6 +252,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
       <span data-slot="task-card-top" className="flex flex-wrap items-center gap-2">
         <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
         {frogWord}
+        {movingWord}
         {props.priority ? (
           <span data-slot="task-card-priority" className="text-label uppercase text-ink-muted">
             {PRIORITY[props.priority]}
