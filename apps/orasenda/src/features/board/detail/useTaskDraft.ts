@@ -131,7 +131,12 @@ export function useTaskDraft(
   }, [flushAll]);
 
   // A pending pause does not outlive the sheet: whatever was typed is saved on the way out.
-  useEffect(() => leave, [leave]);
+  useEffect(() => {
+    gone.current = false;
+    return leave;
+  }, [leave]);
 
-  return { draft, titleError, line, setLine, save, change, text, flush, leave };
+  const hasFailed = useCallback(() => Object.keys(failed.current).length > 0, []);
+
+  return { draft, titleError, line, setLine, hasFailed, save, change, text, flush, leave };
 }

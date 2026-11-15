@@ -78,7 +78,7 @@ export function TaskSheet({
       d.setLine({ text: "A finished task can't be the Frog." });
       return;
     }
-    d.setLine(null);
+    if (!d.hasFailed()) d.setLine(null);
     void toggleFrog(task);
   };
 
@@ -107,6 +107,7 @@ export function TaskSheet({
       <div className={WIDE}>
         <InlineNotice
           variant="row"
+          collapseEmpty
           tone={d.line || boardLine?.tone === "attention" ? "attention" : "rest"}
           actionLabel={d.line ? (d.line.retry ? "Try again" : undefined) : boardLine?.action?.label}
           actionName={d.line ? "Try again saving" : boardLine?.action?.name}

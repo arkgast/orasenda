@@ -161,3 +161,20 @@ test("inline_notice_secondary_action_name_overrides_the_label", () => {
   );
   expect(screen.getByRole("button", { name: "Keep as is" })).toBeTruthy();
 });
+
+test("inline_notice_row_collapse_empty_takes_no_height_but_keeps_the_live_region", () => {
+  const { rerender } = render(
+    <InlineNotice variant="row" collapseEmpty>
+      {""}
+    </InlineNotice>,
+  );
+  const row = document.querySelector("[data-slot=inline-notice]") as HTMLElement;
+  expect(row).toHaveClass("h-0");
+  expect(screen.getByRole("status")).toBeInTheDocument();
+  rerender(
+    <InlineNotice variant="row" collapseEmpty>
+      Saved.
+    </InlineNotice>,
+  );
+  expect(row).toHaveClass("h-hit-min");
+});

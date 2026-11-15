@@ -42,8 +42,10 @@ for (const size of SIZES) {
     expect(m.right).toBeLessThanOrEqual(size.width);
     expect(m.bottom).toBeLessThanOrEqual(size.height);
     expect(m.sideways).toBeLessThanOrEqual(0);
-    // The sheet body is wider than container-sheet-stack at all three sizes.
-    expect(m.columns).toBe(2);
+    // The sheet body is wider than container-sheet-stack except at 640: one column there.
+    expect(m.columns).toBe(size.width === 640 ? 1 : 2);
+    // The actions row is pinned: Done is on screen without scrolling.
+    await expect(dialog.getByRole("button", { name: "Done" })).toBeInViewport({ ratio: 1 });
   });
 
   test(`board_detail_sheet_targets_and_focus_${at}`, async ({ page }) => {

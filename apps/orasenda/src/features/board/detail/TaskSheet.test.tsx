@@ -114,6 +114,25 @@ test("a failed save keeps the value and says so", async () => {
   expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
 });
 
+test("the Frog toggle keeps an earlier field's failure line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await openSheet({
+    replies: {
+      task_update: () => {
+        throw new Error("store");
+      },
+    },
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Priority" }), {
+    target: { value: "high" },
+  });
+  await settle();
+  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: "Today's Frog" }));
+  await settle();
+  expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
+});
+
 test("the record line reads estimate, buffer and actual", async () => {
   await openSheet({
     board: withTask({ estimate: 3, planned: 4, sessions: 4, tracked: "1h 40m" }),

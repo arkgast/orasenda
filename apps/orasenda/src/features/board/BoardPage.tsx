@@ -105,6 +105,7 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
   const [sheetId, setSheetId] = useState<string | null>(null);
   const sheetTask = columns.flatMap((c) => c.tasks).find((t) => t.id === sheetId);
   const openTask = (id: string) => {
+    actions.show(null);
     setSheetId(id);
     onOpenTask?.(id);
   };
