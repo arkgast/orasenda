@@ -44,6 +44,11 @@ const typedSources = Object.fromEntries(
   typed.map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
 );
 
+test("rel_normalises_backslashes", () => {
+  expect(rel(`${dir}/a\\b.tsx`)).toBe("a/b.tsx");
+  expect(rel(join(dir, "c", "d.tsx"))).toBe("c/d.tsx");
+});
+
 test("guard_rejects_create_element", () => {
   const all = Object.fromEntries(
     tsFiles(dir).map((f) => [f.replace(`${dir}/`, ""), readFileSync(f, "utf8")]),
