@@ -247,3 +247,29 @@ test("dialog_initial_focus_ref_takes_focus_instead_of_cancel", async () => {
   render(<FocusHost />);
   await vi.waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
 });
+
+test("dialog_without_confirm", () => {
+  render(<Dialog title="Import tasks" onCancel={() => {}} />);
+  const actions = document.querySelector("[data-slot=dialog-actions]") as HTMLElement;
+  expect(within(actions).getAllByRole("button")).toHaveLength(1);
+  expect(within(actions).getByRole("button", { name: "Cancel" })).toBeTruthy();
+});
+
+test("dialog_confirm_disabled_reason", () => {
+  const onConfirm = vi.fn();
+  render(
+    <Dialog
+      title="Import tasks"
+      confirmLabel="Import 0 tasks"
+      confirmDisabledReason="Select at least one task to import."
+      onCancel={() => {}}
+      onConfirm={onConfirm}
+    />,
+  );
+  const confirm = screen.getByRole("button", { name: "Import 0 tasks" });
+  expect(confirm).toBeDisabled();
+  expect(confirm).toHaveAccessibleDescription("Select at least one task to import.");
+  expect(screen.getByText("Select at least one task to import.")).toBeVisible();
+  fireEvent.click(confirm);
+  expect(onConfirm).not.toHaveBeenCalled();
+});

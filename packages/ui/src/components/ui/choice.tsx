@@ -3,6 +3,7 @@ import {
   type InputHTMLAttributes,
   type ReactElement,
   type ReactNode,
+  type Ref,
   useContext,
 } from "react";
 import { cn } from "../../lib/utils";
@@ -96,8 +97,11 @@ export interface ChoiceProps
   type?: "radio" | "checkbox";
   /** A full-width chip with a bold title and one sentence of description. */
   long?: boolean;
-  description?: string;
+  /** The `long` chip's lines under the title; pass block spans for more than one. */
+  description?: ReactNode;
   className?: string;
+  /** The native input, e.g. for a Dialog's initialFocusRef. */
+  ref?: Ref<HTMLInputElement>;
   children: ReactNode;
 }
 

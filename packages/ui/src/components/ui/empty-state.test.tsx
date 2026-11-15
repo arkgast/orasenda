@@ -38,3 +38,21 @@ test("omits_button_without_handler", () => {
   render(<EmptyState actionLabel="Add a task" />);
   expect(screen.queryByRole("button")).toBeNull();
 });
+
+test("empty_state_secondary_action", () => {
+  const onAction = vi.fn();
+  const onSecond = vi.fn();
+  render(
+    <EmptyState
+      actionLabel="Add a task"
+      onAction={onAction}
+      secondaryAction={{ label: "Import tasks…", onAction: onSecond }}
+    />,
+  );
+  const buttons = screen.getAllByRole("button");
+  expect(buttons.map((b) => b.textContent)).toEqual(["Add a task", "Import tasks…"]);
+  expect(buttons[1]?.getAttribute("data-variant")).toBe("ghost");
+  fireEvent.click(buttons[1] as HTMLElement);
+  expect(onSecond).toHaveBeenCalledOnce();
+  expect(onAction).not.toHaveBeenCalled();
+});

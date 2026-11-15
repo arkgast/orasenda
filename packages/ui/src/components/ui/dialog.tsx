@@ -1,6 +1,6 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
 import type { JSX, ReactNode, RefObject } from "react";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -28,15 +28,15 @@ if (typeof document !== "undefined") {
   );
 }
 
-export interface DialogProps {
+interface DialogBaseProps {
   open?: boolean;
   title: string;
   description?: string;
   children?: ReactNode;
-  confirmLabel: string;
+  /** Disables the confirm and shows this reason under the actions, linked to it. */
+  confirmDisabledReason?: string;
   cancelLabel?: string;
   onCancel: () => void;
-  onConfirm: () => void;
   destructive?: boolean;
   scrim?: boolean;
   loading?: boolean;
@@ -48,6 +48,13 @@ export interface DialogProps {
 
 // The overlay is a grid that centres the panel inside a space-3 gutter (Radix scrollable-overlay pattern), capped at the panel width token; padding
 // and gaps are the token steps. Nothing here is a fixed size.
+/** Without a confirm label there is no confirm button (the import sheet's source step); with one, a handler is required. */
+type DialogConfirmProps =
+  | { confirmLabel: string; onConfirm: () => void }
+  | { confirmLabel?: undefined; onConfirm?: undefined };
+
+export type DialogProps = DialogBaseProps & DialogConfirmProps;
+
 const content =
   "flex max-h-full w-full scroll-py-3 flex-col gap-5 rounded-lg border border-line-strong bg-surface-overlay p-5 text-ink shadow-overlay";
 
@@ -64,6 +71,7 @@ export function Dialog({
   description,
   children,
   confirmLabel,
+  confirmDisabledReason,
   cancelLabel = "Cancel",
   onCancel,
   onConfirm,
@@ -73,6 +81,7 @@ export function Dialog({
   size = "panel",
   initialFocusRef,
 }: DialogProps): JSX.Element {
+  const reasonId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -146,21 +155,36 @@ export function Dialog({
             ) : (
               children
             )}
-            <div
-              data-slot="dialog-actions"
-              ref={actionsRef}
-              className="flex flex-wrap justify-end gap-2"
-            >
-              <Button variant="ghost" onClick={onCancel}>
-                {cancelLabel}
-              </Button>
-              <Button
-                variant={destructive ? "critical" : "primary"}
-                onClick={onConfirm}
-                loading={loading}
+            <div className="flex flex-col gap-2">
+              <div
+                data-slot="dialog-actions"
+                ref={actionsRef}
+                className="flex flex-wrap justify-end gap-2"
               >
-                {confirmLabel}
-              </Button>
+                <Button variant="ghost" onClick={onCancel}>
+                  {cancelLabel}
+                </Button>
+                {confirmLabel ? (
+                  <Button
+                    variant={destructive ? "critical" : "primary"}
+                    onClick={onConfirm}
+                    loading={loading}
+                    disabled={!!confirmDisabledReason}
+                    aria-describedby={confirmDisabledReason ? reasonId : undefined}
+                  >
+                    {confirmLabel}
+                  </Button>
+                ) : null}
+              </div>
+              {confirmLabel && confirmDisabledReason ? (
+                <p
+                  id={reasonId}
+                  data-slot="dialog-reason"
+                  className="m-0 text-end text-body-sm text-ink-muted"
+                >
+                  {confirmDisabledReason}
+                </p>
+              ) : null}
             </div>
           </Prim.Content>
         </Prim.Overlay>
