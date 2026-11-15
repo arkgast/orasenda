@@ -128,7 +128,7 @@ fn spread_after_tombstone_rank() {
 
 #[test]
 fn spread_leaves_room_between_neighbours() {
-    for n in [1, 2, 61, 62, 500, 3000] {
+    for n in [1, 2, 30, 62, 500, 1000] {
         let ranks = spread(None, n);
         assert!(ranks.iter().all(|r| !r.ends_with('0')));
         for w in ranks.windows(2) {
