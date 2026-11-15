@@ -80,6 +80,7 @@ pub fn run_import_preview<H: Host>(
     if kind != ImportSourceKind::Todoist && session_active(host) {
         return Err(ImportError::session_active());
     }
+    let id = next_id();
     let read = match request {
         PreviewRequest::Reminders => read_reminders(host)?,
         PreviewRequest::Things => read_things(host)?,
@@ -130,12 +131,14 @@ pub fn run_import_preview<H: Host>(
         ));
         kept.push((key, task));
     }
-    let id = next_id();
-    guard.import_pending = Some(PendingPreview {
-        id,
-        source: kind,
-        tasks: kept,
-    });
+    // A slower, older read must not replace a newer preview that finished first.
+    if guard.import_pending.as_ref().is_none_or(|p| p.id < id) {
+        guard.import_pending = Some(PendingPreview {
+            id,
+            source: kind,
+            tasks: kept,
+        });
+    }
     Ok(ImportPreview {
         id,
         source: kind,
@@ -213,7 +216,10 @@ fn read_reminders<H: Host>(host: &H) -> Result<Read, ImportError> {
         Err(PlatformError::Unsupported) => Err(unavailable()),
         Err(error) => {
             eprintln!("import: reminders could not be read ({error:?})");
-            Err(ImportError::new(ImportErrorKind::TimedOut, READ_REMINDERS))
+            Err(ImportError::new(
+                ImportErrorKind::Unreadable,
+                READ_REMINDERS,
+            ))
         }
     }
 }

@@ -6,11 +6,11 @@ use crate::api::{ColumnSettings, ImportItemView, Lane};
 use crate::board::view::{Ctx, due_label, lane};
 use crate::import::fit::FittedTask;
 
-/// `Work, Planning · Due Fri 20 Nov · 4 checklist items`; the parts that exist, in that order.
+/// `Work · Planning · Due Fri 20 Nov · 4 checklist items`; the parts that exist, in that order.
 pub(crate) fn meta(task: &FittedTask, cx: Ctx) -> String {
     let mut parts = Vec::new();
     if !task.tags.is_empty() {
-        parts.push(task.tags.join(", "));
+        parts.push(task.tags.join(" · "));
     }
     if let Some(label) = task.due.as_deref().and_then(|d| due_label(d, cx.today)) {
         parts.push(label);

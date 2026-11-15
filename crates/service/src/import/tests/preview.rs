@@ -98,6 +98,7 @@ fn preview_reminders_timeout_line() {
         error.message,
         "Orasenda couldn't read your reminders. Try again."
     );
+    assert_eq!(error.kind, ImportErrorKind::Unreadable);
 }
 
 #[test]
@@ -170,4 +171,56 @@ fn todoist_preview_while_session_active() {
     let error = run_import_preview(&host, PreviewRequest::Reminders).unwrap_err();
     assert_eq!(error.kind, ImportErrorKind::SessionActive);
     std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn older_preview_finishing_later_does_not_replace_newer() {
+    let host = host();
+    reminders(&host, SourceAccess::Granted, 1);
+    let first = run_import_preview(&host, PreviewRequest::Reminders).unwrap();
+    // A preview whose id was taken earlier than the pending one must not replace it.
+    let stale = crate::import::PendingPreview {
+        id: first.id + 10,
+        source: ImportSourceKind::Todoist,
+        tasks: Vec::new(),
+    };
+    lock(host.service().unwrap()).import_pending = Some(stale);
+    run_import_preview(&host, PreviewRequest::Reminders).unwrap();
+    // The second request took an id below the pending one, so the pending one stays.
+    assert_eq!(pending_id(&host), Some(first.id + 10));
+}
+
+#[test]
+fn zip_with_non_exports_adds_archive_line() {
+    use zip::write::{SimpleFileOptions, ZipWriter};
+    let host = host();
+    let dir = super::todoist::Scratch::new("archive");
+    let path = dir.0.join("Backup.zip");
+    let mut zip = ZipWriter::new(std::fs::File::create(&path).unwrap());
+    let good = "TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT\ntask,Pay rent,,4,1\n";
+    for (name, body) in [
+        ("Home.csv", good),
+        ("x.csv", "a,b\n1,2\n"),
+        ("y.csv", "c\n3\n"),
+    ] {
+        zip.start_file(name, SimpleFileOptions::default()).unwrap();
+        zip.write_all(body.as_bytes()).unwrap();
+    }
+    zip.finish().unwrap();
+    let p = run_import_preview(&host, PreviewRequest::Todoist(path.clone())).unwrap();
+    assert_eq!(
+        p.summary,
+        vec!["2 files in the archive weren't Todoist exports."]
+    );
+    let mut zip = ZipWriter::new(std::fs::File::create(&path).unwrap());
+    for (name, body) in [("Home.csv", good), ("x.csv", "a,b\n1,2\n")] {
+        zip.start_file(name, SimpleFileOptions::default()).unwrap();
+        zip.write_all(body.as_bytes()).unwrap();
+    }
+    zip.finish().unwrap();
+    let p = run_import_preview(&host, PreviewRequest::Todoist(path)).unwrap();
+    assert_eq!(
+        p.summary,
+        vec!["1 file in the archive wasn't a Todoist export."]
+    );
 }

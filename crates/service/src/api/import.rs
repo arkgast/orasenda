@@ -59,7 +59,7 @@ pub struct ImportItemView {
     /// The row's place in the source's order; `task_import` takes these back.
     pub key: u32,
     pub title: String,
-    /// `Work · Due Fri 20 Nov · 4 checklist items`; empty when there is nothing to say.
+    /// `Work · Planning · Due Fri 20 Nov · 4 checklist items`; empty when there is nothing to say.
     pub meta: String,
     /// "Already on the Board, in Today"; set only for a row with a live match.
     pub why: Option<String>,

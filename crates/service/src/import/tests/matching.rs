@@ -2,6 +2,7 @@ use std::sync::atomic::Ordering;
 
 use orasenda_core::platform::import::SourceAccess;
 
+use super::todoist::Scratch;
 use super::*;
 use crate::api::{ImportPreview, Lane as ApiLane, PreviewRequest};
 use crate::import::run_import_preview;
@@ -66,4 +67,23 @@ fn meta_line_words() {
     assert_eq!(p.items[0].meta, "Home · Due Fri 20 Nov");
     assert_eq!(p.items[1].meta, "Home");
     assert_eq!(source.reads.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn meta_line_tags_due_and_checklist() {
+    let host = host();
+    let dir = Scratch::new("meta");
+    let path = dir.0.join("Work.csv");
+    let text = "TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT,DATE,DEADLINE\n\
+        section,Planning,,,,,\n\
+        task,Plan,,,1,2026-11-20,\n\
+        task,a,,,2,,\ntask,b,,,2,,\ntask,c,,,2,,\ntask,d,,,2,,\n\
+        task,Solo,,,1,,\ntask,only,,,2,,\n";
+    std::fs::write(&path, text).unwrap();
+    let p = run_import_preview(&host, PreviewRequest::Todoist(path)).unwrap();
+    assert_eq!(
+        p.items[0].meta,
+        "Work · Planning · Due Fri 20 Nov · 4 checklist items"
+    );
+    assert_eq!(p.items[1].meta, "Work · Planning · 1 checklist item");
 }
