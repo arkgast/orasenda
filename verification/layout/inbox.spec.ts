@@ -22,7 +22,7 @@ for (const size of SIZES) {
 
   test(`inbox_one_note_targets_${at}`, async ({ page }) => {
     await openInbox(page, "inboxOne", size);
-    const remove = page.getByRole("button", { name: /^Remove note/ });
+    const remove = page.getByRole("button", { name: /^More actions for/ });
     await expect(remove).toBeVisible();
     const box = await remove.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
@@ -32,7 +32,7 @@ for (const size of SIZES) {
   test(`inbox_fifty_notes_targets_${at}`, async ({ page }) => {
     await openInbox(page, "inboxFifty", size);
     const box = await page
-      .getByRole("button", { name: /^Remove note/ })
+      .getByRole("button", { name: /^More actions for/ })
       .first()
       .boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
@@ -48,7 +48,7 @@ for (const size of SIZES) {
     const region = page.getByRole("region", { name: "Inbox" });
     const scrolls = await region.evaluate((el) => el.scrollHeight > el.clientHeight);
     expect(scrolls).toBe(true);
-    await expect(page.getByRole("button", { name: /^Remove note/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^More actions for/ }).first()).toBeVisible();
   });
 
   test(`inbox_long_notes_wrap_${at}`, async ({ page }) => {
@@ -69,9 +69,9 @@ for (const size of SIZES) {
   });
 }
 
-test("inbox_remove_focus_ring_has_room_at_the_inline_end", async ({ page }) => {
+test("inbox_row_menu_focus_ring_has_room_at_the_inline_end", async ({ page }) => {
   await openInbox(page, "inboxFifty", { width: 900, height: 600 });
-  const button = page.getByRole("button", { name: /^Remove note/ }).first();
+  const button = page.getByRole("button", { name: /^More actions for/ }).first();
   await button.focus();
   const edge = await page
     .getByRole("region", { name: "Inbox" })
@@ -88,7 +88,24 @@ test("inbox_unreadable_shows_a_line_not_the_empty_state", async ({ page }) => {
 
 test("inbox_remove_shows_undo", async ({ page }) => {
   await openInbox(page, "inboxOne", { width: 900, height: 600 });
-  await page.getByRole("button", { name: /^Remove note/ }).click();
+  await page.getByRole("button", { name: /^More actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Remove" }).click();
   await expect(page.getByText("Note removed.")).toBeVisible();
   await expect(page.getByRole("button", { name: /Undo/ })).toBeVisible();
+});
+
+test("inbox_moved_status_line_fits_at_360", async ({ page }) => {
+  const size = { width: 360, height: 240 };
+  await openInbox(page, "inboxOne", size);
+  await page.getByRole("button", { name: /^More actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Move to Board" }).click();
+  const moved = page.getByText("Moved to Board");
+  await expect(moved).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open Board/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    size.width,
+  );
+  const row = page.getByRole("button", { name: /Undo/ }).locator("xpath=ancestor::*[self::div][1]");
+  const box = await row.boundingBox();
+  expect(box?.height).toBeGreaterThanOrEqual(44);
 });
