@@ -8,6 +8,10 @@ import { defineConfig, type InlineConfig, type Plugin, type UserConfig } from "v
 
 const root = import.meta.dirname;
 const src = resolve(root, "src");
+/** A path as an import specifier: forward slashes, so a Windows path (D:\\a\\b.ts) is valid in generated source. */
+export function importSpecifier(path: string): string {
+  return path.replaceAll("\\", "/");
+}
 const alias = { "@": src };
 /** bundle.js makes its elements through the host's React (see design-system/host-jsx-runtime.ts). */
 const hostJsx = {
@@ -103,8 +107,8 @@ export default config;
 /** components/bundle.js and components/bundle.css: a classic script; react is window.React. */
 export function bundleConfig(outDir: string): InlineConfig {
   const names = runtimeExports();
-  const entry = `import "${resolve(root, "design-system/bundle.css")}";
-import * as ui from "${resolve(src, "index.ts")}";
+  const entry = `import "${importSpecifier(resolve(root, "design-system/bundle.css"))}";
+import * as ui from "${importSpecifier(resolve(src, "index.ts"))}";
 window.Orasenda = Object.assign(window.Orasenda || {}, { ${names.map((n) => `${n}: ui.${n}`).join(", ")} });
 `;
   return {
@@ -182,7 +186,7 @@ export function specimenConfig(outDir: string, name: string, file: string): Inli
   const names = runtimeExports();
   const shim = `const O = window.Orasenda;\n${names.map((n) => `export const ${n} = O.${n};`).join("\n")}\n`;
   const entry = `import { createRoot } from "react-dom/client";
-import { ${name}Specimen as Specimen } from "${file}";
+import { ${name}Specimen as Specimen } from "${importSpecifier(file)}";
 for (const theme of ["light", "dark"]) {
   const host = document.getElementById(theme);
   if (host) createRoot(host).render(<Specimen />);

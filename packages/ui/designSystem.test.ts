@@ -6,6 +6,7 @@ import { Script } from "node:vm";
 import { JSDOM } from "jsdom";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import * as ui from "./src/index.ts";
+import { importSpecifier } from "./vite.config.ts";
 
 // The runtime surface: the hand-written bundle.js before the code-first move, plus each component added since.
 const PREVIOUS_SURFACE = [
@@ -347,4 +348,9 @@ test("design_system_check_fails_when_a_seeded_export_renders_nothing", () => {
     delete MINIMAL.Empty;
     dom.window.close();
   }
+});
+
+test("importSpecifier_uses_forward_slashes", () => {
+  expect(importSpecifier("D:\\a\\b\\c.ts")).toBe("D:/a/b/c.ts");
+  expect(importSpecifier("/a/b/c.ts")).toBe("/a/b/c.ts");
 });
