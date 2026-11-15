@@ -1,5 +1,6 @@
 import type { Handler } from "./backend";
 import { BACKUPS_SCENARIOS } from "./backups";
+import { BOARD_SCENARIOS } from "./board";
 import { DATA } from "./data";
 import { FOCUS } from "./focus";
 import { INBOX } from "./inbox";
@@ -24,6 +25,7 @@ const SCENARIOS: Record<string, Handler> = {
   ...BACKUPS_SCENARIOS,
   ...YOUR_DATA,
   ...ROUTINES_SCENARIOS,
+  ...BOARD_SCENARIOS,
 };
 
 export const SCENARIO_NAMES: readonly string[] = Object.keys(SCENARIOS);

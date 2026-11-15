@@ -46,6 +46,7 @@ function load<P>(importer: () => Promise<ComponentType<P>>) {
 const todayPage = load(() => import("@features/today/Today").then((m) => m.Today));
 const settingsPage = load(() => import("@features/settings/Settings").then((m) => m.Settings));
 const inboxPage = load(() => import("@features/inbox/InboxPage").then((m) => m.InboxPage));
+const boardPage = load(() => import("@features/board/BoardPage").then((m) => m.BoardPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
 const focusPage = load(() => import("@features/focus/FocusPage").then((m) => m.FocusPage));
 const routinesPage = load(() =>
@@ -57,6 +58,7 @@ export const pagesReady = Promise.allSettled([
   todayPage.ready,
   settingsPage.ready,
   inboxPage.ready,
+  boardPage.ready,
   placeholderPage.ready,
   focusPage.ready,
   routinesPage.ready,
@@ -72,6 +74,10 @@ function Settings(props: ComponentProps<typeof import("@features/settings/Settin
 }
 function Inbox(props: ComponentProps<typeof import("@features/inbox/InboxPage").InboxPage>) {
   const Page = inboxPage.use();
+  return <Page {...props} />;
+}
+function Board(props: ComponentProps<typeof import("@features/board/BoardPage").BoardPage>) {
+  const Page = boardPage.use();
   return <Page {...props} />;
 }
 function FocusPage(props: ComponentProps<typeof import("@features/focus/FocusPage").FocusPage>) {
@@ -250,7 +256,12 @@ export function App() {
     <div
       className={[
         "app",
-        current === "settings" || current === "inbox" || current === "routines" ? "app-bound" : "",
+        current === "settings" ||
+        current === "inbox" ||
+        current === "board" ||
+        current === "routines"
+          ? "app-bound"
+          : "",
         compact ? "app-compact" : "",
       ]
         .filter(Boolean)
@@ -268,10 +279,12 @@ export function App() {
                 <Settings info={info} arrival={arrival} onNavigate={(page) => navigate(page)} />
               ) : null}
               {current === "inbox" ? <Inbox onNavigate={(page) => navigate(page)} /> : null}
+              {current === "board" ? <Board onNavigate={(page) => navigate(page)} /> : null}
               {current === "routines" ? <Routines onNavigate={(page) => navigate(page)} /> : null}
               {current !== "today" &&
               current !== "settings" &&
               current !== "inbox" &&
+              current !== "board" &&
               current !== "routines" ? (
                 <Placeholder
                   title={TITLES[current]}

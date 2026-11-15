@@ -87,6 +87,17 @@ test("cards_scroll_inside_the_column", () => {
   );
 });
 
+test("cards_keep_the_focus_ring_in_view_when_scrolled", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={1}>
+      <article>Write notes</article>
+    </KanbanColumn>,
+  );
+  expect(container.querySelector("[data-slot=kanban-column-cards]")?.className).toContain(
+    "scroll-py-1",
+  );
+});
+
 test("wide_width_uses_the_wide_token", () => {
   const { container } = render(<KanbanColumn title="Today" count={0} width="wide" />);
   const section = container.querySelector("[data-slot=kanban-column]");
