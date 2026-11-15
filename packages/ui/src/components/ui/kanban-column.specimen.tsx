@@ -68,7 +68,7 @@ export function KanbanColumnSpecimen(): ReactElement {
             title="Today"
             count={3}
             limit={5}
-            drop={{ index: 1, label: "Moving Outline here" }}
+            drop={{ index: 2, label: "Moving Outline here" }}
           >
             {DROP_CARDS}
           </KanbanColumn>
