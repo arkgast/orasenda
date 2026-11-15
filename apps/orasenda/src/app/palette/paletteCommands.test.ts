@@ -189,3 +189,24 @@ test("task_mode_orders_doing_today_backlog_with_hints", () => {
     ["Plan the week", "Backlog"],
   ]);
 });
+
+test("import_tasks_follows_the_task_commands_and_is_never_first", () => {
+  for (const input of [base, { ...base, view: null }, { ...base, tasks: OPEN }]) {
+    const rows = paletteCommands(input);
+    const at = rows.findIndex((c) => c.id === "importTasks");
+    expect(at).toBeGreaterThan(0);
+    expect(rows[at]).toMatchObject({
+      label: "Import tasks…",
+      hint: "From Reminders, Todoist or Things into Backlog",
+    });
+    expect(rows[at].shortcut).toBeUndefined();
+  }
+  const withTasks = labels({ ...base, tasks: OPEN });
+  expect(withTasks.indexOf("Import tasks…")).toBeGreaterThan(withTasks.indexOf("Choose a task…"));
+  expect(paletteCommands({ ...base, tasks: OPEN, tasksOnly: true }).map((c) => c.id)).not.toContain(
+    "importTasks",
+  );
+  expect(paletteCommands({ ...base, displaysOnly: true }).map((c) => c.id)).not.toContain(
+    "importTasks",
+  );
+});

@@ -44,7 +44,7 @@ test("your_data_rows_render_counts", async () => {
   expect(heading).toHaveAttribute("tabindex", "-1");
   expect(screen.getByText("12 sessions · 3 presets · 2 notes")).toBeInTheDocument();
   expect(screen.getByText(OVERVIEW.folder)).toBeInTheDocument();
-  for (const label of ["Stored", "Data folder", "Move data", "Start over"]) {
+  for (const label of ["Stored", "Data folder", "Move data", "Tasks from other apps", "Start over"]) {
     expect(screen.getByRole("group", { name: label })).toBeInTheDocument();
   }
   const variants = [...container.querySelectorAll("button")].map((b) => [
@@ -55,6 +55,7 @@ test("your_data_rows_render_counts", async () => {
     ["Show in Finder", "quiet"],
     ["Export data…", "quiet"],
     ["Import data…", "quiet"],
+    ["Import tasks…", "quiet"],
     ["Delete all data…", "ghost"],
   ]);
   const last = [...container.querySelectorAll('[data-slot="settings-row"]')].at(-1);
