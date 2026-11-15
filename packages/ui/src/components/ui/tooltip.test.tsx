@@ -17,6 +17,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 function Preset() {
@@ -162,7 +163,6 @@ test("tooltip_hides_one_frame_after_blur_and_focus_leaves_a_dialog_trap_cleanly"
   });
   expect(panel()).toBeNull();
   expect(document.activeElement).toBe(next);
-  vi.unstubAllGlobals();
 });
 
 test("tooltip_stays_when_focus_returns_before_the_frame", () => {
@@ -181,5 +181,26 @@ test("tooltip_stays_when_focus_returns_before_the_frame", () => {
     for (const cb of frames.splice(0)) cb(0);
   });
   expect(panel()).not.toBeNull();
-  vi.unstubAllGlobals();
+});
+
+test("tooltip_hover_during_the_blur_frame_does_not_keep_it_open", () => {
+  const frames: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+    frames[id - 1] = () => {};
+  });
+  render(<Preset />);
+  const trigger = screen.getByRole("button");
+  fireEvent.keyDown(trigger, { key: "Tab" });
+  act(() => trigger.focus());
+  act(() => trigger.blur());
+  fireEvent.pointerEnter(trigger);
+  act(() => {
+    for (const cb of frames.splice(0)) cb(0);
+  });
+  fireEvent.pointerLeave(trigger);
+  act(() => {
+    vi.advanceTimersByTime(400);
+  });
+  expect(panel()).toBeNull();
 });

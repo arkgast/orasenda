@@ -129,7 +129,6 @@ export function Tooltip({
   const trigger = cloneElement(children as ReactElement<Record<string, unknown>>, {
     onPointerEnter: (e: unknown) => {
       own.onPointerEnter?.(e);
-      cancelBlur();
       enter();
     },
     onPointerLeave: (e: unknown) => {
