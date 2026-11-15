@@ -88,4 +88,10 @@ pub const COMMANDS: &[&str] = &[
     "spike_overlay_ready",
     "spike_overlay_choice",
     "timer_set_task",
+    "import_sources",
+    "import_preview",
+    "import_discard",
+    "task_import",
+    "task_import_undo",
+    "import_open_settings",
 ];

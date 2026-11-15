@@ -18,10 +18,10 @@ use crate::file_picker::FilePicker;
 
 const NOW: u64 = 1_794_009_600_000;
 
-struct TempDir(PathBuf);
+pub(super) struct TempDir(pub(super) PathBuf);
 
 impl TempDir {
-    fn new() -> TempDir {
+    pub(super) fn new() -> TempDir {
         let path = std::env::temp_dir().join(format!("orasenda-g6-{}", uuid::Uuid::now_v7()));
         std::fs::create_dir_all(&path).unwrap();
         TempDir(path)
@@ -35,14 +35,14 @@ impl Drop for TempDir {
 }
 
 /// Answers every panel with `answer` and remembers what it was asked.
-struct FakePicker {
+pub(super) struct FakePicker {
     answer: Result<Option<PathBuf>, DataError>,
     asked: AtomicUsize,
     name: Mutex<Option<String>>,
 }
 
 impl FakePicker {
-    fn new(answer: Result<Option<PathBuf>, DataError>) -> FakePicker {
+    pub(super) fn new(answer: Result<Option<PathBuf>, DataError>) -> FakePicker {
         FakePicker {
             answer,
             asked: AtomicUsize::new(0),
@@ -50,7 +50,7 @@ impl FakePicker {
         }
     }
 
-    fn asked(&self) -> usize {
+    pub(super) fn asked(&self) -> usize {
         self.asked.load(Ordering::SeqCst)
     }
 }
@@ -63,6 +63,11 @@ impl FilePicker for FakePicker {
     }
 
     fn open(&self) -> Result<Option<PathBuf>, DataError> {
+        self.asked.fetch_add(1, Ordering::SeqCst);
+        self.answer.clone()
+    }
+
+    fn open_import(&self) -> Result<Option<PathBuf>, DataError> {
         self.asked.fetch_add(1, Ordering::SeqCst);
         self.answer.clone()
     }

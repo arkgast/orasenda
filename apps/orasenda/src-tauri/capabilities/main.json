@@ -81,6 +81,12 @@
     "allow-inbox-to-task",
     "allow-task-restore-note",
     "allow-board-columns-set",
-    "allow-timer-set-task"
+    "allow-timer-set-task",
+    "allow-import-sources",
+    "allow-import-preview",
+    "allow-import-discard",
+    "allow-task-import",
+    "allow-task-import-undo",
+    "allow-import-open-settings"
   ]
 }

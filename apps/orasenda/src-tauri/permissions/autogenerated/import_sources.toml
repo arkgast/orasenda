@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-import-sources"
+description = "Enables the import_sources command without any pre-configured scope."
+commands.allow = ["import_sources"]
+
+[[permission]]
+identifier = "deny-import-sources"
+description = "Denies the import_sources command without any pre-configured scope."
+commands.deny = ["import_sources"]

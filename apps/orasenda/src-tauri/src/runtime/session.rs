@@ -35,6 +35,7 @@ pub fn setup(app: &tauri::App) -> Result<(), Box<dyn Error>> {
     let notifier = Arc::clone(&platform.notifier);
     app.manage(Mutex::new(SessionService::new(store, platform, now_ms())));
     app.manage(notifier);
+    app.manage(crate::platform::import_sources());
     app.manage(ViewGate::default());
     let host = AppHost::new(app.handle());
     thread::Builder::new()

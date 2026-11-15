@@ -12,6 +12,8 @@ pub trait FilePicker: Send + Sync {
     fn save(&self, default_name: &str) -> Result<Option<PathBuf>, DataError>;
     /// An Open panel for one `.db` file.
     fn open(&self) -> Result<Option<PathBuf>, DataError>;
+    /// An Open panel for one Todoist export, a `.csv` or a `.zip`.
+    fn open_import(&self) -> Result<Option<PathBuf>, DataError>;
 }
 
 /// The panels of the dialog plugin (desktop).
@@ -67,6 +69,19 @@ impl FilePicker for DialogPicker {
             });
         Self::answer(&mut rx)
     }
+
+    fn open_import(&self) -> Result<Option<PathBuf>, DataError> {
+        use tauri_plugin_dialog::DialogExt;
+        let (tx, mut rx) = tauri::async_runtime::channel(1);
+        self.0
+            .dialog()
+            .file()
+            .add_filter("Todoist export", &["csv", "zip"])
+            .pick_file(move |path| {
+                let _ = tx.try_send(path);
+            });
+        Self::answer(&mut rx)
+    }
 }
 
 /// Mobile has no panel yet; it says so instead of pretending to cancel.
@@ -82,6 +97,10 @@ impl FilePicker for DialogPicker {
     }
 
     fn open(&self) -> Result<Option<PathBuf>, DataError> {
+        Err(unavailable())
+    }
+
+    fn open_import(&self) -> Result<Option<PathBuf>, DataError> {
         Err(unavailable())
     }
 }
