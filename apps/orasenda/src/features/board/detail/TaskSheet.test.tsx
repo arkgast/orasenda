@@ -1,6 +1,6 @@
 import { argsOf, boardOf, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { card, renderBoard, TASKS } from "../BoardPage.support";
 
@@ -17,6 +17,10 @@ async function openSheet(options: Parameters<typeof renderBoard>[0] = {}) {
   card("Write intro").focus();
   fireEvent.keyDown(card("Write intro"), { key: "Enter" });
   await settle();
+  // Radix moves focus into the sheet on a later tick than a microtask flush, so wait for it.
+  await waitFor(() =>
+    expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true),
+  );
   return backend;
 }
 
@@ -31,7 +35,8 @@ test("detail_opens_and_returns_focus", async () => {
   fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(card("Write intro")).toHaveFocus();
+  // Focus returns to the card on a timer after the sheet unmounts.
+  await waitFor(() => expect(card("Write intro")).toHaveFocus());
 });
 
 test("Close and Done both close the sheet", async () => {
@@ -244,7 +249,8 @@ test("a failure stays on screen when another field then saves", async () => {
 test("notes save after a pause, and tags and checklist items save at once", async () => {
   const backend = await openSheet();
   const dialog = within(screen.getByRole("dialog"));
-  vi.useFakeTimers({ shouldAdvanceTime: true });
+  // No shouldAdvanceTime: under load, real time would leak into the 800 ms pause and fire the save early.
+  vi.useFakeTimers();
   try {
     fireEvent.change(dialog.getByRole("textbox", { name: "Notes" }), { target: { value: "Hi" } });
     await vi.advanceTimersByTimeAsync(799);
