@@ -1,3 +1,4 @@
+import { useTaskOptions } from "@domain/board/useTaskOptions";
 import { useBindings } from "@domain/keyboard/useBindings";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { usePresets } from "@domain/presets/presets";
@@ -14,6 +15,10 @@ type Props = {
   compact: boolean;
   /** Only the *Full screen on <display>* commands (*Full screen on another display*). */
   displaysOnly?: boolean;
+  /** Only the tasks that aren't Done (*Choose a task…*). */
+  tasksOnly?: boolean;
+  /** Asks the host to remount the palette in another mode, with an empty query. */
+  onMode(mode: "tasks"): void;
   onClose(): void;
   onNavigate(page: NavPage): void;
 };
@@ -37,6 +42,8 @@ async function attempt<T>(name: string, promise: Promise<T>): Promise<boolean> {
 export function Palette({
   compact,
   displaysOnly = false,
+  tasksOnly = false,
+  onMode,
   onClose,
   onNavigate,
 }: Props): ReactElement {
@@ -46,6 +53,7 @@ export function Palette({
   const [status, setStatus] = useState<string | undefined>();
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const { actions, fixed } = useBindings();
+  const tasks = useTaskOptions();
 
   useEffect(() => {
     let cancelled = false;
@@ -89,8 +97,10 @@ export function Palette({
         actions,
         fixed,
         displaysOnly,
+        tasksOnly,
+        tasks,
       }),
-    [view, settings, presets, displays, actions, fixed, displaysOnly],
+    [view, settings, presets, displays, actions, fixed, displaysOnly, tasksOnly, tasks],
   );
 
   const change = (patch: Partial<Settings>): Promise<boolean> => {
@@ -117,6 +127,17 @@ export function Palette({
         return attempt("timer_resume", commands.timerResume()).then(report("resume"));
       case "end":
         return attempt("timer_stop", commands.timerStop()).then(report("end the session"));
+      case "chooseTask":
+        onMode("tasks");
+        return false;
+      case "clearTask":
+        return attempt("timer_set_task", commands.timerSetTask(null)).then(
+          report("clear the task"),
+        );
+      case "task":
+        return attempt("timer_set_task", commands.timerSetTask(arg ?? null)).then(
+          report("choose that task"),
+        );
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));
       case "fullScreen":

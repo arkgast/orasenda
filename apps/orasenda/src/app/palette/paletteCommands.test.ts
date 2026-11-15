@@ -1,3 +1,4 @@
+import type { TaskPickerOption } from "@orasenda/ui";
 import {
   DISPLAYS,
   IDLE,
@@ -7,6 +8,7 @@ import {
   RUNNING,
   SETTINGS,
   STEADY,
+  taskOption,
   withGlobal,
 } from "@shared/test/fixtures";
 import { expect, test } from "vitest";
@@ -18,6 +20,7 @@ const base = {
   presets: PRESETS,
   displays: DISPLAYS,
   notifications: "granted" as const,
+  tasks: [] as TaskPickerOption[],
 };
 
 const labels = (input: Parameters<typeof paletteCommands>[0]) =>
@@ -152,4 +155,37 @@ test("palette_one_display_is_plain_full_screen", () => {
   const one = paletteCommands({ ...base, displays: [DISPLAYS[0]] });
   expect(one.find((c) => c.id === "fullScreen")).toMatchObject({ label: "Full screen" });
   expect(one.some((c) => c.id.startsWith("fullScreen:"))).toBe(false);
+});
+
+const OPEN = [
+  taskOption("b", "Plan the week", "backlog"),
+  taskOption("t", "Write notes", "today", true),
+  taskOption("d", "Fix the build", "doing"),
+];
+
+test("choose_task_hidden_without_open_tasks", () => {
+  expect(labels(base)).not.toContain("Choose a task…");
+  const idle = labels({ ...base, tasks: OPEN });
+  expect(idle.indexOf("Choose a task…")).toBe(idle.indexOf("Just 2 minutes") + 1);
+  const running = labels({ ...base, view: RUNNING, tasks: OPEN });
+  expect(running.indexOf("Choose a task…")).toBe(running.indexOf("End session") + 1);
+  expect(labels({ ...base, tasks: OPEN })).not.toContain("Clear task");
+});
+
+test("clear_task_only_when_linked", () => {
+  const linked = { ...IDLE, task: { id: "t", title: "Write notes" } };
+  expect(labels({ ...base, view: linked })).toContain("Clear task");
+  expect(labels({ ...base, view: linked, tasks: OPEN }).slice(2, 4)).toEqual([
+    "Choose a task…",
+    "Clear task",
+  ]);
+});
+
+test("task_mode_orders_doing_today_backlog_with_hints", () => {
+  const rows = paletteCommands({ ...base, tasks: OPEN, tasksOnly: true });
+  expect(rows.map((r) => [r.label, r.hint])).toEqual([
+    ["Fix the build", "Doing"],
+    ["Write notes", "Today · Frog"],
+    ["Plan the week", "Backlog"],
+  ]);
 });
