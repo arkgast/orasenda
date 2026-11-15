@@ -324,11 +324,40 @@ test("dialog_sheet_leaves_pointer_focus_alone_when_the_focused_element_holds_the
   expect(body.scrollTop).toBe(0);
 });
 
-test("dialog_sheet_pointerup_clears_the_press", () => {
+function frames() {
+  const queue: FrameRequestCallback[] = [];
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => queue.push(cb));
+  return () => {
+    for (const cb of queue.splice(0)) cb(0);
+  };
+}
+
+test("dialog_sheet_pointerup_ends_the_press_a_frame_later", () => {
+  const run = frames();
   const { body, next } = nudgeSetup();
   fireEvent.pointerDown(next);
   fireEvent.pointerUp(next);
+  run();
   next.blur();
   next.focus();
   expect(body.scrollTop).toBeGreaterThan(0);
+});
+
+test("dialog_sheet_next_frame_clears_the_press", () => {
+  const run = frames();
+  const { body, next } = nudgeSetup();
+  fireEvent.pointerDown(screen.getByRole("button", { name: "Remove item" }));
+  run();
+  next.focus();
+  expect(body.scrollTop).toBeGreaterThan(0);
+});
+
+test("dialog_sheet_clicking_a_label_leaves_its_control_alone", () => {
+  frames();
+  const { body, next } = nudgeSetup();
+  const label = next.closest("label") as HTMLElement;
+  fireEvent.pointerDown(label);
+  fireEvent.pointerUp(label);
+  next.focus();
+  expect(body.scrollTop).toBe(0);
 });
