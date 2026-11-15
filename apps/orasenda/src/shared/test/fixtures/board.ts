@@ -1,5 +1,6 @@
 import { act } from "@testing-library/react";
 import {
+  type BoardNoticeKind,
   type BoardView_Serialize,
   type ColumnView_Serialize,
   events,
@@ -80,4 +81,10 @@ export function boardOf(
     return { ...column, tasks: here, count: here.length, state };
   });
   return { ...BOARD, columns, ...over };
+}
+
+export async function emitBoardNotice(kind: BoardNoticeKind, message: string): Promise<void> {
+  await act(async () => {
+    await events.boardNotice.emit({ kind, message });
+  });
 }

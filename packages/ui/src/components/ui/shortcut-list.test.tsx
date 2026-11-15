@@ -48,3 +48,8 @@ test("shortcut_list_one_kbd_per_key", () => {
   );
   expect(document.querySelectorAll("[data-slot=kbd]")).toHaveLength(3);
 });
+
+test("shortcut_list_label_names_the_table", () => {
+  render(<ShortcutList items={ITEMS} label="On the Board" />);
+  expect(screen.getByRole("table", { name: "On the Board" })).toBeInTheDocument();
+});

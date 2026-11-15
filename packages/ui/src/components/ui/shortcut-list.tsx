@@ -13,16 +13,18 @@ export interface ShortcutListItem {
 
 export interface ShortcutListProps {
   items: ShortcutListItem[];
+  /** The table's hidden caption, which names the list. Default "All shortcuts". */
+  label?: string;
 }
 
 /** A read-only table of every shortcut: the action, then its keys. Never wider than panel-width. */
-export function ShortcutList({ items }: ShortcutListProps): JSX.Element {
+export function ShortcutList({ items, label = "All shortcuts" }: ShortcutListProps): JSX.Element {
   return (
     <table
       data-slot="shortcut-list"
       className="w-full max-w-panel-width border-collapse text-start text-body"
     >
-      <caption className="sr-only">All shortcuts</caption>
+      <caption className="sr-only">{label}</caption>
       <thead>
         <tr>
           <th scope="col" className="p-0">
