@@ -182,3 +182,14 @@
 .today:not([data-layout="strip"]) .today-controls [data-slot="start-button-row"] {
   justify-content: center;
 }
+
+/* The task control sits above the time and takes one quiet line: the time keeps the rest. */
+.today-time:has(.today-task) {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.today-task {
+  justify-self: center;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}

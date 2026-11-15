@@ -3,6 +3,7 @@ import { Choice, SettingsRow, ShortcutList } from "@orasenda/ui";
 import type { Group } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
 import { type Ref, useRef } from "react";
+import { boardShortcutItems } from "../boardShortcutItems";
 import { ShortcutRow } from "../ShortcutRow";
 import { shortcutItems } from "../shortcutItems";
 import { useKeyboard } from "../useKeyboard";
@@ -71,7 +72,7 @@ export function Shortcuts({
           aria-describedby="keyboard-single-help"
           onChange={(event) => onSingleKey(event.target.checked)}
         >
-          Use single keys (Space, F, P)
+          Use single keys (Space, P, F, B)
         </Choice>
       </SettingsRow>
       {view ? (
@@ -114,6 +115,10 @@ export function Shortcuts({
       <div className="flex flex-col gap-2 py-4">
         <p className="m-0 font-semibold">All shortcuts</p>
         <ShortcutList items={shortcutItems(view, singleKey)} />
+      </div>
+      <div className="flex flex-col gap-2 py-4">
+        <p className="m-0 font-semibold">On the Board</p>
+        <ShortcutList label="On the Board" items={boardShortcutItems(singleKey)} />
       </div>
     </section>
   );

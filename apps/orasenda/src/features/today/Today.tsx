@@ -1,3 +1,4 @@
+import { useBoardNotice } from "@domain/board/useBoardNotice";
 import { shownBinding } from "@domain/keyboard/bindings";
 import { useBindings } from "@domain/keyboard/useBindings";
 import { useShortcuts } from "@domain/keyboard/useShortcuts";
@@ -25,8 +26,10 @@ import { type FocusButtonId, FocusButtons } from "./FocusButtons";
 import { type Notice, noticeAfter } from "./notices";
 import { StatusRow } from "./StatusRow";
 import { type StatusActionId, statusLine } from "./statusLine";
+import { TaskSlot } from "./TaskSlot";
 import { TimeView } from "./TimeView";
 import { useTodayKeys } from "./todayKeys";
+import { useBoardLine } from "./useBoardLine";
 import { useControlFocus } from "./useControlFocus";
 import { useKeepGoingHint, usePageVisible } from "./useKeepGoingHint";
 import { useNextMinutes } from "./useNextMinutes";
@@ -73,6 +76,8 @@ export function Today({ onNavigate }: Props) {
   // The focus view that failed to open, so Try again repeats it.
   const [failedOpen, setFailedOpen] = useState<FocusButtonId | null>(null);
   const bindings = useBindings();
+  const [boardLine, setBoardLine] = useBoardLine();
+  useBoardNotice((n) => setBoardLine(n.message));
 
   useEffect(() => {
     const unregister = register({
@@ -125,7 +130,7 @@ export function Today({ onNavigate }: Props) {
     controlError,
     openFailed: failedOpen !== null,
     timerUnavailable: timer.status === "error",
-    notice: notice?.text ?? null,
+    notice: notice?.text ?? boardLine,
     store: view?.store ?? "ok",
     cadence: view,
     capNotice: notice?.persist === true,
@@ -201,6 +206,26 @@ export function Today({ onNavigate }: Props) {
         setControlError(true);
       },
     );
+  };
+
+  // The optional task: choosing or clearing it never starts anything. A refusal (the task is gone
+  // or in Done) is said in words; the board's own event brings the list up to date.
+  const pickTask = (taskId: string | null) => {
+    const failed = (error: unknown) => {
+      console.error("timer_set_task failed", error);
+      setControlError(true);
+    };
+    commands.timerSetTask(taskId).then((result) => {
+      if (result.status === "ok") {
+        setControlError(false);
+        return;
+      }
+      const { kind } = result.error;
+      if (kind === "taskNotFound")
+        setBoardLine("That task is gone. Pick another or start without one.");
+      else if (kind === "taskDone") setBoardLine("Move it out of Done first.");
+      else if (commandFailure(result.error) === "failure") failed(result.error);
+    }, failed);
   };
 
   const end = () => {
@@ -319,6 +344,12 @@ export function Today({ onNavigate }: Props) {
           layout={layout.timer}
           clock={clock.status === "ok" ? clock.clock : undefined}
           idleLength={nextMinutes}
+          task={view?.task?.title}
+          slot={
+            layout.timer === "stackedStrip" ? null : (
+              <TaskSlot task={view?.task ?? null} onPick={pickTask} />
+            )
+          }
         />
       </div>
 

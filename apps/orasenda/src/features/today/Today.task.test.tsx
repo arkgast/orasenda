@@ -27,7 +27,7 @@ const BOARD = boardOf([
 const CHOSEN = { id: "d1", title: "Fix sync bug" };
 
 test("today_picker_starts_empty", async () => {
-  const backend = await renderToday({ board_get: () => BOARD });
+  const { backend } = await renderToday({ board_get: () => BOARD });
   expect(screen.getByRole("button", { name: "Add a task" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Clear task" })).toBeNull();
   expect(argsOf(backend.calls, "timer_set_task")).toEqual([]);
@@ -35,7 +35,7 @@ test("today_picker_starts_empty", async () => {
 });
 
 test("picking_task_calls_set_task", async () => {
-  const backend = await renderToday({
+  const { backend } = await renderToday({
     board_get: () => BOARD,
     timer_set_task: () => ({ ...IDLE, task: CHOSEN }),
   });
@@ -49,7 +49,7 @@ test("picking_task_calls_set_task", async () => {
 });
 
 test("clear_calls_set_task_null", async () => {
-  const backend = await renderToday({
+  const { backend } = await renderToday({
     board_get: () => BOARD,
     timer_state: () => ({ view: { ...RUNNING, task: CHOSEN }, pending: [] }),
     timer_set_task: () => ({ ...RUNNING, task: null }),

@@ -1,5 +1,11 @@
 import { commandFailure } from "@domain/timer/commandFailure";
-import { type ColumnView, commands, type Lane, type TaskView } from "@shared/ipc/bindings";
+import {
+  type ColumnView,
+  commands,
+  type Lane,
+  type TaskView,
+  type TimerCommandErrorKind,
+} from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { locate } from "./lanes";
 import type { useBoard } from "./useBoard";
@@ -16,6 +22,12 @@ export type BoardLine = {
 type Api = ReturnType<typeof useBoard>;
 
 const FAILED = "That didn't save. Try again.";
+
+/** What a start says when Rust refuses the task (spec, Session and task). */
+const TASK_REFUSALS: Partial<Record<TimerCommandErrorKind, string>> = {
+  taskNotFound: "That task is gone. Pick another or start without one.",
+  taskDone: "Move it out of Done first.",
+};
 
 /**
  * The Board's writes and the line under the heading that answers them. Every write names what
@@ -179,16 +191,21 @@ export function useBoardActions(
   );
 
   /**
-   * ⌘⏎ on a card. Seam for B13: today this starts the selected preset; B9's `StartRequest.taskId`
-   * links the task here, and nothing else on the Board changes.
+   * ⌘⏎ on a card: starts the selected preset linked to the task. A task that is gone or in Done
+   * is refused by Rust and said in words, with no retry (the same start would be refused again).
    */
   const startOn = useCallback(
     async function startOn(task: TaskView): Promise<boolean> {
       try {
-        const result = await commands.timerStart({ quick: false });
+        const result = await commands.timerStart({ quick: false, taskId: task.id });
         if (result.status === "ok") {
           show(null);
           return true;
+        }
+        const refusal = TASK_REFUSALS[result.error.kind];
+        if (refusal) {
+          show({ text: refusal, tone: "neutral" });
+          return false;
         }
         if (commandFailure(result.error) === "race") {
           // Another surface got there first: say what is true, no failure.

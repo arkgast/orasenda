@@ -21,7 +21,9 @@ const startOnIntro = async (replies = {}) => {
 
 test("board_start_on_links_task", async () => {
   const backend = await startOnIntro({ timer_start: () => RUNNING });
-  expect(argsOf(backend.calls, "timer_start")).toEqual([{ request: { quick: false, taskId: "t1" } }]);
+  expect(argsOf(backend.calls, "timer_start")).toEqual([
+    { request: { quick: false, taskId: "t1" } },
+  ]);
 });
 
 test("board_start_on_says_task_gone", async () => {

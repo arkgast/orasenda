@@ -1,3 +1,4 @@
+import { useBoardNotice } from "@domain/board/useBoardNotice";
 import { PagesButton } from "@domain/navigation/PagesButton";
 import {
   Button,
@@ -40,6 +41,11 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
   const name = (lane: Lane) => columns.find((c) => c.lane === lane)?.name ?? lane;
   const actions = useBoardActions(api, columns, name);
   const singleKeys = useSingleKeyOn();
+  // A start from anywhere may move a task back to Today or fail to write the board: say so here.
+  const { show } = actions;
+  useBoardNotice((notice) =>
+    show({ text: notice.message, tone: notice.kind === "notSaved" ? "attention" : "neutral" }),
+  );
 
   // A callback ref: the board div mounts and unmounts (empty board, first run), and the room
   // measure must follow it.

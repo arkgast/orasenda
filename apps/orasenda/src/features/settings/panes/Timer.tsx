@@ -1,5 +1,5 @@
 import { selectedPreset } from "@domain/presets/presets";
-import { Button, ChoiceGroup, SettingsRow } from "@orasenda/ui";
+import { Button, ChoiceGroup, Select, SettingsRow } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "@shared/ipc/bindings";
 import { type Ref, useEffect, useId, useRef } from "react";
 import { PresetTable, presetEditButton, presetEditorId } from "../PresetTable";
@@ -11,6 +11,9 @@ import type { PresetEditing } from "../usePresets";
 export function presetLabel(presets: PresetEntry[], settings: Pick<Settings, "presetId">): string {
   return selectedPreset(presets, settings)?.name ?? "";
 }
+
+/** 25 to 50 in steps of five (`board.estimate_buffer`). */
+const BUFFERS = [25, 30, 35, 40, 45, 50].map((n) => ({ value: String(n), label: `${n}%` }));
 
 type Props = {
   headingRef: Ref<HTMLHeadingElement>;
@@ -26,6 +29,7 @@ type Props = {
   disabledReason?: string;
   presetStatus?: string;
   cadenceStatus?: string;
+  bufferStatus?: string;
   editor: PresetEditing;
   onPreset: (presetId: string) => void;
   onCadence: CadenceChange;
@@ -42,6 +46,7 @@ export function Timer({
   disabledReason,
   presetStatus,
   cadenceStatus,
+  bufferStatus,
   editor,
   onPreset,
   onCadence,
@@ -137,6 +142,25 @@ export function Timer({
             The default presets are all here.
           </p>
         )}
+      </SettingsRow>
+      <SettingsRow
+        id="board-buffer"
+        label="Estimate buffer"
+        helper="Padding for the planning fallacy. Your estimates stay as you wrote them."
+        status={bufferStatus}
+        disabledReason={disabledReason}
+      >
+        <Select
+          label="Estimate buffer"
+          labelHidden
+          value={String(settings.boardEstimateBuffer)}
+          disabled={disabled}
+          options={BUFFERS}
+          onChange={(event) => {
+            const percent = Number(event.target.value);
+            onCadence({ boardEstimateBuffer: percent }, `Estimate buffer: ${percent}%.`);
+          }}
+        />
       </SettingsRow>
       <CadenceRows
         settings={settings}

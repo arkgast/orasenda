@@ -192,6 +192,7 @@ export function FocusPage({ hintsLeft = 0 }: { hintsLeft?: number }) {
         progress={shown?.progress ?? 0}
         mode={shown?.mode ?? "idle"}
         phase={shown?.phase ?? "focus"}
+        task={shown?.task?.title}
         offer={shown?.state === "idle" && shown.offer === "keepGoing"}
         secondaryActions={actions}
         clock={clock.status === "ok" ? clock.clock : undefined}

@@ -2,6 +2,7 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { act } from "@testing-library/react";
 import type { AppInfo, DisplayInfo, NoteView, TimerState_Serialize } from "../../ipc/bindings";
 import { events } from "../../ipc/bindings";
+import { BOARD } from "./board";
 import { DATA_REPLIES } from "./data";
 import { FULL_SCREEN_REPLIES } from "./fullScreen";
 import { KEYBOARD } from "./keyboard";
@@ -83,6 +84,8 @@ const DEFAULTS: Replies = {
   notifications_request: () => "granted",
   notifications_open_settings: () => null,
   timer_view: () => IDLE,
+  board_get: () => BOARD,
+  timer_set_task: () => IDLE,
   displays_list: () => DISPLAYS,
   focus_view_close: () => null,
   main_show: () => null,
