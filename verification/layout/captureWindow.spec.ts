@@ -48,7 +48,7 @@ async function expectFits(page: Page): Promise<void> {
   expect(cutOff, "nothing overflows").toEqual([]);
   // The kind choices are native radios inside 44px labels; the label is the target, so measure it.
   const small = (await smallTargets(page.locator("body"))).filter(
-    (line) => !line.startsWith('input ""') && !line.startsWith('span ""'),
+    (line) => !line.startsWith('span ""'),
   );
   expect(small, "targets are 44px").toEqual([]);
   for (const label of await dialog.locator('label[data-slot="choice"]').all()) {

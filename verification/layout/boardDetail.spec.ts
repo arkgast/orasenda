@@ -9,8 +9,12 @@ const SIZES = [
   { width: 640, height: 480 },
 ] as const;
 
-async function openSheet(page: Page, size: { width: number; height: number }) {
-  await openApp(page, "boardWeek", size);
+async function openSheet(
+  page: Page,
+  size: { width: number; height: number },
+  scenario = "boardWeek",
+) {
+  await openApp(page, scenario, size);
   await page.keyboard.press("Meta+3");
   const card = page.getByRole("button", { name: /^Write the intro/ });
   await card.focus();
@@ -57,12 +61,8 @@ for (const size of SIZES) {
 
   test(`board_detail_sheet_targets_and_focus_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size);
-    // A chip's box (14px) sits inside a full-height label, and a tag's remove mark grows its hit area
-    // with a pseudo-element; their own specs judge those two. Everything else is hit-min.
-    const small = (await smallTargets(dialog)).filter(
-      (line) => !line.startsWith('input ""') && !line.includes("Remove tag"),
-    );
-    expect(small).toEqual([]);
+    // smallTargets measures a chip through its label and a tag's remove mark through its ::before.
+    expect(await smallTargets(dialog)).toEqual([]);
     await expectFocusRingVisible(dialog.getByRole("textbox", { name: "Title" }));
     // WebKit gives a date field :focus but never :focus-visible: its ring must still show.
     const due = dialog.getByLabel("Due");
@@ -112,5 +112,110 @@ for (const size of SIZES) {
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Write the intro/ })).toBeFocused();
+  });
+}
+
+async function expectFitsWithoutOuterScroll(page: Page, size: { width: number; height: number }) {
+  const dialog = page.getByRole("dialog", { name: /^Write the intro/ });
+  const m = await dialog.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const root = document.documentElement;
+    return {
+      right: r.right,
+      bottom: r.bottom,
+      sideways: root.scrollWidth - root.clientWidth,
+      down: root.scrollHeight - root.clientHeight,
+    };
+  });
+  expect(m.right).toBeLessThanOrEqual(size.width);
+  expect(m.bottom).toBeLessThanOrEqual(size.height);
+  expect(m.sideways).toBeLessThanOrEqual(0);
+  expect(m.down).toBeLessThanOrEqual(0);
+  await expect(dialog.getByRole("button", { name: "Done" })).toBeInViewport({ ratio: 1 });
+}
+
+for (const size of SIZES) {
+  const at = `${size.width}x${size.height}`;
+
+  test(`board_detail_full_task_fits_and_is_reachable_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    await expectFitsWithoutOuterScroll(page, size);
+    expect(await smallTargets(dialog)).toEqual([]);
+    await expectFocusRingVisible(dialog.getByRole("textbox", { name: "Title" }));
+    // The far ends of the scrolling body keep their ring: the last tag's remove mark and the last item.
+    const remove = dialog.getByRole("button", { name: /^Remove tag/ }).last();
+    await remove.focus();
+    await expect(() => expectFocusRingVisible(remove)).toPass();
+    const last = dialog.getByRole("checkbox").last();
+    await last.focus();
+    await expect(() => expectFocusRingVisible(last)).toPass();
+    await expectFitsWithoutOuterScroll(page, size);
+  });
+
+  test(`board_detail_full_task_notes_ring_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await expect(() => expectFocusRingVisible(notes)).toPass();
+  });
+
+  // Known gap, follow-up issue #612: moving by keyboard to Notes scrolls the sheet body only to the
+  // field's own box, so the focus ring's bottom edge is clipped. At 1440x900 the ring is not clipped,
+  // so only the smaller sizes are expected to fail. Remove the expected failure when #612 lands.
+  test(`board_detail_full_task_tab_to_notes_ring_${at}`, async ({ page }) => {
+    test.fail(size.width < 1440, "#612: Tab to Notes clips the focus ring");
+    const dialog = await openSheet(page, size, "boardFullTask");
+    await dialog.getByRole("checkbox").last().focus();
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    for (let i = 0; i < 8; i++) {
+      if (await notes.evaluate((el) => el === document.activeElement)) break;
+      await page.keyboard.press("Tab");
+    }
+    await expect(notes).toBeFocused();
+    await expectFocusRingVisible(notes);
+  });
+
+  test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardSaveFails");
+    const priority = dialog.getByRole("combobox", { name: "Priority" });
+    await priority.selectOption({ index: 1 });
+    const line = dialog.getByText("That didn't save. Try again.");
+    await expect(line).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Try again saving" })).toBeVisible();
+    await expectFitsWithoutOuterScroll(page, size);
+    expect(await smallTargets(dialog)).toEqual([]);
+    // The line is present, and the Title field sits one gap (16px) under it.
+    const gap = await dialog.evaluate((el) => {
+      const text = [...el.querySelectorAll("*")].find((n) =>
+        [...n.childNodes].some((c) => c.textContent === "That didn't save. Try again."),
+      );
+      let box = text ?? null;
+      while (box && Number.parseFloat(getComputedStyle(box).marginBottom) === 0)
+        box = box.parentElement;
+      const input = [...el.querySelectorAll("input")].find(
+        (i) => i.labels?.[0]?.textContent === "Title",
+      );
+      const field = input?.labels?.[0]?.getBoundingClientRect();
+      return box && field ? field.top - box.getBoundingClientRect().bottom : Number.NaN;
+    });
+    expect(gap).toBeCloseTo(16, 0);
+    const retry = dialog.getByRole("button", { name: "Try again saving" });
+    await retry.focus();
+    await expectFocusRingVisible(retry);
+  });
+
+  test(`board_detail_empty_title_error_is_said_in_words_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    await title.fill("");
+    await title.blur();
+    await expect(
+      dialog.getByText("A task needs a title. Still using Write the intro."),
+    ).toBeVisible();
+    await expect(dialog.getByText("The title wasn't saved.")).toBeVisible();
+    await expectFitsWithoutOuterScroll(page, size);
+    expect(await smallTargets(dialog)).toEqual([]);
+    await title.focus();
+    await expectFocusRingVisible(title);
   });
 }
