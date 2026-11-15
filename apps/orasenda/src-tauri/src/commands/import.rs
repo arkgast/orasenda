@@ -2,8 +2,8 @@
 //! is the only thing added here; everything the user reads is made in the service.
 
 use orasenda_service::api::{
-    ImportDone, ImportError, ImportErrorKind, ImportPreview, ImportSourceKind, ImportSourcesView,
-    PreviewRequest,
+    ImportDone, ImportError, ImportErrorKind, ImportPreview, ImportSourceKind, ImportSourceView,
+    ImportSourcesView, PreviewRequest,
 };
 use orasenda_service::import::{
     run_import_discard, run_import_open_settings, run_import_preview, run_import_sources,
@@ -21,7 +21,7 @@ use crate::runtime::ticker::AppHost;
 #[serde(rename_all = "camelCase")]
 pub enum ImportPreviewOutcome {
     Picked(ImportPreview),
-    Cancelled,
+    Cancelled {},
 }
 
 /// A preview or import id as the webview sends it back: a plain number, lossless below 2^53
@@ -31,6 +31,7 @@ pub enum ImportPreviewOutcome {
 pub struct ImportRef(#[specta(type = specta_typescript::Number)] pub u64);
 
 const TASK_FAILED: &str = "That didn't finish. Try again.";
+const WRITE_FAILED: &str = "The tasks weren't imported. Try again.";
 const PANEL_FAILED: &str = "Orasenda couldn't open that file.";
 
 fn task_failed() -> ImportError {
@@ -49,7 +50,7 @@ pub(crate) fn import_preview_with<H: Host>(
         ImportSourceKind::Things => PreviewRequest::Things,
         ImportSourceKind::Todoist => match picker.open_import() {
             Ok(Some(path)) => PreviewRequest::Todoist(path),
-            Ok(None) => return Ok(ImportPreviewOutcome::Cancelled),
+            Ok(None) => return Ok(ImportPreviewOutcome::Cancelled {}),
             Err(error) => {
                 eprintln!("import: the file panel failed ({error:?})");
                 return Err(ImportError::new(ImportErrorKind::Unreadable, PANEL_FAILED));
@@ -65,7 +66,14 @@ pub(crate) fn import_preview_with<H: Host>(
 pub async fn import_sources(app: tauri::AppHandle) -> ImportSourcesView {
     on_blocking(move || run_import_sources(&AppHost::new(&app)))
         .await
-        .unwrap_or(ImportSourcesView { sources: vec![] })
+        .unwrap_or_else(|| ImportSourcesView {
+            // Could not look: offer the one source that needs nothing from the system.
+            sources: vec![ImportSourceView {
+                kind: ImportSourceKind::Todoist,
+                available: true,
+                reason: None,
+            }],
+        })
 }
 
 /// Reads a source and keeps the result as the one pending preview. Writes nothing. Todoist
@@ -100,7 +108,7 @@ pub async fn task_import(
 ) -> Result<ImportDone, ImportError> {
     on_blocking(move || run_task_import(&AppHost::new(&app), preview_id.0, keys))
         .await
-        .unwrap_or_else(|| Err(task_failed()))
+        .unwrap_or_else(|| Err(ImportError::store(WRITE_FAILED)))
 }
 
 /// Removes the tasks of the last import that are still on the Board; answers how many.

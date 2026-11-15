@@ -10,34 +10,39 @@ use orasenda_service::session::SessionService;
 use orasenda_service::session::test_support::{TestHost, fakes};
 
 use super::capabilities::capability;
-use super::data_files::FakePicker;
+use super::data_files::{FakePicker, TempDir};
 use crate::commands::{ImportPreviewOutcome, import_preview_with};
 
-fn host() -> TestHost {
+fn host() -> (TempDir, TestHost) {
     let f = fakes(NotificationStatus::NotDetermined, false);
-    let store = orasenda_service::session::open_store_at(
-        &std::env::temp_dir().join(format!("orasenda-i8-{}", uuid::Uuid::now_v7())),
-        "device-i8",
-    );
-    TestHost::with(
+    let dir = TempDir::new();
+    let store = orasenda_service::session::open_store_at(&dir.0, "device-i8");
+    let host = TestHost::with(
         SessionService::new(store, f.platform, 1_794_009_600_000),
         f.log,
         f.notifier,
-    )
+    );
+    (dir, host)
 }
 
 #[test]
 fn import_preview_cancelled_panel() {
     let picker = FakePicker::new(Ok(None));
-    let outcome = import_preview_with(&host(), &picker, ImportSourceKind::Todoist).unwrap();
-    assert_eq!(outcome, ImportPreviewOutcome::Cancelled);
+    let (_dir, host) = host();
+    let outcome = import_preview_with(&host, &picker, ImportSourceKind::Todoist).unwrap();
+    assert_eq!(outcome, ImportPreviewOutcome::Cancelled {});
+    assert_eq!(
+        serde_json::to_string(&outcome).unwrap(),
+        r#"{"cancelled":{}}"#
+    );
     assert_eq!(picker.asked(), 1);
 }
 
 #[test]
 fn import_preview_picker_error_is_unreadable() {
     let picker = FakePicker::new(Err(DataError::new(DataErrorKind::Unavailable, "no panel")));
-    let error = import_preview_with(&host(), &picker, ImportSourceKind::Todoist).unwrap_err();
+    let (_dir, host) = host();
+    let error = import_preview_with(&host, &picker, ImportSourceKind::Todoist).unwrap_err();
     assert_eq!(error.kind, ImportErrorKind::Unreadable);
     assert_eq!(picker.asked(), 1);
 }
@@ -46,8 +51,9 @@ fn import_preview_picker_error_is_unreadable() {
 fn import_preview_other_sources_show_no_panel() {
     let picker = FakePicker::new(Ok(None));
     // No source is installed in the test host, so each answers an error, never a panel.
+    let (_dir, host) = host();
     for kind in [ImportSourceKind::Reminders, ImportSourceKind::Things] {
-        assert!(import_preview_with(&host(), &picker, kind).is_err());
+        assert!(import_preview_with(&host, &picker, kind).is_err());
     }
     assert_eq!(picker.asked(), 0);
 }

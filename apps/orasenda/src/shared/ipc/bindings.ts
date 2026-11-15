@@ -849,10 +849,10 @@ export type ImportPreview = ImportPreview_Serialize | ImportPreview_Deserialize;
 export type ImportPreviewOutcome = ImportPreviewOutcome_Serialize | ImportPreviewOutcome_Deserialize;
 
 /**  What `import_preview` did: the preview, or nothing when the Open panel was cancelled. */
-export type ImportPreviewOutcome_Deserialize = { picked: ImportPreview_Deserialize } | "cancelled";
+export type ImportPreviewOutcome_Deserialize = ({ picked: ImportPreview_Deserialize }) & { cancelled?: never } | ({ cancelled: Record<string, never> }) & { picked?: never };
 
 /**  What `import_preview` did: the preview, or nothing when the Open panel was cancelled. */
-export type ImportPreviewOutcome_Serialize = { picked: ImportPreview_Serialize } | "cancelled";
+export type ImportPreviewOutcome_Serialize = ({ picked: ImportPreview_Serialize }) & { cancelled?: never } | ({ cancelled: Record<string, never> }) & { picked?: never };
 
 /**  What a source holds, shown before anything is written. */
 export type ImportPreview_Deserialize = {

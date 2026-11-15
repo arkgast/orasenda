@@ -18,10 +18,10 @@ use crate::file_picker::FilePicker;
 
 const NOW: u64 = 1_794_009_600_000;
 
-struct TempDir(PathBuf);
+pub(super) struct TempDir(pub(super) PathBuf);
 
 impl TempDir {
-    fn new() -> TempDir {
+    pub(super) fn new() -> TempDir {
         let path = std::env::temp_dir().join(format!("orasenda-g6-{}", uuid::Uuid::now_v7()));
         std::fs::create_dir_all(&path).unwrap();
         TempDir(path)
