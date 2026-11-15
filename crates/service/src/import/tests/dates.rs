@@ -23,6 +23,7 @@ fn absolute_dates_accepted_and_refused() {
         "20 Nov 26",
         "20 Foo 2026",
         "2026-11-20x",
+        "2026-11-20 every week",
     ] {
         assert_eq!(absolute(text), None, "{text}");
     }

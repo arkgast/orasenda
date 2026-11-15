@@ -37,10 +37,25 @@ pub(crate) fn absolute(text: &str) -> Option<String> {
 fn iso(text: &str) -> Option<String> {
     let head = text.get(..10)?;
     let rest = &text[10..];
-    if !(rest.is_empty() || rest.starts_with(['T', ' '])) {
+    if !(rest.is_empty() || is_time(rest)) {
         return None;
     }
     LocalDate::parse_iso(head).map(LocalDate::to_iso)
+}
+
+/// `T` or a space, then `HH:MM`, with optional seconds, fraction and zone.
+fn is_time(rest: &str) -> bool {
+    let Some(time) = rest.strip_prefix(['T', ' ']) else {
+        return false;
+    };
+    let b = time.as_bytes();
+    b.len() >= 5
+        && b[..2].iter().all(u8::is_ascii_digit)
+        && b[2] == b':'
+        && b[3..5].iter().all(u8::is_ascii_digit)
+        && time[5..]
+            .chars()
+            .all(|c| c.is_ascii_digit() || ":.+-Z".contains(c))
 }
 
 /// 1 to 12 for a full English month name or its three-letter form ("Sept" too).

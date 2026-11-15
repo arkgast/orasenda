@@ -129,13 +129,7 @@ pub(crate) fn fit(item: RawItem) -> Fitted {
         spill.join("\n"),
         item.date_lines.join("\n"),
     ];
-    let joined = parts
-        .iter()
-        .filter(|p| !p.is_empty())
-        .map(String::as_str)
-        .collect::<Vec<_>>()
-        .join("\n");
-    let (notes, notes_cut) = cut_notes(joined);
+    let (notes, notes_cut) = cut_notes(&parts);
     Fitted {
         task: Some(FittedTask {
             origin: item.origin,
@@ -194,17 +188,35 @@ fn fit_checklist(items: &[String]) -> (Vec<String>, Vec<String>) {
     (kept, spill)
 }
 
-/// The notes within 10 000 characters, cut on a line end (later parts go first); a text with
-/// no line end in range is cut at the limit.
-fn cut_notes(text: String) -> (String, bool) {
-    let Some((limit, _)) = text.char_indices().nth(MAX_NOTES) else {
-        return (text, false);
-    };
-    let window = &text[..limit];
-    let end = if text[limit..].starts_with('\n') {
-        limit
-    } else {
-        window.rfind('\n').unwrap_or(limit)
-    };
-    (text[..end].trim_end().to_owned(), true)
+/// The parts joined by line ends within 10 000 characters. Whole lines are kept in order; the
+/// first line that does not fit is cut at the limit only when it starts its part, otherwise
+/// it and everything after it go (later parts first).
+fn cut_notes(parts: &[String]) -> (String, bool) {
+    let mut out = String::new();
+    let mut used = 0;
+    let mut cut = false;
+    'parts: for part in parts.iter().filter(|p| !p.is_empty()) {
+        for (index, line) in part.split('\n').enumerate() {
+            let sep = usize::from(used > 0);
+            let len = line.chars().count();
+            if used + sep + len <= MAX_NOTES {
+                if sep == 1 {
+                    out.push('\n');
+                }
+                out.push_str(line);
+                used += sep + len;
+                continue;
+            }
+            cut = true;
+            let room = MAX_NOTES.saturating_sub(used + sep);
+            if index == 0 && room > 0 {
+                if sep == 1 {
+                    out.push('\n');
+                }
+                out.extend(line.chars().take(room));
+            }
+            break 'parts;
+        }
+    }
+    (out.trim_end().to_owned(), cut)
 }

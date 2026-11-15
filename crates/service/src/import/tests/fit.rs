@@ -167,3 +167,17 @@ fn summary_lines_read_as_the_spec_writes_them() {
         Some("Things doesn't share checklists, so they stay in Things.")
     );
 }
+
+#[test]
+fn notes_cut_keeps_the_remainder_and_hard_cuts_one_long_line() {
+    let mut item = raw(&"w ".repeat(150));
+    item.notes = "z".repeat(12_000);
+    let fitted = fit(item);
+    assert!(fitted.notes_cut);
+    let task = fitted.task.unwrap();
+    assert_eq!(task.notes.chars().count(), 10_000);
+    assert!(
+        task.notes.contains('\n'),
+        "remainder stays before the cut line"
+    );
+}
