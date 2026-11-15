@@ -275,7 +275,16 @@ test("dialog_confirm_disabled_reason", () => {
 });
 
 function rect(top: number, bottom: number): DOMRect {
-  return { top, bottom, left: 0, right: 0, width: 0, height: bottom - top, x: 0, y: top } as DOMRect;
+  return {
+    top,
+    bottom,
+    left: 0,
+    right: 0,
+    width: 0,
+    height: bottom - top,
+    x: 0,
+    y: top,
+  } as DOMRect;
 }
 
 function NudgeHost() {

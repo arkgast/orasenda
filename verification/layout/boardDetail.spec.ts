@@ -172,6 +172,18 @@ for (const size of SIZES) {
     await expectFocusRingVisible(notes);
   });
 
+  // Notes is the last body field: Alt+Tab (WebKit reaches buttons with Alt) moves on to Close, then Done (#628).
+  test(`board_detail_full_task_tab_out_of_notes_reaches_close_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await page.keyboard.press("Alt+Tab");
+    await expect(notes).not.toBeFocused();
+    await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
+    await page.keyboard.press("Alt+Tab");
+    await expect(dialog.getByRole("button", { name: "Done" })).toBeFocused();
+  });
+
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const body = dialog.locator('[data-slot="dialog-sheet-body"]');
