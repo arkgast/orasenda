@@ -217,7 +217,6 @@ test("a_degraded_store_makes_the_editing_read_only", async () => {
   expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toBeDisabled();
 });
 
-
 test("a_remove_after_a_settings_failure_shows_removed_with_undo", async () => {
   await openIn({
     settings_set: () => Promise.reject(INVALID),
@@ -249,9 +248,7 @@ test("focus_lands_on_a_control_that_stays", async () => {
   });
   edit("Steady Focus");
   fireEvent.click(screen.getByRole("button", { name: "Done editing Steady Focus" }));
-  await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toHaveFocus(),
-  );
+  expect(screen.getByRole("button", { name: "Edit Steady Focus" })).toHaveFocus();
 
   fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
   await settle();
