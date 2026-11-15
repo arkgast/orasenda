@@ -32,7 +32,7 @@ async function open(replies = {}) {
   const backend = mockBackend(replies);
   const onClose = vi.fn();
   const onNavigate = vi.fn();
-  render(<Palette compact={false} onClose={onClose} onNavigate={onNavigate} />);
+  render(<Palette compact={false} onClose={onClose} onNavigate={onNavigate} onMode={() => {}} />);
   await settle();
   return { backend, onClose, onNavigate };
 }
