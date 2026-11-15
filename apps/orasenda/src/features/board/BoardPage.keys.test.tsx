@@ -141,3 +141,21 @@ test("focus follows a card to the column it moved to", async () => {
   await emitBoardChanged(1, boardOf(moved));
   expect(card("Write intro")).toHaveFocus();
 });
+
+test("a held remove key removes once", async () => {
+  const backend = await renderBoard();
+  key("Reply to Ana", { key: "Backspace", metaKey: true });
+  fireEvent.keyDown(card("Reply to Ana"), { key: "Backspace", metaKey: true, repeat: true });
+  await settle();
+  expect(argsOf(backend.calls, "task_remove")).toEqual([{ id: "t2" }]);
+});
+
+test("a menu move keeps focus on the moved card", async () => {
+  await renderBoard();
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Draft outline" }));
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Move to Today" }));
+  await settle();
+  const moved = TASKS.map((t) => (t.id === "b1" ? { ...t, lane: "today" as const } : t));
+  await emitBoardChanged(1, boardOf(moved));
+  expect(card("Draft outline")).toHaveFocus();
+});

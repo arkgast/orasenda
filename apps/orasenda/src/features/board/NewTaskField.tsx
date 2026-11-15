@@ -1,5 +1,5 @@
 import { Input } from "@orasenda/ui";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export const NEW_TASK_ID = "board-new-task";
 
@@ -12,6 +12,7 @@ export function NewTaskField({
   leave(): void;
 }) {
   const [value, setValue] = useState("");
+  const pending = useRef(false);
   return (
     <Input
       id={NEW_TASK_ID}
@@ -28,8 +29,13 @@ export function NewTaskField({
         } else if (event.key === "Enter") {
           event.preventDefault();
           const title = value.trim();
-          if (!title) return;
-          void add(title).then((ok) => ok && setValue(""));
+          if (!title || event.repeat || pending.current) return;
+          pending.current = true;
+          void add(title)
+            .then((ok) => ok && setValue(""))
+            .finally(() => {
+              pending.current = false;
+            });
         }
       }}
     />

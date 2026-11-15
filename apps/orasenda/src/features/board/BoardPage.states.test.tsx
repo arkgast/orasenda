@@ -1,8 +1,8 @@
-import { boardOf, settle } from "@shared/test/fixtures";
+import { argsOf, boardOf, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { renderBoard, TASKS } from "./BoardPage.support";
+import { card, renderBoard, TASKS } from "./BoardPage.support";
 
 afterEach(async () => {
   cleanup();
@@ -12,7 +12,7 @@ afterEach(async () => {
 
 test("failure_line_not_empty_board", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  await renderBoard({
+  const backend = await renderBoard({
     replies: {
       board_get: () => {
         throw new Error("store");
@@ -23,6 +23,18 @@ test("failure_line_not_empty_board", async () => {
   expect(screen.queryByText(/No tasks yet/)).toBeNull();
   expect(screen.getByRole("button", { name: "Try again loading the board" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Try again loading the board" }));
+  await settle();
+  expect(argsOf(backend.calls, "board_get")).toHaveLength(2);
+});
+
+test("start_on_a_running_session_says_so", async () => {
+  await renderBoard({
+    replies: { timer_start: () => Promise.reject({ kind: "alreadyRunning" }) },
+  });
+  card("Write intro").focus();
+  fireEvent.keyDown(card("Write intro"), { key: "Enter", metaKey: true });
+  await settle();
+  expect(screen.getByText("A session is already running.")).toBeInTheDocument();
 });
 
 test("columns read their limits in words and Done is a folded strip", async () => {

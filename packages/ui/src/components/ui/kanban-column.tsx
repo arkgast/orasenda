@@ -120,7 +120,7 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
       </header>
       <div
         data-slot="kanban-column-cards"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-1"
+        className="flex min-h-0 flex-1 flex-col gap-2 scroll-py-1 overflow-y-auto p-1"
       >
         {Children.toArray(props.children).length > 0 ? (
           props.children

@@ -1,5 +1,5 @@
 import type { Lane } from "@shared/ipc/bindings";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { LANES } from "./lanes";
 
 /**
@@ -28,8 +28,11 @@ export function capacity(
 /** The lanes shown open: the most recent `room` of `order`, sparing `keep`. */
 export function openLanes(order: readonly Lane[], room: number, keep: Lane | null): Lane[] {
   const shown = [...order];
+  // With room for one column only, the most recently opened lane wins: a strip or Add task that
+  // opens nothing would be a silent failure. The running column is spared only beside another.
+  const spare = room >= 2 ? keep : null;
   while (shown.length > room) {
-    const drop = shown.findIndex((lane) => lane !== keep);
+    const drop = shown.findIndex((lane) => lane !== spare);
     shown.splice(Math.max(drop, 0), 1);
   }
   return LANES.filter((lane) => shown.includes(lane));
@@ -38,13 +41,10 @@ export function openLanes(order: readonly Lane[], room: number, keep: Lane | nul
 export function useFolds(room: number, keep: Lane | null) {
   const [order, setOrder] = useState<readonly Lane[]>(START);
   const open = openLanes(order, room, keep);
-  const toggle = useCallback(
-    (lane: Lane) =>
-      setOrder((current) => {
-        const without = current.filter((l) => l !== lane);
-        return open.includes(lane) ? without : [...without, lane];
-      }),
-    [open],
-  );
+  const toggle = (lane: Lane) =>
+    setOrder((current) => {
+      const without = current.filter((l) => l !== lane);
+      return open.includes(lane) ? without : [...without, lane];
+    });
   return { open, toggle };
 }

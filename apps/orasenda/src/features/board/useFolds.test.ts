@@ -30,3 +30,8 @@ test("opening a strip folds the least recently opened column", () => {
     "done",
   ]);
 });
+
+test("with room for one column the newest lane wins, even over the running one", () => {
+  expect(openLanes(["doing", "backlog"], 1, "doing")).toEqual(["backlog"]);
+  expect(openLanes(["backlog", "doing", "today"], 1, "doing")).toEqual(["today"]);
+});

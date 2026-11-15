@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { capacity } from "./useFolds";
 
 /** A px token (`--column-min-width`) as a number, or null when the token CSS is not loaded. */
@@ -13,10 +13,9 @@ function px(name: string): number | null {
  * How many open columns the board's box holds, from the column tokens. With no box to measure
  * (before the first paint, or no layout engine) it answers the default window's three.
  */
-export function useRoom(box: RefObject<HTMLElement | null>, active: boolean): number {
+export function useRoom(el: HTMLElement | null, active: boolean): number {
   const [room, setRoom] = useState(3);
   useEffect(() => {
-    const el = box.current;
     if (!active || !el || typeof ResizeObserver === "undefined") return;
     const min = px("--column-min-width");
     const strip = px("--column-strip-width");
@@ -27,6 +26,6 @@ export function useRoom(box: RefObject<HTMLElement | null>, active: boolean): nu
     observer.observe(el);
     measure();
     return () => observer.disconnect();
-  }, [box, active]);
+  }, [el, active]);
   return room;
 }

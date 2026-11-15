@@ -80,12 +80,16 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     }
   };
 
-  const moveColumn = async (task: TaskView, direction: -1 | 1) => {
-    const to = neighbour(task.lane, direction);
-    if (!to) return;
+  /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
+  const moveTo = async (task: TaskView, to: Lane) => {
     if (!(await actions.moveToColumn(task, to))) return;
     if (open.includes(to)) pending.current = { id: task.id, lane: to };
     else focusBeside(task);
+  };
+
+  const moveColumn = async (task: TaskView, direction: -1 | 1) => {
+    const to = neighbour(task.lane, direction);
+    if (to) await moveTo(task, to);
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
@@ -110,12 +114,14 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
       return;
     }
     if (event.metaKey) {
-      if (key === "Backspace") {
+      if (key === "Backspace" || key === "Enter") {
+        // A held key acts once: repeats would remove card after card, or start again.
+        if (event.repeat) return handle(() => {});
+        if (key === "Enter") return handle(() => void actions.startOn(task));
         return handle(() => {
           void actions.remove(task).then((ok) => ok && focusBeside(task));
         });
       }
-      if (key === "Enter") return handle(() => void actions.startOn(task));
       return;
     }
     if (event.altKey) return;
@@ -125,7 +131,11 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     if (key === "End") return handle(() => mine[mine.length - 1]?.focus());
     if (key === "ArrowLeft") return handle(() => stepColumn(task.lane, at.index, -1));
     if (key === "ArrowRight") return handle(() => stepColumn(task.lane, at.index, 1));
-    if (singleKeys && key.toLowerCase() === "f") return handle(() => void actions.toggleFrog(task));
+    if (singleKeys && key.toLowerCase() === "f") {
+      return handle(() => {
+        if (!event.repeat) void actions.toggleFrog(task);
+      });
+    }
   };
 
   /** Focus on a card selects it. */
@@ -146,5 +156,6 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
       (lane(l)[0] ?? heading)?.focus();
     },
     focusBeside,
+    moveTo,
   };
 }

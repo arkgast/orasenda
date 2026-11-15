@@ -9,7 +9,7 @@ import {
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { Lane } from "@shared/ipc/bindings";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardColumns } from "./BoardColumns";
 import { NEW_TASK_ID } from "./NewTaskField";
 import { useBoard } from "./useBoard";
@@ -19,6 +19,10 @@ import { useFolds } from "./useFolds";
 import { useRoom } from "./useRoom";
 import { useSingleKeyOn } from "./useSingleKeyOn";
 import "./board.css";
+
+/** Anything that takes keys for itself: the palette, a dialog, an open menu or list. */
+const OVERLAY =
+  '[role="dialog"], [role="alertdialog"], dialog[open], [role="menu"], [role="listbox"]';
 
 type Props = {
   onNavigate(page: NavPage): void;
@@ -36,8 +40,15 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
   const actions = useBoardActions(api, columns, name);
   const singleKeys = useSingleKeyOn();
 
-  const box = useRef<HTMLDivElement>(null);
-  const room = useRoom(box, ok !== null && !compact);
+  // A callback ref: the board div mounts and unmounts (empty board, first run), and the room
+  // measure must follow it.
+  const box = useRef<HTMLDivElement | null>(null);
+  const [boxEl, setBoxEl] = useState<HTMLDivElement | null>(null);
+  const setBox = useCallback((el: HTMLDivElement | null) => {
+    box.current = el;
+    setBoxEl(el);
+  }, []);
+  const room = useRoom(boxEl, ok !== null && !compact);
   const running = columns.find((c) => c.tasks.some((t) => t.active))?.lane ?? null;
   const folds = useFolds(compact ? 4 : room, running);
   const keys = useBoardKeys({ root: box, columns, open: folds.open, singleKeys, actions });
@@ -73,6 +84,8 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
       )
         return;
       if (event.key.toLowerCase() !== "n") return;
+      // The palette, a dialog or an open menu has the key.
+      if (document.querySelector(OVERLAY)) return;
       event.preventDefault();
       latestAdd.current();
     };
@@ -96,7 +109,11 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
         tone="attention"
         actionLabel="Try again"
         actionName="Try again loading the board"
-        onAction={api.retry}
+        onAction={() => {
+          // The button unmounts with the failure line: keep focus on the heading.
+          document.querySelector<HTMLElement>("h1")?.focus();
+          api.retry();
+        }}
       >
         The board couldn't be loaded. Try again.
       </InlineNotice>
@@ -114,7 +131,7 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
 
   const board = ok ? (
     <div
-      ref={box}
+      ref={setBox}
       className={compact ? "app-board-stack" : "app-board"}
       onKeyDownCapture={keys.onKeyDownCapture}
       onFocusCapture={keys.onFocusCapture}
@@ -126,7 +143,7 @@ export function BoardPage({ onNavigate, onOpenTask }: Props) {
           selected: keys.selected,
           select: keys.select,
           openTask,
-          move: (task, lane) => void actions.moveToColumn(task, lane),
+          move: (task, lane) => void keys.moveTo(task, lane),
           frog: (task) => void actions.toggleFrog(task),
           remove: (task) =>
             void actions.remove(task).then((done) => done && keys.focusBeside(task)),

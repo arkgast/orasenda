@@ -1,3 +1,4 @@
+import { commandFailure } from "@domain/timer/commandFailure";
 import { type ColumnView, commands, type Lane, type TaskView } from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { locate } from "./lanes";
@@ -35,7 +36,10 @@ export function useBoardActions(
   const show = useCallback((next: BoardLine) => {
     clearTimeout(timer.current);
     setLine(next);
-    if (next) timer.current = setTimeout(() => setLine(null), LINE_MS);
+    // Only plain information expires; a failure or a line with Undo stays until replaced.
+    if (next && next.tone === "neutral" && !next.action) {
+      timer.current = setTimeout(() => setLine(null), LINE_MS);
+    }
   }, []);
 
   const failed = useCallback(
@@ -176,14 +180,28 @@ export function useBoardActions(
    * links the task here, and nothing else on the Board changes.
    */
   const startOn = useCallback(
-    async (_task: TaskView): Promise<boolean> => {
+    async function startOn(task: TaskView): Promise<boolean> {
       try {
         const result = await commands.timerStart({ quick: false });
         if (result.status === "ok") return true;
+        if (commandFailure(result.error) === "race") {
+          // Another surface got there first: say what is true, no failure.
+          show({ text: "A session is already running.", tone: "neutral" });
+          return false;
+        }
+        console.error("timer_start failed", result.error);
       } catch (error) {
         console.error("timer_start failed", error);
       }
-      show({ text: "Focus didn't start. Try again.", tone: "attention" });
+      show({
+        text: "Focus didn't start. Orasenda's timer isn't responding.",
+        tone: "attention",
+        action: {
+          label: "Try again",
+          name: "Try again starting focus",
+          run: () => void startOn(task),
+        },
+      });
       return false;
     },
     [show],
