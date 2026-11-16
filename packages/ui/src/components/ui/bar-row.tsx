@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { BarRowProps } from "../../types";
 
 // A share of the scale, 0 to 100. A bad scale reads as empty, never as a wide bar.
@@ -8,8 +8,25 @@ function share(minutes: number, scale: number): number {
 }
 
 /**
+ * The list that owns the three shared columns: label and duration content-sized, the bar takes the rest.
+ * App code never writes the column template.
+ */
+export function BarList(props: { children: ReactNode; "aria-label"?: string }): ReactElement {
+  return (
+    <ul
+      data-slot="bar-list"
+      aria-label={props["aria-label"]}
+      style={{ gridTemplateColumns: "auto minmax(0, 1fr) auto" }}
+      className="m-0 grid list-none p-0"
+    >
+      {props.children}
+    </ul>
+  );
+}
+
+/**
  * A duration as a bar, one list item. Three subgrid columns: label, bar, duration.
- * The parent list supplies the three columns. Read as `spoken`; never focused.
+ * Put rows in a BarList, which supplies the three columns. Read as `spoken`; never focused.
  */
 export function BarRow(props: BarRowProps): ReactElement {
   const { goal } = props;
@@ -27,12 +44,13 @@ export function BarRow(props: BarRowProps): ReactElement {
         {goal ? (
           <span
             data-slot="bar-track"
-            className="relative h-bar-height min-w-0 flex-1 border-t border-line"
+            className="relative flex h-bar-height min-w-0 flex-1 items-center"
           >
+            <span data-slot="bar-track-line" className="h-0 w-full border-t border-line" />
             <span
               data-slot="bar-fill"
               style={{ width }}
-              className="absolute inset-y-0 start-0 h-bar-height rounded-pill bg-focus"
+              className="absolute inset-y-0 start-0 rounded-pill bg-focus"
             />
             <span
               data-slot="bar-goal-stub"

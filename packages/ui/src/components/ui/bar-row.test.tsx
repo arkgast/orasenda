@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { BarRow } from "./bar-row";
+import { BarList, BarRow } from "./bar-row";
 
 const base = { label: "Focus", duration: "2h 10m", spoken: "Focus, 2 hours 10 minutes" };
 
@@ -30,7 +30,9 @@ test("bar_row_goal_scales_to_goal", () => {
   const { container } = render(<BarRow {...base} minutes={150} max={900} goal={goal} />);
   expect(fill(container).style.width).toBe("25%");
   expect(fill(container).className).toContain("bg-focus");
-  expect(container.querySelector("[data-slot='bar-track']")?.className).toContain("border-line");
+  expect(
+    container.querySelector("[data-slot='bar-track-line']")?.classList.contains("border-line"),
+  ).toBe(true);
   expect(container.querySelectorAll("[data-slot='bar-goal-stub']")).toHaveLength(2);
 });
 
@@ -44,12 +46,12 @@ test("bar_row_renders_goal_words_verbatim", () => {
   render(
     <BarRow
       {...base}
-      minutes={720}
+      minutes={50}
       max={720}
-      goal={{ minutes: 720, words: "Goal 12h, reached" }}
+      goal={{ minutes: 600, words: "Meta 10 h · alcanzada" }}
     />,
   );
-  expect(screen.getByText("Goal 12h, reached")).toBeTruthy();
+  expect(screen.getByText("Meta 10 h · alcanzada")).toBeTruthy();
 });
 
 test("bar_row_not_focusable", () => {
@@ -69,4 +71,15 @@ test("bar_row_shows_label_and_duration", () => {
   render(<BarRow {...base} minutes={130} max={130} />);
   expect(screen.getByText("Focus")).toBeTruthy();
   expect(screen.getByText("2h 10m").className).toContain("text-timer-sm");
+});
+
+test("bar_list_owns_the_columns", () => {
+  const { container } = render(
+    <BarList>
+      <BarRow {...base} minutes={30} max={60} />
+    </BarList>,
+  );
+  const ul = container.querySelector("ul") as HTMLElement;
+  expect(ul.style.gridTemplateColumns).toContain("auto");
+  expect(ul.className).toContain("grid");
 });

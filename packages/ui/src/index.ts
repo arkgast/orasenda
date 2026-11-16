@@ -1,5 +1,5 @@
 // The public surface. Each name is exported once, from a component file, a lib file or types.ts.
-export { BarRow } from "./components/ui/bar-row";
+export { BarList, BarRow } from "./components/ui/bar-row";
 export { Button } from "./components/ui/button";
 export type { ButtonProps } from "./components/ui/button";
 export { CapturePad } from "./components/ui/capture-pad";

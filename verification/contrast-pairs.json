@@ -120,12 +120,6 @@
     "where": "changeset 9.2: strip fill (running), goal fill, compact NowLine; TimerStrip focus fill"
   },
   {
-    "fg": "focus",
-    "bg": "surface-raised",
-    "kind": "mark",
-    "where": "BarRow goal fill on a raised card"
-  },
-  {
     "fg": "ink-muted",
     "bg": "surface",
     "kind": "mark",
@@ -503,7 +497,7 @@
     "fg": "focus",
     "bg": "surface-raised",
     "kind": "mark",
-    "where": "T5: FloatingTimer focus ring arc shape on its own fill"
+    "where": "T5: FloatingTimer focus ring arc shape on its own fill; BarRow goal fill on a raised card"
   },
   {
     "fg": "routine",
