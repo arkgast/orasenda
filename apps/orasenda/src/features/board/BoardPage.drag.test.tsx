@@ -2,13 +2,7 @@ import { argsOf, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import {
-  card,
-  pointer,
-  renderBoard,
-  stubPointerCapture,
-  stubRects,
-} from "./BoardPage.support";
+import { card, pointer, renderBoard, stubPointerCapture, stubRects } from "./BoardPage.support";
 
 // Layout (see stubRects): Backlog 0-200, Today 210-410, Doing 420-620, Done strip 630-670.
 // Today: t1 y 40-90, t2 y 100-150. Doing: d1 y 40-90. Backlog: cards from y 100.
