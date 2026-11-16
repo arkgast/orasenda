@@ -35,10 +35,10 @@ pub use hooks::WriteGate;
 #[cfg(any(test, feature = "test-hooks"))]
 pub use raw::RawDb;
 pub use repo::{
-    active_session, focus_sessions, inbox_notes, meta, presets, routines, settings, tasks,
-    window_frames,
+    active_session, focus_sessions, inbox_notes, meta, presets, reflections, routines, settings,
+    tasks, window_frames,
 };
 pub use txn::{Entity, Txn};
 
 /// The schema version this build writes, kept only in `PRAGMA user_version` (ADR-012).
-pub const SCHEMA_VERSION: u32 = 9;
+pub const SCHEMA_VERSION: u32 = 10;

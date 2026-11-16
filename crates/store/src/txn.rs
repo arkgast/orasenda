@@ -16,6 +16,7 @@ pub enum Entity {
     HabitCheck,
     RoutineRun,
     Task,
+    Reflection,
 }
 
 impl Entity {
@@ -31,6 +32,7 @@ impl Entity {
             Entity::HabitCheck => "habit_check",
             Entity::RoutineRun => "routine_run",
             Entity::Task => "task",
+            Entity::Reflection => "reflection",
         }
     }
 }
