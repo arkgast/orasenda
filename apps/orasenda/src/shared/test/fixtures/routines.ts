@@ -25,9 +25,9 @@ export function habitDots(states: HabitDayState[]): HabitDotView[] {
   return states.map((state, index) => {
     const back = states.length - 1 - index;
     const day = 7 - back;
-    const weekday = WEEKDAYS[(((5 - back) % 7) + 7) % 7];
+    const weekday = (((5 - back) % 7) + 7) % 7;
     const date = day > 0 ? `${day} November` : `${31 + day} October`;
-    return { state, today: back === 0, label: `${weekday} ${date}` };
+    return { state, today: back === 0, weekday, label: `${WEEKDAYS[weekday]} ${date}` };
   });
 }
 

@@ -21,11 +21,12 @@ const dots = (from = 0) =>
   Array.from({ length: 28 - from }, (_, i) => {
     const back = 27 - from - i;
     const day = 7 - back;
-    const weekday = WEEKDAYS[(((5 - back) % 7) + 7) % 7];
+    const weekday = (((5 - back) % 7) + 7) % 7;
     return {
       state: back === 0 ? ("upcoming" as const) : (CYCLE[i % 7] as HabitDayState),
       today: back === 0,
-      label: `${weekday} ${day > 0 ? `${day} November` : `${31 + day} October`}`,
+      weekday,
+      label: `${WEEKDAYS[weekday]} ${day > 0 ? `${day} November` : `${31 + day} October`}`,
     };
   });
 

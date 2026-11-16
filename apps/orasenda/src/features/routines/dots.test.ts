@@ -5,7 +5,7 @@ import { toHabitDays } from "./dots";
 test("states_map_to_shapes_and_unknown_is_upcoming", () => {
   const days = toHabitDays([
     ...habitDots(["done", "notDone", "rest", "upcoming"]),
-    { state: "lost" as never, today: false, label: "Sunday 8 November" },
+    { state: "lost" as never, today: false, label: "Sunday 8 November", weekday: 6 },
   ]);
   expect(days.map((d) => d.state)).toEqual(["done", "skipped", "rest", "future", "future"]);
 });
@@ -17,8 +17,13 @@ test("only_the_first_day_carries_its_weekday", () => {
   expect(days[2]).toMatchObject({ today: true, label: "Saturday 7 November" });
 });
 
-test("an_unknown_weekday_word_gives_no_offset", () => {
-  expect(toHabitDays([{ state: "done", today: false, label: "Lunes 9" }])[0]?.weekday).toBe(
-    undefined,
-  );
+test("first_column_from_weekday_field", () => {
+  const days = toHabitDays([{ state: "done", today: false, label: "x", weekday: 4 }]);
+  expect(days[0]?.weekday).toBe(4);
+});
+
+test("non_english_label_still_aligns", () => {
+  const days = toHabitDays([{ state: "done", today: false, label: "lunes 9 de noviembre", weekday: 0 }]);
+  expect(days[0]?.weekday).toBe(0);
+  expect(days[0]?.label).toBe("lunes 9 de noviembre");
 });

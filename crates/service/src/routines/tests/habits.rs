@@ -209,6 +209,20 @@ fn check_in_is_idempotent_and_sets_today() {
 }
 
 #[test]
+fn dot_view_has_weekday() {
+    let host = host();
+    let r = run_routine_create(&host, &routine("Morning")).unwrap();
+    run_habit_create(&host, Some(&r), &habit("A")).unwrap();
+    let dots = run_routines_list(&host).unwrap().routines[0].habits[0]
+        .dots
+        .clone();
+    // T0 is Saturday 7 November: Saturday is 5, and the days before count back from it.
+    assert_eq!(dots.last().unwrap().weekday, 5);
+    let weekdays: Vec<u8> = dots.iter().map(|d| d.weekday).collect();
+    assert!(weekdays.windows(2).all(|w| w[1] == (w[0] + 1) % 7));
+}
+
+#[test]
 fn dots_run_line_and_fresh_start_over_days() {
     let host = host();
     let id = run_habit_create(&host, None, &habit("Walk")).unwrap();
