@@ -48,15 +48,18 @@ test("bar_row_single_line_rows_are_control_sm_tall", async ({ page }) => {
   for (const h of heights) expect(Math.abs(h - expected)).toBeLessThan(0.5);
 });
 
-test("bar_row_stubs_sit_symmetrically_on_the_track", async ({ page }) => {
+test("bar_row_stubs_sit_inside_the_row_with_equal_clearance", async ({ page }) => {
   await openSpecimen(page, "BarRow");
   for (const state of ["bar-row-goal-420", "bar-row-goal-reached-420"]) {
     const frame = page.locator(`[data-state='${state}']`);
-    const track = (await frame.locator("[data-slot=bar-track]").boundingBox())!;
-    const [a, b] = await frame
+    const row = (await frame.locator("[data-slot=bar-row]").boundingBox())!;
+    const words = (await frame.locator("[data-slot=bar-goal-words]").boundingBox())!;
+    const [top, bottom] = await frame
       .locator("[data-slot=bar-goal-stub]")
       .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()));
-    expect(Math.abs(track.y - a.bottom - (b.top - (track.y + track.height)))).toBeLessThan(0.5);
+    expect(top.top).toBeGreaterThanOrEqual(row.y);
+    expect(bottom.bottom).toBeLessThanOrEqual(words.y);
+    expect(Math.abs(top.top - row.y - (words.y - bottom.bottom))).toBeLessThanOrEqual(1);
   }
 });
 
