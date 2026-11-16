@@ -86,12 +86,19 @@ export function useBoardActions(
 
   /** Moves a task to `index` of `lane`; says where it went. */
   const moveTo = useCallback(
-    async (task: TaskView, lane: Lane, index: number, say = true): Promise<boolean> => {
+    async (
+      task: TaskView,
+      lane: Lane,
+      index: number,
+      say: boolean | string = true,
+    ): Promise<boolean> => {
       const result = await latest.current.api.move(task.id, lane, index);
       if (result.status !== "ok") return failed(result.error);
-      if (say)
-        show({ text: `Moved ${task.title} to ${latest.current.name(lane)}.`, tone: "neutral" });
-      else if (shown.current?.tone === "attention") show(null);
+      if (say) {
+        const text =
+          typeof say === "string" ? say : `Moved ${task.title} to ${latest.current.name(lane)}.`;
+        show({ text, tone: "neutral" });
+      } else if (shown.current?.tone === "attention") show(null);
       return true;
     },
     [failed, show],
@@ -114,6 +121,18 @@ export function useBoardActions(
       const index = at.index + delta;
       if (index < 0 || index >= at.column.tasks.length) return Promise.resolve(false);
       return moveTo(task, task.lane, index, false);
+    },
+    [moveTo],
+  );
+
+  /** A pointer drop at `index` of `lane` (counted without the card): the keyboard's line, or the place. */
+  const dropAt = useCallback(
+    (task: TaskView, lane: Lane, index: number): Promise<boolean> => {
+      const place =
+        task.lane === lane
+          ? `Moved ${task.title} to place ${index + 1} in ${latest.current.name(lane)}.`
+          : true;
+      return moveTo(task, lane, index, place);
     },
     [moveTo],
   );
@@ -260,5 +279,5 @@ export function useBoardActions(
     [show],
   );
 
-  return { line, show, add, moveToColumn, reorder, toggleFrog, remove, imported, startOn };
+  return { line, show, add, moveToColumn, reorder, dropAt, toggleFrog, remove, imported, startOn };
 }

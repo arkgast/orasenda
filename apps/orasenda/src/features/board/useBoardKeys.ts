@@ -14,6 +14,7 @@ const CARD = 'button[data-slot="task-card"]';
 type Actions = {
   moveToColumn(task: TaskView, lane: Lane): Promise<boolean>;
   reorder(task: TaskView, delta: -1 | 1): Promise<boolean>;
+  dropAt(task: TaskView, lane: Lane, index: number): Promise<boolean>;
   toggleFrog(task: TaskView): Promise<boolean>;
   remove(task: TaskView): Promise<boolean>;
   startOn(task: TaskView): Promise<boolean>;
@@ -83,6 +84,13 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
   /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
   const moveTo = async (task: TaskView, to: Lane) => {
     if (!(await actions.moveToColumn(task, to))) return;
+    if (open.includes(to)) pending.current = { id: task.id, lane: to };
+    else focusBeside(task);
+  };
+
+  /** A pointer drop: focus follows the card as it does for a key move. */
+  const dropAt = async (task: TaskView, to: Lane, index: number) => {
+    if (!(await actions.dropAt(task, to, index))) return;
     if (open.includes(to)) pending.current = { id: task.id, lane: to };
     else focusBeside(task);
   };
@@ -157,5 +165,6 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     },
     focusBeside,
     moveTo,
+    dropAt,
   };
 }

@@ -37,6 +37,7 @@ const NAMES = [
   "routinesEmpty",
   "routinesRun",
   "boardWeek",
+  "boardDrag",
   "boardOver",
   "boardLong",
   "boardLongTitle",
