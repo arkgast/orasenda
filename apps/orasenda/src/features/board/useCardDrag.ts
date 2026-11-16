@@ -59,6 +59,8 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
   const shown = useRef("");
   const frame = useRef(0);
   const stop = useRef<(() => void) | null>(null);
+  /** Removes a release waiter left by a drag that ended before its release (Esc, blur). */
+  const unwait = useRef<(() => void) | null>(null);
 
   /** Where a release now would drop, or null on the card's own place or outside every column. */
   const resolve = (): (Target & { move: number }) | null => {
@@ -141,14 +143,23 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
     };
     if (released) install();
     else {
-      const onRelease = (event: PointerEvent) => {
-        if (event.pointerId !== was?.pointerId) return;
+      // The release may never come here (Cmd-Tab with the button held): a new press ends the wait.
+      unwait.current?.();
+      const done = () => {
         window.removeEventListener("pointerup", onRelease, true);
         window.removeEventListener("pointercancel", onRelease, true);
+        window.removeEventListener("pointerdown", done, true);
+        unwait.current = null;
+      };
+      const onRelease = (event: PointerEvent) => {
+        if (event.pointerId !== was?.pointerId) return;
+        done();
         install();
       };
       window.addEventListener("pointerup", onRelease, true);
       window.addEventListener("pointercancel", onRelease, true);
+      window.addEventListener("pointerdown", done, true);
+      unwait.current = done;
     }
     setView(null);
     const task = locate(latest.current.columns, d.id)?.column.tasks.find((x) => x.id === d.id);
@@ -248,6 +259,7 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
   useEffect(
     () => () => {
       stop.current?.();
+      unwait.current?.();
       cancelAnimationFrame(frame.current);
     },
     [],
