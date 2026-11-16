@@ -12,7 +12,7 @@ const advance = (ms: number) =>
 
 const advanceFrames = () =>
   act(async () => {
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(400);
   });
 
 beforeEach(() => {
@@ -147,7 +147,11 @@ function Trap({ onClose }: { onClose?: () => void }) {
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose?.()}>
       <Dialog.Portal>
-        <Dialog.Content data-slot="dialog-content" data-testid="container" aria-describedby={undefined}>
+        <Dialog.Content
+          data-slot="dialog-content"
+          data-testid="container"
+          aria-describedby={undefined}
+        >
           <Dialog.Title>Trap</Dialog.Title>
           <Tooltip label="Remove item">
             <button type="button">first</button>
@@ -186,10 +190,11 @@ test("esc_reaches_dialog_with_tooltip_open", async () => {
   fireEvent.keyDown(document, { key: "Tab" });
   act(() => first.focus());
   expect(panel()).not.toBeNull();
+  // The blur hide is pending. Esc unmounts the panel at once and reaches the dialog once it is topmost.
   act(() => first.blur());
   expect(panel()).not.toBeNull();
-  // Blur hide is pending: Esc reaches the trap's owner and the panel is gone at once.
-  fireEvent.keyDown(first, { key: "Escape" });
-  expect(onClose).toHaveBeenCalled();
+  fireEvent.keyDown(document.body, { key: "Escape" });
   expect(panel()).toBeNull();
+  await advanceFrames();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

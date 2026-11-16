@@ -1,6 +1,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import type { FocusEvent, JSX, ReactElement } from "react";
 import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { layerContainer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Kbd } from "./kbd";
@@ -86,7 +87,50 @@ export function Tooltip({
   };
   const leave = () => afterQuick(() => setHover(false));
 
+  // A blur hides the panel one frame late. While focus is in transit it rests on the body, and a panel removed
+  // from a Radix focus trap in that moment makes the trap focus its container (#643). An Esc press while the
+  // hide is pending unmounts the panel at once. Radix's dialog still counts the panel's layer as above it until
+  // it has re-rendered, so this press is held back and sent again a little later, when the dialog is topmost.
+  const blurFrame = useRef(0);
+  // True from a blur until the next focus: the hide is pending until the panel has really unmounted.
+  const blurred = useRef(false);
+  const cancelBlur = useCallback(() => {
+    if (blurFrame.current) {
+      cancelAnimationFrame(blurFrame.current);
+      blurFrame.current = 0;
+    }
+  }, []);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !blurred.current || !shown || hover) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      cancelBlur();
+      cancel();
+      const target = event.target as Element | null;
+      flushSync(() => {
+        setFocus(false);
+        setHover(false);
+      });
+      const resend = () => {
+        const again = new KeyboardEvent("keydown", {
+          key: event.key,
+          code: event.code,
+          bubbles: true,
+          cancelable: true,
+        });
+        (target?.isConnected ? target : document.body).dispatchEvent(again);
+      };
+      // Frame, then a task (React's passive effects run in between), then a frame.
+      requestAnimationFrame(() =>
+        window.setTimeout(() => requestAnimationFrame(resend), tokenNumber("--duration-quick")),
+      );
+    };
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, [cancel, cancelBlur, shown, hover]);
   useEffect(() => cancel, [cancel]);
+  useEffect(() => cancelBlur, [cancelBlur]);
   useEffect(() => {
     if (!hover && !focus && dismissed) setDismissed(false);
   }, [hover, focus, dismissed]);
@@ -130,11 +174,18 @@ export function Tooltip({
     onFocus: (e: FocusEvent) => {
       own.onFocus?.(e);
       anchor.current = e.currentTarget as HTMLElement;
+      blurred.current = false;
+      cancelBlur();
       if (modality.keyboard) setFocus(true);
     },
     onBlur: (e: unknown) => {
       own.onBlur?.(e);
-      setFocus(false);
+      blurred.current = true;
+      cancelBlur();
+      blurFrame.current = requestAnimationFrame(() => {
+        blurFrame.current = 0;
+        setFocus(false);
+      });
     },
   });
 
