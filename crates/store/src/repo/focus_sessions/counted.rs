@@ -1,16 +1,32 @@
 //! Which tasks got focus time that counts: the buffer suggestion's per-task session counts.
 
-use crate::{StoreError, Txn};
+use crate::{StoreError, Txn, sql_int};
 
 /// Per task id in `ids`, how many live focus-phase rows linked to it ran at least
 /// `min_focused_ms`. Breaks and tombstones do not count; a task with no such row is absent.
 /// Ordered by task id.
 pub fn counted_for_tasks(
-    _txn: &Txn,
-    _ids: &[String],
-    _min_focused_ms: u64,
+    txn: &Txn,
+    ids: &[String],
+    min_focused_ms: u64,
 ) -> Result<Vec<(String, u32)>, StoreError> {
-    Ok(Vec::new())
+    let mut sorted: Vec<&String> = ids.iter().collect();
+    sorted.sort();
+    sorted.dedup();
+    let mut stmt = txn.conn().prepare(
+        "SELECT count(*) FROM focus_session
+         WHERE task_id = ?1 AND phase = 'focus' AND deleted_at IS NULL AND focused_ms >= ?2",
+    )?;
+    let min = sql_int(min_focused_ms)?;
+    let mut counted = Vec::new();
+    for id in sorted {
+        let n: i64 = stmt.query_row(rusqlite::params![id, min], |row| row.get(0))?;
+        if n > 0 {
+            let n = u32::try_from(n).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, n))?;
+            counted.push((id.clone(), n));
+        }
+    }
+    Ok(counted)
 }
 
 #[cfg(test)]

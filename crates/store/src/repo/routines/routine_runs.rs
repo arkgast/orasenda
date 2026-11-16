@@ -162,8 +162,11 @@ pub fn finished_between(
     from_day: &str,
     to_day: &str,
 ) -> Result<Vec<RunRow>, StoreError> {
-    let _ = (txn, from_day, to_day);
-    Ok(Vec::new())
+    query(
+        txn,
+        "WHERE outcome = 'finished' AND day >= ?1 AND day <= ?2",
+        [from_day, to_day],
+    )
 }
 
 /// Records `answer` for the next step of the open run `id`, sets `updated_at`, and logs the
