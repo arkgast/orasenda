@@ -204,7 +204,8 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         }
     };
     let notify_default = pending || defaults.notify_session_end;
-    let mut settings = Settings {
+    let review = read_review(txn)?;
+    let settings = Settings {
         theme: read_setting(txn, KEY_THEME, defaults.theme)?,
         preset_id: read_setting(txn, KEY_PRESET, defaults.preset_id)?,
         extension_cap: read_ranged(txn, KEY_EXTENSION_CAP, defaults.extension_cap, 0..=3)?,
@@ -222,9 +223,12 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         notify_routine_due: read_setting(txn, KEY_NOTIFY_ROUTINE, defaults.notify_routine_due)?,
         board_estimate_buffer: read_buffer(txn, defaults.board_estimate_buffer)?,
         single_key: read_setting(txn, KEY_SINGLE_KEY, defaults.single_key)?,
-        ..defaults
+        review_focus_goal_hours: review.focus_goal_hours,
+        notify_shutdown_due: review.shutdown_due,
+        notify_weekly_review: review.weekly_review,
+        review_shutdown_time: review.shutdown_time,
+        review_weekly_day: review.weekly_day,
     };
-    read_review(txn, &mut settings)?;
     Ok((settings, pending))
 }
 

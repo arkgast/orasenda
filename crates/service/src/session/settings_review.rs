@@ -16,23 +16,31 @@ const GOAL_HOURS: std::ops::RangeInclusive<u8> = 0..=60;
 /// The shutdown time, in minutes since midnight: 04:00 to 23:59 (ruling G2).
 const SHUTDOWN_TIME: std::ops::RangeInclusive<u16> = 240..=1439;
 
-/// Reads the review keys into `settings`. Out-of-range and unknown values read the default.
-pub(super) fn read_review(txn: &Txn, settings: &mut Settings) -> Result<(), StoreError> {
+/// The five review values as stored, each already range checked.
+pub(super) struct ReviewKeys {
+    pub focus_goal_hours: u8,
+    pub shutdown_due: bool,
+    pub weekly_review: bool,
+    pub shutdown_time: u16,
+    pub weekly_day: WeeklyDay,
+}
+
+/// Reads the review keys. Out-of-range and unknown values read the default.
+pub(super) fn read_review(txn: &Txn) -> Result<ReviewKeys, StoreError> {
     let d = Settings::default();
-    settings.review_focus_goal_hours =
-        read_ranged(txn, KEY_GOAL_HOURS, d.review_focus_goal_hours, GOAL_HOURS)?;
-    settings.notify_shutdown_due = read_setting(txn, KEY_SHUTDOWN_DUE, d.notify_shutdown_due)?;
-    settings.notify_weekly_review = read_setting(txn, KEY_WEEKLY_REVIEW, d.notify_weekly_review)?;
-    settings.review_shutdown_time = read_ranged(
-        txn,
-        KEY_SHUTDOWN_TIME,
-        d.review_shutdown_time,
-        SHUTDOWN_TIME,
-    )?;
-    // An unknown day fails to decode, which `read_setting` logs and replaces by the default.
-    settings.review_weekly_day =
-        read_setting::<WeeklyDay>(txn, KEY_WEEKLY_DAY, d.review_weekly_day)?;
-    Ok(())
+    Ok(ReviewKeys {
+        focus_goal_hours: read_ranged(txn, KEY_GOAL_HOURS, d.review_focus_goal_hours, GOAL_HOURS)?,
+        shutdown_due: read_setting(txn, KEY_SHUTDOWN_DUE, d.notify_shutdown_due)?,
+        weekly_review: read_setting(txn, KEY_WEEKLY_REVIEW, d.notify_weekly_review)?,
+        shutdown_time: read_ranged(
+            txn,
+            KEY_SHUTDOWN_TIME,
+            d.review_shutdown_time,
+            SHUTDOWN_TIME,
+        )?,
+        // An unknown day fails to decode, which `read_setting` logs and replaces by the default.
+        weekly_day: read_setting::<WeeklyDay>(txn, KEY_WEEKLY_DAY, d.review_weekly_day)?,
+    })
 }
 
 /// Why the review keys of `new` can't be saved, if they can't.

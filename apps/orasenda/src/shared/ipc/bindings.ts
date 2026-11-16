@@ -1600,7 +1600,7 @@ export type Settings = {
 	boardEstimateBuffer: number,
 	/**  Space and P on Today and Space in full screen act (`keys.single_key`). */
 	singleKey: boolean,
-	/**  The daily focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`). */
+	/**  The weekly focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`). */
 	reviewFocusGoalHours: number,
 	/**  Notify when the shutdown is due (`notify.shutdown_due`). Off by default. */
 	notifyShutdownDue: boolean,

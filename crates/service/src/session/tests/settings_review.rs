@@ -104,7 +104,14 @@ fn review_settings_write_only_the_changed_keys() {
             .is_some()
     };
     assert!(has("review.focus_goal_hours"));
-    assert!(!has("review.shutdown_time"));
+    for key in [
+        "review.shutdown_time",
+        "notify.shutdown_due",
+        "notify.weekly_review",
+        "review.weekly_day",
+    ] {
+        assert!(!has(key), "{key} was written");
+    }
 }
 
 #[test]

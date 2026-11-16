@@ -57,7 +57,7 @@ pub struct Settings {
     pub board_estimate_buffer: u8,
     /// Space and P on Today and Space in full screen act (`keys.single_key`).
     pub single_key: bool,
-    /// The daily focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`).
+    /// The weekly focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`).
     pub review_focus_goal_hours: u8,
     /// Notify when the shutdown is due (`notify.shutdown_due`). Off by default.
     pub notify_shutdown_due: bool,
