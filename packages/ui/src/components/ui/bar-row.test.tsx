@@ -41,7 +41,14 @@ test("bar_row_goal_past_goal_fills_only_the_track", () => {
 });
 
 test("bar_row_renders_goal_words_verbatim", () => {
-  render(<BarRow {...base} minutes={720} max={720} goal={{ minutes: 720, words: "Goal 12h, reached" }} />);
+  render(
+    <BarRow
+      {...base}
+      minutes={720}
+      max={720}
+      goal={{ minutes: 720, words: "Goal 12h, reached" }}
+    />,
+  );
   expect(screen.getByText("Goal 12h, reached")).toBeTruthy();
 });
 

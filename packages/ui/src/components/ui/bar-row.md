@@ -6,3 +6,5 @@ A duration shown as a bar, in Review and in session summaries.
 - **Contrast:** `line-strong` on `surface` 4.35 / 5.56 and on `surface-raised` 4.79 / 4.99; `focus` on `surface` 5.31 / 8.74.
 
 Do: let the words say the goal. Don't: show percentages or ratios, colour a bar about apps, or colour the track.
+
+**Using it:** put the rows in a `ul` that is a three-column grid (label and duration content-sized, the bar `1fr`); each row spans the three columns with a subgrid. The goal words (`goal.words`) are shown verbatim beside the goal bar and come from the service; the component composes no words. The rows are read as `spoken`; their content is hidden from the screen reader so nothing is said twice.

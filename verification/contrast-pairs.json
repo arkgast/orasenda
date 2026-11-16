@@ -120,6 +120,12 @@
     "where": "changeset 9.2: strip fill (running), goal fill, compact NowLine; TimerStrip focus fill"
   },
   {
+    "fg": "focus",
+    "bg": "surface-raised",
+    "kind": "mark",
+    "where": "BarRow goal fill on a raised card"
+  },
+  {
     "fg": "ink-muted",
     "bg": "surface",
     "kind": "mark",

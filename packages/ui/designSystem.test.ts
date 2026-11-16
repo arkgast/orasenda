@@ -15,6 +15,7 @@ const PREVIOUS_SURFACE = [
   "TimerStrip",
   "timerLayout",
   "MenuBarTimer",
+  "BarRow",
   "TaskCard",
   "TimeBlock",
   "HabitDots",
@@ -88,7 +89,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(51);
+  expect(components).toHaveLength(52);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -133,6 +134,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   ModeChip: { mode: "focus" },
   TimerRing: { remaining: "25:00", progress: 0.4, mode: "focus" },
   TimerStrip: { remaining: "25:00", progress: 0.4, mode: "focus" },
+  BarRow: { label: "Focus", minutes: 30, max: 60, duration: "0h 30m", spoken: "Focus, 30 minutes" },
   MenuBarTimer: { remaining: "25:00", progress: 0.4, mode: "focus" },
   TaskCard: { title: "Write" },
   TimeBlock: { type: "deep", title: "Deep", start: "09:00", end: "10:00" },
