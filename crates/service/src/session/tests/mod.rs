@@ -19,6 +19,7 @@ mod recovery_break;
 mod review_changed;
 mod run;
 mod settings;
+mod settings_review;
 mod theme;
 mod tips;
 mod two_row_end;

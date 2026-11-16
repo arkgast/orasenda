@@ -277,3 +277,23 @@ test("superseded_pending_save_waits_for_the_newer_outcome", async () => {
   await a;
   expect(aDone).toBe(true);
 });
+
+test("queue_sends_review_keys", async () => {
+  const changes: Partial<Settings>[] = [
+    { reviewFocusGoalHours: 6 },
+    { notifyShutdownDue: true },
+    { notifyWeeklyReview: true },
+    { reviewShutdownTime: 1200 },
+    { reviewWeeklyDay: "sun" },
+  ];
+  for (const change of changes) {
+    resetSettingsQueueForTests();
+    clearMocks();
+    const backend = mockBackend({ settings_get: () => SETTINGS, settings_set: () => null });
+    load();
+    await settle();
+    // Only the review key differs, so only it can make the queue send.
+    await expect(save({ ...SETTINGS, ...change })).resolves.toBe(true);
+    expect(argsOf(backend.calls, "settings_set")).toEqual([{ settings: { ...SETTINGS, ...change } }]);
+  }
+});
