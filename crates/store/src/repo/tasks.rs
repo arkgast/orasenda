@@ -7,8 +7,10 @@
 //! Tracked time is **derived**, never stored: [`tracked`] sums `focus_session` rows that carry
 //! the task's id.
 
+mod lanes;
 mod update;
 
+pub use lanes::{LaneBefore, move_to_backlog_end, restore_lanes};
 pub use update::{TaskPatch, clear_frog, move_to, set_frog, update};
 
 use crate::{Entity, StoreError, Txn, sql_int};

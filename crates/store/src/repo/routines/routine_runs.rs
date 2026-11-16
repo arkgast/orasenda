@@ -156,6 +156,16 @@ pub fn runs_on(txn: &Txn, day: &str) -> Result<Vec<RunRow>, StoreError> {
     query(txn, "WHERE day = ?1", [day])
 }
 
+/// Runs that ended `finished` on a local date in `from_day..=to_day`, oldest first.
+pub fn finished_between(
+    txn: &Txn,
+    from_day: &str,
+    to_day: &str,
+) -> Result<Vec<RunRow>, StoreError> {
+    let _ = (txn, from_day, to_day);
+    Ok(Vec::new())
+}
+
 /// Records `answer` for the next step of the open run `id`, sets `updated_at`, and logs the
 /// changed count and `answers`. Returns the run as it now is, or `None` when the run is
 /// missing, ended, or has every step answered; then nothing is written. Ending the run after

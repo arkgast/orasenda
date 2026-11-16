@@ -4,6 +4,7 @@ use super::*;
 use crate::Store;
 
 mod checks;
+mod lanes;
 mod origin;
 mod tracked;
 mod writes;
