@@ -46,7 +46,9 @@ fn move_to_backlog_end_keeps_order() {
 fn move_returns_lanes_before() {
     let store = seeded();
     let before = store
-        .write(2_000, |txn| move_to_backlog_end(txn, &ids(&["t2", "t1"])))
+        .write(2_000, |txn| {
+            move_to_backlog_end(txn, &ids(&["t2", "t1", "t2"]))
+        })
         .expect("moves");
     assert_eq!(
         before,

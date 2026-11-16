@@ -15,6 +15,9 @@ pub struct LaneBefore {
 /// Moves the live tasks in `ids` to the end of the Backlog, keeping the given order, in the
 /// caller's one transaction. Removed and missing tasks are skipped. Returns where each moved
 /// task was, in the given order. Every write logs like [`move_to`].
+///
+/// Callers pass Today/Doing tasks. A Done task loses its `done_at` when moved, and restoring it
+/// stamps a new one, which shifts stats and buffer eligibility.
 pub fn move_to_backlog_end(txn: &mut Txn, ids: &[String]) -> Result<Vec<LaneBefore>, StoreError> {
     let mut live = Vec::new();
     for id in ids {
