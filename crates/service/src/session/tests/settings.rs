@@ -64,6 +64,7 @@ fn every_new_key_round_trips() {
         notify_routine_due: true,
         board_estimate_buffer: 40,
         single_key: false,
+        ..Settings::default()
     };
     s.set_settings(all.clone(), T0).expect("saves");
     assert_eq!(s.settings(), all);

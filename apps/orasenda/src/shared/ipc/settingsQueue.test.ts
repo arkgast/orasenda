@@ -294,6 +294,8 @@ test("queue_sends_review_keys", async () => {
     await settle();
     // Only the review key differs, so only it can make the queue send.
     await expect(save({ ...SETTINGS, ...change })).resolves.toBe(true);
-    expect(argsOf(backend.calls, "settings_set")).toEqual([{ settings: { ...SETTINGS, ...change } }]);
+    expect(argsOf(backend.calls, "settings_set")).toEqual([
+      { settings: { ...SETTINGS, ...change } },
+    ]);
   }
 });

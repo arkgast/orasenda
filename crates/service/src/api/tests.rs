@@ -59,7 +59,12 @@ fn settings_json() -> serde_json::Value {
         "notifyTwoMinutes": false,
         "notifyRoutineDue": false,
         "boardEstimateBuffer": 25,
-        "singleKey": true
+        "singleKey": true,
+        "reviewFocusGoalHours": 0,
+        "notifyShutdownDue": false,
+        "notifyWeeklyReview": false,
+        "reviewShutdownTime": 1050,
+        "reviewWeeklyDay": "fri"
     })
 }
 

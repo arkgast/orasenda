@@ -33,26 +33,44 @@ fn review_settings_defaults() {
 fn shutdown_time_under_240_reads_default() {
     let s = read_with("review.shutdown_time", &239);
     assert_eq!(s.review_shutdown_time, 1050);
-    assert_eq!(read_with("review.shutdown_time", &240).review_shutdown_time, 240);
+    assert_eq!(
+        read_with("review.shutdown_time", &240).review_shutdown_time,
+        240
+    );
 }
 
 #[test]
 fn shutdown_time_over_1439_reads_default() {
     let s = read_with("review.shutdown_time", &1440);
     assert_eq!(s.review_shutdown_time, 1050);
-    assert_eq!(read_with("review.shutdown_time", &1439).review_shutdown_time, 1439);
+    assert_eq!(
+        read_with("review.shutdown_time", &1439).review_shutdown_time,
+        1439
+    );
 }
 
 #[test]
 fn focus_goal_over_60_reads_default() {
-    assert_eq!(read_with("review.focus_goal_hours", &61).review_focus_goal_hours, 0);
-    assert_eq!(read_with("review.focus_goal_hours", &60).review_focus_goal_hours, 60);
+    assert_eq!(
+        read_with("review.focus_goal_hours", &61).review_focus_goal_hours,
+        0
+    );
+    assert_eq!(
+        read_with("review.focus_goal_hours", &60).review_focus_goal_hours,
+        60
+    );
 }
 
 #[test]
 fn weekly_day_unknown_reads_default() {
-    assert_eq!(read_with("review.weekly_day", &"tue").review_weekly_day, WeeklyDay::Fri);
-    assert_eq!(read_with("review.weekly_day", &"mon").review_weekly_day, WeeklyDay::Mon);
+    assert_eq!(
+        read_with("review.weekly_day", &"tue").review_weekly_day,
+        WeeklyDay::Fri
+    );
+    assert_eq!(
+        read_with("review.weekly_day", &"mon").review_weekly_day,
+        WeeklyDay::Mon
+    );
 }
 
 #[test]
@@ -93,9 +111,18 @@ fn review_settings_write_only_the_changed_keys() {
 fn review_settings_refuse_out_of_range_values() {
     let mut s = service();
     for bad in [
-        Settings { review_focus_goal_hours: 61, ..Settings::default() },
-        Settings { review_shutdown_time: 239, ..Settings::default() },
-        Settings { review_shutdown_time: 1440, ..Settings::default() },
+        Settings {
+            review_focus_goal_hours: 61,
+            ..Settings::default()
+        },
+        Settings {
+            review_shutdown_time: 239,
+            ..Settings::default()
+        },
+        Settings {
+            review_shutdown_time: 1440,
+            ..Settings::default()
+        },
     ] {
         assert!(s.set_settings(bad, T0).is_err());
     }
