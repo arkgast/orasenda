@@ -92,6 +92,8 @@ pub struct HabitDotView {
     pub today: bool,
     /// The date for VoiceOver: "Monday 9 November".
     pub label: String,
+    /// 0 for Monday to 6 for Sunday, so a grid never has to read the label's words.
+    pub weekday: u8,
 }
 
 /// A day's state in the dot grid. Nothing is ever a miss.

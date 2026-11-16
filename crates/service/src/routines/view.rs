@@ -171,6 +171,7 @@ fn habit_view(
             },
             today: dot.today,
             label: dot.date.label(),
+            weekday: dot.date.weekday().index(),
         })
         .collect();
     let standalone = row.routine_id.is_none();

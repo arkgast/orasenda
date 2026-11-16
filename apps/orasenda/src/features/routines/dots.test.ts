@@ -23,7 +23,9 @@ test("first_column_from_weekday_field", () => {
 });
 
 test("non_english_label_still_aligns", () => {
-  const days = toHabitDays([{ state: "done", today: false, label: "lunes 9 de noviembre", weekday: 0 }]);
+  const days = toHabitDays([
+    { state: "done", today: false, label: "lunes 9 de noviembre", weekday: 0 },
+  ]);
   expect(days[0]?.weekday).toBe(0);
   expect(days[0]?.label).toBe("lunes 9 de noviembre");
 });
