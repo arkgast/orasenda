@@ -43,7 +43,8 @@ export function TrendBars({ bars, goal, caption }: TrendBarsProps): ReactElement
       <figcaption id={captionId} className="text-body-sm text-ink-muted">
         {caption}
       </figcaption>
-      <ul className="sr-only">
+      {/* biome-ignore lint/a11y/noRedundantRoles: list-style none drops the list role in WebKit */}
+      <ul role="list" className="sr-only">
         {bars.map((b) => (
           <li key={`${b.label}-${b.spoken}`}>{b.spoken}</li>
         ))}
@@ -61,19 +62,25 @@ export function TrendBars({ bars, goal, caption }: TrendBarsProps): ReactElement
               {drawn(b) ? (
                 <span
                   data-slot="trend-bar-fill"
-                  className="w-bar-height rounded-sm bg-line-strong forced-colors:border"
+                  className="min-h-1 w-bar-height rounded-sm bg-line-strong forced-colors:border"
                   style={{ height: percent(b.minutes, top) }}
                 />
               ) : null}
               {goalMinutes > 0 && !b.empty ? (
                 <span
                   data-slot="trend-bar-goal-line"
-                  className="absolute inset-x-0 flex justify-center gap-1"
+                  className="absolute inset-x-0 flex translate-y-1/2 justify-center gap-1"
                   style={{ bottom: percent(goalMinutes, top) }}
                 >
-                  <span data-slot="trend-bar-stub" className="w-icon-sm border-t-2 border-ink" />
-                  <span className="w-bar-height" />
-                  <span data-slot="trend-bar-stub" className="w-icon-sm border-t-2 border-ink" />
+                  <span
+                    data-slot="trend-bar-stub"
+                    className="min-w-0 max-w-icon-sm flex-1 border-t-2 border-ink"
+                  />
+                  <span className="w-bar-height shrink-0" />
+                  <span
+                    data-slot="trend-bar-stub"
+                    className="min-w-0 max-w-icon-sm flex-1 border-t-2 border-ink"
+                  />
                 </span>
               ) : null}
             </div>
