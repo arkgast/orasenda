@@ -22,7 +22,12 @@ const ANOTHER_APP = "Another app uses this shortcut. Pick a different one.";
 test("no_glyph_literals_in_app_code", () => {
   const files = readdirSync(srcDir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name))
-    .map((entry) => join(entry.parentPath, entry.name).slice(srcDir.length + 1))
+    // "/" on every OS: Windows joins with "\".
+    .map((entry) =>
+      join(entry.parentPath, entry.name)
+        .slice(srcDir.length + 1)
+        .replaceAll("\\", "/"),
+    )
     .filter((file) => !file.startsWith("dev/") && !file.startsWith("shared/test/"))
     .filter((file) => !/\.test\.tsx?$|\.support\.tsx?$/.test(file));
   expect(files.length).toBeGreaterThan(50);
