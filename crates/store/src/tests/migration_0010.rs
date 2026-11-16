@@ -128,12 +128,11 @@ fn check_refuses_long_texts() {
     let (_dir, conn) = migrated("m10long");
     conn.execute_batch(SHUTDOWN).expect("row");
     let over = |n: usize| "x".repeat(n);
-    assert!(
-        conn.execute("UPDATE reflection SET went_well = ?1", [over(1001)])
-            .is_err()
-    );
-    conn.execute("UPDATE reflection SET went_well = ?1", [over(1000)])
-        .expect("1000 is accepted");
+    for col in ["went_well", "to_improve", "outside_control"] {
+        let sql = format!("UPDATE reflection SET {col} = ?1");
+        assert!(conn.execute(&sql, [over(1001)]).is_err(), "{col} 1001");
+        conn.execute(&sql, [over(1000)]).expect("1000 is accepted");
+    }
     conn.execute(
         "INSERT INTO reflection (id, kind, period, created_at, updated_at)
          VALUES ('week:2026-11-16', 'week', '2026-11-16', 1, 1)",
@@ -187,6 +186,14 @@ fn unique_kind_period() {
     )
     .expect("the same period under the other kind is a different row");
     assert_eq!(count(&conn, "SELECT count(*) FROM reflection"), 2);
+    let cols: String = conn
+        .query_row(
+            "SELECT group_concat(name) FROM pragma_index_info('reflection_kind_period')",
+            [],
+            |r| r.get(0),
+        )
+        .expect("index columns");
+    assert_eq!(cols, "kind,period");
     assert_eq!(
         count(
             &conn,

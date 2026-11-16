@@ -143,7 +143,6 @@ pub fn upsert(txn: &mut Txn, write: &ReflectionWrite) -> Result<String, StoreErr
             fields.push(("completed_at", Value::from(at)));
         }
         fields.push(("created_at", Value::from(now)));
-        fields.push(("updated_at", Value::from(now)));
         txn.log_fields(Entity::Reflection, &id, &fields)?;
         return Ok(id);
     };
@@ -190,7 +189,6 @@ pub fn upsert(txn: &mut Txn, write: &ReflectionWrite) -> Result<String, StoreErr
             sql_int(now)?,
         ],
     )?;
-    changed.push(("updated_at", Value::from(now)));
     txn.log_fields(Entity::Reflection, &id, &changed)?;
     Ok(id)
 }

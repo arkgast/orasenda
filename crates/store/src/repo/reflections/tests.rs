@@ -68,12 +68,12 @@ fn upsert_logs_only_changed_fields() {
     save(&store, 1_000, &w);
     assert_eq!(
         fields(&store),
-        ["kind", "period", "went_well", "created_at", "updated_at"]
+        ["kind", "period", "went_well", "created_at"]
     );
     let before = fields(&store).len();
     w.to_improve = Some("sleep".to_owned());
     save(&store, 2_000, &w);
-    assert_eq!(fields(&store)[before..], ["to_improve", "updated_at"]);
+    assert_eq!(fields(&store)[before..], ["to_improve"]);
     let r = row(&store, "shutdown:2026-11-16");
     assert_eq!(r.to_improve.as_deref(), Some("sleep"));
     assert_eq!((r.created_at, r.updated_at), (1_000, 2_000));
@@ -99,10 +99,7 @@ fn upsert_logs_priorities_and_clearing_a_text() {
     w.priorities = vec!["t2".to_owned(), "t1".to_owned()];
     w.improvement = None;
     save(&store, 2_000, &w);
-    assert_eq!(
-        fields(&store)[before..],
-        ["improvement", "priorities", "updated_at"]
-    );
+    assert_eq!(fields(&store)[before..], ["improvement", "priorities"]);
     let r = row(&store, "week:2026-11-16");
     assert_eq!(r.priorities, ["t2", "t1"]);
     assert_eq!(r.improvement, None);
