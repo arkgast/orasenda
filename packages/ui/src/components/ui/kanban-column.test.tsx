@@ -250,3 +250,18 @@ test("drop_slot_never_shrinks", () => {
     "shrink-0",
   );
 });
+
+test("drop_slot_transitions_calm", () => {
+  render(<KanbanColumn title="Today" count={0} drop={{ index: 0, label: "Moving here" }} />);
+  const cls = document.querySelector("[data-slot=kanban-column-drop]")?.className ?? "";
+  expect(cls).toMatch(/\btransition-\[?[a-z-]+/);
+  expect(cls).toContain("duration-calm");
+  expect(cls).toContain("ease-calm");
+});
+
+test("drop_slot_instant_reduce_motion", () => {
+  render(<KanbanColumn title="Today" count={0} drop={{ index: 0, label: "Moving here" }} />);
+  expect(document.querySelector("[data-slot=kanban-column-drop]")?.className).toContain(
+    "motion-reduce:transition-none",
+  );
+});
