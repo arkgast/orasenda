@@ -2,7 +2,6 @@ import type { ColumnView, Lane, TaskView } from "@shared/ipc/bindings";
 import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -92,8 +91,7 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
     });
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `refresh` only reads refs and a setter.
-  const edge = useCallback(() => {
+  const edge = () => {
     cancelAnimationFrame(frame.current);
     const m = measured.current;
     const zone = px("--hit-min");
@@ -108,9 +106,9 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
       frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
-  }, []);
+  };
 
-  const finish = (commit: boolean) => {
+  const finish = (commit: boolean, released = false) => {
     const d = live.current;
     const was = armed.current;
     const t = commit ? resolve() : null;
@@ -127,17 +125,31 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
     measured.current = null;
     shown.current = "";
     if (!d) return;
-    // The click (and double click) that ends a real drag is not a select or an open.
+    // The click (and double click) that ends a real drag is not a select or an open. When the
+    // drag ended before the release (Esc, blur), the swallow waits for that release.
     const swallow = (event: Event) => {
       event.stopPropagation();
       event.preventDefault();
     };
-    window.addEventListener("click", swallow, true);
-    window.addEventListener("dblclick", swallow, true);
-    setTimeout(() => {
-      window.removeEventListener("click", swallow, true);
-      window.removeEventListener("dblclick", swallow, true);
-    }, 0);
+    const install = () => {
+      window.addEventListener("click", swallow, true);
+      window.addEventListener("dblclick", swallow, true);
+      setTimeout(() => {
+        window.removeEventListener("click", swallow, true);
+        window.removeEventListener("dblclick", swallow, true);
+      }, 0);
+    };
+    if (released) install();
+    else {
+      const onRelease = (event: PointerEvent) => {
+        if (event.pointerId !== was?.pointerId) return;
+        window.removeEventListener("pointerup", onRelease, true);
+        window.removeEventListener("pointercancel", onRelease, true);
+        install();
+      };
+      window.addEventListener("pointerup", onRelease, true);
+      window.addEventListener("pointercancel", onRelease, true);
+    }
     setView(null);
     const task = locate(latest.current.columns, d.id)?.column.tasks.find((x) => x.id === d.id);
     if (t && task) return latest.current.drop(task, t.lane, t.move);
@@ -173,9 +185,12 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
     const onUp = (event: PointerEvent) => {
       if (event.pointerId !== armed.current?.pointerId) return;
       point.current = { x: event.clientX, y: event.clientY };
-      finish(true);
+      finish(true, true);
     };
-    const onCancel = () => finish(false);
+    const onCancel = (event: PointerEvent) => {
+      if (event.pointerId === armed.current?.pointerId) finish(false, true);
+    };
+    const onBlur = () => finish(false);
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || !live.current) return;
       event.preventDefault();
@@ -189,7 +204,7 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onCancel);
-    window.addEventListener("blur", onCancel);
+    window.addEventListener("blur", onBlur);
     window.addEventListener("keydown", onKey, true);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("wheel", onScroll, { passive: true });
@@ -197,7 +212,7 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onCancel);
-      window.removeEventListener("blur", onCancel);
+      window.removeEventListener("blur", onBlur);
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("wheel", onScroll);

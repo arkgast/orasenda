@@ -1,4 +1,4 @@
-import { argsOf, boardOf, settle } from "@shared/test/fixtures";
+import { argsOf, settle } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -67,6 +67,7 @@ test("touch_is_ignored", async () => {
 test("drag_moves_between_columns", async () => {
   const backend = await renderBoard();
   const el = lift("Write intro", T1, [500, 200]);
+  expect(Element.prototype.setPointerCapture).toHaveBeenCalledWith(1);
   // The card stays where it is, marked Moving, with the slot in Doing.
   expect(card("Write intro")).toHaveAccessibleName(/Moving/);
   expect(screen.getByText("Moving Write intro here")).toBeInTheDocument();
@@ -83,6 +84,7 @@ test("drag_reorders_within_column", async () => {
   await settle();
   expect(moves(backend)).toEqual([{ id: "t1", lane: "today", index: 1 }]);
   expect(screen.getByText("Moved Write intro to place 2 in Today.")).toBeInTheDocument();
+  expect(card("Write intro")).toHaveFocus();
 });
 
 test("release_on_own_place_cancels", async () => {
@@ -145,6 +147,25 @@ test("esc_cancels_and_is_consumed", async () => {
   expect(moves(backend)).toEqual([]);
 });
 
+test("pointercancel_cancels", async () => {
+  const backend = await renderBoard();
+  const el = lift("Write intro", T1, [500, 200]);
+  pointer("pointercancel", el, 500, 200);
+  await settle();
+  expect(moves(backend)).toEqual([]);
+  expect(screen.getByText("Write intro stayed in Today.")).toBeInTheDocument();
+});
+
+test("blur_cancels", async () => {
+  const backend = await renderBoard();
+  const el = lift("Write intro", T1, [500, 200]);
+  fireEvent(window, new Event("blur"));
+  pointer("pointerup", el, 500, 200);
+  await settle();
+  expect(moves(backend)).toEqual([]);
+  expect(screen.getByText("Write intro stayed in Today.")).toBeInTheDocument();
+});
+
 test("release_outside_cancels", async () => {
   const backend = await renderBoard();
   const el = lift("Write intro", T1, [900, 900]);
@@ -183,7 +204,7 @@ test("keyboard_reorder_stays_silent", async () => {
 
 test("drop_past_limit_allowed", async () => {
   // Doing holds one and its limit is one: the drop is allowed and nothing moves back.
-  const backend = await renderBoard({ board: boardOf(TASKS) });
+  const backend = await renderBoard();
   const el = lift("Write intro", T1, [500, 200]);
   pointer("pointerup", el, 500, 200);
   await settle();
