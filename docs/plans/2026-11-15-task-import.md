@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-15-task-import.md](../specs/2026-11-15-task-import.md)
 - Date: 2026-11-15
-- Status: approved (autonomous run, owner 2026-11-15; fable review applied)
+- Status: done (2026-11-16)
 
 ## Overview
 Fifteen tasks. First come the core, store and platform pieces and the components; then the service and IPC; then the screens, one at a time, each with its behaviour and UI together (owner's rule): the import sheet on the Board, then Settings and the palette, then drag. Last is a docs-only close-out.

@@ -65,6 +65,7 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Inbox note | One captured thought: text, Internal or External, a time. Syncable (`inbox_note`), removed by tombstone. Listed on Inbox; Move to Board turns it into a task. | A task |
 | Board | The page of tasks in four lanes (Backlog, Today, Doing, Done), reached with ⌘3. Task data lives in the syncable `task` table. | The Inbox, which holds captured notes |
 | Lane | A task's column on the Board (`lane` in SQL, "column" in the UI). Names and the Today and Doing limits are editable; limits inform and never block. | A routine's step |
+| Drop slot | The dashed place a dragged card would land, drawn in its column (or the folded strip's "Move here") while the card is held. | The card's own place, which stays put and reads "Moving" |
 | Frog | The one task a day the user marks as the hardest. Setting a second moves the flag, with Undo. | A priority |
 | Estimate buffer | Padding on planned time (25% by default, 25–50%), applied to planning only and never to the stored estimate. | The estimate itself |
 | Planned sessions | The estimate padded by the estimate buffer, rounded up to whole focus sessions. Used for planning and never stored. | The estimate, which stays as written |

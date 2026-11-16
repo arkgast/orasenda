@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-15-board-polish.md](../specs/2026-11-15-board-polish.md)
 - Date: 2026-11-15
-- Status: approved (autonomous run; fable review applied: 1 blocking, 7 important, 6 minor)
+- Status: done (2026-11-16)
 
 ## Overview
 Six tasks, one per existing issue. Each has its tests written first, keeps every file at 500 lines or fewer, passes `./scripts/ci.sh`, and gets an opus review plus one fix round. The UI tasks also get the opus design review (no screenshots: the owner reviews visuals). The spec status and ROADMAP close-out are folded into the P2 close-out at the end of the task-import plan.

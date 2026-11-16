@@ -1,6 +1,6 @@
 # Task import and pointer drag on the Board (P2 close) — Spec
 
-- Status: approved (autonomous run, owner 2026-11-15; fable review applied)
+- Status: implemented (2026-11-16)
 - Date: 2026-11-15
 - Owner: Arnold Gandarillas Castillo
 - Related:
@@ -253,4 +253,12 @@ None block the plan. Each item below is confirmed in the owner's hands-on check,
 8. Denial and *Open System Settings* for both sources; a drag with a trackpad, a mouse and a pen.
 
 ## Implementation status
-Not started. Plan: [2026-11-15-task-import](../plans/2026-11-15-task-import.md); issues follow.
+Implemented (2026-11-16). Plan: [2026-11-15-task-import](../plans/2026-11-15-task-import.md). Merged PRs:
+- I1 #613, I2 #614, I3 #622, I4 #620, I5 #621, I6 #627, I7a #632, I7b #639, I8 #640, I9 #615, I10 #629, I11 #642, I12 #644, I13 #645, and I14 (this PR, close-out).
+
+Design gate: the canvas leans A2, B1 and C1 shipped. The owner may still overrule (canvas https://claude.ai/artifact/N3RphAWsq8PnMhMMwzBq7R).
+
+### Follow-ups
+- #646: the drag's slot-opening motion is deferred (controller ruling).
+
+Hands-on check: see above; it stays with the owner.
