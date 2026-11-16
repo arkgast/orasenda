@@ -11,6 +11,7 @@ import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Input } from "./input";
+import { ACTIVE, ROW, SelectedWord } from "./task-picker-row";
 
 export interface TaskPickerOption {
   id: string;
@@ -39,18 +40,6 @@ const ORDER = { doing: 0, today: 1, backlog: 2 } as const;
 const CREATE_ID = "create";
 const QUIET =
   "min-h-hit-min min-w-0 max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
-
-const ROW =
-  "mx-1 flex min-h-hit-min cursor-pointer items-center justify-between gap-3 rounded-sm border-s-2 border-clear px-3 text-body text-ink hover:bg-surface-sunken";
-const ACTIVE = "border-focus bg-selection";
-
-function SelectedWord(): JSX.Element {
-  return (
-    <span aria-hidden="true" className="block text-caption text-focus">
-      Selected
-    </span>
-  );
-}
 
 /** A length token in px, read from its CSS variable on the root. */
 function tokenPx(name: string): number {
@@ -90,13 +79,14 @@ export function TaskPicker({
   // The panel shows once the person types, or after an arrow key asks for the list.
   const [armed, setArmed] = useState(false);
   const shown = matches(options, query);
-  const showPanel = armed || query.trim() !== "";
   const trimmed = query.trim();
+  const showPanel = armed || trimmed !== "";
   // The add row is a quiet last row: it exists only with onCreate and a non-empty query.
   const hasCreate = onCreate !== undefined && trimmed !== "";
   const count = shown.length + (hasCreate ? 1 : 0);
   const listed = showPanel && count > 0;
   const optionId = (id: string) => `${base}-opt-${id}`;
+  const createDomId = `${base}-create`;
   const index = Math.min(active, count - 1);
   const onCreateRow = listed && hasCreate && index === shown.length;
   const current = listed && !onCreateRow ? shown[index] : undefined;
@@ -146,12 +136,11 @@ export function TaskPicker({
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [editing, showPanel, shown.length]);
-  const currentId = activeId;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when the active option changes
+  const activeDomId = onCreateRow ? createDomId : activeId ? optionId(activeId) : undefined;
   useEffect(() => {
-    if (!editing || !currentId) return;
-    document.getElementById(`${base}-opt-${currentId}`)?.scrollIntoView?.({ block: "nearest" });
-  }, [editing, currentId, base]);
+    if (!editing || !activeDomId) return;
+    document.getElementById(activeDomId)?.scrollIntoView?.({ block: "nearest" });
+  }, [editing, activeDomId]);
 
   const open = () => {
     setQuery("");
@@ -227,7 +216,9 @@ export function TaskPicker({
         aria-expanded={listed}
         aria-autocomplete="list"
         aria-controls={listed ? listId : undefined}
-        aria-activedescendant={activeId ? optionId(activeId) : undefined}
+        aria-activedescendant={
+          onCreateRow ? createDomId : activeId ? optionId(activeId) : undefined
+        }
         autoComplete="off"
         autoFocus
         value={query}
@@ -281,7 +272,7 @@ export function TaskPicker({
               {hasCreate ? (
                 // biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/useFocusableInteractive: the ARIA listbox pattern; the combobox input owns focus and the keys (aria-activedescendant)
                 <div
-                  id={optionId(CREATE_ID)}
+                  id={createDomId}
                   role="option"
                   aria-selected={onCreateRow}
                   data-slot="task-picker-create"
@@ -289,7 +280,11 @@ export function TaskPicker({
                   onMouseMove={() => setActive(shown.length)}
                   className={cn(ROW, onCreateRow && ACTIVE)}
                 >
-                  <span className="min-w-0 truncate">{`Add "${trimmed}" to Backlog`}</span>
+                  <span className="flex min-w-0">
+                    <span className="flex-none whitespace-pre">Add &quot;</span>
+                    <span className="min-w-0 truncate">{trimmed}</span>
+                    <span className="flex-none whitespace-pre">&quot; to Backlog</span>
+                  </span>
                   {onCreateRow ? (
                     <span className="flex-none text-end text-body-sm text-ink-muted">
                       <SelectedWord />

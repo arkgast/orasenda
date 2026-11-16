@@ -66,4 +66,12 @@ test("task_picker_add_row_is_hit_min_and_truncates", async ({ page }) => {
   const p = await frame.locator("[data-slot=task-picker-panel]").boundingBox();
   if (!p || !box) throw new Error("no box");
   expect(box.x + box.width, "row inside panel").toBeLessThanOrEqual(p.x + p.width + 0.5);
+  // Same inset (mx-1 = space-1 from the panel edge) and 2px active bar as a task row.
+  const inset = await row.evaluate((el) => {
+    const panel = el.closest("[data-slot=task-picker-panel]");
+    return panel ? el.getBoundingClientRect().x - panel.getBoundingClientRect().x : -1;
+  });
+  expect(inset, "inset from panel edge").toBeGreaterThan(0);
+  const bar = await row.evaluate((el) => getComputedStyle(el).borderInlineStartWidth);
+  expect(bar).toBe("2px");
 });

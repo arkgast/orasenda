@@ -93,6 +93,7 @@ test("week_marker_after_lane_word", () => {
   type("the");
   const all = rows();
   const text = (i: number) => all[i].textContent?.replace("Selected", "");
+  expect(all[0]).toHaveAccessibleName(/Doing · Frog · This week$/);
   expect(text(0)).toBe("Draft the outlineDoing · Frog · This week");
   expect(text(1)).toBe("Write the reportToday");
   expect(text(2)).toBe("Plan the offsiteBacklog · This week");
@@ -110,6 +111,18 @@ test("blur_with_create_row_picks_nothing", () => {
   const { onCreate, onPick } = setup();
   type("zzz");
   fireEvent.blur(screen.getByRole("combobox"));
+  expect(onCreate).not.toHaveBeenCalled();
+  expect(onPick).not.toHaveBeenCalled();
+});
+
+test("empty_panel_with_create_calls_nothing", () => {
+  const onCreate = vi.fn();
+  const onPick = vi.fn();
+  render(<TaskPicker options={[]} onPick={onPick} onCreate={onCreate} />);
+  fireEvent.click(screen.getByRole("button", { name: "Add a task" }));
+  press("ArrowDown");
+  expect(screen.getByText("No matching tasks")).toBeTruthy();
+  press("Enter");
   expect(onCreate).not.toHaveBeenCalled();
   expect(onPick).not.toHaveBeenCalled();
 });
