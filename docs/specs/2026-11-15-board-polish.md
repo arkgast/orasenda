@@ -1,6 +1,6 @@
 # Board polish: GitHub CI, shared single-key setting, rows and the palette's task (P2) — Spec
 
-- **Status:** approved (autonomous run, owner 2026-11-15: "go autonomous until you finish"; a fable review stood in for the owner gate, and its findings are applied below)
+- **Status:** implemented (2026-11-16)
 - **Date:** 2026-11-15
 - **Issues:** #587, #574, #575, #579, #580, #581 (follow-ups of the Board, epic #545)
 - **Follows:** [the Board spec](2026-11-14-board.md)
@@ -275,6 +275,8 @@ None.
 10. **The owner's Board checklist:** no findings were given at the start of this run ("none yet"). Findings that arrive later become issues.
 
 11. **The 640×480 guard in `board.spec.ts` stays** (fable plan review). A full card is taller than the 202 px Today column at 640×480 because of its metadata, not its title. Making it fit means a layout decision about the column, not a fix inside the title. It gets a follow-up issue, and the long-title card judges the clamp.
+12. **A card with no estimate and nothing done draws no dots row** (#575, PR #594).
+13. **Decision 2 amended** (#634, PR #635): main runs share one group per ref, with cancel-in-progress only on PRs, so a running main run always finishes and only the newest pending one is kept. One group per SHA queued 38 runs on the 5 macOS runners.
 
 ## FAQ
 ### Why a summary job rather than making `layout` the required check?
@@ -287,4 +289,14 @@ The macos-26 runner has 3 vCPUs, and one WebKit worker plus two vite servers alr
 None.
 
 ## Implementation status
-Not started.
+Implemented (2026-11-16). Plan: [2026-11-15-board-polish](../plans/2026-11-15-board-polish.md). Merged PRs:
+- #590 CI (#587); #617 even shards (#616); #635 main concurrency (#634); #625 Windows design-system paths (#611).
+- #591 (#574), #594 (#575), #593 (#579), #619 (#580), #592 (#581).
+- #630 PopoverMenu beside (#624); #626 (#612); #631 (#628); #641 (#636); #623 (#618 flake); #637 (#633 flake).
+
+### Follow-ups
+- #589: a full card is taller than the Today column at 640×480 (Decision 11).
+- #624, #628, #636: done (#630, #631, #641).
+- #638: Settings presets focus gives up after about 10 timer ticks.
+- #643: Sheet Alt+Tab path, Alt+Tab wrap and the flaky `tab_walk_keeps_ring`.
+- #646: Board drag slot opening motion and the Moving card's height.

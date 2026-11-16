@@ -1,6 +1,6 @@
 # Task import and pointer drag on the Board (P2 close) — Spec
 
-- Status: approved (autonomous run, owner 2026-11-15; fable review applied)
+- Status: implemented (2026-11-16)
 - Date: 2026-11-15
 - Owner: Arnold Gandarillas Castillo
 - Related:
@@ -178,7 +178,7 @@ Thin `commands/import.rs`: `import_sources`, `import_preview(source) -> ImportPr
 - **Drop** calls `task_move(id, lane, index)`, the call behind ⌥⌘ arrows and the Move menu (`useBoardActions.ts:84-95`). Limits behave as for a key move: a drop past a limit is allowed and the column reads "4 of 3"; nothing moves back (only a start does, Board Decision 15). A drop in Done sets `done_at`; out of Done clears it.
 - **Cancel:** Esc (consumed, so nothing else sees it), `pointercancel`, the window losing focus, a release on its own place or outside every column: the card stays where it was.
 - **Words:** start "Moving <title>. Esc puts it back."; another column "Moved <title> to <column>." (the keyboard's line); a reorder "Moved <title> to place 3 in <column>." (a keyboard reorder stays silent, `useBoardActions.ts:115`, because focus follows the card); cancel "<title> stayed in <column>." All through the Board's status line; focus lands on the dropped card.
-- **Motion:** cards make room for the slot over `duration-calm` on `easing-calm`; under reduce-motion nothing animates. No ghost image follows the pointer: the slot shows where the card lands, in words and shape.
+- **Motion:** cards make room for the slot over `duration-calm` on `easing-calm`; under reduce-motion nothing animates. No ghost image follows the pointer: the slot shows where the card lands, in words and shape. (Deferred to #646, controller ruling: the slot appears without the opening motion for now.)
 - **The keyboard stays the contract.** Every drag result is reachable by ⌥⌘ arrows and the Move menu; nothing is drag-only.
 
 ## Data & migrations
@@ -253,4 +253,12 @@ None block the plan. Each item below is confirmed in the owner's hands-on check,
 8. Denial and *Open System Settings* for both sources; a drag with a trackpad, a mouse and a pen.
 
 ## Implementation status
-Not started. Plan: [2026-11-15-task-import](../plans/2026-11-15-task-import.md); issues follow.
+Implemented (2026-11-16). Plan: [2026-11-15-task-import](../plans/2026-11-15-task-import.md). Merged PRs:
+- I1 #613, I2 #614, I3 #622, I4 #620, I5 #621, I6 #627, I7a #632, I7b #639, I8 #640, I9 #615, I10 #629, I11 #642, I12 #644, I13 #645, and I14 #647.
+
+Design gate: the canvas leans A2, B1 and C1 shipped. The owner may still overrule (canvas https://claude.ai/artifact/N3RphAWsq8PnMhMMwzBq7R).
+
+### Follow-ups
+- #646: the drag's slot-opening motion is deferred (controller ruling).
+
+Hands-on check: see above; it stays with the owner.
