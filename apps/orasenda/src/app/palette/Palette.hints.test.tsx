@@ -22,7 +22,15 @@ afterEach(async () => {
 
 async function open(keyboard = KEYBOARD) {
   const backend = mockBackend({ keyboard_state: () => keyboard });
-  render(<Palette compact={false} onClose={() => {}} onNavigate={() => {}} onMode={() => {}} />);
+  render(
+    <Palette
+      compact={false}
+      onClose={() => {}}
+      onNavigate={() => {}}
+      onMode={() => {}}
+      onImportTasks={() => {}}
+    />,
+  );
   await settle();
   return backend;
 }

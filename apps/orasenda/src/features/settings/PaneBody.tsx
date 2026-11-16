@@ -17,10 +17,11 @@ type Props = {
   headingRef: Ref<HTMLHeadingElement>;
   model: SettingsModel;
   info: AboutInfo;
+  onImportTasks?: () => void;
 };
 
 /** The open pane, wired to the shared model. Only this pane is in the page. */
-export function PaneBody({ pane, headingRef, model, info }: Props) {
+export function PaneBody({ pane, headingRef, model, info, onImportTasks }: Props) {
   const m = model;
   switch (pane) {
     case "general":
@@ -104,7 +105,7 @@ export function PaneBody({ pane, headingRef, model, info }: Props) {
     case "about":
       return <About headingRef={headingRef} info={info} />;
     case "data":
-      return <YourData headingRef={headingRef} running={m.running} />;
+      return <YourData headingRef={headingRef} running={m.running} onImportTasks={onImportTasks} />;
     case "backups":
       return <Backups headingRef={headingRef} />;
   }

@@ -15,10 +15,13 @@ export function Settings({
   info,
   arrival,
   onNavigate,
+  onImportTasks,
 }: {
   info: AboutInfo;
   arrival: Arrival;
   onNavigate(page: NavPage): void;
+  /** *Import tasks…* in Your data: the app goes to the Board and opens the import sheet. */
+  onImportTasks?(): void;
 }) {
   const { compact } = useWindowLayout();
   const model = useSettingsModel();
@@ -47,7 +50,13 @@ export function Settings({
       onSelect={(id, via) => go(id, via === "keyboard" ? "heading" : "none")}
       onNavigate={onNavigate}
     >
-      <PaneBody pane={pane} headingRef={heading} model={model} info={info} />
+      <PaneBody
+        pane={pane}
+        headingRef={heading}
+        model={model}
+        info={info}
+        onImportTasks={onImportTasks}
+      />
     </SettingsShell>
   );
 }

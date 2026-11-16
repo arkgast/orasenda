@@ -4,6 +4,8 @@ import { openApp } from "./support/app.ts";
 const SIZES = [
   { width: 360, height: 640 },
   { width: 900, height: 600 },
+  { width: 1440, height: 900 },
+  { width: 640, height: 480 },
 ];
 
 async function expectFits(page: Page, size: { width: number; height: number }) {
@@ -46,7 +48,13 @@ for (const size of SIZES) {
       await expectFits(page, size);
       await expectTargets(page);
       const labels = await page.locator("[data-slot=settings-row-label]").allTextContents();
-      expect(labels).toEqual(["Stored", "Data folder", "Move data", "Start over"]);
+      expect(labels).toEqual([
+        "Stored",
+        "Data folder",
+        "Move data",
+        "Tasks from other apps",
+        "Start over",
+      ]);
       const last = page.getByRole("button", { name: "Delete all data…" });
       await last.scrollIntoViewIfNeeded();
       await expect(last).toBeVisible();
