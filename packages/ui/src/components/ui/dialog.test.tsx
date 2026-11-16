@@ -361,3 +361,103 @@ test("dialog_sheet_clicking_a_label_leaves_its_control_alone", () => {
   next.focus();
   expect(body.scrollTop).toBe(0);
 });
+
+// jsdom has no layout, so the fields would count as hidden.
+function showFields() {
+  for (const el of document.querySelectorAll("input, textarea"))
+    vi.spyOn(el, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+}
+
+function WrapHost() {
+  return (
+    <Dialog
+      title="Task"
+      size="sheet"
+      confirmLabel="Done"
+      cancelLabel="Close"
+      onConfirm={() => {}}
+      onCancel={() => {}}
+    >
+      <label>
+        Title
+        <input type="text" />
+      </label>
+      <label>
+        Notes
+        <textarea />
+      </label>
+    </Dialog>
+  );
+}
+
+test("dialog_sheet_plain_tab_leaves_focus_alone_when_it_moved_on_its_own", () => {
+  const run = frames();
+  render(<WrapHost />);
+  showFields();
+  const notes = screen.getByRole("textbox", { name: "Notes" });
+  const close = screen.getByRole("button", { name: "Close" });
+  notes.focus();
+  fireEvent.keyDown(notes, { key: "Tab" });
+  close.focus();
+  run();
+  expect(document.activeElement).toBe(close);
+});
+
+test("dialog_sheet_plain_tab_wraps_when_focus_is_stuck", () => {
+  const run = frames();
+  render(<WrapHost />);
+  showFields();
+  const notes = screen.getByRole("textbox", { name: "Notes" });
+  notes.focus();
+  fireEvent.keyDown(notes, { key: "Tab" });
+  run();
+  expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Title" }));
+});
+
+test("dialog_sheet_plain_tab_ignores_a_handled_tab", () => {
+  const run = frames();
+  render(<WrapHost />);
+  showFields();
+  const notes = screen.getByRole("textbox", { name: "Notes" });
+  notes.addEventListener("keydown", (e) => e.preventDefault());
+  notes.focus();
+  fireEvent.keyDown(notes, { key: "Tab" });
+  run();
+  expect(document.activeElement).toBe(notes);
+});
+
+test("dialog_sheet_shift_tab_wraps_to_notes_unless_full_keyboard_access_is_on", () => {
+  frames();
+  render(<WrapHost />);
+  showFields();
+  const title = screen.getByRole("textbox", { name: "Title" });
+  title.focus();
+  fireEvent.keyDown(title, { key: "Tab", shiftKey: true });
+  expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Notes" }));
+});
+
+test("dialog_sheet_shift_tab_keeps_browser_order_once_a_plain_tab_landed_on_a_button", () => {
+  frames();
+  render(
+    <Dialog title="Task" size="sheet" confirmLabel="Done" onConfirm={() => {}} onCancel={() => {}}>
+      <label>
+        Title
+        <input type="text" />
+      </label>
+      <button type="button">Remove item</button>
+      <label>
+        Notes
+        <textarea />
+      </label>
+    </Dialog>,
+  );
+  showFields();
+  const title = screen.getByRole("textbox", { name: "Title" });
+  title.focus();
+  fireEvent.keyDown(title, { key: "Tab" });
+  screen.getByRole("button", { name: "Remove item" }).focus();
+  title.focus();
+  fireEvent.keyDown(title, { key: "Tab", shiftKey: true });
+  // Our wrap stays out of it: Notes is not reached (Radix's own scope sends it on to the actions).
+  expect(document.activeElement).not.toBe(screen.getByRole("textbox", { name: "Notes" }));
+});

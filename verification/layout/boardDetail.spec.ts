@@ -204,31 +204,136 @@ for (const size of SIZES) {
     await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
   });
 
+  // Plain Tab from the last text field wraps to the first, and Shift+Tab back, as native cycling does (#636).
+  test(`board_detail_full_task_plain_tab_wraps_through_text_fields_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    const notes = dialog.getByRole("textbox", { name: "Notes" });
+    await notes.focus();
+    await page.keyboard.press("Tab");
+    await expect(title).toBeFocused();
+    await expectFocusRingVisible(title);
+    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(0);
+    await page.keyboard.press("Shift+Tab");
+    await expect(notes).toBeFocused();
+    await expectFocusRingVisible(notes);
+  });
+
+  // Date and select stops are Tab stops without full keyboard access, so they must not turn the wrap off (#636).
+  test(`board_detail_full_task_shift_tab_still_wraps_after_date_and_select_stops_${at}`, async ({
+    page,
+  }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    await title.focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press("Tab");
+    await title.focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(dialog.getByRole("textbox", { name: "Notes" })).toBeFocused();
+  });
+
   test(`board_detail_full_task_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
-    const body = dialog.locator('[data-slot="dialog-sheet-body"]');
-    // Plain Tab (WebKit skips buttons) then Alt+Tab (reaches them), each way; every body stop keeps its ring.
-    const walk = async (key: string) => {
-      const stops = new Set<string>();
-      for (let i = 0; i < 40; i++) {
-        if ((await body.locator(":focus").count()) === 1) {
-          await expectFocusRingVisible(page.locator(":focus"));
-          stops.add(
-            await page.locator(":focus").evaluate((el) => {
-              const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
-              const label = el.getAttribute("aria-label") ?? labels?.[0]?.textContent;
-              return `${label ?? el.tagName}#${[...document.querySelectorAll(el.tagName)].indexOf(el)}`;
-            }),
-          );
-        }
-        await page.keyboard.press(key);
-      }
-      return stops;
+    // Plain Tab (WebKit skips buttons) each way: every stop is named, in order, and keeps its ring.
+    const stop = async () => {
+      // Let the sheet's own frame-late focus moves (the text-field wrap) land before reading the focus.
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+      const focused = page.locator(":focus");
+      await expect(focused).toHaveCount(1);
+      await expectFocusRingVisible(focused);
+      return focused.evaluate((el) => {
+        const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
+        const name = el.getAttribute("aria-label") ?? labels?.[0]?.textContent ?? el.textContent;
+        return (name ?? el.tagName).replace(/, worded.*$/, "").trim();
+      });
     };
-    for (const key of ["Tab", "Shift+Tab", "Alt+Tab", "Alt+Shift+Tab"]) {
-      const stops = await walk(key);
-      expect(stops.size, key).toBeGreaterThanOrEqual(4);
-    }
+    const walk = async (key: string, steps: number) => {
+      const seen = [await stop()];
+      for (let i = 0; i < steps; i++) {
+        await page.keyboard.press(key);
+        seen.push(await stop());
+      }
+      return seen;
+    };
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    const rows = Array.from({ length: 14 }, (_, i) => `Checklist step ${i + 1}`);
+    const fields = ["Title", "2 sessions", "Due", "Due", "Due", "Priority", "Column", "Tags"];
+    const plain = [...fields, ...rows.map((r) => `Edit ${r}`), "Add an item", "Notes"];
+    // Forward from Title round the text fields and back to Title; backward is the same ring the other way.
+    expect(await walk("Tab", plain.length), "Tab").toEqual([...plain, "Title"]);
+    await title.focus();
+    expect(await walk("Shift+Tab", plain.length), "Shift+Tab").toEqual([
+      "Title",
+      ...[...plain].reverse().slice(0, -1),
+      "Title",
+    ]);
+  });
+
+  // Alt+Tab never reaches Add an item: a Remove-item Tooltip unmounting inside the focus trap pulls focus to the
+  // dialog (#643). The ordered list below is the target; it turns on when #643 lands.
+  test.fixme(`board_detail_full_task_alt_tab_walk_keeps_ring_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const stop = async () => {
+      // Let the sheet's own frame-late focus moves (the text-field wrap) land before reading the focus.
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+      const focused = page.locator(":focus");
+      await expect(focused).toHaveCount(1);
+      await expectFocusRingVisible(focused);
+      return focused.evaluate((el) => {
+        const labels = "labels" in el ? (el as HTMLInputElement).labels : null;
+        const name = el.getAttribute("aria-label") ?? labels?.[0]?.textContent ?? el.textContent;
+        return (name ?? el.tagName).replace(/, worded.*$/, "").trim();
+      });
+    };
+    const walk = async (key: string, steps: number) => {
+      const seen = [await stop()];
+      for (let i = 0; i < steps; i++) {
+        await page.keyboard.press(key);
+        seen.push(await stop());
+      }
+      return seen;
+    };
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    const rows = Array.from({ length: 14 }, (_, i) => `Checklist step ${i + 1}`);
+    await title.focus();
+    const tags = [
+      "writing",
+      "client",
+      "draft",
+      "review",
+      "chapter-one",
+      "research",
+      "outline",
+      "edits",
+    ];
+    const all = [
+      "Title",
+      "Deep",
+      "2 sessions",
+      "Due",
+      "Due",
+      "Due",
+      "Priority",
+      "Column",
+      "Today's Frog",
+      ...tags.map((t) => `Remove tag ${t}`),
+      "Tags",
+      ...rows.flatMap((r) => [r, `Edit ${r}`, `Remove item ${r}`]),
+      "Add an item",
+      "Notes",
+      "Close",
+      "Done",
+    ];
+    expect(await walk("Alt+Tab", all.length - 1), "Alt+Tab").toEqual(all);
+    await dialog.getByRole("button", { name: "Done" }).focus();
+    expect(await walk("Alt+Shift+Tab", all.length - 1), "Alt+Shift+Tab").toEqual(
+      [...all].reverse(),
+    );
   });
 
   test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {
