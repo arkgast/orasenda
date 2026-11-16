@@ -33,12 +33,12 @@ export function priorityView(over: Partial<PriorityView> = {}): PriorityView {
   };
 }
 
-/** The overview on a Monday: the shutdown is open and the planned week has one priority. */
+/** The overview on a Tuesday: the shutdown is open and the planned week has one priority. */
 export function reviewView(over: Partial<ReviewView> = {}): ReviewView {
   return {
     today: {
-      day: "2026-11-16",
-      dayLabel: "Monday 16 November",
+      day: "2026-11-17",
+      dayLabel: "Tuesday 17 November",
       done: false,
       line: "Ready when you are.",
     },
