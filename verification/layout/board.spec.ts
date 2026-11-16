@@ -49,15 +49,24 @@ for (const size of SIZES) {
     await page.keyboard.press("Tab");
     const card = page.getByRole("button", { name: /^Write the intro/ });
     await card.focus();
-    // At 640x480 a full card (Frog, priority, due date, tags) is 236px tall against a 202px
-    // scrollport, so its ring is judged from 600px up. Not a title problem (follow-up #589).
-    if (size.height >= 600) await expectFocusRingVisible(card);
+    // Below layout-tight-height the card folds dots, due date and tags into one line (#589).
+    await expectFocusRingVisible(card);
     await page.keyboard.press("Meta+n");
     // Focusing the field scrolls the stacked region back up; the ring is judged once it settles.
     const field = page.getByRole("textbox", { name: "New task" });
     await expect(field).toBeFocused();
     await expect(async () => expectFocusRingVisible(field)).toPass();
   });
+
+  if (at === "640x480") {
+    test("full_card_ring_fits_640x480", async ({ page }) => {
+      await openBoard(page, "boardWeek", size);
+      const card = page.getByRole("button", { name: /^Write the intro/ });
+      await card.focus();
+      await expectFocusRingVisible(card);
+      expect(await card.locator("[data-slot=task-card-fold]").count()).toBe(1);
+    });
+  }
 
   test(`board_empty_and_unreadable_fit_${at}`, async ({ page }) => {
     await openBoard(page, "boardEmpty", size);
@@ -198,7 +207,6 @@ for (const size of [
     await expect(page.getByText("Moving Backlog task 1. Esc puts it back.")).toBeVisible();
     const slot = page.locator('[data-slot="kanban-column-drop"]');
     await expect(slot).toBeVisible();
-    const box = await slot.boundingBox();
     const hit = await page.evaluate(() => {
       const probe = document.createElement("div");
       probe.style.height = "var(--hit-min)";
@@ -207,7 +215,10 @@ for (const size of [
       probe.remove();
       return height;
     });
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(hit - 0.5);
+    // The slot opens over duration-calm; its height is judged once it has settled.
+    await expect
+      .poll(async () => (await slot.boundingBox())?.height ?? 0)
+      .toBeGreaterThanOrEqual(hit - 0.5);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       size.width,
     );

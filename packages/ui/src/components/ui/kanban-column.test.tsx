@@ -254,7 +254,7 @@ test("drop_slot_never_shrinks", () => {
 test("drop_slot_transitions_calm", () => {
   render(<KanbanColumn title="Today" count={0} drop={{ index: 0, label: "Moving here" }} />);
   const cls = document.querySelector("[data-slot=kanban-column-drop]")?.className ?? "";
-  expect(cls).toMatch(/\btransition-\[?[a-z-]+/);
+  expect(cls).toContain("transition-all");
   expect(cls).toContain("duration-calm");
   expect(cls).toContain("ease-calm");
 });
