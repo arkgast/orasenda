@@ -35,11 +35,12 @@ for fx in "$dir"/*.ts; do
     echo "lint-layers: $fx: Biome exited $rc, expected 1 (not linted?)"; printf '%s\n' "$out"
     failures=$((failures + 1)); continue
   fi
-  if [ "$expect" = clean ] && { [ "$rc" -ne 0 ] || ! printf '%s' "$out" | grep -q 'Checked 1 file'; }; then
+  if [ "$expect" = clean ] && { [ "$rc" -ne 0 ] || [[ $out != *'Checked 1 file'* ]]; }; then
     echo "lint-layers: $fx: Biome exited $rc without checking 1 file"; printf '%s\n' "$out"
     failures=$((failures + 1)); continue
   fi
-  if printf '%s' "$out" | grep -q 'noRestrictedImports'; then reported=1; else reported=0; fi
+  # Match in-process: under pipefail, `printf | grep -q` fails with SIGPIPE when grep exits early (#648).
+  if [[ $out == *noRestrictedImports* ]]; then reported=1; else reported=0; fi
   if [ "$expect" = report ] && [ "$reported" = 0 ]; then
     echo "lint-layers: $fx was not reported at $virtual"; failures=$((failures + 1))
   elif [ "$expect" = clean ] && [ "$reported" = 1 ]; then
