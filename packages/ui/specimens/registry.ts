@@ -37,11 +37,13 @@ import { TaskPickerSpecimen } from "../src/components/ui/task-picker.specimen.ts
 import { TimerRingSpecimen } from "../src/components/ui/timer-ring.specimen.tsx";
 import { TimerStripSpecimen } from "../src/components/ui/timer-strip.specimen.tsx";
 import { TooltipSpecimen } from "../src/components/ui/tooltip.specimen";
+import { TrendBarsSpecimen } from "../src/components/ui/trend-bars.specimen.tsx";
 
 export const specimens: Record<string, () => ReactElement> = {
   Icon: IconSpecimen,
   IconButton: IconButtonSpecimen,
   Tooltip: TooltipSpecimen,
+  TrendBars: TrendBarsSpecimen,
   FloatingTimer: FloatingTimerSpecimen,
   FullScreenFocus: FullScreenFocusSpecimen,
   Kbd: KbdSpecimen,

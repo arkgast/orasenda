@@ -20,6 +20,8 @@ const week: TrendBar[] = [
 ];
 
 const marks = (c: HTMLElement) => c.querySelectorAll<HTMLElement>("[data-slot='trend-bar-fill']");
+const lines = (c: HTMLElement) =>
+  c.querySelectorAll<HTMLElement>("[data-slot='trend-bar-goal-line']");
 const stubs = (c: HTMLElement) => c.querySelectorAll<HTMLElement>("[data-slot='trend-bar-stub']");
 
 test("trend_bars_figure_and_caption", () => {
@@ -36,7 +38,9 @@ test("trend_bars_spoken_list", () => {
 
 test("trend_bars_marks_are_hidden_from_assistive_tech", () => {
   const { container } = render(<TrendBars bars={week} caption="c" />);
-  expect(container.querySelector("[data-slot='trend-bars-plot']")?.getAttribute("aria-hidden")).toBe("true");
+  expect(
+    container.querySelector("[data-slot='trend-bars-plot']")?.getAttribute("aria-hidden"),
+  ).toBe("true");
 });
 
 test("trend_bars_empty_draws_label_only", () => {
@@ -62,7 +66,7 @@ test("trend_bars_scale_to_goal", () => {
     <TrendBars bars={week} goal={{ minutes: 240, words: "Goal 4h" }} caption="c" />,
   );
   expect([...marks(container)].map((m) => m.style.height)).toEqual(["25%", "50%", "12.5%"]);
-  expect([...stubs(container)].every((s) => s.style.bottom === "100%")).toBe(true);
+  expect([...lines(container)].every((s) => s.style.bottom === "100%")).toBe(true);
   expect(screen.getAllByText("Goal 4h")).toHaveLength(1);
 });
 
@@ -70,7 +74,7 @@ test("trend_bars_goal_below_top_bar_keeps_stubs_inside_plot", () => {
   const { container } = render(
     <TrendBars bars={week} goal={{ minutes: 60, words: "Goal 1h" }} caption="c" />,
   );
-  expect([...stubs(container)].every((s) => s.style.bottom === "50%")).toBe(true);
+  expect([...lines(container)].every((s) => s.style.bottom === "50%")).toBe(true);
 });
 
 test("trend_bars_current_is_word", () => {
@@ -92,7 +96,9 @@ test("trend_bars_nothing_focusable", () => {
   const { container } = render(
     <TrendBars bars={week} goal={{ minutes: 120, words: "Goal 2h" }} caption="c" />,
   );
-  expect(container.querySelectorAll("a, button, input, select, textarea, [tabindex]")).toHaveLength(0);
+  expect(container.querySelectorAll("a, button, input, select, textarea, [tabindex]")).toHaveLength(
+    0,
+  );
 });
 
 test("trend_bars_no_animation", () => {

@@ -1,0 +1,11 @@
+Vertical bars for a few periods side by side in Review Stats: 7 days, 8 weeks or 6 months. The vertical form of `BarRow`'s marks; a week reads left to right like the habit dot grid.
+
+- **Anatomy:** a `figure` with a `figcaption` (the caption, `body-sm`, `ink-muted`) and a plot of 6, 7 or 8 equal columns. Each column is a `bar-height` wide `line-strong` fill rising from the baseline inside a plot `chart-height` (120px) tall, with its label underneath in `caption` (wraps rather than overlaps). No track, no axis, no gridlines. Fills scale to the larger of the top bar and the goal; a bar never leaves the plot.
+- **Current period:** its label is a word supplied by Rust ("Today", "This week", "This month") set in `font-semibold` and `ink`. Weight and the word carry it, never colour alone.
+- **Empty period:** nothing recorded, or a future day: no fill, no stubs, only the label.
+- **Goal (optional):** two short `ink` stubs (`icon-sm` long, 2px thick) at the goal height, one on each side of every drawn column and never across a fill, and the goal words ("Goal 12h", `caption`, `ink`) once, under the plot at its end. A bar at or above the goal fills up to the stubs' line, and the words carry the rest.
+- **VoiceOver:** the marks are `aria-hidden`. The figure is named by its caption and holds a visually hidden list, one item per period, each the `spoken` sentence ("Monday, 1 hour 5 minutes"). Nothing is focusable. No animation, so reduce-motion changes nothing.
+- **Props:** `bars: { label, spoken, minutes, duration, current, empty }[]`, `goal?: { minutes, words }`, `caption`.
+- **Contrast:** `line-strong` fill on `surface` 4.35 / 5.56 and on `surface-raised` 4.79 / 4.99 (3:1 needed for a mark); `ink` stubs and `ink-muted` labels pass 4.5:1 on both. In forced-colors the fill gets a border.
+
+Do: let the words say the goal and the current period. Don't: show percentages, colour a bar by performance, add a red or amber, draw a bar for an empty period, or make a column focusable.

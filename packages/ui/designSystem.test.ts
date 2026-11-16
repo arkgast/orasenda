@@ -47,6 +47,7 @@ const PREVIOUS_SURFACE = [
   "Icon",
   "IconButton",
   "Tooltip",
+  "TrendBars",
   "Kbd",
   "describeShortcut",
   "PopoverMenu",
@@ -92,6 +93,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
   expect(components).toHaveLength(54);
+  expect(components).toHaveLength(52);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -204,6 +206,7 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   Icon: { name: "play" },
   IconButton: { label: "Close", icon: null },
   Tooltip: { label: "Hint", children: "Anchor" },
+  TrendBars: { bars: [], caption: "Focus time" },
   Kbd: { keys: "⌘." },
   PopoverMenu: {
     heading: "Presets",
