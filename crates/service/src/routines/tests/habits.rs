@@ -213,11 +213,14 @@ fn dot_view_has_weekday() {
     let host = host();
     let r = run_routine_create(&host, &routine("Morning")).unwrap();
     run_habit_create(&host, Some(&r), &habit("A")).unwrap();
+    host.set_now(T0 + 3 * DAY);
     let dots = run_routines_list(&host).unwrap().routines[0].habits[0]
         .dots
         .clone();
-    // T0 is Saturday 7 November: Saturday is 5, and the days before count back from it.
-    assert_eq!(dots.last().unwrap().weekday, 5);
+    // Created Saturday 7 November (5); today is Tuesday (1).
+    assert_eq!(dots.len(), 4);
+    assert_eq!(dots[0].weekday, 5);
+    assert_eq!(dots.last().unwrap().weekday, 1);
     let weekdays: Vec<u8> = dots.iter().map(|d| d.weekday).collect();
     assert!(weekdays.windows(2).all(|w| w[1] == (w[0] + 1) % 7));
 }

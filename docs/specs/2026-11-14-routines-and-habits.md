@@ -200,7 +200,7 @@ Every ruling here was made by the controller under the owner's autonomy grant (2
 26. **Moves happen in the store** (`move_to` renumbers the live list from 0 and logs only changed positions); a habit moves only within its own list (R2, #515).
 27. **Store days are ISO strings with a `GLOB` CHECK; the store doesn't depend on core's `LocalDate`** (R2, #515). The run API stays dumb; the run rules are the service's.
 28. **Portability counts the four tables** (R2, #515; R5, #518): `SyncRows`, `Counts` and the IPC `DataCounts` gain routines, habits, check-ins and runs; the import line words them, and an import that touched them emits `routines-changed`.
-29. **`HabitDots columns="week"` reads the first day's `weekday` (0 = Monday) from the data, never from a date parse** (R3, #516). Until `HabitDotView` carries it (#547), the page reads it from the first word of Rust's label (R7, #520).
+29. **`HabitDots columns="week"` reads the first day's `weekday` (0 = Monday) from the data, never from a date parse** (R3, #516). `HabitDotView.weekday` carries it (#547).
 30. **`RoutineCard` is an `h2` by default (`headingLevel` 3 inside a section), and its today shapes use `break`** (hollow ring, half ring, filled check) (R3, #516). The `routine` hue is the start edge only; the words carry the meaning.
 31. **`RoutineStep` leaves focus and the live region to its host** and exposes `stepNameRef`; the progress list draws done, skipped, now and upcoming as four shapes with words (R4, #517).
 32. **`DayPicker`'s last day stays `aria-disabled`, not native-disabled,** so keyboard and VoiceOver users reach it and hear "At least one day stays on." Seven plain toggle buttons at `hit-min` (R4, #517).
