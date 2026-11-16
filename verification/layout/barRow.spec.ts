@@ -35,3 +35,35 @@ test("bar_row_columns_align_and_nothing_is_tabbable", async ({ page }) => {
       .count(),
   ).toBe(0);
 });
+
+test("bar_row_single_line_rows_are_control_sm_tall", async ({ page }) => {
+  await openSpecimen(page, "BarRow");
+  const expected = await page.evaluate(() =>
+    Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--control-sm")),
+  );
+  expect(expected).toBeGreaterThan(0);
+  const heights = await page
+    .locator("[data-state='bar-row-plain-420'] [data-slot=bar-row]")
+    .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height));
+  for (const h of heights) expect(Math.abs(h - expected)).toBeLessThan(0.5);
+});
+
+test("bar_row_stubs_sit_symmetrically_on_the_track", async ({ page }) => {
+  await openSpecimen(page, "BarRow");
+  for (const state of ["bar-row-goal-420", "bar-row-goal-reached-420"]) {
+    const frame = page.locator(`[data-state='${state}']`);
+    const track = (await frame.locator("[data-slot=bar-track]").boundingBox())!;
+    const [a, b] = await frame
+      .locator("[data-slot=bar-goal-stub]")
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()));
+    expect(Math.abs(track.y - a.bottom - (b.top - (track.y + track.height)))).toBeLessThan(0.5);
+  }
+});
+
+test("bar_row_long_label_wraps_and_leaves_the_bar_room_at_360", async ({ page }) => {
+  await openSpecimen(page, "BarRow");
+  const frame = page.locator("[data-state='bar-row-narrow-360']");
+  const row = (await frame.locator("[data-slot=bar-row]").nth(1).boundingBox())!;
+  const fill = (await frame.locator("[data-slot=bar-fill]").nth(1).boundingBox())!;
+  expect(fill.width).toBeGreaterThanOrEqual(row.width * 0.4 - 0.5);
+});

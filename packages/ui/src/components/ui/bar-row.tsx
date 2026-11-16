@@ -8,7 +8,7 @@ function share(minutes: number, scale: number): number {
 }
 
 /**
- * The list that owns the three shared columns: label and duration content-sized, the bar takes the rest.
+ * The list that owns the three shared columns: the label is content-sized up to 40% of the row and wraps, the bar takes the rest, the duration is content-sized.
  * App code never writes the column template.
  */
 export function BarList(props: { children: ReactNode; "aria-label"?: string }): ReactElement {
@@ -16,7 +16,7 @@ export function BarList(props: { children: ReactNode; "aria-label"?: string }): 
     <ul
       data-slot="bar-list"
       aria-label={props["aria-label"]}
-      style={{ gridTemplateColumns: "auto minmax(0, 1fr) auto" }}
+      style={{ gridTemplateColumns: "fit-content(40%) minmax(0, 1fr) auto" }}
       className="m-0 grid list-none p-0"
     >
       {props.children}
@@ -37,42 +37,39 @@ export function BarRow(props: BarRowProps): ReactElement {
       aria-label={props.spoken}
       className="col-span-3 grid min-h-control-sm grid-cols-subgrid items-center gap-x-3 text-body text-ink"
     >
-      <span aria-hidden="true" data-slot="bar-label">
+      <span aria-hidden="true" data-slot="bar-label" className="min-w-0">
         {props.label}
       </span>
-      <span aria-hidden="true" className="flex min-w-0 items-center gap-2">
+      <span aria-hidden="true" className="flex min-w-0 flex-col gap-1 py-1">
         {goal ? (
-          <span
-            data-slot="bar-track"
-            className="relative flex h-bar-height min-w-0 flex-1 items-center"
-          >
-            <span data-slot="bar-track-line" className="h-0 w-full border-t border-line" />
-            <span
-              data-slot="bar-fill"
-              style={{ width }}
-              className="absolute inset-y-0 start-0 rounded-pill bg-focus"
-            />
-            <span
-              data-slot="bar-goal-stub"
-              className="absolute end-0 bottom-full h-1-5 border-s-2 border-ink"
-            />
-            <span
-              data-slot="bar-goal-stub"
-              className="absolute end-0 top-full h-1-5 border-s-2 border-ink"
-            />
-          </span>
+          <>
+            <span data-slot="bar-track" className="relative flex h-bar-height min-w-0 items-center">
+              <span data-slot="bar-track-line" className="h-0 w-full border-t border-line" />
+              <span
+                data-slot="bar-fill"
+                style={{ width }}
+                className="absolute inset-y-0 start-0 rounded-pill bg-focus"
+              />
+              <span
+                data-slot="bar-goal-stub"
+                className="absolute end-0 bottom-full h-1-5 border-s-2 border-ink"
+              />
+              <span
+                data-slot="bar-goal-stub"
+                className="absolute end-0 top-full h-1-5 border-s-2 border-ink"
+              />
+            </span>
+            <span data-slot="bar-goal-words" className="text-caption text-ink-muted">
+              {goal.words}
+            </span>
+          </>
         ) : (
-          <span className="min-w-0 flex-1">
-            <span
-              data-slot="bar-fill"
-              style={{ width }}
-              className="block h-bar-height rounded-pill bg-line-strong"
-            />
-          </span>
+          <span
+            data-slot="bar-fill"
+            style={{ width }}
+            className="block h-bar-height rounded-pill bg-line-strong"
+          />
         )}
-        {goal ? (
-          <span className="whitespace-nowrap text-body-sm text-ink-muted">{goal.words}</span>
-        ) : null}
       </span>
       <span aria-hidden="true" className="whitespace-nowrap text-end text-timer-sm">
         {props.duration}

@@ -80,6 +80,7 @@ test("bar_list_owns_the_columns", () => {
     </BarList>,
   );
   const ul = container.querySelector("ul") as HTMLElement;
-  expect(ul.style.gridTemplateColumns).toContain("auto");
+  // jsdom normalises `minmax(0, 1fr)` to `minmax(0px, 1fr)`.
+  expect(ul.style.gridTemplateColumns).toBe("fit-content(40%) minmax(0px, 1fr) auto");
   expect(ul.className).toContain("grid");
 });
