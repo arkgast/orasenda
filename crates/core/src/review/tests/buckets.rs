@@ -43,7 +43,10 @@ fn buckets_weeks8_anchor() {
     assert_eq!(got.len(), 8);
     assert_eq!(got[0].start, d(2026, 9, 28));
     assert_eq!(got[7].start, d(2026, 11, 16));
-    assert_eq!(got[0].minutes, 20, "the Sunday before the first week is outside");
+    assert_eq!(
+        got[0].minutes, 20,
+        "the Sunday before the first week is outside"
+    );
     assert_eq!(got[6].minutes, 30, "Sunday belongs to the week before");
     assert_eq!(got[7].minutes, 40);
     assert!(got.iter().all(|bucket| !bucket.future));

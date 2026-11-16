@@ -27,7 +27,9 @@ fn ten(actual: u32) -> Vec<(LocalDate, u8, u32)> {
 }
 
 fn percent(actual: u32) -> u8 {
-    suggest(&ten(actual), today()).expect("a suggestion").percent
+    suggest(&ten(actual), today())
+        .expect("a suggestion")
+        .percent
 }
 
 #[test]
@@ -38,7 +40,11 @@ fn suggest_nine_tasks_none() {
 #[test]
 fn suggest_two_weeks_none() {
     let list: Vec<_> = (0..12).map(|i| (d(2026, 11, 9 + i % 8), 4, 5)).collect();
-    assert_eq!(suggest(&list, today()), None, "twelve tasks in two Monday-weeks");
+    assert_eq!(
+        suggest(&list, today()),
+        None,
+        "twelve tasks in two Monday-weeks"
+    );
 }
 
 #[test]
@@ -73,7 +79,11 @@ fn suggest_window_is_the_last_56_days() {
     list[9].0 = oldest.pred();
     assert_eq!(suggest(&list, today()), None, "56 days back is outside");
     list[9].0 = today().succ();
-    assert_eq!(suggest(&list, today()), None, "a day after today is ignored");
+    assert_eq!(
+        suggest(&list, today()),
+        None,
+        "a day after today is ignored"
+    );
 }
 
 #[test]
@@ -101,6 +111,11 @@ fn suggest_reports_its_numbers() {
     let got = suggest(&ten(52), today()).expect("a suggestion");
     assert_eq!(
         got,
-        Suggestion { percent: 30, tasks: 10, estimated: 40, actual: 52 }
+        Suggestion {
+            percent: 30,
+            tasks: 10,
+            estimated: 40,
+            actual: 52
+        }
     );
 }
