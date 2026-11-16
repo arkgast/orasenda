@@ -17,6 +17,7 @@ mod menu_popup;
 mod navigation;
 mod notifications;
 mod presets;
+mod review;
 mod routines;
 mod settings;
 mod timer;
@@ -38,6 +39,9 @@ pub use menu_popup::*;
 pub use navigation::*;
 pub use notifications::*;
 pub use presets::*;
+// Empty until the first review command (V9) lands; that task removes the allow.
+#[allow(unused_imports)]
+pub use review::*;
 pub use routines::*;
 pub use settings::*;
 pub use timer::*;

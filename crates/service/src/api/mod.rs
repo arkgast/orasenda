@@ -45,6 +45,12 @@ pub use keyboard::{
     ShortcutStatus,
 };
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
+pub use review::{
+    BarView, BufferSuggestionView, GoalView, HabitStat, LookBack, MoveUndo, PriorityPick,
+    PriorityView, ReflectionEcho, ReviewError, ReviewPrimary, ReviewView, ShutdownAnswers,
+    ShutdownStatus, ShutdownView, StatsRange, StatsView, UnfinishedTask, WeekStatus, WeeklyAnswers,
+    WeeklyDraft, WeeklyView,
+};
 pub use routines::{
     HabitDayState, HabitDotView, HabitDraft, HabitView, RoutineDraft, RoutineToday, RoutineView,
     RoutinesError, RoutinesView, RunStepView, RunView, StepOutcome, StepState, TemplateId,

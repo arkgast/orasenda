@@ -112,6 +112,19 @@ impl Type for RoutinesChangedEvent {
     }
 }
 
+/// `review-changed`: the Review overview after any review write, at local midnight and at
+/// 04:00 local.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, tauri_specta::Event)]
+#[serde(transparent)]
+#[tauri_specta(event_name = "review-changed")]
+pub struct ReviewChangedEvent(pub ReviewView);
+
+impl Type for ReviewChangedEvent {
+    fn definition(types: &mut Types) -> DataType {
+        <ReviewView as Type>::definition(types)
+    }
+}
+
 /// `board-changed`: the whole board after any write, at local midnight and after an Inbox
 /// move. The newest `seq` wins.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]

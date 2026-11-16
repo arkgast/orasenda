@@ -233,6 +233,7 @@ export const events = {
 	overlayShow: makeEvent<OverlayShow, OverlayShow>("overlay-show"),
 	paletteOpen: makeEvent<PaletteOpen, PaletteOpen>("palette-open"),
 	presetsChanged: makeEvent<PresetEntry[], PresetEntry[]>("presets-changed"),
+	reviewChanged: makeEvent<ReviewView, ReviewView>("review-changed"),
 	routinesChanged: makeEvent<RoutinesView_Serialize, RoutinesView_Deserialize>("routines-changed"),
 	settingsChanged: makeEvent<SettingsChanged, SettingsChanged>("settings-changed"),
 	spikeUsageChanged: makeEvent<SpikeUsageChanged, SpikeUsageChanged>("spike-usage-changed"),
@@ -326,6 +327,20 @@ export type BackupPolicy = {
 	frequency: BackupFrequency,
 	/**  How many backups to keep, 1 to 50, across every kind. */
 	keep: number,
+};
+
+/**  One bar: a day, a week, a month or a task. */
+export type BarView = {
+	/**  "Tue", "16 Nov" or "Oct". */
+	label: string,
+	/**  "Tuesday 17 November, 2 hours 10 minutes" or "Saturday 21 November, nothing recorded". */
+	spoken: string,
+	minutes: number,
+	/**  "2h 10m"; empty when none. */
+	duration: string,
+	current: boolean,
+	/**  No focus, or a future day. */
+	empty: boolean,
 };
 
 /**  One binding of an action, in one slot. */
@@ -461,6 +476,15 @@ export type BoardView_Serialize = {
 
 /**  Which break a [`Phase::Break`] is: the long one comes every `rounds` completed focus sessions. */
 export type BreakKind = "short" | "long";
+
+/**  The estimate buffer suggestion; never applied by itself. */
+export type BufferSuggestionView = {
+	/**  25 to 50, in steps of 5. */
+	percent: number,
+	line: string,
+	/**  "Use 40%". */
+	action: string,
+};
 
 /**  Why a capture was not saved. */
 export type CaptureError = 
@@ -674,6 +698,15 @@ export type GlobalBindingView_Serialize = {
 	status: ShortcutStatus,
 } & BindingView_Serialize;
 
+/**  The weekly focus goal against what was focused. */
+export type GoalView = {
+	minutes: number,
+	/**  "Goal 12h". */
+	words: string,
+	/**  "You reached your 12h goal." or "9h 40m of a 12h goal." */
+	line: string,
+};
+
 /**  Where an action works. */
 export type Group = "fullScreen" | "timer" | "capture";
 
@@ -724,6 +757,23 @@ export type HabitDraft_Serialize = {
 	optional: boolean,
 	/**  A standalone habit's weekday mask; ignored inside a routine. `None` is every day. */
 	days: number | null,
+};
+
+/**  One habit's line, with its dot grid on the Week range only. */
+export type HabitStat = HabitStat_Serialize | HabitStat_Deserialize;
+
+/**  One habit's line, with its dot grid on the Week range only. */
+export type HabitStat_Deserialize = {
+	name: string,
+	line: string,
+	dots?: HabitDotView[] | null,
+};
+
+/**  One habit's line, with its dot grid on the Week range only. */
+export type HabitStat_Serialize = {
+	name: string,
+	line: string,
+	dots: HabitDotView[] | null,
 };
 
 /**  One habit: a routine's step or a standalone habit. */
@@ -1002,6 +1052,41 @@ export type Lane = "backlog" | "today" | "doing" | "done";
  */
 export type LimitState = "under" | "at" | "over";
 
+/**  The week just worked, in words and small shapes. */
+export type LookBack = LookBack_Serialize | LookBack_Deserialize;
+
+/**  The week just worked, in words and small shapes. */
+export type LookBack_Deserialize = {
+	/**  "Monday 16 to Friday 20 November". */
+	heading: string,
+	focusLine: string,
+	days: BarView[],
+	goal?: GoalView | null,
+	/**  The top 5 tasks by focus time. */
+	tasks: BarView[],
+	tasksLine: string,
+	routineLines: string[],
+	habitLines: string[],
+	estimateLine?: string | null,
+	reflections: ReflectionEcho[],
+};
+
+/**  The week just worked, in words and small shapes. */
+export type LookBack_Serialize = {
+	/**  "Monday 16 to Friday 20 November". */
+	heading: string,
+	focusLine: string,
+	days: BarView[],
+	goal: GoalView | null,
+	/**  The top 5 tasks by focus time. */
+	tasks: BarView[],
+	tasksLine: string,
+	routineLines: string[],
+	habitLines: string[],
+	estimateLine: string | null,
+	reflections: ReflectionEcho[],
+};
+
 /**  A session milestone, emitted as `timer-milestone`. */
 export type MilestoneEvent = MilestoneEvent_Serialize | MilestoneEvent_Deserialize;
 
@@ -1049,6 +1134,12 @@ export type Mode = "focus" |
 "break" | 
 /**  The last two minutes of a focus or a break, once the warning has fired. */
 "warning" | "paused" | "idle";
+
+/**  A shutdown move that can be undone for 10 minutes. */
+export type MoveUndo = {
+	token: string,
+	line: string,
+};
 
 /**  One entry of the menu. */
 export type NativeMenuItem = NativeMenuItem_Serialize | NativeMenuItem_Deserialize;
@@ -1244,6 +1335,56 @@ export type PresetPatch_Serialize = {
 	breakMin: number | null,
 	longBreakMin: number | null,
 	rounds: number | null,
+};
+
+/**  A priority: a task on the board, or a new title that becomes a Backlog task once. */
+export type PriorityPick = ({ task: string }) & { newTitle?: never } | ({ newTitle: string }) & { task?: never };
+
+/**  A weekly priority: a live task. A removed task is left out; a Done task reads "Done". */
+export type PriorityView = {
+	taskId: string,
+	title: string,
+	done: boolean,
+	/**  "Fix sync bug · Doing". */
+	line: string,
+};
+
+/**  A day's shutdown answers, shown back as the person's own words. */
+export type ReflectionEcho = {
+	dayLabel: string,
+	lines: string[],
+};
+
+/**  Why a review command did nothing. */
+export type ReviewError = 
+/**  No such task, or nothing to undo. */
+"notFound" | 
+/**  A text is over its limit. */
+"tooLong" | 
+/**  A fourth priority. */
+"full" | 
+/**  A blank new title. */
+"empty" | 
+/**
+ *  The review is for an earlier day: "This review is for an earlier day. Open Review again
+ *  to see today."
+ */
+"period" | 
+/**  The store is unavailable or the write failed. */
+"store";
+
+/**
+ *  Which flow the overview offers first: the weekly review from the weekly day until the end
+ *  of the planned week's Monday while it has no completed review, else the shutdown while the
+ *  shutdown day's isn't complete, else neither.
+ */
+export type ReviewPrimary = "shutdown" | "weekly" | "none";
+
+/**  The Review page's overview: today's shutdown, the planned week, and which one leads. */
+export type ReviewView = {
+	today: ShutdownStatus,
+	week: WeekStatus,
+	primary: ReviewPrimary,
 };
 
 /**  A routine as typed in its editor. The service trims the name. */
@@ -1487,6 +1628,68 @@ export type ShortcutStatus = "registered" | "off" |
 "failed";
 
 /**
+ *  The shutdown's three optional prompts. Also the argument of `shutdown_complete`: the
+ *  service trims, and an absent or empty field is written as NULL.
+ */
+export type ShutdownAnswers = ShutdownAnswers_Serialize | ShutdownAnswers_Deserialize;
+
+/**
+ *  The shutdown's three optional prompts. Also the argument of `shutdown_complete`: the
+ *  service trims, and an absent or empty field is written as NULL.
+ */
+export type ShutdownAnswers_Deserialize = {
+	wentWell?: string | null,
+	toImprove?: string | null,
+	outsideControl?: string | null,
+};
+
+/**
+ *  The shutdown's three optional prompts. Also the argument of `shutdown_complete`: the
+ *  service trims, and an absent or empty field is written as NULL.
+ */
+export type ShutdownAnswers_Serialize = {
+	wentWell: string | null,
+	toImprove: string | null,
+	outsideControl: string | null,
+};
+
+/**  The shutdown day's state. */
+export type ShutdownStatus = {
+	/**  The shutdown day, `YYYY-MM-DD` (the 04:00 rule). */
+	day: string,
+	/**  "Monday 16 November". */
+	dayLabel: string,
+	done: boolean,
+	/**  "Ready when you are." or "Shutdown complete at 17:42." */
+	line: string,
+};
+
+/**  The guided shutdown. */
+export type ShutdownView = ShutdownView_Serialize | ShutdownView_Deserialize;
+
+/**  The guided shutdown. */
+export type ShutdownView_Deserialize = {
+	day: string,
+	dayLabel: string,
+	unfinished: UnfinishedTask[],
+	/**  The current week's priorities (`week_start(today)`), not the planned week's. */
+	tomorrow: string[],
+	answers: ShutdownAnswers_Deserialize,
+	completedLine?: string | null,
+};
+
+/**  The guided shutdown. */
+export type ShutdownView_Serialize = {
+	day: string,
+	dayLabel: string,
+	unfinished: UnfinishedTask[],
+	/**  The current week's priorities (`week_start(today)`), not the planned week's. */
+	tomorrow: string[],
+	answers: ShutdownAnswers_Serialize,
+	completedLine: string | null,
+};
+
+/**
  *  Where an action is bound. `App` is *In Orasenda* (an app-menu accelerator), `Global` is
  *  *Everywhere* (a global shortcut). `App` comes first in registry order.
  */
@@ -1527,6 +1730,48 @@ export type StartRequest_Serialize = {
 	quick: boolean,
 	/**  The task to link; overrides the chosen task. Absent starts with the choice, if any. */
 	taskId: string | null,
+};
+
+/**  The range a Stats view covers. */
+export type StatsRange = "week" | "weeks8" | "months6";
+
+/**  Neutral stats: words first, every number also a sentence. */
+export type StatsView = StatsView_Serialize | StatsView_Deserialize;
+
+/**  Neutral stats: words first, every number also a sentence. */
+export type StatsView_Deserialize = {
+	range: StatsRange,
+	summary: string[],
+	bars: BarView[],
+	/**
+	 *  The weekly goal: the week's total on Week, a tick per week on 8 weeks, `None` on 6
+	 *  months and when no goal is set.
+	 */
+	goal?: GoalView | null,
+	routines: string[],
+	habits: HabitStat_Deserialize[],
+	estimateLine?: string | null,
+	buffer?: BufferSuggestionView | null,
+	/**  Says plainly that the range has nothing in it, without naming or counting a gap. */
+	empty?: string | null,
+};
+
+/**  Neutral stats: words first, every number also a sentence. */
+export type StatsView_Serialize = {
+	range: StatsRange,
+	summary: string[],
+	bars: BarView[],
+	/**
+	 *  The weekly goal: the week's total on Week, a tick per week on 8 weeks, `None` on 6
+	 *  months and when no goal is set.
+	 */
+	goal: GoalView | null,
+	routines: string[],
+	habits: HabitStat_Serialize[],
+	estimateLine: string | null,
+	buffer: BufferSuggestionView | null,
+	/**  Says plainly that the range has nothing in it, without naming or counting a gap. */
+	empty: string | null,
 };
 
 /**  The answer to a run's current step. */
@@ -1674,6 +1919,8 @@ export type TaskView_Deserialize = {
 	sessions: number,
 	/**  A session is running on it. */
 	active: boolean,
+	/**  A priority of the current week (`week_start(today)`), never the planned week. */
+	weekPriority: boolean,
 };
 
 /**  A task as the board shows it. */
@@ -1710,6 +1957,8 @@ export type TaskView_Serialize = {
 	sessions: number,
 	/**  A session is running on it. */
 	active: boolean,
+	/**  A priority of the current week (`week_start(today)`), never the planned week. */
+	weekPriority: boolean,
 };
 
 /**  Which template a routine was copied from. Stored as its camelCase text (`as_str`). */
@@ -1924,6 +2173,15 @@ export type TipSeen =
 /**  The tip was rendered: the first showing is counted, the second one marks it seen. */
 "shown";
 
+/**  A task still in Today or Doing at shutdown. */
+export type UnfinishedTask = {
+	id: string,
+	title: string,
+	laneLabel: string,
+	/**  A session is running on it. */
+	active: boolean,
+};
+
 /**  A stretch of time one app was in front. `end_ms` is `None` while open. */
 export type UsageSegment = UsageSegment_Serialize | UsageSegment_Deserialize;
 
@@ -1943,6 +2201,79 @@ export type UsageSegment_Serialize = {
 	/**  UTC epoch milliseconds, far below 2^53. Exported as `number` (ADR-007). */
 	startMs: number,
 	endMs: number | null,
+};
+
+/**  The planned week's state. */
+export type WeekStatus = {
+	/**  The planned week's Monday, `YYYY-MM-DD`. */
+	weekStart: string,
+	/**  "Planning the week of 23 November". */
+	label: string,
+	/**  Its weekly review is complete. */
+	planned: boolean,
+	line: string,
+	priorities: PriorityView[],
+};
+
+/**  What the weekly review answered so far; typed priorities are already tasks here. */
+export type WeeklyAnswers = WeeklyAnswers_Serialize | WeeklyAnswers_Deserialize;
+
+/**  What the weekly review answered so far; typed priorities are already tasks here. */
+export type WeeklyAnswers_Deserialize = {
+	improvement?: string | null,
+	notes?: string | null,
+	priorities: PriorityView[],
+};
+
+/**  What the weekly review answered so far; typed priorities are already tasks here. */
+export type WeeklyAnswers_Serialize = {
+	improvement: string | null,
+	notes: string | null,
+	priorities: PriorityView[],
+};
+
+/**  The weekly review's draft: the full state, written as is. */
+export type WeeklyDraft = WeeklyDraft_Serialize | WeeklyDraft_Deserialize;
+
+/**  The weekly review's draft: the full state, written as is. */
+export type WeeklyDraft_Deserialize = {
+	improvement?: string | null,
+	notes?: string | null,
+	/**  0 to 3, in order. */
+	priorities: PriorityPick[],
+};
+
+/**  The weekly review's draft: the full state, written as is. */
+export type WeeklyDraft_Serialize = {
+	improvement: string | null,
+	notes: string | null,
+	/**  0 to 3, in order. */
+	priorities: PriorityPick[],
+};
+
+/**  The weekly review: the look-back and the plan. */
+export type WeeklyView = WeeklyView_Serialize | WeeklyView_Deserialize;
+
+/**  The weekly review: the look-back and the plan. */
+export type WeeklyView_Deserialize = {
+	weekStart: string,
+	label: string,
+	lookBack: LookBack_Deserialize,
+	answers: WeeklyAnswers_Deserialize,
+	/**  The previous week's improvement, shown back as written. */
+	lastImprovement?: string | null,
+	completedLine?: string | null,
+};
+
+/**  The weekly review: the look-back and the plan. */
+export type WeeklyView_Serialize = {
+	weekStart: string,
+	label: string,
+	lookBack: LookBack_Serialize,
+	answers: WeeklyAnswers_Serialize,
+	/**  The previous week's improvement, shown back as written. */
+	lastImprovement: string | null,
+	completedLine: string | null,
 };
 
 /**

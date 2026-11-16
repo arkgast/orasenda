@@ -13,8 +13,8 @@ use orasenda_store::Store;
 
 use crate::api::{BoardNotice, BoardView, ClockTick, DataOverview};
 use crate::api::{
-    KeyboardView, MilestoneEvent, NoteView, PresetEntry, RoutinesView, Settings, StartRequest,
-    Theme, TimerView,
+    KeyboardView, MilestoneEvent, NoteView, PresetEntry, ReviewView, RoutinesView, Settings,
+    StartRequest, Theme, TimerView,
 };
 use crate::scheduler::Host;
 use crate::session::{Action, Platform, SessionService, Surfaces, ViewGate};
@@ -51,6 +51,7 @@ pub enum Event {
     RoutinesChanged(RoutinesView),
     BoardChanged(u64, BoardView),
     BoardNotice(BoardNotice),
+    ReviewChanged(ReviewView),
 }
 
 #[derive(Clone, Default)]
@@ -460,6 +461,11 @@ impl Host for TestHost {
     fn emit_board_notice(&self, notice: &BoardNotice) {
         self.note_unlocked();
         self.0.log.push(Event::BoardNotice(notice.clone()));
+    }
+
+    fn emit_review_changed(&self, view: &ReviewView) {
+        self.note_unlocked();
+        self.0.log.push(Event::ReviewChanged(view.clone()));
     }
 
     fn reminders(&self) -> Option<Arc<dyn orasenda_core::platform::import::RemindersSource>> {

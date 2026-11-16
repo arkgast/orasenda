@@ -62,8 +62,25 @@ import type {
   WellnessNoteProps,
 } from "@orasenda/ui";
 import { Button, type ButtonProps } from "@orasenda/ui";
-import type { Settings } from "../ipc/bindings";
+import type {
+  BarView,
+  PriorityPick,
+  PriorityView,
+  ReviewView,
+  Settings,
+  ShutdownView_Serialize,
+  StatsView_Serialize,
+  WeeklyView_Serialize,
+} from "../ipc/bindings";
 import type { CoversEveryKey, SETTINGS_KEYS } from "../ipc/settingsQueue";
+import {
+  barView,
+  priorityView,
+  reviewView,
+  shutdownView,
+  statsView,
+  weeklyView,
+} from "./fixtures/review";
 
 export const valid = (
   <Button onClick={() => {}} type="button" disabled aria-label="Start" variant="primary">
@@ -149,3 +166,21 @@ export type TypeSurface = [
   TooltipProps,
   WellnessNoteProps,
 ];
+
+// The review fixture builders return exactly the generated contract types, and a priority pick is
+// a task or a new title, never both.
+export const reviewBuilders: [
+  BarView,
+  PriorityView,
+  ReviewView,
+  ShutdownView_Serialize,
+  StatsView_Serialize,
+  WeeklyView_Serialize,
+] = [barView(), priorityView(), reviewView(), shutdownView(), statsView(), weeklyView()];
+
+export const pickTask: PriorityPick = { task: "task-1" };
+export const pickNew: PriorityPick = { newTitle: "Plan the move" };
+// @ts-expect-error a pick names a task or a title, not both
+export const pickBoth: PriorityPick = { task: "task-1", newTitle: "Plan the move" };
+// @ts-expect-error the primary flow is one of shutdown, weekly or none
+export const badPrimary = reviewView({ primary: "monthly" });

@@ -50,7 +50,10 @@ fn review_types_serialise_camel_case() {
     assert_eq!(value["week"]["weekStart"], "2026-11-23");
     assert_eq!(value["week"]["priorities"][0]["taskId"], "t1");
     assert_eq!(value["primary"], "weekly");
-    assert_eq!(serde_json::to_value(ReviewPrimary::Shutdown).unwrap(), "shutdown");
+    assert_eq!(
+        serde_json::to_value(ReviewPrimary::Shutdown).unwrap(),
+        "shutdown"
+    );
     assert_eq!(serde_json::to_value(ReviewPrimary::None).unwrap(), "none");
 
     let shutdown = ShutdownView {
@@ -109,7 +112,10 @@ fn review_types_serialise_camel_case() {
     let value = serde_json::to_value(&weekly).unwrap();
     assert_eq!(value["lookBack"]["focusLine"], "12h 5m of focus");
     assert_eq!(value["lookBack"]["days"][0]["spoken"], bar().spoken);
-    assert_eq!(value["lookBack"]["reflections"][0]["dayLabel"], "Monday 16 November");
+    assert_eq!(
+        value["lookBack"]["reflections"][0]["dayLabel"],
+        "Monday 16 November"
+    );
     assert_eq!(value["lookBack"]["goal"]["words"], "Goal 12h");
     assert_eq!(value["lastImprovement"], json!(null));
 
@@ -138,7 +144,10 @@ fn review_types_serialise_camel_case() {
     assert_eq!(value["buffer"]["action"], "Use 40%");
     assert_eq!(value["estimateLine"], json!(null));
     assert_eq!(serde_json::to_value(StatsRange::Week).unwrap(), "week");
-    assert_eq!(serde_json::to_value(StatsRange::Months6).unwrap(), "months6");
+    assert_eq!(
+        serde_json::to_value(StatsRange::Months6).unwrap(),
+        "months6"
+    );
 
     let undo = MoveUndo {
         token: "tok".into(),

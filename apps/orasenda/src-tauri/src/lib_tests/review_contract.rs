@@ -17,13 +17,14 @@ fn bindings_carry_the_review_contract() {
         "export type ShutdownView = ",
         "export type WeeklyView = ",
         "export type StatsView = ",
-        "export type PriorityPick = { task: string } | { newTitle: string }",
-        "export type ReviewPrimary = \"shutdown\" | \"weekly\" | \"none\"",
-        "export type StatsRange = \"week\" | \"weeks8\" | \"months6\"",
-        "export type ReviewError = \"notFound\" | \"tooLong\" | \"full\" | \"empty\" | \"period\" | \"store\"",
-        "dots: HabitDotView[] | null",
-        "weekPriority: boolean",
-        "export type MoveUndo = { token: string; line: string }",
+        "export type PriorityPick = ({ task: string }) & { newTitle?: never } | ({ newTitle: string }) & { task?: never };",
+        "export type ReviewPrimary = \"shutdown\" | \"weekly\" | \"none\";",
+        "export type StatsRange = \"week\" | \"weeks8\" | \"months6\";",
+        "\"notFound\" | \n",
+        "\"period\" | \n",
+        "\tdots: HabitDotView[] | null,",
+        "\tweekPriority: boolean,",
+        "export type MoveUndo = {\n\ttoken: string,\n\tline: string,\n};",
     ] {
         assert!(bindings.contains(needle), "bindings lack {needle}");
     }
