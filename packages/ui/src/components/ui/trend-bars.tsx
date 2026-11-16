@@ -86,7 +86,7 @@ export function TrendBars({ bars, goal, caption }: TrendBarsProps): ReactElement
             </div>
             <span
               className={cn(
-                "max-w-full text-center text-caption text-ink-muted break-words",
+                "max-w-full text-center text-caption text-ink-muted break-normal",
                 b.current && "font-semibold text-ink",
               )}
             >

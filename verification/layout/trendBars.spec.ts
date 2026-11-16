@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { openSpecimen } from "./support/specimen.ts";
 
 const FRAMES = [
+  "trend-bars-week-240",
+  "trend-bars-weeks-goal-240",
   "trend-bars-week-360",
   "trend-bars-week-1440",
   "trend-bars-weeks-goal-360",

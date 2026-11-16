@@ -4,16 +4,6 @@ import { type TrendBar, TrendBars } from "./trend-bars.tsx";
 
 const hm = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`;
 
-function bar(
-  label: string,
-  spoken: string,
-  minutes: number,
-  current = false,
-  empty = false,
-): TrendBar {
-  return { label, spoken, minutes, duration: hm(minutes), current, empty };
-}
-
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_WORDS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const words = (m: number) => {
@@ -49,22 +39,38 @@ const WEEKS_8: TrendBar[] = [0, 0, 540, 610, 480, 700, 560, 320].map((m, i) => (
   empty: m === 0,
 }));
 
-const MONTHS_6: TrendBar[] = [1900, 2400, 2100, 2800, 2300, 900].map((m, i) =>
-  bar(
-    ["Jun", "Jul", "Aug", "Sep", "Oct", "This month"][i] as string,
-    `Month ${i + 1}, ${hm(m)}`,
-    m,
-    i === 5,
-  ),
-);
+const MONTH_NAMES = ["June", "July", "August", "September", "October"];
+const MONTHS_6: TrendBar[] = [1900, 2400, 2100, 2800, 2300, 900].map((m, i) => ({
+  label: ["Jun", "Jul", "Aug", "Sep", "Oct", "This month"][i] as string,
+  spoken: `${i === 5 ? "This month" : MONTH_NAMES[i]}, ${words(m)}`,
+  minutes: m,
+  duration: hm(m),
+  current: i === 5,
+  empty: false,
+}));
 
-const NONE: TrendBar[] = DAYS.map((d, i) =>
-  bar(i === 3 ? "Today" : d, `${d}, nothing recorded`, 0, i === 3, true),
-);
+const NONE: TrendBar[] = DAYS.map((d, i) => ({
+  label: i === 3 ? "Today" : d,
+  spoken: `${i === 3 ? `Today, ${DAY_WORDS[i]}` : DAY_WORDS[i]}, nothing recorded`,
+  minutes: 0,
+  duration: "",
+  current: i === 3,
+  empty: true,
+}));
 
 export function TrendBarsSpecimen(): ReactElement {
   return (
     <>
+      <Frame state="trend-bars-week-240" width={240} height={220}>
+        <TrendBars bars={WEEK} caption="Focus time, this week" />
+      </Frame>
+      <Frame state="trend-bars-weeks-goal-240" width={240} height={220}>
+        <TrendBars
+          bars={WEEKS_8}
+          goal={{ minutes: 600, words: "Goal 10h" }}
+          caption="Focus time, last 8 weeks"
+        />
+      </Frame>
       <Frame state="trend-bars-week-360" width={360} height={220}>
         <TrendBars bars={WEEK} caption="Focus time, this week" />
       </Frame>
