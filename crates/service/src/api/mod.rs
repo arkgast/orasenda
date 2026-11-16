@@ -11,6 +11,9 @@ mod import;
 mod inbox;
 mod keyboard;
 mod presets;
+mod review;
+#[cfg(test)]
+mod review_tests;
 mod routines;
 mod settings;
 #[cfg(test)]

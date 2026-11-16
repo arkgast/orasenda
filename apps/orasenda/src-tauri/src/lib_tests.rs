@@ -10,6 +10,7 @@ mod data;
 mod data_files;
 mod import;
 mod plist;
+mod review_contract;
 mod routines;
 
 use capabilities::{assert_capability, capability};

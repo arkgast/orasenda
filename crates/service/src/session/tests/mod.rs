@@ -16,6 +16,7 @@ mod presets_seed;
 mod read_owed;
 mod recovery;
 mod recovery_break;
+mod review_changed;
 mod run;
 mod settings;
 mod theme;
