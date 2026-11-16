@@ -273,8 +273,8 @@ for (const size of SIZES) {
   });
 
   // Alt+Tab never reaches Add an item: a Remove-item Tooltip unmounting inside the focus trap pulls focus to the
-  // dialog (#643). The ordered list below is the target; it turns on when #643 lands.
-  test.fixme(`board_detail_full_task_alt_tab_walk_keeps_ring_${at}`, async ({ page }) => {
+  // dialog (#643). The ordered list below is the walk.
+  test(`board_detail_full_task_alt_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const stop = async () => {
       // Let the sheet's own frame-late focus moves (the text-field wrap) land before reading the focus.
