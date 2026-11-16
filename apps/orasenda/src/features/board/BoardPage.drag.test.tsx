@@ -8,7 +8,6 @@ import {
   renderBoard,
   stubPointerCapture,
   stubRects,
-  TASKS,
 } from "./BoardPage.support";
 
 // Layout (see stubRects): Backlog 0-200, Today 210-410, Doing 420-620, Done strip 630-670.
