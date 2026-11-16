@@ -11,7 +11,11 @@ fn starts(buckets: &[Bucket]) -> Vec<LocalDate> {
 #[test]
 fn buckets_week_marks_future_days() {
     let today = d(2026, 11, 18);
-    let sessions = [(d(2026, 11, 16), 25 * MIN), (d(2026, 11, 16), 30 * MIN)];
+    let sessions = [
+        (d(2026, 11, 16), 25 * MIN),
+        (d(2026, 11, 16), 30 * MIN),
+        (today.succ(), 40 * MIN),
+    ];
     let got = focus_buckets(&sessions, StatsRange::Week, today);
     assert_eq!(got.len(), 7);
     assert_eq!(got[0].start, d(2026, 11, 16));

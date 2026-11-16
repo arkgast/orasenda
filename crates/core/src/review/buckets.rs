@@ -41,6 +41,10 @@ pub fn focus_buckets(
     let starts = bucket_starts(range, today);
     let mut totals = vec![(0u64, 0u32); starts.len()];
     for (date, focused_ms) in sessions {
+        // Days after today are empty.
+        if *date > today {
+            continue;
+        }
         // The bucket whose start is the latest one on or before the date.
         let Some(index) = starts.iter().rposition(|start| start <= date) else {
             continue;
