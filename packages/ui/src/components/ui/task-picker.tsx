@@ -19,6 +19,8 @@ export interface TaskPickerOption {
   /** The column in words ("Doing", "Today", "Backlog"). */
   laneLabel: string;
   frog?: boolean;
+  /** Planned for this week: reads " · This week" after the column word. */
+  week?: boolean;
 }
 
 export interface TaskPickerProps {
@@ -29,11 +31,26 @@ export interface TaskPickerProps {
   onPick: (id: string | null) => void;
   /** The quiet text at rest and the input's name. Default "Add a task". */
   quietLabel?: string;
+  /** Adds a last row, Add "<query>" to Backlog, while the query is not empty. Never applied on its own. */
+  onCreate?: (title: string) => void;
 }
 
 const ORDER = { doing: 0, today: 1, backlog: 2 } as const;
+const CREATE_ID = "create";
 const QUIET =
   "min-h-hit-min min-w-0 max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
+
+const ROW =
+  "mx-1 flex min-h-hit-min cursor-pointer items-center justify-between gap-3 rounded-sm border-s-2 border-clear px-3 text-body text-ink hover:bg-surface-sunken";
+const ACTIVE = "border-focus bg-selection";
+
+function SelectedWord(): JSX.Element {
+  return (
+    <span aria-hidden="true" className="block text-caption text-focus">
+      Selected
+    </span>
+  );
+}
 
 /** A length token in px, read from its CSS variable on the root. */
 function tokenPx(name: string): number {
@@ -58,6 +75,7 @@ export function TaskPicker({
   options,
   onPick,
   quietLabel = "Add a task",
+  onCreate,
 }: TaskPickerProps): JSX.Element {
   const [editing, setEditing] = useState(false);
   const [query, setQuery] = useState("");
@@ -73,9 +91,16 @@ export function TaskPicker({
   const [armed, setArmed] = useState(false);
   const shown = matches(options, query);
   const showPanel = armed || query.trim() !== "";
-  const listed = showPanel && shown.length > 0;
+  const trimmed = query.trim();
+  // The add row is a quiet last row: it exists only with onCreate and a non-empty query.
+  const hasCreate = onCreate !== undefined && trimmed !== "";
+  const count = shown.length + (hasCreate ? 1 : 0);
+  const listed = showPanel && count > 0;
   const optionId = (id: string) => `${base}-opt-${id}`;
-  const current = listed ? shown[Math.min(active, shown.length - 1)] : undefined;
+  const index = Math.min(active, count - 1);
+  const onCreateRow = listed && hasCreate && index === shown.length;
+  const current = listed && !onCreateRow ? shown[index] : undefined;
+  const activeId = onCreateRow ? CREATE_ID : current?.id;
 
   useEffect(() => {
     if (!editing && restoreFocus.current) {
@@ -121,7 +146,7 @@ export function TaskPicker({
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [editing, showPanel, shown.length]);
-  const currentId = current?.id;
+  const currentId = activeId;
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when the active option changes
   useEffect(() => {
     if (!editing || !currentId) return;
@@ -142,6 +167,10 @@ export function TaskPicker({
     onPick(id);
     close(true);
   };
+  const create = () => {
+    onCreate?.(trimmed);
+    close(true);
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -154,12 +183,13 @@ export function TaskPicker({
         setActive(0);
         return;
       }
-      if (shown.length === 0) return;
+      if (count === 0) return;
       const step = event.key === "ArrowDown" ? 1 : -1;
-      setActive((i) => (Math.min(i, shown.length - 1) + step + shown.length) % shown.length);
+      setActive((i) => (Math.min(i, count - 1) + step + count) % count);
     } else if (event.key === "Enter") {
       event.preventDefault();
       if (current) pick(current.id);
+      else if (onCreateRow) create();
     }
   };
 
@@ -197,7 +227,7 @@ export function TaskPicker({
         aria-expanded={listed}
         aria-autocomplete="list"
         aria-controls={listed ? listId : undefined}
-        aria-activedescendant={current ? optionId(current.id) : undefined}
+        aria-activedescendant={activeId ? optionId(activeId) : undefined}
         autoComplete="off"
         autoFocus
         value={query}
@@ -223,7 +253,7 @@ export function TaskPicker({
             above ? "bottom-full mb-1" : "top-full mt-1",
           )}
         >
-          {shown.length === 0 ? (
+          {count === 0 ? (
             <p className="m-0 px-4 py-3 text-body-sm text-ink-muted">No matching tasks</p>
           ) : (
             <div id={listId} role="listbox" aria-label="Tasks">
@@ -237,23 +267,36 @@ export function TaskPicker({
                   data-slot="task-picker-option"
                   onClick={() => pick(option.id)}
                   onMouseMove={() => setActive(shown.indexOf(option))}
-                  className={cn(
-                    "mx-1 flex min-h-hit-min cursor-pointer items-center justify-between gap-3 rounded-sm border-s-2 border-clear px-3 text-body text-ink hover:bg-surface-sunken",
-                    option === current && "border-focus bg-selection",
-                  )}
+                  className={cn(ROW, option === current && ACTIVE)}
                 >
                   <span className="min-w-0 truncate">{option.title}</span>
                   <span className="flex-none text-end text-body-sm text-ink-muted">
                     {option.laneLabel}
                     {option.frog ? " · Frog" : ""}
-                    {option === current ? (
-                      <span aria-hidden="true" className="block text-caption text-focus">
-                        Selected
-                      </span>
-                    ) : null}
+                    {option.week ? " · This week" : ""}
+                    {option === current ? <SelectedWord /> : null}
                   </span>
                 </div>
               ))}
+              {hasCreate ? (
+                // biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/useFocusableInteractive: the ARIA listbox pattern; the combobox input owns focus and the keys (aria-activedescendant)
+                <div
+                  id={optionId(CREATE_ID)}
+                  role="option"
+                  aria-selected={onCreateRow}
+                  data-slot="task-picker-create"
+                  onClick={create}
+                  onMouseMove={() => setActive(shown.length)}
+                  className={cn(ROW, onCreateRow && ACTIVE)}
+                >
+                  <span className="min-w-0 truncate">{`Add "${trimmed}" to Backlog`}</span>
+                  {onCreateRow ? (
+                    <span className="flex-none text-end text-body-sm text-ink-muted">
+                      <SelectedWord />
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           )}
         </div>

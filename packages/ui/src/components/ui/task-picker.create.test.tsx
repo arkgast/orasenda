@@ -4,7 +4,14 @@ import { TaskPicker, type TaskPickerOption, type TaskPickerProps } from "./task-
 
 const OPTIONS: TaskPickerOption[] = [
   { id: "b1", title: "Plan the offsite", lane: "backlog", laneLabel: "Backlog", week: true },
-  { id: "d1", title: "Draft the outline", lane: "doing", laneLabel: "Doing", frog: true, week: true },
+  {
+    id: "d1",
+    title: "Draft the outline",
+    lane: "doing",
+    laneLabel: "Doing",
+    frog: true,
+    week: true,
+  },
   { id: "t1", title: "Write the report", lane: "today", laneLabel: "Today" },
 ];
 
@@ -85,9 +92,10 @@ test("week_marker_after_lane_word", () => {
   setup();
   type("the");
   const all = rows();
-  expect(all[0]).toHaveAccessibleName("Draft the outline Doing · Frog · This week");
-  expect(all[1]).toHaveAccessibleName("Plan the offsite Backlog · This week");
-  expect(all[2]).toHaveAccessibleName("Write the report Today");
+  const text = (i: number) => all[i].textContent?.replace("Selected", "");
+  expect(text(0)).toBe("Draft the outlineDoing · Frog · This week");
+  expect(text(1)).toBe("Write the reportToday");
+  expect(text(2)).toBe("Plan the offsiteBacklog · This week");
 });
 
 test("esc_with_create_row_picks_nothing", () => {
