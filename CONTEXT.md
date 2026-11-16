@@ -99,6 +99,17 @@ code, specs and issues. When a term is ambiguous or keeps needing explanation, a
 | Run of days | The count of done scheduled days, where a single not-done scheduled day between two done days is forgiven; two in a row end it. Shown as words from 2 ("5 days kept"), never as a big number. | A streak that breaks on one miss |
 | Fresh-start line | The restart line "Two days off. Today is a fresh start.", shown while the two latest scheduled days before today are both not done and today is not done yet. Replaces the run line. | A warning (Orasenda has none) |
 | Due nudge | The one local notification "<Routine name> is ready when you are." at a routine's time of day, at most once per routine per local day, within 30 minutes of the time and never after the routine is done. Gated by `notify.routine_due` (off by default) and the notification status. | A reminder list; the session-end notification |
+| Shutdown | The guided daily close on the Review page (spec 2026-11-16): unfinished tasks, a read-only look at tomorrow, three optional reflection prompts, then "Shutdown complete." Writes one `reflection` row for its shutdown day. | The Evening Shutdown template (a plain routine, copied and never linked) |
+| Shutdown day | The local date a shutdown belongs to: the date it started, or the previous date when it started before 04:00. Frozen at start. | Today's local date (midnight), used everywhere else |
+| Reflection | A `reflection` row (syncable): the shutdown's three optional answers, or the week's one improvement, notes and priorities. Id `shutdown:<day>` or `week:<Monday>`. Shown back as the person's words, never counted or scored. | A review step; a check-in |
+| Weekly review | The four-step weekly flow on the Review page: look-back, one improvement and notes, up to three priorities, "Week planned." | Stats (the overview's always-available record) |
+| Planned week | The week (Monday to Sunday) a weekly review plans: the current week from Monday to Thursday, the next week from Friday to Sunday. | The look-back week (the week before the planned week) |
+| Look-back | The weekly review's read-only first step: the week before the planned week, up to now, in sentences and bars, with that week's reflections. | Stats ranges |
+| Weekly priority | One of 0 to 3 Board tasks the person chose for a planned week (picked or typed new into Backlog). Marked "· This week" in the TaskPicker. | The Frog (one task, one day); a task's priority field (high, medium, low) |
+| Focus time | Every focused minute of phase `focus` sessions, quick and ended early included, counted to the local date the session started. The same total as the deep-hours cap. Called "focus", never "deep hours", in the UI. | Deep tasks (a task kind) |
+| Stats range | Week (seven day bars), 8 weeks (eight week bars) or 6 months (six month bars) in the Review page's Stats. | The 28-day dot grid |
+| Time away | 14 or more local days with nothing recorded for one count. Counts with a denominator start after it ("Since 3 November: …"); totals don't change; no sentence names the gap. | A loss (Orasenda never words one) |
+| Buffer suggestion | A quiet offer in Stats to set `board.estimate_buffer` to the value the person's finished tasks fit, shown only after 10 eligible tasks over 3 weeks and applied only on *Use NN%*. | Auto-tuning (Orasenda never changes the buffer by itself) |
 
 ## Relationships
 - A preset has a spec (lengths); a session is started from a spec and remembers its preset.
