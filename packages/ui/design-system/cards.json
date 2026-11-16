@@ -47,6 +47,10 @@
     "group": "Timer",
     "height": 300
   },
+  "FlowStep": {
+    "group": "Review",
+    "height": 1080
+  },
   "FullScreenFocus": {
     "group": "Timer",
     "height": 1500
@@ -57,7 +61,7 @@
   },
   "IconButton": {
     "group": "Actions",
-    "height": 1080
+    "height": 560
   },
   "InlineNotice": {
     "group": "Feedback",
@@ -69,7 +73,7 @@
   },
   "IntentPrompt": {
     "group": "Focus protection",
-    "height": 1080
+    "height": 560
   },
   "KanbanColumn": {
     "group": "Tasks",
@@ -95,10 +99,6 @@
     "group": "Calendar",
     "height": 120
   },
-  "FlowStep": {
-    "group": "Review",
-    "height": 1080
-  },
   "PageFrame": {
     "group": "Layout",
     "height": 380
@@ -121,7 +121,7 @@
   },
   "RoutineStep": {
     "group": "Routines",
-    "height": 1080
+    "height": 560
   },
   "ScrollRegion": {
     "group": "Layout",

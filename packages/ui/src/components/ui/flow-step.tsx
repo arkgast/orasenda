@@ -1,10 +1,11 @@
 import type { KeyboardEvent, ReactElement, ReactNode, Ref } from "react";
 import { Button } from "./button";
+import { Kbd } from "./kbd";
 
 export interface FlowStepProps {
   /** The step's name: the `h1` and the focus target. */
   title: string;
-  /** Progress in words, for example "Step 2 of 4". Also the key that cross-fades the step. */
+  /** Progress in words, for example "Step 2 of 4". Also the key that fades the new step in. */
   progress: string;
   children?: ReactNode;
   /** The one primary action (Continue, or Back to Review), supplied by the host. */
@@ -26,6 +27,15 @@ export function FlowStep(props: FlowStepProps): ReactElement {
   // An inner control that handled Esc (preventDefault or stopPropagation) keeps the flow open.
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== "Escape" || event.defaultPrevented) return;
+    // Esc that cancels an IME composition, or with a modifier, is not an end request.
+    if (
+      event.nativeEvent.isComposing ||
+      event.shiftKey ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey
+    )
+      return;
     event.preventDefault();
     props.onEnd();
   };
@@ -54,7 +64,7 @@ export function FlowStep(props: FlowStepProps): ReactElement {
         >
           {props.title}
         </h1>
-        <div data-slot="flow-step-content" className="min-h-0 flex-1 overflow-hidden">
+        <div data-slot="flow-step-content" className="min-h-0 flex-1 overflow-hidden p-1">
           {props.children}
         </div>
       </div>
@@ -64,6 +74,7 @@ export function FlowStep(props: FlowStepProps): ReactElement {
       >
         <Button variant="ghost" aria-keyshortcuts="Escape" onClick={props.onEnd}>
           End
+          <Kbd keys="Esc" inTooltip />
         </Button>
         <div className="ms-auto flex flex-wrap items-center justify-end gap-2">
           {props.notNow ? (

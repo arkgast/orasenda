@@ -95,3 +95,46 @@ test("reduce_motion_no_transition", () => {
   expect(body.className).toContain("ease-calm");
   expect(body.className).toContain("motion-reduce:transition-none");
 });
+
+test("esc_ignored_while_composing", () => {
+  const onEnd = vi.fn();
+  render(
+    <FlowStep title="T" progress="Step 1 of 4" primary={primary} onEnd={onEnd}>
+      <input aria-label="Note" />
+    </FlowStep>,
+  );
+  fireEvent.keyDown(screen.getByLabelText("Note"), { key: "Escape", isComposing: true });
+  fireEvent.keyDown(screen.getByLabelText("Note"), { key: "Escape", shiftKey: true });
+  expect(onEnd).not.toHaveBeenCalled();
+});
+
+test("content_has_focus_ring_inset", () => {
+  const { container } = render(
+    <FlowStep title="T" progress="Step 1 of 4" primary={primary} onEnd={() => {}}>
+      Body
+    </FlowStep>,
+  );
+  const content = container.querySelector("[data-slot=flow-step-content]") as HTMLElement;
+  expect(content.className).toContain("p-1");
+});
+
+test("new_step_remounts_body_and_heading_takes_focus", () => {
+  const headingRef = createRef<HTMLHeadingElement>();
+  const el = (progress: string) => (
+    <FlowStep
+      title="T"
+      progress={progress}
+      primary={primary}
+      onEnd={() => {}}
+      headingRef={headingRef}
+    >
+      Body
+    </FlowStep>
+  );
+  const { container, rerender } = render(el("Step 1 of 4"));
+  const first = container.querySelector("[data-slot=flow-step-body]");
+  rerender(el("Step 2 of 4"));
+  expect(container.querySelector("[data-slot=flow-step-body]")).not.toBe(first);
+  headingRef.current?.focus();
+  expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
+});
