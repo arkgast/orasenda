@@ -10,6 +10,7 @@ mod migration_0006;
 mod migration_0007;
 mod migration_0008;
 mod migration_0009;
+mod migration_0010;
 
 const DEVICE: &str = "device-a";
 
@@ -138,7 +139,7 @@ fn fresh_file_reaches_current_schema_without_review_marker() {
             &conn,
             "SELECT count(*) FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
         ),
-        13
+        14
     );
 }
 
