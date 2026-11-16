@@ -9,7 +9,7 @@ trap 'rm -rf "$tmp"' EXIT
 expect() { # name, expected exit, actual exit, output, [substring]
   local ok=1
   [ "$2" = "$3" ] || ok=0
-  if [ -n "${5:-}" ] && ! printf '%s' "$4" | grep -qF -- "$5"; then ok=0; fi
+  if [ -n "${5:-}" ] && [[ $4 != *"$5"* ]]; then ok=0; fi
   if [ "$ok" = 1 ]; then echo "ok   $1"; else echo "FAIL $1: expected exit $2 (with '${5:-}'), got $3: $4"; failures=$((failures + 1)); fi
 }
 

@@ -25,7 +25,7 @@ if [ "$(uname -s)" = Darwin ]; then
   printf '#!/usr/bin/env bash\necho "$*" > "%s/args"\n' "$stubs" > "$stubs/pnpm"
   rc=0
   out="$(PATH="$stubs:$PATH" ORASENDA_LAYOUT=skip just layout verification/layout/x.spec.ts --shard=1/4 2>&1)" || rc=$?
-  if printf '%s' "$out" | grep -q "WebKit is not installed"; then
+  if [[ $out == *"WebKit is not installed"* ]]; then
     echo "skip pass-through (WebKit not installed here)"
   else
     expect "args run pnpm" 0 "$rc"
