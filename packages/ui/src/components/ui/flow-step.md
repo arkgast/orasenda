@@ -1,0 +1,12 @@
+The frame of a review flow (daily shutdown, weekly review): small progress in words above the `h1`, the step body, and a footer with the controls. It is the pattern the design system README calls *A step applies on Continue*: the host applies a step only when the person chooses the primary.
+
+- **Layout:** `surface` fill, padding `space-4` below `sm`, then `space-5` / `space-6`. Order: progress (`body-sm`, `ink-muted`, for example "Step 1 of 4"), the `h1` (`title`), the children (they fill the rest and clip, so give long content its own `ScrollRegion`), then the footer.
+- **Footer:** *End* at the start, quiet (`ghost` `Button`). At the end, an optional *Not now*, then the primary. Both are `ghost` or `primary` buttons at `control-lg` height, so every target is at least `hit-min`. Exactly one primary is in the frame, and the host supplies it (*Continue*, or *Back to Review* on the last step). *Not now* is never louder than *End*: both are `ghost`.
+- **Props:** `title`, `progress` (words only), `children`, `primary` (a node), `notNow?` (`{ label, onClick }`, shown only when given, never a toggle and never pre-applied), `onEnd`, `headingRef?`.
+- **Heading:** the `h1` has `tabIndex={-1}` and is exposed through `headingRef`. The host moves focus to it after each step, and focuses *Back to Review* on the last step. The frame sets no focus itself.
+- **Keyboard:** Esc anywhere in the frame calls `onEnd`, unless an inner control already handled it (`preventDefault` or `stopPropagation`, as `TaskPicker` does when it closes its list). Tab order is the body, *End*, *Not now*, the primary. No single-key shortcuts: text fields need every key.
+- **Announcements:** the frame has no live region. The host owns one polite region and says "Step 2 of 4, Tomorrow" when the step changes.
+- **Motion:** a new step (keyed by `progress`) cross-fades in with `duration-calm` and `easing-calm`; under reduce-motion there is no transition.
+- **Accessibility:** *End* carries `aria-keyshortcuts="Escape"`. State is in words ("Step 2 of 4"), never color alone. Both themes use the same tokens.
+
+Do: give a step one primary and let *End* and *Not now* stay quiet. Don't: add a second primary, apply a step before Continue, or announce the step from inside the frame.

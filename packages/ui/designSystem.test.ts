@@ -39,6 +39,7 @@ const PREVIOUS_SURFACE = [
   "StartButton",
   "NowLine",
   "PageFrame",
+  "FlowStep",
   "ScrollRegion",
   "SettingsIndex",
   "SettingsNav",
@@ -91,6 +92,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
   expect(components).toHaveLength(53);
+  expect(components).toHaveLength(52);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -180,6 +182,13 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
   StartButton: { onStart: noop, onQuickStart: noop },
   NowLine: { time: "09:41" },
   PageFrame: { title: "Today", children: "Body" },
+  FlowStep: {
+    title: "Tomorrow",
+    progress: "Step 2 of 4",
+    primary: "Continue",
+    onEnd: noop,
+    children: "Body",
+  },
   ScrollRegion: { label: "Tasks", children: "Body" },
   SettingsIndex: {
     sections: [{ id: "a", name: "General", value: "On" }],

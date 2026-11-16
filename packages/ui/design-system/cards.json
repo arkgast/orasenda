@@ -57,7 +57,7 @@
   },
   "IconButton": {
     "group": "Actions",
-    "height": 560
+    "height": 1080
   },
   "InlineNotice": {
     "group": "Feedback",
@@ -69,7 +69,7 @@
   },
   "IntentPrompt": {
     "group": "Focus protection",
-    "height": 560
+    "height": 1080
   },
   "KanbanColumn": {
     "group": "Tasks",
@@ -95,6 +95,10 @@
     "group": "Calendar",
     "height": 120
   },
+  "FlowStep": {
+    "group": "Review",
+    "height": 1080
+  },
   "PageFrame": {
     "group": "Layout",
     "height": 380
@@ -117,7 +121,7 @@
   },
   "RoutineStep": {
     "group": "Routines",
-    "height": 560
+    "height": 1080
   },
   "ScrollRegion": {
     "group": "Layout",

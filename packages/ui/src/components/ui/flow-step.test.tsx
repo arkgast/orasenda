@@ -8,7 +8,13 @@ const primary = <button type="button">Continue</button>;
 test("flow_step_heading_focus_target", () => {
   const headingRef = createRef<HTMLHeadingElement>();
   render(
-    <FlowStep title="Tomorrow" progress="Step 2 of 4" primary={primary} onEnd={() => {}} headingRef={headingRef}>
+    <FlowStep
+      title="Tomorrow"
+      progress="Step 2 of 4"
+      primary={primary}
+      onEnd={() => {}}
+      headingRef={headingRef}
+    >
       Body
     </FlowStep>,
   );

@@ -9,6 +9,7 @@ import { DayPickerSpecimen } from "../src/components/ui/day-picker.specimen.tsx"
 import { DialogSpecimen } from "../src/components/ui/dialog.specimen.tsx";
 import { EmptyStateSpecimen } from "../src/components/ui/empty-state.specimen.tsx";
 import { FloatingTimerSpecimen } from "../src/components/ui/floating-timer.specimen.tsx";
+import { FlowStepSpecimen } from "../src/components/ui/flow-step.specimen.tsx";
 import { FullScreenFocusSpecimen } from "../src/components/ui/full-screen-focus.specimen.tsx";
 import { HabitDotsSpecimen } from "../src/components/ui/habit-dots.specimen.tsx";
 import { IconSpecimen } from "../src/components/ui/icon.specimen.tsx";
@@ -50,6 +51,7 @@ export const specimens: Record<string, () => ReactElement> = {
   NavRail: NavRailSpecimen,
   SettingsNav: SettingsNavSpecimen,
   PageFrame: PageFrameSpecimen,
+  FlowStep: FlowStepSpecimen,
   MenuBarTimer: MenuBarTimerSpecimen,
   TimerRing: TimerRingSpecimen,
   TimerStrip: TimerStripSpecimen,
