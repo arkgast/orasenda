@@ -39,7 +39,7 @@
     "worktreeOnly": true
   },
   "release": {
-    "enabled": false,
+    "enabled": true,
     "publish": []
   },
   "docs": {

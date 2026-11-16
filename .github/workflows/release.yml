@@ -1,0 +1,44 @@
+# Generated releases: release-please keeps one release PR open with the next version and notes.
+# Merging it tags v<version> and creates the GitHub Release. Written by baton:init.
+# Orasenda publishes no packages (release.publish is empty), so there are no build or publish jobs.
+name: release
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      # gh workflow run release.yml -f dry_run=true
+      dry_run:
+        description: "Release nothing (no packages are published from this repo)"
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  release-please:
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    # The token is an environment secret: only runs on the base branch can read it.
+    environment: release
+    # release-please acts with RELEASE_PLEASE_TOKEN, not GITHUB_TOKEN, so CI runs on its PR.
+    permissions:
+      contents: read
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          target-branch: "main"
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
