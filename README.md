@@ -7,8 +7,9 @@ A calm, minimal, local-first app for focus, time blocking and tasks. Features:
 - Routines and habits, with evidence-informed templates
 - Opt-in app tracking and kind distraction blocking
 
-**Status:** early development. The P0 foundations (the Tauri app shell and the macOS blocking spike)
-are built; the app is not ready for everyday use yet. See the [Roadmap](docs/ROADMAP.md).
+**Status:** private beta in progress (macOS). P0 foundations, P1 Focus Core (version 0.1.0) and P2 Tasks
+(version 0.2.0) are built: the focus timer, the Board with task import and drag, and routines and habits from
+P4. Next: the rest of P4 (shutdown, weekly review, stats) and P3 Plan the Day. See the [Roadmap](docs/ROADMAP.md).
 
 - [Product spec](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
