@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useCompactHeight } from "../../lib/use-compact-height";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -86,7 +87,17 @@ function accessibleName(props: TaskCardProps, tags: string[]): string {
   return parts.filter(Boolean).join(", ");
 }
 
-function Dots({ est, done, hasEstimate }: { est: number; done: number; hasEstimate: boolean }) {
+function Dots({
+  est,
+  done,
+  hasEstimate,
+  nowrap,
+}: {
+  est: number;
+  done: number;
+  hasEstimate: boolean;
+  nowrap?: boolean;
+}) {
   const dots = [];
   for (let i = 0; i < Math.min(MAX_DOTS, Math.max(est, done)); i++) {
     const over = hasEstimate && i >= est && i < done;
@@ -106,7 +117,11 @@ function Dots({ est, done, hasEstimate }: { est: number; done: number; hasEstima
     );
   }
   return (
-    <span aria-hidden="true" data-slot="task-card-dots" className="inline-flex flex-wrap gap-1-5">
+    <span
+      aria-hidden="true"
+      data-slot="task-card-dots"
+      className={cn("inline-flex gap-1-5", nowrap ? "min-w-0 shrink overflow-hidden" : "flex-wrap")}
+    >
       {dots}
     </span>
   );
@@ -186,7 +201,10 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const hasEstimate = props.estimate != null;
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
   const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
-  const stateWords = [active ? "In progress" : "", selected ? "Selected" : ""]
+  const tight = useCompactHeight() && !row;
+  // In card density "Selected" is a word on the chip line, like "Moving", so no state adds a line.
+  const selectedShown = Boolean(selected) && !props.moving;
+  const stateWords = [active ? "In progress" : "", row && selectedShown ? "Selected" : ""]
     .filter(Boolean)
     .join(" · ");
   const estimateText = hasEstimate ? `Est ${est}` : "No estimate";
@@ -196,11 +214,11 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     !props.moving && "shadow-raised",
     row
       ? "flex min-h-hit-min flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
-      : "flex flex-col gap-3 p-4",
+      : ["flex flex-col p-4", tight ? "gap-2" : "gap-3"],
     interactive &&
       "cursor-pointer outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm focus-visible:outline-2 enabled:active:bg-selection disabled:cursor-default disabled:border-dashed motion-reduce:transition-none",
     props.menu && !props.disabled && "pe-hit-min",
-    selected ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
+    selected && !props.moving ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
     active && "border-s-4 border-s-focus",
     props.moving && "border-dashed",
   );
@@ -216,11 +234,27 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const frogWord = props.frog ? (
     <span
       data-slot="task-card-frog"
-      className="flex-none whitespace-nowrap text-break text-label uppercase"
+      className={cn(
+        "whitespace-nowrap text-break text-label uppercase",
+        row ? "flex-none" : "min-w-0 truncate",
+      )}
     >
       Frog
     </span>
   ) : null;
+  // At layout-compact-height or less the dots, due date and tags share one muted line that truncates.
+  const foldText = [props.due ?? "", ...tags].filter(Boolean).join(" · ");
+  const foldDots = Math.max(est, done) > 0;
+  const foldLine =
+    tight && (foldText || foldDots) ? (
+      <span
+        data-slot="task-card-fold"
+        className="flex min-w-0 items-center gap-2 overflow-hidden text-body-sm text-ink-muted"
+      >
+        {foldDots ? <Dots est={est} done={done} hasEstimate={hasEstimate} nowrap /> : null}
+        <span className="min-w-0 truncate">{foldText}</span>
+      </span>
+    ) : null;
   const body = row ? (
     <>
       <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
@@ -249,12 +283,28 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     </>
   ) : (
     <>
-      <span data-slot="task-card-top" className="flex flex-wrap items-center gap-2">
-        <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
-        {frogWord}
+      <span
+        data-slot="task-card-top"
+        className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden"
+      >
+        <span className="flex flex-none whitespace-nowrap">
+          <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
+        </span>
         {movingWord}
-        {props.priority ? (
-          <span data-slot="task-card-priority" className="text-label uppercase text-ink-muted">
+        {selectedShown ? (
+          <span
+            data-slot="task-card-selected"
+            className="flex-none whitespace-nowrap text-body-sm text-focus"
+          >
+            Selected
+          </span>
+        ) : null}
+        {frogWord}
+        {props.priority && !props.moving && !selectedShown ? (
+          <span
+            data-slot="task-card-priority"
+            className="min-w-0 truncate text-label uppercase text-ink-muted"
+          >
             {PRIORITY[props.priority]}
           </span>
         ) : null}
@@ -272,19 +322,22 @@ export function TaskCard(props: TaskCardProps): ReactElement {
           {stateWords}
         </span>
       ) : null}
-      {Math.max(est, done) > 0 ? <Dots est={est} done={done} hasEstimate={hasEstimate} /> : null}
+      {tight ? null : Math.max(est, done) > 0 ? (
+        <Dots est={est} done={done} hasEstimate={hasEstimate} />
+      ) : null}
       <span
         data-slot="task-card-meta"
         className="font-mono text-body-sm text-ink-muted tabular-nums"
       >
         {meta}
       </span>
-      {props.due || props.checklist ? (
+      {foldLine}
+      {(props.due && !tight) || props.checklist ? (
         <span
           data-slot="task-card-plan"
           className="flex flex-wrap gap-x-3 text-body-sm text-ink-muted"
         >
-          {props.due ? <span data-slot="task-card-due">{props.due}</span> : null}
+          {props.due && !tight ? <span data-slot="task-card-due">{props.due}</span> : null}
           {props.checklist ? (
             <span data-slot="task-card-checklist" className="font-mono tabular-nums">
               {`${count(props.checklist.done)} of ${count(props.checklist.total)}`}
@@ -292,7 +345,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
           ) : null}
         </span>
       ) : null}
-      {tags.length ? (
+      {tags.length && !tight ? (
         <span data-slot="task-card-tags" className="flex flex-wrap gap-1-5">
           {tags.map((t) => (
             <span

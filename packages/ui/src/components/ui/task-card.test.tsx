@@ -64,9 +64,10 @@ test("renders_selected_with_word_or_shape", () => {
   expect(screen.getByText("Selected")).toBeTruthy();
 });
 
-test("renders_active_and_selected_words_joined", () => {
+test("renders_active_and_selected_words", () => {
   render(<TaskCard title="Write" active selected />);
-  expect(screen.getByText("In progress · Selected")).toBeTruthy();
+  expect(screen.getByText("In progress")).toBeTruthy();
+  expect(screen.getByText("Selected")).toBeTruthy();
 });
 
 test("renders_dots_capped_at_twelve_with_over_marks", () => {

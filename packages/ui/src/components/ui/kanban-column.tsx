@@ -32,7 +32,7 @@ function DropSlot({ label }: { label: string }) {
     <div
       data-slot="kanban-column-drop"
       aria-hidden="true"
-      className="flex min-h-hit-min shrink-0 items-center rounded-md border-2 border-dashed border-line-strong px-3 py-2 text-body-sm text-ink wrap-anywhere"
+      className="flex min-h-hit-min shrink-0 items-center transition-all duration-calm ease-calm motion-reduce:transition-none starting:min-h-0 starting:py-0 rounded-md border-2 border-dashed border-line-strong px-3 py-2 text-body-sm text-ink wrap-anywhere"
     >
       {label}
     </div>
