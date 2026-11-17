@@ -1,6 +1,10 @@
 //! Finished focus sessions. **Syncable and append-only**: a row is inserted once, when the
 //! session ends, and never updated (ADR-002).
 
+mod counted;
+
+pub use counted::counted_for_tasks;
+
 use crate::{Entity, StoreError, Txn, sql_int};
 use orasenda_core::{SessionPreset, SessionRecord};
 use serde::Serialize;

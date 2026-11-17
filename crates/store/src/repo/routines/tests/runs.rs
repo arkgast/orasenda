@@ -212,3 +212,54 @@ fn run_checks_refuse_inconsistent_rows() {
         assert!(sql_fails(&store, sql), "{sql}");
     }
 }
+
+fn finished_ids(store: &Store, from: &str, to: &str) -> Vec<String> {
+    store
+        .read(|txn| {
+            Ok(repo::finished_between(txn, from, to)?
+                .into_iter()
+                .map(|r| r.id)
+                .collect())
+        })
+        .expect("reads")
+}
+
+#[test]
+fn finished_between_skips_open_and_stopped() {
+    let store = store();
+    store
+        .write(1_000, |txn| {
+            for (id, day) in [
+                ("open", "2026-11-10"),
+                ("stop", "2026-11-10"),
+                ("done", "2026-11-10"),
+            ] {
+                repo::start(txn, &new_run(id, "r1", day, &[]))?;
+            }
+            repo::end(txn, "stop", RunOutcome::Stopped)?;
+            repo::end(txn, "done", RunOutcome::Finished)?;
+            Ok(())
+        })
+        .expect("writes");
+    assert_eq!(finished_ids(&store, "2026-11-10", "2026-11-10"), ["done"]);
+}
+
+#[test]
+fn finished_between_inclusive_days() {
+    let store = store();
+    store
+        .write(1_000, |txn| {
+            for (id, day) in [
+                ("a", "2026-11-09"),
+                ("b", "2026-11-10"),
+                ("c", "2026-11-12"),
+                ("d", "2026-11-13"),
+            ] {
+                repo::start(txn, &new_run(id, "r1", day, &[]))?;
+                repo::end(txn, id, RunOutcome::Finished)?;
+            }
+            Ok(())
+        })
+        .expect("writes");
+    assert_eq!(finished_ids(&store, "2026-11-10", "2026-11-12"), ["b", "c"]);
+}
