@@ -100,7 +100,9 @@ fn primary_with_monday() {
     use ReviewPrimary::{Shutdown, Weekly};
     let host = host();
     set_weekly_day(&host, WeeklyDay::Mon);
-    let expected = [Shutdown, Shutdown, Weekly, Shutdown, Shutdown, Shutdown, Shutdown];
+    let expected = [
+        Shutdown, Shutdown, Weekly, Shutdown, Shutdown, Shutdown, Shutdown,
+    ];
     for (days, want) in expected.into_iter().enumerate() {
         assert_eq!(primary_at(&host, days as u64), want, "day {days}");
     }
@@ -132,7 +134,12 @@ fn removed_priority_dropped() {
     );
     run_task_remove(&host, &gone.id).expect("removed");
     let view = view_at(&host, at(0, 12));
-    let titles: Vec<_> = view.week.priorities.iter().map(|p| p.title.as_str()).collect();
+    let titles: Vec<_> = view
+        .week
+        .priorities
+        .iter()
+        .map(|p| p.title.as_str())
+        .collect();
     assert_eq!(titles, ["Fix sync bug"]);
     assert_eq!(view.week.priorities[0].line, "Fix sync bug · Doing");
     assert!(!view.week.priorities[0].done);
@@ -142,7 +149,12 @@ fn removed_priority_dropped() {
 fn done_priority_reads_done() {
     let host = host();
     let task = add(&host, "Fix sync bug", Lane::Done);
-    reflect(&host, ReflectionKind::Week, "2026-11-09", vec![task.id.clone()]);
+    reflect(
+        &host,
+        ReflectionKind::Week,
+        "2026-11-09",
+        vec![task.id.clone()],
+    );
     let view = view_at(&host, at(0, 12));
     assert_eq!(view.week.priorities[0].line, "Fix sync bug · Done");
     assert!(view.week.priorities[0].done);
@@ -161,7 +173,10 @@ fn period_previous_accepted() {
     // Monday 9 November, 12:00 local (UTC+1).
     let now = at(2, 12);
     for given in ["2026-11-09", "2026-11-08"] {
-        assert_eq!(check_period(ReflectionKind::Shutdown, given, now, 60), Ok(()));
+        assert_eq!(
+            check_period(ReflectionKind::Shutdown, given, now, 60),
+            Ok(())
+        );
     }
     // Monday: the planned week is this week; the one before it is accepted too.
     for given in ["2026-11-09", "2026-11-02"] {

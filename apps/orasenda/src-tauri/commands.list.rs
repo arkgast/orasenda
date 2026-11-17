@@ -94,4 +94,5 @@ pub const COMMANDS: &[&str] = &[
     "task_import",
     "task_import_undo",
     "import_open_settings",
+    "review_get",
 ];

@@ -62,7 +62,10 @@ fn emit_at_four_once() {
         })
         .collect();
     assert_eq!(views.len(), 1);
-    assert_eq!(views[0].today.day, "2026-11-07", "the shutdown day moved on");
+    assert_eq!(
+        views[0].today.day, "2026-11-07",
+        "the shutdown day moved on"
+    );
     host.set_now(T0 + 3 * HOUR + MINUTE);
     iterate(&host);
     assert_eq!(count(&host), 0, "once");
