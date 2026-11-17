@@ -47,6 +47,7 @@ const NAMES = [
   "reviewStatsUnavailable",
   "reviewWeekly",
   "reviewWeeklyEmpty",
+  "reviewWeeklySaveFails",
   "boardWeek",
   "boardDrag",
   "boardOver",

@@ -39,7 +39,7 @@ export interface TaskPickerProps {
 const ORDER = { doing: 0, today: 1, backlog: 2 } as const;
 const CREATE_ID = "create";
 const QUIET =
-  "min-h-hit-min min-w-0 max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
+  "min-h-hit-min min-w-hit-min max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
 
 /** A length token in px, read from its CSS variable on the root. */
 function tokenPx(name: string): number {
@@ -126,8 +126,13 @@ export function TaskPicker({
       // The panel sits space-1 off the input, and keeps space-2 from the window edge.
       const gap = tokenPx("--space-1");
       const margin = tokenPx("--space-2") + gap;
-      const below = window.innerHeight - box.bottom - margin;
-      const over = box.top - margin;
+      // Inside a scroll region the panel is clipped by it, so measure against that, not the window.
+      const bound = wrap.current?.closest('[data-slot="scroll-region"]')?.getBoundingClientRect();
+      const clipped = bound !== undefined && bound.height > 0;
+      const floor = clipped ? Math.min(window.innerHeight, bound.bottom) : window.innerHeight;
+      const ceiling = clipped ? Math.max(0, bound.top) : 0;
+      const below = floor - box.bottom - margin;
+      const over = box.top - ceiling - margin;
       const flip = below < 2 * tokenPx("--hit-min") && over > below;
       setAbove(flip);
       setRoom(Math.max(0, flip ? over : below));

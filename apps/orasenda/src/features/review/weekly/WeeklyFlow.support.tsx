@@ -8,7 +8,7 @@ import {
   weeklyView,
 } from "@shared/test/fixtures";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 import { WeeklyFlow } from "./WeeklyFlow";
 
 export const BOARD = boardOf([
@@ -91,6 +91,9 @@ export async function addTyped(n: number, title: string): Promise<void> {
 export async function pickTask(n: number, query: string, title: string): Promise<void> {
   fireEvent.click(screen.getByRole("button", { name: `Add priority ${n}` }));
   fireEvent.change(screen.getByRole("combobox"), { target: { value: query } });
-  fireEvent.click(screen.getByRole("option", { name: new RegExp(title) }));
+  expect(screen.getByRole("option", { name: new RegExp(title) })).toBeInTheDocument();
+  await pressKey("ArrowDown");
+  await pressKey("ArrowUp");
+  await pressKey("Enter");
   await settle();
 }

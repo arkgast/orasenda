@@ -16,9 +16,7 @@ export function LookBackStep({ view }: Props): ReactElement {
   return (
     <ScrollRegion label="Look back">
       <div className="app-shutdown-body">
-        {view.lastImprovement ? (
-          <p className="app-review-label">Last week you chose: {view.lastImprovement}</p>
-        ) : null}
+        {view.lastImprovement ? <p className="app-review-label">{view.lastImprovement}</p> : null}
         <p className="app-review-label">{lookBack.heading}</p>
         <p className="app-review-line">{lookBack.focusLine}</p>
         <TrendBars bars={lookBack.days} caption="Focus time by day" />
@@ -34,7 +32,9 @@ export function LookBackStep({ view }: Props): ReactElement {
                 goal={{ minutes: goal.minutes, words: goal.words }}
               />
             </BarList>
-            <p className="app-review-line">{goal.line}</p>
+            <p className="app-review-line" aria-hidden="true">
+              {goal.line}
+            </p>
           </>
         ) : null}
         {lookBack.tasks.length > 0 ? (
@@ -56,10 +56,10 @@ export function LookBackStep({ view }: Props): ReactElement {
         <Lines lines={lookBack.habitLines} />
         {lookBack.estimateLine ? <p className="app-review-line">{lookBack.estimateLine}</p> : null}
         {lookBack.reflections.map((echo) => (
-          <section key={echo.dayLabel} className="app-weekly-echo" aria-label={echo.dayLabel}>
+          <div key={echo.dayLabel} className="app-weekly-echo">
             <p className="app-review-label">{echo.dayLabel}</p>
             <Lines lines={echo.lines} />
-          </section>
+          </div>
         ))}
       </div>
     </ScrollRegion>

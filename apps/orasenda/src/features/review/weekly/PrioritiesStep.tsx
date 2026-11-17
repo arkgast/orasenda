@@ -1,27 +1,42 @@
-import { InlineNotice, ScrollRegion, TaskPicker, type TaskPickerOption } from "@orasenda/ui";
+import {
+  Button,
+  InlineNotice,
+  ScrollRegion,
+  TaskPicker,
+  type TaskPickerOption,
+} from "@orasenda/ui";
 import type { ReactElement } from "react";
-import { isTooLong, type Pick, TOO_LONG_PRIORITY } from "./useWeekly";
+import { isTooLong, type PriorityChoice, TOO_LONG_PRIORITY } from "./useWeekly";
 
 const MAX_PICKS = 3;
 
 type Props = {
-  picks: Pick[];
+  picks: PriorityChoice[];
   options: TaskPickerOption[];
   /** A failed save, in a plain line at the top of the step. */
   line: string | null;
   /** Rust refused a typed title as too long: the line goes by the picker that caused it. */
   tooLong: boolean;
-  onChange(picks: Pick[]): void;
+  onChange(picks: PriorityChoice[]): void;
+  /** Back, at the end of the region so a short window keeps all its height for the content. */
+  onBack(): void;
 };
 
 /** Step 3: up to three optional priorities. Nothing is chosen for the person; a fourth never appears. */
-export function PrioritiesStep({ picks, options, line, tooLong, onChange }: Props): ReactElement {
+export function PrioritiesStep({
+  picks,
+  options,
+  line,
+  tooLong,
+  onChange,
+  onBack,
+}: Props): ReactElement {
   const slots = picks.length < MAX_PICKS ? picks.length + 1 : MAX_PICKS;
   const marked = tooLong ? picks.map(isTooLong) : [];
   const unplaced = tooLong && !marked.includes(true);
   const taken = (index: number) =>
     new Set(picks.flatMap((p, i) => (i !== index && "task" in p ? [p.task] : [])));
-  const place = (index: number, pick: Pick | null) => {
+  const place = (index: number, pick: PriorityChoice | null) => {
     const next = picks.slice();
     if (pick === null) next.splice(index, 1);
     else next[index] = pick;
@@ -61,11 +76,16 @@ export function PrioritiesStep({ picks, options, line, tooLong, onChange }: Prop
                     if (text) place(index, { newTitle: text });
                   }}
                 />
-                {marked[index] ? <p className="app-review-line">{TOO_LONG_PRIORITY}</p> : null}
+                {marked[index] ? <InlineNotice>{TOO_LONG_PRIORITY}</InlineNotice> : null}
               </li>
             );
           })}
         </ol>
+        <div className="app-weekly-back">
+          <Button variant="quiet" onClick={onBack}>
+            Back
+          </Button>
+        </div>
       </div>
     </ScrollRegion>
   );

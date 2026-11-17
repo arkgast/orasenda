@@ -48,6 +48,16 @@ async function expectFits(page: Page, size: Size) {
   expect(await smallTargets(page.getByRole("main"))).toEqual([]);
 }
 
+/** The scroll region is never squeezed below one hit target, and never scrolls sideways. */
+async function expectRegionRoom(page: Page, name: string) {
+  const region = page.getByRole("region", { name });
+  const hit = await page.evaluate(() =>
+    Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hit-min")),
+  );
+  expect((await region.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(hit);
+  expect(await region.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+}
+
 for (const size of SIZES) {
   const at = `${size.width}x${size.height}`;
 
@@ -64,10 +74,12 @@ for (const size of SIZES) {
     await expect(page.getByRole("heading", { name: "One improvement", level: 1 })).toBeFocused();
     await expect(page.getByRole("button", { name: "Not now" })).toBeVisible();
     await expectFits(page, size);
+    await expectRegionRoom(page, "One improvement");
 
     await press(page, next(page));
     await expect(page.getByRole("heading", { name: "Priorities", level: 1 })).toBeFocused();
     await expectFits(page, size);
+    await expectRegionRoom(page, "Priorities");
 
     await press(page, next(page));
     await expect(page.getByRole("heading", { name: "Week planned.", level: 1 })).toBeAttached();
@@ -84,13 +96,58 @@ for (const size of SIZES) {
       const slot = page.getByRole("button", { name: `Add priority ${n}` });
       await slot.scrollIntoViewIfNeeded();
       await press(page, slot);
-      await page.keyboard.type(`Priority ${n}`);
+      // The first title is long: it truncates inside the column instead of widening the region.
+      await page.keyboard.type(n === 1 ? "A long priority ".repeat(8) : `Priority ${n}`);
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
     }
     await expect(page.getByRole("button", { name: /^Task: Priority 3/ })).toBeAttached();
     await expect(page.getByRole("button", { name: /^Add priority/ })).toHaveCount(0);
     await expectFits(page, size);
+    await expectRegionRoom(page, "Priorities");
+  });
+
+  test(`weekly_picker_panel_stays_in_the_region_${at}`, async ({ page }) => {
+    await startWeekly(page, "reviewWeekly", size);
+    await press(page, next(page));
+    await press(page, next(page));
+    for (const n of [1, 2]) {
+      const slot = page.getByRole("button", { name: `Add priority ${n}` });
+      await press(page, slot);
+      await page.keyboard.type(`Priority ${n}`);
+      await page.keyboard.press("Enter");
+    }
+    await press(page, page.getByRole("button", { name: "Add priority 3" }));
+    await page.keyboard.press("ArrowDown");
+    const panel = page.locator('[data-slot="task-picker-panel"]');
+    await expect(panel).toBeVisible();
+    const region = await page.getByRole("region", { name: "Priorities" }).boundingBox();
+    const box = await panel.boundingBox();
+    expect(region).not.toBeNull();
+    expect(box).not.toBeNull();
+    if (!region || !box) return;
+    expect(box.y).toBeGreaterThanOrEqual(region.y - 1);
+    expect(box.y + box.height).toBeLessThanOrEqual(region.y + region.height + 1);
+  });
+
+  test(`weekly_failed_saves_keep_their_lines_in_view_${at}`, async ({ page }) => {
+    await startWeekly(page, "reviewWeeklySaveFails", size);
+    await press(page, next(page));
+    await press(page, next(page));
+    const line = page.getByText("Orasenda can't save your reflection right now.");
+    await expect(line).toBeVisible();
+    await expectFits(page, size);
+    await press(page, page.getByRole("button", { name: "Not now" }));
+    await expect(page.getByRole("heading", { name: "Priorities", level: 1 })).toBeFocused();
+    const slot = page.getByRole("button", { name: "Add priority 1" });
+    await press(page, slot);
+    await page.keyboard.type("x".repeat(201));
+    await page.keyboard.press("Enter");
+    await press(page, next(page));
+    const tooLong = page.getByText("Keep a priority to 200 characters.");
+    await expect(tooLong).toBeVisible();
+    await expectFits(page, size);
+    await expectRegionRoom(page, "Priorities");
   });
 }
 

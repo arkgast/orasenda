@@ -3,7 +3,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { TOO_LONG_PRIORITY } from "./useWeekly";
-import { addTyped, heading, openWeekly, pickTask, press } from "./WeeklyFlow.support";
+import { addTyped, answerOf, heading, openWeekly, pickTask, press } from "./WeeklyFlow.support";
 
 afterEach(async () => {
   cleanup();
@@ -99,7 +99,7 @@ test("too_long_priority_shows_the_line_next_to_its_picker_and_keeps_the_draft", 
   });
   await addTyped(1, "x".repeat(201));
   await press("Continue");
-  expect(screen.getByText(TOO_LONG_PRIORITY)).toBeInTheDocument();
+  expect(screen.getByText(TOO_LONG_PRIORITY).closest('[role="status"]')).not.toBeNull();
   expect(heading()).toHaveTextContent("Priorities");
   expect(screen.getAllByRole("button", { name: /^Task: / })).toHaveLength(1);
   expect(argsOf(backend.calls, "weekly_complete")).toHaveLength(1);
@@ -125,7 +125,7 @@ test("a_save_failure_says_so_and_stays", async () => {
     },
   });
   await press("Continue");
-  expect(screen.getByText("Orasenda can't save your weekly review right now.")).toBeInTheDocument();
+  expect(screen.getByText("Orasenda can't save your reflection right now.")).toBeInTheDocument();
   expect(heading()).toHaveTextContent("Priorities");
 });
 
@@ -142,4 +142,21 @@ test("saved_priorities_come_back_from_the_view", async () => {
   );
   expect(screen.getByRole("button", { name: /^Task: Fix sync bug/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Add priority 2" })).toBeInTheDocument();
+});
+
+test("too_long_priority_from_step_two_shows_its_line_at_the_top_of_step_two", async () => {
+  let saves = 0;
+  const { backend } = await toPriorities({
+    weekly_save: (args: unknown) => {
+      saves += 1;
+      if (saves > 1) throw "tooLong";
+      return answerOf(weeklyView())(args);
+    },
+  });
+  await addTyped(1, "x".repeat(201));
+  await press("Back");
+  await press("Continue");
+  expect(heading()).toHaveTextContent("One improvement");
+  expect(screen.getByText(TOO_LONG_PRIORITY)).toBeInTheDocument();
+  expect(argsOf(backend.calls, "weekly_save")).toHaveLength(2);
 });

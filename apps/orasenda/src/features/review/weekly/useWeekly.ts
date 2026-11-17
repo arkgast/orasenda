@@ -20,16 +20,16 @@ const TOO_LONG_IMPROVEMENT = "Keep your improvement to 200 characters.";
 const TOO_LONG_NOTES = "Keep your notes to 2,000 characters.";
 
 const NOT_FOUND = "One of those tasks is no longer on your board. Choose another, or leave it out.";
-const SAVE_FAILED = "Orasenda can't save your weekly review right now.";
+const SAVE_FAILED = "Orasenda can't save your reflection right now.";
 const SAVE_LINES: Partial<Record<ReviewError, string>> = {
   period: "This review is for an earlier week. Open Review again to see this week.",
   notFound: NOT_FOUND,
 };
 
 /** A priority in the draft: a task on the board, or a title typed here that Rust adds once. */
-export type Pick = { task: string; title: string } | { newTitle: string };
+export type PriorityChoice = { task: string; title: string } | { newTitle: string };
 
-export type Draft = { improvement: string; notes: string; picks: Pick[] };
+export type Draft = { improvement: string; notes: string; picks: PriorityChoice[] };
 
 export type Load =
   | { status: "loading" }
@@ -54,7 +54,7 @@ const draftToSend = (draft: Draft): WeeklyDraft_Deserialize => ({
 const length = (text: string) => [...text.trim()].length;
 
 /** Whether a typed priority is over Rust's limit, for the picker that caused a TooLong. */
-export const isTooLong = (pick: Pick): boolean =>
+export const isTooLong = (pick: PriorityChoice): boolean =>
   "newTitle" in pick && length(pick.newTitle) > MAX_TITLE;
 
 /** What a TooLong answer means for this draft: a line at the top, or a flag for the pickers. */
@@ -124,7 +124,8 @@ export function useWeekly() {
           console.error(`${name} failed`, result.error);
           if (result.error === "tooLong") {
             const found = tooLong(sent);
-            setLine(found.line);
+            // Off the priorities step (Continue from step 2) no picker is on screen: say it at the top.
+            setLine(found.line ?? (found.priority && then !== 3 ? TOO_LONG_PRIORITY : null));
             setPriorityTooLong(found.priority);
           } else setLine(SAVE_LINES[result.error] ?? SAVE_FAILED);
         }

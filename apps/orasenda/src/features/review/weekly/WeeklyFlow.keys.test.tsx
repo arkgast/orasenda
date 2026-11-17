@@ -40,7 +40,7 @@ test("weekly_by_keyboard_end_to_end", async () => {
 });
 
 test("last_improvement_first", async () => {
-  await openWeekly({}, weeklyView({ lastImprovement: "Stop at five" }));
+  await openWeekly({}, weeklyView({ lastImprovement: "Last week you chose: Stop at five" }));
   const line = screen.getByText("Last week you chose: Stop at five");
   const focus = screen.getByText("2h 10m of focus");
   expect(line.compareDocumentPosition(focus) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

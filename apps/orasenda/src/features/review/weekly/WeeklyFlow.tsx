@@ -111,22 +111,20 @@ export function WeeklyFlow({ onClose }: Props): ReactElement {
                     disabled={state.busy}
                     onChange={(event) => state.change({ notes: event.target.value })}
                   />
+                  <BackButton onClick={state.back} />
                 </div>
               </ScrollRegion>
-              <BackButton onClick={state.back} />
             </>
           ) : null}
           {step === 2 ? (
-            <>
-              <PrioritiesStep
-                picks={draft.picks}
-                options={options}
-                line={state.line}
-                tooLong={state.priorityTooLong}
-                onChange={(picks) => state.change({ picks })}
-              />
-              <BackButton onClick={state.back} />
-            </>
+            <PrioritiesStep
+              picks={draft.picks}
+              options={options}
+              line={state.line}
+              tooLong={state.priorityTooLong}
+              onChange={(picks) => state.change({ picks })}
+              onBack={state.back}
+            />
           ) : null}
           {step === 3 ? <Planned line={view.completedLine} /> : null}
         </div>

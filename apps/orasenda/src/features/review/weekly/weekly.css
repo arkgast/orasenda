@@ -1,4 +1,4 @@
-/* The weekly flow's step area: the region fills it, the Back button sits under the region. */
+/* The weekly flow's step area: the region fills it; Back sits at the end of the region's content. */
 .app-weekly-stage {
   display: flex;
   flex-direction: column;
@@ -13,8 +13,8 @@
 }
 
 .app-weekly-back {
-  flex: none;
   padding-inline: var(--space-1);
+  padding-block-end: var(--space-1);
 }
 
 .app-weekly-slots {
@@ -29,7 +29,7 @@
 .app-weekly-slot {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--space-1);
   min-inline-size: 0;
 }

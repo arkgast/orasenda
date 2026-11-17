@@ -33,7 +33,7 @@ const weeklyBackend = (view: ReturnType<typeof weeklyView>): Handler =>
 
 REVIEW_WEEKLY_SCENARIOS.reviewWeekly = weeklyBackend(
   weeklyView({
-    lastImprovement: "Stop work by five",
+    lastImprovement: "Last week you chose: Stop work by five",
     lookBack: {
       heading: "Monday 16 to Sunday 22 November",
       focusLine: "7h 10m of focus this week.",
@@ -94,3 +94,14 @@ REVIEW_WEEKLY_SCENARIOS.reviewWeeklyEmpty = weeklyBackend(
     },
   }),
 );
+
+// A weekly review whose saves fail: the improvement step cannot save ("store"), and the
+// completion answers TooLong, so the lines sit at the top of a step and next to a picker.
+REVIEW_WEEKLY_SCENARIOS.reviewWeeklySaveFails = backend({
+  replies: {
+    review_get: () => reviewView({ primary: "weekly" }),
+    weekly_get: () => weeklyView(),
+    weekly_save: () => Promise.reject("store"),
+    weekly_complete: () => Promise.reject("tooLong"),
+  },
+});
