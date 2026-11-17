@@ -214,7 +214,7 @@ test("second_esc_in_pending_window_drops_the_resend", async () => {
   fireEvent.keyDown(document.body, { key: "Escape" });
   await advanceFrames();
   window.removeEventListener("keydown", seen, true);
-  // The two real presses only: nothing is sent again afterwards.
+  // Only the second real press reaches window; nothing is re-sent.
   expect(seen).toHaveBeenCalledTimes(1);
   expect(onClose).toHaveBeenCalledTimes(1);
 });

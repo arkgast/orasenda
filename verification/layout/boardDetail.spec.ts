@@ -336,9 +336,8 @@ for (const size of SIZES) {
     );
   });
 
-  // Alt+Tab at the first and last stop. Radix FocusScope and the sheet's wrapTextFields both skip a press with
-  // Alt held, so the ring does not close yet (#643 item 2). Fix lives in dialog.tsx, outside this task: see #683.
-  test.fixme(`board_detail_full_task_alt_tab_wraps_${at}`, async ({ page }) => {
+  // Alt+Tab at the last stop wraps to the first, and Alt+Shift+Tab at the first to the last (#643 item 2).
+  test(`board_detail_full_task_alt_tab_wraps_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const done = dialog.getByRole("button", { name: "Done" });
     const title = dialog.getByRole("textbox", { name: "Title" });

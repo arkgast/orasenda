@@ -1,6 +1,6 @@
 import { AlertDialog, Dialog as DialogPrimitive } from "radix-ui";
 import type { JSX, ReactNode, RefObject } from "react";
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { isTopmostLayer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -96,6 +96,35 @@ function wrapTextFields(
   });
 }
 
+const TABBABLE =
+  'a[href], button, input:not([type="hidden"]), select, textarea, summary, [contenteditable=""], [contenteditable="true"], [tabindex]';
+
+// Radix FocusScope loops only a Tab without Alt, so with Alt held the trap pulls focus back to the dialog at the
+// ends. Wrap the first and last tabbable stop here the same way: Alt+Tab from the last goes to the first, and
+// Alt+Shift+Tab from the first goes to the last. Anywhere else the browser moves focus itself.
+function wrapAltTab(content: HTMLElement, event: KeyboardEvent): void {
+  if (event.key !== "Tab" || !event.altKey || event.ctrlKey || event.metaKey) return;
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !content.contains(active)) return;
+  const stops = [...content.querySelectorAll<HTMLElement>(TABBABLE)].filter(
+    (el) => !el.hasAttribute("disabled") && el.tabIndex >= 0 && el.getClientRects().length > 0,
+  );
+  const first = stops[0];
+  const last = stops[stops.length - 1];
+  const to = event.shiftKey
+    ? active === first
+      ? last
+      : undefined
+    : active === last
+      ? first
+      : undefined;
+  if (!to || to === active) return;
+  event.preventDefault();
+  event.stopPropagation();
+  to.focus();
+  if (to instanceof HTMLInputElement) to.select();
+}
+
 interface DialogBaseProps {
   open?: boolean;
   title: string;
@@ -158,6 +187,15 @@ export function Dialog({
   const showScrim = !!(scrim || destructive || sheet);
   // A native listener on a callback ref: the body mounts inside the portal, after this component's own effects,
   // and it is a scroll container, not a control, so it takes no React event prop.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      const el = contentRef.current;
+      if (el && isTopmostLayer(el)) wrapAltTab(el, event);
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open]);
   const watchFocus = useCallback((body: HTMLDivElement | null) => {
     if (!body) return;
     // Pointer focus is left to the browser, so a click never moves the field under the pointer. Only the
