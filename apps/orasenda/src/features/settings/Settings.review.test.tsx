@@ -32,10 +32,9 @@ afterEach(async () => {
 
 const saved = (calls: Parameters<typeof argsOf>[0]) =>
   argsOf(calls, "settings_set") as { settings: typeof SETTINGS }[];
-const time = () => screen.queryByLabelText("Review time") as HTMLInputElement | null;
+const time = () => screen.queryByLabelText("Time of day") as HTMLInputElement | null;
 const shutdown = () => screen.getByRole("checkbox", { name: "When it's time to close the day" });
-const weekly = () =>
-  screen.getByRole("checkbox", { name: "When it's time for the weekly review" });
+const weekly = () => screen.getByRole("checkbox", { name: "When it's time for the weekly review" });
 
 test("goal_stepper_no_goal_at_zero", async () => {
   const { backend } = await openIn("Timer");
@@ -48,7 +47,7 @@ test("goal_stepper_no_goal_at_zero", async () => {
   expect(saved(backend.calls).at(-1)?.settings.reviewFocusGoalHours).toBe(1);
   expect(screen.getByRole("spinbutton", { name: "Weekly focus goal" })).toHaveAttribute(
     "aria-valuetext",
-    "1 hours",
+    "1 hour",
   );
 });
 
@@ -90,22 +89,14 @@ test("review_time_bounded_0400_2359", async () => {
 });
 
 test("stored_time_out_of_range_shows_the_default", async () => {
-  await openIn(
-    "Notifications",
-    withSettings({ notifyShutdownDue: true, reviewShutdownTime: 100 }),
-  );
+  await openIn("Notifications", withSettings({ notifyShutdownDue: true, reviewShutdownTime: 100 }));
   expect(time()?.value).toBe("17:30");
 });
 
 test("weekly_day_shown_while_weekly_on", async () => {
   const { backend } = await openIn("Notifications", withSettings({ notifyWeeklyReview: true }));
   const day = screen.getByLabelText("Weekly review day") as HTMLSelectElement;
-  expect([...day.options].map((o) => o.text)).toEqual([
-    "Friday",
-    "Saturday",
-    "Sunday",
-    "Monday",
-  ]);
+  expect([...day.options].map((o) => o.text)).toEqual(["Friday", "Saturday", "Sunday", "Monday"]);
   fireEvent.change(day, { target: { value: "sun" } });
   await settle();
   expect(saved(backend.calls).at(-1)?.settings.reviewWeeklyDay).toBe("sun");
@@ -114,6 +105,7 @@ test("weekly_day_shown_while_weekly_on", async () => {
 test("nudge_switches_use_the_same_permission_gate", async () => {
   const { backend } = await openIn("Notifications", {
     timer_state: view({ notifications: "notDetermined" }),
+    ...withSettings({ notifySessionEnd: false }),
     notifications_request: () => Promise.resolve("granted"),
   });
   fireEvent.click(shutdown());

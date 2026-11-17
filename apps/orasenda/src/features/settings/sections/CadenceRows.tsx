@@ -1,6 +1,7 @@
-import { Choice, ChoiceGroup, SettingsRow, WellnessNote } from "@orasenda/ui";
+import { Choice, ChoiceGroup, SettingsRow, Stepper, WellnessNote } from "@orasenda/ui";
 import type { PresetEntry, Settings } from "@shared/ipc/bindings";
 import { NumberField } from "./NumberField";
+import { goalText } from "./reviewTime";
 
 /** What a cadence row changes, and the save line that follows it. */
 export type CadenceChange = (patch: Partial<Settings>, saved: string) => void;
@@ -14,6 +15,7 @@ export const CAPS = [
 
 export const LONGEST_RANGE = { min: 60, max: 150 };
 export const DEEP_RANGE = { min: 2, max: 8 };
+export const GOAL_RANGE = { min: 0, max: 60 };
 
 type Props = {
   settings: Settings;
@@ -91,6 +93,28 @@ export function CadenceRows({
           disabled={disabled}
           onCommit={(deepCapHours) =>
             onChange({ deepCapHours }, `Deep-hours cap: ${deepCapHours} hours.`)
+          }
+        />
+      </SettingsRow>
+      <SettingsRow
+        id="focus-goal"
+        label="Weekly focus goal"
+        helper="A target to look at in your weekly review. Never a score."
+        disabledReason={disabledReason}
+      >
+        <Stepper
+          label="Weekly focus goal"
+          min={GOAL_RANGE.min}
+          max={GOAL_RANGE.max}
+          value={settings.reviewFocusGoalHours}
+          zeroLabel="No goal"
+          valueText={goalText}
+          disabled={disabled}
+          onChange={(hours) =>
+            onChange(
+              { reviewFocusGoalHours: hours },
+              hours === 0 ? "Weekly focus goal: none." : `Weekly focus goal: ${goalText(hours)}.`,
+            )
           }
         />
       </SettingsRow>
