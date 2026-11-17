@@ -57,7 +57,7 @@ fn routines_changed_event_name() {
 
 #[test]
 fn bindings_carry_the_routines_contract() {
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = read_bindings();
     for needle in [
         "routinesList: () => typedError<RoutinesView_Serialize, RoutinesError>",
         "routineTemplates: () => typedError<TemplateView_Serialize[], RoutinesError>",

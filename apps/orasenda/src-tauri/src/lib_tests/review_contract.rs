@@ -10,7 +10,7 @@ fn review_changed_event_name() {
 
 #[test]
 fn bindings_carry_the_review_contract() {
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = read_bindings();
     for needle in [
         "reviewChanged: makeEvent<",
         "export type ReviewView = ",

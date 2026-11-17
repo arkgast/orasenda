@@ -19,6 +19,18 @@ mod routines;
 
 use capabilities::{assert_capability, capability};
 
+/// `export_bindings` rewrites `bindings.ts` (truncate, then write) while other tests read it on
+/// other threads; both sides hold this lock so no reader sees a half-written file (#715).
+static BINDINGS_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// The generated bindings, read while no test is rewriting them.
+fn read_bindings() -> String {
+    let _guard = BINDINGS_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    std::fs::read_to_string(bindings_path()).unwrap()
+}
+
 /// A tauri-specta "language" that records the registered command names instead of
 /// writing a file: the builder's configuration is only reachable through an exporter.
 struct CommandNames<'a>(&'a mut Vec<String>);
@@ -79,8 +91,13 @@ fn tauri_conf_main_starts_hidden() {
 /// Regenerates `bindings.ts`; `just ci` fails when the committed file differs.
 #[test]
 fn export_bindings() {
-    super::export_bindings(&specta_builder()).unwrap();
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = {
+        let _guard = BINDINGS_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        super::export_bindings(&specta_builder()).unwrap();
+        std::fs::read_to_string(bindings_path()).unwrap()
+    };
     assert!(
         bindings.contains("appInfo"),
         "no appInfo command:\n{bindings}"

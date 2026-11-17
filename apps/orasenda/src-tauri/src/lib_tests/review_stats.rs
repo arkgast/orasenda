@@ -34,7 +34,7 @@ fn review_stats_granted_to_main() {
 
 #[test]
 fn bindings_carry_the_stats_commands() {
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = read_bindings();
     for needle in [
         "reviewStats: (range: StatsRange) => typedError<StatsView_Serialize, ReviewError>",
         "bufferSuggestionDismiss: () => typedError<null, ReviewError>",
