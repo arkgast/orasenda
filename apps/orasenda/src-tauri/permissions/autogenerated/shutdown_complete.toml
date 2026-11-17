@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shutdown-complete"
+description = "Enables the shutdown_complete command without any pre-configured scope."
+commands.allow = ["shutdown_complete"]
+
+[[permission]]
+identifier = "deny-shutdown-complete"
+description = "Denies the shutdown_complete command without any pre-configured scope."
+commands.deny = ["shutdown_complete"]

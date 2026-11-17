@@ -1,6 +1,7 @@
 //! The review words: every quoted sentence, and the copy test.
 
 mod copy;
+mod shutdown;
 mod tomorrow;
 mod view;
 mod words;
@@ -16,3 +17,4 @@ mod buffer;
 mod look_back;
 mod stats;
 mod support;
+mod undo;

@@ -121,6 +121,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::import_open_settings,
             commands::review_get,
             commands::review_stats,
+            commands::shutdown_get,
+            commands::shutdown_move,
+            commands::shutdown_move_undo,
+            commands::shutdown_complete,
             commands::buffer_suggestion_dismiss,
             commands::weekly_get,
             spike::commands::spike_status,
@@ -154,7 +158,6 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         // The review types no command or event carries yet; each command task adds its own.
         .typ::<ipc::ShutdownView>()
         .typ::<ipc::WeeklyDraft>()
-        .typ::<ipc::MoveUndo>()
         .typ::<ipc::ReviewError>()
 }
 

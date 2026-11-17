@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shutdown-move-undo"
+description = "Enables the shutdown_move_undo command without any pre-configured scope."
+commands.allow = ["shutdown_move_undo"]
+
+[[permission]]
+identifier = "deny-shutdown-move-undo"
+description = "Denies the shutdown_move_undo command without any pre-configured scope."
+commands.deny = ["shutdown_move_undo"]

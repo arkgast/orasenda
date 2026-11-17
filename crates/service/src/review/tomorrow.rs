@@ -18,8 +18,6 @@ use crate::session::SessionService;
 impl SessionService {
     /// The Tomorrow step's lines for the shutdown of `day`: tomorrow is the day after.
     /// Unavailable or unreadable storage is an error, never an empty day.
-    // V16b calls this from shutdown_get; remove the allow there.
-    #[allow(dead_code)]
     pub(crate) fn tomorrow_lines(
         &self,
         now_ms: u64,

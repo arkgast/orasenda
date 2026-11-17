@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shutdown-get"
+description = "Enables the shutdown_get command without any pre-configured scope."
+commands.allow = ["shutdown_get"]
+
+[[permission]]
+identifier = "deny-shutdown-get"
+description = "Denies the shutdown_get command without any pre-configured scope."
+commands.deny = ["shutdown_get"]

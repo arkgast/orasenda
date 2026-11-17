@@ -230,6 +230,10 @@ fn main_capability_exact() {
             "allow-review-stats",
             "allow-buffer-suggestion-dismiss",
             "allow-weekly-get",
+            "allow-shutdown-get",
+            "allow-shutdown-move",
+            "allow-shutdown-move-undo",
+            "allow-shutdown-complete",
         ],
     );
     let (_, main) = capability("main.json");

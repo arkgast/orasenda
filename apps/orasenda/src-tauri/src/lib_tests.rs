@@ -11,6 +11,7 @@ mod data_files;
 mod import;
 mod plist;
 mod review_contract;
+mod review_shutdown;
 mod review_stats;
 mod review_view;
 mod review_weekly;
