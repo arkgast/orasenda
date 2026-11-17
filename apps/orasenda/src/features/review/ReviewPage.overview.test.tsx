@@ -1,4 +1,4 @@
-import { priorityView, reviewView, settle } from "@shared/test/fixtures";
+import { priorityView, reviewView, settle, shutdownView } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
@@ -24,16 +24,21 @@ test("overview_is_a_page_frame_titled_review_with_today_and_this_week", async ()
 
 test("primary_follows_view", async () => {
   const onStart = vi.fn();
-  const { container } = await renderReview({}, { onStart });
+  const { container } = await renderReview({ shutdown_get: () => shutdownView() }, { onStart });
   let main = primaries(container);
   expect(main).toHaveLength(1);
   expect(main[0]).toHaveTextContent("Start shutdown");
   // The other flow is a secondary button inside its own section, not a primary.
   const other = within(section("This week")).getByRole("button", { name: "Start weekly review" });
   expect(other).toHaveAttribute("data-variant", "quiet");
-  fireEvent.click(main[0] as HTMLElement);
+  // The weekly flow arrives with V20: its button only reports the start. The shutdown opens.
   fireEvent.click(other);
-  expect(onStart.mock.calls).toEqual([["shutdown"], ["weekly"]]);
+  fireEvent.click(main[0] as HTMLElement);
+  expect(onStart.mock.calls).toEqual([["weekly"], ["shutdown"]]);
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Unfinished tasks" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^End/ }));
+  expect(screen.getByRole("heading", { level: 1, name: "Review" })).toHaveFocus();
 
   await emitReviewChanged(reviewView({ primary: "weekly" }));
   main = primaries(container);
@@ -69,7 +74,7 @@ test("look_again_after_completion", async () => {
       line: "Shutdown complete at 17:42.",
     },
   });
-  await renderReview({ review_get: () => done }, { onStart });
+  await renderReview({ review_get: () => done, shutdown_get: () => shutdownView() }, { onStart });
   const today = section("Today");
   expect(today).toHaveTextContent("Shutdown complete at 17:42.");
   fireEvent.click(within(today).getByRole("button", { name: /^Look again/ }));

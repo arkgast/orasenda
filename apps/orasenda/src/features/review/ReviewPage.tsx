@@ -1,22 +1,23 @@
 import { PagesButton } from "@domain/navigation/PagesButton";
 import { Button, InlineNotice, type NavPage, PageFrame, ScrollRegion } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
-import { type ReactElement, useEffect, useRef } from "react";
+import { type ReactElement, useEffect, useRef, useState } from "react";
+import { type FlowAsk, takeFlowAsk } from "./flowAsk";
 import { type Flow, Overview, primaryFlow, START_LABELS } from "./Overview";
+import { ShutdownFlow } from "./shutdown/ShutdownFlow";
 import { useReview } from "./useReview";
 import "./review.css";
 
-/** The seam V17 (shutdown) and V20 (weekly) fill: the flows replace the overview in place. */
-function noFlowYet(_flow: Flow): void {}
-
 type Props = {
   onNavigate(page: NavPage): void;
-  /** Starts a flow; V17 and V20 provide it. Until then nothing opens. */
+  /** Told whenever a flow is started, from a button or an ask. The page opens the flow itself. */
   onStart?: (flow: Flow) => void;
+  /** An ask from outside the page (the palette): opens its flow once per `seq`. */
+  asked?: FlowAsk;
 };
 
 /** The Review page: today's shutdown and the planned week, with the one primary at the header's end. */
-export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactElement {
+export function ReviewPage({ onNavigate, onStart, asked }: Props): ReactElement {
   const { compact } = useWindowLayout();
   const { review, retry } = useReview();
   const view = review.status === "ok" ? review.view : null;
@@ -35,6 +36,24 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
     wasError.current = review.status === "error";
   }, [review.status]);
   const lead = view ? primaryFlow(view.primary) : null;
+  // The flow in progress replaces the overview in place; V20 adds the weekly one.
+  const [flow, setFlow] = useState<Flow | null>(null);
+  const start = (next: Flow) => {
+    onStart?.(next);
+    if (next === "shutdown") setFlow(next);
+  };
+  const wasFlow = useRef(false);
+  useEffect(() => {
+    // Ending a flow gives focus back to the page's heading.
+    if (wasFlow.current && flow === null) page.current?.querySelector<HTMLElement>("h1")?.focus();
+    wasFlow.current = flow !== null;
+  }, [flow]);
+  // An ask opens its flow once, even on a fresh mount: the ask outlives the page (flowAsk.ts).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `start` only sets state, and `seq` is the ask
+  useEffect(() => {
+    const next = takeFlowAsk(asked);
+    if (next) start(next);
+  }, [asked?.seq]);
 
   const status =
     review.status === "error" ? (
@@ -53,6 +72,14 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
       <InlineNotice variant="row">{""}</InlineNotice>
     );
 
+  if (flow === "shutdown") {
+    return (
+      <div className="app-review-page">
+        <ShutdownFlow onClose={() => setFlow(null)} />
+      </div>
+    );
+  }
+
   return (
     <div ref={page} className="app-review-page">
       <PageFrame
@@ -62,7 +89,7 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
         }
         primary={
           lead ? (
-            <Button variant="primary" onClick={() => onStart(lead)}>
+            <Button variant="primary" onClick={() => start(lead)}>
               {START_LABELS[lead]}
             </Button>
           ) : undefined
@@ -70,7 +97,7 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
         status={status}
       >
         <ScrollRegion label="Review">
-          {view ? <Overview view={view} onStart={onStart} /> : null}
+          {view ? <Overview view={view} onStart={start} /> : null}
         </ScrollRegion>
       </PageFrame>
     </div>

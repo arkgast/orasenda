@@ -74,3 +74,79 @@
 .app-review-actions {
   margin-block-start: var(--space-1);
 }
+
+/* The flow fills the page; FlowStep is its frame (it sets its own padding and h-full). */
+.app-shutdown-flow {
+  position: relative;
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+/* Where the Undo toast lives: the flow above its footer (control-lg plus the frame's padding). */
+.app-shutdown-toast-host {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  inset-block-end: calc(var(--control-lg) + var(--space-4));
+  contain: layout;
+  pointer-events: none;
+}
+
+.app-shutdown-toast-host > [data-slot="toast"] {
+  pointer-events: auto;
+}
+
+/* A live region that only screen readers read. */
+.app-review-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-shutdown-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  max-inline-size: var(--content-width);
+  padding-inline: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.app-shutdown-tasks,
+.app-shutdown-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+}
+
+.app-shutdown-task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.app-shutdown-task-text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.app-shutdown-task-where {
+  color: var(--ink-muted);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+}

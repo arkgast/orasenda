@@ -1,5 +1,5 @@
 import type { ShutdownView_Serialize } from "@shared/ipc/bindings";
-import { type Replies, mockBackend, settle, shutdownView } from "@shared/test/fixtures";
+import { mockBackend, type Replies, settle, shutdownView } from "@shared/test/fixtures";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import { ShutdownFlow } from "./ShutdownFlow";

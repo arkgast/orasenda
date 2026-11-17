@@ -2,6 +2,8 @@ import { useShortcuts } from "@domain/keyboard/useShortcuts";
 import { PAGE_ORDER } from "@domain/navigation/PagesButton";
 import { onPaletteRequest } from "@domain/navigation/paletteRequest";
 import { useWindowView } from "@domain/window/useWindowView";
+import type { FlowAsk } from "@features/review/flowAsk";
+import type { Flow } from "@features/review/Overview";
 import type { AboutInfo } from "@features/settings/panes/About";
 import type { Arrival, SettingsTarget } from "@features/settings/Settings";
 import { type NavPage, NavRail } from "@orasenda/ui";
@@ -122,6 +124,9 @@ export function App() {
   const [importAsked, setImportAsked] = useState(0);
   // An ask waits here until the Board is shown, so a failed full-screen leave opens nothing.
   const [importPending, setImportPending] = useState(false);
+  // The same for a review flow (*Start shutdown*): Review opens it once per `seq` (flowAsk.ts).
+  const [flowAsked, setFlowAsked] = useState<FlowAsk>({ seq: 0, flow: "shutdown" });
+  const [flowPending, setFlowPending] = useState<Flow | null>(null);
   const main = useRef<HTMLElement>(null);
 
   const { compact } = useWindowLayout();
@@ -185,6 +190,7 @@ export function App() {
     // A page the shell delivers twice (event and take) navigates once; the rail always moves focus.
     if (fromShell && !fullScreenRef.current && page === currentRef.current && !target) return;
     setImportPending(false);
+    setFlowPending(null);
     const show = () => {
       currentRef.current = page;
       // Render the new page now so its heading exists, then move focus to it (NavRail README).
@@ -258,6 +264,22 @@ export function App() {
     setImportAsked((count) => count + 1);
   }, [importPending, current, fullScreen]);
 
+  const askFlow = useCallback(
+    (flow: Flow) => {
+      paletteOpener.current = null;
+      navigate("review");
+      setFlowPending(flow);
+    },
+    [navigate],
+  );
+
+  useEffect(() => {
+    // In full screen Review isn't mounted yet: wait until it is shown.
+    if (!flowPending || current !== "review" || fullScreen) return;
+    setFlowPending(null);
+    setFlowAsked((ask) => ({ seq: ask.seq + 1, flow: flowPending }));
+  }, [flowPending, current, fullScreen]);
+
   useShortcuts(
     PAGE_ORDER.map(({ id }, index) => ({
       key: String(index + 1),
@@ -278,6 +300,7 @@ export function App() {
         onClose={() => setPalette("closed")}
         onNavigate={(page) => navigate(page)}
         onImportTasks={askImport}
+        onStartFlow={askFlow}
       />
     );
 
@@ -332,7 +355,9 @@ export function App() {
                 <Board onNavigate={(page) => navigate(page)} importAsked={importAsked} />
               ) : null}
               {current === "routines" ? <Routines onNavigate={(page) => navigate(page)} /> : null}
-              {current === "review" ? <Review onNavigate={(page) => navigate(page)} /> : null}
+              {current === "review" ? (
+                <Review onNavigate={(page) => navigate(page)} asked={flowAsked} />
+              ) : null}
               {current !== "today" &&
               current !== "settings" &&
               current !== "inbox" &&

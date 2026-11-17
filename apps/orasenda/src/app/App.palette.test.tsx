@@ -1,3 +1,4 @@
+import { resetFlowAsk } from "@features/review/flowAsk";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
 import {
@@ -19,6 +20,7 @@ beforeEach(() => {
   stubPaletteDom();
   resetTimerQueueForTests();
   resetSettingsQueueForTests();
+  resetFlowAsk();
 });
 afterEach(async () => {
   cleanup();
@@ -93,7 +95,5 @@ test("palette_start_shutdown_from_the_review_page_opens_the_flow_again", async (
   await emitPaletteOpen();
   fireEvent.click(screen.getByRole("option", { name: "Start shutdown" }));
   await settle();
-  expect(
-    screen.getByRole("heading", { level: 1, name: "Unfinished tasks" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 1, name: "Unfinished tasks" })).toBeInTheDocument();
 });

@@ -158,6 +158,9 @@ const IMPORT_TASKS: Command = {
   hint: "From Reminders, Todoist or Things into Backlog",
 };
 
+/** Opens Review's shutdown flow. Always listed while the main window is up. */
+const START_SHUTDOWN: Command = { id: "startShutdown", label: "Start shutdown" };
+
 /** The commands available now, in the order the palette shows them (command-palette.md). */
 export function paletteCommands(input: PaletteInput): Command[] {
   if (input.tasksOnly) return taskRows(input.tasks);
@@ -172,6 +175,7 @@ export function paletteCommands(input: PaletteInput): Command[] {
     ...taskCommands(input),
     captureCommand(input),
     IMPORT_TASKS,
+    START_SHUTDOWN,
     ...focusViewCommands(input),
     ...settingsCommands(input),
     ...pages,

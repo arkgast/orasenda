@@ -21,7 +21,9 @@ test("shutdown_by_keyboard_end_to_end", async () => {
   expect(screen.getByText("Fix sync bug")).toBeInTheDocument();
   await press("Continue");
   expect(heading()).toHaveTextContent("Reflect");
-  fireEvent.change(screen.getByLabelText("What went well?"), { target: { value: "  A calm day " } });
+  fireEvent.change(screen.getByLabelText("What went well?"), {
+    target: { value: "  A calm day " },
+  });
   await press("Continue");
   expect(argsOf(backend.calls, "shutdown_complete")).toEqual([
     {
