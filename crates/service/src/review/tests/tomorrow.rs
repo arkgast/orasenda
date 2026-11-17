@@ -1,14 +1,14 @@
 //! The shutdown's tomorrow lines: routines, tasks due, planned sessions, this week's priorities.
 
-use orasenda_core::NotificationStatus;
 use orasenda_core::LocalDate;
+use orasenda_core::NotificationStatus;
 use orasenda_store::reflections::{self, ReflectionKind, ReflectionWrite};
 
 use crate::api::{Lane, RoutineDraft, TaskDraft};
 use crate::board::run_task_add;
 use crate::routines::run_routine_create;
-use crate::session::test_support::{T0, TestHost};
 use crate::session::lock;
+use crate::session::test_support::{T0, TestHost};
 
 /// A fresh install, UTC+1. `T0` is Saturday 7 November 2026, 01:00 local.
 fn host() -> TestHost {
@@ -35,7 +35,13 @@ fn routine(host: &TestHost, name: &str, minute: Option<u16>, days: u8) {
     run_routine_create(host, &draft).expect("routine saved");
 }
 
-fn task(host: &TestHost, title: &str, lane: Lane, estimate: Option<u8>, due: Option<&str>) -> String {
+fn task(
+    host: &TestHost,
+    title: &str,
+    lane: Lane,
+    estimate: Option<u8>,
+    due: Option<&str>,
+) -> String {
     let draft = TaskDraft {
         title: title.into(),
         lane: Some(lane),
@@ -57,14 +63,20 @@ fn tomorrow_routines_with_times() {
     assert_eq!(got[0], "Sunday 8 November.");
     assert_eq!(
         got[1],
-        "Routines: Morning pages at 07:30, Evening wind-down at 21:00."
+        "Routines: Morning pages at 7:30 AM, Evening wind-down at 9:00 PM."
     );
 }
 
 #[test]
 fn tomorrow_tasks_due() {
     let host = host();
-    task(&host, "Send invoice", Lane::Backlog, None, Some("2026-11-08"));
+    task(
+        &host,
+        "Send invoice",
+        Lane::Backlog,
+        None,
+        Some("2026-11-08"),
+    );
     task(&host, "Later one", Lane::Backlog, None, Some("2026-11-09"));
     task(&host, "Already done", Lane::Done, None, Some("2026-11-08"));
     let got = lines(&host);
@@ -82,7 +94,9 @@ fn tomorrow_planned_with_buffer() {
     let buffer = lock(&host.0.service).settings().board_estimate_buffer;
     let planned = crate::board::view::planned(2, buffer) + crate::board::view::planned(3, buffer);
     assert!(
-        got.contains(&format!("Planned {planned} sessions with a {buffer}% buffer")),
+        got.contains(&format!(
+            "Planned {planned} sessions with a {buffer}% buffer"
+        )),
         "{got:?}"
     );
 }
@@ -103,14 +117,20 @@ fn tomorrow_uses_current_week_priorities() {
         priorities: vec![id.into()],
         complete: true,
     };
-    let store = lock(&host.0.service).store().expect("a store");
+    let service = lock(&host.0.service);
+    let store = service.store().expect("a store");
     // Saturday 7 November belongs to the week of Monday 2 November.
     store
-        .write(T0, |txn| reflections::upsert(txn, &write("2026-11-02", &this)))
+        .write(T0, |txn| {
+            reflections::upsert(txn, &write("2026-11-02", &this))
+        })
         .expect("saved");
     store
-        .write(T0, |txn| reflections::upsert(txn, &write("2026-11-09", &next)))
+        .write(T0, |txn| {
+            reflections::upsert(txn, &write("2026-11-09", &next))
+        })
         .expect("saved");
+    drop(service);
     let got = lines(&host);
     assert!(
         got.contains(&"Priorities this week: This week.".to_owned()),
@@ -123,6 +143,10 @@ fn tomorrow_empty_day() {
     let host = host();
     assert_eq!(
         lines(&host),
-        vec!["Sunday 8 November.", "No routines scheduled.", "Nothing due."]
+        vec![
+            "Sunday 8 November.",
+            "No routines scheduled.",
+            "Nothing due."
+        ]
     );
 }
