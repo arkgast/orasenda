@@ -31,7 +31,8 @@ fn samples() -> Vec<(&'static str, String, bool)> {
     }
     for range in RANGES {
         let start = date(2026, 11, 16);
-        add("bar_label", bar_label(range, start), false);
+        add("bar_label", bar_label(range, start, false), false);
+        add("bar_label", bar_label(range, start, true), false);
         add("bar_spoken", bar_spoken(range, start, 0), false);
         add("bar_spoken", bar_spoken(range, start, 95), false);
         for since in [None, Some(date(2026, 11, 3))] {
@@ -112,6 +113,12 @@ fn words_have_no_banned_copy() {
     for (name, line, percent) in lines {
         let lower = line.to_lowercase();
         assert!(!line.contains('!'), "{name}: {line}");
+        assert!(
+            !line
+                .chars()
+                .any(|c| matches!(c as u32, 0x1F300..=0x1FAFF | 0x2600..=0x27BF)),
+            "{name}: {line}"
+        );
         for word in BANNED {
             assert!(!lower.contains(word), "{name}: {line}");
         }

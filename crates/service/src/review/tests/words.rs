@@ -41,6 +41,10 @@ fn habit_line_since_creation() {
         habit_line(1, since, StatsRange::Weeks8),
         "Done on 1 day since 3 November."
     );
+    assert_eq!(
+        habit_line(0, since, StatsRange::Week),
+        "No check-ins since 3 November."
+    );
 }
 
 #[test]
@@ -102,9 +106,18 @@ fn no_goal_gives_none() {
 #[test]
 fn bar_words_by_range() {
     let tuesday = date(2026, 11, 17);
-    assert_eq!(bar_label(StatsRange::Week, tuesday), "Tue");
-    assert_eq!(bar_label(StatsRange::Weeks8, date(2026, 11, 16)), "16 Nov");
-    assert_eq!(bar_label(StatsRange::Months6, date(2026, 10, 1)), "Oct");
+    assert_eq!(bar_label(StatsRange::Week, tuesday, false), "Tue");
+    assert_eq!(
+        bar_label(StatsRange::Weeks8, date(2026, 11, 16), false),
+        "16 Nov"
+    );
+    assert_eq!(
+        bar_label(StatsRange::Months6, date(2026, 10, 1), false),
+        "Oct"
+    );
+    assert_eq!(bar_label(StatsRange::Week, tuesday, true), "Today");
+    assert_eq!(bar_label(StatsRange::Weeks8, tuesday, true), "This week");
+    assert_eq!(bar_label(StatsRange::Months6, tuesday, true), "This month");
     assert_eq!(
         bar_spoken(StatsRange::Week, tuesday, 130),
         "Tuesday 17 November, 2 hours 10 minutes"

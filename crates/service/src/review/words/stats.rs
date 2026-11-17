@@ -63,8 +63,16 @@ pub(crate) fn goal_words(minutes: u32, goal_minutes: u32) -> Option<String> {
     Some(format!("Goal {}{reached}", duration(goal_minutes)))
 }
 
-/// "Tue", "16 Nov" or "Oct".
-pub(crate) fn bar_label(range: StatsRange, start: LocalDate) -> String {
+/// "Tue", "16 Nov" or "Oct"; "Today", "This week" or "This month" for the current bar.
+pub(crate) fn bar_label(range: StatsRange, start: LocalDate, current: bool) -> String {
+    if current {
+        return match range {
+            StatsRange::Week => "Today",
+            StatsRange::Weeks8 => "This week",
+            StatsRange::Months6 => "This month",
+        }
+        .to_owned();
+    }
     let month = &month_name(start)[..3];
     match range {
         StatsRange::Week => start.weekday().short().to_owned(),
@@ -112,7 +120,7 @@ pub(crate) fn habit_line(days: u32, since: Option<LocalDate>, range: StatsRange)
         (None, StatsRange::Weeks8) => "in these 8 weeks".to_owned(),
         (None, StatsRange::Months6) => "in these 6 months".to_owned(),
     };
-    if days == 0 && since.is_none() {
+    if days == 0 {
         return format!("No check-ins {span}.");
     }
     format!("Done on {} {span}.", count(days, "day", "days"))
@@ -151,8 +159,8 @@ pub(crate) fn estimate_line(tasks: u32, planned: u32, actual: u32) -> Option<Str
 /// The buffer suggestion's sentence.
 pub(crate) fn buffer_line(tasks: u32, planned: u32, actual: u32, percent: u8) -> String {
     format!(
-        "{} finished tasks: {} planned, {} of 5 minutes or more. A {percent}% buffer would fit these.",
-        tasks,
+        "{}: {} planned, {} of 5 minutes or more. A {percent}% buffer would fit these.",
+        count(tasks, "finished task", "finished tasks"),
         count(planned, "session", "sessions"),
         count(actual, "session", "sessions"),
     )
