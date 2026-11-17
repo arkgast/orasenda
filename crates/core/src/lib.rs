@@ -8,6 +8,7 @@ pub mod blocking;
 pub mod clock;
 pub mod platform;
 pub mod rank;
+pub mod review;
 pub mod routines;
 pub mod timer;
 pub mod usage;
