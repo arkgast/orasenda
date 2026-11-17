@@ -71,6 +71,8 @@ pub struct DataCounts {
     pub runs: u32,
     /// Board tasks.
     pub tasks: u32,
+    /// Reflections, a data-inventory count only.
+    pub reflections: u32,
 }
 
 impl From<Counts> for DataCounts {
@@ -85,6 +87,7 @@ impl From<Counts> for DataCounts {
             checks: counts.checks,
             runs: counts.runs,
             tasks: counts.tasks,
+            reflections: counts.reflections,
         }
     }
 }

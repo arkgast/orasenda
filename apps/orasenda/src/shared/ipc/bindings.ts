@@ -590,6 +590,8 @@ export type DataCounts = {
 	runs: number,
 	/**  Board tasks. */
 	tasks: number,
+	/**  Reflections, a data-inventory count only. */
+	reflections: number,
 };
 
 export type DataError = {

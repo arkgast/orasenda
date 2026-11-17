@@ -14,6 +14,7 @@ pub struct Counts {
     pub checks: u32,
     pub runs: u32,
     pub tasks: u32,
+    pub reflections: u32,
 }
 
 /// Counts live rows: tombstones (`deleted_at` set) are skipped. `setting` and `routine_run`
@@ -32,5 +33,6 @@ pub fn counts(txn: &Txn) -> Result<Counts, StoreError> {
         checks: count("SELECT count(*) FROM habit_check WHERE deleted_at IS NULL")?,
         runs: count("SELECT count(*) FROM routine_run")?,
         tasks: count("SELECT count(*) FROM task WHERE deleted_at IS NULL")?,
+        reflections: count("SELECT count(*) FROM reflection WHERE deleted_at IS NULL")?,
     })
 }

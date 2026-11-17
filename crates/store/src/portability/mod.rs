@@ -4,6 +4,7 @@
 
 mod merge;
 mod probe;
+mod reflection_rows;
 mod routine_rows;
 mod rows;
 mod snapshot;
@@ -13,6 +14,7 @@ mod tests;
 
 pub use merge::{MergeCounts, merge};
 pub use probe::{Probe, ProbeError, probe};
+pub use reflection_rows::ReflectionRowAll;
 pub use routine_rows::{CheckRowAll, HabitRowAll, RoutineRowAll, RunRowAll};
 pub use rows::{NoteRowAll, PresetRowAll, SessionRowAll, SettingRow, SyncRows, TaskRowAll, rows};
 pub use stats::{Counts, counts};

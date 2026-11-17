@@ -25,6 +25,7 @@ const overview = (backups: BackupEntry[]): DataOverview_Serialize => ({
     habits: 0,
     checks: 0,
     runs: 0,
+    reflections: 0,
     tasks: 0,
   },
   folder: "/Users/test/Library/Application Support/com.veloud.orasenda",

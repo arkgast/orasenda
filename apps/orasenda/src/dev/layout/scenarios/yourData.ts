@@ -16,6 +16,7 @@ function overview(patch: Record<string, unknown> = {}) {
       habits: 0,
       checks: 0,
       runs: 0,
+      reflections: 0,
     },
     folder: FOLDER,
     backups: [],
@@ -39,6 +40,7 @@ const IMPORTED = {
       habits: 0,
       checks: 0,
       runs: 0,
+      reflections: 0,
     },
     updated: {
       sessions: 0,
@@ -49,6 +51,7 @@ const IMPORTED = {
       habits: 0,
       checks: 0,
       runs: 0,
+      reflections: 0,
     },
   },
 };

@@ -1,5 +1,6 @@
 //! Every row of the syncable tables, tombstones included, as plain structs.
 
+use super::reflection_rows::{self, ReflectionRowAll};
 use super::routine_rows::{self, CheckRowAll, HabitRowAll, RoutineRowAll, RunRowAll};
 use crate::{StoreError, Txn};
 
@@ -100,6 +101,7 @@ pub struct SyncRows {
     pub habits: Vec<HabitRowAll>,
     pub checks: Vec<CheckRowAll>,
     pub runs: Vec<RunRowAll>,
+    pub reflections: Vec<ReflectionRowAll>,
 }
 
 /// Reads every row of the syncable tables, removed ones included.
@@ -225,5 +227,6 @@ pub fn rows(txn: &Txn) -> Result<SyncRows, StoreError> {
         habits,
         checks,
         runs,
+        reflections: reflection_rows::read(conn)?,
     })
 }

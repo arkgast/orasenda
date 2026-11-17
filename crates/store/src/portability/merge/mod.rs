@@ -2,10 +2,12 @@
 //!
 //! Each table has its own file. A row only in the file is inserted; on both sides the later
 //! `updated_at` wins (for check-ins, `checked_at`) and a tie keeps the local row. Every written row logs every field through
-//! `Txn::log_fields`; an unchanged row logs nothing.
+//! `Txn::log_fields`; an unchanged row logs nothing. `reflection` is the exception: it merges per
+//! field and logs only changed fields (see `reflections.rs`).
 
 mod notes;
 mod presets;
+mod reflections;
 mod routines;
 mod sessions;
 mod settings;
@@ -78,6 +80,13 @@ pub fn merge(txn: &mut Txn, rows: &SyncRows) -> Result<MergeCounts, StoreError> 
     for row in &rows.runs {
         let (a, u) = (&mut counts.added.runs, &mut counts.updated.runs);
         routines::merge_run(txn, row)?.tally(a, u);
+    }
+    for row in &rows.reflections {
+        let (a, u) = (
+            &mut counts.added.reflections,
+            &mut counts.updated.reflections,
+        );
+        reflections::merge_row(txn, row)?.tally(a, u);
     }
     Ok(counts)
 }
