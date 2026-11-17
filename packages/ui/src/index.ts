@@ -57,6 +57,7 @@ export { TimerRing } from "./components/ui/timer-ring";
 export { TimerStrip } from "./components/ui/timer-strip";
 export { Toast } from "./components/ui/toast";
 export { Tooltip } from "./components/ui/tooltip";
+export { TrendBars } from "./components/ui/trend-bars";
 export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-pad";
 export type { ChecklistItem, ChecklistProps } from "./components/ui/checklist";
 export type { SelectOption, SelectProps } from "./components/ui/select";
@@ -119,3 +120,4 @@ export type { TimerLayout, TimerLayoutBox, TimerLayoutFn } from "./lib/timer-lay
 export type { TimerStripProps } from "./components/ui/timer-strip";
 export type { ToastProps } from "./components/ui/toast";
 export type * from "./types.ts";
+export type { TrendBar, TrendBarsGoal, TrendBarsProps } from "./components/ui/trend-bars";

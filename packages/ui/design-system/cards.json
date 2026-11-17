@@ -191,6 +191,10 @@
     "group": "Overlays",
     "height": 640
   },
+  "TrendBars": {
+    "group": "Review",
+    "height": 520
+  },
   "WellnessNote": {
     "group": "Routines",
     "height": 120
