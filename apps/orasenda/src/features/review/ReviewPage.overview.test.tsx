@@ -3,6 +3,7 @@ import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { emitReviewChanged, primaries, renderReview, section } from "./ReviewPage.support";
+import { TWO } from "./shutdown/ShutdownFlow.support";
 
 afterEach(async () => {
   cleanup();
@@ -120,4 +121,24 @@ test("review_changed_replaces_the_view", async () => {
     }),
   );
   expect(section("Today")).toHaveTextContent("Shutdown complete at 17:42.");
+});
+
+test("end_after_a_move_takes_the_toast_with_the_flow", async () => {
+  await renderReview(
+    {
+      shutdown_get: () => TWO,
+      shutdown_move: () => ({ token: "t1", line: "Moved 2 tasks to Backlog." }),
+    },
+    { onStart: () => {} },
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Start shutdown" }));
+  await settle();
+  const pick = screen.getByRole("button", { name: "Back to Backlog Write notes" });
+  fireEvent.click(pick);
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await settle();
+  expect(document.querySelector('[data-slot="toast"]')).not.toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /^End/ }));
+  expect(document.querySelector('[data-slot="toast"]')).toBeNull();
+  expect(screen.getByRole("heading", { level: 1, name: "Review" })).toHaveFocus();
 });

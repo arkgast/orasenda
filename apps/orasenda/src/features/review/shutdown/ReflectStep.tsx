@@ -21,6 +21,7 @@ export function ReflectStep({ draft, line, disabled, onChange }: Props): ReactEl
   return (
     <ScrollRegion label="Reflect">
       <div className="app-shutdown-body">
+        {line ? <InlineNotice>{line}</InlineNotice> : null}
         <p className="app-review-line">All three are optional.</p>
         {FIELDS.map(({ key, label }) => (
           <TextArea
@@ -32,7 +33,6 @@ export function ReflectStep({ draft, line, disabled, onChange }: Props): ReactEl
             onChange={(event) => onChange((now) => ({ ...now, [key]: event.target.value }))}
           />
         ))}
-        {line ? <InlineNotice>{line}</InlineNotice> : null}
       </div>
     </ScrollRegion>
   );

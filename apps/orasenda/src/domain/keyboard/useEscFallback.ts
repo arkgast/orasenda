@@ -5,15 +5,14 @@ const OVERLAY =
   '[role="dialog"], [role="alertdialog"], dialog[open], [role="menu"], [role="listbox"]';
 
 /**
- * Esc ends the flow also when focus is outside the `FlowStep` (a click on plain text moves it
- * there). The frame handles Esc from inside and marks it handled, so the window sees it
+ * A window-level Esc for a running flow, for when focus sits outside its frame (a click on plain
+ * text moves it there). A frame that handled Esc marks it handled, so the window sees it
  * `defaultPrevented` and does nothing twice. An overlay that is open takes the key first (looked
- * for in the capture phase, because the overlay closes on this same Esc). The same rule as the
- * run view's `useRunKeys`; a flow takes no single keys, so nothing else is bound.
+ * for in the capture phase, because the overlay closes on this same Esc).
  */
-export function useFlowEsc(end: () => void): void {
-  const latest = useRef(end);
-  latest.current = end;
+export function useEscFallback(leave: () => void): void {
+  const latest = useRef(leave);
+  latest.current = leave;
   useEffect(() => {
     let overlay = false;
     const before = (event: KeyboardEvent) => {

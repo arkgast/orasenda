@@ -92,6 +92,25 @@ export function useShutdown() {
     }
   }, []);
 
+  /** Tomorrow's lines count the Today lane, so a move or an Undo changes them: read them again. */
+  const refreshTomorrow = useCallback(async () => {
+    try {
+      const result = await commands.shutdownGet();
+      if (!live.current) return;
+      if (result.status === "error") {
+        console.error("shutdown_get failed", result.error);
+        return;
+      }
+      const { tomorrow } = result.data;
+      setLoad((now) =>
+        now.status === "ok" ? { status: "ok", view: { ...now.view, tomorrow } } : now,
+      );
+    } catch (error) {
+      // The old lines stay.
+      console.error("shutdown_get failed", error);
+    }
+  }, []);
+
   const toggle = useCallback((id: string) => {
     setPicked((now) => {
       const next = new Set(now);
@@ -109,6 +128,7 @@ export function useShutdown() {
           // A new move replaces the toast of the one before.
           setToast({ line: result.data.line, token: result.data.token });
           setStep(1);
+          await refreshTomorrow();
         } else if (result.error === "notFound") {
           // Nothing could move (a session started, or a task was removed): not worth an alarm.
           setToast(null);
@@ -118,7 +138,7 @@ export function useShutdown() {
           setLine(MOVE_FAILED);
         }
       }),
-    [exclusive],
+    [exclusive, refreshTomorrow],
   );
 
   const complete = useCallback(
@@ -163,15 +183,17 @@ export function useShutdown() {
     void exclusive(async () => {
       const result = await commands.shutdownMoveUndo(token);
       if (!live.current) return;
-      if (result.status === "ok") setToast({ line: result.data, token: null });
-      else if (result.error === "notFound") setToast({ line: UNDO_EXPIRED, token: null });
+      if (result.status === "ok") {
+        setToast({ line: result.data, token: null });
+        await refreshTomorrow();
+      } else if (result.error === "notFound") setToast({ line: UNDO_EXPIRED, token: null });
       else {
         console.error("shutdown_move_undo failed", result.error);
         // The token is still good: Undo stays on offer.
         setToast({ line: UNDO_FAILED, token });
       }
     });
-  }, [toast, exclusive]);
+  }, [toast, exclusive, refreshTomorrow]);
 
   return {
     load,

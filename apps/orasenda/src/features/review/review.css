@@ -82,18 +82,38 @@
   block-size: 100%;
 }
 
-/* Where the Undo toast lives: the flow above its footer (control-lg plus the frame's padding). */
-.app-shutdown-toast-host {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-start: 0;
-  inset-block-end: calc(var(--control-lg) + var(--space-4));
-  contain: layout;
-  pointer-events: none;
+/* The step's stage: the scroll region, then the Undo toast in the flow under it. */
+.app-shutdown-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  block-size: 100%;
+  min-block-size: 0;
 }
 
-.app-shutdown-toast-host > [data-slot="toast"] {
-  pointer-events: auto;
+.app-shutdown-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+/* The toast component is fixed to the window; here it joins the flow instead. */
+.app-shutdown-stage > [data-slot="toast"] {
+  position: static;
+  inset: auto;
+  flex: none;
+  margin-inline: 0;
+  max-inline-size: none;
+}
+
+/* On a short window the toast is one row, so the region keeps its room. */
+@media (max-height: 300px) {
+  .app-shutdown-stage > [data-slot="toast"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 }
 
 /* A live region that only screen readers read. */
@@ -136,6 +156,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+.app-shutdown-task > button {
+  margin-inline-start: auto;
 }
 
 .app-shutdown-task-text {

@@ -15,9 +15,9 @@ type Props = {
  */
 export function MoveToast({ toast, onUndo, onDismiss }: Props): ReactElement {
   return (
-    // The host stops above the flow's footer, and `contain: layout` makes the toast's fixed box
-    // sit inside it: the toast is at the bottom centre of the step, never over End or Continue.
-    <div className="app-shutdown-toast-host">
+    // The toast sits in the flow under the step's scroll region and takes its own room, so it
+    // never covers a line or a field and the region shrinks to make way.
+    <>
       <Toast
         actionLabel={toast.token ? "Undo" : undefined}
         onAction={toast.token ? onUndo : undefined}
@@ -25,6 +25,6 @@ export function MoveToast({ toast, onUndo, onDismiss }: Props): ReactElement {
       >
         {toast.line}
       </Toast>
-    </div>
+    </>
   );
 }

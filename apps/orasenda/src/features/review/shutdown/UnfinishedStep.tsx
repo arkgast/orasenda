@@ -52,6 +52,7 @@ export function UnfinishedStep({ view, picked, line, onToggle }: Props): ReactEl
   return (
     <ScrollRegion label="Unfinished tasks">
       <div className="app-shutdown-body">
+        {line ? <InlineNotice>{line}</InlineNotice> : null}
         <p className="app-review-label">{view.dayLabel}</p>
         {view.unfinished.length === 0 ? (
           <p className="app-review-line">Nothing unfinished.</p>
@@ -67,7 +68,6 @@ export function UnfinishedStep({ view, picked, line, onToggle }: Props): ReactEl
             </ul>
           </>
         )}
-        {line ? <InlineNotice>{line}</InlineNotice> : null}
       </div>
     </ScrollRegion>
   );

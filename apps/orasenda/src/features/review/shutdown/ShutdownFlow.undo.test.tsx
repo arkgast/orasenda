@@ -1,4 +1,4 @@
-import { argsOf, settle } from "@shared/test/fixtures";
+import { argsOf, settle, shutdownView } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
@@ -91,4 +91,49 @@ test("end_closes_the_flow_and_with_it_the_toast", async () => {
   const { onClose } = await moveOne();
   await press(/^End/);
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("tomorrow_reads_again_after_a_move_and_after_undo", async () => {
+  let reads = 0;
+  const { backend } = await moveOne({
+    shutdown_get: () => {
+      reads += 1;
+      return shutdownView({ tomorrow: [`Planned: ${reads} sessions`] });
+    },
+  });
+  expect(argsOf(backend.calls, "shutdown_get")).toHaveLength(2);
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Tomorrow");
+  expect(screen.getByText("Planned: 2 sessions")).toBeInTheDocument();
+  await press("Undo");
+  expect(screen.getByText("Planned: 3 sessions")).toBeInTheDocument();
+});
+
+test("a_failed_tomorrow_read_keeps_the_old_lines", async () => {
+  let reads = 0;
+  await moveOne({
+    shutdown_get: () => {
+      reads += 1;
+      if (reads > 1) throw "store";
+      return shutdownView({ tomorrow: ["Planned: 1 sessions"] });
+    },
+  });
+  expect(screen.getByText("Planned: 1 sessions")).toBeInTheDocument();
+});
+
+test("focus_goes_to_dismiss_after_undo_and_to_the_heading_after_dismiss", async () => {
+  await moveOne();
+  await press("Undo");
+  expect(screen.getByRole("button", { name: "Dismiss" })).toHaveFocus();
+  await press("Dismiss");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+});
+
+test("focus_goes_to_dismiss_when_undo_has_expired", async () => {
+  await moveOne({
+    shutdown_move_undo: () => {
+      throw "notFound";
+    },
+  });
+  await press("Undo");
+  expect(screen.getByRole("button", { name: "Dismiss" })).toHaveFocus();
 });

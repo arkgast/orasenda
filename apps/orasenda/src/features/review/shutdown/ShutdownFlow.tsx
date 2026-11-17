@@ -1,10 +1,10 @@
+import { useEscFallback } from "@domain/keyboard/useEscFallback";
 import { Button, FlowStep, InlineNotice, ScrollRegion } from "@orasenda/ui";
 import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 import { MoveToast } from "./MoveToast";
 import { ReflectStep } from "./ReflectStep";
 import { UnfinishedStep } from "./UnfinishedStep";
-import { useFlowEsc } from "./useFlowEsc";
 import { STEP_TITLES, useShutdown } from "./useShutdown";
 
 type Props = {
@@ -23,7 +23,26 @@ export function ShutdownFlow({ onClose }: Props): ReactElement {
   const heading = useRef<HTMLHeadingElement>(null);
   const root = useRef<HTMLDivElement>(null);
   // Esc also ends the flow when focus sits outside the frame. No single keys: text fields need them.
-  useFlowEsc(onClose);
+  useEscFallback(onClose);
+
+  // Where focus goes when the control that held it leaves: Undo hands it to Dismiss, Dismiss to
+  // the step heading.
+  const afterUndo = useRef(false);
+  const toastKey = state.toast ? `${state.toast.line}|${state.toast.token}` : "";
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the toast changes
+  useEffect(() => {
+    if (!afterUndo.current || state.toast?.token !== null) return;
+    afterUndo.current = false;
+    root.current?.querySelector<HTMLElement>('[data-slot="toast"] button')?.focus();
+  }, [toastKey]);
+  const undo = () => {
+    afterUndo.current = true;
+    state.undo();
+  };
+  const dismiss = () => {
+    state.dismissToast();
+    heading.current?.focus();
+  };
 
   useEffect(() => {
     if (load.status === "loading") return;
@@ -81,27 +100,29 @@ export function ShutdownFlow({ onClose }: Props): ReactElement {
         primary={primary}
         notNow={step === 2 ? { label: "Not now", onClick: state.skipReflect } : undefined}
       >
-        {step === 0 ? (
-          <UnfinishedStep
-            view={view}
-            picked={state.picked}
-            line={state.line}
-            onToggle={state.toggle}
-          />
-        ) : null}
-        {step === 1 ? <Tomorrow view={view} /> : null}
-        {step === 2 ? (
-          <ReflectStep
-            draft={state.draft}
-            line={state.line}
-            disabled={state.busy}
-            onChange={state.setDraft}
-          />
-        ) : null}
+        <div className="app-shutdown-stage">
+          <div className="app-shutdown-scroll">
+            {step === 0 ? (
+              <UnfinishedStep
+                view={view}
+                picked={state.picked}
+                line={state.line}
+                onToggle={state.toggle}
+              />
+            ) : null}
+            {step === 1 ? <Tomorrow view={view} /> : null}
+            {step === 2 ? (
+              <ReflectStep
+                draft={state.draft}
+                line={state.line}
+                disabled={state.busy}
+                onChange={state.setDraft}
+              />
+            ) : null}
+          </div>
+          {state.toast ? <MoveToast toast={state.toast} onUndo={undo} onDismiss={dismiss} /> : null}
+        </div>
       </FlowStep>
-      {state.toast ? (
-        <MoveToast toast={state.toast} onUndo={state.undo} onDismiss={state.dismissToast} />
-      ) : null}
     </div>
   );
 }
