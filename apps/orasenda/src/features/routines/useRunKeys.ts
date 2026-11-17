@@ -1,9 +1,5 @@
+import { useEscFallback } from "@domain/keyboard/useEscFallback";
 import { useSingleKeys } from "@domain/keyboard/useSingleKeys";
-import { useEffect, useRef } from "react";
-
-/** Anything that takes Esc for itself: the palette, a dialog, an open menu or list. */
-const OVERLAY =
-  '[role="dialog"], [role="alertdialog"], dialog[open], [role="menu"], [role="listbox"]';
 
 type Keys = {
   /** `Settings.singleKey`: Enter and S at rest work only while it is on. */
@@ -29,24 +25,5 @@ export function useRunKeys({ singleKeys, done, skip, leave }: Keys): void {
   if (skip) map.s = skip;
   useSingleKeys(map, singleKeys);
 
-  const latest = useRef(leave);
-  latest.current = leave;
-  useEffect(() => {
-    let overlay = false;
-    const before = (event: KeyboardEvent) => {
-      if (event.key === "Escape") overlay = document.querySelector(OVERLAY) !== null;
-    };
-    const after = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented || overlay || event.repeat) return;
-      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-      event.preventDefault();
-      latest.current();
-    };
-    window.addEventListener("keydown", before, true);
-    window.addEventListener("keydown", after);
-    return () => {
-      window.removeEventListener("keydown", before, true);
-      window.removeEventListener("keydown", after);
-    };
-  }, []);
+  useEscFallback(leave);
 }

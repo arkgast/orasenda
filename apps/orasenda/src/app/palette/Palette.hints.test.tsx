@@ -29,6 +29,7 @@ async function open(keyboard = KEYBOARD) {
       onNavigate={() => {}}
       onMode={() => {}}
       onImportTasks={() => {}}
+      onStartFlow={() => {}}
     />,
   );
   await settle();

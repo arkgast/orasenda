@@ -39,6 +39,7 @@ async function open(replies = {}) {
       onNavigate={onNavigate}
       onMode={() => {}}
       onImportTasks={() => {}}
+      onStartFlow={() => {}}
     />,
   );
   await settle();

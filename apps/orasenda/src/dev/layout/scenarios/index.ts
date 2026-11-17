@@ -9,6 +9,7 @@ import { FOCUS } from "./focus";
 import { INBOX } from "./inbox";
 import { KEYBOARD_SCENARIOS } from "./keyboard";
 import { REVIEW_SCENARIOS } from "./review";
+import { REVIEW_SHUTDOWN_SCENARIOS } from "./reviewShutdown";
 import { ROUTINES_SCENARIOS } from "./routines";
 import { SETTINGS_SCENARIOS } from "./settings";
 import { TIMER } from "./timer";
@@ -30,6 +31,7 @@ const SCENARIOS: Record<string, Handler> = {
   ...YOUR_DATA,
   ...ROUTINES_SCENARIOS,
   ...REVIEW_SCENARIOS,
+  ...REVIEW_SHUTDOWN_SCENARIOS,
   ...BOARD_SCENARIOS,
   ...BOARD_LONG_TITLE,
   ...BOARD_SHEET_SCENARIOS,
