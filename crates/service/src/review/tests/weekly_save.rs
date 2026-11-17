@@ -240,7 +240,7 @@ fn week_priority_current_not_planned_on_friday() {
     // Friday 13 November: this week starts 9 November, next week 16 November.
     save(
         &host,
-        "2026-11-09",
+        "2026-11-16",
         vec![PriorityPick::Task(planned.clone())],
     )
     .expect("saved");
