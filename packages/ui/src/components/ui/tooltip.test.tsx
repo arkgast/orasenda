@@ -165,8 +165,8 @@ function Trap({ onClose }: { onClose?: () => void }) {
 
 test("tooltip_unmount_in_trap_keeps_focus", async () => {
   render(<Trap />);
-  const first = screen.getByText("first");
-  act(() => screen.getByText("second").focus());
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
   fireEvent.keyDown(document, { key: "Tab" });
   act(() => first.focus());
   expect(panel()).not.toBeNull();
@@ -175,18 +175,18 @@ test("tooltip_unmount_in_trap_keeps_focus", async () => {
   await act(async () => {
     await Promise.resolve();
   });
-  expect(document.activeElement).not.toBe(screen.getByTestId("container"));
-  act(() => screen.getByText("second").focus());
+  expect(document.activeElement).not.toBe(screen.getByRole("dialog", { name: "Trap" }));
+  act(() => screen.getByRole("button", { name: "second" }).focus());
   await advanceFrames();
   expect(panel()).toBeNull();
-  expect(document.activeElement).toBe(screen.getByText("second"));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "second" }));
 });
 
 test("esc_reaches_dialog_with_tooltip_open", async () => {
   const onClose = vi.fn();
   render(<Trap onClose={onClose} />);
-  const first = screen.getByText("first");
-  act(() => screen.getByText("second").focus());
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
   fireEvent.keyDown(document, { key: "Tab" });
   act(() => first.focus());
   expect(panel()).not.toBeNull();
@@ -196,5 +196,25 @@ test("esc_reaches_dialog_with_tooltip_open", async () => {
   fireEvent.keyDown(document.body, { key: "Escape" });
   expect(panel()).toBeNull();
   await advanceFrames();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("second_esc_in_pending_window_drops_the_resend", async () => {
+  const onClose = vi.fn();
+  render(<Trap onClose={onClose} />);
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => first.focus());
+  act(() => first.blur());
+  const seen = vi.fn();
+  window.addEventListener("keydown", seen, true);
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  // A second real Esc arrives before the held press is sent again.
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  await advanceFrames();
+  window.removeEventListener("keydown", seen, true);
+  // The two real presses only: nothing is sent again afterwards.
+  expect(seen).toHaveBeenCalledTimes(1);
   expect(onClose).toHaveBeenCalledTimes(1);
 });
