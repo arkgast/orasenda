@@ -1,4 +1,4 @@
-import { type StatsRange, type StatsView_Serialize } from "@shared/ipc/bindings";
+import type { StatsRange, StatsView_Serialize } from "@shared/ipc/bindings";
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import {
   argsOf,
@@ -10,7 +10,7 @@ import {
   statsView,
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { renderReview, section } from "./ReviewPage.support";
 

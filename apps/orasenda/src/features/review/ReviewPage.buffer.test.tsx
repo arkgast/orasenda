@@ -48,7 +48,9 @@ test("use_buffer_sets_setting", async () => {
   shown = statsView();
   fireEvent.click(within(section("Stats")).getByRole("button", { name: "Use 40%" }));
   await waitFor(() => expect(argsOf(backend.calls, "settings_set")).toHaveLength(1));
-  const sent = argsOf(backend.calls, "settings_set")[0] as { settings: { boardEstimateBuffer: number } };
+  const sent = argsOf(backend.calls, "settings_set")[0] as {
+    settings: { boardEstimateBuffer: number };
+  };
   expect(sent.settings.boardEstimateBuffer).toBe(40);
   await settle();
   // The stats are read again, and the notice goes once the buffer matches.

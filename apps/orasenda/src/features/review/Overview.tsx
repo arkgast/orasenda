@@ -1,6 +1,7 @@
 import { Button, Icon } from "@orasenda/ui";
 import type { PriorityView, ReviewPrimary, ReviewView } from "@shared/ipc/bindings";
 import { type ReactElement, type ReactNode, useId } from "react";
+import { StatsSection } from "./StatsSection";
 
 /** A guided review: the day's shutdown or the week's review. */
 export type Flow = "shutdown" | "weekly";
@@ -103,7 +104,7 @@ export function Overview({ view, onStart }: Props): ReactElement {
           </div>
         ) : null}
       </Section>
-      {/* V15b mounts the Stats section here. */}
+      <StatsSection />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { INBOX } from "./inbox";
 import { KEYBOARD_SCENARIOS } from "./keyboard";
 import { REVIEW_SCENARIOS } from "./review";
 import { REVIEW_SHUTDOWN_SCENARIOS } from "./reviewShutdown";
+import { REVIEW_STATS_SCENARIOS } from "./reviewStats";
 import { ROUTINES_SCENARIOS } from "./routines";
 import { SETTINGS_SCENARIOS } from "./settings";
 import { TIMER } from "./timer";
@@ -32,6 +33,7 @@ const SCENARIOS: Record<string, Handler> = {
   ...ROUTINES_SCENARIOS,
   ...REVIEW_SCENARIOS,
   ...REVIEW_SHUTDOWN_SCENARIOS,
+  ...REVIEW_STATS_SCENARIOS,
   ...BOARD_SCENARIOS,
   ...BOARD_LONG_TITLE,
   ...BOARD_SHEET_SCENARIOS,

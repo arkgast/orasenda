@@ -41,6 +41,8 @@ const NAMES = [
   "reviewUnavailable",
   "reviewShutdown",
   "reviewShutdownEmpty",
+  "reviewStatsWeeks",
+  "reviewStatsGap",
   "boardWeek",
   "boardDrag",
   "boardOver",
