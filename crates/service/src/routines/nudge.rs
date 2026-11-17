@@ -42,27 +42,31 @@ pub fn nudge_text(name: &str) -> String {
 }
 
 /// Posts the nudge for each routine that became due, once per new local minute. The service
-/// lock is never held while the notifier is asked or posts.
-pub fn nudge_due<H: Host>(host: &H) {
+/// lock is never held while the notifier is asked or posts. True when at least one nudge was
+/// posted, so the review nudges give way for the minute.
+pub fn nudge_due<H: Host>(host: &H) -> bool {
     let Some(service) = host.service() else {
-        return;
+        return false;
     };
     let due = lock(service).routines_due(host.now_ms());
     if due.is_empty() {
-        return;
+        return false;
     }
     let notifier = host.notifier();
     let status = notifier.status();
     store_status(host, status);
     if status != NotificationStatus::Granted {
-        return;
+        return false;
     }
     let fresh = lock(service).mark_nudged(due);
+    let mut posted = false;
     for name in fresh {
-        if let Err(error) = notifier.post(&nudge_text(&name), "") {
-            eprintln!("routines: could not post the due nudge ({error})");
+        match notifier.post(&nudge_text(&name), "") {
+            Ok(()) => posted = true,
+            Err(error) => eprintln!("routines: could not post the due nudge ({error})"),
         }
     }
+    posted
 }
 
 impl SessionService {

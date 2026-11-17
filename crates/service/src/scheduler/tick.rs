@@ -45,8 +45,8 @@ fn tick_once<H: Host>(host: &H) {
     if let Some(view) = review {
         crate::review::emit_changed(host, &view);
     }
-    // Once per new local minute: the routines whose time has come.
-    crate::routines::nudge_due(host);
+    // Once per new local minute: the routines whose time has come, then the review nudges.
+    crate::review::nudge_due(host, crate::routines::nudge_due(host));
 }
 
 /// Emits one `clock-tick` now.

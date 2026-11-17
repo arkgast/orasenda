@@ -3,6 +3,7 @@
 
 mod buffer;
 mod emit;
+mod nudge;
 mod shutdown;
 mod state;
 mod stats;
@@ -15,8 +16,9 @@ pub(crate) mod words;
 pub use buffer::run_buffer_suggestion_dismiss;
 pub(crate) use emit::changed_view;
 pub use emit::emit_changed;
+pub use nudge::nudge_due;
 pub use shutdown::{run_shutdown_complete, run_shutdown_get};
-pub(crate) use state::ReviewState;
+pub(crate) use state::{NudgeKind, ReviewState};
 pub use stats::run_review_stats;
 pub(crate) use stats::stats_parts;
 pub use undo::{run_shutdown_move, run_shutdown_move_undo};
