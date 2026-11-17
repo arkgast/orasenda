@@ -14,20 +14,17 @@
 
 use orasenda_core::review::planned_week;
 use orasenda_core::routines::{due_now, minute_of_day};
-use orasenda_core::{LocalDate, NotificationStatus, Weekday, Weekdays};
-use orasenda_store::reflections::{self, ReflectionKind, reflection_id};
-use orasenda_store::{StoreError, Txn};
+use orasenda_core::{LocalDate, NotificationStatus, Weekdays};
+use orasenda_store::StoreError;
+use orasenda_store::reflections::ReflectionKind;
 
 use super::NudgeKind;
+use super::view::{is_complete, weekly_weekday};
 use super::words;
-use crate::api::WeeklyDay;
 use crate::scheduler::{Host, store_status};
 use crate::session::{SessionService, lock};
 
 const MINUTE_MS: u64 = 60_000;
-
-/// The shutdown time outside 04:00 to 23:59 reads as this default (17:30).
-const DEFAULT_SHUTDOWN_TIME: u16 = 1050;
 
 /// A nudge that is due now: its kind and the local date it is for.
 type Pending = (NudgeKind, LocalDate);
@@ -84,10 +81,8 @@ impl SessionService {
         let today = local.today;
         // Yesterday's marks can't match again.
         self.review.nudge.nudged.retain(|(_, day)| *day == today);
-        let time = match settings.review_shutdown_time {
-            240..=1439 => settings.review_shutdown_time,
-            _ => DEFAULT_SHUTDOWN_TIME,
-        };
+        // The stored time is already read within 240..=1439 (default 1050).
+        let time = settings.review_shutdown_time;
         let minute_of_day = minute_of_day(now_ms, local.offset_min);
         let window = |days: Weekdays, kind: NudgeKind| {
             let nudged = self.review.nudge.nudged.contains(&(kind, today));
@@ -103,7 +98,7 @@ impl SessionService {
         let mut shutdown =
             settings.notify_shutdown_due && window(Weekdays::WEEKDAYS, NudgeKind::Shutdown);
         let mut weekly = settings.notify_weekly_review
-            && Weekdays::from_bits(weekday_of(settings.review_weekly_day).bit())
+            && Weekdays::from_bits(weekly_weekday(settings.review_weekly_day).bit())
                 .is_some_and(|days| window(days, NudgeKind::Weekly));
         if !shutdown && !weekly {
             return None;
@@ -141,24 +136,9 @@ impl SessionService {
         let store = self.store().ok_or(StoreError::Closed)?;
         store.read(|txn| {
             Ok((
-                completed(txn, ReflectionKind::Shutdown, today)?,
-                completed(txn, ReflectionKind::Week, planned_week(today))?,
+                is_complete(txn, ReflectionKind::Shutdown, today)?,
+                is_complete(txn, ReflectionKind::Week, planned_week(today))?,
             ))
         })
-    }
-}
-
-/// Whether the reflection of `kind` for the period starting `date` is live and complete.
-fn completed(txn: &Txn, kind: ReflectionKind, date: LocalDate) -> Result<bool, StoreError> {
-    let row = reflections::get(txn, &reflection_id(kind, &date.to_iso()))?;
-    Ok(row.is_some_and(|row| row.deleted_at.is_none() && row.completed_at.is_some()))
-}
-
-fn weekday_of(day: WeeklyDay) -> Weekday {
-    match day {
-        WeeklyDay::Fri => Weekday::Friday,
-        WeeklyDay::Sat => Weekday::Saturday,
-        WeeklyDay::Sun => Weekday::Sunday,
-        WeeklyDay::Mon => Weekday::Monday,
     }
 }

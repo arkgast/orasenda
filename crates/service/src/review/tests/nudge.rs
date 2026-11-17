@@ -4,7 +4,7 @@
 use orasenda_core::NotificationStatus;
 use orasenda_store::reflections::{self, ReflectionKind, ReflectionWrite};
 
-use crate::api::{RoutineDraft, Settings};
+use crate::api::{RoutineDraft, Settings, WeeklyDay};
 use crate::review::nudge_due;
 use crate::routines::run_routine_create;
 use crate::scheduler::iterate;
@@ -21,24 +21,36 @@ fn at(days: u64, minute: u64) -> u64 {
 }
 
 /// The default shutdown time, 17:30.
-const NOW: u64 = 1050;
+const NOW: u16 = 1050;
 
 /// Monday 9 November, 17:30: a weekday that is not the weekly day.
 fn monday() -> u64 {
-    at(2, NOW)
+    at(2, NOW.into())
 }
 
 /// Friday 13 November, 17:30: the shutdown and the weekly review are both due.
 fn friday() -> u64 {
-    at(6, NOW)
+    at(6, NOW.into())
 }
 
 fn host(shutdown: bool, weekly: bool, status: NotificationStatus) -> TestHost {
+    configured(shutdown, weekly, status, NOW, WeeklyDay::Fri)
+}
+
+fn configured(
+    shutdown: bool,
+    weekly: bool,
+    status: NotificationStatus,
+    time: u16,
+    day: WeeklyDay,
+) -> TestHost {
     let host = TestHost::fresh(status);
     let mut service = lock(&host.0.service);
     let settings = Settings {
         notify_shutdown_due: shutdown,
         notify_weekly_review: weekly,
+        review_shutdown_time: time,
+        review_weekly_day: day,
         ..service.settings()
     };
     service.set_settings(settings, T0).expect("saves");
@@ -134,6 +146,7 @@ fn nudge_not_after_window() {
     tick(&host, monday() + 30 * MINUTE);
     tick(&host, friday() + 30 * MINUTE);
     assert!(posts(&host).is_empty());
+    assert_eq!(host.log().count(|e| matches!(e, Event::StatusRead)), 0);
 }
 
 #[test]
@@ -214,11 +227,11 @@ fn routine_nudge_same_minute_marks_review_nudged() {
 #[test]
 fn shutdown_nudge_weekdays_only() {
     let host = granted(true, false);
-    tick(&host, at(0, NOW));
-    tick(&host, at(1, NOW));
+    tick(&host, at(0, NOW.into()));
+    tick(&host, at(1, NOW.into()));
     assert!(posts(&host).is_empty(), "Saturday and Sunday");
     for days in 2..=6 {
-        tick(&host, at(days, NOW));
+        tick(&host, at(days, NOW.into()));
     }
     assert_eq!(posts(&host).len(), 5, "Monday to Friday");
 }
@@ -228,4 +241,33 @@ fn weekly_nudge_on_the_weekly_day_only() {
     let host = granted(false, true);
     tick(&host, monday());
     assert!(posts(&host).is_empty());
+}
+
+#[test]
+fn nudge_follows_the_review_time() {
+    let host = configured(
+        true,
+        false,
+        NotificationStatus::Granted,
+        1200,
+        WeeklyDay::Fri,
+    );
+    tick(&host, at(2, 1050));
+    assert!(posts(&host).is_empty(), "17:30 is before 20:00");
+    tick(&host, at(2, 1200));
+    assert_eq!(posts(&host), vec![SHUTDOWN]);
+}
+
+#[test]
+fn weekly_nudge_follows_the_weekly_day() {
+    let host = configured(true, true, NotificationStatus::Granted, NOW, WeeklyDay::Mon);
+    tick(&host, monday());
+    assert_eq!(posts(&host), vec![WEEKLY]);
+    tick(&host, friday());
+    assert_eq!(posts(&host), vec![SHUTDOWN], "Friday is only the shutdown");
+
+    let host = configured(true, true, NotificationStatus::Granted, NOW, WeeklyDay::Mon);
+    complete(&host, ReflectionKind::Week, "2026-11-09");
+    tick(&host, monday());
+    assert_eq!(posts(&host), vec![SHUTDOWN]);
 }

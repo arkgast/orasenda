@@ -115,17 +115,32 @@ fn build(txn: &Txn, local: When, weekly_day: WeeklyDay) -> Result<ReviewView, St
     })
 }
 
+/// The weekday a weekly day setting names.
+pub(super) fn weekly_weekday(day: WeeklyDay) -> Weekday {
+    match day {
+        WeeklyDay::Fri => Weekday::Friday,
+        WeeklyDay::Sat => Weekday::Saturday,
+        WeeklyDay::Sun => Weekday::Sunday,
+        WeeklyDay::Mon => Weekday::Monday,
+    }
+}
+
+/// Whether the reflection of `kind` for the period starting `date` is live and complete.
+pub(super) fn is_complete(
+    txn: &Txn,
+    kind: ReflectionKind,
+    date: LocalDate,
+) -> Result<bool, StoreError> {
+    let row = live(reflections::get(txn, &reflection_id(kind, &date.to_iso()))?);
+    Ok(row.is_some_and(|row| row.completed_at.is_some()))
+}
+
 /// Weekly from the weekly day until the end of the planned week's Monday while that week has
 /// no completed review; else shutdown while the shutdown day's isn't complete; else none.
 /// With Monday as the weekly day, weekly is Monday only.
 fn primary(today: LocalDate, weekly_day: WeeklyDay, planned: bool, done: bool) -> ReviewPrimary {
     let weekday = today.weekday();
-    let from = match weekly_day {
-        WeeklyDay::Fri => Weekday::Friday,
-        WeeklyDay::Sat => Weekday::Saturday,
-        WeeklyDay::Sun => Weekday::Sunday,
-        WeeklyDay::Mon => Weekday::Monday,
-    };
+    let from = weekly_weekday(weekly_day);
     let due = weekday == Weekday::Monday || (from != Weekday::Monday && weekday >= from);
     if due && !planned {
         ReviewPrimary::Weekly
