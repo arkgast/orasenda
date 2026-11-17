@@ -2,7 +2,8 @@
 //!
 //! Each table has its own file. A row only in the file is inserted; on both sides the later
 //! `updated_at` wins (for check-ins, `checked_at`) and a tie keeps the local row. Every written row logs every field through
-//! `Txn::log_fields`; an unchanged row logs nothing.
+//! `Txn::log_fields`; an unchanged row logs nothing. `reflection` is the exception: it merges per
+//! field and logs only changed fields (see `reflections.rs`).
 
 mod notes;
 mod presets;

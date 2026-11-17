@@ -6,7 +6,7 @@
 //! the file is inserted. Only the fields that changed are logged, like `reflections::upsert`.
 //! A `priorities` value that is not a JSON array of text fails the whole import.
 
-use super::Outcome;
+use super::{Outcome, opt};
 use crate::portability::ReflectionRowAll;
 use crate::portability::reflection_rows::get;
 use crate::{Entity, StoreError, Txn};
@@ -30,8 +30,8 @@ fn texts(row: &ReflectionRowAll) -> [&Option<String>; 5] {
     ]
 }
 
-fn text_value(text: &Option<String>) -> Value {
-    text.clone().map_or(Value::Null, Value::from)
+fn canonical(priorities: &[String]) -> Result<String, StoreError> {
+    serde_json::to_string(priorities).map_err(|e| StoreError::Json(e.to_string()))
 }
 
 fn priority_list(row: &ReflectionRowAll) -> Result<Vec<String>, StoreError> {
@@ -67,12 +67,12 @@ pub(super) fn merge_row(txn: &mut Txn, file: &ReflectionRowAll) -> Result<Outcom
         };
         let value = winner.clone().or_else(|| other.clone());
         if value != *local_texts[i] {
-            changed.push((TEXTS[i], text_value(&value)));
+            changed.push((TEXTS[i], opt(value.clone())));
         }
         *target = value;
     }
-    if file_wins && file.priorities != local.priorities {
-        merged.priorities.clone_from(&file.priorities);
+    if file_wins && priorities != priority_list(&local)? {
+        merged.priorities = canonical(&priorities)?;
         changed.push(("priorities", Value::from(priorities)));
     }
     merged.completed_at = match (local.completed_at, file.completed_at) {
@@ -112,15 +112,12 @@ pub(super) fn merge_row(txn: &mut Txn, file: &ReflectionRowAll) -> Result<Outcom
     Ok(Outcome::Updated)
 }
 
-fn opt(value: Option<i64>) -> Value {
-    value.map_or(Value::Null, Value::from)
-}
-
 fn insert(
     txn: &mut Txn,
     row: &ReflectionRowAll,
     priorities: Vec<String>,
 ) -> Result<Outcome, StoreError> {
+    let canonical_priorities = canonical(&priorities)?;
     txn.conn().execute(
         "INSERT INTO reflection (id, kind, period, went_well, to_improve, outside_control,
              improvement, notes, priorities, completed_at, created_at, updated_at, deleted_at)
@@ -134,7 +131,7 @@ fn insert(
             row.outside_control,
             row.improvement,
             row.notes,
-            row.priorities,
+            canonical_priorities,
             row.completed_at,
             row.created_at,
             row.updated_at,
@@ -147,7 +144,7 @@ fn insert(
     ];
     for (name, text) in TEXTS.iter().zip(texts(row)) {
         if text.is_some() {
-            fields.push((*name, text_value(text)));
+            fields.push((*name, opt(text.clone())));
         }
     }
     if !priorities.is_empty() {
