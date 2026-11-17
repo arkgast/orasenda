@@ -75,8 +75,10 @@ fn emit_at_four_once() {
 fn emit_after_unlock() {
     let host = host();
     iterate(&host);
+    host.log().take();
     host.set_now(T0 + 3 * HOUR);
     iterate(&host);
+    assert_eq!(count(&host), 1, "the tick emits review-changed");
     assert_eq!(under_lock(&host), 0);
     assert!(run_review_get(&host).is_ok());
 }
