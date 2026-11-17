@@ -95,7 +95,6 @@
     "allow-shutdown-get",
     "allow-shutdown-move",
     "allow-shutdown-move-undo",
-    "allow-shutdown-complete",
-    "allow-buffer-suggestion-dismiss"
+    "allow-shutdown-complete"
   ]
 }

@@ -19,9 +19,6 @@ pub use shutdown::{run_shutdown_complete, run_shutdown_get};
 pub(crate) use state::ReviewState;
 pub use stats::run_review_stats;
 pub use undo::{run_shutdown_move, run_shutdown_move_undo};
-pub use view::{check_period, run_review_get};
-// The weekly look-back (V18) reads the same parts for last week.
-#[allow(unused_imports)]
 pub(crate) use stats::stats_parts;
 pub use view::{check_period, run_review_get};
 pub use weekly::run_weekly_get;

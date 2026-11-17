@@ -157,7 +157,6 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         ])
         // The review types no command or event carries yet; each command task adds its own.
         .typ::<ipc::ShutdownView>()
-        .typ::<ipc::WeeklyView>()
         .typ::<ipc::WeeklyDraft>()
         .typ::<ipc::ReviewError>()
 }
