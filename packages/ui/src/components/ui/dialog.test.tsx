@@ -461,3 +461,25 @@ test("dialog_sheet_shift_tab_keeps_browser_order_once_a_plain_tab_landed_on_a_bu
   // Our wrap stays out of it: Notes is not reached (Radix's own scope sends it on to the actions).
   expect(document.activeElement).not.toBe(screen.getByRole("textbox", { name: "Notes" }));
 });
+
+test("dialog_alt_tab_wraps_at_the_first_and_last_stop_both_ways", () => {
+  frames();
+  render(<WrapHost />);
+  showFields();
+  for (const el of document.querySelectorAll("button"))
+    vi.spyOn(el, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+  const close = screen.getByRole("button", { name: "Close" });
+  const done = screen.getByRole("button", { name: "Done" });
+  done.focus();
+  fireEvent.keyDown(done, { key: "Tab", altKey: true });
+  expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Title" }));
+  fireEvent.keyDown(document.activeElement as HTMLElement, {
+    key: "Tab",
+    altKey: true,
+    shiftKey: true,
+  });
+  expect(document.activeElement).toBe(done);
+  close.focus();
+  fireEvent.keyDown(close, { key: "Tab", altKey: true });
+  expect(document.activeElement).toBe(close);
+});

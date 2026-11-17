@@ -1,6 +1,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import type { FocusEvent, JSX, ReactElement } from "react";
 import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { layerContainer } from "../../lib/layer";
 import { cn } from "../../lib/utils";
 import { Kbd } from "./kbd";
@@ -40,6 +41,10 @@ function tokenNumber(name: string): number {
   if (!Number.isFinite(n)) return 0;
   return /ms$/.test(raw) ? n : /s$/.test(raw) ? n * 1000 : n;
 }
+
+// Not a design token: how long the re-sent Esc waits (after React's passive effects ran) for the dialog's layer
+// set to settle. A wait in code, not a motion.
+const RESEND_WAIT_MS = 120;
 
 const panel =
   "z-popover flex w-max max-w-tooltip items-center gap-2 rounded-sm border border-line-strong bg-surface-overlay px-2 py-1 text-body-sm text-ink";
@@ -86,7 +91,76 @@ export function Tooltip({
   };
   const leave = () => afterQuick(() => setHover(false));
 
+  // A blur hides the panel one frame late. While focus is in transit it rests on the body, and a panel removed
+  // from a Radix focus trap in that moment makes the trap focus its container (#643). An Esc press while the
+  // hide is pending unmounts the panel at once. Radix's dialog still counts the panel's layer as above it until
+  // it has re-rendered, so this press is held back and sent again a little later, when the dialog is topmost.
+  const blurFrame = useRef(0);
+  // True from a blur until the next focus or the frame that hides the panel: the hide is pending.
+  const [blurred, setBlurred] = useState(false);
+  const cancelBlur = useCallback(() => {
+    if (blurFrame.current) {
+      cancelAnimationFrame(blurFrame.current);
+      blurFrame.current = 0;
+    }
+  }, []);
+  // The re-sent Esc: its frame and task ids, and the listener that drops it if another Esc arrives first.
+  const resendIds = useRef<{ raf: number; timer: number; drop?: () => void }>({ raf: 0, timer: 0 });
+  const cancelResend = useCallback(() => {
+    const r = resendIds.current;
+    if (r.raf) cancelAnimationFrame(r.raf);
+    if (r.timer) clearTimeout(r.timer);
+    r.drop?.();
+    resendIds.current = { raf: 0, timer: 0 };
+  }, []);
+  useEffect(() => {
+    if (!blurred || !shown || hover) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      cancelBlur();
+      cancel();
+      cancelResend();
+      const target = event.target as Element | null;
+      flushSync(() => {
+        setFocus(false);
+        setHover(false);
+        setBlurred(false);
+      });
+      // Only the original target: if it is gone there is no layer left to send the press to.
+      if (!target?.isConnected) return;
+      const ids = resendIds.current;
+      const sent = new KeyboardEvent("keydown", {
+        key: event.key,
+        code: event.code,
+        bubbles: true,
+        cancelable: true,
+      });
+      // Another real Esc before the re-send has already been handled by the layer below: drop ours.
+      const dropOnEsc = (again: KeyboardEvent) => {
+        if (again !== sent && again.key === "Escape") cancelResend();
+      };
+      window.addEventListener("keydown", dropOnEsc, true);
+      ids.drop = () => window.removeEventListener("keydown", dropOnEsc, true);
+      const resend = () => {
+        cancelResend();
+        if (target.isConnected) target.dispatchEvent(sent);
+      };
+      // Frame, then a task (React's passive effects run in between), then a frame.
+      ids.raf = requestAnimationFrame(() => {
+        ids.timer = window.setTimeout(() => {
+          ids.timer = 0;
+          ids.raf = requestAnimationFrame(resend);
+        }, RESEND_WAIT_MS);
+      });
+    };
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, [cancel, cancelBlur, cancelResend, shown, hover, blurred]);
+  useEffect(() => cancelResend, [cancelResend]);
   useEffect(() => cancel, [cancel]);
+  useEffect(() => cancelBlur, [cancelBlur]);
   useEffect(() => {
     if (!hover && !focus && dismissed) setDismissed(false);
   }, [hover, focus, dismissed]);
@@ -130,11 +204,19 @@ export function Tooltip({
     onFocus: (e: FocusEvent) => {
       own.onFocus?.(e);
       anchor.current = e.currentTarget as HTMLElement;
+      setBlurred(false);
+      cancelBlur();
       if (modality.keyboard) setFocus(true);
     },
     onBlur: (e: unknown) => {
       own.onBlur?.(e);
-      setFocus(false);
+      setBlurred(true);
+      cancelBlur();
+      blurFrame.current = requestAnimationFrame(() => {
+        blurFrame.current = 0;
+        setFocus(false);
+        setBlurred(false);
+      });
     },
   });
 

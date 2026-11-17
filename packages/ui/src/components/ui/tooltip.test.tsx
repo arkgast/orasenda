@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Dialog } from "radix-ui";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { IconButton, Kbd } from "../../index";
 import { Tooltip } from "./tooltip";
@@ -7,6 +8,11 @@ const panel = () => document.querySelector<HTMLElement>("[data-slot=tooltip]");
 const advance = (ms: number) =>
   act(() => {
     vi.advanceTimersByTime(ms);
+  });
+
+const advanceFrames = () =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(400);
   });
 
 beforeEach(() => {
@@ -135,4 +141,80 @@ test("tooltip_adds_no_live_region", () => {
   advance(160);
   expect(panel()).not.toBeNull();
   expect(document.querySelectorAll('[role="status"],[role="alert"],[aria-live]').length).toBe(0);
+});
+
+function Trap({ onClose }: { onClose?: () => void }) {
+  return (
+    <Dialog.Root open onOpenChange={(open) => !open && onClose?.()}>
+      <Dialog.Portal>
+        <Dialog.Content
+          data-slot="dialog-content"
+          data-testid="container"
+          aria-describedby={undefined}
+        >
+          <Dialog.Title>Trap</Dialog.Title>
+          <Tooltip label="Remove item">
+            <button type="button">first</button>
+          </Tooltip>
+          <button type="button">second</button>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+test("tooltip_unmount_in_trap_keeps_focus", async () => {
+  render(<Trap />);
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => first.focus());
+  expect(panel()).not.toBeNull();
+  // The blur leaves focus on the body for a moment; the panel must not unmount in that window.
+  act(() => first.blur());
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(document.activeElement).not.toBe(screen.getByRole("dialog", { name: "Trap" }));
+  act(() => screen.getByRole("button", { name: "second" }).focus());
+  await advanceFrames();
+  expect(panel()).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "second" }));
+});
+
+test("esc_reaches_dialog_with_tooltip_open", async () => {
+  const onClose = vi.fn();
+  render(<Trap onClose={onClose} />);
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => first.focus());
+  expect(panel()).not.toBeNull();
+  // The blur hide is pending. Esc unmounts the panel at once and reaches the dialog once it is topmost.
+  act(() => first.blur());
+  expect(panel()).not.toBeNull();
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  expect(panel()).toBeNull();
+  await advanceFrames();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("second_esc_in_pending_window_drops_the_resend", async () => {
+  const onClose = vi.fn();
+  render(<Trap onClose={onClose} />);
+  const first = screen.getByRole("button", { name: "first" });
+  act(() => screen.getByRole("button", { name: "second" }).focus());
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => first.focus());
+  act(() => first.blur());
+  const seen = vi.fn();
+  window.addEventListener("keydown", seen, true);
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  // A second real Esc arrives before the held press is sent again.
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  await advanceFrames();
+  window.removeEventListener("keydown", seen, true);
+  // Only the second real press reaches window; nothing is re-sent.
+  expect(seen).toHaveBeenCalledTimes(1);
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

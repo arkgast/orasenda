@@ -272,9 +272,9 @@ for (const size of SIZES) {
     ]);
   });
 
-  // Alt+Tab never reaches Add an item: a Remove-item Tooltip unmounting inside the focus trap pulls focus to the
-  // dialog (#643). The ordered list below is the target; it turns on when #643 lands.
-  test.fixme(`board_detail_full_task_alt_tab_walk_keeps_ring_${at}`, async ({ page }) => {
+  // The full Alt+Tab ring from Title to Done, and Alt+Shift+Tab back, with the focus ring visible at every stop
+  // (a Tooltip unmounting inside the focus trap must not pull focus to the dialog, #643). The ordered list is the walk.
+  test(`board_detail_full_task_alt_tab_walk_keeps_ring_${at}`, async ({ page }) => {
     const dialog = await openSheet(page, size, "boardFullTask");
     const stop = async () => {
       // Let the sheet's own frame-late focus moves (the text-field wrap) land before reading the focus.
@@ -334,6 +334,18 @@ for (const size of SIZES) {
     expect(await walk("Alt+Shift+Tab", all.length - 1), "Alt+Shift+Tab").toEqual(
       [...all].reverse(),
     );
+  });
+
+  // Alt+Tab at the last stop wraps to the first, and Alt+Shift+Tab at the first to the last (#643 item 2).
+  test(`board_detail_full_task_alt_tab_wraps_${at}`, async ({ page }) => {
+    const dialog = await openSheet(page, size, "boardFullTask");
+    const done = dialog.getByRole("button", { name: "Done" });
+    const title = dialog.getByRole("textbox", { name: "Title" });
+    await done.focus();
+    await page.keyboard.press("Alt+Tab");
+    await expect(title).toBeFocused();
+    await page.keyboard.press("Alt+Shift+Tab");
+    await expect(done).toBeFocused();
   });
 
   test(`board_detail_save_failure_is_said_in_words_${at}`, async ({ page }) => {
