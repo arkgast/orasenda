@@ -46,7 +46,12 @@ test("primary_follows_view", async () => {
 test("no_primary_when_none", async () => {
   const done = reviewView({
     primary: "none",
-    today: { day: "2026-11-17", dayLabel: "Tuesday 17 November", done: true, line: "Shutdown complete at 17:42." },
+    today: {
+      day: "2026-11-17",
+      dayLabel: "Tuesday 17 November",
+      done: true,
+      line: "Shutdown complete at 17:42.",
+    },
   });
   const { container } = await renderReview({ review_get: () => done });
   expect(primaries(container)).toHaveLength(0);
@@ -57,7 +62,12 @@ test("look_again_after_completion", async () => {
   const onStart = vi.fn();
   const done = reviewView({
     primary: "none",
-    today: { day: "2026-11-17", dayLabel: "Tuesday 17 November", done: true, line: "Shutdown complete at 17:42." },
+    today: {
+      day: "2026-11-17",
+      dayLabel: "Tuesday 17 November",
+      done: true,
+      line: "Shutdown complete at 17:42.",
+    },
   });
   await renderReview({ review_get: () => done }, { onStart });
   const today = section("Today");
@@ -100,7 +110,9 @@ test("no_priorities_shows_no_list", async () => {
 test("review_changed_replaces_the_view", async () => {
   await renderReview();
   await emitReviewChanged(
-    reviewView({ today: { ...reviewView().today, line: "Shutdown complete at 17:42.", done: true } }),
+    reviewView({
+      today: { ...reviewView().today, line: "Shutdown complete at 17:42.", done: true },
+    }),
   );
   expect(section("Today")).toHaveTextContent("Shutdown complete at 17:42.");
 });

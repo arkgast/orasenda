@@ -48,6 +48,7 @@ const settingsPage = load(() => import("@features/settings/Settings").then((m) =
 const inboxPage = load(() => import("@features/inbox/InboxPage").then((m) => m.InboxPage));
 const boardPage = load(() => import("@features/board/BoardPage").then((m) => m.BoardPage));
 const placeholderPage = load(() => import("./Placeholder").then((m) => m.Placeholder));
+const reviewPage = load(() => import("@features/review/ReviewPage").then((m) => m.ReviewPage));
 const focusPage = load(() => import("@features/focus/FocusPage").then((m) => m.FocusPage));
 const routinesPage = load(() =>
   import("@features/routines/RoutinesPage").then((m) => m.RoutinesPage),
@@ -62,6 +63,7 @@ export const pagesReady = Promise.allSettled([
   placeholderPage.ready,
   focusPage.ready,
   routinesPage.ready,
+  reviewPage.ready,
 ]);
 
 function Today(props: ComponentProps<typeof import("@features/today/Today").Today>) {
@@ -88,6 +90,10 @@ function Routines(
   props: ComponentProps<typeof import("@features/routines/RoutinesPage").RoutinesPage>,
 ) {
   const Page = routinesPage.use();
+  return <Page {...props} />;
+}
+function Review(props: ComponentProps<typeof import("@features/review/ReviewPage").ReviewPage>) {
+  const Page = reviewPage.use();
   return <Page {...props} />;
 }
 function Placeholder(props: ComponentProps<typeof import("./Placeholder").Placeholder>) {
@@ -296,7 +302,8 @@ export function App() {
         current === "settings" ||
         current === "inbox" ||
         current === "board" ||
-        current === "routines"
+        current === "routines" ||
+        current === "review"
           ? "app-bound"
           : "",
         compact ? "app-compact" : "",
@@ -325,11 +332,13 @@ export function App() {
                 <Board onNavigate={(page) => navigate(page)} importAsked={importAsked} />
               ) : null}
               {current === "routines" ? <Routines onNavigate={(page) => navigate(page)} /> : null}
+              {current === "review" ? <Review onNavigate={(page) => navigate(page)} /> : null}
               {current !== "today" &&
               current !== "settings" &&
               current !== "inbox" &&
               current !== "board" &&
-              current !== "routines" ? (
+              current !== "routines" &&
+              current !== "review" ? (
                 <Placeholder
                   title={TITLES[current]}
                   compact={compact}

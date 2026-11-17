@@ -6,6 +6,7 @@ import {
   IDLE,
   mockBackend,
   RUNNING,
+  reviewView,
   settle,
 } from "@shared/test/fixtures";
 import { stubPaletteDom } from "@shared/test/paletteDom";
@@ -134,6 +135,19 @@ test("rail_switches_pages_and_other_pages_render_empty_state", async () => {
   await settle();
   expect(screen.getByRole("heading", { level: 1, name: "Today" })).toHaveFocus();
   expect(screen.getByRole("timer")).toBeInTheDocument();
+});
+
+test("review_page_replaces_the_placeholder", async () => {
+  mockBackend({ review_get: () => reviewView() });
+  render(<App />);
+  await settle();
+
+  fireEvent.keyDown(document.body, { key: "6", metaKey: true });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Review" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Review" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("button", { name: "Start shutdown" })).toBeInTheDocument();
+  expect(screen.queryByText("This comes in a later phase.")).toBeNull();
 });
 
 test("first_render_does_not_move_focus", async () => {
