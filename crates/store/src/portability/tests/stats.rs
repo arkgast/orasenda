@@ -67,3 +67,16 @@ fn counts_routines_tables_skip_tombstones() {
         }
     );
 }
+
+#[test]
+fn counts_reflections_skip_tombstones() {
+    let store = Store::open_in_memory(DEVICE).expect("opens");
+    exec(
+        &store,
+        "INSERT INTO reflection (id, kind, period, created_at, updated_at, deleted_at)
+           VALUES ('shutdown:2026-11-16', 'shutdown', '2026-11-16', 1, 1, NULL),
+                  ('shutdown:2026-11-17', 'shutdown', '2026-11-17', 1, 1, 5),
+                  ('week:2026-11-23', 'week', '2026-11-23', 1, 1, NULL);",
+    );
+    assert_eq!(store.read(counts).expect("counts").reflections, 2);
+}

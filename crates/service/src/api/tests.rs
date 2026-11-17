@@ -161,6 +161,19 @@ fn data_counts_include_tasks() {
 }
 
 #[test]
+fn data_counts_include_reflections() {
+    let counts = DataCounts::from(orasenda_store::portability::Counts {
+        reflections: 2,
+        ..Default::default()
+    });
+    assert_eq!(counts.reflections, 2);
+    assert_eq!(
+        serde_json::to_value(counts).unwrap()["reflections"],
+        json!(2)
+    );
+}
+
+#[test]
 fn start_request_task_id_is_optional() {
     let bare: StartRequest = serde_json::from_value(json!({ "quick": false })).unwrap();
     assert_eq!(bare.task_id, None);

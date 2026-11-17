@@ -20,6 +20,7 @@ const COUNTS = {
   habits: 0,
   checks: 0,
   runs: 0,
+  reflections: 0,
 };
 const fail =
   (kind: string, message = "x") =>
@@ -115,6 +116,7 @@ test("import_report_line_non_zero_parts", async () => {
       habits: 0,
       checks: 0,
       runs: 0,
+      reflections: 0,
     },
     updated: { ...COUNTS, settings: 2 },
   };
@@ -135,6 +137,17 @@ test("import_report_line_names_routine_rows", async () => {
   fireEvent.click(button("Import data…"));
   await settle();
   expect(lines()).toEqual(["Added 2 routines, 9 habits and 1 check-in. Updated 3 routine runs."]);
+});
+
+test("import_line_words_reflections", async () => {
+  const report = {
+    added: { ...COUNTS, reflections: 1 },
+    updated: { ...COUNTS, reflections: 3 },
+  };
+  await open({ data_import: () => ({ kind: "imported", report }) });
+  fireEvent.click(button("Import data…"));
+  await settle();
+  expect(lines()).toEqual(["Added 1 reflection. Updated 3 reflections."]);
 });
 
 test("import_refreshes_the_stored_counts", async () => {

@@ -121,3 +121,49 @@ fn open_store_at_applies_pending() {
     assert_eq!(get_meta(&store, "marker"), None);
     assert_eq!(store.device_id(), "device-z");
 }
+
+fn put_reflection(store: &orasenda_store::Store) {
+    use orasenda_store::reflections::{ReflectionKind, ReflectionWrite, upsert};
+    let write = ReflectionWrite {
+        kind: ReflectionKind::Shutdown,
+        period: "2026-11-16".to_owned(),
+        went_well: Some("shipped".to_owned()),
+        to_improve: None,
+        outside_control: None,
+        improvement: None,
+        notes: None,
+        priorities: Vec::new(),
+        complete: true,
+    };
+    store.write(1, |txn| upsert(txn, &write)).unwrap();
+}
+
+fn reflection_count(store: &orasenda_store::Store) -> u32 {
+    store
+        .read(orasenda_store::portability::counts)
+        .unwrap()
+        .reflections
+}
+
+#[test]
+fn delete_all_leaves_no_reflections() {
+    let dir = TempDir::new();
+    let store = open(dir.path());
+    put_reflection(&store);
+    assert_eq!(reflection_count(&store), 1);
+    drop(store);
+    stage_delete(dir.path()).unwrap();
+    assert_eq!(apply_pending(dir.path()), PendingOutcome::Deleted);
+    assert_eq!(reflection_count(&open(dir.path())), 0);
+}
+
+#[test]
+fn a_restored_backup_keeps_its_reflections() {
+    let dir = TempDir::new();
+    let store = open(dir.path());
+    put_reflection(&store);
+    let made = create(&store, dir.path(), BackupKind::Manual, T0).unwrap();
+    drop(store);
+    stage_restore(dir.path(), &made.file).unwrap();
+    assert_eq!(reflection_count(&open(dir.path())), 1);
+}

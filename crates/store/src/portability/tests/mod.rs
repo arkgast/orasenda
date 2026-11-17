@@ -3,6 +3,7 @@
 mod merge;
 mod merge_routines;
 mod probe;
+mod reflections;
 mod rows;
 mod snapshot;
 mod stats;
