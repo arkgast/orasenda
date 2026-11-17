@@ -1,10 +1,14 @@
 //! What the review keeps in memory between ticks and commands, held in `SessionService` as
 //! `review`. Memory only: a relaunch starts every field empty.
 
+use std::collections::BTreeSet;
+
 use orasenda_core::LocalDate;
 use orasenda_store::tasks::LaneBefore;
 
 /// The review's memory: the day marks (V10), the one Undo (V16b) and the nudge marks (V21).
+// `undo` is filled by V16b; until then nothing reads it.
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub(crate) struct ReviewState {
     pub day: DayMarks,
@@ -35,9 +39,18 @@ pub(crate) struct UndoSlot {
 /// The nudges already posted, so each goes out once per period. Empty until V21.
 #[allow(dead_code)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+/// The two review nudges.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum NudgeKind {
+    Shutdown,
+    Weekly,
+}
+
+/// What the nudges remember between ticks, so each kind goes out at most once per day.
+#[derive(Debug, Default)]
 pub(crate) struct NudgeMarks {
-    /// The shutdown day whose nudge was posted.
-    pub shutdown: Option<LocalDate>,
-    /// The planned week whose nudge was posted.
-    pub weekly: Option<LocalDate>,
+    /// The last minute (since the epoch) the nudges were checked.
+    pub minute: Option<u64>,
+    /// The kinds nudged, by local date.
+    pub nudged: BTreeSet<(NudgeKind, LocalDate)>,
 }

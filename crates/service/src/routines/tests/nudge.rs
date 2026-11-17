@@ -191,3 +191,15 @@ fn the_setting_is_saved_under_its_key() {
         .unwrap();
     assert_eq!(stored, Some(true));
 }
+
+#[test]
+fn nudge_due_says_whether_it_posted() {
+    let (host, _) = nudge_host(true, NotificationStatus::Granted);
+    host.set_now(SEVEN);
+    assert!(crate::routines::nudge_due(&host), "posted");
+    host.set_now(SEVEN + MINUTE);
+    assert!(!crate::routines::nudge_due(&host), "already nudged");
+    let (denied, _) = nudge_host(true, NotificationStatus::Denied);
+    denied.set_now(SEVEN);
+    assert!(!crate::routines::nudge_due(&denied), "denied");
+}
