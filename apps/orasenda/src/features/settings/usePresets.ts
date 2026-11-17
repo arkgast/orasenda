@@ -1,6 +1,6 @@
 import type { PresetEntry, PresetError, PresetPatch } from "@shared/ipc/bindings";
 import { commands } from "@shared/ipc/bindings";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BREAK_RANGE, FOCUS_RANGE } from "./customRange";
 
 /** The editor's fields, named as the patch names them. */
@@ -64,15 +64,6 @@ async function call<T>(
   }
 }
 
-/** Moves focus once React has drawn the answer, so it doesn't fall to the page when a control goes. */
-function focusSoon(find: () => Element | null | undefined, tries = 10) {
-  setTimeout(() => {
-    const target = find() as HTMLElement | null | undefined;
-    if (target) target.focus();
-    else if (tries > 0) focusSoon(find, tries - 1);
-  }, 0);
-}
-
 export type PresetEditing = ReturnType<typeof usePresetEditing>;
 
 /**
@@ -92,8 +83,33 @@ export function usePresetEditing(
   const [errors, setErrors] = useState<FieldErrors>({});
   const latest = useRef(presets);
   latest.current = presets;
+  // Where focus goes once React has drawn the answer: `find` is tried after every render of the
+  // list or the line, and it is dropped as soon as it lands or a newer action starts.
+  const [pendingFocus, setPendingFocus] = useState<{
+    find: () => Element | null | undefined;
+  } | null>(null);
+  useEffect(() => {
+    // `presets` and `line` are the renders the target may appear in.
+    void presets;
+    void line;
+    if (!pendingFocus) return;
+    // Someone has moved on (tabbed or changed pane): don't pull focus back.
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== startedOn.current) {
+      setPendingFocus(null);
+      return;
+    }
+    const target = pendingFocus.find() as HTMLElement | null | undefined;
+    if (!target) return;
+    target.focus();
+    setPendingFocus(null);
+  }, [pendingFocus, presets, line]);
+  // What had focus when the last action started: a later change of focus means they moved on.
+  const startedOn = useRef<Element | null>(null);
   const turn = useRef(0);
   const begin = () => {
+    startedOn.current = document.activeElement;
+    setPendingFocus(null);
     onStart();
     return ++turn.current;
   };
@@ -185,12 +201,12 @@ export function usePresetEditing(
         text: `Removed ${old.name}.${moved ? ` ${next.name} is selected.` : ""}`,
         undo: { id, name: old.name },
       });
-      focusSoon(
-        () =>
+      setPendingFocus({
+        find: () =>
           [...document.querySelectorAll("button")].find(
             (b) => b.getAttribute("aria-label") === `Undo removing ${old.name}`,
           ) ?? document.querySelector<HTMLElement>('input[type="radio"]'),
-      );
+      });
     } else if (result.error?.kind === "lastPreset") {
       answer(mine, { text: "At least one preset stays." });
     } else {
@@ -203,7 +219,9 @@ export function usePresetEditing(
     const result = await call(() => commands.presetUndoRemove(id));
     if (result.ok) {
       answer(mine, { text: `Brought back ${name}.` });
-      focusSoon(() => document.getElementById(`preset-${id}-radio`));
+      setPendingFocus({
+        find: () => document.getElementById(`preset-${id}-radio`),
+      });
     } else if (result.error?.kind === "duplicateName") {
       answer(mine, { text: "Another preset has this name now. Rename it first." });
     } else {

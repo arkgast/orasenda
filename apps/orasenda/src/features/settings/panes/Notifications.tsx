@@ -1,6 +1,6 @@
 import { Choice, SettingsRow } from "@orasenda/ui";
 import type { NotificationStatus } from "@shared/ipc/bindings";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 
 export type NotificationsRow = {
   line: string | null;
@@ -95,6 +95,8 @@ type Props = {
   onRoutineDue: (checked: boolean) => void;
   onAsk: () => void;
   onOpen: () => void;
+  /** More rows after Routines (the review nudges). */
+  children?: ReactNode;
 };
 
 export function Notifications({
@@ -115,6 +117,7 @@ export function Notifications({
   onRoutineDue,
   onAsk,
   onOpen,
+  children,
 }: Props) {
   // Only ids that are in the DOM: the line renders when set, the reason when set.
   const describedBy = [
@@ -137,7 +140,7 @@ export function Notifications({
       <SettingsRow
         id="notifications"
         label="Notifications"
-        helper="Orasenda only notifies you about your sessions and routines. Never about stats or streaks."
+        helper="Orasenda only notifies you about your sessions, routines and reviews. Never about stats or streaks."
         status={line ?? undefined}
         actionLabel={
           action === "ask" ? "Ask macOS" : action === "open" ? "Open System Settings" : undefined
@@ -196,6 +199,7 @@ export function Notifications({
           When a routine is due
         </Choice>
       </SettingsRow>
+      {children}
     </section>
   );
 }

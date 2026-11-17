@@ -1,6 +1,6 @@
 import type { Theme } from "@shared/ipc/bindings";
 import type { Ref } from "react";
-import { askMacOS, tick, untick } from "./notificationsToggle";
+import { askMacOS, type NotifyKey, tick, untick } from "./notificationsToggle";
 import type { PaneId } from "./panes";
 import { About, type AboutInfo } from "./panes/About";
 import { Backups } from "./panes/Backups";
@@ -9,8 +9,24 @@ import { Notifications } from "./panes/Notifications";
 import { Shortcuts } from "./panes/Shortcuts";
 import { Timer } from "./panes/Timer";
 import { YourData } from "./panes/YourData";
+import { ReviewNudgeRows } from "./sections/ReviewNudgeRows";
+import { DAY_LABEL, timeText } from "./sections/reviewTime";
 import { CADENCE_KEYS } from "./settingsKeys";
 import type { SettingsModel } from "./useSettingsModel";
+
+/** One review nudge's switch: the same permission flow as the routine one. */
+function nudge(m: SettingsModel, key: NotifyKey, line: string | null) {
+  return {
+    checked: m.ticked.includes(key) || Boolean(m.shown[key]),
+    asking: m.askingFor === key,
+    line,
+    onToggle: (checked: boolean) => {
+      m.clearNotice();
+      if (checked) tick(m.status, key);
+      else untick(key);
+    },
+  };
+}
 
 type Props = {
   pane: PaneId;
@@ -48,6 +64,7 @@ export function PaneBody({ pane, headingRef, model, info, onImportTasks }: Props
           disabledReason={m.reason}
           presetStatus={m.reasonIf("preset")}
           cadenceStatus={m.reasonIf(...CADENCE_KEYS)}
+          goalStatus={m.reasonIf("reviewGoal")}
           bufferStatus={m.reasonIf("boardBuffer")}
           editor={m.editor}
           onPreset={(presetId: string) => m.withLatest({ presetId })}
@@ -86,7 +103,23 @@ export function PaneBody({ pane, headingRef, model, info, onImportTasks }: Props
           }}
           onAsk={() => askMacOS(m.askKey)}
           onOpen={m.openSystemSettings}
-        />
+        >
+          <ReviewNudgeRows
+            shutdown={nudge(m, "notifyShutdownDue", m.shutdownLine)}
+            weekly={nudge(m, "notifyWeeklyReview", m.weeklyLine)}
+            time={m.shown.reviewShutdownTime}
+            day={m.shown.reviewWeeklyDay}
+            disabled={m.readOnly || m.status === "unavailable"}
+            disabledReason={m.reason}
+            timeStatus={m.reasonIf("reviewTime")}
+            onTime={(minutes) =>
+              m.changeCadence({ reviewShutdownTime: minutes }, `Review time: ${timeText(minutes)}.`)
+            }
+            onDay={(day) =>
+              m.changeCadence({ reviewWeeklyDay: day }, `Weekly review day: ${DAY_LABEL[day]}.`)
+            }
+          />
+        </Notifications>
       );
     case "keyboard":
       return (

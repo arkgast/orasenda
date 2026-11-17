@@ -29,6 +29,31 @@ const CASES: { patch: Partial<Settings>; key: Key; line: string }[] = [
     key: "deepCapHours",
     line: "Deep-hours cap wasn't saved. Back to 4 hours.",
   },
+  {
+    patch: { reviewFocusGoalHours: 5 },
+    key: "reviewGoal",
+    line: "Weekly focus goal wasn't saved. Back to no goal.",
+  },
+  {
+    patch: { notifyShutdownDue: true },
+    key: "notifyShutdown",
+    line: "The shutdown note wasn't saved. Back to off.",
+  },
+  {
+    patch: { notifyWeeklyReview: true },
+    key: "notifyWeekly",
+    line: "The weekly review note wasn't saved. Back to off.",
+  },
+  {
+    patch: { reviewShutdownTime: 600 },
+    key: "reviewTime",
+    line: "Review time wasn't saved. Back to 17:30.",
+  },
+  {
+    patch: { reviewWeeklyDay: "sun" },
+    key: "reviewDay",
+    line: "Weekly review day wasn't saved. Back to Friday.",
+  },
 ];
 
 test("cadence_field_failure_lines", () => {

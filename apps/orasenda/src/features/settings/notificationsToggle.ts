@@ -7,7 +7,12 @@ import { latest, save } from "@shared/ipc/settingsQueue";
 // the newest is dropped, so an untick while asking is never undone by a late reply.
 
 /** The notification preferences a box can ask macOS for. */
-export type NotifyKey = "notifySessionEnd" | "notifyTwoMinutes" | "notifyRoutineDue";
+export type NotifyKey =
+  | "notifySessionEnd"
+  | "notifyTwoMinutes"
+  | "notifyRoutineDue"
+  | "notifyShutdownDue"
+  | "notifyWeeklyReview";
 
 let asking: NotifyKey | null = null;
 let request = 0;

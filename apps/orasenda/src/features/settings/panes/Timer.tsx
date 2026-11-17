@@ -29,6 +29,7 @@ type Props = {
   disabledReason?: string;
   presetStatus?: string;
   cadenceStatus?: string;
+  goalStatus?: string;
   bufferStatus?: string;
   editor: PresetEditing;
   onPreset: (presetId: string) => void;
@@ -46,6 +47,7 @@ export function Timer({
   disabledReason,
   presetStatus,
   cadenceStatus,
+  goalStatus,
   bufferStatus,
   editor,
   onPreset,
@@ -169,6 +171,7 @@ export function Timer({
         disabled={disabled}
         disabledReason={disabledReason}
         status={cadenceStatus}
+        goalStatus={goalStatus}
         onChange={onCadence}
       />
     </section>

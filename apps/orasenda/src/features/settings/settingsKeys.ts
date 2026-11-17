@@ -2,6 +2,7 @@ import type { PresetEntry, Settings as SettingsValue } from "@shared/ipc/binding
 import { themeLabel } from "./panes/General";
 import { presetLabel } from "./panes/Timer";
 import { CAPS } from "./sections/CadenceRows";
+import { DAY_LABEL, effectiveReviewTime, goalText, timeText } from "./sections/reviewTime";
 
 /** The Timer cadence fields, each with its own failure line. */
 export const CADENCE_KEYS = [
@@ -22,7 +23,12 @@ export type Key =
   | "notifyTwo"
   | "notifyRoutine"
   | "boardBuffer"
-  | "singleKey";
+  | "singleKey"
+  | "reviewGoal"
+  | "notifyShutdown"
+  | "notifyWeekly"
+  | "reviewTime"
+  | "reviewDay";
 
 export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[] {
   const keys: Key[] = [];
@@ -34,6 +40,11 @@ export function changedKeys(sent: SettingsValue, restored: SettingsValue): Key[]
   if (sent.notifyRoutineDue !== restored.notifyRoutineDue) keys.push("notifyRoutine");
   if (sent.boardEstimateBuffer !== restored.boardEstimateBuffer) keys.push("boardBuffer");
   if (sent.singleKey !== restored.singleKey) keys.push("singleKey");
+  if (sent.reviewFocusGoalHours !== restored.reviewFocusGoalHours) keys.push("reviewGoal");
+  if (sent.notifyShutdownDue !== restored.notifyShutdownDue) keys.push("notifyShutdown");
+  if (sent.notifyWeeklyReview !== restored.notifyWeeklyReview) keys.push("notifyWeekly");
+  if (sent.reviewShutdownTime !== restored.reviewShutdownTime) keys.push("reviewTime");
+  if (sent.reviewWeeklyDay !== restored.reviewWeeklyDay) keys.push("reviewDay");
   return keys;
 }
 
@@ -51,6 +62,11 @@ export function withKeys(base: SettingsValue, from: SettingsValue, keys: Key[]):
     else if (key === "boardBuffer") next.boardEstimateBuffer = from.boardEstimateBuffer;
     else if (key === "singleKey") next.singleKey = from.singleKey;
     else if (key === "notifyTwo") next.notifyTwoMinutes = from.notifyTwoMinutes;
+    else if (key === "reviewGoal") next.reviewFocusGoalHours = from.reviewFocusGoalHours;
+    else if (key === "notifyShutdown") next.notifyShutdownDue = from.notifyShutdownDue;
+    else if (key === "notifyWeekly") next.notifyWeeklyReview = from.notifyWeeklyReview;
+    else if (key === "reviewTime") next.reviewShutdownTime = from.reviewShutdownTime;
+    else if (key === "reviewDay") next.reviewWeeklyDay = from.reviewWeeklyDay;
     else if (key === "notifyRoutine") next.notifyRoutineDue = from.notifyRoutineDue;
     else next.notifySessionEnd = from.notifySessionEnd;
   }
@@ -74,6 +90,15 @@ export const FAILURE_NAME: Record<Key, { subject: string; verb: string; again: s
   notifyTwo: { subject: "The two-minute note", verb: "wasn't", again: "the two-minute note" },
   boardBuffer: { subject: "The estimate buffer", verb: "wasn't", again: "the estimate buffer" },
   notifyRoutine: { subject: "The routine note", verb: "wasn't", again: "the routine note" },
+  reviewGoal: { subject: "Weekly focus goal", verb: "wasn't", again: "the weekly focus goal" },
+  notifyShutdown: { subject: "The shutdown note", verb: "wasn't", again: "the shutdown note" },
+  notifyWeekly: {
+    subject: "The weekly review note",
+    verb: "wasn't",
+    again: "the weekly review note",
+  },
+  reviewTime: { subject: "Review time", verb: "wasn't", again: "the review time" },
+  reviewDay: { subject: "Weekly review day", verb: "wasn't", again: "the weekly review day" },
 };
 
 export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]): string {
@@ -89,6 +114,14 @@ export function backTo(key: Key, restored: SettingsValue, presets: PresetEntry[]
   if (key === "deepCapHours") return `${restored.deepCapHours} hours`;
   if (key === "boardBuffer") return `${restored.boardEstimateBuffer}%`;
   if (key === "singleKey") return restored.singleKey ? "on" : "off";
+  if (key === "reviewGoal")
+    return restored.reviewFocusGoalHours === 0
+      ? "no goal"
+      : goalText(restored.reviewFocusGoalHours);
+  if (key === "notifyShutdown") return restored.notifyShutdownDue ? "on" : "off";
+  if (key === "notifyWeekly") return restored.notifyWeeklyReview ? "on" : "off";
+  if (key === "reviewTime") return timeText(effectiveReviewTime(restored.reviewShutdownTime));
+  if (key === "reviewDay") return DAY_LABEL[restored.reviewWeeklyDay];
   if (key === "notifyRoutine") return restored.notifyRoutineDue ? "on" : "off";
   return (key === "notifyTwo" ? restored.notifyTwoMinutes : restored.notifySessionEnd)
     ? "on"

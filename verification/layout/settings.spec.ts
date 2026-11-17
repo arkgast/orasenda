@@ -81,8 +81,17 @@ for (const size of SIZES) {
 }
 
 const REGION = "[data-slot=scroll-region]";
-const TAB_STOPS =
-  "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+// A control with tabindex -1 (a Stepper's arrow buttons: arrow keys step the value) is not a stop.
+const TAB_STOPS = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]",
+]
+  .map((stop) => `${stop}:not([tabindex='-1'])`)
+  .join(", ");
 
 /** Every control in the scroll region (a radio group is one stop) is reached by Tab and is in view. */
 async function expectTabReach(page: Page): Promise<void> {

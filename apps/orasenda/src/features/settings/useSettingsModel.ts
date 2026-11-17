@@ -6,6 +6,7 @@ import { latest, load, register, save } from "@shared/ipc/settingsQueue";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { askingKey, type NotifyKey, pendingKeys, subscribeAsking } from "./notificationsToggle";
 import { notificationsRow, routineDueLine } from "./panes/Notifications";
+import { nudgeLine } from "./sections/ReviewNudgeRows";
 import { changedKeys, type Key } from "./settingsKeys";
 import { buildNotice, type Line, READ_ONLY, WRITE_REASON } from "./settingsNotice";
 import { usePresetEditing } from "./usePresets";
@@ -118,7 +119,11 @@ export function useSettingsModel() {
   const sessionAsking = askingFor === "notifySessionEnd" || askingFor === "notifyTwoMinutes";
   const row = notificationsRow(
     status,
-    askingFor !== null || sessionOn || shown.notifyRoutineDue,
+    askingFor !== null ||
+      sessionOn ||
+      shown.notifyRoutineDue ||
+      shown.notifyShutdownDue ||
+      shown.notifyWeeklyReview,
     askingFor !== null,
   );
   const sessionLine = notificationsRow(status, sessionAsking || sessionOn, sessionAsking).line;
@@ -127,7 +132,11 @@ export function useSettingsModel() {
     ? "notifySessionEnd"
     : shown.notifyTwoMinutes
       ? "notifyTwoMinutes"
-      : "notifyRoutineDue";
+      : shown.notifyShutdownDue
+        ? "notifyShutdownDue"
+        : shown.notifyWeeklyReview
+          ? "notifyWeeklyReview"
+          : "notifyRoutineDue";
   const notifyLine =
     [
       reasonIf("notify", "notifyTwo"),
@@ -146,6 +155,15 @@ export function useSettingsModel() {
     ]
       .filter(Boolean)
       .join(" ") || null;
+
+  const nudgeText = (key: NotifyKey, on: boolean, reason: Key[]) =>
+    [reasonIf(...reason), nudgeLine(status, on, askingFor === key)].filter(Boolean).join(" ") ||
+    null;
+  const shutdownLine = nudgeText("notifyShutdownDue", shown.notifyShutdownDue, ["notifyShutdown"]);
+  const weeklyLine = nudgeText("notifyWeeklyReview", shown.notifyWeeklyReview, [
+    "notifyWeekly",
+    "reviewDay",
+  ]);
 
   const notice = buildNotice({
     readOnly,
@@ -177,6 +195,8 @@ export function useSettingsModel() {
     askKey,
     notifyLine,
     routineLine,
+    shutdownLine,
+    weeklyLine,
     notice,
     reasonIf,
     withLatest,
