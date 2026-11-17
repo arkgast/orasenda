@@ -52,6 +52,7 @@ fn samples() -> Vec<(&'static str, String, bool)> {
     for n in [0, 1, 4] {
         add("tasks_line", tasks_line(n), false);
         add("move_line", move_line(n), false);
+        add("put_back_line", put_back_line(n), false);
     }
     add("day_label", day_label(date(2026, 11, 16)), false);
     add("week_label", week_label(date(2026, 11, 23)), false);

@@ -1,6 +1,7 @@
 //! The review words: every quoted sentence, and the copy test.
 
 mod copy;
+mod shutdown;
 mod tomorrow;
 mod view;
 mod words;
@@ -15,4 +16,5 @@ pub(super) fn date(year: i32, month: u8, day: u8) -> LocalDate {
 mod buffer;
 mod look_back;
 mod stats;
+mod undo;
 mod support;

@@ -214,6 +214,8 @@ fn move_line_singular_plural() {
     assert_eq!(move_line(2), "Moved 2 tasks to Backlog.");
     assert_eq!(move_line(1), "Moved 1 task to Backlog.");
     assert_eq!(nothing_unfinished(), "Nothing unfinished.");
+    assert_eq!(put_back_line(1), "Put 1 task back.");
+    assert_eq!(put_back_line(3), "Put 3 tasks back.");
     assert_eq!(undo_expired(), "That can't be undone now.");
 }
 
