@@ -38,14 +38,14 @@ const weekly = () => screen.getByRole("checkbox", { name: "When it's time for th
 
 test("goal_stepper_no_goal_at_zero", async () => {
   const { backend } = await openIn("Timer");
-  const goal = screen.getByRole("spinbutton", { name: "Weekly focus goal" });
+  const goal = screen.getByRole("spinbutton", { name: "Hours per week" });
   expect(goal).toHaveAttribute("aria-valuetext", "No goal");
   expect(goal).toHaveAttribute("aria-valuemin", "0");
   expect(goal).toHaveAttribute("aria-valuemax", "60");
-  fireEvent.click(screen.getByRole("button", { name: "Increase Weekly focus goal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Increase Hours per week" }));
   await settle();
   expect(saved(backend.calls).at(-1)?.settings.reviewFocusGoalHours).toBe(1);
-  expect(screen.getByRole("spinbutton", { name: "Weekly focus goal" })).toHaveAttribute(
+  expect(screen.getByRole("spinbutton", { name: "Hours per week" })).toHaveAttribute(
     "aria-valuetext",
     "1 hour",
   );
@@ -123,4 +123,38 @@ test("nudge_switch_saves_directly_when_granted", async () => {
   await settle();
   expect(argsOf(backend.calls, "notifications_request")).toHaveLength(0);
   expect(saved(backend.calls).at(-1)?.settings.notifyWeeklyReview).toBe(true);
+});
+
+test("a_failed_day_save_shows_its_reason_and_try_again_resends_it", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  let fail = true;
+  const { backend } = await openIn("Notifications", {
+    ...withSettings({ notifyWeeklyReview: true }),
+    settings_set: () => (fail ? Promise.reject("write failed") : null),
+  });
+  fireEvent.change(screen.getByLabelText("Weekly review day"), { target: { value: "sun" } });
+  await settle();
+  expect(screen.getByText("Weekly review day wasn't saved. Back to Friday.")).toBeInTheDocument();
+  fail = false;
+  fireEvent.click(screen.getByRole("button", { name: /Try again/ }));
+  await settle();
+  expect(saved(backend.calls).at(-1)?.settings.reviewWeeklyDay).toBe("sun");
+});
+
+test("a_failed_goal_save_shows_its_reason_beside_the_row", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await openIn("Timer", { settings_set: () => Promise.reject("write failed") });
+  fireEvent.click(screen.getByRole("button", { name: /Increase Hours per week|Increase/ }));
+  await settle();
+  expect(screen.getAllByText(/Weekly focus goal wasn't saved/).length).toBeGreaterThan(0);
+});
+
+test("denied_nudge_line_stays_short", async () => {
+  await openIn("Notifications", {
+    timer_state: view({ notifications: "denied" }),
+    ...withSettings({ notifyShutdownDue: true }),
+  });
+  expect(
+    screen.getAllByText("On here, but macOS has notifications off for Orasenda."),
+  ).toHaveLength(1);
 });

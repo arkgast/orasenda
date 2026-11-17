@@ -24,6 +24,7 @@ type Props = {
   disabled: boolean;
   disabledReason?: string;
   status?: string;
+  goalStatus?: string;
   onChange: CadenceChange;
 };
 
@@ -34,6 +35,7 @@ export function CadenceRows({
   disabled,
   disabledReason,
   status,
+  goalStatus,
   onChange,
 }: Props) {
   const reaches = selected != null && selected.focusMin >= settings.longestFocusMin;
@@ -99,11 +101,12 @@ export function CadenceRows({
       <SettingsRow
         id="focus-goal"
         label="Weekly focus goal"
+        status={goalStatus}
         helper="A target to look at in your weekly review. Never a score."
         disabledReason={disabledReason}
       >
         <Stepper
-          label="Weekly focus goal"
+          label="Hours per week"
           min={GOAL_RANGE.min}
           max={GOAL_RANGE.max}
           value={settings.reviewFocusGoalHours}

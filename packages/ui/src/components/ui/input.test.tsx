@@ -98,3 +98,9 @@ test("ref reaches the field element", () => {
   );
   expect(el).toBe(screen.getByLabelText("Title"));
 });
+
+test("a time field draws its focus ring on :focus", () => {
+  render(<Input label="Time" type="time" />);
+  const cls = screen.getByLabelText("Time").className.split(" ");
+  expect(cls).toContain("focus:outline-2");
+});

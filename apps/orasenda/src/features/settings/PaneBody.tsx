@@ -64,6 +64,7 @@ export function PaneBody({ pane, headingRef, model, info, onImportTasks }: Props
           disabledReason={m.reason}
           presetStatus={m.reasonIf("preset")}
           cadenceStatus={m.reasonIf(...CADENCE_KEYS)}
+          goalStatus={m.reasonIf("reviewGoal")}
           bufferStatus={m.reasonIf("boardBuffer")}
           editor={m.editor}
           onPreset={(presetId: string) => m.withLatest({ presetId })}

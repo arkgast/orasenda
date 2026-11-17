@@ -13,6 +13,9 @@ export function nudgeLine(
   if (status === "granted" && preference && !asking) {
     return "On. A notification appears once when it's time.";
   }
+  if (status === "denied" && preference && !asking) {
+    return "On here, but macOS has notifications off for Orasenda.";
+  }
   return notificationsRow(status, preference, asking).line;
 }
 
@@ -90,6 +93,7 @@ export function ReviewNudgeRows(props: ReviewNudgeProps) {
             label="Weekly review day"
             labelHidden
             aria-describedby="notifications-weekly-help"
+            className="max-w-field-width"
             value={props.day}
             disabled={disabled}
             options={DAY_OPTIONS}

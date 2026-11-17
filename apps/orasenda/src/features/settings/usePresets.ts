@@ -93,13 +93,22 @@ export function usePresetEditing(
     void presets;
     void line;
     if (!pendingFocus) return;
+    // Someone has moved on (tabbed or changed pane): don't pull focus back.
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== startedOn.current) {
+      setPendingFocus(null);
+      return;
+    }
     const target = pendingFocus.find() as HTMLElement | null | undefined;
     if (!target) return;
     target.focus();
     setPendingFocus(null);
   }, [pendingFocus, presets, line]);
+  // What had focus when the last action started: a later change of focus means they moved on.
+  const startedOn = useRef<Element | null>(null);
   const turn = useRef(0);
   const begin = () => {
+    startedOn.current = document.activeElement;
     setPendingFocus(null);
     onStart();
     return ++turn.current;
@@ -210,7 +219,9 @@ export function usePresetEditing(
     const result = await call(() => commands.presetUndoRemove(id));
     if (result.ok) {
       answer(mine, { text: `Brought back ${name}.` });
-      setPendingFocus({ find: () => document.getElementById(`preset-${id}-radio`) });
+      setPendingFocus({
+        find: () => document.getElementById(`preset-${id}-radio`),
+      });
     } else if (result.error?.kind === "duplicateName") {
       answer(mine, { text: "Another preset has this name now. Rename it first." });
     } else {

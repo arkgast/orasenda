@@ -46,8 +46,9 @@ export function Input({
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
         "aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-line-strong",
         "disabled:cursor-default disabled:border-dashed disabled:text-ink-muted",
-        // WebKit never matches :focus-visible on a date field, so its ring follows :focus.
-        rest.type === "date" && "focus:outline-2 focus:outline-offset-2 focus:outline-focus-ring",
+        // WebKit never matches :focus-visible on a date or time field, so its ring follows :focus.
+        (rest.type === "date" || rest.type === "time") &&
+          "focus:outline-2 focus:outline-offset-2 focus:outline-focus-ring",
         unit ? "w-number-width max-w-full" : "w-full",
       )}
     />

@@ -140,7 +140,7 @@ export function Notifications({
       <SettingsRow
         id="notifications"
         label="Notifications"
-        helper="Orasenda only notifies you about your sessions and routines. Never about stats or streaks."
+        helper="Orasenda only notifies you about your sessions, routines and reviews. Never about stats or streaks."
         status={line ?? undefined}
         actionLabel={
           action === "ask" ? "Ask macOS" : action === "open" ? "Open System Settings" : undefined

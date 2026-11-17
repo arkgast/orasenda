@@ -1,5 +1,5 @@
 import { Input } from "@orasenda/ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { effectiveReviewTime, parseReviewTime, REVIEW_TIME, timeText } from "./reviewTime";
 
 type Props = {
@@ -13,7 +13,12 @@ type Props = {
 export function ReviewTimeField({ saved, disabled, onCommit }: Props) {
   const shown = timeText(effectiveReviewTime(saved));
   const [draft, setDraft] = useState(shown);
-  useEffect(() => setDraft(shown), [shown]);
+  // A new stored value replaces the draft while rendering, so no stale frame and focus stays.
+  const [base, setBase] = useState(shown);
+  if (base !== shown) {
+    setBase(shown);
+    setDraft(shown);
+  }
   const commit = () => {
     const minutes = parseReviewTime(draft);
     // Keep the last good value for anything outside the range or half typed.
@@ -23,11 +28,12 @@ export function ReviewTimeField({ saved, disabled, onCommit }: Props) {
   return (
     <Input
       id="review-time"
+      className="max-w-field-width"
       label="Time of day"
       type="time"
       min={timeText(REVIEW_TIME.min)}
       max={timeText(REVIEW_TIME.max)}
-      helper="Both reminders use this time, from 04:00 to 23:59."
+      helper="From 04:00 to 23:59."
       disabled={disabled}
       value={draft}
       onChange={(event) => setDraft(event.target.value)}

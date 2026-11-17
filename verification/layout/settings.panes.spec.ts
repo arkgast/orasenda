@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openApp } from "./support/app.ts";
 import { expectFocusRingVisible } from "./support/focusRing.ts";
+import { pressTab } from "./support/specimen.ts";
 
 const SIZES = [
   { width: 360, height: 240 },
@@ -182,3 +183,68 @@ test("settings_panes_focus_scrolled_into_view_clears_the_title_360x240", async (
       .toBeGreaterThanOrEqual(0);
   }
 });
+
+const REVIEW_SIZES = [
+  { width: 360, height: 240 },
+  { width: 640, height: 480 },
+  { width: 900, height: 600 },
+];
+
+async function expectCalm(page: Page, size: { width: number; height: number }) {
+  const m = await page.evaluate(() => ({
+    h: document.documentElement.scrollHeight,
+    w: document.documentElement.scrollWidth,
+  }));
+  expect(m.h, "no document scroll").toBeLessThanOrEqual(size.height);
+  expect(m.w, "no sideways scroll").toBeLessThanOrEqual(size.width);
+}
+
+for (const size of REVIEW_SIZES) {
+  const at = `${size.width}x${size.height}`;
+
+  test(`settings_panes_review_nudge_rows_${at}`, async ({ page }) => {
+    await openApp(page, "idle", size, { page: "settings", pane: "Notifications" });
+    const shutdown = page.getByRole("checkbox", { name: "When it's time to close the day" });
+    const weekly = page.getByRole("checkbox", { name: "When it's time for the weekly review" });
+    await shutdown.check();
+    await weekly.check();
+    const day = page.getByLabel("Weekly review day");
+    const time = page.getByLabel("Time of day");
+    await expect(day).toBeVisible();
+    await expect(time).toBeVisible();
+    await expectCalm(page, size);
+    for (const control of [day, time]) {
+      const box = await control.boundingBox();
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+    for (const control of [shutdown, weekly, day, time]) {
+      // Arrive by keyboard (a click or a script focus draws no :focus-visible ring).
+      await control.evaluate((el) => {
+        const marker = document.createElement("span");
+        marker.tabIndex = -1;
+        el.before(marker);
+        marker.focus();
+      });
+      await pressTab(page);
+      await expect(control).toBeFocused();
+      await expectFocusRingVisible(control);
+    }
+  });
+
+  test(`settings_panes_weekly_goal_row_${at}`, async ({ page }) => {
+    await openApp(page, "idle", size, { page: "settings", pane: "Timer" });
+    const row = page.locator("[data-slot=settings-row]").filter({ hasText: "Weekly focus goal" });
+    await row.scrollIntoViewIfNeeded();
+    await expectCalm(page, size);
+    const value = row.locator("[data-slot=stepper-value]");
+    await page.keyboard.press("Shift");
+    await value.focus();
+    await expectFocusRingVisible(value);
+    const small = await row
+      .locator("button")
+      .evaluateAll((els) =>
+        els.map((el) => el.getBoundingClientRect()).filter((r) => r.width < 44 || r.height < 44),
+      );
+    expect(small).toEqual([]);
+  });
+}
