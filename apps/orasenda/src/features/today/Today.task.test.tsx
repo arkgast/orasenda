@@ -100,3 +100,20 @@ test("board_notice_not_saved_reads_as_attention", async () => {
   const moved = screen.getByText("Moved Fix sync bug back to Today.");
   expect(moved.closest("[data-slot=inline-notice]")).toHaveAttribute("data-tone", "neutral");
 });
+
+test("today_picker_shows_this_week", async () => {
+  await renderToday({
+    board_get: () =>
+      boardOf([
+        boardTask("d1", "Fix sync bug", "doing", { weekPriority: true }),
+        boardTask("b1", "Draft outline", "backlog"),
+      ]),
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Add a task" }));
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "sync" } });
+  expect(screen.getByRole("option", { name: /Fix sync bug/ })).toHaveTextContent(
+    "Doing · This week",
+  );
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "outline" } });
+  expect(screen.getByRole("option", { name: /Draft outline/ })).not.toHaveTextContent("This week");
+});
