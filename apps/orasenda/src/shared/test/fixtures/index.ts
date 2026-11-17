@@ -6,6 +6,7 @@ import { BOARD } from "./board";
 import { DATA_REPLIES } from "./data";
 import { FULL_SCREEN_REPLIES } from "./fullScreen";
 import { KEYBOARD } from "./keyboard";
+import { REVIEW_REPLIES } from "./review";
 import { ROUTINES_REPLIES } from "./routines";
 import { BREAK, IDLE, PAUSED, PRESETS, RUNNING, SETTINGS } from "./timer";
 
@@ -93,6 +94,7 @@ const DEFAULTS: Replies = {
   ...DATA_REPLIES,
   ...FULL_SCREEN_REPLIES,
   ...ROUTINES_REPLIES,
+  ...REVIEW_REPLIES,
 };
 
 /**

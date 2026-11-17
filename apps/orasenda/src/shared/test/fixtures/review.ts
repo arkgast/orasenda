@@ -7,6 +7,7 @@ import type {
   StatsView_Serialize,
   WeeklyView_Serialize,
 } from "../../ipc/bindings";
+import type { Replies } from "./index";
 import { habitDots } from "./routines";
 
 /** A day's bar: 2h 10m on Tuesday, not today. */
@@ -116,3 +117,9 @@ export function statsView(over: Partial<StatsView_Serialize> = {}): StatsView_Se
     ...over,
   };
 }
+
+/** The review commands' default replies, spread into the mocked backend. */
+export const REVIEW_REPLIES: Replies = {
+  review_stats: () => statsView(),
+  buffer_suggestion_dismiss: () => null,
+};
