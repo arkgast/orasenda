@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useTightHeight } from "../../lib/use-tight-height";
+import { useCompactHeight } from "../../lib/use-compact-height";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -201,7 +201,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const hasEstimate = props.estimate != null;
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
   const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
-  const tight = useTightHeight() && !row;
+  const tight = useCompactHeight() && !row;
   // In card density "Selected" is a word on the chip line, like "Moving", so no state adds a line.
   const selectedShown = Boolean(selected) && !props.moving;
   const stateWords = [active ? "In progress" : "", row && selectedShown ? "Selected" : ""]
@@ -234,12 +234,15 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const frogWord = props.frog ? (
     <span
       data-slot="task-card-frog"
-      className="flex-none whitespace-nowrap text-break text-label uppercase"
+      className={cn(
+        "whitespace-nowrap text-break text-label uppercase",
+        row ? "flex-none" : "min-w-0 truncate",
+      )}
     >
       Frog
     </span>
   ) : null;
-  // Below layout-tight-height the dots, due date and tags share one muted line that truncates.
+  // At layout-compact-height or less the dots, due date and tags share one muted line that truncates.
   const foldText = [props.due ?? "", ...tags].filter(Boolean).join(" · ");
   const foldDots = Math.max(est, done) > 0;
   const foldLine =
@@ -287,7 +290,6 @@ export function TaskCard(props: TaskCardProps): ReactElement {
         <span className="flex flex-none whitespace-nowrap">
           <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
         </span>
-        {frogWord}
         {movingWord}
         {selectedShown ? (
           <span
@@ -297,7 +299,8 @@ export function TaskCard(props: TaskCardProps): ReactElement {
             Selected
           </span>
         ) : null}
-        {props.priority ? (
+        {frogWord}
+        {props.priority && !props.moving && !selectedShown ? (
           <span
             data-slot="task-card-priority"
             className="min-w-0 truncate text-label uppercase text-ink-muted"

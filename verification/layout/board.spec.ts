@@ -49,7 +49,6 @@ for (const size of SIZES) {
     await page.keyboard.press("Tab");
     const card = page.getByRole("button", { name: /^Write the intro/ });
     await card.focus();
-    // Below layout-tight-height the card folds dots, due date and tags into one line (#589).
     await expectFocusRingVisible(card);
     await page.keyboard.press("Meta+n");
     // Focusing the field scrolls the stacked region back up; the ring is judged once it settles.
@@ -65,6 +64,14 @@ for (const size of SIZES) {
       await card.focus();
       await expectFocusRingVisible(card);
       expect(await card.locator("[data-slot=task-card-fold]").count()).toBe(1);
+    });
+  }
+
+  if (at === "900x600") {
+    test("card_not_folded_900x600", async ({ page }) => {
+      await openBoard(page, "boardWeek", size);
+      const card = page.getByRole("button", { name: /^Write the intro/ });
+      expect(await card.locator("[data-slot=task-card-fold]").count()).toBe(0);
     });
   }
 
@@ -245,22 +252,43 @@ test("board_drag_moves_card_between_columns", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("moving_card_height_steady_900x600", async ({ page }) => {
-  await openBoard(page, "boardDrag", { width: 900, height: 600 });
-  const card = page.getByRole("button", { name: /^Write the intro/ });
-  const height = async () => (await card.boundingBox())?.height ?? 0;
-  const before = await height();
-  const box = await card.boundingBox();
-  if (!box) throw new Error("card is not on the page");
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  const pressed = await height();
-  await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 20, { steps: 4 });
-  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 60, { steps: 4 });
-  await expect(page.getByText("Moving Write the intro. Esc puts it back.")).toBeVisible();
-  const during = await height();
-  await page.keyboard.press("Escape");
-  await page.mouse.up();
-  const after = await height();
-  for (const h of [pressed, during, after]) expect(Math.abs(h - before)).toBeLessThanOrEqual(0.5);
-});
+for (const size of [
+  { width: 900, height: 600 },
+  { width: 640, height: 480 },
+]) {
+  test(`moving_card_height_steady_${size.width}x${size.height}`, async ({ page }) => {
+    await openBoard(page, "boardDrag", size);
+    const card = page.getByRole("button", { name: /^Write the intro/ });
+    const height = async () => (await card.boundingBox())?.height ?? 0;
+    // The state word lies whole inside the card and the chip line never overflows.
+    const wordWhole = async (slot: string) => {
+      const top = card.locator("[data-slot=task-card-top]");
+      const fits = await top.evaluate((el) => el.scrollWidth <= el.clientWidth);
+      expect(fits).toBe(true);
+      const cardBox = await card.boundingBox();
+      const wordBox = await card.locator(`[data-slot=${slot}]`).boundingBox();
+      if (!cardBox || !wordBox) throw new Error(`${slot} is not on the page`);
+      expect(wordBox.x).toBeGreaterThanOrEqual(cardBox.x);
+      expect(wordBox.x + wordBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width);
+      const topBox = await top.boundingBox();
+      if (!topBox) throw new Error("top line is not on the page");
+      expect(wordBox.x + wordBox.width).toBeLessThanOrEqual(topBox.x + topBox.width);
+    };
+    const before = await height();
+    const box = await card.boundingBox();
+    if (!box) throw new Error("card is not on the page");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    const pressed = await height();
+    await wordWhole("task-card-selected");
+    await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 20, { steps: 4 });
+    await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 60, { steps: 4 });
+    await expect(page.getByText("Moving Write the intro. Esc puts it back.")).toBeVisible();
+    const during = await height();
+    await wordWhole("task-card-moving");
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    const after = await height();
+    for (const h of [pressed, during, after]) expect(Math.abs(h - before)).toBeLessThanOrEqual(0.5);
+  });
+}

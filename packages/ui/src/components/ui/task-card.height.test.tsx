@@ -8,12 +8,12 @@ let tight = false;
 beforeEach(() => {
   tight = false;
   listeners = [];
-  document.documentElement.style.setProperty("--layout-tight-height", "700px");
+  document.documentElement.style.setProperty("--layout-compact-height", "480px");
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
       get matches() {
-        return tight && query === "(height < 700px)";
+        return tight && query === "(height <= 480px)";
       },
       media: query,
       addEventListener: (_: string, fn: () => void) => listeners.push(fn),
@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  document.documentElement.style.removeProperty("--layout-tight-height");
+  document.documentElement.style.removeProperty("--layout-compact-height");
 });
 
 const full = (
@@ -110,4 +110,16 @@ test("short_window_many_dots_stay_inside_the_fold", () => {
   const dots = container.querySelector("[data-slot=task-card-dots]") as HTMLElement;
   expect(dots.className).toContain("overflow-hidden");
   expect(dots.className).toContain("min-w-0");
+});
+
+test("state_word_keeps_priority_off_the_chip_line_and_in_the_name", () => {
+  const { container } = render(
+    <TaskCard title="Write" frog priority="high" selected onOpen={() => {}} />,
+  );
+  expect(container.querySelector("[data-slot=task-card-priority]")).toBeNull();
+  const top = container.querySelector("[data-slot=task-card-top]") as HTMLElement;
+  const slots = [...top.children].map((c) => c.getAttribute("data-slot"));
+  expect(slots.indexOf("task-card-selected")).toBe(1);
+  expect(container.querySelector("[data-slot=task-card-frog]")?.className).toContain("truncate");
+  expect(screen.getByRole("button").getAttribute("aria-label")).toContain("High");
 });
