@@ -13,7 +13,7 @@ mod run_view;
 mod service;
 #[cfg(test)]
 mod tests;
-mod view;
+pub(crate) mod view;
 pub mod words;
 
 pub use nudge::{NudgeState, nudge_due, nudge_text};

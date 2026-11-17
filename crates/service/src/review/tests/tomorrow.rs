@@ -6,7 +6,7 @@ use orasenda_store::reflections::{self, ReflectionKind, ReflectionWrite};
 
 use crate::api::{Lane, RoutineDraft, TaskDraft};
 use crate::board::run_task_add;
-use crate::routines::run_routine_create;
+use crate::routines::{run_routine_create, run_routine_remove};
 use crate::session::lock;
 use crate::session::test_support::{T0, TestHost};
 
@@ -26,13 +26,13 @@ fn lines(host: &TestHost) -> Vec<String> {
         .expect("the lines")
 }
 
-fn routine(host: &TestHost, name: &str, minute: Option<u16>, days: u8) {
+fn routine(host: &TestHost, name: &str, minute: Option<u16>, days: u8) -> String {
     let draft = RoutineDraft {
         name: name.into(),
         time_of_day: minute,
         days,
     };
-    run_routine_create(host, &draft).expect("routine saved");
+    run_routine_create(host, &draft).expect("routine saved")
 }
 
 fn task(
@@ -59,11 +59,25 @@ fn tomorrow_routines_with_times() {
     routine(&host, "Evening wind-down", Some(21 * 60), 64);
     routine(&host, "Morning pages", Some(7 * 60 + 30), 127);
     routine(&host, "Saturday only", Some(9 * 60), 32);
+    let gone = routine(&host, "Deleted one", Some(8 * 60), 64);
+    run_routine_remove(&host, &gone).expect("deleted");
     let got = lines(&host);
     assert_eq!(got[0], "Sunday 8 November.");
     assert_eq!(
         got[1],
         "Routines: Morning pages at 7:30 AM, Evening wind-down at 9:00 PM."
+    );
+}
+
+#[test]
+fn tomorrow_any_time_routines_come_last() {
+    let host = host();
+    routine(&host, "Stretch", None, 64);
+    routine(&host, "Evening wind-down", Some(21 * 60), 64);
+    let got = lines(&host);
+    assert_eq!(
+        got[1],
+        "Routines: Evening wind-down at 9:00 PM, Stretch (any time)."
     );
 }
 
@@ -86,17 +100,15 @@ fn tomorrow_tasks_due() {
 #[test]
 fn tomorrow_planned_with_buffer() {
     let host = host();
-    task(&host, "One", Lane::Today, Some(2), None);
-    task(&host, "Two", Lane::Today, Some(3), None);
+    task(&host, "One", Lane::Today, Some(1), None);
+    task(&host, "Two", Lane::Today, Some(1), None);
     task(&host, "Elsewhere", Lane::Doing, Some(5), None);
     let got = lines(&host);
-    // The default buffer is applied the way the Board footer does.
+    // Each task rounds up on its own (1 at 25% is 2), so two give 4, not 3.
     let buffer = lock(&host.0.service).settings().board_estimate_buffer;
-    let planned = crate::board::view::planned(2, buffer) + crate::board::view::planned(3, buffer);
+    assert_eq!(buffer, 25);
     assert!(
-        got.contains(&format!(
-            "Planned {planned} sessions with a {buffer}% buffer"
-        )),
+        got.contains(&"Planned 4 sessions with a 25% buffer".to_owned()),
         "{got:?}"
     );
 }

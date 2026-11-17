@@ -212,7 +212,7 @@ fn created(habit: &HabitRow, local: Local) -> LocalDate {
     LocalDate::from_epoch_ms(habit.created_at, local.offset_min)
 }
 
-fn mask(bits: u8) -> Result<Weekdays, StoreError> {
+pub(crate) fn mask(bits: u8) -> Result<Weekdays, StoreError> {
     Weekdays::from_bits(bits).ok_or_else(|| bad("a day mask"))
 }
 

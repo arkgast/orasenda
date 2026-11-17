@@ -231,7 +231,7 @@ fn tomorrow_empty_day() {
 fn tomorrow_planned_mirrors_board() {
     let tomorrow = Tomorrow {
         day: date(2026, 11, 17),
-        routines: vec![(7 * 60, "Morning".to_owned())],
+        routines: vec![(Some(7 * 60), "Morning".to_owned())],
         due: vec!["File taxes".to_owned()],
         planned_sessions: 5,
         buffer: 40,

@@ -8,8 +8,8 @@ use crate::routines::words::time_label;
 /// What Rust knows about tomorrow, for the shutdown's read-only step.
 pub(crate) struct Tomorrow {
     pub day: LocalDate,
-    /// (minute of day, routine name), in time order.
-    pub routines: Vec<(u16, String)>,
+    /// (minute of day, routine name), in time order; routines with no time come last.
+    pub routines: Vec<(Option<u16>, String)>,
     pub due: Vec<String>,
     pub planned_sessions: u32,
     pub buffer: u8,
@@ -57,7 +57,10 @@ pub(crate) fn tomorrow_lines(tomorrow: &Tomorrow) -> Vec<String> {
         let routines: Vec<String> = tomorrow
             .routines
             .iter()
-            .map(|(minute, name)| format!("{name} at {}", time_label(*minute, tomorrow.cycle)))
+            .map(|(minute, name)| match minute {
+                Some(minute) => format!("{name} at {}", time_label(*minute, tomorrow.cycle)),
+                None => format!("{name} (any time)"),
+            })
             .collect();
         lines.push(format!("Routines: {}.", routines.join(", ")));
     }

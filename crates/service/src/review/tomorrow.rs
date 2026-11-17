@@ -1,8 +1,8 @@
 //! The shutdown's Tomorrow step: what tomorrow holds, read from the store and worded by
 //! [`words::tomorrow_lines`]. Nothing is invented: a thing the store doesn't hold isn't listed.
 
+use orasenda_core::LocalDate;
 use orasenda_core::review::week_start;
-use orasenda_core::{LocalDate, Weekdays};
 use orasenda_store::reflections::{self, ReflectionKind, reflection_id};
 use orasenda_store::routines as routine_rows;
 use orasenda_store::tasks;
@@ -12,6 +12,7 @@ use super::view::priorities;
 use super::words::{self, Tomorrow};
 use crate::api::Lane;
 use crate::board::view::{lane, planned};
+use crate::routines::view::mask;
 use crate::session::SessionService;
 
 impl SessionService {
@@ -42,14 +43,12 @@ fn read(
     let weekday = tomorrow.weekday();
     let mut routines = Vec::new();
     for row in routine_rows::list_live(txn)? {
-        let days = Weekdays::from_bits(row.fields.days)
-            .ok_or_else(|| StoreError::Json("a routine's weekday mask".into()))?;
-        // A routine with no time of day has no minute to list.
-        if let (true, Some(minute)) = (days.contains(weekday), row.fields.time_of_day) {
-            routines.push((minute, row.fields.name));
+        if mask(row.fields.days)?.contains(weekday) {
+            routines.push((row.fields.time_of_day, row.fields.name));
         }
     }
-    routines.sort_by_key(|(minute, _)| *minute);
+    // Timed routines in time order, then the ones that can happen any time.
+    routines.sort_by_key(|(minute, _)| minute.unwrap_or(u16::MAX));
 
     let iso = tomorrow.to_iso();
     let live = tasks::list_live(txn)?;
