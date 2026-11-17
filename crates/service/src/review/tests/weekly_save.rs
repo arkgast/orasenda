@@ -88,6 +88,20 @@ fn new_task_in_same_transaction() {
     );
     assert_eq!(refused, Err(ReviewError::NotFound));
     assert_eq!(backlog_titles(&host), ["Already here", "Second"]);
+    // Two typed titles keep their order in Backlog and in the view.
+    let view = save(&host, "2026-11-09", vec![typed("Fourth"), typed("Fifth")]).expect("saved");
+    assert_eq!(
+        backlog_titles(&host),
+        ["Already here", "Second", "Fourth", "Fifth"]
+    );
+    assert_eq!(ids(&view).len(), 2);
+    let lines: Vec<_> = view
+        .answers
+        .priorities
+        .iter()
+        .map(|p| p.line.as_str())
+        .collect();
+    assert_eq!(lines, ["Fourth · Backlog", "Fifth · Backlog"]);
 }
 
 #[test]
@@ -158,6 +172,14 @@ fn absent_field_writes_null() {
         run_weekly_save(&host, "2026-11-09".into(), long),
         Err(ReviewError::TooLong)
     );
+    let long_notes = WeeklyDraft {
+        notes: Some("x".repeat(2_001)),
+        ..WeeklyDraft::default()
+    };
+    assert_eq!(
+        run_weekly_save(&host, "2026-11-09".into(), long_notes),
+        Err(ReviewError::TooLong)
+    );
 }
 
 #[test]
@@ -218,7 +240,7 @@ fn week_priority_current_not_planned_on_friday() {
     // Friday 13 November: this week starts 9 November, next week 16 November.
     save(
         &host,
-        "2026-11-16",
+        "2026-11-09",
         vec![PriorityPick::Task(planned.clone())],
     )
     .expect("saved");

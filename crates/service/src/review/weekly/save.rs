@@ -10,6 +10,7 @@ use orasenda_store::reflections::{self, ReflectionKind, ReflectionWrite};
 use orasenda_store::tasks;
 use orasenda_store::{StoreError, Txn};
 
+use super::view_in;
 use crate::api::{PriorityPick, ReviewError, WeeklyDraft, WeeklyView};
 use crate::board::{append_backlog, check};
 use crate::review::{changed_view, check_period, emit_changed};
@@ -64,13 +65,21 @@ fn save<H: Host>(
         check_period(ReflectionKind::Week, given, now_ms, local.offset_min)?;
         let week = LocalDate::parse_iso(given).ok_or(ReviewError::Period)?;
         let store = guard.store().ok_or(ReviewError::Store)?;
-        let created = store
-            .write(now_ms, |txn| write(txn, given, &checked, complete))
+        let goal_minutes = u32::from(guard.settings().review_focus_goal_hours) * 60;
+        let local_day = (local.today, local.offset_min);
+        // The view is built in the write, so a failed read-back rolls the save back and the
+        // webview never holds a committed task whose id it did not learn.
+        let (created, view) = store
+            .write(now_ms, |txn| {
+                Ok(match write(txn, given, &checked, complete)? {
+                    Ok(created) => Ok((created, view_in(txn, week, local_day, goal_minutes)?)),
+                    Err(error) => Err(error),
+                })
+            })
             .map_err(|error| {
                 eprintln!("review: could not save the weekly review ({error})");
                 ReviewError::Store
             })??;
-        let view = guard.weekly_view_of(now_ms, week)?;
         // The flag follows the week `today` falls in; a new task is a new card either way.
         let board = (created || week == week_start(local.today))
             .then(|| guard.board_changed(now_ms))
@@ -97,6 +106,7 @@ fn check_draft(draft: WeeklyDraft) -> Result<Checked, ReviewError> {
                 PriorityPick::NewTitle(check::title(&text).map_err(|error| match error {
                     crate::api::BoardError::TitleEmpty => ReviewError::Empty,
                     crate::api::BoardError::TitleTooLong => ReviewError::TooLong,
+                    // `check::title` returns only the two above.
                     _ => ReviewError::Store,
                 })?)
             }

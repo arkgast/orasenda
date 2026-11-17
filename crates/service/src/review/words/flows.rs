@@ -144,3 +144,8 @@ pub(crate) fn load_failure() -> &'static str {
 pub(crate) fn save_failure() -> &'static str {
     "Orasenda can't save your reflection right now."
 }
+
+/// The `TooLong` error's line for a typed priority.
+pub(crate) fn too_long_line() -> &'static str {
+    "Keep a priority to 200 characters."
+}
