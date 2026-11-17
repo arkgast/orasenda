@@ -6,6 +6,7 @@
 
 mod notes;
 mod presets;
+mod reflections;
 mod routines;
 mod sessions;
 mod settings;
@@ -78,6 +79,13 @@ pub fn merge(txn: &mut Txn, rows: &SyncRows) -> Result<MergeCounts, StoreError> 
     for row in &rows.runs {
         let (a, u) = (&mut counts.added.runs, &mut counts.updated.runs);
         routines::merge_run(txn, row)?.tally(a, u);
+    }
+    for row in &rows.reflections {
+        let (a, u) = (
+            &mut counts.added.reflections,
+            &mut counts.updated.reflections,
+        );
+        reflections::merge_row(txn, row)?.tally(a, u);
     }
     Ok(counts)
 }

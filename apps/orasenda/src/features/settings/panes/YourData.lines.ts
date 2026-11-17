@@ -8,6 +8,7 @@ const ORDER: ReadonlyArray<[keyof DataCounts, string, string]> = [
   ["habits", "habit", "habits"],
   ["checks", "check-in", "check-ins"],
   ["runs", "routine run", "routine runs"],
+  ["reflections", "reflection", "reflections"],
   ["settings", "setting", "settings"],
 ];
 const SHOWN = 3;

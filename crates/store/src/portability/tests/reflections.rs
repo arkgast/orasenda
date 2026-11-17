@@ -256,7 +256,11 @@ fn merge_logs_only_changed_fields() {
     store
         .write(9, |txn| merge(txn, &only(file.clone())))
         .expect("merges again");
-    assert_eq!(logged(&store).len(), before, "an unchanged merge logs nothing");
+    assert_eq!(
+        logged(&store).len(),
+        before,
+        "an unchanged merge logs nothing"
+    );
 }
 
 #[test]
