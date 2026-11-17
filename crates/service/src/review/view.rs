@@ -137,7 +137,7 @@ fn primary(today: LocalDate, weekly_day: WeeklyDay, planned: bool, done: bool) -
 }
 
 /// The priorities that are still live tasks, in saved order. A removed task is left out.
-fn priorities(txn: &Txn, ids: &[String]) -> Result<Vec<PriorityView>, StoreError> {
+pub(super) fn priorities(txn: &Txn, ids: &[String]) -> Result<Vec<PriorityView>, StoreError> {
     let names = columns::read(txn)?;
     let mut views = Vec::new();
     for id in ids {

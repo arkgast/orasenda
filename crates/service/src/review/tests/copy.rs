@@ -69,7 +69,7 @@ fn samples() -> Vec<(&'static str, String, bool)> {
         for planned in [0, 3] {
             let tomorrow = Tomorrow {
                 day: date(2026, 11, 21),
-                routines: vec![(420, "Morning".to_owned())],
+                routines: vec![(Some(420), "Morning".to_owned())],
                 due: vec!["File taxes".to_owned()],
                 planned_sessions: planned,
                 buffer: 40,
