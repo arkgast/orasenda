@@ -95,6 +95,8 @@
     "allow-shutdown-get",
     "allow-shutdown-move",
     "allow-shutdown-move-undo",
-    "allow-shutdown-complete"
+    "allow-shutdown-complete",
+    "allow-weekly-save",
+    "allow-weekly-complete"
   ]
 }

@@ -131,7 +131,7 @@ pub fn run_import_preview<H: Host>(
             &task,
             on_board[index],
             &matches.columns,
-            matches.cx,
+            &matches.cx,
         ));
         kept.push((key, task));
     }

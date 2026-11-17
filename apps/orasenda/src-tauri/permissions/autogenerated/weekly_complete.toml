@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-weekly-complete"
+description = "Enables the weekly_complete command without any pre-configured scope."
+commands.allow = ["weekly_complete"]
+
+[[permission]]
+identifier = "deny-weekly-complete"
+description = "Denies the weekly_complete command without any pre-configured scope."
+commands.deny = ["weekly_complete"]

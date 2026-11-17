@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-weekly-save"
+description = "Enables the weekly_save command without any pre-configured scope."
+commands.allow = ["weekly_save"]
+
+[[permission]]
+identifier = "deny-weekly-save"
+description = "Denies the weekly_save command without any pre-configured scope."
+commands.deny = ["weekly_save"]

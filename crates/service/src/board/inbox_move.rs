@@ -72,7 +72,7 @@ pub fn run_task_restore_note<H: Host>(host: &H, task_id: &str) -> Result<(), Boa
 
 fn task_view(txn: &orasenda_store::Txn, id: &str, cx: Ctx) -> Answer<TaskView> {
     Ok(live(txn, id)?
-        .map(|row| view::task_view(&row, cx, None))
+        .map(|row| view::task_view(&row, &cx, None))
         .ok_or(BoardError::Store))
 }
 

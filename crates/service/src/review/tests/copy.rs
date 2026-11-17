@@ -109,6 +109,7 @@ fn samples() -> Vec<(&'static str, String, bool)> {
     add("nudge_weekly", nudge_weekly().to_owned(), false);
     add("load_failure", load_failure().to_owned(), false);
     add("save_failure", save_failure().to_owned(), false);
+    add("too_long_line", too_long_line().to_owned(), false);
     lines
 }
 

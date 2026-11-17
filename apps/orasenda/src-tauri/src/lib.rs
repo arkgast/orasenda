@@ -127,6 +127,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::shutdown_complete,
             commands::buffer_suggestion_dismiss,
             commands::weekly_get,
+            commands::weekly_save,
+            commands::weekly_complete,
             spike::commands::spike_status,
             spike::commands::spike_running_apps,
             spike::commands::spike_rule,

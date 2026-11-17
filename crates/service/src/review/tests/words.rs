@@ -315,4 +315,5 @@ fn period_line_plain() {
         save_failure(),
         "Orasenda can't save your reflection right now."
     );
+    assert_eq!(too_long_line(), "Keep a priority to 200 characters.");
 }

@@ -13,7 +13,7 @@ pub(crate) const MAX_CHECKLIST: usize = 30;
 pub(crate) const MAX_ITEM: usize = 200;
 
 /// A title trimmed, or why it is refused.
-pub(super) fn title(text: &str) -> Result<String, BoardError> {
+pub(crate) fn title(text: &str) -> Result<String, BoardError> {
     let text = text.trim();
     if text.is_empty() {
         Err(BoardError::TitleEmpty)

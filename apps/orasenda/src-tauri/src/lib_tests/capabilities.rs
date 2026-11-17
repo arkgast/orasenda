@@ -234,6 +234,8 @@ fn main_capability_exact() {
             "allow-shutdown-move",
             "allow-shutdown-move-undo",
             "allow-shutdown-complete",
+            "allow-weekly-save",
+            "allow-weekly-complete",
         ],
     );
     let (_, main) = capability("main.json");
