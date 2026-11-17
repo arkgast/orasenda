@@ -1,6 +1,7 @@
 //! The review words: every quoted sentence, and the copy test.
 
 mod copy;
+mod view;
 mod words;
 
 use orasenda_core::LocalDate;

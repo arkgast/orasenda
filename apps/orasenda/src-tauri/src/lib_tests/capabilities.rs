@@ -226,6 +226,7 @@ fn main_capability_exact() {
             "allow-task-import",
             "allow-task-import-undo",
             "allow-import-open-settings",
+            "allow-review-get",
         ],
     );
     let (_, main) = capability("main.json");

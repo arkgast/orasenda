@@ -204,6 +204,8 @@ export const commands = {
 	taskImportUndo: (importId: ImportRef) => typedError<number, ImportError>(__TAURI_INVOKE("task_import_undo", { importId })),
 	/**  Opens the System Settings pane for a source's permission, on the main thread. */
 	importOpenSettings: (source: ImportSourceKind) => typedError<null, ImportError>(__TAURI_INVOKE("import_open_settings", { source })),
+	/**  Today's shutdown, the planned week, and which one leads. */
+	reviewGet: () => typedError<ReviewView, ReviewError>(__TAURI_INVOKE("review_get")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */

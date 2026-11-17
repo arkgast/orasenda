@@ -149,6 +149,8 @@ pub struct SessionService {
     pub(crate) board_seq: Cell<u64>,
     /// The due nudge's last minute and the routines it nudged today. Memory only.
     pub(crate) nudge: crate::routines::NudgeState,
+    /// The review's memory: the day marks, the one Undo and the nudge marks. Memory only.
+    pub(crate) review: crate::review::ReviewState,
     /// The task the person chose for the next start, if any. Never set by the service itself.
     pub(super) chosen_task: Option<String>,
     /// The previous session's task, for a *Keep going* or a roll-on right after a quick end.
@@ -213,6 +215,7 @@ impl SessionService {
             board_day: None,
             board_seq: Cell::new(0),
             nudge: crate::routines::NudgeState::default(),
+            review: crate::review::ReviewState::default(),
             chosen_task: None,
             carry_task: None,
             task_titles: HashMap::new(),

@@ -87,6 +87,7 @@
     "allow-import-discard",
     "allow-task-import",
     "allow-task-import-undo",
-    "allow-import-open-settings"
+    "allow-import-open-settings",
+    "allow-review-get"
   ]
 }

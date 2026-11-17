@@ -19,7 +19,7 @@ use crate::session::{DB_FILE, lock};
 /// the preset library under its cap. Afterwards the service reloads and the host applies the
 /// theme and emits `settings-changed` and `presets-changed`, plus `inbox-changed` when notes
 /// were added or updated and `routines-changed` when routines, habits, check-ins or runs
-/// were. `dir` is the app data dir.
+/// were, and `review-changed` when reflections were. `dir` is the app data dir.
 ///
 /// The service stays locked from the copy until the reload, so no session can start between
 /// the check and the write.
@@ -69,6 +69,12 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
         } else {
             None
         };
+        let reviews_changed = merged.added.reflections + merged.updated.reflections > 0;
+        let review = if reviews_changed {
+            crate::review::changed_view(&guard, now_ms)
+        } else {
+            None
+        };
         let board = guard.board_changed(now_ms);
         let report = ImportReport {
             added: DataCounts::from(merged.added),
@@ -80,6 +86,7 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
             notes,
             routines,
             board,
+            review,
             view: guard.snapshot(now_ms),
         };
         (report, published)
@@ -94,6 +101,7 @@ struct Published {
     notes: Option<Vec<crate::api::NoteView>>,
     routines: Option<crate::api::RoutinesView>,
     board: Option<crate::board::Changed>,
+    review: Option<crate::api::ReviewView>,
     view: (u64, crate::api::TimerView),
 }
 
@@ -110,6 +118,9 @@ fn publish<H: Host>(host: &H, published: &Published) {
         }
         if let Some((seq, board)) = &published.board {
             host.emit_board_changed(*seq, board);
+        }
+        if let Some(review) = &published.review {
+            crate::review::emit_changed(host, review);
         }
         scheduler::publish_view(host, published.view.0, &published.view.1);
         scheduler::publish_clock(host);
