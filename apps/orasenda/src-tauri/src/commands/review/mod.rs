@@ -1,8 +1,6 @@
-//! Review commands. The contract (V2) has none yet: each command task adds its `mod` line.
-mod view;
-pub use view::*;
 //! Review commands, one file per owning task: each command task adds its `mod` line.
-
 mod stats;
+mod view;
 
 pub use stats::*;
+pub use view::*;

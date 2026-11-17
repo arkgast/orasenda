@@ -11,8 +11,8 @@ mod data_files;
 mod import;
 mod plist;
 mod review_contract;
-mod review_view;
 mod review_stats;
+mod review_view;
 mod routines;
 
 use capabilities::{assert_capability, capability};
