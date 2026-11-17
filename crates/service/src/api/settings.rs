@@ -16,6 +16,21 @@ pub enum Theme {
     Dark,
 }
 
+/// The day the weekly review becomes due (`review.weekly_day`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum WeeklyDay {
+    /// Friday.
+    #[default]
+    Fri,
+    /// Saturday.
+    Sat,
+    /// Sunday.
+    Sun,
+    /// Monday.
+    Mon,
+}
+
 /// The saved settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -42,6 +57,16 @@ pub struct Settings {
     pub board_estimate_buffer: u8,
     /// Space and P on Today and Space in full screen act (`keys.single_key`).
     pub single_key: bool,
+    /// The weekly focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`).
+    pub review_focus_goal_hours: u8,
+    /// Notify when the shutdown is due (`notify.shutdown_due`). Off by default.
+    pub notify_shutdown_due: bool,
+    /// Notify when the weekly review is due (`notify.weekly_review`). Off by default.
+    pub notify_weekly_review: bool,
+    /// The shutdown time, minutes since midnight, 240 to 1439 (`review.shutdown_time`).
+    pub review_shutdown_time: u16,
+    /// The day the weekly review is due (`review.weekly_day`).
+    pub review_weekly_day: WeeklyDay,
 }
 
 impl Default for Settings {
@@ -59,6 +84,11 @@ impl Default for Settings {
             notify_routine_due: false,
             board_estimate_buffer: 25,
             single_key: true,
+            review_focus_goal_hours: 0,
+            notify_shutdown_due: false,
+            notify_weekly_review: false,
+            review_shutdown_time: 1050,
+            review_weekly_day: WeeklyDay::Fri,
         }
     }
 }

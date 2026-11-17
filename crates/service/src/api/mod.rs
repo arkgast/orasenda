@@ -56,7 +56,7 @@ pub use routines::{
     RoutinesError, RoutinesView, RunStepView, RunView, StepOutcome, StepState, TemplateId,
     TemplateView,
 };
-pub use settings::{Settings, Theme, default_selected_id};
+pub use settings::{Settings, Theme, WeeklyDay, default_selected_id};
 pub use timer::{
     ClockTick, Mode, Offer, StartRequest, StoreStatus, SuggestionView, TimerState, TimerTask,
     TimerView,

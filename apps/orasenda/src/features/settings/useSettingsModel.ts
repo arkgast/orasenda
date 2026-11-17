@@ -24,6 +24,11 @@ const DEFAULT_SETTINGS: SettingsValue = {
   notifyRoutineDue: false,
   boardEstimateBuffer: 25,
   singleKey: true,
+  reviewFocusGoalHours: 0,
+  notifyShutdownDue: false,
+  notifyWeeklyReview: false,
+  reviewShutdownTime: 1050,
+  reviewWeeklyDay: "fri",
 };
 
 const noop = () => {};

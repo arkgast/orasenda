@@ -4,6 +4,7 @@ use orasenda_core::{NotificationStatus, PresetId};
 use orasenda_store::{StoreError, Txn, meta, settings};
 use serde::de::DeserializeOwned;
 
+use super::settings_review::{invalid_review, merge_review, read_review, write_review};
 use super::*;
 use crate::api::{Settings, SettingsError, SettingsErrorKind, StoreStatus, Theme};
 use crate::keyboard::{ActionId, Slot, conflicts, fold};
@@ -140,6 +141,7 @@ impl SessionService {
                 stored = Some(read_settings(txn)?);
             }
             write_changed(txn, &presented, &cached_preset, &settings)?;
+            write_review(txn, &presented, &settings)?;
             if theme_changed {
                 settings::set(txn, KEY_THEME, &settings.theme)?;
             }
@@ -162,6 +164,7 @@ impl SessionService {
             self.settings.theme = settings.theme;
         }
         merge_changed(&mut self.settings, &presented, &cached_preset, &settings);
+        merge_review(&mut self.settings, &presented, &settings);
         // An echoed value is not copied into the cache while the review is pending: the cache
         // keeps the stored-or-true value the review will use.
         if notify_changed {
@@ -201,6 +204,7 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         }
     };
     let notify_default = pending || defaults.notify_session_end;
+    let review = read_review(txn)?;
     let settings = Settings {
         theme: read_setting(txn, KEY_THEME, defaults.theme)?,
         preset_id: read_setting(txn, KEY_PRESET, defaults.preset_id)?,
@@ -219,12 +223,17 @@ pub(super) fn read_settings(txn: &Txn) -> Result<(Settings, bool), StoreError> {
         notify_routine_due: read_setting(txn, KEY_NOTIFY_ROUTINE, defaults.notify_routine_due)?,
         board_estimate_buffer: read_buffer(txn, defaults.board_estimate_buffer)?,
         single_key: read_setting(txn, KEY_SINGLE_KEY, defaults.single_key)?,
+        review_focus_goal_hours: review.focus_goal_hours,
+        notify_shutdown_due: review.shutdown_due,
+        notify_weekly_review: review.weekly_review,
+        review_shutdown_time: review.shutdown_time,
+        review_weekly_day: review.weekly_day,
     };
     Ok((settings, pending))
 }
 
 /// A value that must lie in `range`; one outside it is logged and replaced by `default`.
-fn read_ranged<T: DeserializeOwned + PartialOrd + Copy>(
+pub(super) fn read_ranged<T: DeserializeOwned + PartialOrd + Copy>(
     txn: &Txn,
     key: &str,
     default: T,
@@ -366,7 +375,7 @@ impl SessionService {
         if !BUFFERS.contains(&settings.board_estimate_buffer) {
             return Some("the estimate buffer can be 25, 30, 35, 40, 45 or 50 percent");
         }
-        None
+        invalid_review(settings)
     }
 }
 
@@ -383,7 +392,11 @@ fn read_buffer(txn: &Txn, default: u8) -> Result<u8, StoreError> {
     }
 }
 
-fn read_setting<T: DeserializeOwned>(txn: &Txn, key: &str, default: T) -> Result<T, StoreError> {
+pub(super) fn read_setting<T: DeserializeOwned>(
+    txn: &Txn,
+    key: &str,
+    default: T,
+) -> Result<T, StoreError> {
     match settings::get::<T>(txn, key) {
         Ok(Some(value)) => Ok(value),
         Ok(None) => Ok(default),

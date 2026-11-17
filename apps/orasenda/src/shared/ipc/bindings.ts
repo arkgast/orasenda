@@ -1600,6 +1600,16 @@ export type Settings = {
 	boardEstimateBuffer: number,
 	/**  Space and P on Today and Space in full screen act (`keys.single_key`). */
 	singleKey: boolean,
+	/**  The weekly focus goal in hours, 0 to 60; 0 is no goal (`review.focus_goal_hours`). */
+	reviewFocusGoalHours: number,
+	/**  Notify when the shutdown is due (`notify.shutdown_due`). Off by default. */
+	notifyShutdownDue: boolean,
+	/**  Notify when the weekly review is due (`notify.weekly_review`). Off by default. */
+	notifyWeeklyReview: boolean,
+	/**  The shutdown time, minutes since midnight, 240 to 1439 (`review.shutdown_time`). */
+	reviewShutdownTime: number,
+	/**  The day the weekly review is due (`review.weekly_day`). */
+	reviewWeeklyDay: WeeklyDay,
 };
 
 /**  The settings changed. */
@@ -2233,6 +2243,17 @@ export type WeeklyAnswers_Serialize = {
 	notes: string | null,
 	priorities: PriorityView[],
 };
+
+/**  The day the weekly review becomes due (`review.weekly_day`). */
+export type WeeklyDay = 
+/**  Friday. */
+"fri" | 
+/**  Saturday. */
+"sat" | 
+/**  Sunday. */
+"sun" | 
+/**  Monday. */
+"mon";
 
 /**  The weekly review's draft: the full state, written as is. */
 export type WeeklyDraft = WeeklyDraft_Serialize | WeeklyDraft_Deserialize;

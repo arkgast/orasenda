@@ -41,6 +41,11 @@ export const SETTINGS_KEYS = [
   "notifyRoutineDue",
   "boardEstimateBuffer",
   "singleKey",
+  "reviewFocusGoalHours",
+  "notifyShutdownDue",
+  "notifyWeeklyReview",
+  "reviewShutdownTime",
+  "reviewWeeklyDay",
 ] as const satisfies readonly (keyof Settings)[];
 
 // Compile-time exhaustiveness (#114): `tsc` fails here when bindings.ts gains a field this list misses.
