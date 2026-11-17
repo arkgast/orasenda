@@ -148,3 +148,14 @@ fn undo_emits_both_events_after_unlock() {
         0
     );
 }
+
+#[test]
+fn undo_leaves_removed_task_removed() {
+    let host = host();
+    let (a, b) = setup(&host);
+    let undo = run_shutdown_move(&host, vec![a.clone(), b.clone()]).expect("moves");
+    crate::board::run_task_remove(&host, &a).expect("removed");
+    let line = run_shutdown_move_undo(&host, &undo.token).expect("undoes");
+    assert_eq!(line, "Put 1 task back.");
+    assert_eq!(lane_of(&host, &b), Lane::Doing);
+}

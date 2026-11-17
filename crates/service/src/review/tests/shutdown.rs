@@ -162,7 +162,9 @@ fn period_two_back_refused() {
     let host = host();
     host.set_now(NOON);
     // The day before is accepted; two back is not.
-    assert!(run_shutdown_complete(&host, "2026-11-06", answers(None)).is_ok());
+    let view = run_shutdown_complete(&host, "2026-11-06", answers(None)).expect("accepted");
+    assert_eq!(view.day, "2026-11-06");
+    assert_eq!(view.completed_line.as_deref(), Some("Shutdown complete."));
     assert_eq!(
         run_shutdown_complete(&host, "2026-11-05", answers(None)),
         Err(ReviewError::Period)

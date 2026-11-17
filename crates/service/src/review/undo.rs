@@ -77,16 +77,22 @@ pub fn run_shutdown_move_undo<H: Host>(host: &H, token: &str) -> Result<String, 
         };
         let lanes: Vec<LaneBefore> = slot.lanes.clone();
         let restored = guard.board_write(now_ms, |txn, _| {
+            let mut live = 0_u32;
+            for lane in &lanes {
+                if tasks::get(txn, &lane.id)?.is_some_and(|row| row.deleted_at.is_none()) {
+                    live += 1;
+                }
+            }
             tasks::restore_lanes(txn, &lanes)?;
-            Ok(Ok(()))
+            Ok(Ok(live))
         });
-        let Ok((_, board)) = restored else {
+        let Ok((live, board)) = restored else {
             // The write failed and nothing changed: the person can try again.
             guard.review.undo = Some(slot);
             return Err(ReviewError::Store);
         };
         (
-            words::put_back_line(u32::try_from(lanes.len()).unwrap_or(u32::MAX)),
+            words::put_back_line(live),
             board,
             guard.take_link_view(now_ms),
             changed_view(&guard, now_ms),
