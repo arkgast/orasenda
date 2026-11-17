@@ -497,7 +497,7 @@
     "fg": "focus",
     "bg": "surface-raised",
     "kind": "mark",
-    "where": "T5: FloatingTimer focus ring arc shape on its own fill"
+    "where": "T5: FloatingTimer focus ring arc shape on its own fill; BarRow goal fill on a raised card"
   },
   {
     "fg": "routine",
