@@ -20,6 +20,17 @@ pub(super) fn host() -> TestHost {
 
 /// A focus session that started `days_ago` days before `T0` (at 09:00 UTC) and ran `minutes`.
 pub(super) fn session(host: &TestHost, id: &str, days_ago: u64, minutes: u64, task: Option<&str>) {
+    session_ms(host, id, days_ago, minutes * MINUTE, task);
+}
+
+/// Like [`session`], with the focused time in milliseconds.
+pub(super) fn session_ms(
+    host: &TestHost,
+    id: &str,
+    days_ago: u64,
+    focused_ms: u64,
+    task: Option<&str>,
+) {
     let started_ms = T0 - days_ago * DAY + 9 * HOUR;
     let record = SessionRecord {
         id: SessionId(id.to_owned()),
@@ -27,9 +38,9 @@ pub(super) fn session(host: &TestHost, id: &str, days_ago: u64, minutes: u64, ta
         phase: Phase::Focus,
         planned_ms: 25 * MINUTE,
         started_ms,
-        ended_ms: started_ms + minutes * MINUTE,
+        ended_ms: started_ms + focused_ms,
         paused_total_ms: 0,
-        focused_ms: minutes * MINUTE,
+        focused_ms,
         end_reason: EndReason::Completed,
         extensions: 0,
         break_kind: None,

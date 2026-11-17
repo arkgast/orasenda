@@ -254,3 +254,31 @@ fn stats_parts_reads_any_date_range() {
     assert_eq!(parts.sessions[0].date, date(30));
     assert_eq!(parts.sessions[0].focused_ms, 40 * 60_000);
 }
+
+#[test]
+fn stats_parts_leaves_out_rows_created_after_the_range() {
+    let host = host();
+    let routine = RoutineDraft {
+        name: "Wind-down".into(),
+        time_of_day: None,
+        days: 127,
+    };
+    run_routine_create(&host, &routine).unwrap();
+    run_habit_create(&host, None, &habit("Walk")).unwrap();
+    let date = |d| LocalDate::new(2026, 10, d).unwrap();
+    let service = lock(&host.0.service);
+    let parts = db(&service)
+        .read(|txn| stats_parts(txn, date(26), date(31), 60))
+        .expect("reads");
+    assert!(parts.routines.is_empty(), "{:?}", parts.routines);
+    assert!(parts.habits.is_empty(), "{:?}", parts.habits);
+}
+
+#[test]
+fn stats_sub_minute_focus_counts_as_empty() {
+    let host = host();
+    session_ms(&host, "blink", 1, 30_000, None);
+    let view = stats(&host, StatsRange::Week);
+    assert!(view.empty.is_some());
+    assert_eq!(view.summary.len(), 1);
+}

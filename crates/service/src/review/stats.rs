@@ -112,17 +112,18 @@ pub(crate) fn stats_parts(
         sessions,
         done_tasks,
         estimated,
-        routines: finished_runs(txn, from, to)?,
+        routines: finished_runs(txn, from, to, offset_min)?,
         habits: habit_days(txn, from, to, offset_min)?,
     })
 }
 
 /// Each live routine with how many of its runs finished in `from..=to`. A removed routine is
-/// left out, and so are its runs.
+/// left out, and so are its runs, and so is one created after `to`.
 fn finished_runs(
     txn: &Txn,
     from: LocalDate,
     to: LocalDate,
+    offset_min: i32,
 ) -> Result<Vec<(String, u32)>, StoreError> {
     let runs = routine_runs::finished_between(txn, &from.to_iso(), &to.to_iso())?;
     let mut count: BTreeMap<&str, u32> = BTreeMap::new();
@@ -131,6 +132,7 @@ fn finished_runs(
     }
     Ok(routine_rows::list_live(txn)?
         .into_iter()
+        .filter(|routine| LocalDate::from_epoch_ms(routine.created_at, offset_min) <= to)
         .map(|routine| {
             let n = count.get(routine.id.as_str()).copied().unwrap_or(0);
             (routine.fields.name, n)
@@ -159,6 +161,7 @@ fn habit_days(
         checked.entry(check.habit_id).or_default().insert(day);
     }
     rows.into_iter()
+        .filter(|habit| LocalDate::from_epoch_ms(habit.created_at, offset_min) <= to)
         .map(|habit| {
             let bits = habit_mask(&habit, &routine_days);
             Ok(HabitDays {
@@ -189,7 +192,7 @@ impl SessionService {
     ) -> Result<StatsView, StoreError> {
         let store = self
             .store()
-            .ok_or_else(|| bad("the store is unavailable"))?;
+            .ok_or_else(|| StoreError::Sqlite("the store is unavailable".into()))?;
         let local = self.routines_local(now_ms);
         let settings = self.settings();
         let core: CoreRange = range.into();
@@ -244,10 +247,7 @@ fn build(
     let minutes: u32 = buckets.iter().map(|bucket| bucket.minutes).sum();
     let sessions = u32::try_from(parts.sessions.len()).unwrap_or(u32::MAX);
     let from = buckets.first().map_or(ask.today, |bucket| bucket.start);
-    let empty = parts
-        .sessions
-        .is_empty()
-        .then(|| words::empty_line(!ask.ever));
+    let empty = (minutes == 0).then(|| words::empty_line(!ask.ever));
     let summary = match empty {
         Some(line) => vec![line.to_owned()],
         None => vec![
