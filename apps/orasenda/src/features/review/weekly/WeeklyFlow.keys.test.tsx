@@ -140,7 +140,9 @@ test("not_now_on_priorities_completes_with_the_saved_priorities", async () => {
     answers: {
       improvement: "Start earlier",
       notes: null,
-      priorities: [{ taskId: "t1", title: "Fix sync bug", done: false, line: "Fix sync bug · Doing" }],
+      priorities: [
+        { taskId: "t1", title: "Fix sync bug", done: false, line: "Fix sync bug · Doing" },
+      ],
     },
   });
   const { backend } = await openWeekly({}, saved);

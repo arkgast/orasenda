@@ -80,7 +80,10 @@ test("clearing_a_priority_removes_its_slot", async () => {
   fireEvent.click(screen.getAllByRole("button", { name: "Clear task" })[0] as HTMLElement);
   await press("Continue");
   expect(argsOf(backend.calls, "weekly_complete")).toEqual([
-    { weekStart: "2026-11-23", draft: { improvement: null, notes: null, priorities: [{ task: "t2" }] } },
+    {
+      weekStart: "2026-11-23",
+      draft: { improvement: null, notes: null, priorities: [{ task: "t2" }] },
+    },
   ]);
 });
 

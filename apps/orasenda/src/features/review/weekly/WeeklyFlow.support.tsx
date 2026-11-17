@@ -46,10 +46,7 @@ export function answerOf(view: WeeklyView_Serialize, completed = false) {
 }
 
 /** Renders the weekly flow on the mocked backend and lets the first view land. */
-export async function openWeekly(
-  replies: Replies = {},
-  view: WeeklyView_Serialize = weeklyView(),
-) {
+export async function openWeekly(replies: Replies = {}, view: WeeklyView_Serialize = weeklyView()) {
   const onClose = vi.fn();
   const backend = mockBackend({
     weekly_get: () => view,

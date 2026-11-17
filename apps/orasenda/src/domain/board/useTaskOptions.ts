@@ -16,6 +16,7 @@ export function taskOptions(board: BoardView): TaskPickerOption[] {
         lane: column.lane as TaskPickerOption["lane"],
         laneLabel: column.name,
         frog: task.isFrog || undefined,
+        week: task.weekPriority || undefined,
       })),
     );
 }
