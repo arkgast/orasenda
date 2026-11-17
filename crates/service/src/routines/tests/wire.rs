@@ -25,10 +25,11 @@ fn views_are_camel_case() {
         state: HabitDayState::Upcoming,
         today: true,
         label: "Monday 9 November".into(),
+        weekday: 0,
     };
     assert_eq!(
         json!(dot),
-        json!({ "state": "upcoming", "today": true, "label": "Monday 9 November" })
+        json!({ "state": "upcoming", "today": true, "label": "Monday 9 November", "weekday": 0 })
     );
     let run = RunView {
         id: "run".into(),

@@ -719,6 +719,8 @@ export type HabitDotView = {
 	today: boolean,
 	/**  The date for VoiceOver: "Monday 9 November". */
 	label: string,
+	/**  0 for Monday to 6 for Sunday, so a grid never has to read the label's words. */
+	weekday: number,
 };
 
 /**
