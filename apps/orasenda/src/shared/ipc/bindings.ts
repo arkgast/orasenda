@@ -235,6 +235,13 @@ export const commands = {
 	 *  far, and last week's improvement.
 	 */
 	weeklyGet: () => typedError<WeeklyView_Serialize, ReviewError>(__TAURI_INVOKE("weekly_get")),
+	/**
+	 *  Saves the weekly draft for the week starting `week_start` and returns the view with every
+	 *  typed priority resolved to its task. Answers `Period` for a week older than the one before.
+	 */
+	weeklySave: (weekStart: string, draft: WeeklyDraft_Deserialize) => typedError<WeeklyView_Serialize, ReviewError>(__TAURI_INVOKE("weekly_save", { weekStart, draft })),
+	/**  Saves the draft and marks the week planned. The first completion time is kept. */
+	weeklyComplete: (weekStart: string, draft: WeeklyDraft_Deserialize) => typedError<WeeklyView_Serialize, ReviewError>(__TAURI_INVOKE("weekly_complete", { weekStart, draft })),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */

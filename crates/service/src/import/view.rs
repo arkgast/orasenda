@@ -7,7 +7,7 @@ use crate::board::view::{Ctx, due_label, lane};
 use crate::import::fit::FittedTask;
 
 /// `Work · Planning · Due Fri 20 Nov · 4 checklist items`; the parts that exist, in that order.
-pub(crate) fn meta(task: &FittedTask, cx: Ctx) -> String {
+pub(crate) fn meta(task: &FittedTask, cx: &Ctx) -> String {
     let mut parts = Vec::new();
     if !task.tags.is_empty() {
         parts.push(task.tags.join(" · "));
@@ -38,7 +38,7 @@ pub(crate) fn item(
     task: &FittedTask,
     on_board: Option<Lane>,
     columns: &[ColumnSettings],
-    cx: Ctx,
+    cx: &Ctx,
 ) -> ImportItemView {
     let why = on_board.map(|l| {
         let name = columns

@@ -2,7 +2,9 @@
 //! person has answered so far, and last week's improvement shown back as written.
 
 mod look_back;
+mod save;
 
+use orasenda_core::LocalDate;
 use orasenda_core::review::{look_back as look_back_range, planned_week};
 use orasenda_store::reflections::{self, ReflectionKind, ReflectionRow, reflection_id};
 use orasenda_store::{StoreError, Txn};
@@ -13,6 +15,8 @@ use crate::api::{ReviewError, WeeklyAnswers, WeeklyView};
 use crate::scheduler::Host;
 use crate::session::{SessionService, lock};
 
+pub use save::{run_weekly_complete, run_weekly_save};
+
 /// `weekly_get`: the weekly review now. Unavailable or unreadable storage answers `Store`.
 pub fn run_weekly_get<H: Host>(host: &H) -> Result<WeeklyView, ReviewError> {
     let service = host.service().ok_or(ReviewError::Store)?;
@@ -22,12 +26,22 @@ pub fn run_weekly_get<H: Host>(host: &H) -> Result<WeeklyView, ReviewError> {
 impl SessionService {
     /// The weekly view at `now_ms`, read in one transaction.
     pub(crate) fn weekly_view(&self, now_ms: u64) -> Result<WeeklyView, ReviewError> {
+        let planned = planned_week(self.routines_local(now_ms).today);
+        self.weekly_view_of(now_ms, planned)
+    }
+
+    /// The weekly view of the week starting `planned` (the planned week, or the one before it
+    /// for a flow left open across midnight).
+    pub(crate) fn weekly_view_of(
+        &self,
+        now_ms: u64,
+        planned: LocalDate,
+    ) -> Result<WeeklyView, ReviewError> {
         let store = self.store().ok_or(ReviewError::Store)?;
         let local = self.routines_local(now_ms);
         let goal_minutes = u32::from(self.settings().review_focus_goal_hours) * 60;
         store
             .read(|txn| {
-                let planned = planned_week(local.today);
                 let (from, to) = look_back_range(planned);
                 let look = look_back::build(
                     txn,

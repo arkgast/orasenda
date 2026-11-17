@@ -1,7 +1,9 @@
 //! The store side of the board, run under the service lock.
 
+use orasenda_core::review::week_start;
 use orasenda_core::{LocalDate, rank};
-use orasenda_store::tasks::{self, TaskRow};
+use orasenda_store::reflections::{self, ReflectionKind};
+use orasenda_store::tasks::{self, NewTask, TaskKind, TaskRow};
 use orasenda_store::{StoreError, Txn};
 
 use super::view::{self, Ctx};
@@ -17,10 +19,35 @@ pub(crate) type Changed = (u64, BoardView);
 impl SessionService {
     /// The words' context at `now_ms`.
     pub(crate) fn board_ctx(&self, now_ms: u64) -> Ctx {
-        let offset = self.local_time().utc_offset_min(now_ms);
+        let today = self.board_today(now_ms);
         Ctx {
-            today: LocalDate::from_epoch_ms(now_ms, offset),
+            today,
             buffer: self.settings().board_estimate_buffer,
+            week_priorities: self.week_priority_ids(today),
+        }
+    }
+
+    /// The local date at `now_ms`.
+    fn board_today(&self, now_ms: u64) -> LocalDate {
+        LocalDate::from_epoch_ms(now_ms, self.local_time().utc_offset_min(now_ms))
+    }
+
+    /// The task ids chosen by the review of the week `today` falls in, not the week being
+    /// planned on a Friday. A failed read is logged and gives none: the flag only decorates.
+    fn week_priority_ids(&self, today: LocalDate) -> Vec<String> {
+        let Some(store) = self.store() else {
+            return Vec::new();
+        };
+        let id = reflections::reflection_id(ReflectionKind::Week, &week_start(today).to_iso());
+        match store.read(|txn| reflections::get(txn, &id)) {
+            Ok(row) => row
+                .filter(|row| row.deleted_at.is_none())
+                .map(|row| row.priorities)
+                .unwrap_or_default(),
+            Err(error) => {
+                eprintln!("board: could not read the week's priorities ({error})");
+                Vec::new()
+            }
         }
     }
 
@@ -31,7 +58,7 @@ impl SessionService {
         let offset = self.local_time().utc_offset_min(now_ms);
         let since = view::done_since(cx.today, offset);
         let rows = store.read(|txn| view::read(txn, since))?;
-        let mut board = view::build(&rows, cx);
+        let mut board = view::build(&rows, &cx);
         if let Some(running) = self.running_task() {
             for task in board.columns.iter_mut().flat_map(|c| &mut c.tasks) {
                 task.active = task.id == running;
@@ -85,7 +112,7 @@ impl SessionService {
     /// recorded one. The first tick only records the date, and the new date is recorded only
     /// once the view was read, so a failed read retries on the next tick.
     pub(crate) fn board_day_view(&mut self, now_ms: u64) -> Option<Changed> {
-        let today = self.board_ctx(now_ms).today;
+        let today = self.board_today(now_ms);
         match self.board_day {
             None => {
                 self.board_day = Some(today);
@@ -130,4 +157,29 @@ pub(super) fn rank_at(
         before.map(String::as_str),
         ranks.get(index).map(String::as_str),
     ))
+}
+
+/// A new task with `title` (already checked) at the end of Backlog; returns its id. For the
+/// weekly review's typed priorities, written in the review's own transaction.
+pub(crate) fn append_backlog(txn: &mut Txn, title: String) -> Result<String, StoreError> {
+    let id = uuid::Uuid::now_v7().to_string();
+    let new = NewTask {
+        id: id.clone(),
+        title,
+        notes: String::new(),
+        tags: Vec::new(),
+        kind: TaskKind::Deep,
+        estimate: None,
+        due: None,
+        priority: None,
+        checklist: Vec::new(),
+        lane: tasks::Lane::Backlog,
+        rank: rank_at(txn, Lane::Backlog, usize::MAX, None)?,
+        frog_day: None,
+        source_note_id: None,
+        origin: None,
+        created_at: txn.now_ms(),
+    };
+    tasks::insert(txn, &new)?;
+    Ok(id)
 }

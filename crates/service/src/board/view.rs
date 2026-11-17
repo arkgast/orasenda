@@ -17,10 +17,12 @@ const MONTHS: [&str; 12] = [
 ];
 
 /// What the words need to know about now.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) struct Ctx {
     pub today: LocalDate,
     pub buffer: u8,
+    /// The task ids the current week's review chose, in saved order (`weekPriority`).
+    pub week_priorities: Vec<String>,
 }
 
 /// Everything one board view reads from the store.
@@ -47,7 +49,7 @@ pub(super) fn read(txn: &Txn, since: u64) -> Result<Rows, StoreError> {
     })
 }
 
-pub(super) fn build(rows: &Rows, cx: Ctx) -> BoardView {
+pub(super) fn build(rows: &Rows, cx: &Ctx) -> BoardView {
     let columns: Vec<ColumnView> = rows
         .columns
         .iter()
@@ -97,7 +99,7 @@ pub(crate) fn planned(estimate: u8, buffer: u8) -> u32 {
     (u32::from(estimate) * (100 + u32::from(buffer))).div_ceil(100)
 }
 
-pub(crate) fn task_view(row: &TaskRow, cx: Ctx, tracked: Option<&Tracked>) -> TaskView {
+pub(crate) fn task_view(row: &TaskRow, cx: &Ctx, tracked: Option<&Tracked>) -> TaskView {
     let focused_ms = tracked.map_or(0, |t| t.focused_ms);
     let minutes = focused_ms / 60_000;
     TaskView {
@@ -137,8 +139,7 @@ pub(crate) fn task_view(row: &TaskRow, cx: Ctx, tracked: Option<&Tracked>) -> Ta
         sessions: tracked.map_or(0, |t| t.sessions),
         // The session link is B9's; until then no session runs on a task.
         active: false,
-        // The weekly review wires it (V19).
-        week_priority: false,
+        week_priority: cx.week_priorities.contains(&row.id),
     }
 }
 

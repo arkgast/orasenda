@@ -29,6 +29,7 @@ use crate::scheduler::Host;
 use crate::session::lock;
 pub(crate) use service::Answer;
 pub(crate) use service::Changed;
+pub(crate) use service::append_backlog;
 use service::{live, rank_at};
 use view::{Ctx, stored_lane};
 
@@ -73,7 +74,7 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
         };
         tasks::insert(txn, &new)?;
         Ok(live(txn, &id)?
-            .map(|row| view::task_view(&row, cx, None))
+            .map(|row| view::task_view(&row, &cx, None))
             .ok_or(BoardError::Store))
     })
 }

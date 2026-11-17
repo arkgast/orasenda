@@ -102,4 +102,6 @@ pub const COMMANDS: &[&str] = &[
     "shutdown_complete",
     "buffer_suggestion_dismiss",
     "weekly_get",
+    "weekly_save",
+    "weekly_complete",
 ];

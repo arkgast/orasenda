@@ -22,6 +22,7 @@ pub(crate) use stats::stats_parts;
 pub use undo::{run_shutdown_move, run_shutdown_move_undo};
 pub use view::{check_period, run_review_get};
 pub use weekly::run_weekly_get;
+pub use weekly::{run_weekly_complete, run_weekly_save};
 
 #[cfg(test)]
 mod tests;

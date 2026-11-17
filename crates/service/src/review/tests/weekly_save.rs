@@ -42,7 +42,9 @@ fn board(host: &TestHost) -> BoardView {
 fn backlog_titles(host: &TestHost) -> Vec<String> {
     let board = board(host);
     let column = board.columns.iter().find(|c| c.lane == Lane::Backlog);
-    column.map_or_else(Vec::new, |c| c.tasks.iter().map(|t| t.title.clone()).collect())
+    column.map_or_else(Vec::new, |c| {
+        c.tasks.iter().map(|t| t.title.clone()).collect()
+    })
 }
 
 fn save(host: &TestHost, week: &str, picks: Vec<PriorityPick>) -> Result<WeeklyView, ReviewError> {
@@ -214,8 +216,18 @@ fn week_priority_current_not_planned_on_friday() {
     let current = add(&host, "For this week");
     host.set_now(at(6, 12));
     // Friday 13 November: this week starts 9 November, next week 16 November.
-    save(&host, "2026-11-16", vec![PriorityPick::Task(planned.clone())]).expect("saved");
-    save(&host, "2026-11-09", vec![PriorityPick::Task(current.clone())]).expect("saved");
+    save(
+        &host,
+        "2026-11-16",
+        vec![PriorityPick::Task(planned.clone())],
+    )
+    .expect("saved");
+    save(
+        &host,
+        "2026-11-09",
+        vec![PriorityPick::Task(current.clone())],
+    )
+    .expect("saved");
     let board = board(&host);
     let flag = |id: &str| {
         board
