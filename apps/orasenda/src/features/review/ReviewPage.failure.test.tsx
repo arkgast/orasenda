@@ -25,11 +25,14 @@ test("load_failure_line_try_again", async () => {
   expect(primaries(container)).toHaveLength(0);
   expect(screen.queryByRole("region", { name: "Today" })).toBeNull();
   fail = false;
+  screen.getByRole("button", { name: /^Try again/ }).focus();
   fireEvent.click(screen.getByRole("button", { name: /^Try again/ }));
   await settle();
   expect(screen.getByRole("region", { name: "Today" })).toBeInTheDocument();
   expect(screen.queryByText("Orasenda can't load your review right now.")).toBeNull();
   expect(backend.calls.filter((c) => c.cmd === "review_get")).toHaveLength(2);
+  // The button that had focus is gone: focus lands on the page heading, not on the body.
+  expect(screen.getByRole("heading", { name: "Review", level: 1 })).toHaveFocus();
 });
 
 test("a_refused_load_is_the_same_failure", async () => {

@@ -13,7 +13,7 @@
   flex-direction: column;
   gap: var(--space-6);
   max-inline-size: var(--content-width);
-  padding-inline-end: var(--space-1);
+  padding-inline: var(--space-1);
 }
 
 .app-review-section {
@@ -50,7 +50,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   font-size: var(--type-body-font-size);
   line-height: var(--type-body-line-height);
 }
@@ -64,6 +64,11 @@
 /* The tick lines up with the first line of text. */
 .app-review-priority > svg {
   margin-block-start: var(--space-1);
+}
+
+.app-review-slot {
+  flex: none;
+  inline-size: var(--icon-md);
 }
 
 .app-review-actions {

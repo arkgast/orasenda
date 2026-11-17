@@ -14,7 +14,7 @@ afterEach(async () => {
 const BANNED = /!|missed|failed|broken|streak lost|[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/iu;
 
 // Every source file of the feature, found by glob so later tasks are covered without an edit.
-const SOURCES = import.meta.glob<string>("./*.{ts,tsx}", {
+const SOURCES = import.meta.glob<string>("./**/*.{ts,tsx}", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -34,7 +34,10 @@ function literals(source: string): string[] {
   )) {
     found.push(m[1] ?? m[2] ?? m[3] ?? "");
   }
-  for (const m of code.matchAll(/>([^<>{}\n]+)</g)) found.push(m[1] ?? "");
+  for (const m of code.matchAll(/>([^<>{}]+)</g)) {
+    const text = (m[1] ?? "").replace(/&apos;/g, "'").trim();
+    if (text) found.push(text);
+  }
   return found;
 }
 
@@ -49,6 +52,17 @@ test("review_copy_has_no_banned_words", async () => {
       expect(text, `${name}: ${text}`).not.toMatch(BANNED);
     }
   }
+});
+
+test("literals_reads_jsx_text_on_its_own_line", () => {
+  const found = literals("<p>\n  Orasenda can&apos;t load it.\n</p>");
+  expect(found).toContain("Orasenda can't load it.");
+});
+
+test("the_glob_finds_files_in_subfolders", () => {
+  // Later flows live in subfolders (shutdown/, weekly/); the glob must reach them.
+  expect(Object.keys(SOURCES).some((n) => n.startsWith("./") && n.includes("Overview"))).toBe(true);
+  expect("./shutdown/X.tsx").toMatch(/^\.\/(?:[^/]+\/)*[^/]+\.tsx$/);
 });
 
 test("failure_copy_has_no_banned_words", async () => {

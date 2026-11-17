@@ -66,6 +66,42 @@ for (const size of SIZES) {
   });
 }
 
+for (const scenario of ["reviewWeekly", "reviewDone"]) {
+  for (const size of SIZES) {
+    test(`${scenario}_header_and_targets_${size.width}x${size.height}`, async ({ page }) => {
+      await openReview(page, scenario, size);
+      expect(await smallTargets(page.getByRole("main"))).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        size.width,
+      );
+      if (scenario === "reviewDone") {
+        await expect(page.locator('[data-slot="button"][data-variant="primary"]')).toHaveCount(0);
+        await expect(page.getByRole("button", { name: /^Look again/ })).toHaveCount(2);
+        return;
+      }
+      const primary = page.getByRole("button", { name: "Start weekly review" });
+      await expect(primary).toBeVisible();
+      // The primary clears the title (and the Pages picker when compact) by at least space-3.
+      const gap = await page.evaluate(() => {
+        const lead = document.querySelector('[data-slot="button"][data-variant="primary"]');
+        if (!lead) return -1;
+        const box = lead.getBoundingClientRect();
+        // Everything in the header's row to the left of the primary: the title and the picker.
+        let edge = 0;
+        for (const el of document.querySelectorAll("h1, button")) {
+          const r = el.getBoundingClientRect();
+          if (el !== lead && r.right <= box.left + 1 && r.top < box.bottom && r.bottom > box.top) {
+            edge = Math.max(edge, r.right);
+          }
+        }
+        return box.left - edge;
+      });
+      if (process.env.DEBUG_GAPS) console.log(JSON.stringify({ scenario, gap }));
+      expect(gap).toBeGreaterThanOrEqual(12);
+    });
+  }
+}
+
 test("review_primary_shows_a_focus_ring", async ({ page }) => {
   await openReview(page, "reviewOverview", { width: 900, height: 600 });
   const primary = page.getByRole("button", { name: "Start shutdown" });

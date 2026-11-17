@@ -37,3 +37,17 @@ REVIEW_SCENARIOS.reviewEmpty = reviewBackend(() =>
 );
 
 REVIEW_SCENARIOS.reviewUnavailable = reviewBackend(() => Promise.reject("store"));
+
+// The weekly review leads (the longest primary label beside the Pages picker), and a finished day
+// and week (Look again, no primary).
+REVIEW_SCENARIOS.reviewWeekly = reviewBackend(() =>
+  reviewView({ primary: "weekly", today: { ...reviewView().today, done: true } }),
+);
+
+REVIEW_SCENARIOS.reviewDone = reviewBackend(() =>
+  reviewView({
+    primary: "none",
+    today: { ...reviewView().today, done: true },
+    week: { ...reviewView().week, planned: true },
+  }),
+);

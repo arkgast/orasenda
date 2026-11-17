@@ -57,7 +57,11 @@ function Priority({ priority }: { priority: PriorityView }): ReactElement {
   // Done is the word in Rust's line and a tick beside it: never colour alone.
   return (
     <li className="app-review-priority" data-done={priority.done ? "" : undefined}>
-      {priority.done ? <Icon name="check" size="md" /> : null}
+      {priority.done ? (
+        <Icon name="check" size="md" />
+      ) : (
+        <span className="app-review-slot" aria-hidden="true" />
+      )}
       <span>{priority.line}</span>
     </li>
   );

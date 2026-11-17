@@ -18,6 +18,7 @@ const CONTROLS: readonly IconName[] = [
   "pages",
   "jump",
 ];
+const ACTIONS: readonly IconName[] = ["edit", "delete", "restore", "check"];
 const RAIL: readonly IconName[] = [
   "today",
   "inbox",
@@ -49,6 +50,9 @@ export function IconSpecimen(): ReactElement {
       </Frame>
       <Frame state="icon-sheet-rail" width={420} height={96}>
         <Sheet names={RAIL} />
+      </Frame>
+      <Frame state="icon-sheet-row-actions" width={420} height={60}>
+        <Sheet names={ACTIONS} />
       </Frame>
       <Frame state="icon-md-alert" width={140} height={60}>
         <div className="flex items-center gap-2 p-4 text-ink">

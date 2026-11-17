@@ -1,7 +1,7 @@
 import { PagesButton } from "@domain/navigation/PagesButton";
 import { Button, InlineNotice, type NavPage, PageFrame, ScrollRegion } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
-import type { ReactElement } from "react";
+import { type ReactElement, useEffect, useRef } from "react";
 import { type Flow, Overview, primaryFlow, START_LABELS } from "./Overview";
 import { useReview } from "./useReview";
 import "./review.css";
@@ -20,6 +20,20 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
   const { compact } = useWindowLayout();
   const { review, retry } = useReview();
   const view = review.status === "ok" ? review.view : null;
+  const page = useRef<HTMLDivElement>(null);
+  const wasError = useRef(false);
+  useEffect(() => {
+    // Try again unmounts its own button once the load succeeds: focus goes to the heading.
+    const active = document.activeElement;
+    if (
+      wasError.current &&
+      review.status === "ok" &&
+      (!active || active === document.body || !active.isConnected)
+    ) {
+      page.current?.querySelector<HTMLElement>("h1")?.focus();
+    }
+    wasError.current = review.status === "error";
+  }, [review.status]);
   const lead = view ? primaryFlow(view.primary) : null;
 
   const status =
@@ -31,14 +45,16 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
         actionName="Try again loading your review"
         onAction={retry}
       >
-        Orasenda can&apos;t load your review right now.
+        <span>
+          Orasenda can&apos;t load your review right now. <span>It&apos;s kept on this Mac.</span>
+        </span>
       </InlineNotice>
     ) : (
       <InlineNotice variant="row">{""}</InlineNotice>
     );
 
   return (
-    <div className="app-review-page">
+    <div ref={page} className="app-review-page">
       <PageFrame
         title="Review"
         compactPicker={
@@ -55,9 +71,6 @@ export function ReviewPage({ onNavigate, onStart = noFlowYet }: Props): ReactEle
       >
         <ScrollRegion label="Review">
           {view ? <Overview view={view} onStart={onStart} /> : null}
-          {review.status === "error" ? (
-            <p className="app-review-line">It&apos;s kept on this Mac.</p>
-          ) : null}
         </ScrollRegion>
       </PageFrame>
     </div>
