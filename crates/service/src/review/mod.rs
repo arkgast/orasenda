@@ -10,6 +10,12 @@ pub(crate) use emit::changed_view;
 pub use emit::emit_changed;
 pub(crate) use state::ReviewState;
 pub use view::{check_period, run_review_get};
+mod buffer;
+mod stats;
+
+pub use buffer::run_buffer_suggestion_dismiss;
+pub use stats::run_review_stats;
+pub(crate) use stats::stats_parts;
 
 #[cfg(test)]
 mod tests;

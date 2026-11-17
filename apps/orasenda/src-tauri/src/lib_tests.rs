@@ -12,6 +12,7 @@ mod import;
 mod plist;
 mod review_contract;
 mod review_view;
+mod review_stats;
 mod routines;
 
 use capabilities::{assert_capability, capability};
