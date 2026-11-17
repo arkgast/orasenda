@@ -7,8 +7,8 @@ import { backend } from "./backend";
 export const REVIEW_STATS_SCENARIOS: Record<string, Handler> = {};
 
 // Review > Stats. *reviewStatsWeeks* has a goal, a long habit name, a long sentence, a routine
-// line and the buffer suggestion, on every range; *reviewStatsGap* has weeks with nothing in them
-// and says so plainly, without counting the gap.
+// line and the buffer suggestion, on every range; *reviewStatsGap* has filled periods around empty ones;
+// *reviewStatsEmpty* has nothing in range; *reviewStatsUnavailable* fails the read.
 
 /** The Review backend, answering `review_stats` by range. */
 function statsBackend(by: (range: StatsRange) => StatsView_Serialize): Handler {
@@ -100,26 +100,54 @@ REVIEW_STATS_SCENARIOS.reviewStatsWeeks = statsBackend((range) => {
   });
 });
 
+const WEEKS8 = ["22 Sep", "29 Sep", "6 Oct", "13 Oct", "20 Oct", "27 Oct", "3 Nov", "This week"];
+const MONTHS6 = ["Jun", "Jul", "Aug", "Sep", "Oct", "This month"];
+
+// Gaps: filled periods around empty ones. The summary says what happened and never counts the gap.
 REVIEW_STATS_SCENARIOS.reviewStatsGap = statsBackend((range) => {
-  const quiet = "Nothing recorded in this range yet.";
   if (range === "week") {
     return statsView({
-      summary: [quiet],
-      bars: days([0, 0, 0, 0, 0, 0, 0], 2),
-      habits: [],
-      empty: null,
+      summary: ["4h 30m of focus this week, across 3 days."],
+      bars: days([120, 0, 0, 150, 0, 0, 0], 3),
+      habits: [habitStat({ name: "Read", dots: habitDots(Array(28).fill("notDone")) })],
     });
   }
+  const weeks = range === "weeks8";
   return statsView({
     range,
-    summary: [quiet],
-    bars: periods(
-      range === "weeks8"
-        ? ["22 Sep", "29 Sep", "6 Oct", "13 Oct", "20 Oct", "27 Oct", "3 Nov", "This week"]
-        : ["Jun", "Jul", "Aug", "Sep", "Oct", "This month"],
-      [],
-    ),
-    habits: [],
-    empty: "Stats appear after your first focus session.",
+    summary: [weeks ? "19h of focus over 8 weeks." : "46h of focus over 6 months."],
+    bars: weeks
+      ? periods(WEEKS8, [400, 0, 0, 380, 0, 360, 0, 0])
+      : periods(MONTHS6, [900, 0, 0, 1100, 760, 0]),
+    habits: [
+      habitStat({
+        name: "Read",
+        dots: null,
+        line: weeks ? "Done on 9 days in these 8 weeks" : "Done on 22 days in these 6 months",
+      }),
+    ],
   });
+});
+
+// Empty: nothing in the range. Rust sends the one sentence in both `summary` and `empty`.
+REVIEW_STATS_SCENARIOS.reviewStatsEmpty = statsBackend((range) => {
+  const line =
+    range === "months6"
+      ? "Stats appear after your first focus session."
+      : "Nothing recorded in this range yet.";
+  return statsView({
+    range,
+    summary: [line],
+    empty: line,
+    bars:
+      range === "week"
+        ? days([0, 0, 0, 0, 0, 0, 0], 2)
+        : periods(range === "weeks8" ? WEEKS8 : MONTHS6, []),
+    habits: [],
+  });
+});
+
+// Unavailable: the stats read fails while the rest of Review loads.
+REVIEW_STATS_SCENARIOS.reviewStatsUnavailable = backend({
+  replies: { review_get: () => reviewView(), review_stats: () => Promise.reject("store") },
 });

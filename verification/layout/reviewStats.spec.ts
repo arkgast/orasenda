@@ -80,7 +80,7 @@ for (const size of SIZES) {
     for (const range of RANGES) {
       await pick(page, range);
       await expectContained(page, size);
-      if (range !== "6 months") await expectNoOverlap(page);
+      await expectNoOverlap(page);
       // Dots and their legend are on Week only.
       const dots = range === "Week" ? 1 : 0;
       expect((await page.locator('[data-slot="habit-dot"]').count()) > 0).toBe(dots === 1);
@@ -99,19 +99,63 @@ for (const size of SIZES) {
     }
     await expect(page.getByRole("button", { name: "Use 40%" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Not now" })).toBeAttached();
+    // The actions wrap under the sentence instead of squeezing it to a sliver.
+    const notice = await page
+      .locator('[data-slot="inline-notice-message"]')
+      .last()
+      .evaluate((el) => el.getBoundingClientRect().bottom);
+    const actionTop = await page
+      .getByRole("button", { name: "Use 40%" })
+      .evaluate((el) => el.getBoundingClientRect().top);
+    if (process.env.DEBUG_GAPS)
+      console.log(JSON.stringify({ at, noticeBottom: notice, actionTop }));
+    expect(actionTop).toBeGreaterThanOrEqual(notice - 0.5);
+    if (size.height <= 240) {
+      // At the smallest window the page is longer than the region, so the region scrolls.
+      const region = page.getByRole("region", { name: "Review", exact: true });
+      expect(await region.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    }
   });
 
   test(`review_stats_gap_${at}`, async ({ page }) => {
     await openStats(page, "reviewStatsGap", size);
     for (const range of RANGES) {
       await pick(page, range);
-      await expect(page.getByText("Nothing recorded in this range yet.")).toBeAttached();
       await expectContained(page, size);
-      if (range !== "6 months") await expectNoOverlap(page);
+      await expectNoOverlap(page);
+      // Filled and empty periods side by side; the gap is not counted in words.
+      expect(await page.locator('[data-slot="trend-bar-fill"]').count()).toBeGreaterThan(0);
+      await expect(page.getByText("Nothing recorded in this range yet.")).toHaveCount(0);
+      expect(await smallTargets(page.getByRole("main"))).toEqual([]);
     }
-    await expect(page.getByText("Stats appear after your first focus session.")).toBeAttached();
-    // No fills at all, and no button that asks for anything.
-    await expect(page.locator('[data-slot="trend-bar-fill"]')).toHaveCount(0);
+    await expect(page.getByText("Done on 22 days in these 6 months")).toBeAttached();
+  });
+
+  test(`review_stats_empty_${at}`, async ({ page }) => {
+    await openStats(page, "reviewStatsEmpty", size);
+    for (const range of RANGES) {
+      await pick(page, range);
+      await expectContained(page, size);
+      await expectNoOverlap(page);
+      // The one sentence shows once, whatever the range.
+      const line =
+        range === "6 months"
+          ? "Stats appear after your first focus session."
+          : "Nothing recorded in this range yet.";
+      await expect(page.getByText(line)).toHaveCount(1);
+      await expect(page.locator('[data-slot="trend-bar-fill"]')).toHaveCount(0);
+      expect(await smallTargets(page.getByRole("main"))).toEqual([]);
+    }
+  });
+
+  test(`review_stats_unavailable_${at}`, async ({ page }) => {
+    await openStats(page, "reviewStatsUnavailable", size);
+    const row = page.locator('[data-slot="inline-notice"][data-tone="attention"]');
+    await expect(row).toBeAttached();
+    // The row keeps its sentence and its button inside the window, whatever its height.
+    const box = await row.boundingBox();
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(size.width);
+    await expectContained(page, size);
     expect(await smallTargets(page.getByRole("main"))).toEqual([]);
   });
 }

@@ -32,7 +32,7 @@ test("neither_button_runs_by_itself", async () => {
   expect(stats).toHaveTextContent("Your finished tasks took more sessions than planned.");
   expect(within(stats).getByRole("button", { name: "Use 40%" })).toHaveAttribute(
     "data-variant",
-    "ghost",
+    "quiet",
   );
   expect(within(stats).getByRole("button", { name: "Not now" })).toHaveAttribute(
     "data-variant",

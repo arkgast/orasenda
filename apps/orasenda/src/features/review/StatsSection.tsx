@@ -8,8 +8,8 @@ import {
   TrendBars,
 } from "@orasenda/ui";
 import { commands, type StatsRange, type StatsView_Serialize } from "@shared/ipc/bindings";
-import { latest, save } from "@shared/ipc/settingsQueue";
-import { type ReactElement, useId, useState } from "react";
+import { latest, load, save } from "@shared/ipc/settingsQueue";
+import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { habitDays } from "./habitDays";
 import { useStats } from "./useStats";
 
@@ -29,8 +29,10 @@ function duration(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-function Shapes({ view, caption }: { view: StatsView_Serialize; caption: string }): ReactElement {
+function Shapes({ view }: { view: StatsView_Serialize }): ReactElement {
   const { goal, bars } = view;
+  // The caption follows the bars on screen, not the range just picked.
+  const caption = RANGES.find((r) => r.range === view.range)?.caption ?? "";
   if (view.range === "week") {
     // A weekly goal has no per-day line: the week's total is a goal row above the day bars.
     const total = bars.reduce((sum, bar) => sum + bar.minutes, 0);
@@ -65,8 +67,10 @@ function Lines({ lines, label }: { lines: string[]; label: string }): ReactEleme
   if (lines.length === 0) return null;
   return (
     <ul aria-label={label} className="app-review-stats-lines">
-      {lines.map((line) => (
-        <li key={line}>{line}</li>
+      {lines.map((line, index) => (
+        // Lines can repeat (two copies of a template), and every read replaces the whole list.
+        // biome-ignore lint/suspicious/noArrayIndexKey: no ids in the view; the list is replaced whole
+        <li key={`${index}-${line}`}>{line}</li>
       ))}
     </ul>
   );
@@ -79,7 +83,8 @@ function Habits({ view }: { view: StatsView_Serialize }): ReactElement | null {
   return (
     <ul aria-label="Habits" className="app-review-habits">
       {view.habits.map((habit, index) => (
-        <li key={habit.name}>
+        // biome-ignore lint/suspicious/noArrayIndexKey: names are not unique; the list is replaced whole
+        <li key={`${index}-${habit.name}`}>
           {habit.dots ? (
             <HabitDots
               name={habit.name}
@@ -89,10 +94,10 @@ function Habits({ view }: { view: StatsView_Serialize }): ReactElement | null {
               legend={index === first}
             />
           ) : (
-            <>
+            <div className="app-review-habit">
               <p className="app-review-habit-name">{habit.name}</p>
               <p className="app-review-line">{habit.line}</p>
-            </>
+            </div>
           )}
         </li>
       ))}
@@ -108,14 +113,30 @@ export function StatsSection(): ReactElement {
   const titleId = useId();
   const groupId = useId();
   const view = stats.view;
-  const caption = RANGES.find((r) => r.range === range)?.caption ?? "";
+  const buffer = view?.buffer ?? null;
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  // The save chain builds on the latest settings; have them read if no page has.
+  useEffect(() => {
+    if (!latest()) load();
+  }, []);
+
+  /** After the person's own action, the notice goes; focus waits on the heading, not on body. */
+  const done = (): void => {
+    heading.current?.focus();
+    refresh();
+  };
 
   const chooseBuffer = async (percent: number): Promise<void> => {
     setSaveNote(null);
-    // The save chain builds on the latest settings; read them once if Today has not.
-    const current = latest() ?? (await commands.settingsGet().catch(() => null));
-    const worked = current ? await save({ ...current, boardEstimateBuffer: percent }) : false;
-    if (worked) refresh();
+    const current = latest();
+    if (!current) {
+      console.error("buffer save: settings are not loaded yet");
+      load();
+      setSaveNote(SAVE_FAILED);
+      return;
+    }
+    if (await save({ ...current, boardEstimateBuffer: percent })) done();
     else setSaveNote(SAVE_FAILED);
   };
 
@@ -123,7 +144,7 @@ export function StatsSection(): ReactElement {
     setSaveNote(null);
     commands.bufferSuggestionDismiss().then(
       (result) => {
-        if (result.status === "ok") return refresh();
+        if (result.status === "ok") return done();
         console.error("buffer_suggestion_dismiss failed", result.error);
         setSaveNote(SAVE_FAILED);
       },
@@ -136,7 +157,7 @@ export function StatsSection(): ReactElement {
 
   return (
     <section aria-labelledby={titleId} className="app-review-section">
-      <h2 id={titleId} className="app-review-heading">
+      <h2 ref={heading} id={titleId} tabIndex={-1} className="app-review-heading">
         Stats
       </h2>
       <div className="app-review-stats">
@@ -173,27 +194,26 @@ export function StatsSection(): ReactElement {
         {view ? (
           <>
             <Lines lines={view.summary} label="Summary" />
-            {view.empty ? <p className="app-review-line">{view.empty}</p> : null}
-            <Shapes view={view} caption={caption} />
+            <Shapes view={view} />
             <Lines lines={view.routines} label="Routines" />
             <Habits view={view} />
             {view.estimateLine ? <p className="app-review-line">{view.estimateLine}</p> : null}
-            {view.buffer ? (
+            {buffer ? (
               <InlineNotice
-                actionLabel={view.buffer.action}
-                onAction={() => void chooseBuffer(view.buffer?.percent ?? 0)}
+                actionLabel={buffer.action}
+                actionVariant="quiet"
+                onAction={() => void chooseBuffer(buffer.percent)}
                 secondaryAction={{ label: "Not now", onAction: notNow }}
               >
-                {view.buffer.line}
+                {buffer.line}
               </InlineNotice>
-            ) : null}
-            {saveNote ? (
-              <p role="status" className="app-review-line">
-                {saveNote}
-              </p>
             ) : null}
           </>
         ) : null}
+        {/* Always mounted, so a line that arrives is announced. */}
+        <p role="status" className="app-review-line">
+          {saveNote}
+        </p>
       </div>
     </section>
   );
