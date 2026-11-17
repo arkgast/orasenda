@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-buffer-suggestion-dismiss"
+description = "Enables the buffer_suggestion_dismiss command without any pre-configured scope."
+commands.allow = ["buffer_suggestion_dismiss"]
+
+[[permission]]
+identifier = "deny-buffer-suggestion-dismiss"
+description = "Denies the buffer_suggestion_dismiss command without any pre-configured scope."
+commands.deny = ["buffer_suggestion_dismiss"]

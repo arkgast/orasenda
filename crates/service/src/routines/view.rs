@@ -160,20 +160,7 @@ fn habit_view(
 ) -> HabitView {
     let f = &row.fields;
     let created = created(row, local);
-    let dots = day_states(created, local.today, days, done, WINDOW_DAYS)
-        .into_iter()
-        .map(|dot| HabitDotView {
-            state: match dot.state {
-                DayState::Done => HabitDayState::Done,
-                DayState::NotDone => HabitDayState::NotDone,
-                DayState::Rest => HabitDayState::Rest,
-                DayState::Upcoming => HabitDayState::Upcoming,
-            },
-            today: dot.today,
-            label: dot.date.label(),
-            weekday: dot.date.weekday().index(),
-        })
-        .collect();
+    let dots = dot_views(created, local.today, days, done);
     let standalone = row.routine_id.is_none();
     HabitView {
         id: row.id.clone(),
@@ -195,6 +182,29 @@ fn habit_view(
         fresh_start: fresh_start(created, local.today, days, done)
             .then(|| words::FRESH_START.to_owned()),
     }
+}
+
+/// The habit's dot grid: the last 28 days from its creation day (Routines and Review Stats).
+pub(crate) fn dot_views(
+    created: LocalDate,
+    today: LocalDate,
+    days: Weekdays,
+    done: &BTreeSet<LocalDate>,
+) -> Vec<HabitDotView> {
+    day_states(created, today, days, done, WINDOW_DAYS)
+        .into_iter()
+        .map(|dot| HabitDotView {
+            state: match dot.state {
+                DayState::Done => HabitDayState::Done,
+                DayState::NotDone => HabitDayState::NotDone,
+                DayState::Rest => HabitDayState::Rest,
+                DayState::Upcoming => HabitDayState::Upcoming,
+            },
+            today: dot.today,
+            label: dot.date.label(),
+            weekday: dot.date.weekday().index(),
+        })
+        .collect()
 }
 
 /// The local date a habit was made on, in the current offset.

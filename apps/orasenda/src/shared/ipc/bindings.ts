@@ -206,6 +206,16 @@ export const commands = {
 	importOpenSettings: (source: ImportSourceKind) => typedError<null, ImportError>(__TAURI_INVOKE("import_open_settings", { source })),
 	/**  Today's shutdown, the planned week, and which one leads. */
 	reviewGet: () => typedError<ReviewView, ReviewError>(__TAURI_INVOKE("review_get")),
+	/**
+	 *  The neutral stats for a range: focus, goal, tasks, routines, habits and the buffer
+	 *  suggestion.
+	 */
+	reviewStats: (range: StatsRange) => typedError<StatsView_Serialize, ReviewError>(__TAURI_INVOKE("review_stats", { range })),
+	/**
+	 *  *Not now* on the buffer suggestion: hides it for 28 days on this device. Never changes the
+	 *  buffer.
+	 */
+	bufferSuggestionDismiss: () => typedError<null, ReviewError>(__TAURI_INVOKE("buffer_suggestion_dismiss")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
