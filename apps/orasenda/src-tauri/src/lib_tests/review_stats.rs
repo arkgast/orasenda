@@ -36,7 +36,7 @@ fn review_stats_granted_to_main() {
 fn bindings_carry_the_stats_commands() {
     let bindings = std::fs::read_to_string(bindings_path()).unwrap();
     for needle in [
-        "reviewStats: (range: StatsRange) => typedError<StatsView, ReviewError>",
+        "reviewStats: (range: StatsRange) => typedError<StatsView_Serialize, ReviewError>",
         "bufferSuggestionDismiss: () => typedError<null, ReviewError>",
     ] {
         assert!(bindings.contains(needle), "bindings lack {needle}");

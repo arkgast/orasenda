@@ -155,6 +155,26 @@ pub enum StatsRange {
     Months6,
 }
 
+impl From<StatsRange> for orasenda_core::review::StatsRange {
+    fn from(range: StatsRange) -> Self {
+        match range {
+            StatsRange::Week => Self::Week,
+            StatsRange::Weeks8 => Self::Weeks8,
+            StatsRange::Months6 => Self::Months6,
+        }
+    }
+}
+
+impl From<orasenda_core::review::StatsRange> for StatsRange {
+    fn from(range: orasenda_core::review::StatsRange) -> Self {
+        match range {
+            orasenda_core::review::StatsRange::Week => Self::Week,
+            orasenda_core::review::StatsRange::Weeks8 => Self::Weeks8,
+            orasenda_core::review::StatsRange::Months6 => Self::Months6,
+        }
+    }
+}
+
 /// Neutral stats: words first, every number also a sentence.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

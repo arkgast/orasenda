@@ -95,4 +95,6 @@ pub const COMMANDS: &[&str] = &[
     "task_import_undo",
     "import_open_settings",
     "review_get",
+    "review_stats",
+    "buffer_suggestion_dismiss",
 ];

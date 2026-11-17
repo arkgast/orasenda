@@ -15,6 +15,8 @@ mod stats;
 
 pub use buffer::run_buffer_suggestion_dismiss;
 pub use stats::run_review_stats;
+// The weekly look-back (V18) reads the same parts for last week.
+#[allow(unused_imports)]
 pub(crate) use stats::stats_parts;
 
 #[cfg(test)]

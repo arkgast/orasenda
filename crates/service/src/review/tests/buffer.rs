@@ -7,7 +7,9 @@ use crate::session::lock;
 use crate::session::test_support::{T0, TestHost, db};
 
 fn suggestion(host: &TestHost) -> Option<crate::api::BufferSuggestionView> {
-    run_review_stats(host, StatsRange::Week).expect("stats").buffer
+    run_review_stats(host, StatsRange::Week)
+        .expect("stats")
+        .buffer
 }
 
 #[test]
@@ -22,7 +24,12 @@ fn buffer_shows_over_the_threshold() {
         "10 finished tasks: 20 sessions planned, 30 sessions of 5 minutes or more. A 50% buffer would fit these."
     );
     // The same on every range.
-    assert!(run_review_stats(&host, StatsRange::Months6).unwrap().buffer.is_some());
+    assert!(
+        run_review_stats(&host, StatsRange::Months6)
+            .unwrap()
+            .buffer
+            .is_some()
+    );
 }
 
 #[test]

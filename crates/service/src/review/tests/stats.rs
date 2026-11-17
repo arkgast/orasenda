@@ -171,7 +171,9 @@ fn stats_estimate_line_follows_g1() {
     let view = stats(&host, StatsRange::Week);
     assert_eq!(
         view.estimate_line.as_deref(),
-        Some("2 finished tasks had an estimate: 5 sessions planned, 6 sessions of 5 minutes or more.")
+        Some(
+            "2 finished tasks had an estimate: 5 sessions planned, 6 sessions of 5 minutes or more."
+        )
     );
     assert_eq!(view.summary[1], "Finished 4 tasks.");
     // A task done before this week is in the longer range only.
@@ -204,7 +206,11 @@ fn stats_empty_range_line() {
     let line = "Nothing recorded in this range yet.";
     assert_eq!(view.empty.as_deref(), Some(line));
     assert_eq!(view.summary, [line]);
-    assert!(view.bars.iter().all(|bar| bar.empty && bar.duration.is_empty()));
+    assert!(
+        view.bars
+            .iter()
+            .all(|bar| bar.empty && bar.duration.is_empty())
+    );
     assert_eq!(view.bars.len(), 7, "the labels stay");
 }
 

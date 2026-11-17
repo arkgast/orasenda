@@ -20,6 +20,7 @@ pub use nudge::{NudgeState, nudge_due, nudge_text};
 pub use run::{run_run_end, run_run_start, run_run_step};
 pub use service::{MAX_LONG, MAX_ROUTINE_HABITS, MAX_ROUTINES, MAX_SHORT, MAX_STANDALONE_HABITS};
 pub use view::WINDOW_DAYS;
+pub(crate) use view::dot_views;
 
 use orasenda_core::TemplateId;
 use orasenda_core::routines::templates;
