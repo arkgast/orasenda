@@ -14,6 +14,7 @@ export { describeShortcut } from "./lib/shortcuts";
 export { Dialog } from "./components/ui/dialog";
 export { EmptyState } from "./components/ui/empty-state";
 export { FloatingTimer } from "./components/ui/floating-timer";
+export { FlowStep } from "./components/ui/flow-step";
 export { FullScreenFocus } from "./components/ui/full-screen-focus";
 export { HabitDots } from "./components/ui/habit-dots";
 export { Icon } from "./components/ui/icon";
@@ -76,6 +77,7 @@ export type {
 } from "./components/ui/import-preview-list";
 export type { ImportSource, ImportSourcePickerProps } from "./components/ui/import-source-picker";
 export type { FloatingTimerProps } from "./components/ui/floating-timer";
+export type { FlowStepProps } from "./components/ui/flow-step";
 export type { FullScreenFocusProps } from "./components/ui/full-screen-focus";
 export type { HabitDay, HabitDotsProps, HabitState } from "./components/ui/habit-dots";
 export type { IconName, IconProps } from "./components/ui/icon";

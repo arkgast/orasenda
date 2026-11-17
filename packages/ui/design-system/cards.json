@@ -47,6 +47,10 @@
     "group": "Timer",
     "height": 300
   },
+  "FlowStep": {
+    "group": "Review",
+    "height": 1080
+  },
   "FullScreenFocus": {
     "group": "Timer",
     "height": 1500
