@@ -60,7 +60,10 @@ fn look_back_range_follows_planned_week() {
     assert_eq!(view.week_start, "2026-11-09");
     assert_eq!(view.label, "Planning the week of 9 November");
     assert_eq!(view.look_back.heading, "Monday 2 to Sunday 8 November");
-    assert_eq!(view.look_back.focus_line, "Focused for 1h 15m across 2 sessions.");
+    assert_eq!(
+        view.look_back.focus_line,
+        "Focused for 1h 15m across 2 sessions."
+    );
     assert_eq!(view.look_back.days.len(), 7);
     assert_eq!(view.look_back.days[0].minutes, 30);
     assert_eq!(view.look_back.days[0].label, "Mon");
@@ -72,8 +75,14 @@ fn look_back_range_follows_planned_week() {
     host.set_now(T0 - 2 * DAY);
     let view = weekly(&host);
     assert_eq!(view.week_start, "2026-11-02");
-    assert_eq!(view.look_back.heading, "Monday 26 October to Sunday 1 November");
-    assert_eq!(view.look_back.focus_line, "Focused for 25m across 1 session.");
+    assert_eq!(
+        view.look_back.heading,
+        "Monday 26 October to Sunday 1 November"
+    );
+    assert_eq!(
+        view.look_back.focus_line,
+        "Focused for 25m across 1 session."
+    );
 }
 
 #[test]
@@ -116,7 +125,9 @@ fn look_back_estimate_line_g1() {
     let view = weekly(&host);
     assert_eq!(
         view.look_back.estimate_line.as_deref(),
-        Some("2 finished tasks had an estimate: 4 sessions planned, 5 sessions of 5 minutes or more.")
+        Some(
+            "2 finished tasks had an estimate: 4 sessions planned, 5 sessions of 5 minutes or more."
+        )
     );
     assert_eq!(view.look_back.tasks_line, "Finished 4 tasks.");
     let host = self::host();
@@ -126,11 +137,23 @@ fn look_back_estimate_line_g1() {
 #[test]
 fn reflections_echoed_not_counted() {
     let host = host();
-    write(&host, shutdown("2026-11-04", [Some("Wrote the draft"), None, Some("The rain")]));
-    write(&host, shutdown("2026-11-03", [None, Some("Start earlier"), None]));
+    write(
+        &host,
+        shutdown(
+            "2026-11-04",
+            [Some("Wrote the draft"), None, Some("The rain")],
+        ),
+    );
+    write(
+        &host,
+        shutdown("2026-11-03", [None, Some("Start earlier"), None]),
+    );
     // Blank answers, and days outside the look-back, are left out.
     write(&host, shutdown("2026-11-05", [Some("  "), None, None]));
-    write(&host, shutdown("2026-11-09", [Some("Too late"), None, None]));
+    write(
+        &host,
+        shutdown("2026-11-09", [Some("Too late"), None, None]),
+    );
     let echoes = weekly(&host).look_back.reflections;
     assert_eq!(echoes.len(), 2);
     assert_eq!(echoes[0].day_label, "Tuesday 3 November");
@@ -168,7 +191,10 @@ fn answers_and_completed_line_follow_the_planned_week() {
     assert_eq!(view.answers.notes.as_deref(), Some("Slow start"));
     assert_eq!(view.completed_line, None);
     write(&host, week("2026-11-09", Some("Fewer tabs"), true));
-    assert_eq!(weekly(&host).completed_line.as_deref(), Some("Week planned."));
+    assert_eq!(
+        weekly(&host).completed_line.as_deref(),
+        Some("Week planned.")
+    );
 }
 
 #[test]

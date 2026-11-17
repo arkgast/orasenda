@@ -1,8 +1,10 @@
 //! Finished focus sessions. **Syncable and append-only**: a row is inserted once, when the
 //! session ends, and never updated (ADR-002).
 
+mod by_task;
 mod counted;
 
+pub use by_task::focused_by_task;
 pub use counted::counted_for_tasks;
 
 use crate::{Entity, StoreError, Txn, sql_int};

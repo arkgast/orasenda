@@ -328,7 +328,7 @@ fn habit_stat(ask: &Build, habit: &HabitDays, from: LocalDate) -> HabitStat {
 }
 
 /// G1: finished tasks in the range with an estimate and a counted session.
-fn estimate_line(estimated: &[(LocalDate, u8, u32)]) -> Option<String> {
+pub(super) fn estimate_line(estimated: &[(LocalDate, u8, u32)]) -> Option<String> {
     let tasks = u32::try_from(estimated.len()).unwrap_or(u32::MAX);
     let planned = estimated.iter().map(|(_, n, _)| u32::from(*n)).sum();
     let actual = estimated.iter().map(|(_, _, n)| *n).sum();

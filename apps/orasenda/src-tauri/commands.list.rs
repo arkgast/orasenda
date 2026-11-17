@@ -97,4 +97,5 @@ pub const COMMANDS: &[&str] = &[
     "review_get",
     "review_stats",
     "buffer_suggestion_dismiss",
+    "weekly_get",
 ];
