@@ -12,7 +12,9 @@ beforeEach(() => {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
-      matches: tight && query === "(max-height: 700px)",
+      get matches() {
+        return tight && query === "(height < 700px)";
+      },
       media: query,
       addEventListener: (_: string, fn: () => void) => listeners.push(fn),
       removeEventListener: (_: string, fn: () => void) => {
@@ -78,15 +80,34 @@ test("resizing_taller_unfolds", () => {
 });
 
 test("moving_card_height_steady", () => {
-  // A press during a drag must not add the Selected line; Moving stays on the chip line.
+  // Selected and Moving are words on the chip line, so no state adds a line.
   const { container } = render(<TaskCard title="Write" selected moving onOpen={() => {}} />);
   expect(container.querySelector("[data-slot=task-card-state]")).toBeNull();
+  expect(container.querySelector("[data-slot=task-card-selected]")).toBeNull();
   const word = container.querySelector("[data-slot=task-card-moving]") as HTMLElement;
   expect(word.parentElement?.getAttribute("data-slot")).toBe("task-card-top");
+  expect(container.querySelector("[data-slot=task-card-top]")?.className).toContain("flex-nowrap");
   expect(screen.getByRole("button").getAttribute("aria-label")).toContain("Moving");
 });
 
-test("selected_line_shows_when_not_moving", () => {
+test("selected_word_sits_on_the_chip_line", () => {
   const { container } = render(<TaskCard title="Write" selected onOpen={() => {}} />);
-  expect(container.querySelector("[data-slot=task-card-state]")?.textContent).toBe("Selected");
+  const word = container.querySelector("[data-slot=task-card-selected]") as HTMLElement;
+  expect(word.textContent).toBe("Selected");
+  expect(word.parentElement?.getAttribute("data-slot")).toBe("task-card-top");
+  expect(container.querySelector("[data-slot=task-card-state]")).toBeNull();
+});
+
+test("short_window_with_due_only_renders_no_empty_plan_line", () => {
+  tight = true;
+  const { container } = render(full);
+  expect(container.querySelector("[data-slot=task-card-plan]")).toBeNull();
+});
+
+test("short_window_many_dots_stay_inside_the_fold", () => {
+  tight = true;
+  const { container } = render(<TaskCard title="Big" estimate={12} due="Due Friday" />);
+  const dots = container.querySelector("[data-slot=task-card-dots]") as HTMLElement;
+  expect(dots.className).toContain("overflow-hidden");
+  expect(dots.className).toContain("min-w-0");
 });

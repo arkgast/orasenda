@@ -244,3 +244,23 @@ test("board_drag_moves_card_between_columns", async ({ page }) => {
     page.getByRole("region", { name: "Doing" }).getByRole("button", { name: /^Write the intro/ }),
   ).toBeVisible();
 });
+
+test("moving_card_height_steady_900x600", async ({ page }) => {
+  await openBoard(page, "boardDrag", { width: 900, height: 600 });
+  const card = page.getByRole("button", { name: /^Write the intro/ });
+  const height = async () => (await card.boundingBox())?.height ?? 0;
+  const before = await height();
+  const box = await card.boundingBox();
+  if (!box) throw new Error("card is not on the page");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  const pressed = await height();
+  await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 20, { steps: 4 });
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 60, { steps: 4 });
+  await expect(page.getByText("Moving Write the intro. Esc puts it back.")).toBeVisible();
+  const during = await height();
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  const after = await height();
+  for (const h of [pressed, during, after]) expect(Math.abs(h - before)).toBeLessThanOrEqual(0.5);
+});

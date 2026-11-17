@@ -120,7 +120,7 @@ function Dots({
     <span
       aria-hidden="true"
       data-slot="task-card-dots"
-      className={cn("inline-flex gap-1-5", nowrap ? "flex-none" : "flex-wrap")}
+      className={cn("inline-flex gap-1-5", nowrap ? "min-w-0 shrink overflow-hidden" : "flex-wrap")}
     >
       {dots}
     </span>
@@ -202,8 +202,9 @@ export function TaskCard(props: TaskCardProps): ReactElement {
   const kind = props.type === "shallow" ? "Shallow" : "Deep";
   const tags = [...new Set(props.tags ?? [])].slice(0, MAX_TAGS);
   const tight = useTightHeight() && !row;
-  // A press during a drag adds no "Selected" line, so the card is as tall before, during and after.
-  const stateWords = [active ? "In progress" : "", selected && !props.moving ? "Selected" : ""]
+  // In card density "Selected" is a word on the chip line, like "Moving", so no state adds a line.
+  const selectedShown = Boolean(selected) && !props.moving;
+  const stateWords = [active ? "In progress" : "", row && selectedShown ? "Selected" : ""]
     .filter(Boolean)
     .join(" · ");
   const estimateText = hasEstimate ? `Est ${est}` : "No estimate";
@@ -217,7 +218,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     interactive &&
       "cursor-pointer outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm focus-visible:outline-2 enabled:active:bg-selection disabled:cursor-default disabled:border-dashed motion-reduce:transition-none",
     props.menu && !props.disabled && "pe-hit-min",
-    selected ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
+    selected && !props.moving ? "bg-selection" : interactive && "enabled:hover:bg-surface-sunken",
     active && "border-s-4 border-s-focus",
     props.moving && "border-dashed",
   );
@@ -245,7 +246,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     tight && (foldText || foldDots) ? (
       <span
         data-slot="task-card-fold"
-        className="flex min-w-0 items-center gap-2 text-body-sm text-ink-muted"
+        className="flex min-w-0 items-center gap-2 overflow-hidden text-body-sm text-ink-muted"
       >
         {foldDots ? <Dots est={est} done={done} hasEstimate={hasEstimate} nowrap /> : null}
         <span className="min-w-0 truncate">{foldText}</span>
@@ -279,12 +280,28 @@ export function TaskCard(props: TaskCardProps): ReactElement {
     </>
   ) : (
     <>
-      <span data-slot="task-card-top" className="flex flex-wrap items-center gap-2">
-        <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
+      <span
+        data-slot="task-card-top"
+        className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden"
+      >
+        <span className="flex flex-none whitespace-nowrap">
+          <ModeChip mode={props.type === "shallow" ? "shallow" : "focus"}>{kind}</ModeChip>
+        </span>
         {frogWord}
         {movingWord}
+        {selectedShown ? (
+          <span
+            data-slot="task-card-selected"
+            className="flex-none whitespace-nowrap text-body-sm text-focus"
+          >
+            Selected
+          </span>
+        ) : null}
         {props.priority ? (
-          <span data-slot="task-card-priority" className="text-label uppercase text-ink-muted">
+          <span
+            data-slot="task-card-priority"
+            className="min-w-0 truncate text-label uppercase text-ink-muted"
+          >
             {PRIORITY[props.priority]}
           </span>
         ) : null}
@@ -312,7 +329,7 @@ export function TaskCard(props: TaskCardProps): ReactElement {
         {meta}
       </span>
       {foldLine}
-      {props.due || props.checklist ? (
+      {(props.due && !tight) || props.checklist ? (
         <span
           data-slot="task-card-plan"
           className="flex flex-wrap gap-x-3 text-body-sm text-ink-muted"
