@@ -10,11 +10,7 @@ use orasenda_store::tasks::LaneBefore;
 #[derive(Debug, Default)]
 pub(crate) struct ReviewState {
     pub day: DayMarks,
-    // `undo` is filled by V16b; until then nothing reads it.
-    #[allow(dead_code)]
     pub undo: Option<UndoSlot>,
-    // Filled by V21; until then nothing reads it.
-    #[allow(dead_code)]
     pub nudge: NudgeMarks,
 }
 
@@ -36,9 +32,6 @@ pub(crate) struct UndoSlot {
     pub lanes: Vec<LaneBefore>,
 }
 
-/// The nudges already posted, so each goes out once per period. Empty until V21.
-#[allow(dead_code)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 /// The two review nudges.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum NudgeKind {

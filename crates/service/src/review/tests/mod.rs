@@ -1,9 +1,9 @@
 //! The review words: every quoted sentence, and the copy test.
 
 mod copy;
+mod nudge;
 mod shutdown;
 mod tomorrow;
-mod nudge;
 mod view;
 mod words;
 
