@@ -53,6 +53,21 @@ mod tests {
         insert_raw(&store, "s3", Some("a"), 1_900, 100);
         insert_raw(&store, "s4", Some("a"), 2_000, 900);
         insert_raw(&store, "s5", None, 1_000, 900);
+        insert_raw(&store, "s6", Some("a"), 1_300, 500);
+        insert_raw(&store, "s7", Some("a"), 1_400, 500);
+        store
+            .write(1, |txn| {
+                txn.conn().execute(
+                    "UPDATE focus_session SET phase = 'short_break' WHERE id = 's6'",
+                    [],
+                )?;
+                txn.conn().execute(
+                    "UPDATE focus_session SET deleted_at = 1 WHERE id = 's7'",
+                    [],
+                )?;
+                Ok(())
+            })
+            .expect("updates");
         let found = store
             .read(|txn| focused_by_task(txn, 1_000, 2_000))
             .expect("reads");

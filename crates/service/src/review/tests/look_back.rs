@@ -4,8 +4,9 @@
 use orasenda_store::reflections::{self, ReflectionKind, ReflectionWrite};
 
 use super::support::*;
-use crate::api::{ReviewError, WeeklyView};
+use crate::api::{HabitDraft, ReviewError, RoutineDraft, WeeklyView};
 use crate::review::run_weekly_get;
+use crate::routines::{run_habit_check, run_habit_create, run_routine_create};
 use crate::session::lock;
 use crate::session::test_support::{T0, TestHost, db};
 
@@ -67,6 +68,10 @@ fn look_back_range_follows_planned_week() {
     assert_eq!(view.look_back.days.len(), 7);
     assert_eq!(view.look_back.days[0].minutes, 30);
     assert_eq!(view.look_back.days[0].label, "Mon");
+    // Saturday is today: its bar says so, and Sunday is still to come.
+    assert_eq!(view.look_back.days[5].label, "Today");
+    assert!(view.look_back.days[5].current);
+    assert!(view.look_back.days[6].empty);
     assert_eq!(view.look_back.days[4].minutes, 45);
     assert!(view.look_back.days[1].empty);
     assert_eq!(view.look_back.tasks_line, "No tasks finished.");
@@ -160,6 +165,58 @@ fn reflections_echoed_not_counted() {
     assert_eq!(echoes[0].lines, ["Start earlier"]);
     assert_eq!(echoes[1].day_label, "Wednesday 4 November");
     assert_eq!(echoes[1].lines, ["Wrote the draft", "The rain"]);
+}
+
+#[test]
+fn a_removed_task_is_left_out_of_the_top_five() {
+    let host = host();
+    for n in 1..=7u32 {
+        done_task(&host, &format!("task{n}"), 5, None, n);
+    }
+    let service = lock(&host.0.service);
+    db(&service)
+        .write(T0, |txn| {
+            orasenda_store::tasks::remove(txn, "task7", T0).map(drop)
+        })
+        .expect("removes a task");
+    drop(service);
+    let tasks = weekly(&host).look_back.tasks;
+    let titles: Vec<&str> = tasks.iter().map(|bar| bar.label.as_str()).collect();
+    assert_eq!(titles, ["task6", "task5", "task4", "task3", "task2"]);
+}
+
+#[test]
+fn routine_and_habit_lines_cover_the_look_back() {
+    let host = host();
+    let routine = RoutineDraft {
+        name: "Wind-down".into(),
+        time_of_day: None,
+        days: 127,
+    };
+    let id = run_routine_create(&host, &routine).unwrap();
+    // Runs on 2 to 9 November: the last one is after the look-back.
+    finished_runs(&host, &id, 8);
+    let habit = HabitDraft {
+        name: "Walk".into(),
+        when_text: None,
+        where_text: None,
+        anchor: None,
+        two_minute: None,
+        identity: None,
+        optional: false,
+        days: None,
+    };
+    let habit_id = run_habit_create(&host, None, &habit).unwrap();
+    run_habit_check(&host, &habit_id, true).unwrap();
+    let view = weekly(&host);
+    assert_eq!(
+        view.look_back.routine_lines,
+        ["Wind-down: finished 7 times."]
+    );
+    assert_eq!(
+        view.look_back.habit_lines,
+        ["Done on 1 day since 7 November."]
+    );
 }
 
 #[test]

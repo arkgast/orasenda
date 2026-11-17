@@ -61,7 +61,7 @@ fn day_bars(parts: &Parts, from: LocalDate, today: LocalDate) -> Vec<BarView> {
                 .sum();
             let minutes = u32::try_from(ms / MINUTE_MS).unwrap_or(u32::MAX);
             BarView {
-                label: day.weekday().short().to_owned(),
+                label: words::bar_label(StatsRange::Week, day, day == today),
                 spoken: words::bar_spoken(StatsRange::Week, day, minutes),
                 minutes,
                 duration: duration(minutes),
@@ -128,18 +128,25 @@ fn task_bars(
 fn habit_line(habit: &HabitDays, from: LocalDate, to: LocalDate) -> String {
     let done: Vec<LocalDate> = habit.done.iter().copied().collect();
     let (days, since) = days_done(habit.created, from, to, &done);
-    words::habit_line(days, since, StatsRange::Week)
+    words::look_back_habit_line(days, since)
 }
 
 /// The shutdown answers saved for the range, by day, as the person wrote them. A day with no
 /// answers is left out; nothing is counted or summarised.
 fn echoes(txn: &Txn, from: LocalDate, to: LocalDate) -> Result<Vec<ReflectionEcho>, StoreError> {
     let rows = reflections::list(txn, ReflectionKind::Shutdown, &from.to_iso(), &to.to_iso())?;
-    Ok(rows.iter().filter_map(echo).collect())
+    rows.iter()
+        .filter_map(|row| echo(row).transpose())
+        .collect()
 }
 
-fn echo(row: &ReflectionRow) -> Option<ReflectionEcho> {
-    let day = LocalDate::parse_iso(&row.period)?;
+fn echo(row: &ReflectionRow) -> Result<Option<ReflectionEcho>, StoreError> {
+    let day = LocalDate::parse_iso(&row.period).ok_or_else(|| {
+        StoreError::Sqlite(format!(
+            "a shutdown reflection has the period {:?}",
+            row.period
+        ))
+    })?;
     let lines: Vec<String> = [&row.went_well, &row.to_improve, &row.outside_control]
         .into_iter()
         .flatten()
@@ -147,8 +154,8 @@ fn echo(row: &ReflectionRow) -> Option<ReflectionEcho> {
         .filter(|text| !text.is_empty())
         .map(str::to_owned)
         .collect();
-    (!lines.is_empty()).then(|| ReflectionEcho {
+    Ok((!lines.is_empty()).then(|| ReflectionEcho {
         day_label: words::day_label(day),
         lines,
-    })
+    }))
 }

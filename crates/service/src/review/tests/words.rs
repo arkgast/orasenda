@@ -48,6 +48,17 @@ fn habit_line_since_creation() {
 }
 
 #[test]
+fn look_back_habit_line_names_that_week() {
+    assert_eq!(look_back_habit_line(4, None), "Done on 4 days that week.");
+    assert_eq!(look_back_habit_line(0, None), "No check-ins that week.");
+    let since = Some(date(2026, 11, 3));
+    assert_eq!(
+        look_back_habit_line(1, since),
+        "Done on 1 day since 3 November."
+    );
+}
+
+#[test]
 fn habit_line_no_denominator() {
     assert_eq!(
         habit_line(9, None, StatsRange::Week),
