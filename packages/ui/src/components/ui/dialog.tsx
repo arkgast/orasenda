@@ -185,8 +185,6 @@ export function Dialog({
   const Prim = destructive ? AlertDialog : DialogPrimitive;
   const sheet = size === "sheet";
   const showScrim = !!(scrim || destructive || sheet);
-  // A native listener on a callback ref: the body mounts inside the portal, after this component's own effects,
-  // and it is a scroll container, not a control, so it takes no React event prop.
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -196,6 +194,8 @@ export function Dialog({
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
   }, [open]);
+  // A native listener on a callback ref: the body mounts inside the portal, after this component's own effects,
+  // and it is a scroll container, not a control, so it takes no React event prop.
   const watchFocus = useCallback((body: HTMLDivElement | null) => {
     if (!body) return;
     // Pointer focus is left to the browser, so a click never moves the field under the pointer. Only the
