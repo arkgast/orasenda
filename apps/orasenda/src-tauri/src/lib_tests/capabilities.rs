@@ -229,6 +229,7 @@ fn main_capability_exact() {
             "allow-review-get",
             "allow-review-stats",
             "allow-buffer-suggestion-dismiss",
+            "allow-weekly-get",
         ],
     );
     let (_, main) = capability("main.json");

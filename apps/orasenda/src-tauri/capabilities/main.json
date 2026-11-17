@@ -90,6 +90,7 @@
     "allow-import-open-settings",
     "allow-review-get",
     "allow-review-stats",
-    "allow-buffer-suggestion-dismiss"
+    "allow-buffer-suggestion-dismiss",
+    "allow-weekly-get"
   ]
 }

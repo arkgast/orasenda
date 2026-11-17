@@ -120,6 +120,20 @@ pub(crate) fn habit_line(days: u32, since: Option<LocalDate>, range: StatsRange)
         (None, StatsRange::Weeks8) => "in these 8 weeks".to_owned(),
         (None, StatsRange::Months6) => "in these 6 months".to_owned(),
     };
+    habit_sentence(days, &span)
+}
+
+/// Like [`habit_line`] for the weekly look-back, which is not always the current week: "Done
+/// on 4 days that week." or "No check-ins that week."
+pub(crate) fn look_back_habit_line(days: u32, since: Option<LocalDate>) -> String {
+    let span = since.map_or_else(
+        || "that week".to_owned(),
+        |created| format!("since {}", day_month(created)),
+    );
+    habit_sentence(days, &span)
+}
+
+fn habit_sentence(days: u32, span: &str) -> String {
     if days == 0 {
         return format!("No check-ins {span}.");
     }

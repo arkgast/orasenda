@@ -161,7 +161,7 @@ pub(super) fn priorities(txn: &Txn, ids: &[String]) -> Result<Vec<PriorityView>,
     Ok(views)
 }
 
-fn live(row: Option<ReflectionRow>) -> Option<ReflectionRow> {
+pub(super) fn live(row: Option<ReflectionRow>) -> Option<ReflectionRow> {
     row.filter(|row| row.deleted_at.is_none())
 }
 

@@ -216,6 +216,11 @@ export const commands = {
 	 *  buffer.
 	 */
 	bufferSuggestionDismiss: () => typedError<null, ReviewError>(__TAURI_INVOKE("buffer_suggestion_dismiss")),
+	/**
+	 *  The weekly review: the look-back on the week before the planned one, what is answered so
+	 *  far, and last week's improvement.
+	 */
+	weeklyGet: () => typedError<WeeklyView_Serialize, ReviewError>(__TAURI_INVOKE("weekly_get")),
 	/**  Whether the spike runs and the platform is supported. Never errors. */
 	spikeStatus: () => __TAURI_INVOKE<SpikeStatus>("spike_status"),
 	/**  Regular running apps, sorted by name, without Orasenda and the safety allowlist. */
