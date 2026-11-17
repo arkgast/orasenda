@@ -67,7 +67,10 @@ fn shutdown_get_lists_today_and_doing_and_freezes_the_day() {
         .iter()
         .map(|task| (task.id.as_str(), task.lane_label.as_str(), task.active))
         .collect();
-    assert_eq!(listed, [(a.as_str(), "Today", false), (b.as_str(), "Doing", false)]);
+    assert_eq!(
+        listed,
+        [(a.as_str(), "Today", false), (b.as_str(), "Doing", false)]
+    );
     assert!(!view.tomorrow.is_empty());
     assert_eq!(view.completed_line, None);
     // Before 04:00 the day is still the previous date.
@@ -117,7 +120,10 @@ fn complete_emits_review_changed_after_unlock() {
         .collect();
     assert_eq!(changed.len(), 1);
     assert!(changed[0].today.done);
-    assert_eq!(host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
 }
 
 #[test]

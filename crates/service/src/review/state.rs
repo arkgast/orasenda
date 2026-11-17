@@ -5,12 +5,12 @@ use orasenda_core::LocalDate;
 use orasenda_store::tasks::LaneBefore;
 
 /// The review's memory: the day marks (V10), the one Undo (V16b) and the nudge marks (V21).
-// `undo` is filled by V16b and `nudge` by V21; until then nothing reads them.
-#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub(crate) struct ReviewState {
     pub day: DayMarks,
     pub undo: Option<UndoSlot>,
+    // Filled by V21; until then nothing reads it.
+    #[allow(dead_code)]
     pub nudge: NudgeMarks,
 }
 
@@ -33,6 +33,7 @@ pub(crate) struct UndoSlot {
 }
 
 /// The nudges already posted, so each goes out once per period. Empty until V21.
+#[allow(dead_code)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct NudgeMarks {
     /// The shutdown day whose nudge was posted.

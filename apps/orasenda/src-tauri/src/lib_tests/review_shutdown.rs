@@ -41,10 +41,10 @@ fn shutdown_commands_granted_to_main() {
 fn bindings_carry_the_shutdown_commands() {
     let bindings = std::fs::read_to_string(bindings_path()).unwrap();
     for needle in [
-        "shutdownGet: () => typedError<ShutdownView",
+        "shutdownGet: () => typedError<ShutdownView_Serialize, ReviewError>",
         "shutdownMove: (ids: string[]) => typedError<MoveUndo",
         "shutdownMoveUndo: (token: string) => typedError<string, ReviewError>",
-        "shutdownComplete: (day: string, answers: ShutdownAnswers) => typedError<ShutdownView",
+        "shutdownComplete: (day: string, answers: ShutdownAnswers_Deserialize) => typedError<ShutdownView_Serialize, ReviewError>",
     ] {
         assert!(bindings.contains(needle), "bindings lack {needle}");
     }

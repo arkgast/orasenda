@@ -211,6 +211,20 @@ export const commands = {
 	 *  suggestion.
 	 */
 	reviewStats: (range: StatsRange) => typedError<StatsView_Serialize, ReviewError>(__TAURI_INVOKE("review_stats", { range })),
+	/**  The guided shutdown for the current shutdown day. */
+	shutdownGet: () => typedError<ShutdownView_Serialize, ReviewError>(__TAURI_INVOKE("shutdown_get")),
+	/**
+	 *  Sends the chosen unfinished tasks to the end of the Backlog in one write. A task with a
+	 *  running session stays. The token undoes it for 10 minutes.
+	 */
+	shutdownMove: (ids: string[]) => typedError<MoveUndo, ReviewError>(__TAURI_INVOKE("shutdown_move", { ids })),
+	/**
+	 *  Puts the last move back. Answers the line to show; `NotFound` once the token has expired or
+	 *  been replaced.
+	 */
+	shutdownMoveUndo: (token: string) => typedError<string, ReviewError>(__TAURI_INVOKE("shutdown_move_undo", { token })),
+	/**  Saves the answers for `day` and completes the shutdown. */
+	shutdownComplete: (day: string, answers: ShutdownAnswers_Deserialize) => typedError<ShutdownView_Serialize, ReviewError>(__TAURI_INVOKE("shutdown_complete", { day, answers })),
 	/**
 	 *  *Not now* on the buffer suggestion: hides it for 28 days on this device. Never changes the
 	 *  buffer.

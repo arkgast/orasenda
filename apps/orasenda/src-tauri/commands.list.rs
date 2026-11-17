@@ -96,6 +96,10 @@ pub const COMMANDS: &[&str] = &[
     "import_open_settings",
     "review_get",
     "review_stats",
+    "shutdown_get",
+    "shutdown_move",
+    "shutdown_move_undo",
+    "shutdown_complete",
     "buffer_suggestion_dismiss",
     "weekly_get",
 ];

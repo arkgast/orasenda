@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shutdown-move"
+description = "Enables the shutdown_move command without any pre-configured scope."
+commands.allow = ["shutdown_move"]
+
+[[permission]]
+identifier = "deny-shutdown-move"
+description = "Denies the shutdown_move command without any pre-configured scope."
+commands.deny = ["shutdown_move"]

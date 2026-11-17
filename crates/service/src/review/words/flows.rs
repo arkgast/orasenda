@@ -90,6 +90,11 @@ pub(crate) fn move_line(count_moved: u32) -> String {
     format!("Moved {} to Backlog.", count(count_moved, "task", "tasks"))
 }
 
+/// "Put 2 tasks back."
+pub(crate) fn put_back_line(count_restored: u32) -> String {
+    format!("Put {} back.", count(count_restored, "task", "tasks"))
+}
+
 /// "Nothing unfinished."
 pub(crate) fn nothing_unfinished() -> &'static str {
     "Nothing unfinished."

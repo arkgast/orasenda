@@ -1,10 +1,10 @@
 //! `shutdown_move` and `shutdown_move_undo`: one write, one token, ten minutes.
 
 use super::shutdown::{add, lane_of};
-use super::support::{MINUTE, host};
+use super::support::host;
 use crate::api::{Lane, ReviewError, StartRequest};
 use crate::review::{run_shutdown_get, run_shutdown_move, run_shutdown_move_undo};
-use crate::session::test_support::{Event, T0, TestHost};
+use crate::session::test_support::{Event, MINUTE, T0, TestHost};
 use crate::session::{Action, run_action_on};
 
 fn setup(host: &TestHost) -> (String, String) {
@@ -122,7 +122,10 @@ fn move_emits_board_changed_after_unlock() {
         .filter(|event| matches!(event, Event::ReviewChanged(_)))
         .count();
     assert_eq!((board, review), (1, 1));
-    assert_eq!(host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
 }
 
 #[test]
@@ -140,5 +143,8 @@ fn undo_emits_both_events_after_unlock() {
             .count(),
         2
     );
-    assert_eq!(host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert_eq!(
+        host.0.under_lock.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
 }
