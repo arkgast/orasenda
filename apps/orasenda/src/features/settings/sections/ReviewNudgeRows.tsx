@@ -56,7 +56,7 @@ export function ReviewNudgeRows(props: ReviewNudgeProps) {
       <SettingsRow
         id="notifications-shutdown"
         label="Shutdown"
-        helper="One calm reminder on weekdays to close the day."
+        helper="One reminder on weekdays to close the day."
         status={shutdown.line ?? undefined}
         disabledReason={disabledReason}
       >
@@ -74,7 +74,7 @@ export function ReviewNudgeRows(props: ReviewNudgeProps) {
       <SettingsRow
         id="notifications-weekly"
         label="Weekly review"
-        helper="One calm reminder on the day you choose."
+        helper="One reminder on the day you choose."
         status={weekly.line ?? undefined}
         disabledReason={disabledReason}
       >
