@@ -9,6 +9,7 @@ pub mod data;
 pub mod import;
 pub mod inbox;
 pub mod keyboard;
+pub mod review;
 pub mod routines;
 pub mod scheduler;
 pub mod session;
