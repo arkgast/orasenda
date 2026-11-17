@@ -7,15 +7,15 @@ import { frames, openSpecimen } from "./support/specimen.ts";
 test("glyph_sheet_at_20px_both_themes", async ({ page }, info) => {
   await openSpecimen(page, "Icon");
   const all = frames(page);
-  expect(await all.count()).toBe(3);
-  for (let i = 0; i < 3; i++) await expectVisibleFits(all.nth(i));
+  expect(await all.count()).toBe(4);
+  for (let i = 0; i < 4; i++) await expectVisibleFits(all.nth(i));
   const sizes = await page.locator("[data-icon] svg").evaluateAll((els) =>
     els.map((el) => {
       const r = el.getBoundingClientRect();
       return { w: r.width, h: r.height, stroke: getComputedStyle(el).stroke };
     }),
   );
-  expect(sizes.length).toBe(21);
+  expect(sizes.length).toBe(25);
   const ink = await page
     .locator("[data-icon]")
     .first()

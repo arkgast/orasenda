@@ -1,0 +1,76 @@
+/* Review: like Routines, the window is bounded so only the ScrollRegion scrolls. */
+.app-review-page {
+  flex: auto;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+/* One readable column; space-1 at the inline end keeps focus rings clear. */
+.app-review-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-inline-size: var(--content-width);
+  padding-inline: var(--space-1);
+}
+
+.app-review-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.app-review-heading {
+  margin: 0;
+  font-size: var(--type-heading-font-size);
+  line-height: var(--type-heading-line-height);
+  font-weight: var(--type-heading-font-weight);
+}
+
+.app-review-label,
+.app-review-line {
+  margin: 0;
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+}
+
+.app-review-line {
+  color: var(--ink-muted);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+}
+
+.app-review-priorities {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+}
+
+.app-review-priority {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* The tick lines up with the first line of text. */
+.app-review-priority > svg {
+  margin-block-start: var(--space-1);
+}
+
+.app-review-slot {
+  flex: none;
+  inline-size: var(--icon-md);
+}
+
+.app-review-actions {
+  margin-block-start: var(--space-1);
+}
