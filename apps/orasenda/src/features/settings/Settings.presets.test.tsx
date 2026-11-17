@@ -273,3 +273,20 @@ test("edit_button_reports_whether_the_editor_is_open", async () => {
     "true",
   );
 });
+
+test("undo_focus_after_slow_presets_changed", async () => {
+  await openIn({
+    preset_remove: () => [PRESETS[0], PRESETS[1]],
+    preset_undo_remove: () => PRESETS,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Remove Deep Work" }));
+  await settle();
+  await emitPresetsChanged([PRESETS[0] as PresetEntry, STEADY]);
+  fireEvent.click(await screen.findByRole("button", { name: "Undo removing Deep Work" }));
+  await settle();
+  // presets-changed is slow: longer than any polling would wait.
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  expect(screen.queryByRole("radio", { name: /Deep Work/ })).toBeNull();
+  await emitPresetsChanged(PRESETS as PresetEntry[]);
+  await waitFor(() => expect(screen.getByRole("radio", { name: /Deep Work/ })).toHaveFocus());
+});
