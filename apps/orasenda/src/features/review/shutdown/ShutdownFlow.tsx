@@ -1,7 +1,8 @@
 import { useEscFallback } from "@domain/keyboard/useEscFallback";
 import { Button, FlowStep, InlineNotice, ScrollRegion } from "@orasenda/ui";
+import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { ReactElement } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MoveToast } from "./MoveToast";
 import { ReflectStep } from "./ReflectStep";
 import { UnfinishedStep } from "./UnfinishedStep";
@@ -19,6 +20,13 @@ type Props = {
  */
 export function ShutdownFlow({ onClose }: Props): ReactElement {
   const state = useShutdown();
+  // Below layout-short-height the toast is one row, so the region keeps its room.
+  const { height } = useWindowLayout();
+  const [shortLimit] = useState(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--layout-short-height"),
+    ),
+  );
   const { load, step } = state;
   const heading = useRef<HTMLHeadingElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -100,7 +108,7 @@ export function ShutdownFlow({ onClose }: Props): ReactElement {
         primary={primary}
         notNow={step === 2 ? { label: "Not now", onClick: state.skipReflect } : undefined}
       >
-        <div className="app-shutdown-stage">
+        <div className="app-shutdown-stage" data-short={height < shortLimit || undefined}>
           <div className="app-shutdown-scroll">
             {step === 0 ? (
               <UnfinishedStep

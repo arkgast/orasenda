@@ -107,13 +107,11 @@
   max-inline-size: none;
 }
 
-/* On a short window the toast is one row, so the region keeps its room. */
-@media (max-height: 300px) {
-  .app-shutdown-stage > [data-slot="toast"] {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
+/* Below layout-short-height (data-short, from the token) the toast is one row, so the region keeps its room. */
+.app-shutdown-stage[data-short] > [data-slot="toast"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 /* A live region that only screen readers read. */
