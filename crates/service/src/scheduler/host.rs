@@ -8,7 +8,7 @@ use orasenda_core::platform::import::{RemindersSource, ThingsSource};
 
 use crate::api::{
     BoardNotice, BoardView, ClockTick, DataOverview, KeyboardView, MilestoneEvent, NoteView,
-    PresetEntry, RoutinesView, Settings, Theme, TimerView,
+    PresetEntry, ReviewView, RoutinesView, Settings, Theme, TimerView,
 };
 use crate::session::{SessionService, Surfaces, ViewGate};
 
@@ -59,6 +59,9 @@ pub trait Host: Clone + Send + Sync + 'static {
     /// Emits `board-notice`: a toast line after a start moved or failed to move a task. Never
     /// called under the service lock. An emit error is logged, never fatal.
     fn emit_board_notice(&self, notice: &BoardNotice);
+    /// Emits `review-changed`: the Review overview after a review write, and at local midnight
+    /// and 04:00. Never called under the service lock. An emit error is logged, never fatal.
+    fn emit_review_changed(&self, view: &ReviewView);
     /// Apple Reminders as an import source; `None` off macOS.
     fn reminders(&self) -> Option<Arc<dyn RemindersSource>> {
         None

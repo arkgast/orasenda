@@ -431,3 +431,11 @@ fn carried_task_removed_clears_carry() {
     let again = start_on(&host, None).expect("starts again");
     assert_eq!(linked(&again), None);
 }
+
+#[test]
+fn task_view_week_priority_defaults_false() {
+    let host = host();
+    let task = add(&host, "Plan the week", Lane::Backlog);
+    assert!(!task.week_priority);
+    assert!(!task_of(&host, &task.id).week_priority);
+}

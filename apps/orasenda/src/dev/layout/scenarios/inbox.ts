@@ -42,6 +42,7 @@ const MOVED_TASK: TaskView_Serialize = {
   trackedMs: 0,
   sessions: 0,
   active: false,
+  weekPriority: false,
 };
 const inboxBackend = (notes: () => unknown): Handler =>
   backend({

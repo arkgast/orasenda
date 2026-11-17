@@ -143,9 +143,17 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             ipc::RoutinesChangedEvent,
             ipc::BoardChanged,
             ipc::BoardNoticeEvent,
+            ipc::ReviewChangedEvent,
             spike::OverlayShow,
             spike::SpikeUsageChanged,
         ])
+        // The review types no command or event carries yet; each command task adds its own.
+        .typ::<ipc::ShutdownView>()
+        .typ::<ipc::WeeklyView>()
+        .typ::<ipc::StatsView>()
+        .typ::<ipc::WeeklyDraft>()
+        .typ::<ipc::MoveUndo>()
+        .typ::<ipc::ReviewError>()
 }
 
 /// Where the generated TypeScript contract lives: `apps/orasenda/src/shared/ipc/bindings.ts`.

@@ -136,6 +136,13 @@ impl Host for AppHost {
         }
     }
 
+    fn emit_review_changed(&self, view: &orasenda_service::api::ReviewView) {
+        use tauri_specta::Event;
+        if let Err(error) = crate::ipc::ReviewChangedEvent(view.clone()).emit(&self.0) {
+            eprintln!("review: could not emit review-changed: {error}");
+        }
+    }
+
     fn emit_board_notice(&self, notice: &orasenda_service::api::BoardNotice) {
         use tauri_specta::Event;
         if let Err(error) = crate::ipc::BoardNoticeEvent(notice.clone()).emit(&self.0) {

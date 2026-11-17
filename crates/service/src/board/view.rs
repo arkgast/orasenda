@@ -137,6 +137,8 @@ pub(crate) fn task_view(row: &TaskRow, cx: Ctx, tracked: Option<&Tracked>) -> Ta
         sessions: tracked.map_or(0, |t| t.sessions),
         // The session link is B9's; until then no session runs on a task.
         active: false,
+        // The weekly review wires it (V19).
+        week_priority: false,
     }
 }
 

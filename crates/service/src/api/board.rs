@@ -101,6 +101,8 @@ pub struct TaskView {
     pub sessions: u32,
     /// A session is running on it.
     pub active: bool,
+    /// A priority of the current week (`week_start(today)`), never the planned week.
+    pub week_priority: bool,
 }
 
 /// One column with its tasks in order.

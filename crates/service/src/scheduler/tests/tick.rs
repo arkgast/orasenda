@@ -44,6 +44,7 @@ fn ending_tick_publishes_idle_view_once_and_lists_ended_effects() {
             Event::RoutinesChanged(_) => "routines",
             Event::BoardChanged(..) => "board",
             Event::BoardNotice(_) => "board-notice",
+            Event::ReviewChanged(_) => "review",
         })
         .collect();
     assert_eq!(

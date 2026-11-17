@@ -33,6 +33,7 @@ export const task = (
   trackedMs: 0,
   sessions: 0,
   active: false,
+  weekPriority: false,
   ...over,
 });
 
