@@ -210,3 +210,15 @@ test("import_tasks_follows_the_task_commands_and_is_never_first", () => {
     "importTasks",
   );
 });
+
+test("start_shutdown_is_listed_with_the_main_commands_and_not_in_the_sub_modes", () => {
+  for (const input of [base, { ...base, view: null }, { ...base, tasks: OPEN }]) {
+    expect(paletteCommands(input)).toContainEqual({ id: "startShutdown", label: "Start shutdown" });
+  }
+  expect(paletteCommands({ ...base, tasksOnly: true }).map((c) => c.id)).not.toContain(
+    "startShutdown",
+  );
+  expect(paletteCommands({ ...base, displaysOnly: true }).map((c) => c.id)).not.toContain(
+    "startShutdown",
+  );
+});

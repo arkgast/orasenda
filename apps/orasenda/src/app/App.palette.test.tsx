@@ -1,6 +1,14 @@
 import { resetSettingsQueueForTests } from "@shared/ipc/settingsQueue";
 import { resetTimerQueueForTests } from "@shared/ipc/timerQueue";
-import { boardOf, boardTask, emitPaletteOpen, mockBackend, settle } from "@shared/test/fixtures";
+import {
+  boardOf,
+  boardTask,
+  emitPaletteOpen,
+  mockBackend,
+  reviewView,
+  settle,
+  shutdownView,
+} from "@shared/test/fixtures";
 import { stubPaletteDom } from "@shared/test/paletteDom";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -51,4 +59,41 @@ test("esc_in_task_mode_returns_focus_to_first_opener", async () => {
   await settle();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(opener).toHaveFocus();
+});
+
+test("palette_start_shutdown_opens_once", async () => {
+  mockBackend({ review_get: () => reviewView(), shutdown_get: () => shutdownView() });
+  render(<App />);
+  await settle();
+  await emitPaletteOpen();
+  fireEvent.click(screen.getByRole("option", { name: "Start shutdown" }));
+  await settle();
+  expect(screen.queryByRole("combobox")).toBeNull();
+  // The flow opens on the Review page, with focus on its first heading.
+  const heading = screen.getByRole("heading", { level: 1, name: "Unfinished tasks" });
+  expect(heading).toHaveFocus();
+  // Ending it and coming back later shows the overview: the ask was used up.
+  fireEvent.keyDown(heading, { key: "Escape" });
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Review" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Today" }));
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "Review" }));
+  await settle();
+  expect(screen.getByRole("heading", { level: 1, name: "Review" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { level: 1, name: "Unfinished tasks" })).toBeNull();
+});
+
+test("palette_start_shutdown_from_the_review_page_opens_the_flow_again", async () => {
+  mockBackend({ review_get: () => reviewView(), shutdown_get: () => shutdownView() });
+  render(<App />);
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "Review" }));
+  await settle();
+  await emitPaletteOpen();
+  fireEvent.click(screen.getByRole("option", { name: "Start shutdown" }));
+  await settle();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Unfinished tasks" }),
+  ).toBeInTheDocument();
 });
