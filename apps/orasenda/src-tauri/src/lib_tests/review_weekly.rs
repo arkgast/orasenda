@@ -15,7 +15,7 @@ fn weekly_get_granted_to_main() {
 
 #[test]
 fn bindings_carry_weekly_get() {
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = read_bindings();
     assert!(
         bindings.contains("weeklyGet: () => typedError<WeeklyView_Serialize, ReviewError>"),
         "bindings lack weeklyGet"
@@ -40,7 +40,7 @@ fn weekly_writes_granted_to_main() {
 
 #[test]
 fn bindings_carry_weekly_writes() {
-    let bindings = std::fs::read_to_string(bindings_path()).unwrap();
+    let bindings = read_bindings();
     for name in ["weeklySave", "weeklyComplete"] {
         assert!(
             bindings.contains(&format!(
