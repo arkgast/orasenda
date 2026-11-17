@@ -5,6 +5,7 @@ mod files;
 mod import;
 mod import_keys;
 mod names;
+mod import_review;
 mod pending;
 
 use std::path::{Path, PathBuf};
