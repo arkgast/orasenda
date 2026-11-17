@@ -71,7 +71,8 @@ for (const size of SIZES) {
     test("card_not_folded_900x600", async ({ page }) => {
       await openBoard(page, "boardWeek", size);
       const card = page.getByRole("button", { name: /^Write the intro/ });
-      expect(await card.locator("[data-slot=task-card-fold]").count()).toBe(0);
+      await expect(card).toBeVisible();
+      await expect(card.locator("[data-slot=task-card-fold]")).toHaveCount(0);
     });
   }
 
