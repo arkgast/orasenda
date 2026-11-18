@@ -110,6 +110,9 @@ Types (`crates/service/src/api/routines.rs`, `specta`, camelCase):
 - Replaces the `Placeholder` for `routines` in `App.tsx`: one line in the page switch, no change to the page list, keys or `NavRail` (Board session).
 - `useRoutines` holds the view from `routines_list` and `routines-changed`. Writes are chained: one call in flight, as in the conventions' *Newest wins* rule.
 - **Overview** (the canvas's chosen option, see Decisions): the `PageFrame` title "Routines". The page's one primary action is **Start** on the next routine due today (or the first not finished today); every other Start is a secondary button. Each routine is a `RoutineCard`: name, time and days, the today line with its shape, the steps as read-only `RoutineItem`s, and a *More* `PopoverMenu` (Edit, Move up, Move down, Remove). The *Habits* section lists the standalone habits, each with a "Done today" `RoutineItem` checkbox and its `HabitDots`. *Show the record* on a routine expands each step's `HabitDots` (28 days, legend once per page). `WellnessNote` sits at the foot of every templated routine.
+
+> Superseded by [2026-11-17-ui-consistency](2026-11-17-ui-consistency.md) (Decision 4)
+
 - **Empty state:** `EmptyState` "No routines yet." with the message "Routines are small steps you take at the same time each day." The primary action is **Start from a template**; the secondary is **Make your own**.
 - **Add:** an *Add* menu (New routine, From a template…, New habit). *From a template…* opens a `Dialog` with the five templates as a list of choices: name, summary, steps and the wellness note.
 - **Editors:** a `Dialog` for a routine (name, time of day as an `Input` of type time or *Any time*, `DayPicker`) and for a habit (name, when, where, anchor, 2-minute version, identity, *Optional*; a live preview of Rust's sentence after save). Errors appear inline under the field (`Input` error). Remove shows an `InlineNotice` row: "Removed Morning Light & Movement." with **Undo**, for 10 seconds or until the next action.
@@ -213,6 +216,9 @@ Every ruling here was made by the controller under the owner's autonomy grant (2
 39. **The nudge reads the notification status only when a routine is due,** and marks nothing nudged unless it is `granted`, so permission granted inside the window still gets one nudge. A failed post counts as nudged (R6, #519).
 40. **Settings › Notifications:** *When a routine is due* is its own row labelled "Routines"; the permission actions stay on the session row so no two buttons share a name (R6, #519).
 41. **The overview's one primary Start goes to the routine in progress today, else the first not started in the person's order** (R7, #520). The webview can't know "due next" without reading the clock.
+
+> Superseded by [2026-11-17-ui-consistency](2026-11-17-ui-consistency.md) (Decision 4)
+
 42. **Writes are one in flight, newest check-in wins, and a failure rolls back to Rust's last view with a plain line** (R7, #520; R9, #522). An Ok with no `routines-changed` reads the list again.
 43. **The legend sits once, on the first grid on the page; the "Done today" checkbox is a `RoutineItem` named "Done today: <habit>"** (R7, #520). `RoutineItem` gained `name` and its documented `readOnly` form.
 44. **Esc always ends or leaves the run view; Enter-at-rest and S follow `keys.single_key`** (R8, #521). End routine ends at once with no confirm, and one answer is in flight at a time.
@@ -230,6 +236,8 @@ Canvas: https://claude.ai/artifact/3d9UTChLuhpUrBufwGzVPv (private to the owner;
 | Routines page | A Cards · B Timeline and detail · C Compact rows | **A Cards** | One primary Start (the next routine due). Every routine and its steps are readable at a glance, built from `RoutineCard` and read-only `RoutineItem`s. B hides routines behind a selection, and C hides the steps and draws a routine-level strip that isn't a habit's record. |
 | Run view | A One step · B Checklist | **A One step** | One thing on screen lowers the cost of starting for the ADHD audience. Enter, S and Esc map to one button each, and the progress list stays below in shape and word. B invites jumping around and has no clear next action. |
 | Dot grid | A Weeks of 28 days · B 14-day strip · C 28 days, one wrapped line | **A Weeks** | Four Monday-aligned rows with a weekday header, so rest days line up and a rhythm shows without a number. B is too short to show the two-in-a-row rule kindly, and C (today's `HabitDots`) puts a Monday in a different column on every width. |
+
+> Superseded by [2026-11-17-ui-consistency](2026-11-17-ui-consistency.md) (Decision 4)
 
 The owner can overrule any pick on review; components follow the pick (`HabitDots columns="week"` adds the weekday header row, aria-hidden).
 

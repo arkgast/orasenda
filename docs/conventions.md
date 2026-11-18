@@ -153,3 +153,10 @@ live region on a page whose spec allows exactly one (#157, PR #159).
   (`role="status"`, `role="alert"`, `aria-live`) only when its README names one, as `AppRow` does
   for a failed save.
 - An id that another element must reference is settable by prop, so the consumer can pass it in.
+
+## Reading context
+- Current rules live in living docs: `packages/ui/design-system/README.md`, the component `.md` files, `docs/DECISIONS.md`, `CONTEXT.md` and this file.
+- Specs are history: grep them by topic, and never read them whole.
+- A reversed decision gets `> Superseded by <spec path> (Decision N)` directly under it in the source spec, in the PR that reverses it.
+
+Upstream: [JCIOriente/baton#207](https://github.com/JCIOriente/baton/issues/207).
