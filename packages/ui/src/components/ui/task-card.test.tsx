@@ -392,7 +392,13 @@ test("disabled_or_menuless_card_ignores_menu_key", () => {
 });
 
 test("task_card_more_uses_more_glyph", () => {
-  render(<TaskCard title="Write" onOpen={() => {}} menu={{ moveTargets: [{ id: "today", label: "Today" }] }} />);
+  render(
+    <TaskCard
+      title="Write"
+      onOpen={() => {}}
+      menu={{ moveTargets: [{ id: "today", label: "Today" }], onMove: () => {} }}
+    />,
+  );
   const more = screen.getByRole("button", { name: "More actions for Write" });
   const { container } = render(<Icon name="more" />);
   expect(more.querySelector("svg")?.innerHTML).toBe(container.querySelector("svg")?.innerHTML);

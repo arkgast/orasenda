@@ -15,9 +15,7 @@ test("read_only_done_shows_tick_without_checkbox", () => {
   expect(box).toHaveClass("bg-break", "border-break");
   expect(box?.querySelector("svg")).toHaveClass("stroke-on-break");
   expect(row(container)).toHaveAttribute("data-state", "done");
-  expect(row(container).querySelector("[data-slot=routine-item-label]")?.parentElement).toHaveClass(
-    "text-ink-muted",
-  );
+  expect(row(container)).toHaveClass("text-ink-muted");
 });
 
 test("read_only_done_is_not_a_tab_stop", () => {
@@ -32,8 +30,12 @@ test("read_only_done_prefix_keeps_detail_and_optional_exposed", () => {
   const prefix = container.querySelector(".sr-only");
   expect(prefix?.textContent).toBe("Done today: ");
   expect(row(container).textContent).toBe("Done today: StretchOptionalTwo minutes");
-  expect(container.querySelector("[data-slot=routine-item-label]")?.closest("[aria-hidden]")).toBeNull();
-  expect(container.querySelector("[data-slot=routine-item-detail]")?.closest("[aria-hidden]")).toBeNull();
+  expect(
+    container.querySelector("[data-slot=routine-item-label]")?.closest("[aria-hidden]"),
+  ).toBeNull();
+  expect(
+    container.querySelector("[data-slot=routine-item-detail]")?.closest("[aria-hidden]"),
+  ).toBeNull();
   expect(screen.getByText("Optional")).toBeVisible();
   expect(screen.getByText("Two minutes")).toBeVisible();
 });

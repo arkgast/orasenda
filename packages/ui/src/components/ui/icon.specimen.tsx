@@ -10,6 +10,8 @@ const CONTROLS: readonly IconName[] = [
   "collapse",
   "window",
   "menu",
+  "more",
+  "plus",
   "chevron",
   "close",
   "back",

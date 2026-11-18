@@ -15,7 +15,7 @@ test("glyph_sheet_at_20px_both_themes", async ({ page }, info) => {
       return { w: r.width, h: r.height, stroke: getComputedStyle(el).stroke };
     }),
   );
-  expect(sizes.length).toBe(25);
+  expect(sizes.length).toBe(27);
   const ink = await page
     .locator("[data-icon]")
     .first()

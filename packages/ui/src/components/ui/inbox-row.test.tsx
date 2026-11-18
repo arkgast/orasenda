@@ -238,7 +238,7 @@ test("row_without_a_menu_ignores_the_menu_key", () => {
 });
 
 test("inbox_row_more_uses_more_glyph", () => {
-  setup();
+  withMenu();
   const more = screen.getByRole("button", { name: "More actions for Ask Sam about the invoice" });
   const { container } = render(<Icon name="more" />);
   expect(more.querySelector("svg")?.innerHTML).toBe(container.querySelector("svg")?.innerHTML);

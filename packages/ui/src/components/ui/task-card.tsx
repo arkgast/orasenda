@@ -162,7 +162,7 @@ function CardMenu(props: {
     <span ref={anchor} data-slot="task-card-menu" className="flex-none">
       <IconButton
         label={`More actions for ${title}`}
-        icon={<Icon name="menu" />}
+        icon={<Icon name="more" />}
         shortcut="⇧F10"
         tabIndex={props.tabIndex}
         aria-haspopup="menu"
