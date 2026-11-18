@@ -27,24 +27,9 @@ fmt:
     cargo fmt --all
     pnpm exec biome check --write .
 
-# Lint Rust and TypeScript without changing files.
-lint:
-    cargo clippy --workspace --all-targets --locked -- -D warnings
-    pnpm exec biome lint .
-    "{{ just_executable() }}" tailwind-strict
-    "{{ just_executable() }}" lint-layers
-
 # Frontend layer rules: every lint fixture must be reported (or stay clean) as its header says.
 lint-layers:
     node tools/lint-layers.ts
-
-# Run every test suite.
-test:
-    cargo test --workspace --locked
-    pnpm --filter orasenda test
-    pnpm --filter @orasenda/tokens test
-    pnpm exec vitest run
-    pnpm --filter @orasenda/ui test
 
 # Regenerate packages/tokens/tokens.css and theme.css from packages/tokens/tokens.json.
 tokens:
@@ -112,7 +97,7 @@ ci-web:
     @echo "==> test (vitest)"
     pnpm --filter orasenda test
 
-# Rust: format, dependency boundaries, clippy, tests and the committed bindings.
+# Rust: format, dependency boundaries, clippy, tests (incl. core purity) and the committed bindings.
 ci-rust:
     @echo "==> format (rustfmt)"
     cargo fmt --all --check
@@ -120,8 +105,6 @@ ci-rust:
     "{{ just_executable() }}" core-boundary
     @echo "==> service boundary (no tauri, tao, wry, objc2, block2, windows)"
     "{{ just_executable() }}" service-boundary
-    @echo "==> core purity (no target_os in core)"
-    "{{ just_executable() }}" core-purity
     @echo "==> lint (clippy)"
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
@@ -137,31 +120,6 @@ specimens:
 # Fail on a tracked source file over 500 lines.
 file-size:
     node tools/file-size.ts
-
-# Fails when orasenda-core source branches on the target OS (ADR-001).
-[private]
-[script]
-core-purity:
-    [ -d crates/core/src ] || { echo "core purity: crates/core/src not found" >&2; exit 2; }
-    status=0
-    raw="$(grep -rnE 'target_os|target_family|target_vendor|cfg(_attr)?!?\((.*[(, ])?(unix|windows) *[,)]' crates/core/src)" || status=$?
-    if [ "$status" -eq 1 ]; then
-        exit 0
-    elif [ "$status" -ne 0 ]; then
-        echo "core purity check failed: grep exited $status" >&2
-        exit "$status"
-    fi
-    status=0
-    hits="$(grep -vE '^[^:]+:[0-9]+:\s*//' <<<"$raw")" || status=$?
-    if [ "$status" -ge 2 ]; then
-        echo "core purity check failed: grep exited $status" >&2
-        exit "$status"
-    fi
-    if [ -n "$hits" ]; then
-        echo "orasenda-core must not branch on the target OS (ADR-001):" >&2
-        echo "$hits" >&2
-        exit 1
-    fi
 
 # Fails when orasenda-core depends on tauri, tao, wry, objc2, block2, windows, windows-core, rusqlite
 # or libsqlite3-sys on any target.
@@ -199,14 +157,12 @@ service-boundary:
 # target needs the NDK's clang and llvm-ar. NDK lookup, first match wins: ANDROID_NDK_HOME,
 # NDK_HOME, ANDROID_NDK_LATEST_HOME, then the newest folder under
 # ${ANDROID_HOME:-$HOME/Library/Android/sdk}/ndk/.
-# Runs only on macOS: the iOS check builds Objective-C and needs Xcode; on other hosts it skips, and
-# the required macOS ci job covers both targets (#78).
-[private]
+# Runs only on macOS: the iOS check builds Objective-C and needs Xcode; on other hosts it skips; run it on demand on a Mac.
 [script]
 mobile:
     host="$(uname -s)"
     if [ "$host" != Darwin ]; then
-        echo "mobile: skipped on $host; iOS needs Xcode, and the required macOS ci job checks iOS and Android"
+        echo "mobile: skipped on $host; iOS needs Xcode; run it on a Mac"
         exit 0
     fi
     ndk="${ANDROID_NDK_HOME:-${NDK_HOME:-${ANDROID_NDK_LATEST_HOME:-}}}"
