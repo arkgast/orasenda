@@ -1,4 +1,5 @@
 import { KEYBOARD } from "@shared/test/fixtures/keyboardView";
+import { statsView } from "@shared/test/fixtures/review";
 import type {
   AppInfo,
   DisplayInfo,
@@ -165,6 +166,9 @@ export function backend({
     timer_state: () => ({ view, pending }),
     settings_get: () => settings,
     settings_set: () => null,
+    // The Review page's stats: one day of focus, until a scenario says otherwise.
+    review_stats: () => statsView(),
+    buffer_suggestion_dismiss: () => null,
     keyboard_state: () => KEYBOARD,
     timer_start: () => RUNNING,
     timer_pause: () => PAUSED,

@@ -41,9 +41,16 @@ function literals(source: string): string[] {
   return found;
 }
 
+/** The page's text without HabitDots' forced-colors tick, which only shows in high-contrast mode. */
+function shownText(root: HTMLElement): string {
+  const copy = root.cloneNode(true) as HTMLElement;
+  for (const tick of copy.querySelectorAll('[data-slot="habit-dot"] [aria-hidden]')) tick.remove();
+  return copy.textContent ?? "";
+}
+
 test("review_copy_has_no_banned_words", async () => {
   const { container } = await renderReview();
-  expect(container.textContent ?? "").not.toMatch(BANNED);
+  expect(shownText(container)).not.toMatch(BANNED);
 
   const files = Object.entries(SOURCES).filter(([name]) => !/\.(test|support)\./.test(name));
   expect(files.map(([name]) => name)).toContain("./Overview.tsx");

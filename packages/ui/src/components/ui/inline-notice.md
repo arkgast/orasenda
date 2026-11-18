@@ -2,7 +2,8 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 
 - `children`: one or two plain sentences. `tone: 'warning'` (triangle, `amber-soft`) only for time almost up and WIP limits; everything else is neutral, or `attention` in the status row (the alert glyph, see below).
 - `actionLabel` with `onAction` adds one ghost action. `actionName` sets an accessible name that contains the visible text (the row variant's names are in its Actions line). In the row variant, `tone: 'rest'` is the at-rest line in `ink-muted` with no glyph.
-- `secondaryAction` (`{ label, name?, onAction }`, default variant only) adds a quiet `Button` after the first action, for a pair such as "Add a checklist" and "Keep as is". `name` is its accessible name when it differs from the label. Both keep the 44px hit target and wrap under the message in a narrow window.
+- `secondaryAction` (`{ label, name?, onAction }`, default variant only) adds a quiet `Button` after the first action, for a pair such as "Add a checklist" and "Keep as is". `name` is its accessible name when it differs from the label. Both keep the 44px hit target. The message sizes to its text (`flex-auto`), so a long sentence takes the full line and both actions wrap under it in a narrow window.
+- `actionVariant` (`'ghost'` by default, or `'quiet'`) also applies to the default variant's first action: an optional suggestion's accept is `'quiet'`, so it never reads weaker than its quiet dismissal.
 - The message is `role="status"`; mount it at the milestone, never on every tick.
 - The default variant stays for in-place notices.
 

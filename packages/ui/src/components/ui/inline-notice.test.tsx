@@ -178,3 +178,12 @@ test("inline_notice_row_collapse_empty_takes_no_height_but_keeps_the_live_region
   );
   expect(row).toHaveClass("h-hit-min");
 });
+
+test("default_action_can_be_quiet", () => {
+  render(
+    <InlineNotice actionVariant="quiet" actionLabel="Use it" onAction={() => {}}>
+      A suggestion.
+    </InlineNotice>,
+  );
+  expect(screen.getByRole("button", { name: "Use it" }).getAttribute("data-variant")).toBe("quiet");
+});

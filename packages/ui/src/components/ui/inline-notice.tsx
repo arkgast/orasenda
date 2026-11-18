@@ -14,6 +14,8 @@ export type InlineNoticeProps = {
   | {
       variant?: "default";
       tone?: "neutral" | "warning";
+      /** Defaults to 'ghost'; 'quiet' gives the first action a border (for an optional suggestion's accept). */
+      actionVariant?: "quiet" | "ghost";
       /** A second, quiet action after the first (for "Keep as is"). `name` is the accessible name when it differs from `label`. */
       secondaryAction?: { label: string; name?: string; onAction: () => void };
     }
@@ -94,13 +96,17 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
         data-slot="inline-notice-message"
         role="status"
         aria-atomic="true"
-        className="flex flex-1 items-baseline gap-2"
+        className="flex flex-auto items-baseline gap-2"
       >
         <ModeShape mode={warning ? "warning" : "shallow"} />
         <span>{props.children}</span>
       </div>
       {hasAction ? (
-        <Button variant="ghost" aria-label={props.actionName || undefined} onClick={props.onAction}>
+        <Button
+          variant={props.actionVariant === "quiet" ? "quiet" : "ghost"}
+          aria-label={props.actionName || undefined}
+          onClick={props.onAction}
+        >
           {props.actionLabel}
         </Button>
       ) : null}

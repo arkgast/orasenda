@@ -51,7 +51,7 @@ for (const size of SIZES) {
   test(`review_empty_${at}`, async ({ page }) => {
     await openReview(page, "reviewEmpty", size);
     await expect(page.getByText("No priorities yet.")).toBeAttached();
-    await expect(page.getByRole("list")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "This week" }).getByRole("list")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(
       size.height,
     );
