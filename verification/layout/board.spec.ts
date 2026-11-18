@@ -71,6 +71,7 @@ for (const size of SIZES) {
       const card = page.getByRole("button", { name: /^Plan the week/ });
       await card.focus();
       await expectFocusRingVisible(card);
+      await expect(card.locator("[data-slot=task-card-checklist]")).toHaveText("1 of 1");
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         size.width,
       );
