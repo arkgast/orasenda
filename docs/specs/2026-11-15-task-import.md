@@ -178,7 +178,7 @@ Thin `commands/import.rs`: `import_sources`, `import_preview(source) -> ImportPr
 - **Drop** calls `task_move(id, lane, index)`, the call behind ⌥⌘ arrows and the Move menu (`useBoardActions.ts:84-95`). Limits behave as for a key move: a drop past a limit is allowed and the column reads "4 of 3"; nothing moves back (only a start does, Board Decision 15). A drop in Done sets `done_at`; out of Done clears it.
 - **Cancel:** Esc (consumed, so nothing else sees it), `pointercancel`, the window losing focus, a release on its own place or outside every column: the card stays where it was.
 - **Words:** start "Moving <title>. Esc puts it back."; another column "Moved <title> to <column>." (the keyboard's line); a reorder "Moved <title> to place 3 in <column>." (a keyboard reorder stays silent, `useBoardActions.ts:115`, because focus follows the card); cancel "<title> stayed in <column>." All through the Board's status line; focus lands on the dropped card.
-- **Motion:** cards make room for the slot over `duration-calm` on `easing-calm`; under reduce-motion nothing animates. No ghost image follows the pointer: the slot shows where the card lands, in words and shape. (Deferred to #646, controller ruling: the slot appears without the opening motion for now.)
+- **Motion:** cards make room for the slot over `duration-calm` on `easing-calm`; under reduce-motion nothing animates. No ghost image follows the pointer: the slot shows where the card lands, in words and shape. (Shipped in #697, which closed #646.)
 - **The keyboard stays the contract.** Every drag result is reachable by ⌥⌘ arrows and the Move menu; nothing is drag-only.
 
 ## Data & migrations
