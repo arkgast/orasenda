@@ -1,3 +1,0 @@
-# Files that predate the 500-line ceiling: "<lines> <path>". The list only shrinks.
-# The guard (scripts/file-size.sh) fails when a listed file grows, when it is back
-# at 500 lines or fewer (remove its entry), or when its path no longer exists.

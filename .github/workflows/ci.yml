@@ -41,18 +41,16 @@ jobs:
       # and passes, so the `ci` summary passes (branch protection requires the `ci` context). Do not use workflow-level
       # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
       # Fails closed: pushes, an empty diff or a failed diff all run everything.
-      - name: Decide whether this PR only changes docs
-        id: scope
-        run: ./scripts/docs-only.sh
-
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        if: steps.scope.outputs.docs_only != 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version-file: .node-version
           cache: pnpm
+
+      - name: Decide whether this PR only changes docs
+        id: scope
+        run: node tools/docs-only.ts
 
       - name: Install just
         if: steps.scope.outputs.docs_only != 'true'
@@ -119,9 +117,13 @@ jobs:
       # and passes, so the `ci` summary passes (branch protection requires the `ci` context). Do not use workflow-level
       # `paths:` or `paths-ignore:`: a skipped workflow leaves the required check pending forever.
       # Fails closed: pushes, an empty diff or a failed diff all run everything.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
       - name: Decide whether this PR only changes docs
         id: scope
-        run: ./scripts/docs-only.sh
+        run: node tools/docs-only.ts
 
       # The Tauri app crate links WebKitGTK on Linux (the same list as scripts/cloud-setup.sh).
       - name: Install the Tauri Linux libraries
@@ -199,18 +201,16 @@ jobs:
 
       # Mirrors the web and rust jobs: docs-only PRs skip the toolchain, the installs and ./scripts/ci.sh.
       # This job is advisory, so nothing requires it; it still reports a result either way.
-      - name: Decide whether this PR only changes docs
-        id: scope
-        run: ./scripts/docs-only.sh
-
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        if: steps.scope.outputs.docs_only != 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version-file: .node-version
           cache: pnpm
+
+      - name: Decide whether this PR only changes docs
+        id: scope
+        run: node tools/docs-only.ts
 
       - name: Install Rust toolchain (rust-toolchain.toml)
         if: steps.scope.outputs.docs_only != 'true'
