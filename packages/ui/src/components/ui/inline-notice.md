@@ -1,7 +1,7 @@
 A quiet line of guidance in place, and, as `variant="row"`, the reserved status row on Today, the Focus window and every `PageFrame`.
 
 - `children`: one or two plain sentences. `tone: 'warning'` (triangle, `amber-soft`) only for time almost up and WIP limits; everything else is neutral, or `attention` in the status row (the alert glyph, see below).
-- `actionLabel` with `onAction` adds one ghost action. `actionName` sets an accessible name that contains the visible text (the row variant's names are in its Actions line). In the row variant, `tone: 'rest'` is the at-rest line in `ink-muted` with no glyph.
+- `actionLabel` with `onAction` adds one action (ghost by default, rendered in the row variant as an inline `Button` with `text-focus`). `actionName` sets an accessible name that contains the visible text (the row variant's names are in its Actions line). In the row variant, `tone: 'rest'` is the at-rest line in `ink-muted` with no glyph.
 - `secondaryAction` (`{ label, name?, onAction }`, default variant only) adds a quiet `Button` after the first action, for a pair such as "Add a checklist" and "Keep as is". `name` is its accessible name when it differs from the label. Both keep the 44px hit target. The message sizes to its text (`flex-auto`), so a long sentence takes the full line and both actions wrap under it in a narrow window.
 - `actionVariant` (`'ghost'` by default, or `'quiet'`) also applies to the default variant's first action: an optional suggestion's accept is `'quiet'`, so it never reads weaker than its quiet dismissal.
 - The message is `role="status"`; mount it at the milestone, never on every tick.
@@ -9,10 +9,10 @@ A quiet line of guidance in place, and, as `variant="row"`, the reserved status 
 
 ## Status row (`variant="row"`)
 
-- **Anatomy:** a 44px row with no box (two actions may grow it, see below); one ghost or quiet action as a sibling. Today adds a second action as a sibling `Button` beside the row (`StatusRow`, a composition in the app, not a prop here); in the stacked strip the strip's own `ModeChip` is the state word, so the row adds none. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. `collapseEmpty` lets an empty row take no height (the sheet's save line); the paragraph stays mounted. The row is never the live region, so chip changes are never announced.
-- **Text:** `body-sm` `ink`, at most two lines; it never truncates, and the row grows only for a second action that wraps. Tip copy is at most 65 characters. Ghost actions are `focus` text (5.31 / 8.74 on `surface`).
+- **Anatomy:** a 44px row with no box (two actions may grow it, see below); one inline or quiet action as a sibling. Today adds a second action as a sibling `Button` beside the row (`StatusRow`, a composition in the app, not a prop here); in the stacked strip the strip's own `ModeChip` is the state word, so the row adds none. The message paragraph is the live region (`role="status"`, `aria-live="polite"`), always mounted and empty when there is nothing to say. `collapseEmpty` lets an empty row take no height (the sheet's save line); the paragraph stays mounted. The row is never the live region, so chip changes are never announced.
+- **Text:** `body-sm` `ink`, at most two lines; it never truncates, and the row grows only for a second action that wraps. Tip copy is at most 65 characters. Inline actions are `focus` text (5.31 / 8.74 on `surface`).
 - **Tones:** `neutral` (no glyph), `attention` (the alert glyph in `ink`), `warning` (the amber triangle, time only).
-- **Actions:** `actionVariant` is `'ghost'` by default, or `'quiet'`; names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
+- **Actions:** `actionVariant` is `'ghost'` by default (rendered as the inline row `Button`), or `'quiet'` (quiet, row size); names contain their visible text and say what they retry ("Try again saving break minutes", "Try again saving").
 - **Focus:** at a session end the line is announced first, then focus moves to Start focus, with the action one Shift-Tab away.
 
 ### Priority

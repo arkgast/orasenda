@@ -85,13 +85,15 @@ test("row_empty_message_stays_mounted", () => {
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
-test("row_action_defaults_to_ghost_and_can_be_quiet", () => {
+test("row_action_defaults_to_inline_and_can_be_quiet", () => {
   const { rerender } = render(
     <InlineNotice variant="row" actionLabel="Got it" onAction={() => {}}>
       Tip
     </InlineNotice>,
   );
-  expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe("ghost");
+  expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe(
+    "inline",
+  );
   expect(screen.getByRole("button", { name: "Got it" })).toHaveClass("text-focus");
   rerender(
     <InlineNotice variant="row" actionVariant="quiet" actionLabel="Got it" onAction={() => {}}>
