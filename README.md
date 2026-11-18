@@ -74,7 +74,7 @@ macOS-only features are unavailable there.
 ### Commands
 - `just dev` runs the desktop app with hot reload.
 - `just build` builds the release app (a .app and .dmg on macOS).
-- `just ci` runs every check that CI runs: the Rust and React tests plus lint. `just mobile`, `just contrast`,
+- `just ci` runs every check that CI runs: the Rust and React tests plus lint. `just mobile`,
   `just tokens`, `just ui-build` and `just design-system-check` run on demand.
 - `pnpm --filter orasenda tauri ios dev` runs the app in the iOS Simulator. Add a device name to
   pick one, for example `pnpm --filter orasenda tauri ios dev "iPhone 16"`.

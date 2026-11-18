@@ -5,7 +5,6 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set windows-shell := ["bash", "-euo", "pipefail", "-c"]
 set script-interpreter := ["bash", "-euo", "pipefail"]
 
-python := if os_family() == "windows" { "python" } else { "python3" }
 mobile_targets := "--target aarch64-apple-ios --target aarch64-linux-android"
 
 default:
@@ -47,11 +46,6 @@ test:
     node --test tools/tailwind-strict.test.ts
     pnpm --filter @orasenda/ui test
 
-# Check the declared colour pairs (verification/contrast-pairs.json) in both themes.
-contrast:
-    {{ python }} -m unittest discover -s verification -p "contrast_test.py"
-    {{ python }} verification/contrast.py
-
 # Regenerate packages/tokens/tokens.css and theme.css from packages/tokens/tokens.json.
 tokens:
     pnpm --filter @orasenda/tokens build
@@ -81,7 +75,7 @@ design-system-check:
     DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
 # GitHub runs ci-shared + ci-web and ci-rust as two parallel jobs. Platform builds (mobile, app
-# build, design system, contrast, tokens) have their own recipes. Stops at the first failure.
+# build, design system, tokens) have their own recipes. Stops at the first failure.
 # The Rust and React tests plus lint; the same on every OS.
 ci: ci-shared ci-web ci-rust
 
@@ -104,8 +98,11 @@ ci-web:
     pnpm exec biome ci .
     @echo "==> frontend layers (lint fixtures)"
     "{{ just_executable() }}" lint-layers
-    @echo "==> tokens (tests)"
+    @echo "==> tokens (tests, including contrast in both themes)"
     pnpm --filter @orasenda/tokens test
+    @echo "==> tokens (generated CSS is committed and current)"
+    "{{ just_executable() }}" tokens
+    git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> lint (no arbitrary Tailwind values)"
     "{{ just_executable() }}" tailwind-strict
     @echo "==> ui (typecheck)"
