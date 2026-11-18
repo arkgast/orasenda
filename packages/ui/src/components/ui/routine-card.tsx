@@ -73,7 +73,7 @@ export function RoutineCard(props: RoutineCardProps): ReactElement {
       data-slot="routine-card"
       data-today={today}
       aria-labelledby={headingId}
-      className="@container flex w-full max-w-full flex-col gap-3 rounded-md border border-line-strong border-s-4 border-s-routine bg-surface-raised p-4 text-ink shadow-raised wrap-anywhere"
+      className={`@container flex w-full max-w-full flex-col gap-3 rounded-md border border-line-strong border-s-4 bg-surface-raised p-4 text-ink shadow-raised wrap-anywhere ${today === "finished" ? "border-s-break" : "border-s-routine"}`}
     >
       <div
         data-slot="routine-card-top"

@@ -13,8 +13,6 @@ type Props = {
   legendFor: string | null;
   /** Start, once the run view wires it (R8); without it no Start shows. */
   onStart?: (id: string) => void;
-  /** The routine whose Start is the page's one primary action. */
-  primaryStart: string | null;
   onMore(id: string, index: number, action: MoreAction): void;
   /** A step's own More menu: Edit, Move up, Move down, Remove within its routine. */
   onStepMore(id: string, index: number, action: MoreAction): void;
@@ -41,7 +39,7 @@ export function RoutineList(props: Props): ReactElement {
                 <>
                   {props.onStart && routine.today !== "finished" ? (
                     <Button
-                      variant={props.primaryStart === routine.id ? "primary" : "quiet"}
+                      variant="quiet"
                       aria-label={`Start ${routine.name}`}
                       onClick={() => props.onStart?.(routine.id)}
                     >
@@ -50,8 +48,8 @@ export function RoutineList(props: Props): ReactElement {
                   ) : null}
                   <ActionMenu
                     id={moreId(routine.id)}
-                    label="More"
-                    name={`More for ${routine.name}`}
+                    trigger="more"
+                    name={`More actions for ${routine.name}`}
                     heading={routine.name}
                     items={moreItems(index, routines.length, true)}
                     onSelect={(id) => props.onMore(routine.id, index, id as MoreAction)}
@@ -75,11 +73,13 @@ export function RoutineList(props: Props): ReactElement {
                           label={habit.name}
                           detail={habit.anchorLine ?? undefined}
                           optional={habit.optional}
+                          done={habit.doneToday}
+                          skipped={routine.today === "finished" && !habit.doneToday}
                         />
                         <ActionMenu
                           id={moreId(habit.id)}
-                          label="More"
-                          name={`More for ${habit.name}`}
+                          trigger="more"
+                          name={`More actions for ${habit.name}`}
                           heading={habit.name}
                           items={moreItems(at, routine.habits.length)}
                           onSelect={(id) => props.onStepMore(habit.id, at, id as MoreAction)}

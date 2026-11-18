@@ -26,7 +26,7 @@ const LABELS = ["Name", "When", "Where", "After", "2-minute version", "Identity"
 
 test("new_habit_on_its_own_sends_every_field_and_its_days", async () => {
   const { backend } = await renderRoutines();
-  await choose("Add", "New habit");
+  await choose("Add a routine or habit", "New habit");
   const d = "New habit";
   expect(LABELS.map((label) => field(d, label).getAttribute("maxlength"))).toEqual([
     "80",
@@ -67,7 +67,7 @@ test("new_habit_on_its_own_sends_every_field_and_its_days", async () => {
 
 test("a_habit_in_a_routine_has_no_days_of_its_own", async () => {
   const { backend } = await renderRoutines();
-  await choose("Add", "New habit");
+  await choose("Add a routine or habit", "New habit");
   const d = "New habit";
   fireEvent.click(within(dialog(d)).getByRole("radio", { name: "Morning Light & Movement" }));
   expect(within(dialog(d)).queryByRole("group", { name: "Repeat on" })).toBeNull();
@@ -93,7 +93,7 @@ test("a_habit_in_a_routine_has_no_days_of_its_own", async () => {
 
 test("add_a_step_from_a_routines_more_menu_puts_it_in_that_routine", async () => {
   const { backend } = await renderRoutines();
-  await choose("More for Morning Light & Movement", "Add a step");
+  await choose("More actions for Morning Light & Movement", "Add a step");
   const d = "New step";
   expect(within(dialog(d)).getByRole("radio", { name: "Morning Light & Movement" })).toBeChecked();
   type(d, "Name", "Open the blinds");
@@ -104,7 +104,7 @@ test("add_a_step_from_a_routines_more_menu_puts_it_in_that_routine", async () =>
 
 test("edit_a_standalone_habit_fills_in_its_fields_and_saves_through_habit_update", async () => {
   const { backend } = await renderRoutines();
-  await choose("More for Stretch", "Edit");
+  await choose("More actions for Stretch", "Edit");
   const d = "Edit habit";
   expect(field(d, "Name")).toHaveValue("Stretch");
   expect(within(dialog(d)).queryByRole("radiogroup")).toBeNull();
@@ -138,7 +138,9 @@ test("edit_a_standalone_habit_fills_in_its_fields_and_saves_through_habit_update
 test("edit_a_step_from_its_own_more_menu", async () => {
   const { backend } = await renderRoutines();
   const steps = within(card("Morning Light & Movement")).getByRole("list", { name: "Steps" });
-  fireEvent.click(within(steps).getByRole("button", { name: "More for Drink a glass of water" }));
+  fireEvent.click(
+    within(steps).getByRole("button", { name: "More actions for Drink a glass of water" }),
+  );
   fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
   await settle();
   const d = "Edit step";
@@ -159,7 +161,7 @@ test("too_long_from_rust_shows_under_the_field_over_its_limit", async () => {
       throw "tooLong";
     },
   });
-  await choose("More for Stretch", "Edit");
+  await choose("More actions for Stretch", "Edit");
   const d = "Edit habit";
   // A paste can pass the field's cap in some engines; Rust's refusal still lands on the field.
   type(d, "Where", "x".repeat(81));
@@ -179,7 +181,7 @@ test("a_full_list_and_an_empty_name_are_said_kindly", async () => {
       throw answer;
     },
   });
-  await choose("Add", "New habit");
+  await choose("Add a routine or habit", "New habit");
   const d = "New habit";
   type(d, "Name", "Read");
   fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add habit" }));
@@ -195,7 +197,7 @@ test("a_full_list_and_an_empty_name_are_said_kindly", async () => {
 
 test("a_new_step_moved_to_its_own_is_worded_as_a_habit", async () => {
   await renderRoutines();
-  await choose("More for Morning Light & Movement", "Add a step");
+  await choose("More actions for Morning Light & Movement", "Add a step");
   fireEvent.click(within(dialog("New step")).getByRole("radio", { name: "On its own" }));
   const d = "New habit";
   expect(within(dialog(d)).getByRole("group", { name: "Repeat on" })).toBeInTheDocument();
@@ -209,7 +211,7 @@ test("a_routine_removed_while_adding_puts_the_habit_on_its_own", async () => {
       throw "notFound";
     },
   });
-  await choose("More for Morning Light & Movement", "Add a step");
+  await choose("More actions for Morning Light & Movement", "Add a step");
   const d = "New step";
   type(d, "Name", "Open the blinds");
   fireEvent.click(within(dialog(d)).getByRole("button", { name: "Add step" }));
@@ -232,7 +234,9 @@ test("a_habit_edited_while_its_step_is_removed_or_a_routine_runs_says_so", async
     },
   });
   const steps = within(card("Morning Light & Movement")).getByRole("list", { name: "Steps" });
-  fireEvent.click(within(steps).getByRole("button", { name: "More for Drink a glass of water" }));
+  fireEvent.click(
+    within(steps).getByRole("button", { name: "More actions for Drink a glass of water" }),
+  );
   fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
   await settle();
   const d = "Edit step";
@@ -256,7 +260,7 @@ test("a_field_error_is_drawn_before_focus_lands_on_the_field", async () => {
       throw "empty";
     },
   });
-  await choose("Add", "New habit");
+  await choose("Add a routine or habit", "New habit");
   const d = "New habit";
   const name = field(d, "Name") as HTMLInputElement;
   const heard: string[] = [];

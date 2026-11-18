@@ -11,12 +11,15 @@ const STEPS = [
   { label: "Walk outside", detail: "Ten minutes in daylight", optional: true },
 ];
 
-function Steps(): ReactElement {
+/** `done` ticks the first n steps; `skipped` marks the rest as Skipped (a finished routine). */
+function Steps({ done = 0, skipped = false }: { done?: number; skipped?: boolean }): ReactElement {
   return (
     <>
-      {STEPS.map((s) => (
+      {STEPS.map((s, i) => (
         <RoutineItem
           key={s.label}
+          done={i < done}
+          skipped={skipped && i >= done}
           label={s.label}
           detail={s.detail}
           optional={s.optional}
@@ -36,7 +39,7 @@ export function RoutineCardSpecimen(): ReactElement {
           meta="07:00 · Every day"
           today="notStarted"
           todayLine="Not started today"
-          actions={<Button variant="primary">Start</Button>}
+          actions={<Button variant="quiet">Start</Button>}
           footer={<WellnessNote />}
         >
           <Steps />
@@ -47,10 +50,10 @@ export function RoutineCardSpecimen(): ReactElement {
           name="Deep Work Start"
           meta="09:00 · Weekdays"
           today="inProgress"
-          todayLine="2 of 5 done today"
+          todayLine="2 of 3 done today"
           actions={<Button variant="quiet">Continue</Button>}
         >
-          <Steps />
+          <Steps done={2} />
         </RoutineCard>
       </Frame>
       <Frame state="routine-card-finished-360" width={360} height={460}>
@@ -58,11 +61,10 @@ export function RoutineCardSpecimen(): ReactElement {
           name="Evening Shutdown, a long name that wraps onto a second line"
           meta="17:30 · Weekdays"
           today="finished"
-          todayLine="Done today, 4 of 5"
-          actions={<Button variant="quiet">Start</Button>}
+          todayLine="Done today, 2 of 3"
           footer={<WellnessNote />}
         >
-          <Steps />
+          <Steps done={2} skipped />
         </RoutineCard>
       </Frame>
       <Frame state="routine-card-bare-900" width={900} height={160}>

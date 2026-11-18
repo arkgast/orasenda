@@ -97,12 +97,32 @@ test("empty_slots_render_nothing", () => {
 });
 
 test("routine_accent_sits_on_the_edge_only", () => {
-  const { container } = render(<RoutineCard name="R" today="finished" />);
+  const { container } = render(<RoutineCard name="R" today="notStarted" />);
   const card = container.querySelector("[data-slot='routine-card']");
   expect(card?.className).toContain("border-s-routine");
   expect(card?.className).not.toMatch(/\bbg-routine/);
   expect(container.innerHTML).not.toMatch(/\btext-routine/);
 });
+
+const edge = (today: string) => {
+  const { container } = render(<RoutineCard name="R" today={today as "finished"} />);
+  return container.querySelector("[data-slot='routine-card']")?.className ?? "";
+};
+
+test("finished_card_has_break_edge", () => {
+  const cls = edge("finished");
+  expect(cls).toContain("border-s-break");
+  expect(cls).not.toContain("border-s-routine");
+});
+
+test.each(["inProgress", "notStarted", "bogus"])(
+  "in_progress_and_unknown_keep_routine_edge: %s",
+  (today) => {
+    const cls = edge(today);
+    expect(cls).toContain("border-s-routine");
+    expect(cls).not.toContain("border-s-break");
+  },
+);
 
 test("copy_has_no_loss_words", () => {
   const { container } = render(

@@ -239,7 +239,7 @@
     "fg": "break",
     "bg": "surface",
     "kind": "mark",
-    "where": "T3: TimerRing break arc, TimerStrip break fill"
+    "where": "T3: TimerRing break arc, TimerStrip break fill; RoutineCard finished edge"
   },
   {
     "fg": "amber",
@@ -491,7 +491,7 @@
     "fg": "break",
     "bg": "surface-raised",
     "kind": "mark",
-    "where": "T5: FloatingTimer break half circle shape on its own fill"
+    "where": "T5: FloatingTimer break half circle shape on its own fill; RoutineCard finished edge"
   },
   {
     "fg": "focus",

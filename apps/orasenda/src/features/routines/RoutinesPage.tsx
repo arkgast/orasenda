@@ -26,16 +26,6 @@ const LINES: Record<Exclude<Line, Notice | null>, string> = {
   startFailed: "That routine couldn't start. Your data is safe; try again in a moment.",
 };
 
-/**
- * The routine whose Start is the page's one primary action. Rust gives no "due" field and the
- * webview never reads the clock (ADR-011), so: the one in progress today, else the first one in
- * the person's order not started today. Null when every routine is done today.
- */
-export function primaryStart(view: RoutinesView): string | null {
-  const open = view.routines.find((r) => r.today === "inProgress");
-  return (open ?? view.routines.find((r) => r.today === "notStarted"))?.id ?? null;
-}
-
 /** The habit whose grid shows the page's one legend: the first grid on the page. */
 function legendFor(view: RoutinesView, expanded: ReadonlySet<string>): string | null {
   const routine = view.routines.find((r) => expanded.has(r.id) && r.habits.length > 0);
@@ -173,7 +163,7 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
     </Button>
   ) : view ? (
     <ActionMenu
-      label="Add"
+      trigger="add"
       heading="Add"
       items={[
         { id: "routine", label: "New routine", kind: "link" },
@@ -216,7 +206,6 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
                 }
                 legendFor={legendFor(view, expanded)}
                 onStart={start}
-                primaryStart={primaryStart(view)}
                 onMore={more("routine")}
                 onStepMore={more("habit")}
               />

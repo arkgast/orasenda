@@ -74,7 +74,16 @@ const routine = (patch: Partial<RoutineView_Serialize>): RoutineView_Serialize =
 
 const OVERVIEW: RoutinesView_Serialize = {
   routines: [
-    routine({}),
+    routine({
+      habits: [
+        habit("habit-1", "Drink a glass of water", {
+          anchorLine: "After I wake up, I will drink a glass of water.",
+          doneToday: true,
+        }),
+        habit("habit-2", "Get outdoor light: 5–10 min, 15–20 if overcast, 30+ if heavily overcast"),
+        habit("habit-3", "Electrolytes", { optional: true }),
+      ],
+    }),
     routine({
       id: "routine-2",
       name: "A routine with a very long name that has to wrap inside its card",
@@ -85,6 +94,35 @@ const OVERVIEW: RoutinesView_Serialize = {
       note: null,
       today: "notStarted",
       todayLine: "Not started today",
+    }),
+    // Finished with every step done, then finished with one step not done (shown as Skipped).
+    routine({
+      id: "routine-3",
+      name: "Evening Shutdown",
+      time: "17:30",
+      timeOfDay: 1050,
+      wellness: false,
+      note: null,
+      habits: [
+        habit("habit-31", "Write tomorrow's list", { routineId: "routine-3", doneToday: true }),
+        habit("habit-32", "Close the laptop", { routineId: "routine-3", doneToday: true }),
+      ],
+      today: "finished",
+      todayLine: "Done today, 2 of 2",
+    }),
+    routine({
+      id: "routine-4",
+      name: "Wind-down",
+      time: "21:30",
+      timeOfDay: 1290,
+      wellness: false,
+      note: null,
+      habits: [
+        habit("habit-41", "Dim the lights", { routineId: "routine-4", doneToday: true }),
+        habit("habit-42", "Read for ten minutes", { routineId: "routine-4" }),
+      ],
+      today: "finished",
+      todayLine: "Done today, 1 of 2",
     }),
   ],
   habits: [

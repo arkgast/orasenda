@@ -1,12 +1,12 @@
-import { Button, PopoverMenu, type PopoverMenuItem } from "@orasenda/ui";
+import { Button, Icon, IconButton, PopoverMenu, type PopoverMenuItem } from "@orasenda/ui";
 import { type ReactElement, useId, useRef, useState } from "react";
 
 type Props = {
   /** The trigger's id, so focus can come back to it after a move or an Undo (`moreId`). */
   id?: string;
-  /** The visible word on the trigger: "More" or "Add". */
-  label: string;
-  /** The trigger's spoken name when the word repeats on the page: "More for Stretch". */
+  /** `more` is an icon button; `add` is the primary Add button with its plus and the word. */
+  trigger: "more" | "add";
+  /** The icon trigger's spoken name and tooltip: "More actions for Stretch". */
   name?: string;
   heading: string;
   items: PopoverMenuItem[];
@@ -14,23 +14,27 @@ type Props = {
 };
 
 /** A quiet button that opens a `PopoverMenu` of actions. The host owns what each row does. */
-export function ActionMenu({ id, label, name, heading, items, onSelect }: Props): ReactElement {
+export function ActionMenu({ id, trigger, name, heading, items, onSelect }: Props): ReactElement {
   const anchor = useRef<HTMLSpanElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
+  const triggerProps = {
+    id,
+    "aria-haspopup": "menu" as const,
+    "aria-expanded": open,
+    "aria-controls": open ? menuId : undefined,
+    onClick: () => setOpen((was) => !was),
+  };
   return (
     <span ref={anchor} className="app-routines-menu">
-      <Button
-        id={id}
-        variant="quiet"
-        aria-label={name}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((was) => !was)}
-      >
-        {label}
-      </Button>
+      {trigger === "more" ? (
+        <IconButton {...triggerProps} label={name ?? "More actions"} icon={<Icon name="more" />} />
+      ) : (
+        <Button {...triggerProps} variant="primary" aria-label="Add a routine or habit">
+          <Icon name="plus" />
+          Add
+        </Button>
+      )}
       {open ? (
         <PopoverMenu
           id={menuId}

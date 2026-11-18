@@ -31,7 +31,7 @@ test("empty_state_offers_a_template_first_and_making_your_own", async () => {
   expect(primary).toHaveLength(1);
   expect(primary[0]).toHaveTextContent("Start from a template");
   expect(screen.getByRole("button", { name: "Make your own" })).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Add" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Add a routine or habit" })).toBeNull();
 });
 
 test("template_dialog_lists_the_five_templates_with_steps_and_the_wellness_note", async () => {
@@ -72,7 +72,7 @@ test("a_refused_add_keeps_the_dialog_open_with_a_plain_line", async () => {
       throw "full";
     },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add a routine or habit" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: /From a template/ }));
   await settle();
   // The live line is in place, empty, before anything fails, so VoiceOver hears the text arrive.
@@ -147,7 +147,7 @@ test("an_empty_template_list_reads_as_a_failure_and_can_be_asked_again", async (
 
 test("add_menu_offers_new_routine_a_template_and_new_habit", async () => {
   await renderRoutines();
-  const add = screen.getByRole("button", { name: "Add" });
+  const add = screen.getByRole("button", { name: "Add a routine or habit" });
   expect(add).toHaveAttribute("aria-haspopup", "menu");
   fireEvent.click(add);
   const menu = await screen.findByRole("menu");
@@ -174,11 +174,11 @@ test("cancel_closes_the_dialog_without_writing", async () => {
 
 test("opening_the_templates_clears_the_removed_row", async () => {
   const { container } = await renderRoutines();
-  fireEvent.click(screen.getByRole("button", { name: "More for Stretch" }));
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Stretch" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
   await settle();
   expect(statusText(container)).toContain("Removed Stretch.");
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add a routine or habit" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "From a template…" }));
   await settle();
   expect(statusText(container)).toBe("");
