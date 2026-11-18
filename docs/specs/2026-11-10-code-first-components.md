@@ -10,7 +10,7 @@
 - **One build tool.** Vite 8 builds the app, `@orasenda/ui`, the artifact's classic `bundle.js` and its React 19 library scripts. `design/system/` becomes a git-ignored build output (`just design-system`).
 - **Tokens stay the one source of values.** `tokens.json` moves to `packages/tokens/`. A closed Tailwind `@theme` is generated from it, so a class can only name a token; arbitrary values fail lint.
 - **The minimum macOS rises to 15.8.2.** The macOS 13 engine table in the P1 Components spec no longer applies.
-- **Shape: one foundation PR, then one PR per component in three dependency waves, at most three at once.** Behaviour, WebKit sizes and contrast stay exactly as they are; only test selectors change. T5–T7 of P1 Components resume in TSX after the wave they depend on.
+- **Shape: one foundation PR, then one PR per component in three dependency waves, at most three at once.** Behaviour, sizes and contrast stay exactly as they are; only test selectors change. T5–T7 of P1 Components resume in TSX after the wave they depend on.
 
 ## Change in a nutshell
 Today `Button` is hand-written JavaScript inside the artifact, copied into the repo byte for byte:
@@ -66,7 +66,7 @@ The design system is edited by hand in the artifact and copied into `design/syst
    - **Fluid between steps.** Type, spacing, gaps and the timer scale smoothly with `clamp(<min token>, <fluid token>, <max token>)`, where the fluid tokens (a `fluid` group, preferred terms in `cqi`) are added in the foundation. Steps change layout; fluid tokens change size.
    - **Fixed on purpose:** only hit targets (`hit-min`, `hit-floor`, `round` 52×52 from `design/system/README.md` "Layout and hit targets") and 1px borders.
 6. **The artifact builds and loads.** `just design-system` writes `design/system/` (git-ignored). Its `components/bundle.js` is one classic IIFE whose line 1 is the `@ds-bundle` header, which reads `window.React` and `window.ReactDOM` and assigns `window.Orasenda` with `Object.assign(window.Orasenda || {}, …)`. CI builds it into a temp dir and checks that it loads as a classic script after `components/lib/react.js` and `react-dom.js` and renders every runtime export.
-7. **Behaviour unchanged; sizes may respond.** Behaviour, copy, colour and contrast stay the same, and jsdom tests keep their expectations with only selectors changed. Sizes may now differ by screen: the WebKit specs keep every fit, hit-target, focus, keyboard, reduced-motion and accessibility-tree check at every size they test, and gain a phone case (390×844) and an `xl` case (1440×900, already in the README's list). An exact-size expectation (a diameter, a font size) becomes a range from its min and max tokens. A PR that changes an expectation names it and why.
+7. **Behaviour unchanged; sizes may respond.** Behaviour, copy, colour and contrast stay the same, and jsdom tests keep their expectations with only selectors changed. Sizes may now differ by screen: the tests keep every hit-target, focus, keyboard, reduced-motion and accessibility-tree check. An exact-size expectation (a diameter, a font size) becomes a range from its min and max tokens. A PR that changes an expectation names it and why.
 8. **macOS 15.8.2.** `tauri.conf.json` `bundle.macOS.minimumSystemVersion` is `15.8.2`, and the Vite build target is the Safari engine that macOS 15.8.2 ships (cited in the foundation PR).
 9. **Docs.** CLAUDE.md, CONTEXT.md, the P1 Components spec and ADR-015 say code-first (done in this spec's PR).
 10. **Published.** After every merge to `main` that changes `packages/ui` or `packages/tokens`, the controller (or an opus agent) runs `just design-system` from `main` and publishes the result to the live artifact. The first code-first publish happens only after v34 is saved under `design/reviews/`.
@@ -96,7 +96,7 @@ No product entities. The units are build artifacts and migration steps.
 
 - **Component file:** `<kebab>.tsx`, exporting one public component (PascalCase, as in the inventory) and its `<Name>Props`. Internal helpers it alone uses stay in the file. shadcn's generated part exports (`DialogContent`, `TooltipTrigger`, …) are file-internal unless a README names them as public.
 - **README:** `<kebab>.md`, the component's contract (was `design/system/components/<Name>/README.md`). It is source; the build copies it to `components/<Name>/README.md`.
-- **Specimen:** `<kebab>.specimen.tsx`, only for the [14 listed components](#specimens) (16 after T5 and T6). One file is both the artifact's `components/<Name>/preview.html` (compiled by Vite) and the page the WebKit specs and `just specimens` load. Replaces `packages/ui/specimens/<Name>.tsx` and the specimen entry in CONTEXT.md.
+- **Specimen:** `<kebab>.specimen.tsx`, only for the [14 listed components](#specimens) (16 after T5 and T6). One file is both the artifact's `components/<Name>/preview.html` (compiled by Vite) and the page `just specimens` loads. Replaces `packages/ui/specimens/<Name>.tsx` and the specimen entry in CONTEXT.md.
 - **Static card:** the generated `preview.html` for a component with no specimen: its name, the first paragraph of its README and its props table, in both themes.
 - **Legacy bundle:** `src/legacy.js` (today's `bundle.js` as an ES module that exports its functions instead of assigning `window.Orasenda`), `src/legacy.css` (today's `bundle.css`) and `src/legacy.d.ts` (today's `index.d.ts`). Temporary; they keep `bundle.js` and `index.d.ts` complete while the waves run.
 - **Wave:** a set of components whose component dependencies are all migrated already. A component's PR may start once every component it depends on has merged.
@@ -185,7 +185,7 @@ The `chart-*` variables are omitted. Orasenda-only colours (`break`, `routine`, 
 4. The existing `ui-css` staleness step and `components.css`/`components.d.ts` are removed in the foundation PR (their job moves to steps 1–3).
 
 ### Inventory
-Dependencies are other components and shared helpers each one calls in today's `bundle.js`. Wave 1 depends on nothing but the foundation (`cn`, `glyphs.tsx`, the theme). "shadcn base" is the `shadcn add` item the file starts from; "—" means plain TSX on Tailwind. "Specimen" marks the 14 with a WebKit page.
+Dependencies are other components and shared helpers each one calls in today's `bundle.js`. Wave 1 depends on nothing but the foundation (`cn`, `glyphs.tsx`, the theme). "shadcn base" is the `shadcn add` item the file starts from; "—" means plain TSX on Tailwind. "Specimen" marks the 14 with a specimen page.
 
 | Component | Depends on | shadcn base (Radix) | Wave | Specimen | First consumer |
 |---|---|---|---|---|---|
@@ -227,17 +227,17 @@ Type-only exports in `src/types.ts`: every `*NextProps` today's `index.d.ts` dec
 After the waves: **T5** (#172: `FullScreenFocus` redesign, `FloatingTimer` from v34, owns #183) resumes after wave 3; **T6** (#173: `CommandPalette` redesign, `CapturePad` copy, `ShortcutRecorder`) after wave 3; **T7** (#174: `Icon`, the approved glyph sheet, `NavRail` roving and rail icons, `StartButton` on `Icon`) after wave 2 (it needs `NavRail` and `StartButton`); **#175** closes out after T5–T7 and deletes the legacy files if a wave left any.
 
 ### Specimens
-Chosen because a WebKit spec measures them now or will in T5–T7 (P1 Components Testing strategy):
-- the seven with a layout spec today: `Kbd`, `IconButton`, `Tooltip`, `StartButton`, `TimerRing`, `TimerStrip`, `PopoverMenu` (the seed page, `seed.spec.ts`, folds into `TimerRing`'s specimen);
+Chosen because their layout is worth showing on a page (P1 Components Testing strategy):
+- the seven in use today: `Kbd`, `IconButton`, `Tooltip`, `StartButton`, `TimerRing`, `TimerStrip`, `PopoverMenu` (the seed page folds into `TimerRing`'s specimen);
 - seven more from the migration: `NavRail` (T7 roving focus), `PageFrame` (the Settings font check at 900×600 and 1440×900), `MenuBarTimer` (inside the floater), `Dialog` (layers over it), `CapturePad` and `CommandPalette` (T6 cases), `FullScreenFocus` (T5 cases);
 - then `FloatingTimer` (T5) and `ShortcutRecorder` (T6): 16 by #175.
 
 Everything else gets a static card.
 
 ### Per-component pipeline (one PR each)
-1. **Migrate.** Start from `shadcn add <base>` if the inventory names one, then rewrite it to the README contract and today's `bundle.js` behaviour; move the README to `<kebab>.md`, the props from `legacy.d.ts` inline, the tests from `packages/ui/<name>.test.tsx` to `<kebab>.test.tsx` (roles first, `data-slot` second), and the specimen if listed. Make it responsive (goal 5): container variants for layout changes, fluid tokens for sizes, fixed only for hit targets and borders. Add the phone and `xl` cases to its WebKit spec if it has one. Remove the name from `legacy.js`'s exports (and the function and CSS if nothing legacy still uses them).
+1. **Migrate.** Start from `shadcn add <base>` if the inventory names one, then rewrite it to the README contract and today's `bundle.js` behaviour; move the README to `<kebab>.md`, the props from `legacy.d.ts` inline, the tests from `packages/ui/<name>.test.tsx` to `<kebab>.test.tsx` (roles first, `data-slot` second), and the specimen if listed. Make it responsive (goal 5): container variants for layout changes, fluid tokens for sizes, fixed only for hit targets and borders. Remove the name from `legacy.js`'s exports (and the function and CSS if nothing legacy still uses them).
 2. **Review against the design, test, fix.** Opus reviews against the README, the approved canvases named in the P1 Components spec, and the first consumer's acceptance (conventions, "first consumer"). One fix round.
-3. **Swap into the app.** Update app selectors and `app.css` rules that target the component's `os-*` classes; run `./scripts/ci.sh` (every test, the WebKit specs and contrast).
+3. **Swap into the app.** Update app selectors and `app.css` rules that target the component's `os-*` classes; run `./scripts/ci.sh` (every test and contrast).
 4. **After merge:** the controller publishes from `main`.
 
 ### Foundation PR
@@ -255,7 +255,7 @@ One PR before any component. **First step, before anything else:** prove that th
 - **Mixed bundle.** Between waves, `bundle.js` mixes TSX components and legacy ones. A legacy component rendered inside a migrated one (or the reverse) keeps working because both read the same tokens; their CSS does not overlap (`os-*` classes vs Tailwind utilities). The `design-system-check` renders every export, so a broken mix fails CI.
 - **Radix replaces hand-written placement.** `Tooltip` and `PopoverMenu` today place a panel by script and render it inside the nearest open `<dialog>` (P1 Components, Engine baseline). On Radix, placement is Radix's Popper (flip and shift in the viewport) and the panel portals into the open `Dialog`'s content when there is one. The P1 cases stay: a Tooltip inside an open `Dialog` is visible over it; the menu inside an open `Dialog` is placed against its trigger; Esc closes only the topmost layer; Tab follows the README.
 - **Preflight is off while the legacy bundle exists.** Tailwind's base reset would restyle the legacy `os-*` components and `app.css` (buttons, headings, `hr`, borders). `src/styles.css` imports only Tailwind's theme and utilities layers, plus a small base layer scoped to `[data-slot]` with the resets shadcn's classes assume (`border-style: solid`, `border-width: 0`, box-sizing, `margin: 0` on the element itself). #175 decides whether to turn Preflight on once the legacy files are gone, as its own change with its own screenshots. Superseded: legacy deleted in R2 (PR #287), Preflight on in R3 (PR #290).
-- **Layering across legacy and Radix.** `Dialog` merges before `Tooltip` and `PopoverMenu` (wave 2 order). Until the legacy modal shell is gone (after wave 3), every Radix layer (`Tooltip`, `PopoverMenu`, later `CommandPalette`'s list) portals into the nearest open layer: an open Radix `Dialog`'s content if there is one, otherwise the nearest native `dialog[open]` (still in the top layer), otherwise `body`. One shared helper in `src/lib/layer.ts` returns that container, and Esc closes only the topmost layer, legacy or Radix. The P1 cases (`tooltip.spec.ts`, `popoverMenu.spec.ts` inside an open dialog) keep passing against both kinds; their `dialog[open]` selectors become `role="dialog"`.
+- **Layering across legacy and Radix.** `Dialog` merges before `Tooltip` and `PopoverMenu` (wave 2 order). Until the legacy modal shell is gone (after wave 3), every Radix layer (`Tooltip`, `PopoverMenu`, later `CommandPalette`'s list) portals into the nearest open layer: an open Radix `Dialog`'s content if there is one, otherwise the nearest native `dialog[open]` (still in the top layer), otherwise `body`. One shared helper in `src/lib/layer.ts` returns that container, and Esc closes only the topmost layer, legacy or Radix. The P1 tooltip and popover-menu tests inside an open dialog keep passing against both kinds; their `dialog[open]` selectors become `role="dialog"`.
 - **Native `<dialog>` to Radix Dialog.** Expected behaviour stays: focus moves in and returns to the trigger, the background is inert, Esc and the scrim close per the README, `Dialog destructive` keeps its safe initial focus. Tests that queried `dialog[open]` query `role="dialog"`/`"alertdialog"`. The `HTMLDialogElement` shims in `test-setup.ts` go when `Dialog` migrates.
 - **jsx-runtime in the classic bundle.** `react/jsx-runtime` is bundled into `bundle.js`, so the artifact declares only `react` and `react-dom`. If the foundation finds it pulls React internals that differ from `window.React`, it externalizes it to `window.React` instead (the self-built `react.js` then also assigns `jsx`, `jsxs`, `Fragment`) and records that in its PR.
 - **Strict shortcuts in tests.** `window.Orasenda.strictShortcuts` (`test-setup.ts`) keeps working: `describeShortcut` reads it from `window.Orasenda` in both the library and the bundle.
@@ -273,7 +273,6 @@ No product data. Repository moves, done in the foundation PR with `git mv` so hi
 
 ## Testing strategy
 - **Per component (written first):** move its existing jsdom tests and keep every expectation; add cases only where the README names behaviour today's tests miss. Queries use roles and accessible names first, `data-slot` second, never `os-*` classes.
-- **WebKit:** the existing `verification/layout/*.spec.ts` load `<kebab>.specimen.tsx` pages; their sizes, fit, hit-target, focus-ring, keyboard, reduced-motion and `toMatchAriaSnapshot` expectations stay. New specimens get the same case list from P1 Components Testing strategy.
 - **Contrast:** `verification/contrast.py` reads `packages/tokens/tokens.json`; the declared pairs are unchanged.
 - **New checks, each shown failing on a seeded case in the PR that adds it:**
   - `createElement` in `src/` (guard test);
@@ -325,7 +324,7 @@ Each component keeps its tests green on its own, the review fits one README, and
 They change the components this migration moves. Writing them in hand-written JS first would be migrated again a week later.
 
 ### Why only about 15 specimens?
-A specimen costs a page and its upkeep; it pays where WebKit measures layout. Other components are checked in jsdom and shown as a static card.
+A specimen costs a page and its upkeep; it pays where layout needs a page. Other components are checked in jsdom and shown as a static card.
 
 ## Open questions
 None at approval time. See the author's calls under Decisions.

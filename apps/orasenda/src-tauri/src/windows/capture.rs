@@ -10,8 +10,8 @@ pub(crate) const CAPTURE: &str = "capture";
 
 // The `panel-width` token (packages/tokens/tokens.json), in points; a test reads the file.
 pub(crate) const WIDTH: u32 = 420;
-/// The window's height. The pad's states all fit inside it (`verification/layout/captureWindow.spec.ts`
-/// measures them); the page cannot ask Rust to resize, because the capability grants no window command.
+/// The window's height. The pad's states all fit inside it; the page cannot ask Rust to resize,
+/// because the capability grants no window command.
 pub(crate) const HEIGHT: u32 = 520;
 
 /// What VoiceOver hears after a save (the pad closes, so it cannot say this itself).

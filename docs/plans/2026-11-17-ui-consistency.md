@@ -18,7 +18,7 @@ Design-system tasks (U2a, U2b, U3) come before the screens (U4, U5). U4 also own
 | **U2b** (#721) | `Button` `variant="inline"` and `size="row"`; their call sites | U2a | 2 |
 | **U3** (#722) | Glyphs `more` and `plus`; read-only `RoutineItem` done and Skipped | U2a | 2 |
 | **U4** (#723) | Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge | U3 | 3 |
-| **U5** (#724) | Board: + Add task, header-gap check | U3 | 3 |
+| **U5** (#724) | Board: + Add task and the header gap | U3 | 3 |
 | **U6** (#725) | `PageFrame` and `ScrollRegion` `width="content"`; Routines, Inbox and Review centred; Settings centred | U4 | 4 |
 
 **Controller steps** (not sonnet tasks):
@@ -46,7 +46,7 @@ Design-system tasks (U2a, U2b, U3) come before the screens (U4, U5). U4 also own
 ## Impact
 - **U2a changes `Button` and `IconButton`, which every screen uses.**
   - Removing `round` is a breaking type change. Its two callers (`features/today/Controls.tsx:62`, `full-screen-focus.tsx:264`) are updated in the same PR.
-  - The existing `button`, `icon-button`, `start-button`, `floating-timer`, `full-screen-focus` and `timerRing` / `fullScreenFocus` / `iconButton` layout tests are the regression net.
+  - The existing `button`, `icon-button`, `start-button`, `floating-timer` and `full-screen-focus` component tests are the regression net.
   - Rollback is a revert.
 - **U6 changes `PageFrame` and `ScrollRegion`.** Both props are optional and the defaults render as today, so Board, Settings and every other `ScrollRegion` user are untouched unless they opt in. Calendar doesn't use `PageFrame`.
 - **No schema, IPC or permission change.**
@@ -89,7 +89,6 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
 - Owns:
   - `packages/ui/src/components/ui/button.{tsx,md,test.tsx,specimen.tsx}` (the radius only);
   - `icon-button.{tsx,md,test.tsx,specimen.tsx}`, including the `icon-button-round` specimen at `icon-button.specimen.tsx:15,21`;
-  - `verification/layout/iconButton.spec.ts` (`:13-19,48,71`);
   - `day-picker.{tsx,md,test.tsx}` (`day-picker.md:3`) and its specimen if present;
   - `full-screen-focus.tsx` (`:264` `size="ring"`; the "round" comments at `:44,50`), `full-screen-focus.md` (`:17-19`) and `full-screen-focus.actions.test.tsx` (`:35,130`, `[data-size=round]` becomes `[data-size=ring]`);
   - `start-button.md`;
@@ -112,7 +111,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - [ ] `button.md` drops "(pill, `focus` fill)".
   - [ ] `start-button.md` and `floating-timer.md` say "Start button" instead of "Start pill".
   - [ ] `grep -rn "round\"\|data-size=round\|icon-button-round" packages apps verification` finds no IconButton size use.
-  - [ ] Every existing test passes, including the WebKit layout run, and the hit targets are unchanged.
+  - [ ] Every existing test passes and the hit targets are unchanged.
 - Tests first:
   - `every_variant_is_rounded_md` (button);
   - `ring_size_is_round_control_lg` (icon-button, renamed from the round case);
@@ -154,7 +153,6 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
 - Depends on: U2a (README, `icon-button.specimen.tsx`)
 - Owns:
   - `packages/ui/src/components/ui/icon.{tsx,md,test.tsx}` (and its specimen if present);
-  - `verification/layout/icon.spec.ts` (`:18`, the glyph count 25 becomes 27);
   - `inbox-row.tsx` (`:103` glyph only) and `inbox-row.md` if it names the glyph;
   - `task-card.tsx` (`:165` glyph only) and `task-card.md` if it names the glyph;
   - `icon-button.specimen.tsx` and `popover-menu.specimen.tsx` (`menu` becomes `more` where it stands for More actions);
@@ -205,10 +203,8 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - `HabitList.tsx`;
   - `RoutinesPage.tsx` (the header primary, removal of `primaryStart`);
   - `routines.css`, only if the step grid needs to change for the icon trigger;
-  - `apps/orasenda/src/dev/layout/scenarios/routines.ts` (`:48`, every habit has `doneToday: false` today): add a finished routine with every step done, a finished routine with one step not done, and a routine in progress with some steps done, inside the existing scenario's data;
   - the routines tests whose names change from "More for X" to "More actions for X": `RoutinesPage.overview.test.tsx`, `RoutinesPage.writes.test.tsx`, `RoutinesPage.templates.test.tsx`, `useUndoRemove.test.tsx`, `HabitEditor.test.tsx` (`:96-235`) and `RoutineEditor.test.tsx` (`:27,212`);
   - `RunView.test.tsx` (one new assertion).
-- Touches: `scenarios/index.ts` and the `NAMES` list in `src/dev/layout/scenarios.test.ts`, only if a new scenario name is needed (append; keep both sides on conflict).
 - Interfaces:
   - Consumes: `Icon name="more" | "plus"` (U3), `RoutineItem readOnly done skipped` (U3).
   - Produces: `ActionMenu({ id?, trigger: "more" | "add", name?, heading, items, onSelect })`.
@@ -242,8 +238,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
 - Depends on: U3
 - Owns:
   - `apps/orasenda/src/features/board/BoardPage.tsx` (the header primary, `:235-240`);
-  - `apps/orasenda/src/features/board/board.css`, only if extra spacing is found;
-  - a new case in `verification/layout/board.spec.ts`.
+  - `apps/orasenda/src/features/board/board.css`, only if extra spacing is found.
 - Touches: the Board tests that query the "Add task" button by role and name; the name is unchanged, so they should pass as is.
 - Interfaces:
   - Consumes: `Icon name="plus"` (U3).
@@ -253,13 +248,12 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - [ ] If the measured gap is larger, the extra spacing is removed with tokens only, and the PR names what it was. If it already holds, the PR says the gap is the reserved status row (spec Decision 6) and changes no CSS.
   - [ ] Columns keep their `column-width` / `column-wide-width` caps and stay left-aligned.
 - Tests first:
-  - `add_task_has_plus_glyph_and_name` (BoardPage);
-  - `board_header_to_columns_gap_within_contract` (layout).
+  - `add_task_has_plus_glyph_and_name` (BoardPage).
 
 ### U6 (#725): Content width: `PageFrame` and `ScrollRegion` `width="content"`; Settings centred
 - Priority: 2
 - Kind: ui (design system + app)
-- Depends on: U4 (`RoutinesPage.tsx`, `routines.css`, the routines scenario); U3 (README)
+- Depends on: U4 (`RoutinesPage.tsx`, `routines.css`); U3 (README)
 - Owns:
   - `packages/ui/src/components/ui/page-frame.{tsx,md,test.tsx,specimen.tsx}`;
   - `packages/ui/src/components/ui/scroll-region.{tsx,md,test.tsx}` (and its specimen if present);
@@ -268,8 +262,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - `apps/orasenda/src/features/routines/RoutinesPage.tsx` (the `width` props only) and `routines.css` (drop `max-inline-size` at `:15` and `padding-inline-end` at `:16`);
   - `apps/orasenda/src/features/inbox/InboxPage.tsx` (the `width` props) and `inbox.css` (drop `:12` and `:15`);
   - `apps/orasenda/src/features/review/ReviewPage.tsx` (the `width` props) and `review.css` (drop `max-inline-size` at `:15` only; `:134` is the shutdown flow, out of scope);
-  - `apps/orasenda/src/styles/app.css` (`.settings-content` gains `margin-inline: auto`);
-  - a new `verification/layout/contentWidth.spec.ts`.
+  - `apps/orasenda/src/styles/app.css` (`.settings-content` gains `margin-inline: auto`).
 - Touches: none.
 - Interfaces:
   - Produces: `PageFrameProps.width?: "full" | "content"`, `ScrollRegionProps.width?: "full" | "content"`.
@@ -285,17 +278,14 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
     - R.right = B.right − 4 ± 1 and R.left = B.left + 4 ± 1 (the region stays full width; the scrollbar is at the window's edge);
     - (C.left − (R.left + 4)) and ((R.right − 4 − scrollbar-size) − C.right) differ by at most 1 (centred);
     - the header's primary (where there is one) has its right edge within 1px of H.right, and the first card or row has its right edge within 1px of C.right;
-    - `smallTargets` is empty, and there is no page scroll.
+    - every target is at least `hit-min`, and there is no page scroll.
   - [ ] At 640 × 480 the column fills R's content box, and the first focusable item's focus ring is fully inside R's padding box.
   - [ ] Settings at 1440 × 900: `.settings-content` is centred within its `ScrollRegion`'s content box (gaps differ by at most 1px). The title, the index and the save line keep their positions.
   - [ ] `page-frame.md` and `scroll-region.md` document `width`: reading pages pass it to both; Board does not.
 - Tests first:
   - `content_width_wraps_header_and_status_in_inset_columns` (page-frame);
   - `content_width_wraps_children_in_centred_column` (scroll-region);
-  - `default_width_unchanged` (page-frame and scroll-region);
-  - `content_column_centred_and_header_aligned` (layout, three pages, two sizes);
-  - `narrow_window_column_fills_region_and_focus_ring_fits` (layout, 640 × 480);
-  - `settings_content_centred_in_pane` (layout).
+  - `default_width_unchanged` (page-frame and scroll-region).
 
 ## Coverage check
 | Spec requirement | Task(s) |
@@ -315,4 +305,3 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
 | Failure mode: an unknown `today` value | U4: `in_progress_and_unknown_keep_routine_edge` |
 | Failure mode: the Routines view fails to load | U4: `overview_has_one_primary_add` (no Add primary while the error shows) |
 | Failure mode: a long item name in "More actions for <name>" | U4: `more_trigger_is_icon_named_for_item` |
-| Failure mode: a window narrower than `content-width` | U6: `narrow_window_column_fills_region_and_focus_ring_fits` |

@@ -15,9 +15,9 @@ Models (token budget, owner 2026-11-10): F is planned and reviewed by opus and i
 The public surface of `@orasenda/ui` (`src/index.ts`) and `window.Orasenda` stays the same names and props as `design/system/components/index.d.ts` at ee533d9. F owns `src/index.ts`'s structure; each component task changes only its own export lines. `src/types.ts` (type-only exports) is created complete by F and edited only by T5 and T6 (moving `FullScreenFocusNextProps`, `CommandPaletteNextProps`, `CommandNext` onto their components).
 
 ## Impact
-- **Affected call paths / consumers:** every app import of `@orasenda/ui` (Today, Settings and its sections, App shell, overlay, DevPanel); app tests and `app.css` rules that select `os-*` classes; the WebKit specs in `verification/layout/`; `verification/contrast.py`; the live artifact.
+- **Affected call paths / consumers:** every app import of `@orasenda/ui` (Today, Settings and its sections, App shell, overlay, DevPanel); app tests and `app.css` rules that select `os-*` classes; `verification/contrast.py`; the live artifact.
 - **Data and migrations:** no product data. Files move with `git mv` in F (spec, Data & migrations). Expand → migrate → contract: F adds the TSX pipeline beside the legacy bundle (expand), C1–C32 move one component each (migrate), #175 deletes `src/legacy.*` (contract).
-- **Tests that must stay green:** `pnpm --filter @orasenda/ui test`, `pnpm --filter orasenda test` and `typecheck`, `just layout`, `just contrast`, `design-system-check`, the whole `./scripts/ci.sh` in every task.
+- **Tests that must stay green:** `pnpm --filter @orasenda/ui test`, `pnpm --filter orasenda test` and `typecheck`, `just contrast`, `design-system-check`, the whole `./scripts/ci.sh` in every task.
 - **Rollout and rollback:** every task is one squash commit; revert it and the legacy export it replaced comes back with it (the legacy code is deleted only when nothing uses it). The artifact is republished from `main` after the revert. v34 is kept under `design/reviews/05-v34/`.
 
 ## Dependency graph
@@ -41,7 +41,6 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
 | `packages/tokens/tokens.json` | F | T7 only if an icon size token is needed |
 | `packages/ui/src/guard.test.ts` | F | none |
 | `apps/orasenda/src/styles/app.css`, app tests | — | Each Cn edits only rules and selectors for its own `os-*` classes |
-| `verification/layout/<name>.spec.ts` | the component's Cn | — |
 | `verification/contrast-pairs.json` | — | Each Cn edits only its own entries (`where` names the component) |
 
 ## Tasks
@@ -49,7 +48,7 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
 ### F: Code-first foundation (#187)
 - Priority: 0
 - Depends on: none
-- Owns: `packages/ui/{package.json,tsconfig.json,vite.config.ts,components.json,design-system/**,src/index.ts,src/index.test.ts,src/types.ts,src/styles.css,src/lib/utils.ts,src/legacy.*,src/components/ui/glyphs.tsx,src/components/ui/*.md,src/guard.test.ts,src/design-system-check.test.ts}`, `packages/tokens/**`, `tools/biome/**`, `apps/orasenda/{package.json,vite.config.ts,src/main.tsx,src/App.tsx}`, `apps/orasenda/src-tauri/tauri.conf.json` (macOS minimum only), `justfile`, `.github/workflows/ci.yml`, `.gitignore`, `biome.json`, `pnpm-lock.yaml`, `verification/contrast.py`, `verification/contrast_test.py`, `verification/layout/playwright.config.ts`, `design/reviews/05-v34/**`; deletes `design/system/**` from git, `packages/ui/{build.ts,build.test.ts,index.ts,react-global.ts,components.css,components.d.ts}`
+- Owns: `packages/ui/{package.json,tsconfig.json,vite.config.ts,components.json,design-system/**,src/index.ts,src/index.test.ts,src/types.ts,src/styles.css,src/lib/utils.ts,src/legacy.*,src/components/ui/glyphs.tsx,src/components/ui/*.md,src/guard.test.ts,src/design-system-check.test.ts}`, `packages/tokens/**`, `tools/biome/**`, `apps/orasenda/{package.json,vite.config.ts,src/main.tsx,src/App.tsx}`, `apps/orasenda/src-tauri/tauri.conf.json` (macOS minimum only), `justfile`, `.github/workflows/ci.yml`, `.gitignore`, `biome.json`, `pnpm-lock.yaml`, `verification/contrast.py`, `verification/contrast_test.py`, `design/reviews/05-v34/**`; deletes `design/system/**` from git, `packages/ui/{build.ts,build.test.ts,index.ts,react-global.ts,components.css,components.d.ts}`
 - Touches: `packages/ui/specimens/**` (moved under `src/components/ui/` as `<kebab>.specimen.tsx` by the owning Cn; F only repoints the Vite server so they keep working), CLAUDE.md (no change expected)
 - Interfaces:
   - Produces: `cn(...inputs: ClassValue[]): string` (`src/lib/utils.ts`); `src/index.ts` exporting the 32 components, `describeShortcut`, `timerLayout` and the type-only exports; `@orasenda/ui/styles.css`; `packages/tokens/theme.css` (closed `@theme`, shadcn mapping, `--breakpoint-*`, `--container-*`, fluid utilities); `just design-system [--out <dir>]`; `just tokens` writing `tokens.css` and `theme.css`; glyph components `ModeShape`, `AlertGlyph`, `PlayGlyph` (`glyphs.tsx`, internal)
@@ -69,16 +68,16 @@ Can start immediately after F, in parallel (at most three at once): any of C1–
   - [ ] `contrast.py` reads `packages/tokens/tokens.json` and passes
   - [ ] `tauri.conf.json` `bundle.macOS.minimumSystemVersion` is `"15.8.2"`; the app's `build.target` names the matching Safari version, cited in the PR
   - [ ] Today, Settings and the placeholder pages load as their own chunks, preloaded and read with `use()` (not `React.lazy`, which suspends on first render and would delay the rail's focus move), inside an error boundary; `pnpm --filter orasenda test` and `typecheck` pass with no app test changed
-  - [ ] every existing `packages/ui` test and WebKit spec passes unchanged against the legacy exports
+  - [ ] every existing `packages/ui` test passes unchanged against the legacy exports
   - [ ] `./scripts/ci.sh` passes
 - Tests first: `design_system_bundle_header_lists_runtime_exports`, `design_system_bundle_loads_as_classic_script`, `design_system_renders_every_export`, `guard_rejects_create_element`, `guard_rejects_exclamation_in_copy`, `lint_rejects_arbitrary_tailwind_value`, `theme_is_closed`, `theme_maps_destructive_to_critical`, `fluid_tokens_stay_within_bounds`, `exports_match_previous_surface`
-- Notes: review by opus. No component is rewritten here. `glyphs.tsx` holds the three inline glyphs from `bundle.js` as TSX. Preflight off, `[data-slot]` base layer (spec, Behavior). The Python step and Playwright cache in `ci.yml` stay.
+- Notes: review by opus. No component is rewritten here. `glyphs.tsx` holds the three inline glyphs from `bundle.js` as TSX. Preflight off, `[data-slot]` base layer (spec, Behavior).
 
 ### Component tasks C1–C32 (#188–#219, one issue each)
 Every component task follows the spec's [per-component pipeline](../specs/2026-11-10-code-first-components.md#per-component-pipeline-one-pr-each):
 - Priority: 1 (wave 1), 2 (wave 2), 3 (wave 3)
 - Depends on: F and the tasks named in its row
-- Owns: `packages/ui/src/components/ui/<kebab>.{tsx,md,test.tsx}` (and `.specimen.tsx` when marked), its old tests `packages/ui/<camel>.test.tsx` (moved), its old specimen `packages/ui/specimens/<Name>.tsx` (moved), `verification/layout/<camel>.spec.ts` (when it has one)
+- Owns: `packages/ui/src/components/ui/<kebab>.{tsx,md,test.tsx}` (and `.specimen.tsx` when marked), its old tests `packages/ui/<camel>.test.tsx` (moved), its old specimen `packages/ui/specimens/<Name>.tsx` (moved)
 - Touches: its lines in `src/index.ts`, its blocks in `src/legacy.{js,css,d.ts}`, its entries in `verification/contrast-pairs.json`, app rules and test selectors for its `os-*` classes, `pnpm-lock.yaml` only if its row adds a dependency
 - Interfaces:
   - Consumes: `cn` (F), the components in its row's "Depends on" as exported from their `.tsx`
@@ -87,7 +86,6 @@ Every component task follows the spec's [per-component pipeline](../specs/2026-1
   - [ ] `<kebab>.tsx` exports `<Name>` and `<Name>Props`; `src/index.ts` exports it from there and not from `legacy.js`
   - [ ] its moved tests pass with only selectors changed (roles first, `data-slot` second, no `os-*`); any changed expectation is named in the PR
   - [ ] no size in the file is fixed except hit targets and 1px borders; layout changes use container variants (page components: viewport variants)
-  - [ ] if it has a WebKit spec: every case passes, plus 390×844 and 1440×900; exact sizes are min/max ranges
   - [ ] Biome reports no error in its files; the arbitrary-value lint and guards pass
   - [ ] `design-system-check` renders it; `./scripts/ci.sh` passes
   - [ ] light and dark screenshots attached (specimen, or the app screen that uses it)
@@ -117,7 +115,7 @@ Every component task follows the spec's [per-component pipeline](../specs/2026-1
 | C20 (#207) | `StartButton` (`start-button`) | 2 | C1, C3 | yes | | opus | `aria-keyshortcuts` from `singleKeys` |
 | C21 (#208) | `Tooltip` (`tooltip`) | 2 | C3, C16 | yes | | opus | portals through `layer.ts`; Esc topmost only |
 | C22 (#209) | `PopoverMenu` (`popover-menu`) | 2 | C3, C16 | yes | | opus | Radix DropdownMenu; Tab per README |
-| C23 (#210) | `TimerRing` (`timer-ring`) | 2 | C2 | yes | | opus | absorbs `seed.spec.ts`; diameter a range in [`timer-min-size`, `timer-full-size`] |
+| C23 (#210) | `TimerRing` (`timer-ring`) | 2 | C2 | yes | | opus | diameter a range in [`timer-min-size`, `timer-full-size`] |
 | C24 (#211) | `TimerStrip` + `timerLayout` (`timer-strip`, `src/lib/timer-layout.ts`) | 2 | C2 | yes | | opus | owns `src/lib/timer-layout.ts` and `timerLayout.test.tsx` |
 | C25 (#212) | `TaskCard` (`task-card`) | 2 | C2 | | | sonnet | |
 | C26 (#213) | `KanbanColumn` (`kanban-column`) | 2 | C2 | | | sonnet | |
@@ -130,7 +128,7 @@ Every component task follows the spec's [per-component pipeline](../specs/2026-1
 
 ### T5: Focus window and floater, in TSX (#172, owns #183)
 - Priority: 3. Depends on: C32, C31, C13, C24.
-- Owns: `full-screen-focus.*`, new `floating-timer.{tsx,md,test.tsx,specimen.tsx}`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts`; `src/types.ts` (removes `FullScreenFocusNextProps`). Touches `tooltip.tsx` and `popover-menu.tsx` (and their tests) for the two v34 fixes only: Tooltip `data-os-esc` and the PopoverMenu Tab fallback (C21 and C22 have merged by then).
+- Owns: `full-screen-focus.*`, new `floating-timer.{tsx,md,test.tsx,specimen.tsx}`; `src/types.ts` (removes `FullScreenFocusNextProps`). Touches `tooltip.tsx` and `popover-menu.tsx` (and their tests) for the two v34 fixes only: Tooltip `data-os-esc` and the PopoverMenu Tab fallback (C21 and C22 have merged by then).
 - Input: `design/reviews/05-v34/` (FullScreenFocus, FloatingTimer, Tooltip `data-os-esc`, PopoverMenu Tab fallback). Acceptance and tests: the P1 Components T5 block, with responsive sizes per the code-first spec. The issue body is updated to this re-cut.
 
 ### T6: Commands, capture and the shortcut recorder, in TSX (#173)
@@ -153,12 +151,11 @@ Every component task follows the spec's [per-component pipeline](../specs/2026-1
 | Goal 4 TSX only | F `guard_rejects_create_element` |
 | Goal 5 tokens only, responsive | F (theme, responsive tokens, lint); every Cn acceptance |
 | Goal 6 artifact builds and loads | F probe, `design-system-check` |
-| Goal 7 behaviour unchanged | every Cn (moved tests; phone and xl WebKit cases) |
+| Goal 7 behaviour unchanged | every Cn (moved tests) |
 | Goal 8 macOS 15.8.2 | F |
 | Goal 9 docs | done in #185 |
 | Goal 10 published | F step 5; every Cn after merge (controller) |
 | Failure mode: a legacy component rendered inside a migrated one | F `design_system_renders_every_export`, rerun by every Cn |
-| Failure mode: a Radix layer opened inside a legacy native `dialog[open]` | C21 `tooltip_inside_native_dialog_is_visible` |
 | Failure mode: Esc with a tooltip over an open dialog | C21 `escape_closes_only_topmost_layer` |
 | Failure mode: a stale generated `theme.css` | F `tokens` staleness step (seeded edit fails) |
 | Failure mode: an export removed from `legacy.js` while a legacy function still calls it | F `design_system_renders_every_export`, rerun by every Cn |

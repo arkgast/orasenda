@@ -31,7 +31,7 @@ Every task writes its tests first, keeps every file at 500 lines or fewer, passe
 
 **Design-system republish.** After I9 merges and after I10 merges, the controller (or an opus agent, never sonnet) runs `just design-system` from `main` and republishes the artifact with `"editing": "code"` (CLAUDE.md).
 
-IPC tasks regenerate `bindings.ts` (`just bindings`) and never hand-merge it. Append-only registration files may be shared and keep both sides on conflict: `crates/platform-macos/src/lib.rs` (mod and `pub use` lines), `apps/orasenda/src-tauri/src/commands/mod.rs`, `src-tauri/src/lib.rs`, `apps/orasenda/src-tauri/commands.list.rs`, `build.rs`, `capabilities/main.json`, `src-tauri/src/lib_tests.rs`, `shared/test/fixtures*`, `apps/orasenda/src/dev/layout/scenarios/index.ts` plus the `NAMES` list in `src/dev/layout/scenarios.test.ts`, `packages/ui/designSystem.test.ts` (recount exports, `docs/common-issues.md`), `packages/ui/src/index.ts`, the specimens registry (`packages/ui/specimens/registry.ts`), `packages/ui/design-system/README.md` (I9 and I10 each edit one line), root `Cargo.toml` (`[workspace.dependencies]`), `docs/common-issues.md`.
+IPC tasks regenerate `bindings.ts` (`just bindings`) and never hand-merge it. Append-only registration files may be shared and keep both sides on conflict: `crates/platform-macos/src/lib.rs` (mod and `pub use` lines), `apps/orasenda/src-tauri/src/commands/mod.rs`, `src-tauri/src/lib.rs`, `apps/orasenda/src-tauri/commands.list.rs`, `build.rs`, `capabilities/main.json`, `src-tauri/src/lib_tests.rs`, `shared/test/fixtures*`, `packages/ui/designSystem.test.ts` (recount exports, `docs/common-issues.md`), `packages/ui/src/index.ts`, the specimens registry (`packages/ui/specimens/registry.ts`), `packages/ui/design-system/README.md` (I9 and I10 each edit one line), root `Cargo.toml` (`[workspace.dependencies]`), `docs/common-issues.md`.
 
 ## Contract
 - **I1 owns** `orasenda_core::rank::spread(after: Option<&str>, n: usize) -> Vec<String>` and `orasenda_core::platform::import::{SourceAccess, ReminderItem, DueParts, RemindersSource, ThingsSource, ThingsReadError, UnbundledReminders}`, as the spec's Core section names them. `ReminderItem.id` is the origin key (the external id, else `local-<calendarItemIdentifier>`); I5 only prefixes `reminders:`.
@@ -53,7 +53,7 @@ IPC tasks regenerate `bindings.ts` (`just bindings`) and never hand-merge it. Ap
 - **Board internals (I5, I7a, I7b):** visibility only, no behaviour change. (I5) the limits and `split_note` in `board/check.rs`, with `pub(crate) mod check;` at `board/mod.rs:8`; (I7a) `columns::read` (`columns.rs:27`), `view::{due_label, stored_lane, Ctx}` (`view.rs:163`) and `pub(crate) mod columns; pub(crate) mod view;`; (I7b) `board::write` (`board/mod.rs:211`) and `service::Answer`. The board tests stay green.
 - **`Host` trait (I7a):** two methods with default bodies returning `None`, so the app host and the fakes compile before I8 wires them.
 - **`FilePicker` (I8):** a new required method; the fake (`src-tauri/src/lib_tests/data_files.rs:58`) and both `DialogPicker` impls (`file_picker.rs`, the mobile one at :79) change with it, and `just mobile` stays green.
-- **Components (I9, I10):** `Dialog` (task sheet, delete-data dialog), `EmptyState` (Inbox, Today, Board), `KanbanColumn` and `TaskCard` (Board). Every existing test, specimen and layout case of their consumers stays green.
+- **Components (I9, I10):** `Dialog` (task sheet, delete-data dialog), `EmptyState` (Inbox, Today, Board), `KanbanColumn` and `TaskCard` (Board). Every existing test and specimen of their consumers stays green.
 - **Dependencies (I3, I6):** `just service-boundary`, `just mobile` and the Windows advisory job stay green; non-macOS builds compile the platform crate empty (ADR-010).
 - **Rollout:** each PR is complete on its own; the import is reachable only once I11 lands, and drag only once I13 does.
 
@@ -241,7 +241,7 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
 - Priority: 1
 - Kind: ui
 - Depends on: none (follows the canvas pick on its issue; until one is recorded, B1)
-- Owns: `packages/ui/src/components/ui/import-source-picker.{tsx,md,test.tsx,specimen.tsx}`, `import-preview-list.{tsx,md,test.tsx,specimen.tsx}`, `dialog.{tsx,md,test.tsx,specimen.tsx}` (170, 249 test, 108 specimen), `empty-state.{tsx,md,test.tsx}` (45, 7, 40), `verification/layout/importSheet.spec.ts` (new).
+- Owns: `packages/ui/src/components/ui/import-source-picker.{tsx,md,test.tsx,specimen.tsx}`, `import-preview-list.{tsx,md,test.tsx,specimen.tsx}`, `dialog.{tsx,md,test.tsx,specimen.tsx}` (170, 249 test, 108 specimen), `empty-state.{tsx,md,test.tsx}` (45, 7, 40).
 - Touches: `packages/ui/src/index.ts` (110), `packages/ui/designSystem.test.ts` (338), `packages/ui/specimens/registry.ts`, `packages/ui/design-system/README.md` (the scrim line: the import sheet).
 - Interfaces: Produces the spec's props: `ImportSourcePicker { sources, reading?, onPick }`; `ImportPreviewList { label, items, onToggle, onSetAll, summary? }`; `Dialog.confirmLabel?`, `Dialog.confirmDisabledReason?` (`Dialog.loading` already exists, `dialog.tsx:42,160`); `EmptyState.secondaryAction?: { label, onAction }`.
 - Acceptance:
@@ -249,7 +249,7 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
   - [ ] `ImportPreviewList`: rows built from `Choice long` with `type="checkbox"`, in a `role="group"` named by `label`; one tab stop with ↑/↓, Home/End and Space; the count line ("12 of 14 selected") is not live; *Select all* or *Select none*, whichever applies; each row's name is its title and its description the meta and why lines; 500 rows render without a layout shift.
   - [ ] `Dialog` without `confirmLabel` renders no confirm; `confirmDisabledReason` disables the confirm with the reason linked; the task sheet and delete-data dialog tests stay green. `dialog.md`'s sheet line is amended as the spec says.
   - [ ] `EmptyState.secondaryAction` adds one ghost button after the quiet action; README amended.
-  - [ ] Both themes in the specimens; `just contrast` passes. `importSheet.spec.ts` opens an "Open the import sheet" case in `import-preview-list.specimen.tsx` (as `dialogSheet.spec.ts:15` does) at 1440×900, 900×600 and 640×480: no page scroll, list scrolls, actions pinned, hit-min rows, a visible focus ring.
+  - [ ] Both themes in the specimens; `just contrast` passes. The import sheet at 1440×900, 900×600 and 640×480: no page scroll, list scrolls, actions pinned, hit-min rows, a visible focus ring.
 - Tests first: `source_picker_roves_and_picks`, `source_picker_disabled_reason_described`, `preview_list_one_tab_stop`, `preview_list_space_toggles`, `preview_list_select_all_none`, `preview_list_names_and_descriptions`, `dialog_without_confirm`, `dialog_confirm_disabled_reason`, `empty_state_secondary_action`.
 - Notes: no new dependency. Recount the exports after a rebase (`docs/common-issues.md`).
 
@@ -258,13 +258,13 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
 - Kind: ui
 - Depends on: #580 (Board polish P6) (follows the canvas pick on its issue; until one is recorded, C1)
 - Owns: `packages/ui/src/components/ui/kanban-column.{tsx,md,test.tsx,specimen.tsx}` (136, 176 test, 80 specimen), `task-card.{tsx,md,specimen.tsx}` (303, 96 specimen; recount after #575 and #580 land), `task-card.moving.test.tsx` (new).
-- Touches: `packages/ui/design-system/README.md` (the Board line: drag), `verification/layout/board.spec.ts` (a slot case).
+- Touches: `packages/ui/design-system/README.md` (the Board line: drag).
 - Interfaces: Produces `KanbanColumn.drop?: { index: number; label: string }` and `TaskCard.moving?: boolean`, as in the spec.
 - Acceptance:
   - [ ] `drop` draws a `hit-min` dashed `line-strong` slot with "Moving <title> here" at `index` (counted with the dragged card left out); on a collapsed column the index is ignored and the strip shows the `selection` ground and "Move here".
   - [ ] `moving` shows a dashed `line-strong` edge and the word "Moving", with no opacity.
   - [ ] `kanban-column.md` and `task-card.md` drop their "no drag here" lines as the spec says.
-  - [ ] Both themes; `just contrast`; the existing Board layout cases stay green.
+  - [ ] Both themes; `just contrast`.
 - Tests first: `drop_slot_at_index`, `drop_on_strip_reads_move_here`, `moving_card_word_and_edge`.
 - Notes: no new component, so `designSystem.test.ts` and the specimens registry are untouched. New `TaskCard` cases go in `task-card.moving.test.tsx` so `task-card.test.tsx` doesn't grow. If `task-card.tsx` passes 450 lines after #580, split the row density into `task-card-row.tsx` here.
 
@@ -272,8 +272,8 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
 - Priority: 1
 - Kind: mixed
 - Depends on: I8, I9, Board polish #574 and #580 (they change `features/board/**`)
-- Owns: `apps/orasenda/src/features/board/import/**` (new: `ImportSheet.tsx`, `useImport.ts`, `ImportSheet.*.test.tsx`), `apps/orasenda/src/dev/layout/scenarios/boardImport.ts` (new).
-- Touches: `features/board/BoardPage.tsx` (220; mount the sheet; `importAsked?: number` and `onImportOpened?: () => void`; the empty state), `features/board/BoardColumns.tsx` (79; pass `footer` for the Backlog column, which today only Today has; `NewTaskField` stays the child at the top, `BoardColumns.tsx:62`), `features/board/useBoardActions.ts` (234; the import line with Undo), `shared/test/fixtures*`, `dev/layout/scenarios/index.ts` and the `NAMES` list, `verification/layout/importSheet.spec.ts` (a case on the real sheet).
+- Owns: `apps/orasenda/src/features/board/import/**` (new: `ImportSheet.tsx`, `useImport.ts`, `ImportSheet.*.test.tsx`).
+- Touches: `features/board/BoardPage.tsx` (220; mount the sheet; `importAsked?: number` and `onImportOpened?: () => void`; the empty state), `features/board/BoardColumns.tsx` (79; pass `footer` for the Backlog column, which today only Today has; `NewTaskField` stays the child at the top, `BoardColumns.tsx:62`), `features/board/useBoardActions.ts` (234; the import line with Undo), `shared/test/fixtures*` and the `NAMES` list (a case on the real sheet).
 - Acceptance:
   - [ ] Entry points follow the canvas pick on the issue (lean A2): a quiet "Import tasks…" in the Backlog footer, and the empty Board's `EmptyState` with the message "Add one, move a note from the Inbox, or import tasks." and *Import tasks…* as its `secondaryAction`; neither opens anything by itself.
   - [ ] `importAsked` opens the sheet only when it differs from the last value consumed, then calls `onImportOpened`, so a remount never reopens it.
@@ -291,7 +291,7 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
 - Kind: web
 - Depends on: I11, #581 (Board polish P5, which edits the palette)
 - Owns: the "Tasks from other apps" row in `apps/orasenda/src/features/settings/panes/YourData.tsx` (195) and its test `YourData.import.test.tsx` (new); `apps/orasenda/src/app/App.import.test.tsx` (new).
-- Touches: `apps/orasenda/src/features/settings/PaneBody.tsx` (passes the handler, :107), `features/settings/Settings.tsx` (an `onImportTasks` prop), `apps/orasenda/src/app/palette/paletteCommands.ts` (147, plus #581's lines) and `paletteCommands.test.ts`, `app/palette/Palette.tsx` (165; the `importTasks` case), `app/palette/Palette.test.tsx` (291), `apps/orasenda/src/app/App.tsx` (303; holds `importAsked`, goes to the Board, resets in `onImportOpened`), `dev/layout/scenarios/yourData.ts`.
+- Touches: `apps/orasenda/src/features/settings/PaneBody.tsx` (passes the handler, :107), `features/settings/Settings.tsx` (an `onImportTasks` prop), `apps/orasenda/src/app/palette/paletteCommands.ts` (147, plus #581's lines) and `paletteCommands.test.ts`, `app/palette/Palette.tsx` (165; the `importTasks` case), `app/palette/Palette.test.tsx` (291), `apps/orasenda/src/app/App.tsx` (303; holds `importAsked`, goes to the Board, resets in `onImportOpened`).
 - Acceptance:
   - [ ] Settings › Your data shows "Tasks from other apps" with a quiet "Import tasks…" beside the data buttons; it goes to the Board and opens the sheet.
   - [ ] The palette lists "Import tasks…"; choosing it goes to the Board and opens the sheet; it is never the first result.
@@ -304,7 +304,7 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
 - Kind: mixed
 - Depends on: I10, I11; ordered after I12 by the owner's rule only (file-disjoint, may run beside I12 if the owner relaxes it). Follows the canvas pick (C1 until one is recorded).
 - Owns: `apps/orasenda/src/features/board/useCardDrag.ts` (new), `features/board/dragGeometry.ts` (new), `features/board/dragGeometry.test.ts` (new), `features/board/BoardPage.drag.test.tsx` (new).
-- Touches: `features/board/BoardColumns.tsx` (`drop` and `moving` props), `features/board/BoardCard.tsx` (49), `features/board/BoardPage.tsx` (pointer handlers on the board root), `features/board/BoardPage.support.tsx` (51; a `stubRects` helper and a `setPointerCapture` stub), `features/board/board.css` (31; `user-select` while dragging, tokens only), `features/board/useBoardActions.ts` (the drag lines), `dev/layout/scenarios/board.ts`, `verification/layout/board.spec.ts` (the slot in a regular and a compact board; a Playwright mouse drag).
+- Touches: `features/board/BoardColumns.tsx` (`drop` and `moving` props), `features/board/BoardCard.tsx` (49), `features/board/BoardPage.tsx` (pointer handlers on the board root), `features/board/BoardPage.support.tsx` (51; a `stubRects` helper and a `setPointerCapture` stub), `features/board/board.css` (31; `user-select` while dragging, tokens only), `features/board/useBoardActions.ts` (the drag lines).
 - Interfaces: Produces pure `targetAt(rects, scroll, point, draggedId) -> { lane, index } | null` and `edgeZone(rect, point) -> -1 | 0 | 1` in `dragGeometry.ts`.
 - Acceptance:
   - [ ] Mouse and pen only; touch is ignored. A press moving less than 6px stays a click; past 6px the drag starts with pointer capture and `user-select` off, and the click that ends it is swallowed.
@@ -313,8 +313,8 @@ Can start at once: I1, I2, I9. Then I3, I4, I5 in parallel; I10 as soon as #580 
   - [ ] Esc is consumed and cancels; so do `pointercancel`, window blur and a release outside every column.
   - [ ] The edge zone is hit-min tall and scrolls one step per animation frame; cards make room over `duration-calm`; under reduce-motion only the easing changes and nothing animates.
   - [ ] The status line says the four lines from the spec; a keyboard reorder stays silent (`useBoardActions.ts:115`); focus lands on the dropped card. A drop past a limit reads "4 of 3" and nothing moves back.
-  - [ ] In WebKit, a real mouse drag moves a card between columns.
-- Tests first: `target_between_midpoints`, `target_skips_dragged_card`, `target_done_is_top`, `target_with_scroll_offset`, `edge_zone_top_and_bottom` (in `dragGeometry.test.ts`); `click_below_threshold_selects`, `touch_is_ignored`, `drag_moves_between_columns`, `drag_reorders_within_column`, `release_on_own_place_cancels`, `drop_in_done_goes_to_top`, `done_to_done_cancels`, `drop_on_folded_strip`, `esc_cancels_and_is_consumed`, `release_outside_cancels`, `click_after_drag_swallowed`, `drag_announces_in_words`, `keyboard_reorder_stays_silent`, `drop_past_limit_allowed`, `no_drag_under_open_sheet` (in `BoardPage.drag.test.tsx`, with `stubRects`); `board_drag_moves_card_between_columns` (WebKit).
+  - [ ] A real mouse drag moves a card between columns.
+- Tests first: `target_between_midpoints`, `target_skips_dragged_card`, `target_done_is_top`, `target_with_scroll_offset`, `edge_zone_top_and_bottom` (in `dragGeometry.test.ts`); `click_below_threshold_selects`, `touch_is_ignored`, `drag_moves_between_columns`, `drag_reorders_within_column`, `release_on_own_place_cancels`, `drop_in_done_goes_to_top`, `done_to_done_cancels`, `drop_on_folded_strip`, `esc_cancels_and_is_consumed`, `release_outside_cancels`, `click_after_drag_swallowed`, `drag_announces_in_words`, `keyboard_reorder_stays_silent`, `drop_past_limit_allowed`, `no_drag_under_open_sheet` (in `BoardPage.drag.test.tsx`, with `stubRects`).
 - Notes: no new dependency, and no HTML5 drag and drop. `DRAG_START_PX = 6` is a behaviour constant with a comment. jsdom has zero-size rects, so the geometry is tested pure and the page test stubs rects.
 
 ### I14: Close-out (docs only, haiku)

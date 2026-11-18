@@ -36,7 +36,7 @@ The UI tasks (G8, G9) get the opus code review and then the opus design review (
 - **Downstream checks that must stay green:**
   - the recovery tests (`session/tests/run.rs`, `recovery.rs`);
   - the manifest and capability tests in `lib_tests.rs`;
-  - `settings*.spec.ts` and `Settings.navigation.test.tsx` (the index gains two sections, and `about`'s heading changes);
+  - `Settings.navigation.test.tsx` (the index gains two sections, and `about`'s heading changes);
   - the store's migration tests.
 - **Rollout and rollback:**
   - Squash PRs.
@@ -220,7 +220,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 ### G8: Settings › About and Your data  (#419)
 - Priority: 1
 - Depends on: G5, G6, F7 (#393)
-- Owns: `apps/orasenda/src/features/settings/sections/YourData.tsx`, `apps/orasenda/src/features/settings/useDataOverview.ts`, `apps/orasenda/src/features/settings/Settings.data.test.tsx`, `verification/layout/settings.data.spec.ts` (new).
+- Owns: `apps/orasenda/src/features/settings/sections/YourData.tsx`, `apps/orasenda/src/features/settings/useDataOverview.ts`, `apps/orasenda/src/features/settings/Settings.data.test.tsx`.
 - Touches:
   - `sections/About.tsx`: heading "About", and the new privacy line;
   - `SettingsHeader.tsx`: `SectionId` gains `data` and `backups`, and `SECTIONS` gains "Your data" after About (F7's Keyboard comes before About). G9 adds "Backups" to `SECTIONS`;
@@ -246,7 +246,7 @@ Can start immediately in parallel: **G1, G2, G7**. Then G3 (after G1), G4 (after
 ### G9: Settings › Backups  (#420)
 - Priority: 1
 - Depends on: G8, G7
-- Owns: `apps/orasenda/src/features/settings/sections/{Backups.tsx,BackupList.tsx}`, `apps/orasenda/src/features/settings/backupFormat.ts` (dates and sizes through `Intl`), `apps/orasenda/src/features/settings/Settings.backups.test.tsx`, `verification/layout/settings.backups.spec.ts` (new).
+- Owns: `apps/orasenda/src/features/settings/sections/{Backups.tsx,BackupList.tsx}`, `apps/orasenda/src/features/settings/backupFormat.ts` (dates and sizes through `Intl`), `apps/orasenda/src/features/settings/Settings.backups.test.tsx`.
 - Touches: `SettingsHeader.tsx` (`SECTIONS` gains "Backups" last); `Settings.tsx` or `SettingsSections.tsx` (renders `<Backups>`); `test/fixtures.ts`.
 - Interfaces:
   - Consumes: `useDataOverview` (G8); `backups_create`, `backups_delete`, `backups_restore`, `backups_set_policy` (G5); `NumberField` (G7).

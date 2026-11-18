@@ -10,10 +10,10 @@
 ## TL;DR
 - A new P1 sub-project, **Components**, between B and C. It builds, design-first, every design-system component that P1's remaining screens (C Today, D Focus views, E Session cadence, F Hotkeys and capture, G Data portability) need, before any of those screens is built. The owner asked for this on 2026-11-10: "all components ready, and implement the screens one by one, functionality + UI".
 - **Scope is P1's screens only** (approved by the owner on 2026-11-10). It covers 8 new components and the redesign props of 5 existing ones, plus a shared icon set, a key table and a layout rule function. Components for later phases wait for those phases: the planning components (TaskCard, KanbanColumn, RoutineItem, NowLine, IntentPrompt, `SessionSlot`, `Select`) and the tracking and blocking components (AppRow, RoleTag, AppPicker, BarRow, `Dialog emphasis="safe"`). Their screens have no behaviour yet, so nothing could check them against a consumer.
-- **The real-engine checks move here from C.** These are the Playwright WebKit layout harness, the bundled fonts it measures with, and `verification/contrast.py` in `ci.sh`. A fluid ring, a strip and a 280×56 floater can't be checked in jsdom. C keeps the Today page cases, which include #119's failing test, and writes them on this harness after Components closes. The harness proves layout on current WebKit; what macOS 13's WebKit supports is settled from compatibility data and owed to the device pass (#61).
+- **The bundled fonts and the contrast check move here from C.** These are the fonts the components render with and `verification/contrast.py` in `ci.sh`. What macOS 13's WebKit supports is settled from compatibility data and owed to the device pass (#61).
 - **The "first consumer" check, for components whose screens don't exist yet**, has three parts:
   1. a component test;
-  2. a specimen in the WebKit harness in both themes, with reduced motion and keyboard runs;
+  2. a specimen in both themes;
   3. a review against the approved screen-group canvas and the README slot tables of the screen that will consume the component.
 
   The consumer screen and its sub-project are named for each component.
@@ -34,7 +34,7 @@ const layout = timerLayout({ contentWidth: box.width, contentHeight: box.height,
 <IconButton label="End session" icon={<Icon name="stop" />} shortcut="⌘." onClick={end} />
 ```
 
-Each of these is in `window.Orasenda` and exported from `packages/ui/index.ts`. Each has a jsdom test in `packages/ui` and a specimen page that the harness renders in WebKit. That page is served by Vite from `packages/ui/specimens/` (`just specimens` serves it for a person too) and loads the real Atkinson Hyperlegible fonts from files in the repo. The specimen is checked in light and dark, with reduced motion, by keyboard, and at the README's sizes. `just ci` runs the harness (macOS only) and `verification/contrast.py`. The design system's `index.d.ts` no longer marks any P1 component "Not implemented in bundle.js yet".
+Each of these is in `window.Orasenda` and exported from `packages/ui/index.ts`. Each has a jsdom test in `packages/ui` and a specimen page. That page is served by Vite from `packages/ui/specimens/` (`just specimens` serves it for a person too) and loads the real Atkinson Hyperlegible fonts from files in the repo. `just ci` runs `verification/contrast.py`. The design system's `index.d.ts` no longer marks any P1 component "Not implemented in bundle.js yet".
 
 In general: for each component below, (1) the artifact is updated and republished, (2) `design/system/` is refreshed from it byte for byte, and (3) `packages/ui` is regenerated, exported and tested, all in one PR. The app's screens don't change, apart from three small visible changes listed under Behavior.
 
@@ -55,17 +55,15 @@ B showed the cost of building components inside a screen sub-project. Its design
 ## Goals / Success criteria
 1. `window.Orasenda` (`bundle.js`) and `@orasenda/ui` (`packages/ui/index.ts`) export the new P1 components: `Icon`, `IconButton`, `Tooltip`, `Kbd`, `TimerStrip`, `PopoverMenu`, `FloatingTimer` and `ShortcutRecorder`. They also export the functions `timerLayout` and `describeShortcut`. The `exports_*` test in `packages/ui/index.test.tsx` lists all of them.
 2. The redesign props of `TimerRing`, `StartButton`, `FullScreenFocus` and `CommandPalette` (with `Command.shortcut`) move onto their `*Props`. Their `*NextProps` interfaces are deleted. After the last task, `index.d.ts` declares exactly six `*NextProps`, all for later phases: `TaskCard`, `RoutineItem`, `IntentPrompt`, `Dialog`, `KanbanColumn` and `NowLine`.
-3. Every component in the [inventory](#inventory) marked "to build" has the following. A task closes only when (a)–(d) hold in its PR:
+3. Every component in the [inventory](#inventory) marked "to build" has the following. A task closes only when (a)–(c) hold in its PR:
    - (a) jsdom tests in `packages/ui`;
    - (b) a specimen in `packages/ui/specimens/` that renders every state the README names, plus `break` and `warning` for the timers, in `data-theme="light"` and `"dark"`;
-   - (c) WebKit harness runs over that specimen with the cases listed under [Testing strategy](#testing-strategy): layout, hit targets, keyboard, reduced motion and the accessibility tree;
-   - (d) its colour pairs in `verification/contrast-pairs.json`, passing `verification/contrast.py` in both themes;
-   - (e) a VoiceOver pass in Safari over the specimen, done once per component by the owner (see [Testing strategy](#testing-strategy)). It is listed under "Not yet verified" in the task's PR and ticked in this spec's Implementation status. The sub-project closes only when every component's pass is ticked.
-4. `just ci` runs `verification/contrast.py` on every platform. On macOS it also runs the layout harness (`just layout`). A pair under its threshold fails the contrast check, and a specimen that overflows its box fails the harness. Each failure is shown by a test that seeds one. The GitHub `ci` job (macOS) installs and caches Playwright's WebKit; both jobs get a working Python 3.
-5. The harness renders with the bundled fonts:
+   - (c) its colour pairs in `verification/contrast-pairs.json`, passing `verification/contrast.py` in both themes;
+   - (d) a VoiceOver pass in Safari over the specimen, done once per component by the owner (see [Testing strategy](#testing-strategy)). It is listed under "Not yet verified" in the task's PR and ticked in this spec's Implementation status. The sub-project closes only when every component's pass is ticked.
+4. `just ci` runs `verification/contrast.py` on every platform. A pair under its threshold fails the contrast check, shown by a test that seeds one. Both CI jobs get a working Python 3.
+5. The specimens render with the bundled fonts:
    - Atkinson Hyperlegible Next, Atkinson Hyperlegible Mono and Lexend, as the upstream variable `woff2` files (roman, `wght` axis) under `packages/tokens/fonts/`, unmodified, with their OFL licence texts;
-   - `@font-face` rules generated into `tokens.css` from `type.fonts` in `tokens.json`;
-   - each harness run asserts `document.fonts.check(...)` for every family at every weight the type styles use, and that no request reaches a font CDN.
+   - `@font-face` rules generated into `tokens.css` from `type.fonts` in `tokens.json`.
 6. The current app keeps working with no app code changes. `pnpm --filter orasenda typecheck` and `test` pass. `Today.tsx` keeps passing `finishTime` to `StartButton` (`apps/orasenda/src/pages/Today.tsx:272`) and keeps its numeric `TimerRing` size, and both still render as before.
 7. `docs/ROADMAP.md`:
    - places Components between B and C, with no letter renamed;
@@ -76,10 +74,9 @@ B showed the cost of building components inside a screen sub-project. Its design
 - **Screens and app wiring.** No page, window, menu, IPC command, Rust code or setting changes. Which shortcut is live, the Single-key shortcuts setting, the Focus window, the floater panel, the capture panel and Settings › Keyboard are each built by their own screen sub-project.
 - **Components for later phases.** The planning `*NextProps` (`TaskCard`, `KanbanColumn`, `RoutineItem`, `NowLine`) and `IntentPrompt` variants. `Dialog emphasis="safe"` (Strong lock, P6). `SessionSlot` (a planning page's header while a session runs, P2). `Select` (compact planning pickers and the AppPicker's "Add as", P2–P5). `AppRow`, `RoleTag`, `AppPicker` and `BarRow` (P5/P6). The role glyphs in the icon set (P5).
 - **Choice variants.** `segmented` and `long` are CSS-only already. Their consumers are planning and blocking.
-- **Committed screenshot baselines.** Text rendering differs between machines and macOS versions, so the harness asserts measurements and the accessibility tree. Screenshots are attached to each PR, not compared.
 - **Device-only checks:** forced colours, Increase Contrast, VoiceOver in WKWebView, native menus, and the layout and features of the system WebKit on macOS 13. These stay with each screen's acceptance and the pre-beta device pass (#61).
 - **Removing deprecated props.** `StartButton.finishTime` and `disabled`, and the numeric `TimerRing.size`, stay working. Dropping them is a later cleanup, not owed by C.
-- **Windows layout checks and Windows key glyphs.** The harness targets macOS's engine, so it is skipped elsewhere, as `just mobile` is. The key table is Mac glyphs only in P1 (see [Key table](#key-table)).
+- **Windows key glyphs.** The key table is Mac glyphs only in P1 (see [Key table](#key-table)).
 - **Font subsetting.** The upstream files ship as they are (see FAQ, fonts).
 
 ## Users & permissions
@@ -97,7 +94,7 @@ n/a for tenancy: one user, one device. Copy is English only, as in the rest of P
 No product entities. The units are design-system components, each with one owner task:
 
 - **Inventory row:** a component, its state (built already / to build / later phase), the redesign contract it implements (README plus `index.d.ts`), the screen that first consumes it and that screen's sub-project, and the task that builds it.
-- **Specimen:** one page per component in `packages/ui/specimens/`. It renders every state the README names in fixed-size frames, in both themes. The harness, the VoiceOver pass and the PR screenshots all read it. A specimen never adds behaviour the component lacks.
+- **Specimen:** one page per component in `packages/ui/specimens/`. It renders every state the README names in fixed-size frames, in both themes. The VoiceOver pass and the PR screenshots read it. A specimen never adds behaviour the component lacks.
 - **Declared pair:** one entry in `verification/contrast-pairs.json`: `{ fg, bg, kind: "text" | "mark", where }`. `contrast.py` checks it in light and dark against `tokens.json` (4.5:1 for text, 3:1 for marks). Floater entries add `wallpaper: ["#EDEDED", "#808080", "#1C1C1E"]` and the rule "fill or edge holds 3:1" (`FloatingTimer` README).
 
 Invariants:
@@ -152,7 +149,7 @@ Built means `bundle.js` implements the README contract today. Line numbers are f
 **G's components.** G's rows and its one `critical` button use `SettingsRow` and `Dialog destructive`, which are built already.
 
 ### Engine baseline
-The app's minimum is macOS 13.0 (`apps/orasenda/src-tauri/tauri.conf.json:39`). WKWebView uses the system WebKit, and on a Mac that never updated Safari that is Safari 16.0's engine. Playwright's WebKit is a patched current build, so the harness proves layout on current WebKit only. The feature baseline comes from compatibility data (MDN browser-compat-data, caniuse), not from the harness:
+The app's minimum is macOS 13.0 (`apps/orasenda/src-tauri/tauri.conf.json:39`). WKWebView uses the system WebKit, and on a Mac that never updated Safari that is Safari 16.0's engine. The feature baseline comes from compatibility data (MDN browser-compat-data, caniuse):
 
 | Feature | Safari | On the macOS 13 baseline | Use |
 |---|---|---|---|
@@ -163,7 +160,7 @@ The app's minimum is macOS 13.0 (`apps/orasenda/src-tauri/tauri.conf.json:39`). 
 | Popover API (`popover`, top layer for non-modals) | 17.0 | **no** | Not used |
 | CSS anchor positioning | 26.0 | **no** | Not used |
 
-So `PopoverMenu` and `Tooltip` don't use the popover API or anchor positioning. Each is a positioned panel placed by script from the trigger's `getBoundingClientRect()`, flipped to stay inside the viewport, and re-placed on resize and scroll. To appear above a modal, the panel is rendered inside the nearest open `<dialog>` (which is already in the top layer); otherwise in the page root. This is the T2 and T4 contract-gap choice, written into their READMEs in the artifact. The harness checks the layout. Whether the macOS 13 system WebKit renders it the same way is owed to #61, which gains a line for it.
+So `PopoverMenu` and `Tooltip` don't use the popover API or anchor positioning. Each is a positioned panel placed by script from the trigger's `getBoundingClientRect()`, flipped to stay inside the viewport, and re-placed on resize and scroll. To appear above a modal, the panel is rendered inside the nearest open `<dialog>` (which is already in the top layer); otherwise in the page root. This is the T2 and T4 contract-gap choice, written into their READMEs in the artifact. Whether the macOS 13 system WebKit renders it the same way is owed to #61, which gains a line for it.
 
 ### Key table
 `describeShortcut(glyphs: string): { aria: string; spoken: string }`, exported from `bundle.js` and `@orasenda/ui` (T2, artifact first, in `index.d.ts` and a "Shortcut glyphs" section of the `Kbd` README).
@@ -227,33 +224,20 @@ Each gap below is a README or `index.d.ts` change. It is made in the artifact be
 ### Exports at the end
 `window.Orasenda` and `packages/ui/index.ts` add `Icon`, `IconButton`, `Tooltip`, `Kbd`, `TimerStrip`, `timerLayout`, `describeShortcut`, `PopoverMenu`, `FloatingTimer` and `ShortcutRecorder`. They also add the type `IconName`. The `declare global` block in `index.d.ts` lists them. `packages/ui/build.ts` and the `ui-css` staleness diff in `ci.sh` are unchanged.
 
-### Harness and checks
-- `verification/layout/`: `playwright.config.ts` with WebKit projects for `light`, `dark` and `light-reduced-motion`, and one `*.spec.ts` per component. The base URL is a Vite server for `packages/ui/specimens/`. `just layout` runs it; `just specimens` starts the same server for a person (the VoiceOver pass and screenshots). The `ci` recipe runs `layout` after the ui tests on macOS and skips it elsewhere, as `mobile` does (`justfile:145-148`).
+### Checks
 - `verification/contrast.py`: Python 3, standard library only. It reads `design/system/tokens.json` and `verification/contrast-pairs.json` and prints each pair's ratios for both themes. It exits non-zero on any failure. `just contrast` runs it with a `python` variable in the `justfile` (`python3` on macOS and Linux, `python` on Windows), and the `ci` recipe runs it before the tokens step. It is seeded with the pairs computed in [the changeset §9](../../design/reviews/04-redesign-pass/04-ds-changeset.md) and the `FloatingTimer` and `TimerStrip` README tables.
 - `.github/workflows/ci.yml` (T1):
   - both jobs add a pinned `actions/setup-python` step (Python 3.13), so `contrast.py` never depends on the runner image's aliases;
-  - the macOS `ci` job caches `~/Library/Caches/ms-playwright` keyed on the Playwright version from `pnpm-lock.yaml`, and runs `pnpm exec playwright install webkit` before `./scripts/ci.sh`;
-  - both steps are skipped on the docs-only path, like the other installs.
+  - that step is skipped on the docs-only path, like the other installs.
 - `./scripts/ci.sh` stays a one-line wrapper for `just ci` (`scripts/ci.sh:3`). There is one list of checks.
-- New dev dependencies go through `baton:deps` in T1: `@playwright/test` (pinned, with its WebKit build) and `vite` for the specimen server in `packages/ui`.
+- A new dev dependency goes through `baton:deps` in T1: `vite` for the specimen server in `packages/ui`.
 
 ## Behavior & edge cases
 - **Three small visible changes in the current app:**
-  - **Fonts (T1).** `tokens.css` starts loading the bundled families, so Today and Settings render in Atkinson Hyperlegible on Macs that don't have it installed. The harness has no `app` project yet, so T1 re-checks B's Settings page by hand: `pnpm tauri dev`, at 900×600 and 1440×900 in both themes, the page doesn't scroll and no line is clipped. The four screenshots go in the PR.
+  - **Fonts (T1).** `tokens.css` starts loading the bundled families, so Today and Settings render in Atkinson Hyperlegible on Macs that don't have it installed. T1 re-checks B's Settings page by hand: `pnpm tauri dev`, at 900×600 and 1440×900 in both themes, the page doesn't scroll and no line is clipped. The four screenshots go in the PR.
   - **The rail (T7).** It becomes one tab stop and takes the final icons.
   - **`TimerRing` warning fade (T3).** It changes from `duration-calm` to `duration-slow`. A only shows `focus`, `paused` and `idle`, so nobody sees the fade until E.
 - **Compatibility.** Every change to an existing component adds to it. The current props keep their current output, so app code needs no change (Goal 6). Before each task's artifact round, the implementer folds that task's `*NextProps` into its `*Props` in a scratch copy of `index.d.ts` and runs `pnpm --filter orasenda typecheck`, so a break shows before the republish. If it breaks, the task stops and the orchestrator rules (opus; fable only if the ruling changes scope), as B's T1 did (plan ruling 6). App files are never edited here.
-- **Real-engine-only behaviour** is asserted in WebKit, not jsdom:
-  - the fluid ring's diameter;
-  - strip and floater overflow;
-  - `:focus-visible` after programmatic focus (the Tooltip's keyboard-event flag);
-  - a Tooltip and a `PopoverMenu` placed inside an open `showModal()` dialog are visible above it;
-  - `container-type` sizing;
-  - the reduced-motion computed durations of transitions and animations.
-- **Fonts fail to load.** The harness fails. It never measures with a fallback font, because a fallback measurement is not evidence of the real layout.
-- **A WebKit or Playwright download is missing offline.** `just layout` fails with the install command to run (`pnpm exec playwright install webkit`). It never silently skips on macOS.
-- **Playwright has no WebKit for the host's macOS.** T1's first acceptance check: the pinned Playwright installs and launches WebKit on the CI runner (`macos-26`) and on the owner's machine (macOS 27). If either fails, T1 stops and asks, before any other T1 work. Options then are a newer Playwright, or running the harness on CI only.
-- **The harness is flaky in CI.** It asserts measurements, not screenshots, and runs with `retries: 0` locally and `retries: 1` in CI with a trace on retry. A case that needs its retry is reported in the PR; a case that fails twice fails `ci`, which is a required check.
 - **The artifact and the repo disagree.** Under design-first, nothing in `design/system/` is edited by hand. A task whose refresh would differ from the republished artifact stops. Each PR links the artifact version it refreshed from (`design-system.json` `lastChange`). See [How each task runs](#how-each-task-runs).
 - **A consumer spec finds a gap later.** If C–G's spec finds a contract this sub-project got wrong, that sub-project fixes it with a small design-first touch, recorded in its own spec, as B did for `InlineNotice` `actionVariant` (#134, comment 3). This sub-project is not reopened.
 
@@ -271,24 +255,14 @@ Fonts (T1):
 For every task:
 - **Component tests** (jsdom, `packages/ui`, written first). These check roles and accessible names, which ids are linked, which props pass through, keyboard handlers, that no live region is added unless its README names one, and that every state renders its word or shape. The task's PR lists its test names.
 - **Copy and colour guard** (jsdom, T1, then extended by every task): a test scans the string literals in `bundle.js` for "!" in user-facing copy and for emoji, and checks that the `critical` class and token are used only by `Dialog` destructive and `Button variant="critical"`.
-- **WebKit harness** on the specimen, in every theme project:
-  - every state renders inside its frame (`scrollWidth <= clientWidth`, `scrollHeight <= clientHeight`);
-  - every focusable element's box is at least `hit-min` (44×44) in both dimensions, or the larger size its README states (`round` 52×52). This covers `PopoverMenu` rows, `StartButton` and its compact form, `ShortcutRecorder` controls, the floater's buttons at 280×56, palette rows and Close;
-  - the focus ring is visible and not clipped by an ancestor;
-  - the keyboard path from the README works with `page.keyboard` only;
-  - `toMatchAriaSnapshot` matches the README's VoiceOver names;
-  - under `light-reduced-motion`, every element has computed `transition-duration` 0s and `animation-name: none` (or `animation-duration` 0s).
-- Per-task size cases, taken from the README's case list (`design/system/README.md:53`):
-  - **T1:** the seed specimen (`TimerRing` and `InlineNotice variant="row"` at 360 wide with "Open Settings"); one seeded overflow fails; `document.fonts.check` for every family and weight.
-  - **T2:** a Tooltip at 40ch on two lines with its `Kbd` unbroken. A Tooltip inside an open `Dialog` is visible over it. `IconButton` hit boxes are ≥ 44×44 (`md`) and 52×52 (`round`). `describeShortcut` round-trips every glyph in the table.
-  - **T3:** the fluid ring in containers from 160 to 1200px. Its diameter is clamped to [`timer-min-size`, `timer-full-size`], and its digits' computed font size is ≥ `timer-md`. `TimerStrip` and its stacked form at 360, 640 and 1440 wide, with a two-line intent in the `task` slot. `timerLayout` is unit-tested against the [table](#timerlayout), and its constants are checked against `tokens.json`. `StartButton` at 399 and 400px of content shows "Start" and then "Start focus", and its name stays "Start focus".
-  - **T4:** the menu fits at 360 wide. Esc returns focus to the trigger. The read-only form marks its radios `aria-disabled`. Inside an open `Dialog`, the menu is visible and placed against its trigger.
-  - **T5:** the `FullScreenFocus` specimen at 1280×720, 1920×1080 and a strip-shaped frame. The `FloatingTimer` at 280×56, 280×64 and 360×96 in each of running, paused, warning, idle, ended, deep (1:30:00) and break, each over the three wallpaper colours as plain CSS backgrounds. The floater's fill is opaque `surface-raised` (its README), so no vibrancy is simulated.
-  - **T6:** the palette's compact form at 360×240. A long command's label and hint wrap without hiding the `Kbd`. `ShortcutRecorder` keeps a conflict line within `panel-width`, and its output round-trips through `describeShortcut`.
-  - **T7:** the glyph sheet at 20px in both themes; each glyph is `aria-hidden`; rail roving focus (↑/↓ moves, Tab leaves, one tab stop).
+- Per-task cases:
+  - **T2:** `describeShortcut` round-trips every glyph in the table.
+  - **T3:** `timerLayout` is unit-tested against the [table](#timerlayout), and its constants are checked against `tokens.json`.
+  - **T6:** `ShortcutRecorder`'s output round-trips through `describeShortcut`.
+  - **T7:** each glyph is `aria-hidden`.
 - **Contrast:** `contrast.py` passes with the task's new pairs. A self-test seeds one failing pair and one floater combination where both fill and edge fail.
-- **VoiceOver (manual, owner).** The owner runs `just specimens`, opens each new specimen in Safari with VoiceOver on, and walks every state with VO-Right and Tab. What was spoken is recorded as a short transcript, one line per state, in a comment on the task's PR or, if the PR has merged, on this spec's tracking issue. The accessibility-tree snapshot in the harness is the merge gate; the VoiceOver pass is not, so a task can merge while it is listed under "Not yet verified". The passes are batched: the owner can do them any time before Components closes. WKWebView's own VoiceOver behaviour, including `aria-keyshortcuts` (e-onboarding-14), is owed to the consuming screen's acceptance.
-- **Both themes by eye:** the PR attaches light and dark screenshots of the specimen from the harness.
+- **VoiceOver (manual, owner).** The owner runs `just specimens`, opens each new specimen in Safari with VoiceOver on, and walks every state with VO-Right and Tab. What was spoken is recorded as a short transcript, one line per state, in a comment on the task's PR or, if the PR has merged, on this spec's tracking issue. The VoiceOver pass is not a merge gate, so a task can merge while it is listed under "Not yet verified". The passes are batched: the owner can do them any time before Components closes. WKWebView's own VoiceOver behaviour, including `aria-keyshortcuts` (e-onboarding-14), is owed to the consuming screen's acceptance.
+- **Both themes by eye:** the PR attaches light and dark screenshots of the specimen.
 - **Review:** the reviewer reads the approved screen-group canvas and the README slot tables for the consumer named in the inventory, and checks each component against them. Because the consumer spec doesn't exist yet, the canvas and README stand in for it (`docs/conventions.md:95-97`). The canvases are artifacts linked from [the redesign record §5](../../design/reviews/04-redesign-pass.md) (`04-redesign-pass.md:101-105`); the repo keeps only their reviews. Per task: T2, T3, T5 and T7 use the timer-surfaces canvas (https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX) and, for T2's `Kbd` and T7's rail, the Settings canvas (https://claude.ai/artifact/GrTgYRHtYxbKh7RVBpbQn1); T4 uses the timer-surfaces canvas; T6 uses the Settings canvas (Keyboard) and the onboarding canvas (https://claude.ai/artifact/XPG6fXqiVfT8y1gTxpzKoz) for the capture pad and the welcome tip.
 - **No regressions:** `pnpm --filter orasenda test` and `typecheck`, `pnpm --filter @orasenda/ui test` and `./scripts/ci.sh` pass.
 
@@ -309,7 +283,7 @@ The tasks run in series (see FAQ). C starts after Components closes (see FAQ).
 
 | # | Task | Builds | Consumers | Depends on |
 |---|---|---|---|---|
-| **T1** | Real-engine harness, bundled fonts and the contrast check | First: the pinned Playwright launches WebKit on macOS 26 (CI) and 27 (owner), else stop and ask. `verification/layout/`, the specimen server (`just layout`, `just specimens`) and a seed specimen; the copy and colour guard; fonts under `packages/tokens/fonts/` and `type.fonts` (artifact first); `verification/contrast.py` and its pairs with the `python` just variable; `layout` and `contrast` in `ci`; `ci.yml` setup-python on both jobs and the cached WebKit install on macOS; the README lines on fonts and `contrast.py` (artifact first); the manual Settings font check | All later tasks; C's Today cases | none |
+| **T1** | Bundled fonts and the contrast check | The specimen server (`just specimens`) and a seed specimen; the copy and colour guard; fonts under `packages/tokens/fonts/` and `type.fonts` (artifact first); `verification/contrast.py` and its pairs with the `python` just variable; `contrast` in `ci`; `ci.yml` setup-python on both jobs; the README lines on fonts and `contrast.py` (artifact first); the manual Settings font check | All later tasks | none |
 | **T2** | The small controls and the key table | `IconButton`, `Tooltip`, `Kbd`, `describeShortcut`. Specimens use the current placeholder glyphs through `icon: ReactNode` | C, D, F | T1 |
 | **T3** | Timer faces and Start | `TimerRing` fluid and the warning fade, `TimerStrip` (with `stacked`), `timerLayout`, `StartButton` redesign | C, D, E | T2 |
 | **T4** | The preset popover | `PopoverMenu` | C, D | T2 (in series after T3) |
@@ -329,16 +303,7 @@ The owner asked for it on 2026-11-10: "ideally we should be having all component
 The owner said "all components". This spec reads it as all the components the next screens need, and asks the owner to confirm. `docs/conventions.md:89` says a design-system change is checked against its first consumer. The planning and blocking screens have no behaviour, no spec and no IPC yet. Their components could only be checked against a canvas, and they would sit unused for a whole phase or more. Those components are: `TaskCard`, `KanbanColumn`, `RoutineItem`, `NowLine`, `IntentPrompt` variants, `Dialog safe`, `SessionSlot`, `Select`, `AppRow`, `RoleTag`, `AppPicker` and `BarRow`. Each later phase builds its own, design-first, the way this sub-project does. If the owner wants them now, they become a second sub-project after this one, with the same checks.
 
 ### What counts as the "first consumer" check when the consumer doesn't exist yet?
-It has three parts. The component test and the WebKit specimen prove the README contract in a real engine, in both themes. The review against the approved canvas and the README slot tables of the named consumer stands in for the consumer spec's accessibility acceptance. If the screen's own spec later finds a gap, that sub-project fixes it with a small design-first touch, and this sub-project is not reopened.
-
-### Why does the layout harness move here from C?
-Three of this sub-project's components can't be checked without real layout: the fluid ring, the strip and the floater at 280×56. `container-type`, `:focus-visible` after programmatic focus and the top layer also behave differently in jsdom. If the harness stayed in C, T3 and T5 would ship with their main risk unverified, and C would find any problem after the fact. What moves is the harness, the fonts it needs and the contrast script. C keeps the Today cases, #119's failing test included, written on this harness as C's first task.
-
-### Why does C wait until Components closes?
-It could start its Today test task after T1, but that task adds an `app` project to `verification/layout/playwright.config.ts`, which T2–T7 also edit, and it commits #119's failing test, which would need `test.fail()` to keep CI green. Waiting is simpler and matches the owner's order: components first, then screens one by one.
-
-### Why Playwright WebKit and not the app's own WKWebView?
-The README already names it as the layout test (`design/system/README.md:53`). It runs headless in CI on macOS and can emulate reduced motion and the colour scheme. It is a current WebKit build, not the system WKWebView, so it proves layout on current WebKit only. Features are chosen from the [macOS 13 baseline](#engine-baseline) by compatibility data, and the old-engine check is owed to the device pass (#61). VoiceOver and native menus still need the real app, and they stay with each screen's acceptance.
+It has three parts. The component test and the specimen prove the README contract, in both themes. The review against the approved canvas and the README slot tables of the named consumer stands in for the consumer spec's accessibility acceptance. If the screen's own spec later finds a gap, that sub-project fixes it with a small design-first touch, and this sub-project is not reopened.
 
 ### Why bundle the fonts now?
 A layout measured with a fallback font doesn't show how the real layout behaves. The README says the fonts ship inside the app and that the preview's CDN import must not ship. `type.fonts` is empty only because the files weren't in the repo yet (`design/system/tokens.json:40`). The OFL requires the licence text to travel with the fonts, and #149 (third-party notices, release precondition) gains them as an item.
@@ -363,7 +328,7 @@ None. The owner answered both calls on 2026-11-10 and accepted the recommendatio
 ## Implementation status
 Updated by the PRs that implement this spec.
 - [x] Plan: [`docs/plans/2026-11-10-p1-components.md`](../plans/2026-11-10-p1-components.md) (seven design-first tasks in series, as cut here)
-- [x] T1 Real-engine harness, bundled fonts and the contrast check
+- [x] T1 Bundled fonts and the contrast check
 - [x] T2 The small controls and the key table (VoiceOver: [ ] IconButton [ ] Tooltip [ ] Kbd)
 - [x] T3 Timer faces and Start (VoiceOver: [ ] TimerRing [ ] TimerStrip [ ] StartButton)
 - [x] T4 The preset popover (VoiceOver: [ ] PopoverMenu)

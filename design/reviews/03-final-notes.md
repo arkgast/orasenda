@@ -80,6 +80,6 @@ Actions: Button, StartButton. Foundations: ModeChip. Timer: TimerRing, MenuBarTi
 1. Render every preview in the design-system host in both themes; check the 560px ring, compact blocks, long titles and 200% text. Switch the host theme to dark since previews no longer carry their own palette.
 2. Bundle the three OFL font files in the app and drop the `@import` from the shipped CSS; `type.fonts` can then list them.
 3. Verify native `<dialog>` behaviour on the target macOS WebKit: Tab containment, inert background, Escape routing, focus restoration, VoiceOver naming; test Japanese and Chinese composition in the palette.
-4. Run `dom.cjs`, `tsc --strict` on `index.d.ts` and the Playwright harness with installed React 18, jsdom and `@types/react`.
+4. Run `dom.cjs` and `tsc --strict` on `index.d.ts` with installed React 18, jsdom and `@types/react`.
 5. Host responsibilities the components deliberately leave open: freezing `progress` while paused, scheduling the two-minute cue and chime once, honouring reduce-motion and sound settings, keeping capture notes and bypass reasons local and deletable, keyboard move and reschedule in the card and block editors, native full-screen exit after confirmation, and the Toast expiry policy.
 6. An icon set for the rail and future screens; the current rail icons are placeholders at the right stroke and size.

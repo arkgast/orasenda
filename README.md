@@ -66,15 +66,16 @@ toolchain and the workspace's packages. Use it as the environment's setup script
 ```sh
 if [ -d orasenda ]; then bash orasenda/scripts/cloud-setup.sh; fi
 ```
-or run `./scripts/cloud-setup.sh` as root from the repo root. On Linux `just ci` skips the macOS-only
-steps (the WebKit layout checks and the mobile check). Its last step builds a debug app; to see
-it, run `xvfb-run -a target/debug/orasenda` and screenshot the display. Focus views and other
+or run `./scripts/cloud-setup.sh` as root from the repo root. `just ci` runs the same there as on macOS. To see
+the app, build it with `pnpm --filter orasenda tauri build --debug --no-bundle`, run
+`xvfb-run -a target/debug/orasenda` and screenshot the display. Focus views and other
 macOS-only features are unavailable there.
 
 ### Commands
 - `just dev` runs the desktop app with hot reload.
 - `just build` builds the release app (a .app and .dmg on macOS).
-- `just ci` runs every check that CI runs.
+- `just ci` runs every check that CI runs: the Rust and React tests plus lint. `just mobile`, `just contrast`,
+  `just tokens`, `just ui-build` and `just design-system-check` run on demand.
 - `pnpm --filter orasenda tauri ios dev` runs the app in the iOS Simulator. Add a device name to
   pick one, for example `pnpm --filter orasenda tauri ios dev "iPhone 16"`.
 - `pnpm --filter orasenda tauri android dev` runs the app on an Android emulator.

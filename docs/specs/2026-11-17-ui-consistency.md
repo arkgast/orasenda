@@ -156,10 +156,6 @@ None.
 
 ## Testing strategy
 - **Unit** (Vitest, beside each component). Tests first in each task; the plan names them. Shape assertions read the class list. Names and roles use Testing Library queries.
-- **Layout** (Playwright WebKit, `verification/layout/`):
-  - At 900 × 600 and 1440 × 900, the content-column alignment on Routines, Inbox and Review.
-  - The Board's header-to-column gap.
-  - `smallTargets` is empty on the changed pages.
 - **Contrast.** `just contrast` checks `break` as a mark on `surface-raised` and on `surface`, in both themes.
 - **Owner's visual checklist** (no screenshots in PRs). Check light and dark, at 900 × 600 and 1440 × 900:
   - [ ] Today: Start focus is a rounded rectangle. Pause/Resume beside the ring is still a circle.

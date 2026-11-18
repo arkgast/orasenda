@@ -74,7 +74,6 @@ Each pair below is new; its implementation is in the shared JS/CSS and its publi
 | `verification/contrast.py` | Assert token schema/names/aliases/usages, CSS variable coverage and explicit text/UI contrast pairs in both themes. |
 | `verification/contrast-results.json` | Machine-readable results for every tested foreground/ground pair. |
 | `verification/dom.cjs` | 28 React/jsdom regression and bundle-contract checks. Native dialog geometry/containment are deliberately outside its claims. |
-| `verification/browser.cjs` | Network-blocked Playwright harness for real hit targets, native modal focus/restore and representative preview screenshots; supplied for rerun because browser launch is blocked here. |
 | `verification/preview.py` | Local-only preview server with live token injection and no remote font requests in the harness; binding a server is blocked in this environment. |
 
 `SPEC.md`, `01-fable-review.md`, `contrast.py`, `proposed.py` and the pre-existing `project/design-system.json` were left unchanged. No `tokens.css` or `manifest.json` was created. No fonts were downloaded, dependencies installed, commits made, or external services called by the bundle.
@@ -147,7 +146,7 @@ Other completed checks:
 - Token shape, uniqueness, legal names, aliases, usage notes and every CSS variable reference passed. All 23 component preview scripts parsed.
 - Independent source review identified paused-ring geometry and incomplete actionable-card metadata; both were corrected, and its IME finding was reproduced and fixed. No remaining P0/P1 finding was reported by that review.
 
-The Playwright browser launch aborted under the sandbox. Local server binding returned `Operation not permitted`; the connected browser tool reported that its access host was unavailable. Consequently **no screenshot, native focus-trap, actual pointer hit-area, VoiceOver, visual clipping or WebKit claim is made**. jsdom explicitly shims showModal/close and does not validate native modality.
+The browser launch aborted under the sandbox. Local server binding returned `Operation not permitted`; the connected browser tool reported that its access host was unavailable. Consequently **no screenshot, native focus-trap, actual pointer hit-area, VoiceOver, visual clipping or WebKit claim is made**. jsdom explicitly shims showModal/close and does not validate native modality.
 
 ## Coordinator double-checks
 

@@ -87,7 +87,7 @@ Severity: **blocker** breaks a principle or the owner direction; **major** fix b
 ### a-timer-2 (major) The floater's ended (and idle) state overflows its minimum width
 **Where:** `Floating.dc.html` geometry; `Floater.dc.html` ended state; `floater-width/height` tokens (min 248×56).
 **Finding:** The ended row is 12 pad + 14 shape + 4 + "Session ended." (about 91px at 13px) + 4 + Start pill (16 + 14 glyph + 6 + "Start" at 17px/600 ≈ 45 + 16 ≈ 97) + 4 + 44 Open + 8 pad ≈ 278px. That exceeds the 248px minimum by about 30px and only just fits the 280 default. Running at the minimum is also tight with Deep Block digits: spec A's `format_remaining(90 min)` is `1:30:00` (seven characters, about 106–118px at `timer-md`), giving about 246–258px, at or over 248. Only the running 248×56 cell is drawn.
-**Fix:** Either raise the minimum to 280×56 (the default width; nothing is lost, since 248 fits no state with margin), or at widths under 280 let the ended/idle floater show the hollow circle and the Start pill with "Session ended." / "No session" spoken (`role="status"`) and as the pill's tooltip. I recommend the first: one fewer rule. Draw the ended state and a `1:30:00` running state at the minimum, and add both to the floater's layout test.
+**Fix:** Either raise the minimum to 280×56 (the default width; nothing is lost, since 248 fits no state with margin), or at widths under 280 let the ended/idle floater show the hollow circle and the Start pill with "Session ended." / "No session" spoken (`role="status"`) and as the pill's tooltip. I recommend the first: one fewer rule. Draw the ended state and a `1:30:00` running state at the minimum.
 
 ### a-timer-3 (major) The read-only preset popover promises a change it does not allow
 **Where:** `Today.dc.html` menu `preset` while active: radios `aria-disabled="true"`, heading "Changes apply to your next session."; `Changes` call 4 and the brief's Q17.
@@ -130,11 +130,6 @@ Severity: **blocker** breaks a principle or the owner direction; **major** fix b
 **Where:** `Changes` not covered: "Brief-only error states 'Timer unavailable' and 'Default preset': not in spec A copy"; brief audit T15 cites `Today.tsx:272`.
 **Fix:** Keep the designer's call on "Default preset" (no spec copy). For the timer, draw one cell: status row "Timer unavailable. Restart Orasenda to try again." (neutral, no shape), idle ring, Start and Just 2 minutes guarded with the disabled look. Record that spec A needs the copy added in the same amendment as the shortened recovered line.
 
-### a-timer-12 (minor) Real-font measurement is still owed
-**Where:** `Changes` not covered; must-fix 5 in the pick.
-**Finding:** The 360 idle row (339 vs 328 estimated), the floater at 248 (a-timer-2), the strip digits at ultrawide sizes and the stacked-strip status row with the tip plus "Got it" (about 355px of text and action against 328, so it wraps to two lines as designed) are all estimates. The canvas type forbids rendering, so this is not a fault of the canvas, but nothing may change in the design system or code until it is measured.
-**Fix:** Phase 3 layout test (Playwright WebKit, Atkinson Hyperlegible Next and Mono loaded) at 360×240, 360×360, 640×330, 640×480, 900×240, 900×600, 1440×900, 3440×400 on Today; 1280×720 and 1920×1080 on the Focus window; 248/280×56, 280×64 and 360×96 on the floater in every state including `1:30:00`. Assert the controls row is inside the viewport, the status row is 44px, `scrollHeight <= innerHeight`, and no text node overflows its box.
-
 ## Calls I accept as made
 
 - Under 360 tall: strip at 640 wide and over, stacked strip below. Closes the gap in the pick.
@@ -150,8 +145,7 @@ Severity: **blocker** breaks a principle or the owner direction; **major** fix b
 
 1. Fix a-timer-1, 2 and 3 on the canvas (three cells and two lines of copy), then refresh the Changes board.
 2. Design-first: `duration-slow`, the window and layout tokens, `timer-min-size`, `floater-*` (with the minimum from a-timer-2), IconButton + Tooltip, StatusRow, TimerStrip, FloatingTimer, PopoverMenu, the TimerRing/StartButton/FullScreenFocus/MenuBarTimer/NavRail changes and the README rules go into the design-system artifact, then `design/system/`, then code.
-3. The layout test in a-timer-12 lands with the first code change and gates the PR.
-4. Spec A amendment: the recovered line, the notification default, "Timer unavailable" copy, the summary wording ("ends 15:20", never "Realistic finish" for a session), and the no-second-"Paused" test extended to the summary.
+3. Spec A amendment: the recovered line, the notification default, "Timer unavailable" copy, the summary wording ("ends 15:20", never "Realistic finish" for a session), and the no-second-"Paused" test extended to the summary.
 
 ---
 
@@ -163,14 +157,14 @@ Severity: **blocker** breaks a principle or the owner direction; **major** fix b
 
 ## Verdict: approve
 
-Eleven of twelve findings are fixed on the canvas; the twelfth (real-font measurement) is written as the gating layout test, which is all a canvas of this type can do. No fix broke a principle: the idle floater keeps one primary (the Start pill) and carries state by shape and word; the read-only popover says what it does and marks the locked radios by dashed shape, not colour; the guarded "Timer unavailable" buttons use the design system's dashed disabled look; the Focus-window popover closes on Esc without the leave dialog; every new text or mark pair passes 4.5 / 3 in both themes. Two small things remain, both fixable in passing while the design-system changes are written. Nothing blocks step 2 of "What must happen next".
+Eleven of twelve findings are fixed on the canvas. No fix broke a principle: the idle floater keeps one primary (the Start pill) and carries state by shape and word; the read-only popover says what it does and marks the locked radios by dashed shape, not colour; the guarded "Timer unavailable" buttons use the design system's dashed disabled look; the Focus-window popover closes on Esc without the leave dialog; every new text or mark pair passes 4.5 / 3 in both themes. Two small things remain, both fixable in passing while the design-system changes are written. Nothing blocks step 2 of "What must happen next".
 
 ## Round-1 findings, one by one
 
 | Id | Status | Checked |
 |---|---|---|
 | a-timer-1 | Fixed | `Floater` has `idle`: hollow circle, "No session" in `ink-muted` 13px, Start pill (glyph + "Start", `aria-label="Start focus"`) in Pause's slot, Open Orasenda; group label "Floating timer, No session"; context menu offers "Start focus" while idle or ended. Drawn at 280 × 64 in both themes (Floating board, row 3). `ended` keeps "Session ended." as `role="status"`. |
-| a-timer-2 | Fixed | Props `w` min 280; Changes row "floater-width / -height: default 280 × 64; min 280 × 56; max 360 × 96"; Start pill `padding-inline: space-3`. Re-estimate with the real token values (`icon-md` 14, `space-1-5` 6, pill border 2): ended 12 + 14 + 4 + 4 + ~91 + 4 + ~88 + 4 + 44 + 8 ≈ 273 of 280; Deep Block "1:30:00" at 28px mono 12 + 14 + 6 + ~118 + 4 + 44 + 4 + 44 + 8 ≈ 254. Both drawn at 280 × 56 and in the layout test. |
+| a-timer-2 | Fixed | Props `w` min 280; Changes row "floater-width / -height: default 280 × 64; min 280 × 56; max 360 × 96"; Start pill `padding-inline: space-3`. Re-estimate with the real token values (`icon-md` 14, `space-1-5` 6, pill border 2): ended 12 + 14 + 4 + 4 + ~91 + 4 + ~88 + 4 + 44 + 8 ≈ 273 of 280; Deep Block "1:30:00" at 28px mono 12 + 14 + 6 + ~118 + 4 + 44 + 4 + 44 + 8 ≈ 254. Both drawn at 280 × 56. |
 | a-timer-3 | Fixed | Running popover: heading "Classic · 25 / 5", second line "Presets can change between sessions.", radios `aria-disabled="true"` with `sp-pop-locked` (ink-muted text, dashed rings; the checked one solid in ink-muted), Settings row live. States cell 13, PopoverMenu change row. Contrast: ink-muted on surface-overlay 5.91 / 6.19; on the selection row 4.91 / 5.53; dashed line-strong rings on overlay 4.79 / 4.58. |
 | a-timer-4 | Fixed | Status-lines rule: store error, newest milestone, then tips; "Session ended." always wins; a tip waits for an idle Today with an empty row. States captions 6 and 11. Tip markup: visible glyph text `aria-hidden`, sibling `os-sr-only` "Control-Option-F starts or pauses focus from anywhere."; Keys VoiceOver table has the row. |
 | a-timer-5 | Fixed | Paused summary "Classic · 25 min" / narrow "25 min", label "Preset Classic, 25 minutes, paused. Preset details"; chip the only "Paused", digits the only time left. Main must-fix 2 and graft 2, One-state-word rule updated. |
@@ -180,7 +174,6 @@ Eleven of twelve findings are fixed on the canvas; the twelfth (real-font measur
 | a-timer-9 | Fixed, with one leftover | Warning header "Almost up · 2 minutes left · ends 15:20" at 01:48; the ceil rule is in the lede, the caption and the MenuBarTimer row. See a-timer-13: the running and paused headers were not updated to the same rule. |
 | a-timer-10 | Fixed | Rail: current page `tabindex="0"`, others `-1`, `aria-current="page"`; Keys caption 1 ("one tab stop with roving focus"), VoiceOver table Rail row, NavRail change row. |
 | a-timer-11 | Fixed | Today state `unavailable`: "Timer unavailable. Restart Orasenda to try again." (neutral, no shape), idle ring, Start and Just 2 minutes `aria-disabled="true"`. The design system's disabled look is `surface-sunken` + `ink-muted` + dashed `line-strong` border, so the guard is shape and colour (bundle.css `.os-btn[aria-disabled="true"]`). Contrast ink-muted on surface-sunken 4.82 / 7.94. States cell 14; the Calls list carries the spec A amendment. |
-| a-timer-12 | Addressed on canvas, owed in code | The Sizes board now states the full Playwright WebKit test (fonts, 13 sizes, every state, the four assertions) and that nothing in design/system or code changes before it passes. The canvas type cannot render, so this is the right closure here; the finding stays open until the test lands with the first code change (step 3 of "What must happen next"). |
 
 Board layout: every frame in `canvas.json` keeps 80px between columns and 120px between rows after the resizes (States 4000, Sizes 2950, Full screen 2980, Floating 1700, Keys 2500, Contrast 2100, Main 1900); checked arithmetically.
 
@@ -214,9 +207,6 @@ In all six theme × wallpaper combinations at least one of the floater's fill or
 **Finding:** The dark-theme floater's line-strong edge is 2.71 on a light wallpaper; the fill (13.52) is what holds there. The conclusion is right, the reason given is not.
 **Fix:** Replace the sentence with the six numbers above and the rule "in every theme × wallpaper combination at least one of fill or edge holds 3:1". Add those three wallpapers to `contrast.py` as the designer asked.
 
-### a-timer-12 (carried) Real-font measurement
-Unchanged from round 1: the layout test gates the first code PR.
-
 ## Calls I accept as made in round 2
 
 - Floater minimum raised to 280 × 56 rather than a width-dependent ended state: one fewer rule.
@@ -228,4 +218,4 @@ Unchanged from round 1: the layout test gates the first code PR.
 
 ## Next
 
-Step 2 of round 1's "What must happen next" can start: the design-system artifact changes (tokens, IconButton + Tooltip, StatusRow, TimerStrip, FloatingTimer, PopoverMenu, the component and README changes), then `design/system/`, then code behind the layout test. Fix a-timer-13 and a-timer-15 on the canvas in passing; neither changes a design-system entry except the one added example in the MenuBarTimer rule.
+Step 2 of round 1's "What must happen next" can start: the design-system artifact changes (tokens, IconButton + Tooltip, StatusRow, TimerStrip, FloatingTimer, PopoverMenu, the component and README changes), then `design/system/`, then code. Fix a-timer-13 and a-timer-15 on the canvas in passing; neither changes a design-system entry except the one added example in the MenuBarTimer rule.

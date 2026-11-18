@@ -140,7 +140,7 @@ const SIZES = [
 const LONG_TASK =
   "Finish the chapter outline and send it round for comments, then book the review with the whole editorial team now please";
 
-// Marks the frame when the view asks to leave, so a layout test can see that one Esc reached it.
+// Marks the frame (data-left) when the view asks to leave, so one Esc reaching it is visible.
 function Marked({ props }: { props: FullScreenFocusProps }): ReactElement {
   const [left, setLeft] = useState(false);
   return (

@@ -22,7 +22,7 @@ E builds no new design-system component or token (spec Non-goals). E11 extends t
 - **E6** adds `"break"` to `Phase` (in `TimerView.phase`).
 - **E7** owns the cadence contract: `Mode` `break | warning`, the new `TimerView` fields, `MilestoneKind` and `MilestoneEvent` additions, `timer_extend`, `timer_set_intent`, `timer_dismiss_offer`, `timer_take_break`, the `extensionCap` and `invalidIntent` error kinds.
 
-Each contract task regenerates `apps/orasenda/src/ipc/bindings.ts`, updates `apps/orasenda/src/test/fixtures.ts` and the layout `scenarios.ts`, lists each command in `commands.list.rs` and grants it in `capabilities/main.json`. E5, E8, E9 and E10 build against these bindings.
+Each contract task regenerates `apps/orasenda/src/ipc/bindings.ts`, updates `apps/orasenda/src/test/fixtures.ts`, lists each command in `commands.list.rs` and grants it in `capabilities/main.json`. E5, E8, E9 and E10 build against these bindings.
 
 ## Impact
 - **Migration (E1):** `000N_preset_library.sql` (N at landing): creates `preset`, adds nullable snapshot columns and `break_kind` to `focus_session`, `DELETE FROM active_session`, inserts `meta('preset_seed','pending')`. Additive (expand). The contract step is E4's: old rows keep their `preset` text; new rows write `quick` or `library`. Forward-only; rollback is deleting `~/Library/Application Support/com.veloud.orasenda` (dev data, no users).
@@ -32,7 +32,7 @@ Each contract task regenerates `apps/orasenda/src/ipc/bindings.ts`, updates `app
 - **Design system (E11):** `FullScreenFocus` and `FloatingTimer` gain optional props; existing callers (D6, D7, the specimens) are unchanged until E10 passes them. The controller republishes the artifact after E11 merges.
 - **Tray:** the Preset submenu reads the library (E4); glyphs and items per state (E9). The threading contract (`tray/mod.rs` doc) stays.
 - **Store:** `Entity::Preset`; `focus_sessions::insert` writes `intent`, `break_kind` and the snapshot; `started_between` reads today's rows.
-- **Must stay green:** `cargo test` for core, store, service and the app crate; Vitest for Today, Settings, `settingsQueue`, App; `just layout`; the bindings check; `just file-size`; `just mobile`.
+- **Must stay green:** `cargo test` for core, store, service and the app crate; Vitest for Today, Settings, `settingsQueue`, App; the bindings check; `just file-size`; `just mobile`.
 - **Interim states on `main` (dev builds only):** after E6 and before E7 a break shows as `mode: focus` and every break is short (round 1); after E7 and before E9 the end notification keeps its old copy and the tray draws a break with the focus glyph. Each is gone when the next task lands.
 - **Rollout and rollback:** each task is one squash-merged PR, revertible after its dependants. E4's revert also reverts E5–E10.
 
@@ -73,16 +73,16 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 | `features/today/{Today.tsx,today.css,statusLine.ts,statusLine.test.ts}` | E4 (start request), E8 (status row, summary, time view) | D8 (top-end cell, one status line) | Never concurrent: E4 (W3), E8 (W6), D8 (W7) rebases on E8. |
 | `src-tauri/src/lib.rs`, `lib_tests.rs`, `commands.list.rs`, `commands/mod.rs`, `ipc.rs`, `capabilities/main.json` | E4, E5, E7, E10 | D1, D4, D5 | Append-only registration lines and exact-list capability tests; the controller resolves them at landing. |
 | `apps/orasenda/src/ipc/bindings.ts` | E4, E5, E6, E7 | D4 | Regenerated after every rebase, never hand-merged. |
-| `src/test/fixtures.ts`, `src/dev/layout/{scenarios.ts,scenarios.test.ts}` | E4–E9 | D4 | Append-only; E4 and E7 also change the `TimerView` and `Settings` builders. The controller resolves. |
+| `src/test/fixtures.ts` | E4–E9 | D4 | Append-only; E4 and E7 also change the `TimerView` and `Settings` builders. The controller resolves. |
 | `app/palette/paletteCommands.ts` and tests | E10 ("Set intent") | D8 | After D8 merges. |
-| `features/focus/*`, `features/floater/*`, `verification/layout/{focusWindow,floaterWindow}.spec.ts` | E10 | D6, D7 | After D6, D7 and D8 merge; E10 adds the break and warning cases D leaves out (D ruling 2). |
+| `features/focus/*`, `features/floater/*` | E10 | D6, D7 | After D6, D7 and D8 merge; E10 adds the break and warning cases D leaves out (D ruling 2). |
 | `crates/platform-macos/src/lib.rs` | E9 (`mod` line) | D3 | Append-only; never concurrent (W1 vs W7). |
 | `CONTEXT.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md` | E10 | D8 | E10 after D8; append at the end. E's terms are already in `CONTEXT.md` (spec PR). |
 | `verification/contrast-pairs.json`, `packages/ui/src/designSystem.test.ts` (export count), `packages/ui/src/index.ts`, `packages/ui/src/types.ts` | E11 (only if touched) | none planned | Append-only; the controller resolves. |
-| `packages/ui/src/components/ui/{full-screen-focus,floating-timer}.*`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts` | E11 | none (D6, D7 consume) | E11 adds optional props only, so D6 and D7 build unchanged; E10 passes them. |
+| `packages/ui/src/components/ui/{full-screen-focus,floating-timer}.*` | E11 | none (D6, D7 consume) | E11 adds optional props only, so D6 and D7 build unchanged; E10 passes them. |
 
 ## Notes for every task
-- **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change, and their own Playwright specs. The controller runs the full `baton verify` at landing. Each task sets `CARGO_TARGET_DIR=target/e<N>`.
+- **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change. The controller runs the full `baton verify` at landing. Each task sets `CARGO_TARGET_DIR=target/e<N>`.
 - **Visuals:** no screenshots in PRs. Each UI task lists, under "Not yet verified", the states and sizes the owner checks by eye in light and dark. VoiceOver is deferred to #326; names and roles are asserted in code (`getByRole` with names, `toMatchAriaSnapshot`).
 - **Registration:** a task that adds a command, an event, a `Host` method or a managed type lists `lib.rs`, `commands.list.rs`, `commands/mod.rs` and the fakes in `session/tests/support/` in Owns or Touches.
 - **Sizes today** (`wc -l`): `timer/engine.rs` 344, `engine/tests.rs` 407, `timer/mod.rs` 297, `store/src/tests.rs` 439, `repo/focus_sessions.rs` 207, `session/tests/{actions 410, recovery 426, run 337, settings 253}.rs`, `session/settings.rs` 227, `session/view.rs` 73, `scheduler/publish.rs` 153, `tray/menu.rs` 352 (D1 splits it), `tray/render.rs` 245, `tray/tests/menu_items.rs` 324, `lib.rs` 348, `Settings.tsx` 467, `Settings.timer.test.tsx` 277, `sections/Timer.tsx` 141, `Today.tsx` 262, `statusLine.ts` 72, `PresetSummary.tsx` 141, `presets.ts` 104. New tests go in new files wherever a test file is above 300.
@@ -140,7 +140,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - store: `repo/focus_sessions.rs` (`insert` writes `preset` `quick`/`library` and the snapshot columns)
   - service: `api/{settings.rs,timer.rs,mod.rs,tests.rs}`, `api/presets.rs` (new), `session/presets.rs` (new: cache, seeding, `list`, `resolve`), `session/{settings.rs,actions.rs,view.rs,run.rs,service.rs,mod.rs}`, `session/tests/{support/*,presets_seed.rs (new),presets_list.rs (new)}` and the existing service and scheduler tests that build a `Settings` or a `StartRequest`, `session/tests/view_select.rs` (D2's), `scheduler/host.rs` (`emit_presets_changed`)
   - app crate: `commands/presets.rs`, `commands/timer.rs`, `ipc.rs`, `runtime/{events.rs,ticker.rs}`, `tray/menu/{mod.rs,entries.rs,commands.rs}`, `tray/mod.rs` (`presets_changed`), `tray/tests/menu_items.rs`, `tray/tests/presets.rs` (new), `commands.list.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`
-  - webview: `ipc/bindings.ts` (regenerated), `ipc/{settingsQueue.ts,settingsQueue.test.ts}`, `test/fixtures.ts`, `dev/layout/scenarios.ts`, `features/settings/{Settings.tsx,settingsKeys.ts,sections/Timer.tsx,Settings.timer.test.tsx}`, `features/today/{Today.tsx,presets.ts,presets.test.ts,PresetSummary.tsx,PresetSummary.test.tsx,useNextMinutes.ts,Today.start.test.tsx}`
+  - webview: `ipc/bindings.ts` (regenerated), `ipc/{settingsQueue.ts,settingsQueue.test.ts}`, `test/fixtures.ts`, `features/settings/{Settings.tsx,settingsKeys.ts,sections/Timer.tsx,Settings.timer.test.tsx}`, `features/today/{Today.tsx,presets.ts,presets.test.ts,PresetSummary.tsx,PresetSummary.test.tsx,useNextMinutes.ts,Today.start.test.tsx}`
 - Touches: `apps/orasenda/src/features/settings/customRange.ts` (kept: E5's editor reuses its ranges), `crates/store/src/repo/settings.rs` (read), `apps/orasenda/src/ui-types.test-d.tsx`.
 - Interfaces:
   - Consumes: E1's `PresetId`, `PresetDef`, `default_presets`, `SessionPreset`, `presets::*`.
@@ -160,8 +160,8 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 ### E5 (#345): Preset editing: commands and Settings › Timer list and editor
 - Priority: 1
 - Depends on: E4
-- Owns: `crates/service/src/session/presets.rs` → `session/presets/{mod.rs,edit.rs}` (split if it would pass 500), `session/tests/presets_edit.rs` (new), `api/presets.rs` (`PresetPatch`), `session/run.rs` (the `run_preset_*` functions), `commands/presets.rs`; `features/settings/sections/{PresetList.tsx,PresetEditor.tsx,Timer.tsx}`, `features/settings/{usePresets.ts,Settings.presets.test.tsx}` (new), `features/settings/Settings.tsx` (mounts the list; any move to stay ≤ 500 goes into `usePresets.ts`), `features/settings/settingsKeys.ts` (save-line copy); `verification/layout/settings.presets.spec.ts` (new).
-- Touches (append-only): `commands.list.rs`, `commands/mod.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`, `ipc.rs`, `ipc/bindings.ts` (regenerated), `test/fixtures.ts`, `dev/layout/scenarios.ts`.
+- Owns: `crates/service/src/session/presets.rs` → `session/presets/{mod.rs,edit.rs}` (split if it would pass 500), `session/tests/presets_edit.rs` (new), `api/presets.rs` (`PresetPatch`), `session/run.rs` (the `run_preset_*` functions), `commands/presets.rs`; `features/settings/sections/{PresetList.tsx,PresetEditor.tsx,Timer.tsx}`, `features/settings/{usePresets.ts,Settings.presets.test.tsx}` (new), `features/settings/Settings.tsx` (mounts the list; any move to stay ≤ 500 goes into `usePresets.ts`), `features/settings/settingsKeys.ts` (save-line copy).
+- Touches (append-only): `commands.list.rs`, `commands/mod.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`, `ipc.rs`, `ipc/bindings.ts` (regenerated), `test/fixtures.ts`.
 - Interfaces:
   - Consumes: E4's `PresetEntry`, `PresetError`, `presets-changed`, `emit_presets_changed`.
   - Produces: `preset_add() -> Result<PresetEntry, PresetError>`; `preset_update(id: PresetId, patch: PresetPatch) -> Result<PresetEntry, PresetError>` with `PresetPatch { name, focus_min, break_min, long_break_min, rounds }` (each `Option`); `preset_remove(id)`, `preset_undo_remove(id)`, `presets_restore_defaults()`, each `-> Result<Vec<PresetEntry>, PresetError>`, the live list (ruling 3).
@@ -171,7 +171,6 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - [ ] Restore un-tombstones and rewrites defaults at their positions (shifting others), leaves user presets alone, may pass 12; `aria-disabled` with "The default presets are all here." when nothing differs; `isChanged` false for user presets.
   - [ ] The editor saves each field on blur or Return and restores on Esc, with always-visible range helpers; duplicate names and blank names give the spec's lines; every write emits `presets-changed`, and `settings-changed` when the selection moves.
   - [ ] While a session runs, edits apply to the next session (B's line). Store degraded: the list is read-only with B's lines.
-  - [ ] `settings.presets.spec.ts`: the editor open and 12 presets at 360×240, 900×600, 1440×900, both themes: no document scroll, targets ≥ 44×44, focus ring.
 - Tests first: `add_at_twelve_is_limit`, `remove_last_is_last_preset`, `remove_selected_selects_first`, `undo_remove_name_taken_is_duplicate`, `restore_defaults_positions_and_past_twelve`, `update_logs_changed_fields_only`, `editor_saves_on_blur_and_return`, `editor_escape_restores`, `editor_saves_chain_newest_wins` (two held replies), `presets_changed_from_tray_updates_list`.
 - Notes: sonnet. The commands call `orasenda_service::session::run_preset_*` through `AppHost` directly; `runtime/session.rs` is D4's in this wave and stays untouched. By eye (owner): the list, the editor open, Remove and Undo, at the three sizes, light and dark.
 
@@ -194,7 +193,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 - Priority: 0
 - Depends on: E6, E3
 - Owns: `crates/service/src/session/cadence.rs` (new: today's rows via `started_between`, `next_round` input, `focused_today`, the cap line and `capReached`, the keep-going offer, `auto` from settings, the midnight tick), `session/{actions.rs,view.rs,service.rs,recovery.rs,persist.rs,run.rs,mod.rs}`, `session/view/` split if `view.rs` would pass 300; `session/tests/{cadence.rs,extend.rs,offer.rs,cap.rs,view_modes.rs,two_row_end.rs,recovery_break.rs}` (new); `api/{timer.rs,events.rs,errors.rs}`; `scheduler/tick.rs` (midnight `timer-tick`); `commands/timer.rs`; `ipc/bindings.ts`.
-- Touches (append-only): `commands.list.rs`, `commands/mod.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`, `ipc.rs`, `test/fixtures.ts` (the `TimerView` builder), `dev/layout/scenarios.ts`; `scheduler/publish.rs` (only if the new milestones need routing; notifications are E9's).
+- Touches (append-only): `commands.list.rs`, `commands/mod.rs`, `capabilities/main.json`, `lib.rs`, `lib_tests.rs`, `ipc.rs`, `test/fixtures.ts` (the `TimerView` builder); `scheduler/publish.rs` (only if the new milestones need routing; notifications are E9's).
 - Interfaces:
   - Consumes: E6's engine and `cadence::*`; E3's `pick`; E4's settings keys.
   - Produces: `Mode { Focus, Break, Warning, Paused, Idle }`; `TimerView { +break_kind, extensions, can_extend, intent, suggestion: Option<SuggestionView { text, label }>, offer: Option<Offer>, check_in, cap_line }`; `MilestoneKind { +Warned, BreakStarted, Extended, CapReached }`, `MilestoneEvent { +phase, quick }`; `Action { +Extend, SetIntent(Option<String>), DismissOffer, TakeBreak }`; commands `timer_extend`, `timer_set_intent(intent: Option<String>)`, `timer_dismiss_offer`, `timer_take_break`, each `-> Result<TimerView, TimerCommandError>`; `TimerCommandErrorKind { +ExtensionCap, InvalidIntent }`; `Effects { +warned, break_started, quick_completed }` for E9.
@@ -212,8 +211,8 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 ### E8 (#348): Today: cadence states and the intent line
 - Priority: 1
 - Depends on: E7, D6
-- Owns: `features/today/{statusLine.ts,statusLine.test.ts,StatusRow.tsx,StatusRow.test.tsx,IntentField.tsx,IntentField.test.tsx,intentEvents.ts,Controls.tsx,TimeView.tsx,Today.tsx,today.css,presets.ts,PresetSummary.tsx,PresetSummary.test.tsx}`, `features/today/Today.cadence.test.tsx` (new); `verification/layout/today.fits.spec.ts` (the new states) and `verification/layout/support/today.ts`; `packages/ui/src/components/ui/inline-notice.md` ("Today slots").
-- Touches (append-only): `dev/layout/scenarios.ts`, `test/fixtures.ts`.
+- Owns: `features/today/{statusLine.ts,statusLine.test.ts,StatusRow.tsx,StatusRow.test.tsx,IntentField.tsx,IntentField.test.tsx,intentEvents.ts,Controls.tsx,TimeView.tsx,Today.tsx,today.css,presets.ts,PresetSummary.tsx,PresetSummary.test.tsx}`, `features/today/Today.cadence.test.tsx` (new); `packages/ui/src/components/ui/inline-notice.md` ("Today slots").
+- Touches (append-only): `test/fixtures.ts`.
 - Interfaces:
   - Consumes: E7's `TimerView` fields and four commands.
   - Produces: `statusLine(input: StatusInput): StatusLine | null` with `StatusLine { text, tone: "neutral" | "attention" | "warning" | "rest", actions: StatusAction[] }`; `requestIntentField(): void` and `onIntentFieldRequest(cb: () => void): () => void` in `intentEvents.ts` (E10's palette row calls `requestIntentField` after navigating to Today).
@@ -222,9 +221,9 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - [ ] Controls in a break: "Pause break"/"Resume break" and "Skip break" (⌘. still works); focus stays on Pause when a break starts.
   - [ ] The summary in a break reads "Steady Focus · break · ends 14:30" ("long break").
   - [ ] Intent: Start sends none; the quiet button opens `IntentField` (`maxLength` 120); Return or blur saves, empty Return clears, Esc restores, focus returns to the button; never opens by itself; `task={view.intent}` reaches `TimerRing` and the wide `TimerStrip` only.
-  - [ ] `today.fits` passes the spec's new states at C's size set in both themes; one primary each; the warning fade is instant under reduced motion.
+  - [ ] The spec's new states render in both themes with one primary each; the warning fade is instant under reduced motion.
   - [ ] The InlineNotice README lists E's rows (code-first, ADR-015).
-- Tests first: `status_line_rank_for_every_row`, `status_row_two_actions_names`, `auto_step_warning_offers_take_break_not_extend`, `controls_in_break_skip_and_pause_break`, `summary_break_heading`, `intent_return_saves_blur_saves_escape_restores`, `intent_never_auto_opens`, `intent_request_event_opens_field`, `today_fits_<size>_<state>` (generated).
+- Tests first: `status_line_rank_for_every_row`, `status_row_two_actions_names`, `auto_step_warning_offers_take_break_not_extend`, `controls_in_break_skip_and_pause_break`, `summary_break_heading`, `intent_return_saves_blur_saves_escape_restores`, `intent_never_auto_opens`, `intent_request_event_opens_field`.
 - Notes: sonnet. Lands before D8 starts (Shared with D). By eye (owner): each new Today state at 360×240, 900×600, 1440×900 in light and dark; the warning fade with and without reduce-motion.
 
 ### E9 (#349): Menu bar, notifications and the cadence settings rows
@@ -245,7 +244,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 ### E10 (#350): Floater and full-screen states, "Set intent", close-out
 - Priority: 2
 - Depends on: E8, E9, E11, D6, D7, D8
-- Owns: `features/focus/{FocusPage.tsx,FocusPage.test.tsx}`, `features/floater/{FloaterPage.tsx,FloaterPage.test.tsx}`; `verification/layout/{focusWindow,floaterWindow}.spec.ts` (break, warning and offer cases); `capabilities/{focus,floater}.json` and `lib_tests.rs` (their exact lists); `app/palette/{paletteCommands.ts,paletteCommands.test.ts}` ("Set intent"); close-out: `docs/specs/2026-11-12-session-cadence.md` (status implemented, Implementation status with each PR), `docs/ROADMAP.md` (row E done), `CONTEXT.md` (check E's terms).
+- Owns: `features/focus/{FocusPage.tsx,FocusPage.test.tsx}`, `features/floater/{FloaterPage.tsx,FloaterPage.test.tsx}`; `capabilities/{focus,floater}.json` and `lib_tests.rs` (their exact lists); `app/palette/{paletteCommands.ts,paletteCommands.test.ts}` ("Set intent"); close-out: `docs/specs/2026-11-12-session-cadence.md` (status implemented, Implementation status with each PR), `docs/ROADMAP.md` (row E done), `CONTEXT.md` (check E's terms).
 - Touches: `features/today/intentEvents.ts` (consume), `features/timer/useSurfaceTimer.ts` (consume).
 - Interfaces:
   - Consumes: E7's view and commands; E8's `requestIntentField`; E11's `secondaryActions`, `onSkipBreak`, `onKeepGoing`, `keepGoingName`; D's `useSurfaceTimer`, `paletteCommands`.
@@ -253,7 +252,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - [ ] The Focus window and the floater pass `mode` and `task` from the view; break and warning show their shapes and words.
   - [ ] The Focus window passes E11's secondary actions per state: "+10 min" while `canExtend` in focus or warning, "Skip break" in a break, "Keep going" and "Stop here" with `offer`, "Take a break" in an auto step; End reads "End break" in a break. The floater passes `onSkipBreak` in a break and `onKeepGoing` with the offer. Each calls the same command as Today.
   - [ ] Grants are exactly what each window shows: `focus.json` gains `allow-timer-extend`, `allow-timer-take-break`, `allow-timer-dismiss-offer`; `floater.json` gains `allow-timer-stop` (Skip break only). The capability tests assert the exact lists.
-  - [ ] The cases D left out (break, warning, the offer) pass in both specs, both themes.
+  - [ ] The states D left out (break, warning, the offer) render in both themes.
   - [ ] The palette lists "Set intent" only while a focus runs or is paused; it navigates to Today and calls `requestIntentField`.
   - [ ] The spec reads implemented; ROADMAP row E reads done.
 - Tests first: `focus_page_break_and_warning_modes`, `focus_page_secondary_action_per_state`, `floater_skip_break_and_keep_going`, `floater_break_and_warning_modes`, `focus_capability_exact_with_cadence`, `floater_capability_exact_with_cadence`, `palette_set_intent_only_in_focus`, `palette_set_intent_opens_field`.
@@ -262,7 +261,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 ### E11 (#343): Break actions on FullScreenFocus and FloatingTimer (design system)
 - Priority: 1
 - Depends on: none (any early slot; the plan puts it in wave 3)
-- Owns: `packages/ui/src/components/ui/full-screen-focus.{tsx,md,specimen.tsx,test.tsx}`, `packages/ui/src/components/ui/floating-timer.{tsx,md,specimen.tsx,test.tsx}`, `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts`.
+- Owns: `packages/ui/src/components/ui/full-screen-focus.{tsx,md,specimen.tsx,test.tsx}`, `packages/ui/src/components/ui/floating-timer.{tsx,md,specimen.tsx,test.tsx}`.
 - Touches (append-only, only if needed): `packages/ui/src/index.ts`, `packages/ui/src/designSystem.test.ts`, `verification/contrast-pairs.json`.
 - Interfaces (props inline in each `.tsx`, all optional, so D6 and D7 build unchanged):
   - Produces: `FullScreenFocus` `secondaryActions?: ReadonlyArray<{ id: string; label: string; name?: string; onSelect: () => void }>` (0–2; two only for the keep-going offer, the second ghost), and End labelled "End break" when `mode="break"`.
@@ -271,7 +270,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
   - [ ] FullScreenFocus: one quiet secondary slot in the controls row beside Pause/End; Pause/Resume stays the only round primary; "+10 min", "Skip break", "Keep going"/"Stop here" and "Take a break" render as the host passes them; the fixed control track does not grow; Tab order Leave → Pause/Resume → End → secondary actions (or as the README states).
   - [ ] FloatingTimer: "Skip break" and "Keep going" fit at 280×56; the README states their widths in the same form as the deep and ended widths now; targets ≥ 44×44.
   - [ ] Tokens only (closed Tailwind theme, no arbitrary values); new colour pairs, if any, in `contrast-pairs.json` at 4.5:1 text and 3:1 marks in both themes.
-  - [ ] Both READMEs describe the props, states and accessible names; the components' existing harness cases still pass; new Playwright specimen cases for each action state at the README sizes, both themes, reduced motion.
+  - [ ] Both READMEs describe the props, states and accessible names; the components' existing tests still pass.
   - [ ] First-consumer check (conventions): the review reads the spec's status-row names ("Add 10 minutes of focus", "Keep going with Steady Focus") and E10's acceptance.
 - Tests first: `full_screen_focus_secondary_action_slot`, `full_screen_focus_two_actions_for_offer`, `full_screen_focus_end_break_label`, `floating_timer_skip_break_in_pause_slot`, `floating_timer_keep_going_in_start_slot`, `floating_timer_actions_fit_280x56`.
 - Notes: sonnet, opus review (design-system change). After merge the controller republishes the design-system artifact from `main`. By eye (owner): both components in each new state at their README sizes, light and dark.
@@ -297,7 +296,7 @@ A slot freed early takes the next ready task in table order. No two tasks in one
 | Goal 8: deep-hours cap | E6, E7, E8, E9 (Settings row) |
 | Goal 9: intent | E6, E7, E8, E10 (palette) |
 | Goal 10: suggestions with labels, verified | E3, E7, E8 |
-| Goal 11: UI rules, harness, ≤ 500 lines | E2, E4, E5, E8, E9, E10 |
+| Goal 11: UI rules, ≤ 500 lines | E2, E4, E5, E8, E9, E10 |
 | Today status-row table, controls, summary | E8 |
 | Settings › Timer and Notifications | E4, E5, E9 |
 | Menu bar glyphs and items | E4 (Preset submenu), E9 |

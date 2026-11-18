@@ -3,7 +3,7 @@
 - Date: 2026-11-10
 - Status: implemented (2026-11-11; approved by the owner 2026-11-10: the folder structure shown in the session, the 500-line ceiling, "use workflow to execute this")
 - Plan: [docs/plans/2026-11-10-structure-refactor.md](../plans/2026-11-10-structure-refactor.md)
-- Runs before sub-project C (Today redesign). C's decisions so far (design-match check: WebKit layout cases plus a review checklist; DevPanel: its own debug-only window) stand.
+- Runs before sub-project C (Today redesign). C's decisions so far (design-match check: a review checklist; DevPanel: its own debug-only window) stand.
 
 ## Why
 1. **Files grew without structure.** `apps/orasenda/src-tauri/src/session.rs` is 3,789 lines (≈1,020 production, 85 tests); `tray.rs` 998, `spike/commands.rs` 963, `scheduler.rs` 839, `crates/store/src/lib.rs` 781, `core/timer/engine.rs` 750. The frontend `src/` is flat. Cause: a task's Owns made "add to my file" the cheapest path, and no review or CI check looked at module shape. Upstream report: JCIOriente/baton#136.
@@ -73,9 +73,9 @@ packages/ui/src/components/ui/choice.tsx             NEW (migrated); legacy.* de
 6. **Plans split before they grow.** A task that would push a file past 500 lines includes the split, and its Owns lists the new sibling files.
 
 ## Legacy removal and Choice
-- **Choice.** `packages/ui/src/components/ui/choice.tsx` exports `ChoiceGroup` and `Choice` (+ props types), built on native `<input type="radio|checkbox">` inside a `<label>` in a `<fieldset>` with a `<legend>` (or `role="radiogroup"` with `aria-labelledby`, as Settings › Timer does today), keeping form semantics, the `choice.md` states (checked ground `selection`, focus dot, dashed disabled, segmented and long variants) and `hit-min`. Theme utilities only, no arbitrary values; the `1.5px` border follows the wave-1 ruling (`border-2`). The CSS block in `styles.css` goes. Consumers: Settings › Timer, Today's preset radios (C removes them later) and the DevPanel. Component test, WebKit specimen in both themes, README updated.
+- **Choice.** `packages/ui/src/components/ui/choice.tsx` exports `ChoiceGroup` and `Choice` (+ props types), built on native `<input type="radio|checkbox">` inside a `<label>` in a `<fieldset>` with a `<legend>` (or `role="radiogroup"` with `aria-labelledby`, as Settings › Timer does today), keeping form semantics, the `choice.md` states (checked ground `selection`, focus dot, dashed disabled, segmented and long variants) and `hit-min`. Theme utilities only, no arbitrary values; the `1.5px` border follows the wave-1 ruling (`border-2`). The CSS block in `styles.css` goes. Consumers: Settings › Timer, Today's preset radios (C removes them later) and the DevPanel. Component test, README updated.
 - **Legacy.** `Mode`, `TimerMode`, `FieldProps` and `Command` move into `types.ts` (or onto their components). `os-num` → `font-mono tabular-nums` utilities, `os-sr-only` → `sr-only`, `os-actions` → utilities. `legacy.js`, `legacy.d.ts`, `legacy.css` are deleted with every build and test branch that reads them (`vite.config.ts` `legacyExternalForDts`/`hasMigratedExports`, `design-system/build.ts` `composeDeclarations`, `guard.test.ts`, `libraryBuild.test.ts`, `index.test.tsx`, comments in `lib/layer.ts` and `tooltip.tsx`). `guard.test.ts` then fails if a file named `legacy.*` or an `os-` class reappears in `packages/ui/src`.
-- **Preflight.** `styles.css` imports Tailwind's preflight in the base layer; `app.css` and the specimens are adjusted so the app looks the same. Before/after WebKit screenshots of Today, Settings and every specimen, in both themes, go on the PR.
+- **Preflight.** `styles.css` imports Tailwind's preflight in the base layer; `app.css` and the specimens are adjusted so the app looks the same. Before/after screenshots of Today, Settings and every specimen, in both themes, go on the PR.
 
 ## The service crate
 - `crates/service` (package `orasenda-service`) depends on `orasenda-core`, `orasenda-store`, `serde`, `specta`, `uuid`. It holds `SessionService`, `Platform`, `Action`, `Effects`, the `api` types and the scheduler's tick/publish logic behind a `Host` trait.
