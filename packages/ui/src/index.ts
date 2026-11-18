@@ -16,7 +16,7 @@ export { EmptyState } from "./components/ui/empty-state";
 export { FloatingTimer } from "./components/ui/floating-timer";
 export { FlowStep } from "./components/ui/flow-step";
 export { FullScreenFocus } from "./components/ui/full-screen-focus";
-export { HabitDots } from "./components/ui/habit-dots";
+export { HabitDots, HabitLegend, HabitWeekdays } from "./components/ui/habit-dots";
 export { Icon } from "./components/ui/icon";
 export { IconButton } from "./components/ui/icon-button";
 export { ImportPreviewList } from "./components/ui/import-preview-list";

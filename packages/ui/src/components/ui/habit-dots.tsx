@@ -20,6 +20,11 @@ export interface HabitDotsProps {
   runLine?: string;
   /** "week": rows of seven aligned to Monday under a weekday header. Unset: one wrapped line. */
   columns?: "week";
+  /**
+   * The grid alone, for a host that lists habits as rows: no visible name, weekday header or run
+   * line (the host prints them once, with `HabitWeekdays` and `HabitLegend`). `name` still names the group.
+   */
+  compact?: boolean;
 }
 
 // Monday first. The key is the weekday's name, since two weekdays share a letter.
@@ -84,6 +89,49 @@ function Dot({
   );
 }
 
+// Every week cell is one icon-md wide, so a header printed on its own lines up with the grids under it.
+const WEEK_GRID = "grid w-max grid-cols-7 justify-items-center";
+const LETTER = "w-icon-md text-center text-label text-ink-muted";
+
+/** The M–S weekday header on its own, for a list of compact week grids. Hidden from assistive tech. */
+export function HabitWeekdays(): ReactElement {
+  return (
+    <div
+      data-slot="habit-weekdays"
+      aria-hidden="true"
+      className={cn(WEEK_GRID, "gap-fluid-stack p-1")}
+    >
+      {WEEKDAY_LETTERS.map(([key, letter]) => (
+        <span key={`head-${key}`} data-slot="habit-weekday" aria-hidden="true" className={LETTER}>
+          {letter}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** The shapes with their words, printed once per screen. */
+export function HabitLegend(): ReactElement {
+  const states = Object.keys(WORDS) as HabitState[];
+  return (
+    <div
+      data-slot="habit-legend"
+      className="flex flex-wrap gap-x-4 gap-y-2 text-body-sm text-ink-muted"
+    >
+      {states.map((s) => (
+        <span key={s} className="inline-flex items-center gap-2">
+          <Dot state={s} decorative />
+          {WORDS[s]}
+        </span>
+      ))}
+      <span className="inline-flex items-center gap-2">
+        <Dot state="future" today decorative />
+        Today
+      </span>
+    </div>
+  );
+}
+
 /** The calm dot grid for a habit. A day not done is a hollow dot, not a gap in a chain. */
 export function HabitDots(props: HabitDotsProps): ReactElement {
   const days = (props.days || []).map((d) => {
@@ -95,16 +143,21 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
     };
   });
   const week = props.columns === "week";
+  const compact = !!props.compact;
   const first = (props.days || [])[0];
   const weekday = typeof first === "object" && first ? first.weekday : undefined;
   const offset =
     week && typeof weekday === "number" && Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
       ? weekday
       : 0;
-  const states = Object.keys(WORDS) as HabitState[];
   return (
-    <div data-slot="habit-dots" className="@container flex flex-col gap-fluid-stack">
-      {props.name ? (
+    // A compact grid sizes to its dots: a size container would have no width of its own in a row.
+    <div
+      data-slot="habit-dots"
+      data-compact={compact ? "" : undefined}
+      className={compact ? "flex-none" : "@container flex flex-col gap-fluid-stack"}
+    >
+      {props.name && !compact ? (
         <div data-slot="habit-name" className="text-body font-semibold">
           {props.name}
         </div>
@@ -115,19 +168,16 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
         role="group"
         aria-label={`${props.name || "Habit"}, daily record`}
         data-columns={week ? "week" : undefined}
-        className={cn(
-          "gap-fluid-stack p-1",
-          week ? "grid w-max grid-cols-7 justify-items-center" : "flex flex-wrap",
-        )}
+        className={cn("gap-fluid-stack p-1", week ? WEEK_GRID : "flex flex-wrap")}
       >
         {/* Each letter is hidden itself: a display: contents wrapper can lose aria-hidden in WebKit. */}
-        {week
+        {week && !compact
           ? WEEKDAY_LETTERS.map(([key, letter]) => (
               <span
                 key={`head-${key}`}
                 data-slot="habit-weekday"
                 aria-hidden="true"
-                className="text-center text-label text-ink-muted"
+                className={LETTER}
               >
                 {letter}
               </span>
@@ -146,28 +196,12 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
           <Dot key={i} {...d} />
         ))}
       </div>
-      {props.runLine ? (
+      {props.runLine && !compact ? (
         <div data-slot="habit-run-line" className="text-body-sm text-ink-muted">
           {props.runLine}
         </div>
       ) : null}
-      {props.legend ? (
-        <div
-          data-slot="habit-legend"
-          className="flex flex-wrap gap-x-4 gap-y-2 text-body-sm text-ink-muted"
-        >
-          {states.map((s) => (
-            <span key={s} className="inline-flex items-center gap-2">
-              <Dot state={s} decorative />
-              {WORDS[s]}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-2">
-            <Dot state="future" today decorative />
-            Today
-          </span>
-        </div>
-      ) : null}
+      {props.legend ? <HabitLegend /> : null}
       {props.note ? (
         <div data-slot="habit-note" className="text-body-sm text-ink-muted">
           {props.note}

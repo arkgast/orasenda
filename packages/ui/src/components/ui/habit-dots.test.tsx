@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { HabitDots } from "./habit-dots";
+import { HabitDots, HabitLegend, HabitWeekdays } from "./habit-dots";
 
 test("renders_done_with_word_or_shape", () => {
   render(<HabitDots days={["done"]} />);
@@ -147,4 +147,31 @@ test("week_layout_dots_keep_their_labels", () => {
     />,
   );
   expect(screen.getByRole("img", { name: "Monday 9 November, Not done" })).toBeTruthy();
+});
+
+test("compact_week_shows_only_the_grid_and_keeps_its_name", () => {
+  const { container } = render(
+    <HabitDots compact name="Stretch" columns="week" days={["done", "skipped"]} runLine="1 day" />,
+  );
+  expect(container.querySelector('[data-slot="habit-name"]')).toBeNull();
+  expect(container.querySelector('[data-slot="habit-weekday"]')).toBeNull();
+  expect(container.querySelector('[data-slot="habit-run-line"]')).toBeNull();
+  expect(screen.getByRole("group", { name: "Stretch, daily record" })).toBeInTheDocument();
+  expect(screen.getAllByRole("img")).toHaveLength(2);
+});
+
+test("weekday_header_alone_is_aria_hidden_and_monday_first", () => {
+  const { container } = render(<HabitWeekdays />);
+  const letters = container.querySelectorAll('[data-slot="habit-weekday"]');
+  expect(Array.from(letters, (l) => l.textContent).join("")).toBe("MTWTFSS");
+  for (const l of letters) expect(l.getAttribute("aria-hidden")).toBe("true");
+});
+
+test("legend_alone_names_every_shape_in_words", () => {
+  const { container } = render(<HabitLegend />);
+  const legend = container.querySelector('[data-slot="habit-legend"]') as HTMLElement;
+  for (const word of ["Done", "Not done", "Rest day", "Upcoming", "Today"]) {
+    expect(legend).toHaveTextContent(word);
+  }
+  expect(screen.queryAllByRole("img")).toHaveLength(0);
 });
