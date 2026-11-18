@@ -20,7 +20,7 @@ export interface FloatingTimerProps extends Omit<MenuBarTimerProps, "compact"> {
   phase?: "focus" | "break";
   /** In a break, "Skip break" takes Pause's slot; while the break is paused, Resume keeps the slot. */
   onSkipBreak?: () => void;
-  /** While idle, "Keep going" takes the Start pill's slot. */
+  /** While idle, "Keep going" takes the Start button's slot. */
   onKeepGoing?: () => void;
   /** The preset's name: the button is then named "Keep going with <name>". */
   keepGoingName?: string;

@@ -131,3 +131,13 @@ test("has_dashed_disabled_look", () => {
   expect(cls.contains("disabled:border-dashed")).toBe(true);
   expect(cls.contains("aria-disabled:border-dashed")).toBe(true);
 });
+
+test("every_variant_is_rounded_md", () => {
+  for (const variant of ["primary", "break", "quiet", "ghost", "critical"] as const) {
+    const { unmount } = render(<Button variant={variant}>Go</Button>);
+    const { className } = screen.getByRole("button");
+    expect(className).toContain("rounded-md");
+    expect(className).not.toContain("rounded-pill");
+    unmount();
+  }
+});
