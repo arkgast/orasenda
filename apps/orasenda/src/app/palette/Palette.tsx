@@ -23,8 +23,8 @@ type Props = {
   onNavigate(page: NavPage): void;
   /** *Import tasks…*: the host goes to the Board and asks for the import sheet. */
   onImportTasks(): void;
-  /** *Start shutdown*: the host goes to Review and asks for the flow. */
-  onStartFlow(flow: "shutdown"): void;
+  /** *Start shutdown* or *Start weekly review*: the host goes to Review and asks for the flow. */
+  onStartFlow(flow: "shutdown" | "weekly"): void;
 };
 
 /** Runs a command; resolves to whether it worked. Failures are logged here, shown by the caller. */
@@ -149,6 +149,9 @@ export function Palette({
         return;
       case "startShutdown":
         onStartFlow("shutdown");
+        return;
+      case "startWeekly":
+        onStartFlow("weekly");
         return;
       case "capture":
         return attempt("capture_open", commands.captureOpen()).then(report("open the capture pad"));

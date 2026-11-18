@@ -222,3 +222,15 @@ test("start_shutdown_is_listed_with_the_main_commands_and_not_in_the_sub_modes",
     "startShutdown",
   );
 });
+
+test("start_weekly_review_is_listed_with_the_main_commands_and_not_in_the_sub_modes", () => {
+  for (const input of [base, { ...base, view: null }, { ...base, tasks: OPEN }]) {
+    expect(paletteCommands(input)).toContainEqual({
+      id: "startWeekly",
+      label: "Start weekly review",
+    });
+  }
+  for (const sub of [{ tasksOnly: true }, { displaysOnly: true }]) {
+    expect(paletteCommands({ ...base, ...sub }).map((c) => c.id)).not.toContain("startWeekly");
+  }
+});

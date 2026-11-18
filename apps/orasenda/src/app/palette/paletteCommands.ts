@@ -161,6 +161,9 @@ const IMPORT_TASKS: Command = {
 /** Opens Review's shutdown flow. Always listed while the main window is up. */
 const START_SHUTDOWN: Command = { id: "startShutdown", label: "Start shutdown" };
 
+/** Opens Review's weekly flow. Always listed while the main window is up. */
+const START_WEEKLY: Command = { id: "startWeekly", label: "Start weekly review" };
+
 /** The commands available now, in the order the palette shows them (command-palette.md). */
 export function paletteCommands(input: PaletteInput): Command[] {
   if (input.tasksOnly) return taskRows(input.tasks);
@@ -176,6 +179,7 @@ export function paletteCommands(input: PaletteInput): Command[] {
     captureCommand(input),
     IMPORT_TASKS,
     START_SHUTDOWN,
+    START_WEEKLY,
     ...focusViewCommands(input),
     ...settingsCommands(input),
     ...pages,

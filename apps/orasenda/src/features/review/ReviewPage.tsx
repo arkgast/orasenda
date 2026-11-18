@@ -6,6 +6,7 @@ import { type FlowAsk, takeFlowAsk } from "./flowAsk";
 import { type Flow, Overview, primaryFlow, START_LABELS } from "./Overview";
 import { ShutdownFlow } from "./shutdown/ShutdownFlow";
 import { useReview } from "./useReview";
+import { WeeklyFlow } from "./weekly/WeeklyFlow";
 import "./review.css";
 
 type Props = {
@@ -36,11 +37,11 @@ export function ReviewPage({ onNavigate, onStart, asked }: Props): ReactElement 
     wasError.current = review.status === "error";
   }, [review.status]);
   const lead = view ? primaryFlow(view.primary) : null;
-  // The flow in progress replaces the overview in place; V20 adds the weekly one.
+  // The flow in progress replaces the overview in place.
   const [flow, setFlow] = useState<Flow | null>(null);
   const start = (next: Flow) => {
     onStart?.(next);
-    if (next === "shutdown") setFlow(next);
+    setFlow(next);
   };
   const wasFlow = useRef(false);
   useEffect(() => {
@@ -76,6 +77,14 @@ export function ReviewPage({ onNavigate, onStart, asked }: Props): ReactElement 
     return (
       <div className="app-review-page">
         <ShutdownFlow onClose={() => setFlow(null)} />
+      </div>
+    );
+  }
+
+  if (flow === "weekly") {
+    return (
+      <div className="app-review-page">
+        <WeeklyFlow onClose={() => setFlow(null)} />
       </div>
     );
   }
