@@ -69,10 +69,10 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
         </p>
         {hasAction ? (
           <Button
-            variant={props.actionVariant === "quiet" ? "quiet" : "ghost"}
+            variant={props.actionVariant === "quiet" ? "quiet" : "inline"}
+            size="row"
             aria-label={props.actionName || undefined}
             onClick={props.onAction}
-            className={cn("flex-none px-3", props.actionVariant !== "quiet" && "text-focus")}
           >
             {props.actionLabel}
           </Button>

@@ -91,7 +91,9 @@ test("row_action_defaults_to_ghost_and_can_be_quiet", () => {
       Tip
     </InlineNotice>,
   );
-  expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe("ghost");
+  expect(screen.getByRole("button", { name: "Got it" }).getAttribute("data-variant")).toBe(
+    "inline",
+  );
   expect(screen.getByRole("button", { name: "Got it" })).toHaveClass("text-focus");
   rerender(
     <InlineNotice variant="row" actionVariant="quiet" actionLabel="Got it" onAction={() => {}}>

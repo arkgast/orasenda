@@ -52,7 +52,7 @@ export function InboxStatus(props: Props): ReactElement {
         {line ? LINES[line] : ""}
       </InlineNotice>
       {moved ? (
-        <Button variant="ghost" className="flex-none px-3 text-focus" onClick={props.onOpenBoard}>
+        <Button variant="inline" size="row" onClick={props.onOpenBoard}>
           Open Board
         </Button>
       ) : null}
