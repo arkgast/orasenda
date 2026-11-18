@@ -34,6 +34,16 @@ test("start_sends_run_start_and_the_run_view_replaces_the_overview", async () =>
   expect(document.querySelectorAll('[data-slot="button"][data-variant="primary"]')).toHaveLength(1);
 });
 
+test("run_view_has_one_primary_per_state", async () => {
+  const primaries = () =>
+    document.querySelectorAll('[data-slot="button"][data-variant="primary"]').length;
+  await startRun();
+  expect(primaries()).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "End routine" }));
+  await flush();
+  expect(primaries()).toBe(1);
+});
+
 test("the_step_shows_its_detail_lines_and_the_progress_list_in_shape_and_word", async () => {
   await startRun();
   expect(runText()).toContain("2-minute version: one sip.");

@@ -18,13 +18,13 @@ const day = (name: string, weekday: string) =>
   within(dialog(name)).getByRole("button", { name: weekday });
 
 async function openNew() {
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add a routine or habit" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "New routine" }));
   await settle();
 }
 
 async function openEdit(name = "Morning Light & Movement") {
-  fireEvent.click(within(card(name)).getByRole("button", { name: `More for ${name}` }));
+  fireEvent.click(within(card(name)).getByRole("button", { name: `More actions for ${name}` }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
   await settle();
 }
@@ -209,6 +209,6 @@ test("saving_a_new_routine_moves_focus_to_its_more", async () => {
   await act(() => new Promise((done) => setTimeout(done, 20)));
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(
-    within(card("Evening walk")).getByRole("button", { name: "More for Evening walk" }),
+    within(card("Evening walk")).getByRole("button", { name: "More actions for Evening walk" }),
   ).toHaveFocus();
 });

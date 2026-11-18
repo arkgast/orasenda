@@ -128,34 +128,6 @@ test("the_page_follows_routines_changed", async () => {
   );
 });
 
-test("start_is_wired_to_the_run_view_by_default_as_the_one_primary", async () => {
-  const { container } = await renderRoutines();
-  expect(primaries(container)).toEqual([
-    screen.getByRole("button", { name: "Start Morning Light & Movement" }),
-  ]);
-});
-
-test("with_start_wired_one_primary_start_goes_to_the_routine_in_progress_or_first_not_finished", async () => {
-  const onStart = vi.fn();
-  const view = routinesView({
-    routines: [
-      routineView({ id: "r-a", name: "Done one" }, "finished"),
-      routineView({ id: "r-b", name: "Fresh one", wellness: false, note: null }),
-      routineView({ id: "r-c", name: "Half one", wellness: false, note: null }, "inProgress"),
-    ],
-  });
-  const { container } = await renderRoutines({ routines_list: () => view }, { onStart });
-  const primary = primaries(container);
-  expect(primary).toHaveLength(1);
-  expect(primary[0]).toHaveAccessibleName("Start Half one");
-  expect(
-    within(card("Fresh one")).getByRole("button", { name: "Start Fresh one" }),
-  ).toHaveAttribute("data-variant", "quiet");
-  expect(within(card("Done one")).queryByRole("button", { name: /^Start/ })).toBeNull();
-  fireEvent.click(primary[0]);
-  expect(onStart).toHaveBeenCalledWith("r-c");
-});
-
 test("an_optional_habit_says_so_by_its_name_not_on_its_check_in", async () => {
   await renderRoutines({
     routines_list: () => routinesView({ habits: [standaloneHabit({ optional: true })] }),

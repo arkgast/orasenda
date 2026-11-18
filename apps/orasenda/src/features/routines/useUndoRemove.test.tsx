@@ -34,7 +34,7 @@ test("remove_shows_removed_with_undo_and_moves_focus_to_undo", async () => {
       return null;
     },
   });
-  await choose(`More for ${ROUTINE}`, "Remove");
+  await choose(`More actions for ${ROUTINE}`, "Remove");
   expect(argsOf(backend.calls, "routine_remove")).toEqual([{ id: "routine-1" }]);
   expect(screen.queryByRole("article", { name: ROUTINE })).toBeNull();
   expect(statusText(container)).toContain(`Removed ${ROUTINE}.`);
@@ -54,21 +54,23 @@ test("undo_restores_and_brings_focus_back_to_the_item", async () => {
       return null;
     },
   });
-  await choose(`More for ${ROUTINE}`, "Remove");
+  await choose(`More actions for ${ROUTINE}`, "Remove");
   fireEvent.click(screen.getByRole("button", { name: `Undo removing ${ROUTINE}` }));
   await settle();
   expect(argsOf(backend.calls, "routine_restore")).toEqual([{ id: "routine-1" }]);
   expect(statusText(container)).toBe(`Brought back ${ROUTINE}.`);
-  expect(within(card(ROUTINE)).getByRole("button", { name: `More for ${ROUTINE}` })).toHaveFocus();
+  expect(
+    within(card(ROUTINE)).getByRole("button", { name: `More actions for ${ROUTINE}` }),
+  ).toHaveFocus();
 });
 
 test("the_removed_row_leaves_after_ten_seconds", async () => {
   const { container } = await renderRoutines();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-  await choose("More for Stretch", "Remove");
+  await choose("More actions for Stretch", "Remove");
   expect(statusText(container)).toContain("Removed Stretch.");
   // Focus has moved on from Undo, so nothing holds the row.
-  act(() => screen.getByRole("button", { name: "Add" }).focus());
+  act(() => screen.getByRole("button", { name: "Add a routine or habit" }).focus());
   await act(async () => vi.advanceTimersByTime(UNDO_MS - 1));
   expect(statusText(container)).toContain("Removed Stretch.");
   await act(async () => vi.advanceTimersByTime(1));
@@ -78,14 +80,14 @@ test("the_removed_row_leaves_after_ten_seconds", async () => {
 test("the_removed_row_stays_while_undo_has_focus_and_leaves_ten_seconds_after_focus_moves", async () => {
   const { container } = await renderRoutines();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-  await choose("More for Stretch", "Remove");
+  await choose("More actions for Stretch", "Remove");
   const undo = screen.getByRole("button", { name: "Undo removing Stretch" });
   expect(undo).toHaveFocus();
   await act(async () => vi.advanceTimersByTime(UNDO_MS * 3));
   // A keyboard or VoiceOver user keeps their place: Undo is still there and still focused.
   expect(statusText(container)).toContain("Removed Stretch.");
   expect(undo).toHaveFocus();
-  const add = screen.getByRole("button", { name: "Add" });
+  const add = screen.getByRole("button", { name: "Add a routine or habit" });
   act(() => add.focus());
   await act(async () => vi.advanceTimersByTime(UNDO_MS - 1));
   expect(statusText(container)).toContain("Removed Stretch.");
@@ -99,7 +101,7 @@ test("the_next_action_replaces_the_removed_row", async () => {
     routines_list: () =>
       routinesView({ habits: [standaloneHabit(), standaloneHabit({ id: "h2", name: "Read" })] }),
   });
-  await choose("More for Stretch", "Remove");
+  await choose("More actions for Stretch", "Remove");
   expect(statusText(container)).toContain("Removed Stretch.");
   fireEvent.click(screen.getByRole("checkbox", { name: "Done today: Read" }));
   expect(statusText(container)).toBe("");
@@ -113,7 +115,9 @@ test("a_step_comes_back_only_with_its_routine", async () => {
     },
   });
   const steps = within(card(ROUTINE)).getByRole("list", { name: "Steps" });
-  fireEvent.click(within(steps).getByRole("button", { name: "More for Drink a glass of water" }));
+  fireEvent.click(
+    within(steps).getByRole("button", { name: "More actions for Drink a glass of water" }),
+  );
   fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
   await settle();
   expect(argsOf(backend.calls, "habit_remove")).toEqual([{ id: "habit-1" }]);
@@ -131,7 +135,7 @@ test("a_full_list_on_undo_is_said_plainly", async () => {
       throw "full";
     },
   });
-  await choose(`More for ${ROUTINE}`, "Remove");
+  await choose(`More actions for ${ROUTINE}`, "Remove");
   fireEvent.click(screen.getByRole("button", { name: `Undo removing ${ROUTINE}` }));
   await settle();
   expect(statusText(container)).toBe(
@@ -148,7 +152,7 @@ test("a_failed_remove_says_so_and_offers_try_again", async () => {
       return null;
     },
   });
-  await choose("More for Stretch", "Remove");
+  await choose("More actions for Stretch", "Remove");
   expect(statusText(container)).toContain(
     "Stretch wasn't removed. Your data is safe; try again in a moment.",
   );
@@ -168,7 +172,7 @@ test("a_failed_undo_offers_try_again", async () => {
       return null;
     },
   });
-  await choose("More for Stretch", "Remove");
+  await choose("More actions for Stretch", "Remove");
   fireEvent.click(screen.getByRole("button", { name: "Undo removing Stretch" }));
   await settle();
   expect(statusText(container)).toContain(

@@ -150,7 +150,7 @@ test("move_down_and_up_call_routine_move_with_the_new_index", async () => {
   });
   const { backend } = await renderRoutines({ routines_list: () => two });
   const more = within(card("Morning Light & Movement")).getByRole("button", {
-    name: "More for Morning Light & Movement",
+    name: "More actions for Morning Light & Movement",
   });
   fireEvent.click(more);
   const menu = await screen.findByRole("menu");
@@ -177,7 +177,7 @@ test("habit_move_calls_habit_move_and_focus_stays_on_the_moved_habit", async () 
       return null;
     },
   });
-  fireEvent.click(screen.getByRole("button", { name: "More for Read" }));
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Read" }));
   fireEvent.click(await screen.findByRole("menuitem", { name: "Move up" }));
   await settle();
   expect(argsOf(backend.calls, "habit_move")).toEqual([{ id: "habit-b", toIndex: 0 }]);
@@ -187,13 +187,15 @@ test("habit_move_calls_habit_move_and_focus_stays_on_the_moved_habit", async () 
       .getAllByRole("heading", { level: 3 })
       .map((h) => h.textContent),
   ).toEqual(["Read", "Stretch"]);
-  expect(screen.getByRole("button", { name: "More for Read" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "More actions for Read" })).toHaveFocus();
 });
 
 test("a_step_moves_within_its_routine_and_keeps_focus", async () => {
   const { backend } = await renderRoutines();
   const steps = within(card("Morning Light & Movement")).getByRole("list", { name: "Steps" });
-  const more = within(steps).getByRole("button", { name: "More for Move for 5–10 minutes" });
+  const more = within(steps).getByRole("button", {
+    name: "More actions for Move for 5–10 minutes",
+  });
   fireEvent.click(more);
   const menu = await screen.findByRole("menu");
   expect(
@@ -205,7 +207,7 @@ test("a_step_moves_within_its_routine_and_keeps_focus", async () => {
   await settle();
   expect(argsOf(backend.calls, "habit_move")).toEqual([{ id: "habit-2", toIndex: 0 }]);
   expect(
-    within(steps).getByRole("button", { name: "More for Move for 5–10 minutes" }),
+    within(steps).getByRole("button", { name: "More actions for Move for 5–10 minutes" }),
   ).toHaveFocus();
 });
 
