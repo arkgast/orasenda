@@ -80,7 +80,8 @@ design-system-check:
     "{{ just_executable() }}" design-system --out "$dir"
     DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
-# Every check, fastest first. Stops at the first failure.
+# The Rust and React tests plus lint, fastest first; the same on every OS. Stops at the first failure.
+# Platform builds (mobile, app build, design system, contrast, tokens) run on their own recipes.
 ci:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
@@ -104,11 +105,6 @@ ci:
     "{{ just_executable() }}" service-boundary
     @echo "==> core purity (no target_os in core)"
     "{{ just_executable() }}" core-purity
-    @echo "==> contrast (self test, then the declared pairs)"
-    "{{ just_executable() }}" contrast
-    @echo "==> tokens (tokens.css and theme.css are up to date)"
-    "{{ just_executable() }}" tokens
-    git diff --exit-code -- packages/tokens/tokens.css packages/tokens/theme.css
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
     @echo "==> lint (no arbitrary Tailwind values)"
@@ -117,10 +113,6 @@ ci:
     pnpm --filter @orasenda/ui typecheck
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
-    @echo "==> ui (library build and the app's types against it)"
-    "{{ just_executable() }}" ui-build
-    @echo "==> design system (files build and load as classic scripts)"
-    "{{ just_executable() }}" design-system-check
     @echo "==> typecheck (tsc)"
     pnpm --filter orasenda typecheck
     @echo "==> test (vitest)"
@@ -132,10 +124,6 @@ ci:
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
     git diff --exit-code -- apps/orasenda/src/shared/ipc/bindings.ts
-    @echo "==> mobile (cargo check core, store and app for iOS and Android)"
-    "{{ just_executable() }}" mobile
-    @echo "==> app build (debug, no bundle)"
-    pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
 # Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=TimerRing&theme=dark
 specimens:
