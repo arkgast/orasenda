@@ -2203,7 +2203,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orasenda"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "orasenda-core",
  "orasenda-platform-macos",
@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "orasenda-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2233,7 +2233,7 @@ dependencies = [
 
 [[package]]
 name = "orasenda-platform-macos"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "block2",
  "objc2",
@@ -2247,7 +2247,7 @@ dependencies = [
 
 [[package]]
 name = "orasenda-service"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "csv",
  "flate2",
@@ -2264,7 +2264,7 @@ dependencies = [
 
 [[package]]
 name = "orasenda-store"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "orasenda-core",
  "rusqlite",

@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0](https://github.com/arkgast/orasenda/compare/v0.2.0...v0.3.0) (2026-11-18)
+
+
+### New
+
+* **data:** your reflections are now included in export, import and backups ([0183c4a](https://github.com/arkgast/orasenda/commit/0183c4a033ee82a407b1297673fcacc3335f4a3d))
+* **notifications:** get an optional nudge for the shutdown and the weekly review, off by default in Settings › Notifications ([4f804f4](https://github.com/arkgast/orasenda/commit/4f804f4c93ccec1705bd594607ec8e680654aed0))
+* **review:** end the day with a short shutdown: move unfinished tasks back to the Backlog with Undo, see tomorrow and reflect if you like ([f436675](https://github.com/arkgast/orasenda/commit/f4366750f792f319a101f9bc4f1db17a26bfa5b7))
+* **review:** look back on last week and choose up to three priorities for the new one in the weekly review ([28094fb](https://github.com/arkgast/orasenda/commit/28094fb953b9ae61f089121207c387b4f54b86cc))
+* **review:** open the Review page to see today and this week at a glance ([6f0977b](https://github.com/arkgast/orasenda/commit/6f0977b2c23b41b53b19bfd2de3d84e5e06714e9))
+* **review:** see your focus, routines and habits over a week, 8 weeks or 6 months, with an optional buffer suggestion for your estimates ([0fe3b75](https://github.com/arkgast/orasenda/commit/0fe3b75cc132cedcdbc6a29a7586d90c9150075e))
+* **settings:** set a weekly focus goal, a review time and the weekly review day in Settings ([abe422c](https://github.com/arkgast/orasenda/commit/abe422c37dbde95d084c3db1c59a15cc09e00162))
+* **ui:** the design system gains BarRow, TrendBars and FlowStep, and TaskPicker can create a task while you type ([727baba](https://github.com/arkgast/orasenda/commit/727baba27c32ce2ad8fa85754da52a8f8eb3bf8d))
+
+
+### Fixed
+
+* **board:** cards stay readable in small windows, and the drop slot opens gently while you drag ([705735e](https://github.com/arkgast/orasenda/commit/705735e6d613e929fb85c8b24daf620ab660bc85))
+* **dialogs:** a tooltip inside a dialog no longer moves keyboard focus away, and Alt+Tab moves through a dialog like Tab ([e8ce1bc](https://github.com/arkgast/orasenda/commit/e8ce1bca5b019c42440867fccfc73f896204ad71))
+* **settings:** after Undo or Remove on a timer preset, focus lands on the right place ([abe422c](https://github.com/arkgast/orasenda/commit/abe422c37dbde95d084c3db1c59a15cc09e00162))
+
 ## [0.2.0](https://github.com/arkgast/orasenda/compare/v0.1.0...v0.2.0) (2026-11-16)
 
 
