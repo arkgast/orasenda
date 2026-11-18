@@ -1,6 +1,12 @@
 import type { ReactElement } from "react";
 import { Frame } from "../../../specimens/Frame.tsx";
-import { type HabitDay, HabitDots, type HabitState } from "./habit-dots.tsx";
+import {
+  type HabitDay,
+  HabitDots,
+  HabitLegend,
+  type HabitState,
+  HabitWeekdays,
+} from "./habit-dots.tsx";
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 // A fixed pattern: weekends rest, one forgiven day, today still upcoming.
@@ -48,6 +54,25 @@ export function HabitDotsSpecimen(): ReactElement {
           days={freshStart()}
           restartNote="Two days off. Today is a fresh start."
         />
+      </Frame>
+      <Frame state="habit-dots-compact-rows-640" width={640} height={260}>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-end">
+            <HabitWeekdays />
+          </div>
+          {["Drink a glass of water", "Stretch", "Read one page"].map((name, i) => (
+            <div key={name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <div className="text-body">
+                <div className="font-semibold">{name}</div>
+                <div className="text-body-sm text-ink-muted">
+                  Done on {2 - (i % 2)} days this week
+                </div>
+              </div>
+              <HabitDots compact name={name} columns="week" days={record(7 - i, i)} />
+            </div>
+          ))}
+          <HabitLegend />
+        </div>
       </Frame>
       <Frame state="habit-dots-wrap-420" width={420} height={160}>
         <HabitDots name="Read" days={record(14, 2)} note="Two minutes: one page" />

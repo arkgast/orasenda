@@ -191,6 +191,19 @@
   line-height: var(--type-body-sm-line-height);
 }
 
+/* Reviews spec :35, canvas 4A: one row per habit, one weekday header above, the legend once after. */
+.app-review-habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The header and every grid sit at the row's end, so the columns line up at any width. */
+.app-review-habit-weekdays {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .app-review-habits {
   margin: 0;
   padding: 0;
@@ -200,10 +213,26 @@
   gap: var(--space-4);
 }
 
+/* Name and line at the start, the week's dots at the end; the dots wrap under the words when narrow. */
 .app-review-habit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+}
+
+.app-review-habit-text {
+  flex: 1 1 var(--field-width);
+  min-inline-size: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.app-review-habit-dots {
+  flex: none;
+  margin-inline-start: auto;
 }
 
 .app-review-habit-name {

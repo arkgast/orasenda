@@ -4,6 +4,8 @@ import {
   Choice,
   ChoiceGroup,
   HabitDots,
+  HabitLegend,
+  HabitWeekdays,
   InlineNotice,
   TrendBars,
 } from "@orasenda/ui";
@@ -78,30 +80,34 @@ function Lines({ lines, label }: { lines: string[]; label: string }): ReactEleme
 
 function Habits({ view }: { view: StatsView_Serialize }): ReactElement | null {
   if (view.habits.length === 0) return null;
-  // The legend prints once, with the first grid; dots only come with the Week range.
-  const first = view.habits.findIndex((habit) => habit.dots);
+  // Reviews spec :35, canvas 4A: one row per habit, one M–S header over the list and the legend once
+  // after it. Dots only come with the Week range; without them a row is its words alone.
+  const dotted = view.habits.some((habit) => habit.dots);
   return (
-    <ul aria-label="Habits" className="app-review-habits">
-      {view.habits.map((habit, index) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: names are not unique; the list is replaced whole
-        <li key={`${index}-${habit.name}`}>
-          {habit.dots ? (
-            <HabitDots
-              name={habit.name}
-              days={habitDays(habit.dots)}
-              runLine={habit.line}
-              columns="week"
-              legend={index === first}
-            />
-          ) : (
-            <div className="app-review-habit">
+    <div className="app-review-habit-list">
+      {dotted ? (
+        <div className="app-review-habit-weekdays">
+          <HabitWeekdays />
+        </div>
+      ) : null}
+      <ul aria-label="Habits" className="app-review-habits">
+        {view.habits.map((habit, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: names are not unique; the list is replaced whole
+          <li key={`${index}-${habit.name}`} className="app-review-habit">
+            <div className="app-review-habit-text">
               <p className="app-review-habit-name">{habit.name}</p>
               <p className="app-review-line">{habit.line}</p>
             </div>
-          )}
-        </li>
-      ))}
-    </ul>
+            {habit.dots ? (
+              <div className="app-review-habit-dots">
+                <HabitDots compact name={habit.name} days={habitDays(habit.dots)} columns="week" />
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {dotted ? <HabitLegend /> : null}
+    </div>
   );
 }
 

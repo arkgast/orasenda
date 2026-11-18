@@ -184,3 +184,52 @@ test("use_buffer_save_failure_is_a_plain_line", async () => {
   expect(within(stats).getByText(/couldn.t save that right now/)).toBeVisible();
   expect(within(stats).getByRole("button", { name: "Use 40%" })).toBeVisible();
 });
+
+// Reviews spec :35 and canvas 4A (owner, 2026-11-18): one row per habit, one M–S header, the legend once after the list.
+test("habit_rows_one_header_one_legend_after_list", async () => {
+  const habits = [
+    habitStat({ name: "Drink water", line: "Done on 2 days this week" }),
+    habitStat({ name: "Stretch", line: "Done on 1 day this week" }),
+    habitStat({ name: "Read one page", line: "Done on 2 days this week" }),
+  ];
+  await renderReview({ review_stats: () => statsView({ habits }) });
+  const stats = section("Stats");
+  const list = within(stats).getByRole("list", { name: "Habits" });
+  const rows = within(list).getAllByRole("listitem");
+  expect(rows).toHaveLength(3);
+  rows.forEach((row, index) => {
+    const habit = habits[index];
+    if (!habit) throw new Error("missing habit");
+    // Each row holds its name, Rust's line and one daily record, and no header or legend of its own.
+    expect(row).toHaveTextContent(habit.name);
+    expect(row).toHaveTextContent(habit.line);
+    expect(within(row).getAllByRole("group", { name: `${habit.name}, daily record` })).toHaveLength(
+      1,
+    );
+    expect(row.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
+    expect(row.querySelectorAll('[data-slot="habit-name"]')).toHaveLength(0);
+    expect(row.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
+  });
+  // One M–S header for the whole list, above the first row.
+  const letters = stats.querySelectorAll('[data-slot="habit-weekday"]');
+  expect(Array.from(letters, (l) => l.textContent).join("")).toBe("MTWTFSS");
+  const first = rows[0] as HTMLElement;
+  expect(letters[0]?.compareDocumentPosition(first)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  // The legend prints once, after the last habit, with words beside each shape.
+  const legends = stats.querySelectorAll('[data-slot="habit-legend"]');
+  expect(legends).toHaveLength(1);
+  const legend = legends[0] as HTMLElement;
+  expect(list.compareDocumentPosition(legend) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(list.contains(legend)).toBe(false);
+  expect(legend).toHaveTextContent("Done");
+  expect(legend).toHaveTextContent("Not done");
+});
+
+test("habit_rows_without_dots_have_no_header_or_legend", async () => {
+  const habits = [habitStat({ dots: null, line: "Done on 20 days in 8 weeks" })];
+  await renderReview({ review_stats: () => statsView({ habits }) });
+  const stats = section("Stats");
+  expect(stats).toHaveTextContent("Done on 20 days in 8 weeks");
+  expect(stats.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
+  expect(stats.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
+});
