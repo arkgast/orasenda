@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { Icon } from "./icon";
 import { TaskCard } from "./task-card";
 
 test("exposes_button_with_name", () => {
@@ -388,4 +389,11 @@ test("disabled_or_menuless_card_ignores_menu_key", () => {
   const card = screen.getByRole("button", { name: /^Write/ });
   fireEvent.keyDown(card, { key: "ContextMenu" });
   expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("task_card_more_uses_more_glyph", () => {
+  render(<TaskCard title="Write" onOpen={() => {}} menu={{ moveTargets: [{ id: "today", label: "Today" }] }} />);
+  const more = screen.getByRole("button", { name: "More actions for Write" });
+  const { container } = render(<Icon name="more" />);
+  expect(more.querySelector("svg")?.innerHTML).toBe(container.querySelector("svg")?.innerHTML);
 });
