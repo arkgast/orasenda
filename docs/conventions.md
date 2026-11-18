@@ -19,8 +19,7 @@ Project rules for every contributor and agent. They override baton's general gui
 ## Process
 - Architecture decisions go in [DECISIONS.md](DECISIONS.md) as ADRs before the code that depends
   on them.
-- All checks live in the `ci` recipe of the `justfile`; `scripts/ci.sh` runs `just ci`, and baton
-  `validate` and GitHub Actions both run that script. Add new checks to the recipe, fastest first.
+- All checks run through one entry point; see [Checks and tooling](#checks-and-tooling).
 - Every task issue, whether a plan task or a follow-up filed from a review, lists Owns and
   Touches. Touches name every file outside Owns that its change or its tests need: the
   TypeScript tests that build an IPC type it changes, the test hooks it needs in another crate,
@@ -31,6 +30,31 @@ Project rules for every contributor and agent. They override baton's general gui
   parallel T5 (#146) owned, and needed a ruling
   (https://github.com/arkgast/orasenda/issues/145#issuecomment-6755881829). So a task that adds or
   reshapes a managed or registered type lists the file with the registration line in Touches.
+
+## Checks and tooling
+- **One entry point.** `just ci` runs every check: `ci-shared` (repo guards), `ci-web` (biome, tsc,
+  vitest) and `ci-rust` (rustfmt, boundaries, clippy, cargo test, bindings). `scripts/ci.sh` runs it
+  for baton `validate`. GitHub runs `just ci-shared ci-web` and `just ci-rust` as two parallel Linux
+  jobs behind the required `ci` summary. Agents and people run `just ci` or one lane, never a
+  hand-made list of commands. Never add a `test`, `lint` or package-script alias that runs checks
+  outside these recipes: such aliases drifted, and one test file never ran in CI because only an
+  alias called it (#750, #751).
+- **A new check goes into a lane recipe,** so `just ci` and GitHub run it. A test that `just ci`
+  doesn't reach doesn't count as a test.
+- **Only the stack's languages.** Repo tooling is TypeScript under `tools/` (run with `node`), and
+  its tests are vitest. Rust checks are `#[test]`s. One test runner per language: vitest and
+  cargo. No Python, no `node --test`, no bash tests. Bash is only for `scripts/ci.sh` (the baton
+  wrapper) and `scripts/cloud-setup.sh` (provisioning). A mix of bash, Python and two JavaScript
+  runners had grown here and was removed (#751, #752).
+- **The required check runs no platform-specific work.** `ci` runs the Rust and React tests plus
+  lint on Linux. Platform builds and checks (`just mobile`, `just ui-build`,
+  `just design-system-check`, the app build) run on demand. The Windows job is off until the repo
+  variable `WINDOWS_CI` is `true` (owner decision, 2026-11-18, #746).
+- **New test infrastructure is an owner decision.** A spec or plan that adds a kind of suite, a
+  test runner or a tool costing more than about a minute per run asks the owner first, one
+  decision at a time, and says what it adds to `just ci`. Keep `just ci` around a minute locally
+  and a few minutes on GitHub (2026-11-18: about 50 s and 2–2.5 min). A per-PR check that had
+  grown without that decision slowed development about 8× (#746).
 
 ## Code structure (ADR-001, ADR-007)
 File size and module layout rules are in [Code structure and size](#code-structure-and-size).
