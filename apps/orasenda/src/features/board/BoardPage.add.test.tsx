@@ -72,3 +72,10 @@ test("an empty board offers Add task and opens the field", async () => {
   await settle();
   expect(field()).toHaveFocus();
 });
+
+test("add_task_has_plus_glyph_and_name", async () => {
+  await renderBoard();
+  const button = screen.getByRole("button", { name: "Add task" });
+  expect(button.querySelector("svg")).not.toBeNull();
+  expect(button.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+});

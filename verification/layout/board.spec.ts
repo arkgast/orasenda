@@ -304,3 +304,22 @@ for (const size of [
     for (const h of [pressed, during, after]) expect(Math.abs(h - before)).toBeLessThanOrEqual(0.5);
   });
 }
+
+for (const size of [
+  { width: 900, height: 600 },
+  { width: 1440, height: 900 },
+] as const) {
+  test(`board_header_to_columns_gap_within_contract_${size.width}x${size.height}`, async ({
+    page,
+  }) => {
+    await openBoard(page, "boardWeek", size);
+    const gap = await page.evaluate(() => {
+      const header = document.querySelector("[data-slot=page-frame-header]");
+      const column = document.querySelector("[id^=board-col-]");
+      if (!header || !column) return Number.NaN;
+      return column.getBoundingClientRect().top - header.getBoundingClientRect().bottom;
+    });
+    // space-2 + hit-min + space-2 + space-1: the PageFrame contract (the reserved status row).
+    expect(gap).toBeLessThanOrEqual(64);
+  });
+}
