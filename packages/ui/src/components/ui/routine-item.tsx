@@ -96,7 +96,11 @@ export function RoutineItem(props: RoutineItemProps): ReactElement {
         <span
           data-slot="routine-item-check"
           aria-hidden="true"
-          className={cn(BOX, done && "border-break bg-break forced-colors:forced-color-adjust-none", skipped && "text-ink-muted")}
+          className={cn(
+            BOX,
+            done && "border-break bg-break forced-colors:forced-color-adjust-none",
+            skipped && "text-ink-muted",
+          )}
         >
           {done ? <Tick /> : null}
           {skipped ? <Dash /> : null}
