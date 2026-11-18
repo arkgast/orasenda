@@ -107,7 +107,8 @@ test("default_width_unchanged", () => {
   );
   expect(container.querySelector("[data-slot=scroll-region-column]")).toBeNull();
   const region = screen.getByRole("region", { name: "Board" });
-  expect(region.className).toContain("overflow-y-scroll");
-  expect(region.className).toContain("p-1");
+  expect(region.className).toBe(
+    "relative h-full min-h-0 overflow-y-scroll border-t border-clear p-1 scroll-pt-2 scroll-pb-6 data-[scrolled=true]:border-line outline-focus-ring focus-visible:outline-2 [&::-webkit-scrollbar]:w-scrollbar-size [&::-webkit-scrollbar-track]:bg-clear [&::-webkit-scrollbar-thumb]:min-h-hit-floor [&::-webkit-scrollbar-thumb]:rounded-pill [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-clear [&::-webkit-scrollbar-thumb]:bg-line-strong [&::-webkit-scrollbar-thumb]:bg-clip-padding",
+  );
   expect(region.firstElementChild?.tagName).toBe("P");
 });

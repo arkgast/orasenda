@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 export interface PageFrameProps {
   title: string;
@@ -105,7 +106,7 @@ function InsetColumn(props: {
       <div className="pe-scrollbar-size h-full">
         <div
           data-slot={props.slot}
-          className={`mx-auto w-full max-w-content-width ${props.className}`}
+          className={cn("mx-auto w-full max-w-content-width", props.className)}
         >
           {props.children}
         </div>

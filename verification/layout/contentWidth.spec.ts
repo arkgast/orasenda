@@ -27,9 +27,9 @@ const rects = (page: Page) =>
       getComputedStyle(document.documentElement).getPropertyValue("--scrollbar-size"),
     );
     const column = document.querySelector("[data-slot=scroll-region-column]") as HTMLElement;
-    // Review keeps its own space-1 inline padding (review.css), so its first box is the body wrapper.
-    const first = (document.querySelector(".app-review-body") ??
-      column.querySelector("li, [data-slot=card], article, section")) as HTMLElement;
+    const first = column.querySelector(
+      "li, [data-slot=card], article, section, .app-review-section",
+    ) as HTMLElement | null;
     const primary = document.querySelector(
       "[data-slot=page-frame-header-column] [data-slot=button][data-variant=primary]",
     );
@@ -70,7 +70,8 @@ for (const size of [
         expect(r.primary).not.toBeNull();
         expect(Math.abs((r.primary ?? 0) - H.right)).toBeLessThanOrEqual(1);
       }
-      if (r.first !== null) expect(Math.abs(r.first - C.right)).toBeLessThanOrEqual(1);
+      expect(r.first).not.toBeNull();
+      expect(Math.abs((r.first ?? 0) - C.right)).toBeLessThanOrEqual(1);
       expect(await smallTargets(page.getByRole("main"))).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(
         size.height,
@@ -91,12 +92,18 @@ for (const p of PAGES) {
     // 640 is narrower than content-width plus the insets, so the column fills the content box.
     expect(Math.abs(C.left - (R.left + 4))).toBeLessThanOrEqual(1);
     expect(Math.abs(C.right - (R.right - 4 - r.bar))).toBeLessThanOrEqual(1);
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
+    await expect(page.getByRole("heading", { name: p.name, level: 1 })).toBeFocused();
+    // Tab order varies by page; focus the region's first control directly, and fail if there is none.
+    const focused = await page.evaluate(() => {
+      const region = document.querySelector("[data-slot=scroll-region]");
+      const el = region?.querySelector<HTMLElement>("a[href], button:not([disabled]), input");
+      el?.focus();
+      return !!el && document.activeElement === el;
+    });
+    expect(focused).toBe(true);
     const fits = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement;
       const region = document.querySelector("[data-slot=scroll-region]") as HTMLElement;
-      if (!region.contains(el)) return true;
       const e = el.getBoundingClientRect();
       const g = region.getBoundingClientRect();
       const ring = 4;
@@ -119,8 +126,20 @@ test("settings_content_centred_in_pane", async ({ page }) => {
     const left = r.left + region.clientLeft + Number.parseFloat(cs.paddingLeft);
     const right =
       r.left + region.clientLeft + region.clientWidth - Number.parseFloat(cs.paddingRight);
-    return c ? { left: c.left - left, right: right - c.right } : null;
+    const b = document.querySelector("[data-slot=page-frame-body]")?.getBoundingClientRect();
+    const h = document.querySelector("header h1")?.getBoundingClientRect();
+    const st = document.querySelector("[data-slot=page-frame-status]")?.getBoundingClientRect();
+    return c && b && h && st
+      ? {
+          left: c.left - left,
+          right: right - c.right,
+          title: h.left - b.left,
+          status: st.left - b.left,
+        }
+      : null;
   });
   expect(g).not.toBeNull();
   expect(Math.abs((g?.left ?? 0) - (g?.right ?? 99))).toBeLessThanOrEqual(1);
+  expect(Math.abs(g?.title ?? 99)).toBeLessThanOrEqual(8);
+  expect(Math.abs(g?.status ?? 99)).toBeLessThanOrEqual(8);
 });

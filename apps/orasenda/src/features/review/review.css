@@ -7,12 +7,11 @@
   min-block-size: 0;
 }
 
-/* One readable column (ScrollRegion width="content"); space-1 at the inline sides keeps focus rings clear. */
+/* One readable column (ScrollRegion width="content"); the region's own padding keeps focus rings clear. */
 .app-review-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding-inline: var(--space-1);
 }
 
 .app-review-section {
