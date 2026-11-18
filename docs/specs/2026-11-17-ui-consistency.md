@@ -189,7 +189,7 @@ None.
      - `nav-rail` has no radius.
      - `tag-field`'s round remove button stays round, because it is a mark inside an information chip.
      - Only `day-picker` changes.
-3. **Overflow menus are a ⋯ `IconButton` (author's call, from Linear).**
+3. **Overflow menus are a ⋮ `IconButton` (owner, 2026-11-18; the first draft's ⋯ was the author's call, from Linear).**
    - A new `more` glyph is added, because no existing glyph fits: `menu` is ≡.
    - The spoken name and tooltip is "More actions for <item>", the wording `InboxRow` and `TaskCard` already use. This deviates from "More for <item>" (see FAQ).
    - It applies to routine cards, routine steps, habits, Inbox rows and task cards.
