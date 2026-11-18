@@ -8,7 +8,7 @@ import { frames, openSpecimen, pressTab } from "./support/specimen.ts";
 
 const SMALL_CONTROLS = ["IconButton", "Tooltip", "Kbd"];
 
-test("icon_button_hit_boxes_md_44_round_52", async ({ page }, info) => {
+test("icon_button_hit_boxes_md_44_ring_52", async ({ page }, info) => {
   await openSpecimen(page, "IconButton");
   const ring = page.locator('[data-frame][data-state="icon-button-ring"]');
   const rest = page.locator("[data-frame]:not([data-state='icon-button-ring'])");
