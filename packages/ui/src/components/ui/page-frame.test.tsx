@@ -116,3 +116,53 @@ test("page_frame_renders_h1_and_three_tracks", () => {
 test("index_exports_the_tsx_page_frame", () => {
   expect(ui.PageFrame).toBe(PageFrame);
 });
+
+test("content_width_wraps_header_and_status_in_inset_columns", () => {
+  const { container } = render(
+    <PageFrame
+      title="Inbox"
+      width="content"
+      primary={<button type="button">Add</button>}
+      status="Saved"
+    >
+      Body
+    </PageFrame>,
+  );
+  for (const [name, host] of [
+    ["page-frame-header-column", "page-frame-header"],
+    ["page-frame-status-column", "page-frame-status"],
+  ] as const) {
+    const column = slot(container, name) as HTMLElement;
+    expect(column.className).toContain("mx-auto");
+    expect(column.className).toContain("w-full");
+    expect(column.className).toContain("max-w-content-width");
+    const scrollbar = column.parentElement as HTMLElement;
+    expect(scrollbar.className).toContain("pe-scrollbar-size");
+    const inset = scrollbar.parentElement as HTMLElement;
+    expect(inset.className).toContain("ps-2");
+    expect(inset.className).toContain("pe-2");
+    expect(inset.parentElement).toBe(slot(container, host));
+  }
+  const header = slot(container, "page-frame-header-column") as HTMLElement;
+  expect(header.className).toContain("justify-between");
+  expect(header.contains(screen.getByRole("heading", { level: 1 }))).toBe(true);
+  expect(header.contains(screen.getByRole("button", { name: "Add" }))).toBe(true);
+  expect(slot(container, "page-frame-status-column")?.textContent).toBe("Saved");
+});
+
+test("default_width_unchanged", () => {
+  const { container } = render(
+    <PageFrame title="Inbox" primary={<button type="button">Add</button>} status="Saved">
+      Body
+    </PageFrame>,
+  );
+  expect(slot(container, "page-frame-header-column")).toBeNull();
+  expect(slot(container, "page-frame-status-column")).toBeNull();
+  expect(slot(container, "page-frame-header")?.className).toBe(
+    "flex h-hit-min shrink-0 items-center justify-between gap-3",
+  );
+  expect(slot(container, "page-frame-status")?.className).toBe("h-hit-min shrink-0");
+  expect(slot(container, "page-frame-body")?.className).toBe(
+    "flex flex-1 flex-col overflow-hidden p-1 *:flex-1",
+  );
+});

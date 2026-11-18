@@ -85,3 +85,29 @@ test("fills its PageFrame body track so it is bounded and scrolls", () => {
   const { container } = render(<ScrollRegion label="Settings">x</ScrollRegion>);
   expect(container.querySelector("[data-slot=scroll-region]")?.className).toContain("h-full");
 });
+
+test("content_width_wraps_children_in_centred_column", () => {
+  const { container } = render(
+    <ScrollRegion label="Inbox" width="content">
+      <p>row</p>
+    </ScrollRegion>,
+  );
+  const region = screen.getByRole("region", { name: "Inbox" });
+  const column = container.querySelector("[data-slot=scroll-region-column]") as HTMLElement;
+  expect(column.parentElement).toBe(region);
+  expect(column.className).toBe("mx-auto w-full max-w-content-width");
+  expect(column.textContent).toBe("row");
+});
+
+test("default_width_unchanged", () => {
+  const { container } = render(
+    <ScrollRegion label="Board">
+      <p>row</p>
+    </ScrollRegion>,
+  );
+  expect(container.querySelector("[data-slot=scroll-region-column]")).toBeNull();
+  const region = screen.getByRole("region", { name: "Board" });
+  expect(region.className).toContain("overflow-y-scroll");
+  expect(region.className).toContain("p-1");
+  expect(region.firstElementChild?.tagName).toBe("P");
+});
