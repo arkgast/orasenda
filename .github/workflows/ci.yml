@@ -113,8 +113,10 @@ jobs:
         run: gitleaks git --no-banner --redact --log-opts="${CI_BASE_REF}..HEAD"
 
   # Advisory: not a required check. A red result is the signal; no continue-on-error.
+  # Off until the repo variable WINDOWS_CI is "true" (owner, 2026-11-18): gh variable set WINDOWS_CI --body true
   windows:
     name: windows (advisory)
+    if: vars.WINDOWS_CI == 'true'
     runs-on: windows-2025
     timeout-minutes: 45
     defaults:
