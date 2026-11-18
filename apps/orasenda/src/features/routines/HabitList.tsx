@@ -48,8 +48,8 @@ function Habit({
         </div>
         <ActionMenu
           id={moreId(habit.id)}
-          label="More"
-          name={`More for ${habit.name}`}
+          trigger="more"
+          name={`More actions for ${habit.name}`}
           heading={habit.name}
           items={moreItems(index, count)}
           onSelect={(id) => onMore(habit.id, index, id as MoreAction)}
