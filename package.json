@@ -8,9 +8,7 @@
   },
   "scripts": {
     "dev": "just dev",
-    "build": "just build",
-    "test": "just test",
-    "lint": "just lint"
+    "build": "just build"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
