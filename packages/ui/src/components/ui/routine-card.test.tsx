@@ -115,11 +115,14 @@ test("finished_card_has_break_edge", () => {
   expect(cls).not.toContain("border-s-routine");
 });
 
-test.each(["inProgress", "notStarted", "bogus"])("%s_keeps_the_routine_edge", (today) => {
-  const cls = edge(today);
-  expect(cls).toContain("border-s-routine");
-  expect(cls).not.toContain("border-s-break");
-});
+test.each(["inProgress", "notStarted", "bogus"])(
+  "in_progress_and_unknown_keep_routine_edge: %s",
+  (today) => {
+    const cls = edge(today);
+    expect(cls).toContain("border-s-routine");
+    expect(cls).not.toContain("border-s-break");
+  },
+);
 
 test("copy_has_no_loss_words", () => {
   const { container } = render(

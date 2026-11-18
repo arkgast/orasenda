@@ -63,7 +63,6 @@ const routine = (patch: Partial<RoutineView_Serialize>): RoutineView_Serialize =
   habits: [
     habit("habit-1", "Drink a glass of water", {
       anchorLine: "After I wake up, I will drink a glass of water.",
-      doneToday: true,
     }),
     habit("habit-2", "Get outdoor light: 5–10 min, 15–20 if overcast, 30+ if heavily overcast"),
     habit("habit-3", "Electrolytes", { optional: true }),
@@ -75,7 +74,16 @@ const routine = (patch: Partial<RoutineView_Serialize>): RoutineView_Serialize =
 
 const OVERVIEW: RoutinesView_Serialize = {
   routines: [
-    routine({}),
+    routine({
+      habits: [
+        habit("habit-1", "Drink a glass of water", {
+          anchorLine: "After I wake up, I will drink a glass of water.",
+          doneToday: true,
+        }),
+        habit("habit-2", "Get outdoor light: 5–10 min, 15–20 if overcast, 30+ if heavily overcast"),
+        habit("habit-3", "Electrolytes", { optional: true }),
+      ],
+    }),
     routine({
       id: "routine-2",
       name: "A routine with a very long name that has to wrap inside its card",

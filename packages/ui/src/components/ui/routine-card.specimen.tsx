@@ -50,7 +50,7 @@ export function RoutineCardSpecimen(): ReactElement {
           name="Deep Work Start"
           meta="09:00 · Weekdays"
           today="inProgress"
-          todayLine="2 of 5 done today"
+          todayLine="2 of 3 done today"
           actions={<Button variant="quiet">Continue</Button>}
         >
           <Steps done={2} />
@@ -61,8 +61,7 @@ export function RoutineCardSpecimen(): ReactElement {
           name="Evening Shutdown, a long name that wraps onto a second line"
           meta="17:30 · Weekdays"
           today="finished"
-          todayLine="Done today, 4 of 5"
-          actions={<Button variant="quiet">Start</Button>}
+          todayLine="Done today, 2 of 3"
           footer={<WellnessNote />}
         >
           <Steps done={2} skipped />

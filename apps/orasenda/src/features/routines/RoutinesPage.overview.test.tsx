@@ -8,8 +8,8 @@ import {
 } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
-import { card, primaries, renderRoutines, within } from "./RoutinesPage.support";
+import { afterEach, expect, test } from "vitest";
+import { card, renderRoutines, within } from "./RoutinesPage.support";
 
 afterEach(async () => {
   cleanup();
