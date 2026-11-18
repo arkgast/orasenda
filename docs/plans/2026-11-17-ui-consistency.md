@@ -13,13 +13,13 @@ Design-system tasks (U2a, U2b, U3) come before the screens (U4, U5). U4 also own
 
 | Task | What | Depends on | Wave |
 |---|---|---|---|
-| **U1** | "Reading context" rule; superseded notes in the routines spec | none | 1 |
-| **U2a** | Shapes: `Button` radius; `IconButton` `ring`; `DayPicker` radius; docs and tests that name "round" or "pill" | none | 1 |
-| **U2b** | `Button` `variant="inline"` and `size="row"`; their call sites | U2a | 2 |
-| **U3** | Glyphs `more` and `plus`; read-only `RoutineItem` done and Skipped | U2a | 2 |
-| **U4** | Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge | U3 | 3 |
-| **U5** | Board: + Add task, header-gap check | U3 | 3 |
-| **U6** | `PageFrame` and `ScrollRegion` `width="content"`; Routines, Inbox and Review centred; Settings centred | U4 | 4 |
+| **U1** (#719) | "Reading context" rule; superseded notes in the routines spec | none | 1 |
+| **U2a** (#720) | Shapes: `Button` radius; `IconButton` `ring`; `DayPicker` radius; docs and tests that name "round" or "pill" | none | 1 |
+| **U2b** (#721) | `Button` `variant="inline"` and `size="row"`; their call sites | U2a | 2 |
+| **U3** (#722) | Glyphs `more` and `plus`; read-only `RoutineItem` done and Skipped | U2a | 2 |
+| **U4** (#723) | Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge | U3 | 3 |
+| **U5** (#724) | Board: + Add task, header-gap check | U3 | 3 |
+| **U6** (#725) | `PageFrame` and `ScrollRegion` `width="content"`; Routines, Inbox and Review centred; Settings centred | U4 | 4 |
 
 **Controller steps** (not sonnet tasks):
 - After U3 merges and after U6 merges, the controller (or an opus agent) runs `just design-system` from `main` and republishes the live artifact with `"editing": "code"`. Follow the memory note "Design system publish".
@@ -62,7 +62,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
 
 ## Tasks
 
-### U1: Reading context and the superseded notes
+### U1 (#719): Reading context and the superseded notes
 - Priority: 2
 - Kind: docs
 - Depends on: none
@@ -82,7 +82,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - [ ] Nothing else in the routines spec changes (`git diff` shows only added lines).
 - Tests first: none (docs). `./scripts/ci.sh` passes.
 
-### U2a: Shapes: Button and IconButton radius, `ring`, DayPicker
+### U2a (#720): Shapes: Button and IconButton radius, `ring`, DayPicker
 - Priority: 1
 - Kind: ui (design system)
 - Depends on: none
@@ -121,7 +121,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - Tokens only, no arbitrary values (`just tailwind-strict`).
   - The README and tokens text must not promise anything later tasks add.
 
-### U2b: Status-row actions: `inline` variant and `row` size
+### U2b (#721): Status-row actions: `inline` variant and `row` size
 - Priority: 2
 - Kind: ui (design system + call sites)
 - Depends on: U2a (`button.*`)
@@ -148,7 +148,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - `inline_variant_has_focus_text_and_ghost_ground`;
   - `row_size_is_flex_none_px_3`.
 
-### U3: Glyphs and read-only steps: `more`, `plus`, done and Skipped
+### U3 (#722): Glyphs and read-only steps: `more`, `plus`, done and Skipped
 - Priority: 1
 - Kind: ui (design system)
 - Depends on: U2a (README, `icon-button.specimen.tsx`)
@@ -193,7 +193,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - The dash matches `RoutineStep`'s skipped mark (`routine-step.tsx`); read it, don't change it.
   - Forced colours: the done and skipped boxes keep their border.
 
-### U4: Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
+### U4 (#723): Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
 - Priority: 1
 - Kind: ui (design system + app)
 - Depends on: U3
@@ -236,7 +236,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - Fixtures already carry `doneToday` and `today`; use the builders in `shared/test/fixtures`.
   - Keep each test file under 500 lines. Split by behaviour if one would pass it.
 
-### U5: Board: + Add task and the header gap
+### U5 (#724): Board: + Add task and the header gap
 - Priority: 2
 - Kind: ui (app)
 - Depends on: U3
@@ -256,7 +256,7 @@ Can start immediately in parallel: U1, U2a. After U2a: U2b and U3 in parallel. A
   - `add_task_has_plus_glyph_and_name` (BoardPage);
   - `board_header_to_columns_gap_within_contract` (layout).
 
-### U6: Content width: `PageFrame` and `ScrollRegion` `width="content"`; Settings centred
+### U6 (#725): Content width: `PageFrame` and `ScrollRegion` `width="content"`; Settings centred
 - Priority: 2
 - Kind: ui (design system + app)
 - Depends on: U4 (`RoutinesPage.tsx`, `routines.css`, the routines scenario); U3 (README)
