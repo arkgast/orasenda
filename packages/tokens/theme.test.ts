@@ -1,11 +1,10 @@
-import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { compile } from "tailwindcss";
+import { afterAll, assert, test } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // biome-ignore lint/suspicious/noExplicitAny: tokens.json is read loosely
@@ -13,7 +12,7 @@ type Loose = Record<string, any>;
 const tokens: Loose = JSON.parse(readFileSync(join(here, "tokens.json"), "utf8"));
 
 const scratch = mkdtempSync(join(tmpdir(), "theme-"));
-after(() => rmSync(scratch, { recursive: true, force: true }));
+afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 function buildTheme(): string {
   const run = spawnSync(
@@ -21,7 +20,7 @@ function buildTheme(): string {
     [join(here, "build.ts"), "--out", join(scratch, "tokens.css")],
     { encoding: "utf8" },
   );
-  assert.equal(run.status, 0, run.stderr);
+  assert.strictEqual(run.status, 0, run.stderr);
   return readFileSync(join(scratch, "theme.css"), "utf8");
 }
 
@@ -34,7 +33,7 @@ test("theme_is_closed", async () => {
   const theme = buildTheme();
   assert.match(theme, /@theme\s*\{\s*--\*: initial;/);
   const css = await utilities(theme, ["bg-red-500", "p-3.5", "text-red-500", "rounded-xl"]);
-  assert.doesNotMatch(css, /^\.[^\s{]+ \{/m);
+  assert.notMatch(css, /^\.[^\s{]+ \{/m);
   const ok = await utilities(theme, ["bg-surface-raised", "p-4", "p-1-5", "rounded-md"]);
   assert.match(ok, /\.bg-surface-raised/);
   assert.match(ok, /\.p-1-5/);
@@ -56,7 +55,7 @@ test("theme_has_font_weights", async () => {
   assert.match(css, /--font-weight-medium: 500;/);
   assert.match(css, /\.font-light \{[^}]*font-weight: var\(--font-weight-light\)/);
   assert.match(css, /\.font-normal \{[^}]*font-weight: var\(--font-weight-normal\)/);
-  assert.doesNotMatch(css, /\.font-bold/);
+  assert.notMatch(css, /\.font-bold/);
 });
 
 test("theme_maps_destructive_to_critical", async () => {
@@ -126,7 +125,7 @@ test("theme_has_a_zero_spacing_step", async () => {
 
 test("theme_has_no_stale_preflight_comment_or_box_sizing_rule", () => {
   const theme = buildTheme();
-  assert.doesNotMatch(theme, /Preflight is off/);
-  assert.doesNotMatch(theme, /box-sizing/);
-  assert.doesNotMatch(theme, /@layer base/);
+  assert.notMatch(theme, /Preflight is off/);
+  assert.notMatch(theme, /box-sizing/);
+  assert.notMatch(theme, /@layer base/);
 });
