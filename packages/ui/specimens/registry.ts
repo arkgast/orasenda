@@ -24,6 +24,7 @@ import { NavRailSpecimen } from "../src/components/ui/nav-rail.specimen.tsx";
 import { PageFrameSpecimen } from "../src/components/ui/page-frame.specimen";
 import { PopoverMenuSpecimen } from "../src/components/ui/popover-menu.specimen";
 import { RoutineCardSpecimen } from "../src/components/ui/routine-card.specimen.tsx";
+import { RoutineItemSpecimen } from "../src/components/ui/routine-item.specimen.tsx";
 import { RoutineStepSpecimen } from "../src/components/ui/routine-step.specimen.tsx";
 import { SelectSpecimen } from "../src/components/ui/select.specimen.tsx";
 import { SettingsNavSpecimen } from "../src/components/ui/settings-nav.specimen.tsx";
@@ -68,6 +69,7 @@ export const specimens: Record<string, () => ReactElement> = {
   RoutineCard: RoutineCardSpecimen,
   HabitDots: HabitDotsSpecimen,
   BarRow: BarRowSpecimen,
+  RoutineItem: RoutineItemSpecimen,
   RoutineStep: RoutineStepSpecimen,
   DayPicker: DayPickerSpecimen,
   KanbanColumn: KanbanColumnSpecimen,

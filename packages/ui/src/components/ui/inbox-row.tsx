@@ -100,7 +100,7 @@ export function InboxRow({
           <span ref={anchor} className="flex-none">
             <IconButton
               label={moreName}
-              icon={<Icon name="menu" />}
+              icon={<Icon name="more" />}
               shortcut="⇧F10"
               tabIndex={menuTabIndex}
               aria-haspopup="menu"

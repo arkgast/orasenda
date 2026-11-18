@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { Icon } from "./icon";
 import { InboxRow, type InboxRowProps } from "./inbox-row";
 
 function setup(over: Record<string, unknown> = {}) {
@@ -234,4 +235,11 @@ test("row_without_a_menu_ignores_the_menu_key", () => {
   setup({ tabIndex: 0 });
   pressOnRow({ key: "F10", shiftKey: true });
   expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("inbox_row_more_uses_more_glyph", () => {
+  withMenu();
+  const more = screen.getByRole("button", { name: "More actions for Ask Sam about the invoice" });
+  const { container } = render(<Icon name="more" />);
+  expect(more.querySelector("svg")?.innerHTML).toBe(container.querySelector("svg")?.innerHTML);
 });

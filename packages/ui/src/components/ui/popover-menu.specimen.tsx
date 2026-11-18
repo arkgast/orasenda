@@ -70,7 +70,7 @@ export function PopoverMenuSpecimen(): ReactElement {
     open === key ? (
       <PopoverMenu id={`pm-${key}`} anchor={anchor} onClose={close} onSelect={pick} {...props} />
     ) : null;
-  const glyph = <Icon name="menu" />;
+  const glyph = <Icon name="more" />;
   const summary = `${nameOf(preset)} · ends 15:20`;
 
   return (
