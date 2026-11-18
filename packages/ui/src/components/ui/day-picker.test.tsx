@@ -157,11 +157,18 @@ test("on_and_off_differ_in_shape_not_only_colour", () => {
   render(<DayPicker label="Days" value={1} onChange={() => {}} />);
   const on = screen.getByRole("button", { name: "Monday" });
   const off = screen.getByRole("button", { name: "Tuesday" });
-  // On is a filled disc with a bold letter; off is a hollow ring with a regular letter.
+  // On is a filled rounded rectangle with a bold letter; off is an outline with a regular letter.
   expect(on.className).toContain("aria-pressed:bg-focus");
   expect(on.className).toContain("aria-pressed:font-semibold");
   expect(off.className).toContain("border-2");
-  expect(on.className).toContain("rounded-pill");
+});
+
+test("day_toggle_is_rounded_md", () => {
+  render(<DayPicker label="Days" value={1} onChange={() => {}} />);
+  for (const b of screen.getAllByRole("button")) {
+    expect(b.className).toContain("rounded-md");
+    expect(b.className).not.toContain("rounded-pill");
+  }
 });
 
 test("hit_targets_are_hit_min_with_a_focus_ring", () => {

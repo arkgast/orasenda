@@ -73,9 +73,12 @@ test("icon_button_expanded_and_controls_pass_through", () => {
   expect(screen.getByRole("button").getAttribute("aria-expanded")).toBe("false");
 });
 
-test("icon_button_round_size_is_exposed_by_data_size", () => {
-  const { rerender } = render(<IconButton label="Resume session" icon={icon} size="round" />);
-  expect(screen.getByRole("button").getAttribute("data-size")).toBe("round");
+test("ring_size_is_round_control_lg", () => {
+  const { rerender } = render(<IconButton label="Resume session" icon={icon} size="ring" />);
+  const ring = screen.getByRole("button");
+  expect(ring.getAttribute("data-size")).toBe("ring");
+  expect(ring.className).toContain("size-control-lg");
+  expect(ring.className).toContain("rounded-pill");
   rerender(<IconButton label="Resume session" icon={icon} />);
   expect(screen.getByRole("button").getAttribute("data-size")).toBe("md");
 });
