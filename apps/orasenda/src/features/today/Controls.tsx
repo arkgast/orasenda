@@ -24,7 +24,7 @@ type Props = {
 };
 
 /**
- * Idle: Start focus and Just 2 minutes. Running or paused: the round Pause or Resume button (one
+ * Idle: Start focus and Just 2 minutes. Running or paused: the ring Pause or Resume button (one
  * element, so focus stays on it when it flips, and when a break starts) and End session, or Skip
  * break in a break (same command, same ⌘.), `space-6` apart.
  */
@@ -59,7 +59,7 @@ export function Controls({
         <>
           <IconButton
             id="today-pause"
-            size="round"
+            size="ring"
             label={paused ? `Resume ${what}` : `Pause ${what}`}
             icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
             shortcut={singleKeys ? "Space" : undefined}

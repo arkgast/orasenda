@@ -10,7 +10,7 @@ export interface IconButtonProps {
   shortcut?: string | string[];
   shortcutLabel?: string;
   keyshortcuts?: boolean;
-  size?: "md" | "round";
+  size?: "md" | "ring";
   onClick?: () => void;
   disabled?: boolean;
   "aria-haspopup"?: "menu";
@@ -28,7 +28,7 @@ export interface IconButtonProps {
 const base =
   "inline-grid shrink-0 cursor-pointer place-items-center rounded-md border border-clear bg-clear p-0 text-ink transition-colors duration-quick ease-calm outline-focus-ring outline-offset-2 hover:bg-surface-sunken active:bg-selection focus-visible:outline-2 motion-reduce:transition-none";
 const medium = "size-hit-min";
-const round = "size-control-lg rounded-pill border-line-strong bg-surface-raised";
+const ring = "size-control-lg rounded-pill border-line-strong bg-surface-raised";
 const unavailable =
   "disabled:cursor-default disabled:border-dashed disabled:border-line-strong disabled:bg-clear disabled:text-ink-muted";
 
@@ -66,7 +66,7 @@ export function IconButton({
         tabIndex={aria.tabIndex}
         disabled={disabled}
         onClick={onClick}
-        className={cn(base, size === "round" ? round : medium, unavailable)}
+        className={cn(base, size === "ring" ? ring : medium, unavailable)}
       >
         <span aria-hidden="true" className="inline-flex fill-none stroke-current *:size-icon-lg">
           {icon}

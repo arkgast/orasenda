@@ -12,13 +12,13 @@ export function IconButtonSpecimen(): ReactElement {
       <Frame state="icon-button-md-shortcut" width={120} height={80}>
         <IconButton label="End session" icon={<Icon name="stop" />} shortcut="⌘." />
       </Frame>
-      <Frame state="icon-button-round" width={140} height={100}>
+      <Frame state="icon-button-ring" width={140} height={100}>
         <IconButton
           label="Resume session"
           icon={<Icon name="play" />}
           shortcut="Space"
           keyshortcuts={false}
-          size="round"
+          size="ring"
         />
       </Frame>
       <Frame state="icon-button-menu-trigger" width={120} height={80}>
