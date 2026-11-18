@@ -181,3 +181,21 @@ test("disabled_inline_has_the_shared_dashed_look", () => {
   expect(cls.contains("disabled:border-dashed")).toBe(true);
   expect(cls.contains("disabled:text-ink-muted")).toBe(true);
 });
+
+// A button inside a card or section that sets overflow-wrap:anywhere (RoutineCard, .app-review-section)
+// must still keep each word on one line and keep its width beside text ("Mor e" bug, owner 2026-11-18).
+test("never_shrinks_or_splits_a_word_in_any_variant_or_size", () => {
+  for (const variant of ["primary", "break", "quiet", "ghost", "inline", "critical"] as const) {
+    for (const size of ["md", "lg", "row"] as const) {
+      const { unmount } = render(
+        <Button variant={variant} size={size}>
+          More
+        </Button>,
+      );
+      const classes = screen.getByRole("button").className.split(/\s+/);
+      expect(classes).toContain("wrap-normal");
+      expect(classes.includes("shrink-0") || classes.includes("flex-none")).toBe(true);
+      unmount();
+    }
+  }
+});
