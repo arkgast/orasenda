@@ -65,6 +65,17 @@ for (const size of SIZES) {
       await expectFocusRingVisible(card);
       expect(await card.locator("[data-slot=task-card-fold]").count()).toBe(1);
     });
+
+    test("checklist_card_ring_fits_640x480", async ({ page }) => {
+      await openBoard(page, "boardWeek", size);
+      const card = page.getByRole("button", { name: /^Plan the week/ });
+      await card.focus();
+      await expectFocusRingVisible(card);
+      await expect(card.locator("[data-slot=task-card-checklist]")).toHaveText("1 of 1");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        size.width,
+      );
+    });
   }
 
   if (at === "900x600") {
