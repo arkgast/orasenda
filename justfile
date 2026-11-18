@@ -80,31 +80,30 @@ design-system-check:
     "{{ just_executable() }}" design-system --out "$dir"
     DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
-# The Rust and React tests plus lint, fastest first; the same on every OS. Stops at the first failure.
-# Platform builds (mobile, app build, design system, contrast, tokens) run on their own recipes.
-ci:
+# GitHub runs ci-shared + ci-web and ci-rust as two parallel jobs. Platform builds (mobile, app
+# build, design system, contrast, tokens) have their own recipes. Stops at the first failure.
+# The Rust and React tests plus lint; the same on every OS.
+ci: ci-shared ci-web ci-rust
+
+# Repo-wide checks that need neither toolchain.
+ci-shared:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
     @echo "==> docs-only classifier (tests)"
     ./scripts/docs-only.test.sh
     @echo "==> file size guard (tests)"
     ./scripts/file-size.test.sh
+    @echo "==> file size (500-line ceiling)"
+    "{{ just_executable() }}" file-size
+
+# React and TypeScript: lint, typecheck and vitest.
+ci-web:
     @echo "==> install (pnpm, frozen lockfile)"
     pnpm install --frozen-lockfile --prefer-offline
-    @echo "==> format (rustfmt)"
-    cargo fmt --all --check
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
     @echo "==> frontend layers (lint fixtures)"
     "{{ just_executable() }}" lint-layers
-    @echo "==> file size (500-line ceiling)"
-    "{{ just_executable() }}" file-size
-    @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
-    "{{ just_executable() }}" core-boundary
-    @echo "==> service boundary (no tauri, tao, wry, objc2, block2, windows)"
-    "{{ just_executable() }}" service-boundary
-    @echo "==> core purity (no target_os in core)"
-    "{{ just_executable() }}" core-purity
     @echo "==> tokens (tests)"
     pnpm --filter @orasenda/tokens test
     @echo "==> lint (no arbitrary Tailwind values)"
@@ -117,6 +116,17 @@ ci:
     pnpm --filter orasenda typecheck
     @echo "==> test (vitest)"
     pnpm --filter orasenda test
+
+# Rust: format, dependency boundaries, clippy, tests and the committed bindings.
+ci-rust:
+    @echo "==> format (rustfmt)"
+    cargo fmt --all --check
+    @echo "==> core boundary (no tauri, tao, wry, objc2, block2, windows, windows-core or SQLite)"
+    "{{ just_executable() }}" core-boundary
+    @echo "==> service boundary (no tauri, tao, wry, objc2, block2, windows)"
+    "{{ just_executable() }}" service-boundary
+    @echo "==> core purity (no target_os in core)"
+    "{{ just_executable() }}" core-purity
     @echo "==> lint (clippy)"
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
