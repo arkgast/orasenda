@@ -1,6 +1,6 @@
 # UI consistency: button shapes, overflow menus, page width and finished routines — Spec
 
-- **Status:** approved (owner, 2026-11-17)
+- **Status:** implemented (2026-11-18)
 - **Date:** 2026-11-17
 - **Owner:** the product owner (request of 2026-11-17, reviewing the macOS app)
 - **Related:** [Routines and habits](2026-11-14-routines-and-habits.md) (Decision 41 is superseded here); [code-first components](2026-11-10-code-first-components.md); spec B, Board columns (to be written)
@@ -256,11 +256,11 @@ None beyond the owner calls above.
 
 ## Implementation status
 Updated by the PRs that implement this spec.
-- [ ] U1 Reading context and the superseded note
-- [ ] U2a Shapes: Button and IconButton radius, `ring`, DayPicker
-- [ ] U2b Status-row actions: `inline` variant, `row` size and their call sites
-- [ ] U3 Glyphs and read-only steps: `more`, `plus`, done and Skipped steps
-- [ ] U4 Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
-- [ ] U5 Board: + Add task and the header gap
-- [ ] U6 Content width: `PageFrame` and `ScrollRegion` `width="content"` on Routines, Inbox and Review; Settings centred
-- [ ] Controller: republish the design-system artifact after U3 and after U6 merge
+- [x] U1 (#726) Reading context and the superseded note
+- [x] U2a (#735) Shapes: Button and IconButton radius, `ring`, DayPicker
+- [x] U2b (#737) Status-row actions: `inline` variant, `row` size and their call sites
+- [x] U3 (#738) Glyphs and read-only steps: `more`, `plus`, done and Skipped steps
+- [x] U4 (#739) Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
+- [x] U5 (#740) Board: + Add task and the header gap
+- [x] U6 (#742) Content width: `PageFrame` and `ScrollRegion` `width="content"` on Routines, Inbox and Review; Settings centred
+- [x] Controller: republish the design-system artifact after U3 and after U6 merge (service Versions 73 and 75)
