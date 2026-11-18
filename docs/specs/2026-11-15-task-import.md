@@ -194,7 +194,6 @@ Thin `commands/import.rs`: `import_sources`, `import_preview(source) -> ImportPr
 - **Store:** migration 8→9 on a filled database; origin round-trips through export and merge.
 - **Components (vitest + specimens, both themes):** `ImportSourcePicker`, `ImportPreviewList` (roving group, Space, select all/none, names and descriptions, count), `Dialog` (no confirm, disabled reason, loading), `KanbanColumn` (slot, strip), `TaskCard` (`moving`); `just contrast` for any new pair.
 - **App (vitest):** the sheet's steps, errors, empty source and dropped stale answers; each entry point; the import line with Undo; drag below and past the threshold, touch ignored, drop between and within columns, Done as a whole, a release on its own place, Esc consumed, release outside, folded strip, the swallowed click, the announcements.
-- **Layout (WebKit):** the import sheet at 1440×900, 900×600 and 640×480 (no page scroll, list scrolls, actions pinned, hit-min rows, focus ring); the drag slot in a regular and a compact board.
 - **Owner's hands-on check (end of run, a bundled debug build):** see [Hands-on](#hands-on-check). To repeat a first prompt, `tccutil reset Reminders <bundle id>` and `tccutil reset AppleEvents <bundle id>`; if that fails, a throwaway identifier (`docs/common-issues.md`, the `tccutil` entry).
 - **Review checklist** as the Board spec's, plus: nothing imported without the button; permission asked only from its source.
 

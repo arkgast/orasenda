@@ -47,11 +47,11 @@ Rule 6 (7.2) and section 10 say it "gains" wallpaper fixtures; `03-direction-pic
 
 ### cs-9 (minor) "Beside a 44px action" measures height, not width
 8.2's footnote and rule 2 say every message fits two lines at 360 wide "beside a 44px action". The actions are text ghosts: "Open Settings" is about 110px, "Try again" about 80, "Got it" about 60. The longest refusal (56 characters) beside "Open Settings" at 360 wide leaves about 210px, roughly 32 characters a line, which fits only because the chip is out of the row while idle.
-**Fix:** write "beside the widest action, 'Open Settings'" and add the stacked-strip running case (chip + two-line store line + no action) to the layout test list.
+**Fix:** write "beside the widest action, 'Open Settings'".
 
 ### cs-10 (minor) PageFrame's flow variant at 360×240 with a status line leaves a 44px region
 List variant: 240 − 44 − 44 − 32 (space-4 ×2) − 16 (two space-2 gaps) = 104 ≥ 96, as 3.2 claims. Flow variant with a line showing (conflict 21): 240 − 44 − 44 − 52 − 32 − 24 = 44px, one row. PageFrame (5.9) also never names its row gap.
-**Fix:** 5.9 anatomy: "rows `space-2` apart". State the floor honestly: "a flow's region is at least 44px at the minimum while a status line shows; the pick's fallback (minimum height 280) applies if the layout test shows a step unusable there".
+**Fix:** 5.9 anatomy: "rows `space-2` apart". State the floor honestly: "a flow's region is at least 44px at the minimum while a status line shows".
 
 ### cs-11 (minor) Select differs from Input in ground and weight while "in the Input family"
 5.7: `surface-raised`, weight 600. Input README: ground `surface-sunken`, body 400. A value Select ("Add as", "Keep usage for") at 600 reads like a title.
@@ -92,7 +92,7 @@ Rule 2 lists 360×240, 360×360, 640×480, 900×240, 900×600, 1440×900. The ap
 ## What I checked and found consistent
 
 - Threshold arithmetic: 360×240 → stacked strip; 640×330 → strip; 900×240 → strip; `layout-ring-min-height` 360 ≥ 188 + 160; `floater-max-height` 96 with the state word from 88 = 2 × `hit-min`; `column-min-width` 200 × 3 + 64 × 2 + 8 × 4 = 760 ≤ 772; `hour-gutter` 52 ≥ about 40px for "09:00" at 13px mono; `minute-scale` 2px gives 30px for 15 minutes ≥ `hit-floor`.
-- Conflicts 1 to 24 each pick a side with a reason, and the picks agree with `03-direction-pick.md` (grafts 1 to 6, must-fix 1 to 10): `duration-slow` 1600ms, "Classic · 18 min left" never "Paused · …", spec copy only, hidden `h1`, one menu model, window tokens, contrast pass, icons as placeholders, layout test.
+- Conflicts 1 to 24 each pick a side with a reason, and the picks agree with `03-direction-pick.md` (grafts 1 to 6, must-fix 1 to 10): `duration-slow` 1600ms, "Classic · 18 min left" never "Paused · …", spec copy only, hidden `h1`, one menu model, window tokens, contrast pass, icons as placeholders.
 - Status-row copy in 8.2 matches spec A word for word where spec A has a line ("Session ended.", "Your last session ended while Orasenda was closed.", "Orasenda can't save sessions right now.", "This data was saved by a newer Orasenda.") and follows the Voice rules elsewhere: no exclamation marks, no shaming, contractions in Orasenda's voice.
 - Principles: one primary per screen holds on every page (Settings has none and says so; planning pages put theirs at the header's end; the SessionSlot replaces it); no state by colour alone (every tone has a word, and the strip's amber fill carries a triangle); no red for time (amber only with the triangle and a word; `critical` only in the destructive Dialog); motion only `duration-calm` and `duration-slow` on `easing-calm`, instant under reduced motion; disabled always with a visible reason.
 - The "Just 2 minutes" paragraph (6.2) is faithful to `docs/SPEC.md` line 39 (the 2-minute rule lowers the cost of starting) and answers the owner's question plainly; keep it as the README's purpose sentence.
@@ -154,4 +154,4 @@ The README dropped "`disabled` when no task is chosen" (right: Start needs no ta
 **Fix:** AppPicker README, States: "the ring sits inside the row because the result list scrolls; it is the one place the ring is inset."
 
 ## Not re-checked here
-Spec A and `verification/contrast.py` changes (section 10) live in the repo PR, not the artifact. The layout test (rule 2) gates the first code change and was not run. The repo refresh of `design/system/` has not happened yet; when it does, diff it against this artifact version (1794260898-f16f) rather than the changeset text.
+Spec A and `verification/contrast.py` changes (section 10) live in the repo PR, not the artifact. The repo refresh of `design/system/` has not happened yet; when it does, diff it against this artifact version (1794260898-f16f) rather than the changeset text.

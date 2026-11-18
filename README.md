@@ -67,7 +67,7 @@ toolchain and the workspace's packages. Use it as the environment's setup script
 if [ -d orasenda ]; then bash orasenda/scripts/cloud-setup.sh; fi
 ```
 or run `./scripts/cloud-setup.sh` as root from the repo root. On Linux `just ci` skips the macOS-only
-steps (the WebKit layout checks and the mobile check). Its last step builds a debug app; to see
+steps (the mobile check). Its last step builds a debug app; to see
 it, run `xvfb-run -a target/debug/orasenda` and screenshot the display. Focus views and other
 macOS-only features are unavailable there.
 

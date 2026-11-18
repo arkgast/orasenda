@@ -37,7 +37,6 @@ Each task that changes IPC regenerates `bindings.ts` with `just bindings` and ne
 - `lib_tests.rs`;
 - `ipc.rs`;
 - `shared/test/fixtures.ts`;
-- `dev/layout/scenarios`;
 - `designSystem.test.ts`;
 - the `Host` trait and its fakes.
 
@@ -114,7 +113,7 @@ Each task that changes IPC regenerates `bindings.ts` with `just bindings` and ne
   - `scheduler/tick.rs` (`nudge_due` once per new local minute);
   - `build.rs`, `capabilities/main.json`, `lib_tests.rs` and `lib.rs`;
   - `bindings.ts`;
-  - `settingsQueue.ts`'s key list, `settingsKeys.ts`, the TS `Settings` fixtures and `dev/layout/layoutMain.tsx`.
+  - `settingsQueue.ts`'s key list, `settingsKeys.ts`, the TS `Settings` fixtures.
 - **Acceptance:** spec run rules and §Nudge; the service tests for each path; the Settings row behaves like *Tell me when a session ends*.
 
 ### R7 (#520) Routines page: overview
@@ -123,15 +122,13 @@ Each task that changes IPC regenerates `bindings.ts` with `just bindings` and ne
   - the `routines` case in `apps/orasenda/src/app/App.tsx`.
 - **Touches:**
   - `apps/orasenda/src/shared/test/` (builders);
-  - `dev/layout/scenarios` (*routines-overview* and *routines-empty*, append-only);
   - `app/Placeholder.test.tsx` if it names Routines.
 - **Acceptance:** spec §Routines page (overview, empty state, Add, templates, check-ins, record, failure line). One primary action. Writes are chained.
 
 ### R8 (#521) Routines page: run view
 - **Owns:** `apps/orasenda/src/features/routines/RunView.tsx`, `useRunKeys.ts` and their tests.
 - **Touches:**
-  - `RoutinesPage.tsx` (showing the run view while `view.run` is set);
-  - `dev/layout/scenarios` (*routines-run*).
+  - `RoutinesPage.tsx` (showing the run view while `view.run` is set).
 - **Acceptance:** spec §Run view; the keyboard path Enter, S and Esc, with single keys off; focus and the live region; reduce motion.
 - **macOS check list:** with Reduce motion on in WebKit, the step change in `RoutineStep` does not cross-fade (jsdom only checks the class names).
 
@@ -158,4 +155,4 @@ Each task that changes IPC regenerates `bindings.ts` with `just bindings` and ne
 
 ## Risks
 - **The Board session lands at the same time.** Rebase before landing, renumber the migration if needed, regenerate the bindings, and recount the append-only lists.
-- **Linux cloud run.** This P4 run builds on Linux in a cloud container. The macOS-only parts (notifications through `UNUserNotificationCenter`, WebKit specimens, VoiceOver) are covered by fakes and tests here. The owner checks them by hand at the end.
+- **Linux cloud run.** This P4 run builds on Linux in a cloud container. The macOS-only parts (notifications through `UNUserNotificationCenter`, VoiceOver) are covered by fakes and tests here. The owner checks them by hand at the end.

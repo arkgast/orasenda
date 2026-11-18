@@ -48,9 +48,9 @@ Start immediately: R0 and R1. R1 doesn't need R0 (it touches no allowlisted file
 
 ### R1: Choice in TSX
 - Kind: design-system component. Priority 1.
-- Owns: `packages/ui/src/components/ui/choice.{tsx,test.tsx,md,specimen.tsx}`, `packages/ui/src/index.ts` (export lines), `packages/ui/src/styles.css` (delete the Choice block), `packages/ui/specimens/registry.ts`, `verification/layout/choice.spec.ts`, `verification/contrast-pairs.json` (if it lists Choice).
+- Owns: `packages/ui/src/components/ui/choice.{tsx,test.tsx,md,specimen.tsx}`, `packages/ui/src/index.ts` (export lines), `packages/ui/src/styles.css` (delete the Choice block), `packages/ui/specimens/registry.ts`, `verification/contrast-pairs.json` (if it lists Choice).
 - Touches: `apps/orasenda/src/pages/settings/Timer.tsx`, `apps/orasenda/src/pages/Today.tsx` (preset radios only), `apps/orasenda/src/spike/DevPanel.tsx`, their tests (selectors only), `packages/ui/index.test.tsx` (expected names).
-- Tests first: `choice.test.tsx` (radio group name, checked state word/ground, disabled reason, keyboard arrows move within a radio group natively, checkbox), the WebKit spec (hit-min 44, focus ring visible, both themes). Existing Settings/Today/DevPanel tests must pass unchanged except selectors.
+- Tests first: `choice.test.tsx` (radio group name, checked state word/ground, disabled reason, keyboard arrows move within a radio group natively, checkbox). Existing Settings/Today/DevPanel tests must pass unchanged except selectors.
 
 ### R2: Delete legacy
 - Kind: design-system cleanup. Priority 1. Depends on R1.
@@ -63,7 +63,6 @@ Start immediately: R0 and R1. R1 doesn't need R0 (it touches no allowlisted file
 - Kind: design-system. Priority 2. Depends on R2.
 - Owns: `packages/ui/src/styles.css`, `apps/orasenda/src/styles/app.css`, `packages/ui/specimens/specimens.css`, `apps/orasenda/src/spike/{spike,overlay}.css` (only rules Preflight breaks).
 - Touches: none in components unless a specimen screenshot shows a visible change (then name it and fix it in the component, within its file).
-- Proof: WebKit screenshots before and after (Today idle, Settings each section, every specimen; light and dark) under the controller's scratchpad, listed in the PR; `just layout` green.
 
 ### R4: Split session.rs in place
 - Kind: Rust refactor (move only). Priority 1. Depends on R0.

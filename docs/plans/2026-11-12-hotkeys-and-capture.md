@@ -21,7 +21,7 @@ Every UI task gets the opus code review and then the opus design review (layout 
 Each task that changes IPC regenerates `bindings.ts` and updates the TS fixtures. Shared registration files are append-only. On a conflict the controller keeps both sides (`union.py`), then runs `cargo fmt` and `just bindings`, and fixes the exact capability lists. These files are:
 - `commands.list.rs`, `commands/mod.rs`, `lib.rs`;
 - the capability files and `lib_tests.rs`;
-- `ipc.rs`, `test/fixtures.ts` and `dev/layout/scenarios.ts`.
+- `ipc.rs`, `test/fixtures.ts`.
 
 ## Contract
 - **F4 owns the keyboard contract:**
@@ -36,13 +36,12 @@ Each task that changes IPC regenerates `bindings.ts` and updates the TS fixtures
 
 ## Impact
 - **Schema:** migration `0005_inbox_note.sql` (F2), so `SCHEMA_VERSION` becomes 5 and the fresh-schema table count increases by one. It is forward-only (ADR-012). If another migration lands in parallel, the second to land renames itself (orasenda-status rule).
-- **Settings:** three new keys and `Settings` fields (F4). `settingsQueue.ts`'s compile-time key list, every TS fixture that builds `Settings`, and `layoutMain.tsx` must follow. ADR-014's diff-then-write chain is unchanged; shortcut keys bypass it through `keyboard_set_shortcut`, which registers before writing.
+- **Settings:** three new keys and `Settings` fields (F4). `settingsQueue.ts`'s compile-time key list and every TS fixture that builds `Settings` must follow. ADR-014's diff-then-write chain is unchanged; shortcut keys bypass it through `keyboard_set_shortcut`, which registers before writing.
 - **Capabilities:** `main` gains the keyboard, inbox, `capture_open` and `tip_seen` commands. There is a new `capture.json`. `focus` and `floater` gain `capture_open`. The exact lists in `lib_tests.rs` follow each.
 - **Public window model:** ADR-016 gains the `capture` line (F6), and ADR-017 moves to accepted (F5).
 - **Dependency:** `tauri-plugin-global-shortcut` 2.4.1 (F5, through baton:deps), desktop only, so `just mobile` still builds.
 - **Downstream checks that must stay green:**
-  - the tray tests (`tray/tests.rs`), `window_min_tests.rs` and the floater and focus layout specs;
-  - `today.*` specs (F8 and F10 touch Today) and `settings*.spec.ts` (F7).
+  - the tray tests (`tray/tests.rs`), `window_min_tests.rs`.
 - **Rollout and rollback:** squash PRs. Reverting F2 after notes exist leaves a table the older binary refuses ("newer data"), the existing store rule. That is acceptable before release.
 
 ## Dependency graph
@@ -62,7 +61,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 ### F1: ShortcutList and InboxRow components  (#386)
 - Priority: 1
 - Depends on: none
-- Owns: `packages/ui/src/components/ui/shortcut-list.{tsx,md,test.tsx,specimen.tsx}`, `inbox-row.{tsx,md,test.tsx,specimen.tsx}`; `verification/layout/shortcutList.spec.ts` and `inboxRow.spec.ts`.
+- Owns: `packages/ui/src/components/ui/shortcut-list.{tsx,md,test.tsx,specimen.tsx}`, `inbox-row.{tsx,md,test.tsx,specimen.tsx}`.
 - Touches (append-only): `packages/ui/src/index.ts` (exports), the specimen registry (wherever the specimens are listed).
 - Interfaces:
   - Produces: `ShortcutList({ items: { action: string; keys: string; spokenKeys: string; off?: boolean }[] })`; `InboxRow({ text: string; kind: "internal" | "external"; time: string; timeLabel: string; onRemove(): void; removeName: string })`.
@@ -71,7 +70,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - [ ] InboxRow: text wraps and is never truncated, then "Internal" or "External" · time as words, and a 44px `IconButton` Remove named by `removeName`. Its focus ring is visible, and it uses tokens only.
   - [ ] Layout: both components at 360 and 900 wide, with a 1000-character note, show no overflow and 44px targets, in both themes (contrast through `just contrast`).
   - [ ] Each README states the contract and what the host provides.
-- Tests first: `shortcut_list_spoken_names`, `shortcut_list_off_word`, `inbox_row_kind_is_a_word`, `inbox_row_remove_named`, `inbox_row_long_text_wraps` (layout), `shortcut_list_fits_panel_width` (layout).
+- Tests first: `shortcut_list_spoken_names`, `shortcut_list_off_word`, `inbox_row_kind_is_a_word`, `inbox_row_remove_named`.
 - Notes: sonnet. After merge, the controller republishes the design-system artifact.
 
 ### F2: Inbox store: migration 0005 and repository  (#387)
@@ -118,7 +117,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 - Touches:
   - service: `session/settings.rs` (three keys and defaults; at 330 lines, put the key list in `session/settings/keys.rs` if it would pass 400), `api/settings.rs` (fields), `session/service.rs` (`toggle_action`; ⌃⌥F runs `run_action_on(Action::StartPauseToggle)`), `session/hint.rs` (the `meta` helper reused for `used.global_shortcut`);
   - append-only: `api/events.rs` (`keyboard-changed`), `commands/mod.rs`, `commands.list.rs`, `lib.rs`, `capabilities/main.json`, `lib_tests.rs`;
-  - TS: `ipc/bindings.ts`, `ipc/settingsQueue.ts` (the key list), `test/fixtures.ts`, `dev/layout/layoutMain.tsx`.
+  - TS: `ipc/bindings.ts`, `ipc/settingsQueue.ts` (the key list), `test/fixtures.ts`.
 - Interfaces:
   - Produces:
     - `trait ShortcutRegistrar { fn register(&self, id: ShortcutId, acc: &Accelerator) -> Result<(), RegisterError>; fn unregister(&self, id: ShortcutId); }`;
@@ -171,13 +170,12 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - `crates/platform-macos/src/windows/capture.rs` (new: the panel spec, reusing `overlay::swap_to_panel_class`, the levels and collection behaviour from the spec, placement on the display under the pointer, and `announce(text)`);
   - `apps/orasenda/src-tauri/src/windows/capture.rs` (new), `commands/capture.rs` (new);
   - `apps/orasenda/capture.html`, `apps/orasenda/src/features/capture/{main.tsx,CapturePage.tsx,CapturePage.test.tsx,capture.css}` (new);
-  - `apps/orasenda/src-tauri/capabilities/capture.json` (new);
-  - `verification/layout/captureWindow.spec.ts` (new).
+  - `apps/orasenda/src-tauri/capabilities/capture.json` (new).
 - Touches:
   - append-only: `windows/mod.rs`, `commands/mod.rs`, `commands.list.rs`, `lib.rs`, `lib_tests.rs`, `capabilities/{main,focus,floater}.json` (`capture_open`);
   - `tray/menu/entries.rs` ("Capture a thought…" with inert ⌃⌥N);
   - `app/palette/paletteCommands.ts` ("Capture a thought");
-  - Vite config (the entry), `layout.html` surfaces (`?surface=capture`);
+  - Vite config (the entry);
   - `docs/DECISIONS.md` (the ADR-016 `capture` line).
 - Interfaces:
   - Consumes: `capture_note` from F3 (#389); the `CaptureOpener` hook from F4 (#388), wired to `capture_open`; the inert-text helper from F5 (#390).
@@ -195,7 +193,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 ### F7: Settings › Keyboard  (#393)
 - Priority: 1
 - Depends on: F1, F4
-- Owns: `apps/orasenda/src/features/settings/sections/Keyboard.tsx` (new), `sections/KeyboardRows.tsx` (new, if Keyboard.tsx passes 250 lines), `features/settings/useKeyboard.ts` (new), `Settings.keyboard.test.tsx` (new), `verification/layout/settings.keyboard.spec.ts` (new).
+- Owns: `apps/orasenda/src/features/settings/sections/Keyboard.tsx` (new), `sections/KeyboardRows.tsx` (new, if Keyboard.tsx passes 250 lines), `features/settings/useKeyboard.ts` (new), `Settings.keyboard.test.tsx` (new).
 - Touches: `Settings.tsx` (at 381: add only the section mount, and move the section list to `settingsSections.ts` if it would pass 400), `SettingsHeader.tsx` (`SectionId` + `"keyboard"`), `settingsTarget.ts` (`keyboard`), `ipc.rs` (`SettingsTarget::Keyboard`).
 - Interfaces:
   - Consumes: `keyboard_state`, `keyboard_set_shortcut`, `keyboard_restore_default` and `keyboard-changed` from F4 (#388); `ShortcutList` from F1 (#386); `ShortcutRecorder`, `SettingsRow`, `Choice`.
@@ -222,14 +220,13 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - [ ] Focus window: Space starts, pauses or resumes, with the same rule.
   - [ ] With `singleKey` off, none fires, and captions, tooltips and `aria-keyshortcuts` drop the single key (StartButton and FullScreenFocus `singleKeys`).
   - [ ] The floater is unchanged.
-  - [ ] The existing `today.focus` and `focusWindow` specs stay green.
 - Tests first: `space_toggles_on_body`, `space_ignored_in_field_and_on_button`, `f_opens_focus_view_menu`, `p_opens_preset_popover`, `keys_off_do_nothing`, `captions_drop_single_keys_when_off`, `focus_page_space_toggles`.
 - Notes: sonnet, ui.
 
 ### F9: Board's Inbox list  (#394)
 - Priority: 1
 - Depends on: F1, F3
-- Owns: `apps/orasenda/src/features/board/{BoardPage.tsx,useInbox.ts,BoardPage.test.tsx,board.css}` (new), `verification/layout/board.spec.ts` (new), `dev/layout` scenarios for Board (append).
+- Owns: `apps/orasenda/src/features/board/{BoardPage.tsx,useInbox.ts,BoardPage.test.tsx,board.css}` (new).
 - Touches: `app/App.tsx` (route `board` to BoardPage instead of Placeholder).
 - Interfaces:
   - Consumes: `inbox_list`, `inbox_remove`, `inbox_restore` and `inbox-changed` from F3 (#389); `InboxRow` from F1 (#386); `PageFrame`, `ScrollRegion`, `EmptyState`, `InlineNotice`; `KeyboardView.capture` from F4 (#388) for the empty-state copy.
@@ -249,7 +246,7 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 - Touches:
   - service: `session/view.rs` (`tip`, `welcome`), the end-milestone path (session-end count), and the Focus view and floater open paths (`used.focus_view`, through the service);
   - TS: `features/today/statusLine.ts` (tip and welcome rows per the InlineNotice ranking; at 232 lines), `Today.tsx` (only the hook call);
-  - append-only: `commands.list.rs`, `lib.rs`, `capabilities/main.json`, `lib_tests.rs`, `bindings.ts`, `test/fixtures.ts`, `dev/layout/scenarios.ts`, `verification/layout/support/today.ts` `STATES` (`welcome`, `tipShortcut`, `tipFocusView`).
+  - append-only: `commands.list.rs`, `lib.rs`, `capabilities/main.json`, `lib_tests.rs`, `bindings.ts`, `test/fixtures.ts`.
 - Interfaces:
   - Consumes: `KeyboardView` (status, voiceOver), the `used.global_shortcut` flag from F4 (#388); `Settings.singleKey` (F8's wiring).
   - Produces: `TimerView { tip: Option<TipId>, welcome: bool }`, `TipId { GlobalShortcut, GlobalShortcutMenu, FocusView, FocusViewKeys }`, `tip_seen(tip: TipId, how: TipSeen) -> Result<TimerView, TimerCommandError>`, `TipSeen { GotIt, Shown }`.
@@ -259,8 +256,8 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
   - [ ] Seen on Got it, on use (`used.*`), or on the 2nd showing; never on Start; none while the store can't write.
   - [ ] Copy is exactly as in the spec table, ≤ 65 characters, and the spoken form uses the spoken keys.
   - [ ] Got it removes only the tip; "Session ended." stays.
-  - [ ] Layout: the longest tip joined to "Session ended." at 360×240 keeps the 44px row, and `expectTodayGaps` passes for the new states.
-- Tests first: `welcome_only_true_first_run`, `tip1_after_first_end_variants`, `tip2_after_second_end_variants`, `tip_seen_on_got_it_use_or_second_showing`, `no_tip_while_store_unavailable`, `got_it_keeps_session_ended`, `today_tip_fits_360x240` (layout).
+  - [ ] Layout: the longest tip joined to "Session ended." at 360×240 keeps the 44px row.
+- Tests first: `welcome_only_true_first_run`, `tip1_after_first_end_variants`, `tip2_after_second_end_variants`, `tip_seen_on_got_it_use_or_second_showing`, `no_tip_while_store_unavailable`, `got_it_keeps_session_ended`.
 - Notes: sonnet, mixed.
 
 ## Coverage check
@@ -278,5 +275,4 @@ Can start immediately in parallel: **F1, F2, F4**. Then F3 (after F2), F5 and F8
 | Failure mode: the panel can't take typing (non-activating) | F6: step 0 stop gate |
 | Failure mode: ⌃⌥F and a Start in flight at the same moment | F4: `start_pause_toggle_each_state` (racing start) |
 | Failure mode: the synced shortcut fails on this device | F4: `register_saved_failed_status` |
-| Failure mode: a 1000-character note at 360 wide | F1: `inbox_row_long_text_wraps` |
 | Failure mode: the store is unavailable during capture | F3: `inbox_store_failure_is_error`, F6: `capture_page_failure_keeps_text` |

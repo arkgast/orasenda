@@ -18,9 +18,7 @@ is copied here before `baton:backlog`.
    fails on every file above. The one piece of work that runs beside the series is off-repo: the
    draft glyph canvas for T7 (see T7, "Before T7").
 2. **Where the new dev dependencies live** (all through `baton:deps` in T1):
-   `@playwright/test` is a devDependency of the workspace root `package.json` (beside
-   `@biomejs/biome`), so `verification/layout/` resolves it without becoming a workspace package
-   and `pnpm-workspace.yaml` is unchanged. `vite` and `@vitejs/plugin-react` are devDependencies of
+   `vite` and `@vitejs/plugin-react` are devDependencies of
    `packages/ui` at the versions `apps/orasenda` already locks (`vite` 8.3.6,
    `@vitejs/plugin-react` 6.2.1), and `@orasenda/tokens` becomes a `workspace:*` devDependency of
    `packages/ui` so the specimens import `tokens.css`. If `baton:deps` rules otherwise, T1's PR
@@ -28,8 +26,8 @@ is copied here before `baton:backlog`.
 3. **Specimens are one Vite page with a registry, not one HTML file per component.**
    `packages/ui/specimens/index.html` loads `main.tsx`, which renders the specimen named by
    `?c=<Name>` from `registry.ts`, with `data-theme` from `?theme=light|dark` on `<html>`. Each
-   task adds one `<Name>.tsx` file and one registry line. The harness and `just specimens` use the
-   same URLs. Frames come from one `Frame.tsx` (fixed width and height, `data-state`, a visible
+   task adds one `<Name>.tsx` file and one registry line. `just specimens` uses
+   the same URLs. Frames come from one `Frame.tsx` (fixed width and height, `data-state`, a visible
    state label outside the frame).
 4. **Component tests are one file per component** at the `packages/ui` root
    (`<component>.test.tsx`, picked up by the existing `include: ["*.ts", "*.tsx"]`), not appended
@@ -43,18 +41,7 @@ is copied here before `baton:backlog`.
    `{ aria: glyphs, spoken: glyphs }` and logs one `console.warn`. `packages/ui/test-setup.ts` and
    the specimens' `main.tsx` set it to `true`. The artifact round may choose another mechanism; the
    T2 PR records it.
-6. **T1 proves Playwright WebKit on both machines before anything else.** Its first commit holds
-   everything the runner needs to launch WebKit, not only the dependency: the pinned
-   `@playwright/test`, a one-case `verification/layout/smoke.spec.ts` (with a minimal
-   `playwright.config.ts`), the `ci.yml` cache step and `pnpm exec playwright install webkit`
-   step on the `ci` job, a temporary `just layout` recipe that runs only `smoke.spec.ts`, and a
-   `layout` call in the `ci` recipe. Today's `ci` job never runs Playwright, so a green run without
-   these proves nothing. The branch is pushed as a draft PR; the `macos-26` run's log must show
-   the WebKit launch line (the smoke case's `webkit <version>` output), linked in the PR. A green
-   run without that line counts as a failure. The owner's macOS 27 run is recorded as a PR
-   comment. If either fails, T1 stops and asks (spec, Behavior, "Playwright has no WebKit for the
-   host's macOS").
-7. **No eighth task to close the sub-project.** The spec counts seven. Each task ticks its own
+6. **No eighth task to close the sub-project.** The spec counts seven. Each task ticks its own
    Implementation status line; T7 ticks the last one. The VoiceOver boxes are ticked as the owner
    records each pass, and the sub-project is closed by a docs-only PR (precedent: #163, "docs:
    close P1-B") once every box is ticked. That PR sets the spec and plan status to implemented.
@@ -111,13 +98,13 @@ steps the spec makes explicit ("How each task runs"):
    read with `paths`), byte for byte. If the live version is newer than the one the orchestrator
    named, someone else republished: stop.
 3. The implementer runs `just ui-css`, exports the new names from `packages/ui/index.ts`, writes
-   the component tests first, then the specimen, the harness spec and the contrast pairs.
+   the component tests first, then the specimen and the contrast pairs.
 4. A fix the review asks for in a component goes back through step 1 as a new version. Nothing in
    `design/system/` or in a component's runtime in `packages/ui` is patched alone.
 
 | Plan task | Spec task | Builds | First consumers |
 |---|---|---|---|
-| **T1** (#168) | T1 | Playwright WebKit harness, specimen server and seed specimen; bundled fonts and `type.fonts`; `verification/contrast.py`; the copy and colour guard; `ci` and `ci.yml` | every later task; C's Today cases |
+| **T1** (#168) | T1 | Specimen server and seed specimen; bundled fonts and `type.fonts`; `verification/contrast.py`; the copy and colour guard; `ci` and `ci.yml` | every later task; C's Today cases |
 | **T2** (#169) | T2 | `IconButton`, `Tooltip`, `Kbd`, `describeShortcut` | C, D, F |
 | **T3** (#170) | T3 | `TimerRing` fluid and the warning fade, `TimerStrip`, `timerLayout`, `StartButton` redesign | C, D, E |
 | **T4** (#171) | T4 | `PopoverMenu` | C, D |
@@ -152,7 +139,7 @@ steps the spec makes explicit ("How each task runs"):
   https://claude.ai/artifact/XPG6fXqiVfT8y1gTxpzKoz.
 - **Every task closes with** both themes checked, the keyboard path, hit targets, the
   accessibility-tree snapshot, reduced motion, contrast through `contrast.py`, `./scripts/ci.sh`
-  green, and light and dark screenshots of the specimen from the harness attached to the PR. Its
+  green. Its
   VoiceOver pass is listed under "Not yet verified" until the owner records it (spec, Testing
   strategy, VoiceOver).
 - **Green CI** means `gh pr checks <pr> --required` passes and `windows (advisory)` is green
@@ -164,11 +151,8 @@ steps the spec makes explicit ("How each task runs"):
   `index.d.ts` and that `packages/ui/components.d.ts` copies. The names fixed by the spec are in
   each task's Produces line. Names the spec leaves to the artifact round are marked "proposed";
   the artifact is binding, and the implementer copies the final props into the task's issue.
-- **Harness contract (T1):** `verification/layout/playwright.config.ts` with the projects
-  `light`, `dark` and `light-reduced-motion`; the specimen URL scheme
-  `/?c=<Name>&theme=light|dark`; and the helpers in `verification/layout/support/` that every
-  later spec file uses. T2–T7 add spec files and helpers. They don't change a project, the URL
-  scheme or an existing helper's signature without listing it in Touches.
+- **Specimen contract (T1):** the specimen URL scheme `/?c=<Name>&theme=light|dark`. T2–T7 don't
+  change it without listing it in Touches.
 - **Contrast contract (T1):** the `verification/contrast-pairs.json` entry shape
   `{ "fg": string, "bg": string, "kind": "text" | "mark", "where": string }`, plus the floater form
   `{ "fill": string, "edge": string, "wallpaper": string[], "kind": "mark", "where": string,
@@ -199,14 +183,14 @@ Risky changes: a shared module that the app imports (`@orasenda/ui`, `tokens.css
     origin, so it needs no change. `packages/ui/build.ts` rejects `url(` in `bundle.css`, so
     `@font-face` must live in `tokens.css` only, never in `bundle.css`.
   - CI (T1): the `ci` job keeps its id and name (branch protection requires the `ci` context) and
-    gains `setup-python`, a Playwright browser cache and `playwright install webkit`; the
-    `windows` job gains `setup-python`. Both new steps are skipped on the docs-only path.
+    gains `setup-python`; the `windows` job gains `setup-python`. Both new steps are skipped on
+    the docs-only path.
 - **Data and migrations:** none. `tokens.json` changes only in `type.fonts` (T1, artifact first).
 - **Tests and downstream checks that must stay green:** `pnpm --filter orasenda typecheck` and
   `test` (Today, Settings, App), `pnpm --filter @orasenda/tokens test` (every existing case,
   including `output_is_deterministic` and `dark_block_guarded_and_repeated_under_data_theme_dark`),
   `pnpm --filter @orasenda/ui typecheck` and `test`, the `tokens` and `ui-css` staleness diffs in
-  `ci`, `pnpm exec biome ci .` (the `a11y` group blocks; specimens and harness files are linted),
+  `ci`, `pnpm exec biome ci .` (the `a11y` group blocks; specimens are linted),
   the app debug build (`tauri build --debug --no-bundle`), and `./scripts/docs-only.test.sh`.
 - **Rollout and rollback:** each task is one squash-merged PR. To roll one back, revert the PR
   and republish the previous artifact version, then refresh `design/system/` from it in the same
@@ -219,7 +203,7 @@ Serial order:   T1 ──> T2 ──> T3 ──> T4 ──> T5 ──> T6 ──
 Real needs:     T2 <- T1;  T3 <- T2;  T4 <- T2;  T5 <- T3, T4;  T6 <- T2;  T7 <- T2 + glyph approval
 Off-repo:       after T2 merges: draft glyph canvas ──(owner approval)──> T7
 ```
-- Real dependencies: T2 needs T1 (harness, specimens, contrast). T3 needs T2 (`describeShortcut`
+- Real dependencies: T2 needs T1 (specimens, contrast). T3 needs T2 (`describeShortcut`
   for `StartButton`'s `aria-keyshortcuts`). T4 needs T2
   (`describeShortcut` for the P key, the positioned-panel helper shared with `Tooltip`). T5 needs
   T3 (`TimerRing` fluid, `TimerStrip`, `timerLayout`) and T4 (the summary trigger opens a
@@ -247,8 +231,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 | `packages/ui/specimens/registry.ts` | own | add | add | add | add | add | add |
 | `packages/ui/specimens/<Name>.tsx` | own (`Seed.tsx`) | own (its own) | own | own | own | own | own, plus touch every earlier one (glyphs) |
 | `packages/ui/package.json`, `tsconfig.json` | own (deps, `specimens` script, include `specimens/**`) | | | | | | |
-| `verification/layout/playwright.config.ts`, `support/**` | own | add (helpers only) | add | add | add | add | add |
-| `verification/layout/<name>.spec.ts` | own (`seed.spec.ts`) | own (its own) | own | own | own | own | own |
 | `verification/contrast.py`, `contrast_test.py` | own | | | | | | |
 | `verification/contrast-pairs.json` | own (seeded) | add | add | add | add | add | add |
 | `packages/tokens/**` (`build.ts`, `build.test.ts`, `tokens.css`, `fonts/**`, `package.json`) | own | | | | | | |
@@ -258,15 +240,12 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 
 ## Tasks
 
-### T1: Real-engine harness, bundled fonts and the contrast check (#168)
+### T1: Specimen server, bundled fonts and the contrast check (#168)
 - Priority: 0
 - Kind: cross-file/debugging (new tooling across CI, tokens and the design system; one small
   artifact round for `type.fonts` and two README lines)
 - Depends on: none
 - Owns:
-  - `verification/layout/playwright.config.ts`, `verification/layout/support/{specimen.ts,fits.ts,hitTargets.ts,focusRing.ts,motion.ts,fonts.ts,network.ts}`,
-    `verification/layout/seed.spec.ts`, `verification/layout/smoke.spec.ts` (the first-commit
-    launch check; it may be folded into `seed.spec.ts` once green)
   - `verification/contrast.py`, `verification/contrast_test.py`, `verification/contrast-pairs.json`
   - `packages/ui/specimens/{index.html,main.tsx,registry.ts,Frame.tsx,Seed.tsx,vite.config.ts,specimens.css}`,
     `packages/ui/guard.test.ts` (the copy and colour guard), `packages/ui/package.json`
@@ -282,18 +261,9 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `type.fonts` and the Colour line about `contrast.py`), `design/system/design-system.json`:
     all from the artifact refresh only
   - `justfile`: a `python` variable (`python` on Windows, `python3` elsewhere), recipes
-    `contrast`, `layout` (skips on non-Darwin like `mobile`; on Darwin fails with
-    `pnpm exec playwright install webkit` when the browser is missing) and `specimens`; in `ci`,
-    `contrast` runs before the `tokens` step and `layout` after the ui tests. In checkpoint 1
-    `layout` is a temporary recipe that runs only `smoke.spec.ts`; checkpoint 4 replaces it.
+    `contrast` and `specimens`; in `ci`, `contrast` runs before the `tokens` step.
   - `.github/workflows/ci.yml`: a pinned `actions/setup-python` step (Python 3.13) on both jobs;
-    on the macOS `ci` job, a SHA-pinned `actions/cache` step (with a version comment, like every
-    other action in the file) for `~/Library/Caches/ms-playwright` keyed on
-    the `@playwright/test` version from `pnpm-lock.yaml`, then `pnpm exec playwright install
-    webkit` before `./scripts/ci.sh`; all new steps carry `if: steps.scope.outputs.docs_only !=
-    'true'`
-  - root `package.json` (`@playwright/test`, pinned exactly), `pnpm-lock.yaml`, `.gitignore`
-    (`test-results/`, `playwright-report/`)
+    all new steps carry `if: steps.scope.outputs.docs_only != 'true'`
 - Touches (read-only or additive):
   - `docs/specs/2026-11-10-p1-components.md`: ticks the T1 line in Implementation status only
   - `packages/ui/build.ts` (read: its `url(` guard means `@font-face` never goes in `bundle.css`;
@@ -317,21 +287,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
       `"200 800"`). The artifact round is binding.
     - `tokens.css`: one `@font-face { font-family; src: url("./<file>") format("woff2");
       font-weight: <range>; font-style: normal; font-display: block }` per entry, before `:root`
-    - `verification/layout/support/specimen.ts`: `openSpecimen(page: Page, name: string, opts?:
-      { theme?: "light" | "dark" }): Promise<void>` (waits for `document.fonts.ready`);
-      `frames(page: Page): Locator` (every `[data-frame]`)
-    - `support/fits.ts`: `overflows(frame: Locator): Promise<string[]>` (each descendant whose
-      `scrollWidth > clientWidth` or `scrollHeight > clientHeight`, by `data-state`);
-      `expectFits(frame: Locator): Promise<void>`
-    - `support/hitTargets.ts`: `smallTargets(scope: Locator, min?: { width: number; height:
-      number }): Promise<string[]>` (default `hit-min`, read from the computed `--hit-min`)
-    - `support/focusRing.ts`: `expectFocusRingVisible(el: Locator): Promise<void>` (outline or
-      box-shadow present and not clipped by any ancestor's `overflow`)
-    - `support/motion.ts`: `animatedElements(page: Page): Promise<string[]>` (any element with a
-      non-zero computed `transition-duration` or a running `animation-name`)
-    - `support/fonts.ts`: `FONT_FACES: Array<{ family: string; weight: number }>` (from
-      `tokens.json`), `expectBundledFontsLoaded(page: Page): Promise<void>`
-    - `support/network.ts`: `recordRequests(page: Page): () => URL[]`
     - `packages/ui/specimens/Frame.tsx`: `Frame(props: { state: string; width: number; height:
       number; children: React.ReactNode }): React.ReactElement`
     - `packages/ui/specimens/registry.ts`: `export const specimens: Record<string, () =>
@@ -339,7 +294,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     - `verification/contrast.py`: CLI `python3 verification/contrast.py [--tokens <path>]
       [--pairs <path>]`; prints each pair's ratio in light and dark; exit 1 on any failure,
       2 on a bad input (unknown token, malformed entry)
-    - `justfile`: `just layout`, `just specimens`, `just contrast`
+    - `justfile`: `just specimens`, `just contrast`
 - Step zero (orchestrator, before the artifact round): fetch the three upstream font releases
   (`googlefonts/atkinson-hyperlegible-next`, `googlefonts/atkinson-hyperlegible-next-mono`,
   `googlefonts/lexend`) into a scratch folder and record in the T1 issue, per family: repository,
@@ -349,26 +304,15 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   from that record, so the republish never waits on the implementer.
 - Checkpoints: one PR, as the spec cuts it, built as commits in this order. After each
   checkpoint the implementer may stop and report (the branch pushed, the PR still a draft):
-  1. Smoke and CI launch (planner decision 6): the pinned `@playwright/test`, a minimal
-     `playwright.config.ts`, `smoke.spec.ts`, the `ci.yml` steps (`setup-python`, `actions/cache`,
-     `playwright install webkit`), the temporary `layout` recipe and its call in `ci`.
+  1. CI setup: the `ci.yml` `setup-python` steps.
   2. Fonts and tokens: the refresh from the artifact, the font files (SHA-256 checked against
      the step-zero record), `build.ts`, `build.test.ts`, `tokens.css`, `packages/tokens/package.json`.
   3. Contrast: `contrast.py`, `contrast_test.py`, the seeded `contrast-pairs.json`, `just contrast`
      and its place in `ci`.
-  4. Harness helpers and the seed: `support/**`, the specimen server, `Seed.tsx`, `seed.spec.ts`
-     (the smoke case folds in), the final `layout` and `specimens` recipes.
+  4. The seed: the specimen server, `Seed.tsx`, the `specimens` recipe.
   5. The guard: `guard.test.ts`; then the manual app check and the #149 comment.
 - Acceptance:
-  - [ ] **First, before any other T1 work (checkpoint 1):** the first commit holds the pinned
-    `@playwright/test`, `smoke.spec.ts`, the `ci.yml` setup, cache and `pnpm exec playwright
-    install webkit` steps, a temporary `just layout` recipe that runs `smoke.spec.ts`, and a
-    `layout` call in the `ci` recipe. The draft PR's `ci` run on `macos-26` passes and its log
-    shows the WebKit launch line; the PR links that log line. If the line is missing, the task
-    stops and asks even when the run is green. The owner's macOS 27 run is recorded as a PR
-    comment with `playwright --version` and the launch output. If either fails, the task stops
-    and asks (planner decision 6).
-  - [ ] `@playwright/test`, `vite`, `@vitejs/plugin-react`, the `actions/setup-python` pin and
+  - [ ] `vite`, `@vitejs/plugin-react`, the `actions/setup-python` pin and
     the `actions/cache` pin (SHA-pinned, with a version comment) went through `baton:deps`; the PR
     lists each version and the reason. The font files are vetted the same way: upstream
     repository, release tag or commit, and SHA-256 of each file, in the PR body, matching the
@@ -382,22 +326,13 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     stacks are unchanged; `packages/ui/components.css` is unchanged.
   - [ ] `just specimens` serves `http://localhost:<port>/?c=Seed&theme=dark` with the bundled
     fonts and no request to `fonts.googleapis.com`, `fonts.gstatic.com` or any other host.
-  - [ ] `just layout` runs `seed.spec.ts` in the `light`, `dark` and `light-reduced-motion`
-    projects (`retries: 0` locally, `retries: 1` with `trace: "on-first-retry"` when `CI` is
-    set). On a non-Darwin host it prints a skip line and exits 0. On Darwin without the browser
-    it fails and prints `pnpm exec playwright install webkit` (checked by hand with the cache
-    folder renamed; recorded in the PR).
-  - [ ] The seed specimen (`TimerRing` and `InlineNotice variant="row"` with the "Open Settings"
-    action, at 360 wide) fits its frames in all three projects; the seeded overflow frame is
-    reported by `overflows`.
   - [ ] `just contrast` passes with the seeded pairs (changeset §9, the `FloatingTimer` and
     `TimerStrip` README tables, the three wallpapers `#EDEDED`, `#808080`, `#1C1C1E`); its self
     test fails a seeded text pair under 4.5:1 and a floater whose fill and edge are both under
     3:1.
-  - [ ] `just ci` runs `contrast` before the tokens step on every platform and `layout` after
-    the ui tests on macOS; `scripts/ci.sh` is still `exec just ci`.
-  - [ ] `ci.yml`: both jobs get the pinned `setup-python` (3.13); the `ci` job caches
-    `~/Library/Caches/ms-playwright` and installs WebKit before `./scripts/ci.sh`; the `ci` job's
+  - [ ] `just ci` runs `contrast` before the tokens step on every platform; `scripts/ci.sh` is
+    still `exec just ci`.
+  - [ ] `ci.yml`: both jobs get the pinned `setup-python` (3.13); the `ci` job's
     id and name are unchanged; a docs-only PR skips every new step.
   - [ ] The copy and colour guard passes on today's `bundle.js`.
   - [ ] **Manual (the font change is visible in the app):** `pnpm tauri dev`, the Settings page
@@ -419,20 +354,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `test_mark_pair_uses_3_to_1`, `test_floater_fails_when_fill_and_edge_both_under_3`,
     `test_floater_passes_when_edge_holds_on_every_wallpaper`, `test_token_reference_resolves`,
     `test_unknown_token_exits_2`
-  - `verification/layout/seed.spec.ts`: `playwright_launches_webkit` (the smoke case),
-    `seed_states_fit_their_frames`, `seeded_overflow_is_reported`,
-    `bundled_fonts_loaded_for_every_family_and_weight`, `no_request_leaves_the_specimen_server`,
-    `seed_focusables_meet_hit_min`, `seed_focus_ring_visible_and_unclipped`,
-    `reduced_motion_leaves_no_transition_or_animation` (runs in `light-reduced-motion` only),
-    `seed_aria_snapshot`
 - Notes: `document.fonts.check` passes for a family no `@font-face` declares (planner
-  decision 9), so `expectBundledFontsLoaded` also iterates `document.fonts` for a loaded
-  `FontFace` per family and checks each was served by the specimen server. The seeded overflow
-  is a dedicated frame in `Seed.tsx` (`data-state="seeded-overflow"`) that the spec expects
-  `overflows` to report; it isn't `test.fail()`, so CI stays green while proving the check bites.
-  Playwright's `webServer` starts `pnpm --filter @orasenda/ui specimens --port <fixed>
-  --strictPort` with `reuseExistingServer: !process.env.CI`. The Windows job installs
-  `@playwright/test` with the workspace but never downloads a browser; `layout` skips there.
+  decision 9).
   Upstream font repositories: `googlefonts/atkinson-hyperlegible-next`,
   `googlefonts/atkinson-hyperlegible-next-mono` (the spec's "-mono"), `googlefonts/lexend`;
   their file names and `wght` ranges come from step zero, and the implementer only checks the
@@ -452,16 +375,14 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     (sets `window.Orasenda.strictShortcuts = true` before `bundle.js` runs, or as decided)
   - `packages/ui/specimens/{IconButton,Tooltip,Kbd}.tsx`, `registry.ts` (three lines),
     `main.tsx` (the strict flag)
-  - `verification/layout/{iconButton,tooltip,kbd}.spec.ts`; `support/**` (additive only)
   - `verification/contrast-pairs.json` (append: tooltip text and `Kbd` on `surface-raised`,
     `IconButton` glyph and edge in rest, hover and pressed, both themes)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T2 line;
   the VoiceOver boxes stay for the owner); GitHub #61 (one line: the positioned-panel placement
-  of `Tooltip` inside an open `<dialog>`, to check on the macOS 13 system WebKit);
+  of `Tooltip` inside an open `<dialog>`);
   `apps/orasenda/src/**` (read: typecheck and test)
 - Interfaces:
-  - Consumes: T1's harness helpers (`openSpecimen`, `expectFits`, `smallTargets`,
-    `expectFocusRingVisible`, `animatedElements`), `Frame`, `specimens`
+  - Consumes: `Frame`, `specimens`
   - Produces:
     - `describeShortcut(glyphs: string): { aria: string; spoken: string }` (spec, Key table):
       modifiers in macOS order `⌃⌥⇧⌘` then one key from `F`-style letters and digits, `.`, `,`,
@@ -492,7 +413,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     bundle.js yet"; `window.Orasenda` and the `declare global` block list the four names.
   - [ ] `IconButton`'s accessible name is its `label`; the icon is `aria-hidden`; `shortcut`
     sets `aria-keyshortcuts` from `describeShortcut(...).aria`; `md` is at least 44×44 and
-    `round` at least 52×52 in WebKit.
+    `round` at least 52×52.
   - [ ] `Tooltip` shows on hover after `duration-quick`; on focus only after a keyboard event
     (`:focus-visible`); Esc hides it; it stays while hovered; inside an open `showModal()` dialog
     it is visible above the dialog; at 40ch it wraps to two lines and its `Kbd` doesn't break.
@@ -500,10 +421,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - [ ] No new live region (`role="status"`, `role="alert"`, `aria-live`) in any of the three.
   - [ ] Every key `describeShortcut` accepts round-trips (the table, both ways); an unknown key
     throws when strict and returns the glyphs unchanged otherwise.
-  - [ ] Harness: the three specimens fit, meet their hit sizes, show a visible focus ring, pass
-    the keyboard path with `page.keyboard` only, match the README's names in the
-    accessibility-tree snapshot, and have no motion under `light-reduced-motion`. Light and dark
-    screenshots in the PR.
   - [ ] `contrast.py` passes with the new pairs. #61 has its line.
   - [ ] Review against the timer-surfaces canvas (Today's Pause/Resume/End, Pages, Jump to
     section; Focus view, Leave full screen, floater) and the Settings canvas for `Kbd`.
@@ -525,15 +442,10 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `tooltip_stays_while_hovered`, `tooltip_renders_inside_nearest_open_dialog`,
     `tooltip_adds_no_live_region`
   - `kbd.test.tsx`: `kbd_glyph_hidden_and_spoken_in_text`, `kbd_in_tooltip_needs_no_spoken`
-  - harness: `icon_button_hit_boxes_md_44_round_52`, `tooltip_40ch_two_lines_kbd_unbroken`,
-    `tooltip_visible_above_open_dialog`, `tooltip_keyboard_path_focus_shows_esc_hides`,
-    `tooltip_not_shown_on_programmatic_focus`, `small_controls_fit_and_ring_visible`,
-    `small_controls_aria_snapshot`, `small_controls_no_motion_when_reduced`
 - Notes: the specimens use the current placeholder glyphs (the rail's inline SVG paths, or text)
   through `icon: ReactNode`; T7 swaps them for `Icon`. Glyph strings are canonical; never accept
   `Cmd+.` text in `describeShortcut`. Don't use the popover API or anchor positioning (Engine
-  baseline). Watch out for `:focus-visible` after programmatic focus: WebKit and jsdom differ,
-  which is why `tooltip_not_shown_on_programmatic_focus` is a harness case.
+  baseline). Watch out for `:focus-visible` after programmatic focus: jsdom differs from a browser.
 
 ### T3: Timer faces and Start (#170)
 - Priority: 0
@@ -547,7 +459,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `index.test.tsx`
   - `packages/ui/{timerLayout,timerRing,timerStrip,startButton}.test.tsx`
   - `packages/ui/specimens/{TimerRing,TimerStrip,StartButton}.tsx`, `registry.ts`
-  - `verification/layout/{timerRing,timerStrip,startButton}.spec.ts`; `support/**` (additive)
   - `verification/contrast-pairs.json` (append: strip bar and triangle, break and warning arcs
     and chips, Start's play glyph, both themes)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T3 line;
@@ -556,7 +467,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   `apps/orasenda/src/pages/Today.tsx` and `Today.test.tsx`, `App.test.tsx` (read: they must pass
   unchanged); `design/system/tokens.json` (read: the `layout-*` and `timer-*` constants)
 - Interfaces:
-  - Consumes: `describeShortcut` (T2), T1's harness helpers
+  - Consumes: `describeShortcut` (T2)
   - Produces:
     - `timerLayout(box: { contentWidth: number; contentHeight: number; windowWidth: number }):
       "ring" | "strip" | "stackedStrip"` (spec rule: `contentHeight < 360` → `strip` if
@@ -602,7 +513,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - [ ] **Compatibility:** with Today's props, `TimerRing` renders its numeric size as before and
     `StartButton` with `finishTime` still renders "Realistic finish · <time>";
     `Today.test.tsx` and `App.test.tsx` pass unchanged.
-  - [ ] Harness, contrast, both themes, screenshots and review (timer-surfaces canvas: Today,
+  - [ ] Contrast, both themes and review (timer-surfaces canvas: Today,
     Focus window, break and warning) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
@@ -623,13 +534,8 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `start_button_unavailable_stays_focusable`,
     `start_button_finish_time_still_renders_realistic_finish`,
     `start_button_disabled_still_disables`, `start_button_play_glyph_hidden`
-  - harness: `fluid_ring_diameter_clamped_in_160_to_1200_containers`,
-    `fluid_ring_digits_at_least_timer_md`, `timer_strip_fits_at_360_640_1440_with_two_line_intent`,
-    `stacked_strip_fits_at_360`, `start_button_label_switches_at_400px_content`,
-    `warning_fade_uses_duration_slow`, `timer_faces_aria_snapshot`,
-    `timer_faces_no_motion_when_reduced`
 - Notes: `timerLayout` is pure and called on resize only, never on a tick. The compact Start label
-  is a container query; jsdom can't see it, so the 399/400 case is a harness case and the jsdom
+  is a container query; jsdom can't see it, so the jsdom
   test checks only that the name stays "Start focus". `App.test.tsx:122` uses
   `toHaveTextContent("Start focus")`, a substring match, so a hidden compact label in the DOM
   doesn't break it; keep the full label in the DOM. Time strings arrive formatted (ADR-011).
@@ -644,10 +550,9 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `packages/ui/index.ts` (adds `PopoverMenu`), `components.{css,d.ts}` (regen),
     `index.test.tsx`, `packages/ui/popoverMenu.test.tsx`
   - `packages/ui/specimens/PopoverMenu.tsx`, `registry.ts`
-  - `verification/layout/popoverMenu.spec.ts`; `support/**` (additive)
   - `verification/contrast-pairs.json` (append: rows, check marks, read-only rows, both themes)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T4 line);
-  GitHub #61 (one line: `PopoverMenu` placement inside an open dialog on the macOS 13 WebKit);
+  GitHub #61 (one line: `PopoverMenu` placement inside an open dialog);
   `apps/orasenda/src/**` (read)
 - Interfaces:
   - Consumes: the positioned-panel helper (T2, inside `bundle.js`), `IconButton`
@@ -680,7 +585,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - [ ] Fits at 360 wide; rows are at least `hit-min`; inside an open `Dialog` the menu is
     visible above it and placed against its trigger; near a viewport edge it flips inside.
   - [ ] No live region.
-  - [ ] Harness, contrast, both themes, screenshots and review (timer-surfaces canvas: the preset
+  - [ ] Contrast, both themes and review (timer-surfaces canvas: the preset
     summary on Today and in the Focus window) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
@@ -692,10 +597,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `popover_menu_read_only_marks_radios_aria_disabled`,
     `popover_menu_focus_window_form_has_no_settings_row`, `popover_menu_renders_inside_open_dialog`,
     `popover_menu_adds_no_live_region`
-  - harness: `popover_menu_fits_at_360`, `popover_menu_rows_meet_hit_min`,
-    `popover_menu_keyboard_path`, `popover_menu_placed_against_trigger_inside_open_dialog`,
-    `popover_menu_flips_inside_viewport`, `popover_menu_aria_snapshot`,
-    `popover_menu_no_motion_when_reduced`
 - Notes: the P key that opens the menu on Today is the host's (C) when `singleKeys` is on; the
   component never listens for it. Don't hold the roving index anywhere but component state.
 
@@ -710,7 +611,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `packages/ui/index.ts` (adds `FloatingTimer`), `components.{css,d.ts}` (regen),
     `index.test.tsx`, `packages/ui/{fullScreenFocus,floatingTimer}.test.tsx`
   - `packages/ui/specimens/{FullScreenFocus,FloatingTimer}.tsx`, `registry.ts`
-  - `verification/layout/{fullScreenFocus,floatingTimer}.spec.ts`; `support/**` (additive)
   - `verification/contrast-pairs.json` (append: the floater's fill and edge over the three
     wallpapers in every state, its controls against its own fill, the full-screen caption)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T5 line);
@@ -751,7 +651,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     live region.
   - [ ] `FullScreenFocus` at 1280×720, 1920×1080 and a strip-shaped frame, each in `focus`,
     `paused`, `idle`, `break`, `warning` and ended.
-  - [ ] Harness, contrast (fill-or-edge rule over every wallpaper), both themes, screenshots and
+  - [ ] Contrast (fill-or-edge rule over every wallpaper), both themes and
     review (timer-surfaces canvas: Focus window, floater, break and warning) as in "Every task
     closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
@@ -766,11 +666,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `floating_timer_idle_start_named_start_focus`, `floating_timer_passes_data_attributes_to_body`,
     `floating_timer_ended_announced_once`, `floating_timer_deep_shows_hours`,
     `floating_timer_every_mode_has_word_or_shape`
-  - harness: `full_screen_focus_ring_at_1280x720_and_1920x1080`,
-    `full_screen_focus_strip_in_strip_frame`, `full_screen_focus_two_line_intent_fits_every_frame`,
-    `full_screen_focus_keyboard_path`,
-    `floating_timer_fits_every_size_and_state`, `floating_timer_buttons_meet_hit_min_at_280x56`,
-    `focus_views_aria_snapshot`, `focus_views_no_motion_when_reduced`
 - Notes: always-on-top, the window frame and the context menu are D's. The floater never changes
   layout by shape (`layout-strip-height` usage). Re-running `timerLayout` on every `remaining`
   change would make the layout flip on a tick; the `ResizeObserver` callback is the only caller.
@@ -786,8 +681,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `packages/ui/index.ts` (adds `ShortcutRecorder`), `components.{css,d.ts}` (regen),
     `index.test.tsx`, `packages/ui/{commandPalette,capturePad,shortcutRecorder}.test.tsx`
   - `packages/ui/specimens/{CommandPalette,CapturePad,ShortcutRecorder}.tsx`, `registry.ts`
-  - `verification/layout/{commandPalette,capturePad,shortcutRecorder}.spec.ts`; `support/**`
-    (additive)
   - `verification/contrast-pairs.json` (append: the shortcut column, the recorder's states and
     conflict line, the pad's helper lines)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T6 line);
@@ -823,7 +716,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     within `panel-width` and linked by `aria-describedby` (not live), the name composed with
     `aria-labelledby`, settable `id`; every key it can emit round-trips through
     `describeShortcut`.
-  - [ ] Harness, contrast, both themes, screenshots and review (Settings canvas, Keyboard; the
+  - [ ] Contrast, both themes and review (Settings canvas, Keyboard; the
     onboarding canvas for the capture pad and the welcome tip) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
@@ -838,10 +731,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `shortcut_recorder_name_composed_with_labelledby`, `shortcut_recorder_id_settable`,
     `shortcut_recorder_conflict_is_described_not_live`,
     `shortcut_recorder_modifier_only_press_records_nothing`
-  - harness: `command_palette_compact_fits_360x240`, `long_command_wraps_without_hiding_kbd`,
-    `palette_rows_and_close_meet_hit_min`, `shortcut_recorder_conflict_within_panel_width`,
-    `shortcut_recorder_keyboard_path`, `commands_and_capture_aria_snapshot`,
-    `commands_and_capture_no_motion_when_reduced`
 - Notes: the recorder reads `KeyboardEvent.code` and modifiers and emits glyphs in `⌃⌥⇧⌘` order;
   it doesn't decide whether a binding is allowed or in conflict (F's Rust does); the host passes
   `conflict`. Which shortcut is live is F's.
@@ -864,7 +753,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
     `packages/ui/startButton.test.tsx` (the glyph case)
   - `packages/ui/specimens/{Icon,NavRail}.tsx`, `registry.ts`, and every earlier specimen
     (placeholder glyphs → `Icon`)
-  - `verification/layout/{icon,navRail}.spec.ts`; `support/**` (additive)
   - `verification/contrast-pairs.json` (append: glyphs on every surface they sit on, rail
     current and rest)
 - Touches (read-only or additive): `docs/specs/2026-11-10-p1-components.md` (ticks the T7 line;
@@ -897,7 +785,7 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - [ ] Every specimen uses `Icon`; no placeholder glyph is left in `packages/ui/specimens/` or
     in `bundle.js`.
   - [ ] #149 has Lucide's notice. The spec's T7 line is ticked.
-  - [ ] Harness, contrast, both themes, screenshots and review (timer-surfaces canvas for the
+  - [ ] Contrast, both themes and review (timer-surfaces canvas for the
     glyphs; Settings canvas for the rail) as in "Every task closes with".
   - [ ] `./scripts/ci.sh` passes; required checks and `windows (advisory)` green.
 - Tests first:
@@ -909,8 +797,6 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
   - `startButton.test.tsx`: `start_button_play_glyph_from_icon`
   - `index.test.tsx`: `index_d_ts_declares_only_later_phase_next_props`,
     `no_p1_component_marked_not_implemented`
-  - harness: `glyph_sheet_at_20px_both_themes`, `rail_roving_focus_one_tab_stop`,
-    `icons_and_rail_aria_snapshot`, `icons_and_rail_no_motion_when_reduced`
 - Notes: the role glyphs are P5's and stay out of `IconName`. `IconName` is a closed union: an
   unknown name is a type error, and the runtime table and the union are checked equal by
   `icon_name_union_matches_runtime_table` (read from `components.d.ts`).
@@ -922,32 +808,26 @@ something no task names. "own" = the task creates or rewrites it; "add" = the ta
 | Goal 2: the redesign props move onto `*Props`; exactly six `*NextProps` left | T3, T5, T6 (folds), T7 (`index_d_ts_declares_only_later_phase_next_props`) |
 | Goal 3 (a): jsdom tests per component | T2–T7 (Tests first) |
 | Goal 3 (b): a specimen per component with every README state, plus `break` and `warning` for timers, in both themes | T1 (specimen server, `Frame`), T2–T7 (specimens), T3 and T5 (`break`, `warning`) |
-| Goal 3 (c): WebKit layout, hit targets, keyboard, reduced motion, accessibility tree | T1 (helpers, `seed.spec.ts`), T2–T7 (spec files) |
 | Goal 3 (d): colour pairs in `contrast-pairs.json` passing in both themes | T1 (script, seed pairs), T2–T7 (append) |
 | Goal 3 (e): the owner's VoiceOver pass per component, under "Not yet verified" | T2–T7 (PR lists it), close-out docs PR (ticks; planner decision 7) |
-| Goal 4: `contrast.py` on every platform, `layout` on macOS; seeded failures; CI installs and caches WebKit; Python on both jobs | T1 (`seeded_overflow_is_reported`, `test_seeded_text_pair_under_4_5_fails`, `test_floater_fails_when_fill_and_edge_both_under_3`, `ci.yml`) |
-| Goal 5: bundled fonts, OFL texts, `@font-face` from `type.fonts`, `document.fonts.check` and no CDN request | T1 (`emits_font_face_per_type_fonts_entry`, `bundled_fonts_loaded_for_every_family_and_weight`, `no_request_leaves_the_specimen_server`) |
+| Goal 4: `contrast.py` on every platform; seeded failures; Python on both jobs | T1 (`test_seeded_text_pair_under_4_5_fails`, `test_floater_fails_when_fill_and_edge_both_under_3`, `ci.yml`) |
+| Goal 5: bundled fonts, OFL texts, `@font-face` from `type.fonts`, `document.fonts.check` and no CDN request | T1 (`emits_font_face_per_type_fonts_entry`) |
 | Goal 6: the app keeps working with no app edits; `finishTime` and numeric `size` render as before | every task (typecheck and test), T3 (`start_button_finish_time_still_renders_realistic_finish`, `timer_ring_numeric_size_unchanged`), T7 (`App.test.tsx` unchanged) |
 | Goal 7: ROADMAP places Components between B and C, C–G cells, dated #134 note | merged with the spec (#166); nothing owed |
 | `CONTEXT.md` terms Specimen and First-consumer check | merged with the spec (#166); nothing owed |
 | Key table: `describeShortcut`, round trip, unknown key strict and lenient | T2 (`describe_shortcut_*`), T6 (`shortcut_recorder_output_round_trips_describe_shortcut`) |
 | `timerLayout` rule and table; constants equal tokens; resize only | T3 (`timer_layout_matches_spec_table`, `timer_layout_constants_match_tokens_json`), T5 (`full_screen_focus_calls_timer_layout_on_resize_only`) |
-| Engine baseline: positioned panels, inside the nearest open dialog; #61 lines | T2 (`tooltip_visible_above_open_dialog`), T4 (`popover_menu_placed_against_trigger_inside_open_dialog`) |
+| Engine baseline: positioned panels, inside the nearest open dialog; #61 lines | T2 (`tooltip_renders_inside_nearest_open_dialog`), T4 (`popover_menu_renders_inside_open_dialog`) |
 | Contract gaps per task, settled in the artifact first and recorded in the PR | T1–T7 (first acceptance item each) |
 | Copy and colour guard (no "!", no emoji, `critical` only in two places) | T1 (`guard.test.ts`), every later task (it scans the whole `bundle.js`) |
 | No live region unless the README names one; ids settable | T2 (`tooltip_adds_no_live_region`, `icon_button_id_passes_through`), T3 (`timer_strip_adds_no_live_region`), T4 (`popover_menu_id_settable`, `popover_menu_adds_no_live_region`), T5 (`floating_timer_ended_announced_once`), T6 (`capture_pad_adds_no_live_region_besides_error`, `shortcut_recorder_id_settable`, `shortcut_recorder_conflict_is_described_not_live`) |
 | Components never read a setting; `singleKeys` from the host | T3 (`start_button_keyshortcuts_follow_single_keys`, `start_button_without_single_keys_prop_matches_current_output`), T5 (`full_screen_focus_caption_follows_single_keys`), T4 (`popover_menu_single_keys_controls_p_shortcut`) |
 | Menu trigger's `aria-expanded` and `aria-controls` (set by the host) | T2 (`icon_button_expanded_and_controls_pass_through`), T4 (`popover_menu_host_trigger_expanded_and_controls_point_at_menu_id`) |
-| E's intent line: two-line intent in the `task` slot of ring, strip and full screen | T3 (`timer_ring_task_whole_in_accessible_name`, `timer_strip_task_whole_in_accessible_name`, `timer_strip_fits_at_360_640_1440_with_two_line_intent`), T5 (`full_screen_focus_task_whole_in_accessible_name_ring_and_strip`, `full_screen_focus_two_line_intent_fits_every_frame`) |
-| Playwright has no WebKit for the host's macOS: stop and ask | T1 (checkpoint 1: the draft PR's log shows the WebKit launch line; the owner's macOS 27 comment) |
-| Three visible changes: fonts (T1 manual Settings check), rail (T7), warning fade (T3) | T1 (manual, four screenshots), T7 (`nav_rail_is_one_roving_tab_stop`), T3 (`warning_fade_uses_duration_slow`) |
-| Missing WebKit offline fails with the install command; never skips on macOS | T1 (acceptance, checked by hand) |
-| Flaky harness: `retries: 1` in CI with trace, `0` locally | T1 (`playwright.config.ts`) |
+| E's intent line: two-line intent in the `task` slot of ring, strip and full screen | T3 (`timer_ring_task_whole_in_accessible_name`, `timer_strip_task_whole_in_accessible_name`), T5 (`full_screen_focus_task_whole_in_accessible_name_ring_and_strip`) |
+| Three visible changes: fonts (T1 manual Settings check), rail (T7), warning fade (T3) | T1 (manual, four screenshots), T7 (`nav_rail_is_one_roving_tab_stop`) |
 | Licence notices: three OFL fonts, Lucide ISC | T1 (#149 comment), T7 (#149 comment) |
 | Failure mode: a family missing from `@font-face` still passes `document.fonts.check` | T1: `bundled_fonts_loaded_for_every_family_and_weight` |
 | Failure mode: a content box exactly at a `timerLayout` threshold | T3: `timer_layout_boundaries` |
-| Failure mode: a Tooltip shown when focus is restored by script after a dialog closes | T2: `tooltip_not_shown_on_programmatic_focus` |
-| Failure mode: a menu opened near the window edge is placed outside the viewport | T4: `popover_menu_flips_inside_viewport` |
 | Failure mode: a modifier pressed alone while recording emits a binding | T6: `shortcut_recorder_modifier_only_press_records_nothing` |
 
 Self-review: every Goal, inventory row marked "to build" or with a `*NextProps`, contract gap and

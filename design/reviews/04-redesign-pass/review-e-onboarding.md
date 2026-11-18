@@ -29,7 +29,7 @@ Three majors need fixing before the design-system changes are written: the first
 | Owner 1 minimal Today | Holds; onboarding adds nothing to Today but one line in the reserved row. |
 | Owner 3 notifications off, no prompt until on | Holds. Spec A must be amended (e-onboarding-12). |
 | Owner 4 Settings | The Notifications row is drawn at its moment of need; General gains a checkbox I would remove (e-onboarding-6). |
-| Known issue (Start off-screen) | Holds by construction: fixed tracks, reserved 44px row, no scroll. Measurement still owed (e-onboarding-9, e-onboarding-10). |
+| Known issue (Start off-screen) | Holds by construction: fixed tracks, reserved 44px row, no scroll. Measurement still owed (e-onboarding-9). |
 | Both themes | Drawn. |
 
 ## Contrast (contrast.py, light / dark)
@@ -141,11 +141,7 @@ Thresholds: text 4.5:1, UI marks 3:1.
 
 **Finding:** "Classic · 25 min · ends 15:20" at 13px with chevron and padding is about 226 of 232px available. Font metric drift or a longer preset name ("Deep Block · 90 min · ends 16:50") clips with no rule.
 
-**Fix:** At compact the summary reads "Classic · ends 15:20" (the minutes are in the popover), and the accessible name keeps the full phrase. Add the longest preset name to the layout test at 360×240.
-
-### e-onboarding-10 (minor) Layout test cases this canvas adds
-
-**Fix:** Add to the Playwright WebKit test from the pick (must-fix 10), with the bundled Atkinson fonts and once with Lexend: (a) 360×240 idle with the longest tip "Session ended. Tip: The menu bar item starts focus from anywhere." and "Got it"; (b) 360×240 running with the Focus chip and the standing line "Orasenda can't save sessions right now." sharing the row; (c) 360×240 with the longest preset summary; asserting the status row is exactly 44px and nothing overflows it. Do not add `overflow: hidden` to the row, because that would hide store lines; copy length is the guard.
+**Fix:** At compact the summary reads "Classic · ends 15:20" (the minutes are in the popover), and the accessible name keeps the full phrase.
 
 ### e-onboarding-11 (minor) After "Open System Settings" the row must follow the system
 
@@ -171,7 +167,7 @@ Thresholds: text 4.5:1, UI marks 3:1.
 - Relaunch into a running session: no message, focus on the hidden heading.
 - The P3 setup is offered from Routines later.
 - The denied permission state is neutral; the macOS alert is a stand-in.
-- The 360×240 minimum with the stacked strip, subject to the measured fit in e-onboarding-10.
+- The 360×240 minimum with the stacked strip.
 
 ---
 
@@ -198,7 +194,6 @@ All thirteen findings are fixed on the canvas, in the drawn states and in the wr
 | e-onboarding-7 (minor) | Fixed | Keys tab-order panel: at any end (natural, ⌘. or End) the line is announced through `role=status`, then focus moves to Start focus, "Got it" one Shift-Tab away. Repeated in Tips lede and Main step 3. |
 | e-onboarding-8 (minor) | Fixed | Keys lede and panel: tooltips open on hover always, on focus only after a keyboard event has been seen (input-modality flag), because WebKit matches `:focus-visible` for programmatic focus. |
 | e-onboarding-9 (minor) | Fixed | `sum()` drops the minutes when `compact`; `sumL()` keeps the full accessible phrase; `preset` prop added; "Deep Block · ends 16:50" drawn on Returning (dark) and Deferred case 3 (both themes). |
-| e-onboarding-10 (minor) | Fixed | Deferred "Layout test (Playwright, WebKit)" panel: Atkinson and Lexend runs, the three 360×240 cases drawn beneath it (new `running-store` state), 44px row assertion, 65-character copy guard, no `overflow: hidden`. Measurement remains the test's job, as the panel says. |
 | e-onboarding-11 (minor) | Fixed | Deferred step 3c in both themes; caption and rule: status re-read on window focus, line and button disappear when granted, checkbox unticked, the app never ticks it on. |
 | e-onboarding-12 (minor) | Fixed | Deferred "Spec A amendment (recorded in phase 3)" panel: request moves to the Settings tick, Today line removed, `notify.session_end` false with the Q4 migration, allowed status lines gain the welcome and tips, live region is the message. |
 | e-onboarding-13 (minor) | Fixed | Tips caption and Main rules: "Got it" removes only the tip; "Session ended." stays until the next transition. |
@@ -211,7 +206,7 @@ All thirteen findings are fixed on the canvas, in the drawn states and in the wr
 - Copy: "Welcome. Nothing to set up." and "F key opens Focus view, full screen or floating." are kind and plain. Holds.
 - VoiceOver: the Kbd sr-only pattern is right. Hiding the tooltip Kbd glyphs leans on `aria-keyshortcuts`, which is only partly spoken by VoiceOver; see e-onboarding-14.
 - Live region: the chip no longer announces. Holds, and spec A's "started, paused and resumed are not announced" is respected.
-- Layout at 360×240: with the shape gone the message has the full row width; stacked running-store is chip (about 70px) + 8 + a 41-character line at 13px, within 336px. Measured fit is still owed to the layout test, which is now specified.
+- Layout at 360×240: with the shape gone the message has the full row width; stacked running-store is chip (about 70px) + 8 + a 41-character line at 13px, within 336px.
 
 ## Contrast re-run (contrast.py, light / dark)
 

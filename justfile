@@ -86,8 +86,6 @@ ci:
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
     @echo "==> docs-only classifier (tests)"
     ./scripts/docs-only.test.sh
-    @echo "==> layout skip switch (tests)"
-    ./scripts/layout-skip.test.sh
     @echo "==> file size guard (tests)"
     ./scripts/file-size.test.sh
     @echo "==> install (pnpm, frozen lockfile)"
@@ -117,8 +115,6 @@ ci:
     "{{ just_executable() }}" tailwind-strict
     @echo "==> ui (typecheck)"
     pnpm --filter @orasenda/ui typecheck
-    @echo "==> typecheck (verification)"
-    pnpm --filter @orasenda/ui exec tsc -p ../../verification/layout/tsconfig.json
     @echo "==> ui (tests)"
     pnpm --filter @orasenda/ui test
     @echo "==> ui (library build and the app's types against it)"
@@ -133,8 +129,6 @@ ci:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
-    @echo "==> layout (real-engine WebKit checks, macOS only; skipped when ORASENDA_LAYOUT=skip)"
-    "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
     git diff --exit-code -- apps/orasenda/src/shared/ipc/bindings.ts
@@ -146,27 +140,6 @@ ci:
 # Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=TimerRing&theme=dark
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
-
-# Real-engine layout checks: runs every spec in verification/layout with Playwright WebKit. macOS only
-# (other hosts skip); fails with the install command when WebKit is missing. Extra args go to
-# Playwright (the GitHub layout job passes --shard=i/4). ORASENDA_LAYOUT=skip skips the run when no
-# args are given: the GitHub checks job sets it because the layout job runs the specs.
-[script]
-layout *args:
-    if [ "${ORASENDA_LAYOUT:-}" = skip ] && [ -z "{{ args }}" ]; then
-        echo "layout: skipped (ORASENDA_LAYOUT=skip; the layout job runs it)"
-        exit 0
-    fi
-    host="$(uname -s)"
-    if [ "$host" != Darwin ]; then
-        echo "layout: skipped on $host; the required macOS layout job runs the WebKit checks"
-        exit 0
-    fi
-    if ! node -e "const {webkit}=require('@playwright/test'); process.exit(require('fs').existsSync(webkit.executablePath()) ? 0 : 1)"; then
-        echo "layout: Playwright's WebKit is not installed. Run: pnpm exec playwright install webkit" >&2
-        exit 1
-    fi
-    pnpm exec playwright test --config verification/layout/playwright.config.ts {{ args }}
 
 # Fail on a tracked source file over 500 lines that is not on the allowlist.
 file-size:

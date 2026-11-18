@@ -209,7 +209,6 @@ Threshold: 4.5 for text, 3.0 for UI marks. Every pair the canvas uses passes; th
 
 ## 4. Carry into implementation
 
-- The Playwright layout test from the Today pick adds Board, Calendar, Routines, Review and ⌘K at 360×240, 900×600 and 1440×900, with the longest status line and an action, asserting the header's primary (or the SessionSlot) is inside the viewport and the page's `scrollHeight <= clientHeight`.
 - Verify with real fonts: the compact pickers at 360 wide (Calendar's select gets about 111px; Routines' about 108px) and the 900×600 header with the longest "Next:" task.
 - Decided here and to record in the design system: no End control on planning pages (⌘., ⌘K, Today); Start routine without the play glyph; tooltips never ellipsize; TaskCard `onSelect`.
 

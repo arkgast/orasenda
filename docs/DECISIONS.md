@@ -316,7 +316,7 @@ Architecture and product decisions, one entry each, newest last. Use the templat
   3. **A convention in `docs/conventions.md` only:** no lint work; drifts at the first rushed PR.
 - **Decision:** Option 1 (owner, 2026-11-13).
   - `surfaces/<main|focus|floater|capture>/`: each window's `main.tsx` entry only; the `.html` files point here, and `*Page.tsx` roots stay in their features. Surfaces may import every layer below, `app/` included.
-  - `app/`: shell, routing, providers, `PageBoundary`, the palette. `focus` goes with ADR-019. `dev/` (spikes and layout scenarios) stays outside the layers.
+  - `app/`: shell, routing, providers, `PageBoundary`, the palette. `focus` goes with ADR-019. `dev/` (spikes) stays outside the layers.
   - `features/<name>/`: one screen or panel each. Subfolders `components/`, `hooks/`, `model/` (pure logic) and `api/` (IPC adapters) appear only when a feature has three or more files of that kind.
   - `domain/<name>/`: code more than one feature needs (timer, presets, cadence, keyboard).
   - `shared/`: the IPC client and bindings, generic hooks, lib, and test fixtures and builders. It imports nothing above it.

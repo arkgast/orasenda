@@ -62,7 +62,7 @@ Spec A built one focus session and stopped there: `Phase` has only `Focus` (`cra
 8. **Deep-hours cap:** the focus session that takes today's focused time past the cap shows "You've focused 4 hours today. A good place to stop." once; while idle afterwards, the quiet line shows; Start is never disabled.
 9. **Intent:** Start sends no intent; the status-row button sets and edits it; it is in the ring and strip `task` slot and in `focus_session.intent`; `session_name()` returns "Deep focus" when it is NULL.
 10. **Suggestions:** every break shows one line from [the list](#break-suggestions), rotating, with its *optional* or *experimental* label.
-11. **UI rules:** tokens only, both themes, one primary per screen, no state by colour alone, no red for time, kind copy; the WebKit harness passes the [new states](#testing-strategy) at C's size set; every file ≤ 500 lines.
+11. **UI rules:** tokens only, both themes, one primary per screen, no state by colour alone, no red for time, kind copy; every file ≤ 500 lines.
 
 ## Non-goals
 - Statistics or totals on screen (P4). `sessions_today` feeds rounds and the cap only.
@@ -273,7 +273,6 @@ Labelled lines read "Optional: step outside for some daylight." and "Experimenta
 - **Service** (fakes as in `session/tests/support`): seeding and conversion; at-least-one and 12 rules; restore defaults; snapshot on start; `TimerView.mode` for every phase; `canExtend` at caps 0–3; cap line once a day and the midnight `timer-tick`; keep-going offer lifecycle; warning notification gated by setting, status and frontmost; one notification per `advance`; writes and `unsaved` for the two-row end; recovery mid-break.
 - **App crate:** tray items and glyphs per state, Preset submenu from the library, header strings.
 - **Vitest:** `statusLine` priority for every row above (the check-in and the auto-step warning included); the auto-continue checkbox and Longest focus field; `StatusRow` two actions and names; `IntentField` Return/blur/Esc and no auto-open; Start sends `{ quick }` only; PresetSummary with library names and the break heading; Settings `PresetList`/`PresetEditor` (save on blur/Return, Esc, errors, Remove/Undo, Add at 12, Restore), extension cap, deep cap, the Notifications checkbox.
-- **WebKit harness** (C's size set, `today-redesign.md:108`, both themes): new Today states: warning with +10, break with suggestion and two actions, long break, labelled suggestion, keep-going, auto-step check-in, auto-step warning, break over, cap line in a break, idle cap line, intent button, intent field open, ring and wide strip with a two-line intent; Settings › Timer with the editor open and 12 presets. Each must fit without scrolling, with one primary.
 - **By eye (owner, no screenshots in PRs):** each new state above at 360×240, 900×600 and 1440×900 in light and dark; the menu bar's triangle and half circle in both menu-bar appearances; the warning fade with and without reduce-motion. VoiceOver passes are deferred to the end of P1 (#326); names and roles are asserted in code (`toMatchAriaSnapshot`).
 
 ## Shared with D

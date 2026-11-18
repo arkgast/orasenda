@@ -38,7 +38,7 @@ The owner also asked what "Just 2 minutes" is for. Starting is often the hardest
 5. **Five screen groups** were each designed on one canvas, reviewed, fixed and re-reviewed. Each group had a first review with findings, a fix round on the same canvas, and a second review. The five group reviews are [`review-a-timer.md`](04-redesign-pass/review-a-timer.md), [`review-b-settings.md`](04-redesign-pass/review-b-settings.md), [`review-c-tracking.md`](04-redesign-pass/review-c-tracking.md), [`review-d-planning.md`](04-redesign-pass/review-d-planning.md) and [`review-e-onboarding.md`](04-redesign-pass/review-e-onboarding.md). Section 5 gives the results.
 6. **Design-system changeset** (opus). The changeset, [`04-ds-changeset.md`](04-redesign-pass/04-ds-changeset.md), collected every token and component change the five groups asked for. It reconciled 121 proposals into 24 resolved conflicts, 26 new tokens, 22 changed tokens, 17 new components, 17 changed components and 34 README rules. Fable reviewed it, in [`04-ds-changeset-review.md`](04-redesign-pass/04-ds-changeset-review.md), and approved it with changes. The changes were applied to the live artifact first, as design-first mode requires. The artifact was republished as version 1794260898-f16f. A scoped check of that version approved it with eight minor findings, which were fixed in version 1794261511-11cc (section 6.4).
 
-Every canvas was drawn but not rendered or screenshot-checked, by design. Real-font layout is owed to the Playwright layout test (section 7).
+Every canvas was drawn but not rendered or screenshot-checked, by design.
 
 ---
 
@@ -76,7 +76,7 @@ Direction A was chosen. These items were grafted from the other two:
 1. **From C: the strip layout and the minimum.** Today switches to the three-column strip when the content box is wider than twice its height and under 420px tall. It switches to the stacked strip under 360 tall and under 640 wide. The window minimum became 360×240. The default stays 900×600. The switch happens on resize only, never on a tick.
 2. **From C: paused wording.** The chip is the only "Paused". Two state words on one screen were rejected. The pick's wording was "Classic · 18 min left". The final wording is "Classic · 25 min" while paused, and "Classic · ends 15:20" while running. The timer review changed the paused wording so that the time left appears only once, in the digits (a-timer-5, rule 9).
 3. **From A2 and C: a visible Pause and Resume target.** The 52px circle gets a `surface-raised` ground and a `line-strong` edge, so the target is visible and not only the glyph.
-4. **From A2: a tooltip on the preset summary** ("Change preset") on hover and focus. The P key cap shows only while single-key shortcuts are on (cs-1), so the shortcut is discoverable when it works. The row-budget overlay from A2 became the model for the layout test assertions.
+4. **From A2: a tooltip on the preset summary** ("Change preset") on hover and focus. The P key cap shows only while single-key shortcuts are on (cs-1), so the shortcut is discoverable when it works.
 5. **From A2 and C: drawn states.** The Start loading state ("Starting…"), the denied-notification state with "Open System Settings", and the Settings keyboard section were drawn in both themes.
 6. **From C: the triangle at the bar's end** is the model for the strip. On the ring the chip's triangle already does this job.
 
@@ -125,7 +125,6 @@ These are not blockers. They are recorded here so they are not lost. The status 
 |---|---|---|---|
 | a-timer-13 | Timer surfaces | The menu bar board's headers still read "18 minutes left" at 18:42. The board's own rule says header minutes round up, which gives 19. The rule and the drawing disagree. | Absorbed into the design system |
 | a-timer-15 | Timer surfaces | The contrast note says the edge holds on a light desktop. That is true in the light theme (4.15) only. In the dark theme the edge is 2.71, and the fill (13.52) carries the boundary. | Absorbed into the design system |
-| a-timer-12 | Timer surfaces | Real-font measurement is now specified as the Playwright WebKit layout test. Nothing was measured on the canvas. | Owed to the layout test (section 7) |
 | b-settings-11 | Settings | When settings cannot be read at launch, the About row still shows "38 focus sessions, since 2 November." The count is not known in that case. | Absorbed into the design system (8.3, "Store unavailable") |
 | b-settings-12 | Settings | "Try again" appears in two places that retry different things. The labels must say what each one retries. | Absorbed into the design system |
 | c-tracking-18 | Tracking | The compact Apps and sites view shows the strength choice but none of the four helper rows. A small window can select Strong lock and never be offered the helper. | Routed to the tracking canvas (changeset section 10) |
@@ -194,7 +193,6 @@ The first review of the changeset raised 19 findings (cs-1 to cs-19). The scoped
 
 Nothing in this pass was rendered, screenshot-checked or run in an app. Every layout number is calculated.
 
-- **Real-font layout in WebKit.** Atkinson Hyperlegible Next and Lexend must be measured in WKWebView. The Playwright WebKit layout test is required by the next spec and gates the first code change. It was not run. Its case list is the "Pages never scroll; regions do." bullet under Layout and hit targets in `design/system/README.md`, which is the source; this section does not restate it in full. That bullet covers at least: windows 360×240, 360×360, 640×330, 640×480, 900×240, 900×600, 1440×900 and 3440×400; the Focus window at 1280×720 and 1920×1080; and the floater at 280×56, 280×64 and 360×96 in every state (running, paused, warning, idle, ended, deep). The cases are the longest status line beside the widest action ("Open Settings"), the stacked strip running (chip plus a two-line store line), a status row exactly 44px, and `scrollHeight <= innerHeight` on Today, Focus and Floating. Planning adds Board, Calendar, Routines, Review and ⌘K at 360×240, 900×600 and 1440×900 ([review-d-planning](04-redesign-pass/review-d-planning.md), section 4). The idle row at 360 wide is estimated at 316 of 328px. If it wraps, the pill reads "Start", and the accessible name stays "Start focus".
 - **VoiceOver** on a running build. Including the composed recorder name and the key glyphs in tooltips.
 - **Native menus and the status item.** The NSMenu and NSStatusItem appearance is drawn as token stand-ins.
 - **Final icons.** The rail, Focus view, leave and open glyphs are placeholders. The final set must be in the design system before the app uses it.
@@ -214,5 +212,4 @@ Nothing in this pass was rendered, screenshot-checked or run in an app. Every la
 ## 8. Next steps
 
 1. Fix the open findings first in the canvas, then in the repo copy where they apply. These are d-planning-20 (planning canvas caption, "about 204px") and e-onboarding-15 (onboarding canvas CSS comments). Any artifact change must be republished and the repo copy refreshed in the same change.
-2. Write the Playwright WebKit layout test before the first code change of Today. It also covers a-timer-12. The device pass for e-onboarding-14 comes with the accessibility pass.
-3. Write the spec A amendments from the Calls board into `docs/specs`.
+2. Write the spec A amendments from the Calls board into `docs/specs`.

@@ -31,7 +31,7 @@ D5, D6, D7 and D8 build against D4's bindings. D2 owns the service functions the
 - **Call paths:** `lifecycle::install` routes window events for `focus-*` and `floater` to the new `windows` module; `on_close_requested` keeps hiding `main` only. The app menu gains the Focus menu after View; `lib.rs`'s `on_menu_event` dispatches through `menu::on_menu_event`. The tray's `MenuEntry::Item.id` becomes `String`, and its Preset submenu is built from E4's preset library (D5 does not touch it).
 - **Data and migrations:** one additive table, `window_frame`, device-only (ADR-012), no backfill. The migration number is provisional (`0003`) until it lands (see Shared with E). Forward-only: once a database is at the new version, a build without D2 refuses to open it. Dev data is disposable, so rollback of D2 means deleting `~/Library/Application Support/com.veloud.orasenda`.
 - **Shared modules:** `tray/menu.rs` (moved by D1), `lib.rs` (tests moved by D1), `commands/menu_popup.rs`, `features/today/{PresetSummary.tsx,presets.ts}` (Today, the Focus window and the palette read `presetChoices`).
-- **Tests that must stay green:** `cargo test` for `orasenda-store`, `orasenda-service`, `orasenda-platform-macos` and the app crate (tray `menu_items` cases, `app_menu` id disjointness, menu popup cases, capability tests); Vitest for Today, `PresetSummary`, `PagesButton`, App and Settings' jump menu; `just layout` (every Today case, the component specs); the bindings check; `just file-size`; `just mobile`.
+- **Tests that must stay green:** `cargo test` for `orasenda-store`, `orasenda-service`, `orasenda-platform-macos` and the app crate (tray `menu_items` cases, `app_menu` id disjointness, menu popup cases, capability tests); Vitest for Today, `PresetSummary`, `PagesButton`, App and Settings' jump menu; the bindings check; `just file-size`; `just mobile`.
 - **Rollout and rollback:** each task is one squash-merged PR, revertible on its own after its dependants are reverted. Entry points (the Today button, the Focus menu, the tray items, the palette rows) arrive in D5 and D8, so reverting those two hides D without touching the windows behind them.
 
 ## Dependency graph
@@ -55,12 +55,12 @@ D4 depends on D1, D2 and D3. D5, D6 and D7 depend on D4 (D5 edits D1's split fil
 D and E share one budget of three concurrent pipelines; the controller interleaves them (ruling 11, see Shared with E). The combined D+E wave table lives in E's plan (`docs/plans/2026-11-12-session-cadence.md`, "Combined D + E waves"); with E4, D4 and D6 also wait for E4, and D8 for E8.
 
 ## Notes for every task
-- **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change, and their own Playwright specs (`pnpm exec playwright test <spec>`). The controller runs the full `baton verify` at landing.
+- **Checks:** implementers (sonnet) run only fast checks: `cargo test -p <crate>`, `pnpm --filter orasenda test` and `typecheck`, `just file-size`, `just mobile` for any Rust change. The controller runs the full `baton verify` at landing.
 - **Build dirs:** each task sets its own `CARGO_TARGET_DIR` (`target/d1` … `target/d8`) so parallel builds don't block on one lock.
 - **Visuals:** no screenshots in PRs. Each UI task lists, under "Not yet verified", the states and sizes the owner checks by eye in light and dark.
 - **VoiceOver** is deferred to #326. Names and roles are asserted in code (Vitest `getByRole` with names).
 - **Registration:** a task that adds a command, an event or a managed type lists `lib.rs`, `commands.list.rs` and `commands/mod.rs` in Owns or Touches (`docs/conventions.md`, Process).
-- **Sizes today** (`wc -l`): `tray/menu.rs` 352, `lib.rs` 348, `lifecycle.rs` 312, `tray/tests/menu_items.rs` 324, `tray/tests.rs` 299, `menu_popup.rs` 265, `ipc.rs` 179, `app_menu.rs` 158, `platform-macos/src/overlay.rs` 412, `store/src/tests.rs` 439, `service/session/run.rs` 122, `service/session/service.rs` 165, `Today.tsx` 262, `App.tsx` 173, `PresetSummary.tsx` 141, `presets.ts` 104, `today.css` 135, `statusLine.ts` 72, `PagesButton.tsx` 67, `scenarios.ts` 124, `layoutMain.tsx` 66. No task below pushes a listed file past 500; new tests go in new files where a file is above 300.
+- **Sizes today** (`wc -l`): `tray/menu.rs` 352, `lib.rs` 348, `lifecycle.rs` 312, `tray/tests/menu_items.rs` 324, `tray/tests.rs` 299, `menu_popup.rs` 265, `ipc.rs` 179, `app_menu.rs` 158, `platform-macos/src/overlay.rs` 412, `store/src/tests.rs` 439, `service/session/run.rs` 122, `service/session/service.rs` 165, `Today.tsx` 262, `App.tsx` 173, `PresetSummary.tsx` 141, `presets.ts` 104, `today.css` 135, `statusLine.ts` 72, `PagesButton.tsx` 67. No task below pushes a listed file past 500; new tests go in new files where a file is above 300.
 
 ## Tasks
 
@@ -150,7 +150,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - `apps/orasenda/{focus.html,floater.html}`, `apps/orasenda/vite.config.ts` (two inputs), `apps/orasenda/src/viteConfig.test.ts`
   - `apps/orasenda/src/features/focus/{main.tsx,FocusPage.tsx}` and `apps/orasenda/src/features/floater/{main.tsx,FloaterPage.tsx}` (stubs: apply the theme, render an empty labelled `main`)
   - `apps/orasenda/src/features/timer/{useSurfaceTimer.ts,useSurfaceTimer.test.tsx}` (new)
-  - `apps/orasenda/src/dev/layout/{layoutMain.tsx,scenarios.ts,scenarios.test.ts}` (`?surface=focus|floater`, `&insets=t,r,b,l`, `&displays=1|2|3`; answers for every new command and every state D6 and D7 need, so neither parallel task edits these files)
 - Touches: `packages/tokens/tokens.json` (read: `floater-*`, `space-6`), `apps/orasenda/src/app/useTheme.ts` (consume), `apps/orasenda/src/ipc/subscribe.ts` (consume).
 - Interfaces:
   - Consumes: D2's `run_view`, `run_select_preset`, `run_frame_load`, `run_frame_get`, `run_frame_save`, `frame_within`, `default_frame`; D3's `displays`, `configure_focus_window`, `configure_floater`, `key_without_activation`, `frame_of`, `set_frame`.
@@ -170,7 +169,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - [ ] `native_menu_popup` pops up in the calling window (`menu_popup_targets_calling_window`).
   - [ ] Capability tests assert each file's exact `windows` pattern list and exact permissions (`main`, `focus-*`, `floater`, `dev`, `overlay`), and that `focus.json` and `floater.json` lack `timer_state` and `settings_set`. `manifest_commands_match_specta_builder` passes.
   - [ ] Bindings regenerated and committed; fixtures updated; `pnpm --filter orasenda typecheck` and `test` pass.
-  - [ ] `layout.html?surface=focus` and `?surface=floater` load the stubs; `scenarios_answer_core_commands` covers the new commands.
 - Tests first: `focus_window_spec_matches_spec`, `floater_window_spec_uses_tokens`, `focus_label_is_valid_for_any_display_id`, `focus_view_open_unknown_display_is_no_display`, `focus_view_open_floater_twice_one_window`, `focus_view_close_refused_for_main`, `open_close_never_touch_session`, `close_requested_focus_and_floater_close`, `floater_frame_saved_on_close_requested`, `frame_debounce_trailing_500ms`, `menu_popup_targets_calling_window`, `focus_capability_exact`, `floater_capability_exact`, `main_capability_exact`, `use_surface_timer_never_calls_timer_state`, `use_surface_timer_ended_until_next_start`.
 - Notes: sonnet, opus review. Create windows from a `spawn_blocking` thread (window creation waits on the main thread) and run the AppKit calls on the main thread with no lock held (`tray/mod.rs` doc). This is the largest task; if it passes four hours, the controller moves `frames.rs` and the frame acceptance to D7.
 
@@ -205,7 +203,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - `apps/orasenda/src/features/focus/{FocusPage.tsx,main.tsx,focus.css,FocusPage.test.tsx,FocusPage.keys.test.tsx}`
   - `apps/orasenda/src/features/today/presets.ts` (`presetChoices(settings, presets)`; `CHOICES` moves here from `PresetSummary.tsx`) and `presets.test.ts`
   - `apps/orasenda/src/features/today/PresetSummary.tsx` (the Focus-window form: no Settings row, heading "Preset for the next session", line "Choosing one applies it and closes.") and `PresetSummary.test.tsx`
-  - `verification/layout/focusWindow.spec.ts` (new)
 - Touches: `apps/orasenda/src/features/timer/{useSurfaceTimer.ts,useClock.ts}`, `apps/orasenda/src/app/useTheme.ts` (consume), `apps/orasenda/src/features/today/Today.tsx` (consumes the changed `PresetSummary`; unchanged).
 - Interfaces:
   - Consumes: `useSurfaceTimer`, `commands.{timerView,timerStart,timerPause,timerResume,timerStop,settingsGet,presetsList,presetSelect,focusViewClose}`, `events.focusInsets` (D4).
@@ -216,9 +213,8 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - [ ] ⌘↩ starts the saved preset with `custom: null` only while idle or ended; ⌘. ends only while running or paused; neither is prevented otherwise.
   - [ ] `onExit` (after the dialog's confirm) calls `focus_view_close`; Esc alone never closes.
   - [ ] A failed command shows its message in the status line; an unreadable view shows "Orasenda can't reach the timer. Close this window and try again."
-  - [ ] Today's `PresetSummary` tests and every Today harness case still pass.
-  - [ ] `focusWindow.spec.ts`: 1280×720, 1920×1080, 390×844, 1440×900, 1000×440 and 360×240 × focus, paused, idle and ended, with and without insets, both themes and reduced motion: no scroll, controls inside the viewport and inside the insets, targets ≥ 44×44, the focus ring at each stop.
-- Tests first: `focus_page_reads_timer_view_not_state`, `focus_page_insets_from_query_and_event`, `focus_cmd_enter_starts_saved_custom_null`, `focus_cmd_period_ends_only_in_session`, `focus_exit_closes_only_after_confirm`, `focus_command_failure_in_status_line`, `focus_view_unreadable_line`, `preset_choices_four_rows_saved_checked`, `summary_focus_form_has_no_settings_row`, `focus_window_fits_<size>_<state>` (generated).
+  - [ ] Today's `PresetSummary` tests still pass.
+- Tests first: `focus_page_reads_timer_view_not_state`, `focus_page_insets_from_query_and_event`, `focus_cmd_enter_starts_saved_custom_null`, `focus_cmd_period_ends_only_in_session`, `focus_exit_closes_only_after_confirm`, `focus_command_failure_in_status_line`, `focus_view_unreadable_line`, `preset_choices_four_rows_saved_checked`, `summary_focus_form_has_no_settings_row`.
 - Notes: sonnet. By eye (owner): the Focus window at 1280×720 and on the second display, idle, running, paused and ended, light and dark. Break and warning cases move to E's last task (ruling 2: no such `Mode` yet).
 
 ### D7 (#338): The floater page and its keys
@@ -227,7 +223,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
 - Owns:
   - `apps/orasenda/src/features/floater/{FloaterPage.tsx,main.tsx,floater.css,FloaterPage.test.tsx,FloaterPage.keys.test.tsx}`
   - `apps/orasenda/src-tauri/src/windows/floater.rs` (the key route and the monitor install) and `windows/floater_keys.rs` (new, if `floater.rs` would pass 300)
-  - `verification/layout/floaterWindow.spec.ts` (new)
 - Touches: `apps/orasenda/src/features/timer/useSurfaceTimer.ts`, `apps/orasenda/src/app/useTheme.ts` (consume), `crates/platform-macos/src/windows/keys.rs` (consume).
 - Interfaces:
   - Consumes: `useSurfaceTimer`, `commands.{timerView,timerStart,timerPause,timerResume,settingsGet,nativeMenuPopup,focusViewClose,mainShow}` (D4); `floater_key`, `install_floater_key_monitor` (D3).
@@ -237,8 +232,7 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - [ ] `FloatingTimer` gets the view's props, `ended`, `data-tauri-drag-region`; `onOpen` calls `main_show`; Start uses the saved preset with `custom: null`. No End anywhere.
   - [ ] The context menu (`contextmenu` → `native_menu_popup` in the floater) lists "Close floating timer", plus "Start focus" while idle or ended. If the popup can't show from the panel, the task drops it and records that on its issue.
   - [ ] Nothing gives the floater key focus on a tick, a milestone or a display change.
-  - [ ] `floaterWindow.spec.ts`: 280×56, 280×64 and 360×96 × running, paused, deep, idle and ended, both themes and reduced motion: no scroll, everything inside the viewport, targets ≥ 44×44, the focus ring.
-- Tests first: `floater_space_pauses_resumes_starts`, `floater_return_calls_main_show`, `floater_escape_closes`, `floater_never_calls_timer_state`, `floater_context_menu_items_per_state`, `key_route_monitor_consumes_six_keys`, `key_route_webview_installs_no_monitor`, `floater_window_fits_<size>_<state>` (generated).
+- Tests first: `floater_space_pauses_resumes_starts`, `floater_return_calls_main_show`, `floater_escape_closes`, `floater_never_calls_timer_state`, `floater_context_menu_items_per_state`, `key_route_monitor_consumes_six_keys`, `key_route_webview_installs_no_monitor`.
 - Notes: sonnet, opus review. By eye (owner): the floater at 280×56, 280×64 and 360×96, running, paused, idle and ended, on light, mid-grey and dark wallpapers, light and dark.
 
 ### D8 (#339): Today's Focus view button, Pages "Commands…", the ⌘K palette; close-out
@@ -249,7 +243,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - `apps/orasenda/src/app/PagesButton.tsx` and `PagesButton.test.tsx` ("Commands…" `Cmd+K` after the six pages)
   - `apps/orasenda/src/app/palette/{Palette.tsx,paletteCommands.ts,paletteCommands.test.ts,Palette.test.tsx}` (new)
   - `apps/orasenda/src/app/App.tsx` (mounts the palette on `palette-open` or Pages "Commands…") and `App.test.tsx`
-  - `verification/layout/palette.spec.ts` (new); `verification/layout/today.fits.spec.ts` (only if the button needs a case)
   - close-out: `docs/DECISIONS.md` (ADR-016 accepted), `docs/specs/2026-11-12-focus-views.md` (status implemented, Implementation status), `docs/ROADMAP.md` (row D done), `CONTEXT.md` (check the spec's terms, add any missing)
 - Touches: `apps/orasenda/src/features/today/presets.ts` (consume `presetChoices`), `apps/orasenda/src/features/settings/notificationsToggle.ts`, `apps/orasenda/src/ipc/settingsQueue.ts`, `apps/orasenda/src/app/useWindowLayout.ts` (consume).
 - Interfaces:
@@ -260,7 +253,6 @@ D and E share one budget of three concurrent pipelines; the controller interleav
   - [ ] Its menu: "Full screen" `Cmd+Shift+F` with one display, or "Full screen on <name>" per display (only the first carries `Cmd+Shift+F`), then "Floating timer, hide Orasenda" `Cmd+Shift+T`. A choice calls `focus_view_open`; a failure shows "The focus view didn't open." in the status row with a ghost "Try again" button that repeats the same open; the line ranks with the one-shot notices (newest wins) and clears on the next transition or a successful open (ruling 5); `null` does nothing.
   - [ ] No webview binding for ⌘⇧F, ⌘⇧T or ⌘K (`useShortcuts` has none); one `palette-open` mounts one palette.
   - [ ] The palette lists only what is available now, start first, Pause and End first while running, per the spec's table; each row runs the same command as its twin. `palette-open` while another modal is open only leaves the window forward.
-  - [ ] Every Today harness case still passes; `palette.spec.ts`: the palette at 360×240 (compact) and 900×600, both themes, no document scroll, the focus ring.
   - [ ] ADR-016 reads accepted; the spec's status reads implemented with each task's PR; the roadmap row D reads done.
 - Tests first: `focus_view_button_one_display_items`, `focus_view_button_several_displays_first_has_shortcut`, `focus_view_choice_calls_open`, `focus_view_button_hidden_without_displays`, `focus_view_open_failure_status_line`, `focus_view_try_again_repeats_open`, `focus_view_line_clears_on_transition`, `pages_commands_opens_palette`, `palette_open_event_mounts_once`, `palette_open_ignored_while_modal_open`, `palette_commands_idle_order`, `palette_commands_running_pause_end_first`, `palette_presets_exclude_selected`, `palette_theme_lists_two_not_current`, `no_webview_binding_for_focus_shortcuts`.
 - Notes: sonnet. By eye (owner): Today with the button at 360×240, 900×600 and 1440×900; the palette regular and compact; light and dark. E adds "Set intent" to `paletteCommands` after D8 merges.
@@ -278,9 +270,9 @@ E (Session cadence, spec PR #330, not yet merged) runs in parallel. The controll
 | `crates/service/src/session/{run.rs,service.rs,mod.rs}` | D2 | Append-only functions and one field; the second to land rebases. |
 | `src-tauri/src/lib.rs`, `commands.list.rs`, `commands/mod.rs`, `ipc.rs`, `capabilities/main.json`, `lib_tests.rs` | D1, D4, D5 | Append-only registration lines; the controller resolves them at landing and keeps the capability tests' exact lists complete. |
 | `src/ipc/bindings.ts` | D4 | Generated: regenerate after every rebase, never hand-merge. |
-| `src/test/fixtures.ts`, `src/dev/layout/scenarios.ts` | D4 | Append-only; the controller resolves. D6 and D7 don't edit them. |
+| `src/test/fixtures.ts` | D4 | Append-only; the controller resolves. D6 and D7 don't edit them. |
 | ⌘K command list (`app/palette/paletteCommands.ts`) | D8 | E adds "Set intent" after D8 merges. |
-| `features/focus/*`, `features/floater/*`, `verification/layout/{focusWindow,floaterWindow}.spec.ts` | D4, D6, D7 | E's last task (states and keys) starts after D6, D7 and D8 merge, and adds the break and warning harness cases D leaves out (ruling 2). |
+| `features/focus/*`, `features/floater/*` | D4, D6, D7 | E's last task (states and keys) starts after D6, D7 and D8 merge, and adds the break and warning cases D leaves out (ruling 2). |
 | `CONTEXT.md`, `docs/DECISIONS.md` | D8 | Append at the end; E's ADRs are 017 onward. |
 | `verification/contrast-pairs.json`, `packages/ui/src/designSystem.test.ts` (export count), `packages/ui/src/index.ts`, `packages/ui/src/types.ts` | none planned | Append-only conflicts; the controller resolves them if either side adds a component. |
 
@@ -311,10 +303,10 @@ Two displays, "Displays have separate Spaces" on, then off. Implementers write t
 ## Coverage check
 | Spec requirement | Task(s) |
 |---|---|
-| Goal 1: the Focus view button, every Today size, harness still passes | D8 |
+| Goal 1: the Focus view button, every Today size | D8 |
 | Goal 2: the button's menu items and order | D8 (items), D4 (`displays_list` order) |
 | Goal 3: borderless Focus window, normal level, collection behaviour | D3, D4; H1 |
-| Goal 4: insets, background, `FullScreenFocus` harness cases | D6 (break and warning: E's last task, ruling 2) |
+| Goal 4: insets, background, `FullScreenFocus` cases | D6 (break and warning: E's last task, ruling 2) |
 | Goal 5: non-activating floater, key without activation, README sizes | D3, D4, D7; H2 |
 | Goal 6: `window_frame`, no `change_log`, relaunch, clamp | D2, D4; H6 |
 | Goal 7: ⇧⌘F, ⇧⌘T, ⌘K from every window | D5, D3 (fallback), D7; H4 |

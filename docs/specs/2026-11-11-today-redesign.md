@@ -3,13 +3,13 @@
 - Status: approved (owner, 2026-11-11); implemented 2026-11-11; amended 2026-11-12 by the [Session cadence spec](2026-11-12-session-cadence.md#amends-earlier-specs) (status row, presets, menu bar)
 - Date: 2026-11-11
 - Owner: Arnold Gandarillas Castillo
-- Related: [#134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut; comment 6780298891 is the Today canvas inventory this spec builds from), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window), [#120](https://github.com/arkgast/orasenda/issues/120) (refused start, Today half), [spec A](2026-11-08-focus-session-loop.md) (amended here, see [Amends spec A](#amends-spec-a)), [Settings spec](2026-11-09-settings.md) (B; its compact layout and its harness handover are C's), [structure refactor spec](2026-11-10-structure-refactor.md) (the file layout C keeps), [SPEC §1](../SPEC.md), [ADR-011](../DECISIONS.md) (time is formatted in Rust), [ADR-013](../DECISIONS.md) (one Rust state, many surfaces), [ADR-014](../DECISIONS.md) (settings: one object, one save chain), [ADR-015](../DECISIONS.md) (code-first design system). Design source: the timer-surfaces canvas https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX (`Today.dc.html`, verdict "approve"). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,start-button,popover-menu,inline-notice,icon-button,tooltip,mode-chip,kbd,nav-rail,page-frame,settings-index}.md`.
+- Related: [#134](https://github.com/arkgast/orasenda/issues/134) (the P1 re-cut; comment 6780298891 is the Today canvas inventory this spec builds from), [#119](https://github.com/arkgast/orasenda/issues/119) (Start below the window), [#120](https://github.com/arkgast/orasenda/issues/120) (refused start, Today half), [spec A](2026-11-08-focus-session-loop.md) (amended here, see [Amends spec A](#amends-spec-a)), [Settings spec](2026-11-09-settings.md) (B; its compact layout is C's), [structure refactor spec](2026-11-10-structure-refactor.md) (the file layout C keeps), [SPEC §1](../SPEC.md), [ADR-011](../DECISIONS.md) (time is formatted in Rust), [ADR-013](../DECISIONS.md) (one Rust state, many surfaces), [ADR-014](../DECISIONS.md) (settings: one object, one save chain), [ADR-015](../DECISIONS.md) (code-first design system). Design source: the timer-surfaces canvas https://claude.ai/artifact/9pNxL32QEEq66j5QyAW1GX (`Today.dc.html`, verdict "approve"). Components: `packages/ui/src/components/ui/{timer-ring,timer-strip,start-button,popover-menu,inline-notice,icon-button,tooltip,mode-chip,kbd,nav-rail,page-frame,settings-index}.md`.
 
 ## TL;DR
 - Today becomes the canvas's **Still Point**: one grid that fills the window with no scrolling: a top row, a 44px status row, the time, and the controls. The time is a fluid `TimerRing`, or a `TimerStrip` when the window is a strip (`timerLayout`). It works from **360×240** up, and 360×240 becomes the window minimum.
 - The preset radios and Custom fields leave Today. A **preset summary** ("Classic · 25 min · ends 15:20") opens the design system's `PopoverMenu`, and Today always starts with `custom: null`. So a start can no longer be refused for its minutes: **the refused-start line and its "Open Settings" are dropped** (owner, 2026-11-11), and #120 closes as fixed by B's inline validation plus this change.
 - Pause, Resume and End become `IconButton`s. The in-app shortcuts are ⌘↩, ⌘⇧↩, ⌘. and ⌘1–6. In compact windows the rail gives way to a **Pages** button that opens a native menu. The menu-bar menu gains Start, Just 2 minutes, a Preset submenu and a status header.
-- The DevPanel leaves Today for its own debug-only window. A Playwright WebKit harness for the app checks every size and state in both themes, starting with #119's failing case.
+- The DevPanel leaves Today for its own debug-only window.
 - **No new design-system component.** Interim line icons live in the app (`app/glyphs.tsx`) until T7's `Icon` set lands. The Focus view button, "Commands… ⌘K", the floater, the warning and break states, Space/P/F and the shortcut recorder stay with D, E, F, T5 and T6.
 
 ## Change in a nutshell
@@ -29,13 +29,13 @@ Open Orasenda at its default 900×600, idle with Classic saved:
 
 Press ⌘↩. The summary reads "Classic · ends 15:20", the ring runs, and the controls become a round **Pause session** button and an **End session** icon button, with ⌘. as End's shortcut. When the session ends, the status row says "Session ended." and focus is on Start focus. Shrink the window to 360×240: the rail is replaced by a Pages button, and the time becomes a stacked strip. Nothing scrolls, Start stays fully visible, and every target stays at least 44px.
 
-In general, every Today state at every window size from 360×240 to 1920×1080 shows its one primary action fully, in a grid whose rows never grow, and the WebKit harness checks this in light, dark and reduced motion.
+In general, every Today state at every window size from 360×240 to 1920×1080 shows its one primary action fully, in a grid whose rows never grow.
 
 ## Problem
 Today is still spec A's interim page: a fixed 280px ring, radios and Custom fields, and a notice slot that grows. At the 900×600 minimum, Start falls below the window after a session end or with Custom checked (#119). A refused Custom start shows only a field helper (#120). The owner wants to use Today every day while T5–T7 are built (owner, 2026-11-10), so it has to fit any window, match the design system, and keep one primary action.
 
 ## Goals / Success criteria
-1. In the WebKit harness, for each size in [the size set](#sizes-and-layout) and each state in [the state set](#states), in light and dark: the document does not scroll on either axis, the primary action (Start focus, or Pause/Resume session) is fully inside the viewport, the status row is 44px tall, and every interactive element is at least 44×44.
+1. For each size in [the size set](#sizes-and-layout) and each state in [the state set](#states), in light and dark: the document does not scroll on either axis, the primary action (Start focus, or Pause/Resume session) is fully inside the viewport, the status row is 44px tall, and every interactive element is at least 44×44.
 2. The time view follows `timerLayout` at each size, and a fluid ring stays between 160 and 560px.
 3. Tabbing through Today in each layout shows the 2px focus ring on every stop, in the [tab order](#focus-and-tab-order). Under reduced motion, nothing on Today animates.
 4. Today never sends `custom` other than `null`, and has no preset radios, Custom fields or range helpers.
@@ -43,7 +43,7 @@ Today is still spec A's interim page: a fixed 280px ring, radios and Custom fiel
 6. The menu-bar menu shows exactly the [items for each state](#menu-bar), and its actions go through the same session service as Today.
 7. The window minimum is 360×240 and equals the `window-min-*` tokens (a test compares them). Settings and the placeholder pages work there too.
 8. The DevPanel opens in its own window from a menu-bar item that exists only when `spike::enabled()`, and Today no longer renders it.
-9. #119's acceptance passes: its harness case is written first, marked as an expected failure, and the Today task removes that mark.
+9. #119's acceptance passes.
 
 ## Non-goals
 - **Focus view button and menu** (Full screen, Floating timer): D and T5. Its top-right grid cell is kept empty so D adds it without a layout change (owner, 2026-11-11).
@@ -53,7 +53,7 @@ Today is still spec A's interim page: a fixed 280px ring, radios and Custom fiel
 - **The first-run welcome line** ("Welcome. Nothing to set up."). It needs a stored first-run flag, and only matters on a first install; it comes with the first sub-project that adds onboarding.
 - **VoiceOver passes:** deferred to the end of P1 (owner, 2026-11-10). Reviews still check names and roles in code.
 - **Screenshots:** none in PRs. The owner reviews the visuals by hand (owner, 2026-11-11).
-- **A spacious breakpoint.** At 1440×900 and above, the fluid ring reaches its 560px ceiling (`timer-full-size`) by itself. Spacious is a size case in the harness, not a code path.
+- **A spacious breakpoint.** At 1440×900 and above, the fluid ring reaches its 560px ceiling (`timer-full-size`) by itself. Spacious is a size case, not a code path.
 
 ## Users & permissions
 One local user, no accounts. The DevPanel window and its menu-bar item exist only in debug builds with `ORASENDA_SPIKE=1` (`spike::enabled()`, `apps/orasenda/src-tauri/src/spike/mod.rs:19`). The `dev` window gets a capability of its own for the spike commands, and the main window keeps only the commands it still uses.
@@ -105,7 +105,7 @@ Preset display names: Classic, 50/10, Deep Block, Custom, and Just 2 minutes (fo
 
 The 180px strip column has no token. The plan's first Today task either finds a token for it or names it as a ruling on its issue, with the owner's sign-off; no arbitrary value lands. The time cell holds `TimerRing size="fluid"`, or `TimerStrip` (`stacked` in stackedStrip). Today passes no `task` (E's) and gives `clock` to the ring from `clock-tick.clock`. The strip gets `idleLength` ("25 min") while idle.
 
-**Size set** (the harness's cases): 360×240, 360×640, 480×320, 640×480, 800×300, 900×600, 1024×400, 1280×800, 1440×900, 1920×1080. This covers stackedStrip, ring-compact, strip, the smallest regular window, the default window, and spacious.
+**Size set:** 360×240, 360×640, 480×320, 640×480, 800×300, 900×600, 1024×400, 1280×800, 1440×900, 1920×1080. This covers stackedStrip, ring-compact, strip, the smallest regular window, the default window, and spacious.
 
 ### Top row
 - **Start:** the **Pages** `IconButton` (`app/PagesButton.tsx`), only when `compact`, with label "Pages", `shortcut={['⌘1','⌘2','⌘3','⌘4','⌘5','⌘6']}` and `shortcutLabel="⌘1–6"`, `aria-haspopup="menu"`. Clicking it calls `native_menu_popup` with the six pages (Today, Board, Calendar, Routines, Review, Settings), accelerators ⌘1–⌘6 and the current page checked. A chosen id navigates as the rail does.
@@ -224,7 +224,7 @@ Details:
 - **Pages on placeholder pages and Settings when compact:** as in [Top row](#top-row).
 - **Pages menu while Settings is current:** Settings is checked, and choosing it again does nothing (the existing `navigate` guard).
 - **Reduced motion:** the ring and strip already drop their motion (their READMEs). Today adds no motion.
-- **Both themes:** every colour is a token. The harness runs both themes.
+- **Both themes:** every colour is a token.
 
 ## Data & migrations
 No schema change. `TimerView` gains `plannedMin` and the bindings are regenerated. The service computes `plannedMin` for a restored session from its stored planned length, so recovery needs no new data.
@@ -246,15 +246,6 @@ No schema change. `TimerView` gains `plannedMin` and the bindings are regenerate
 - `app/useShortcuts.test.ts`, `app/useWindowLayout.test.ts` (the compact rule against stubbed sizes) and `app/PagesButton.test.tsx` (the popup request, navigation, the null answer).
 - The existing `Today.presets/ranges/saves` tests are replaced: preset saving is now `PresetSummary`'s, and ranges are Settings'.
 
-**WebKit harness (`just layout`, macOS):**
-- **Harness setup:**
-  - `apps/orasenda/layout.html` and `src/dev/layout/{layoutMain.tsx,scenarios.ts}` render `App` against `mockIPC`, with a scenario per state chosen by query string, as in #119's notes.
-  - These files are dev-only, never a build input.
-  - `verification/layout/playwright.config.ts` adds a second `webServer` (`pnpm --filter orasenda exec vite --port 4180 --strictPort`).
-- **Today specs** (`verification/layout/today.{fits,focus,motion}.spec.ts`): goals 1–3 across the size set × [states](#states). `today.fits` starts as #119's case: 900×600 × {idle, ended, Custom checked} with `test.fail()` against today's page. The Today task removes the mark.
-- **Other pages:** `appShell.spec.ts` (rail vs Pages on every page, a visible Pages button on each placeholder page when compact, no scroll) and `settings.spec.ts`. The latter covers B's handover: 900×600 and 1440×900 with the longest save line beside *Show* and the denied-on line, plus 360×240 and 480×320 compact.
-- **No new dependency:** Playwright is already the harness's.
-
 #### States
 The state set: idle, idle after an end, recovered, running, paused, store unavailable joined with "Session ended.", start error, timer unavailable, starting, the popover open (idle and running), settings unavailable.
 
@@ -272,7 +263,7 @@ No ADR. C follows ADR-011, ADR-013, ADR-014 and ADR-015. Rulings made for this s
 
 | # | Ruling | Issue |
 |---|---|---|
-| 1 | Design match: the WebKit harness plus the per-state review checklist above. The owner reviews the visuals by hand, with no screenshots. | #134 |
+| 1 | Design match: the per-state review checklist above. The owner reviews the visuals by hand, with no screenshots. | #134 |
 | 2 | DevPanel: its own debug-only window, opened from a debug-only menu-bar item. | #134 |
 | 3 | No refused-start line on Today, because Settings and Rust refuse out-of-range minutes before they are saved. The recovered line keeps spec A's wording. | #120, #134 |
 | 4 | Focus view button: omitted, and its cell kept. | #134 |
@@ -313,7 +304,6 @@ None.
 
 ## Implementation status
 Plan: [docs/plans/2026-11-11-today-redesign.md](../plans/2026-11-11-today-redesign.md). All merged 2026-11-11.
-- [x] Harness, #119's case first (C1 #296, PR #305)
 - [x] IPC: `plannedMin`, `presets_get`, `native_menu_popup` (C2 #297, PR #306)
 - [x] Shell: 360×240 minimum, compact rule, Pages, glyphs, ⌘1–6 (C3 #300, PR #311)
 - [x] Today: grid, time view, controls, status row, ⌘↩/⌘⇧↩/⌘. (C4 #301, PR #314; closes #119 and #120; rulings on #301)

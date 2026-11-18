@@ -57,7 +57,7 @@ The owner asks two questions. On philosophy, A is the only direction with no pri
 1. **From C: the strip layout and the minimum.** Today switches to Horizon's three-column strip when the content box is wider than twice its height and under 420px tall, and to the stacked strip under 360 tall and under 640 wide. The window minimum becomes 360×240 (tokens `window-min-width` 360, `window-min-height` 240), replacing the brief's 360×360. The switch happens only on resize, never on a tick.
 2. **From C: paused wording.** The summary while paused reads "Classic · 18 min left" (preset, time left), never "Paused · …". The chip is the only "Paused".
 3. **From B and C: a visible Pause/Resume target.** The 52px circle gets a `surface-raised` ground and a `line-strong` edge so the target is visible, not only the glyph.
-4. **From B: a tooltip on the preset summary** ("Change preset · P") on hover and keyboard focus, so the single-key shortcut is discoverable. B's row-budget overlay also becomes the model for the Playwright layout test's assertions.
+4. **From B: a tooltip on the preset summary** ("Change preset · P") on hover and keyboard focus, so the single-key shortcut is discoverable.
 5. **From B: drawn states A left to captions.** The Start loading state ("Starting…", design system `StartButton`), the denied-notification state with "Open System Settings", and the Settings › Keyboard section, drawn in both themes before phase 3.
 6. **From C: the triangle at the bar's end** is the model for the strip; on the ring the chip's triangle already does this job, so nothing is added there.
 
@@ -67,14 +67,13 @@ The owner asks two questions. On philosophy, A is the only direction with no pri
 2. **No second "Paused".** Summary reads "Classic · 18 min left" while paused (graft 2). Keep spec A's test that exactly one "Paused" node exists.
 3. **Spec copy only.** Status-row lines come from spec A: "Session ended.", "Session ended while Orasenda was closed.", "Orasenda can't save sessions right now.", "This data was saved by a newer Orasenda.", plus the one-time tip. Remove the invented store line. Check the longest spec line fits two lines of `body-sm` at 360 wide beside a 44px action.
 4. **Hidden heading.** Add the `os-sr-only` `h1` "Today" that receives focus after a page change; document the tab order (Pages → summary → Focus view → status action → controls).
-5. **Verify the 360 idle row with real fonts.** The 316-of-328px estimate must be measured in WebKit with Atkinson Hyperlegible Next. If it wraps, the pill reads "Start" with the glyph and the accessible name stays "Start focus", as the brief says; add that case to the layout test.
+5. **Verify the 360 idle row with real fonts.** The 316-of-328px estimate must be measured in WebKit with Atkinson Hyperlegible Next. If it wraps, the pill reads "Start" with the glyph and the accessible name stays "Start focus", as the brief says.
 6. **One menu model, recorded.** A uses native NSMenus for Pages and Focus view and an in-webview popover for presets. Keep that call (navigation and commands are native; the preset popover carries radios and a heading), and write it into the design system README so the strip and the menu bar follow the same rule.
 7. **Window tokens.** Update `window-min-width` 360 and `window-min-height` 240, add the layout-class and strip thresholds (brief §4 item 3), and replace "scroll below it" with the no-scroll rule for timer surfaces.
 8. **Contrast pass for the new pairs** (brief §4 item 15): tooltip text on `surface-overlay`, the status-row text and its `focus` ghost action, the warning status text, the `line-strong` tooltip edge, the horizon bar fill and track, and the floater edge in both themes. Run `verification/contrast.py` before anything ships.
 9. **Rail icons** stay placeholders only until the icon set (brief §4 item 14) lands; the final icons must be in the design system before the app uses them.
-10. **Layout test.** Playwright WebKit at 360×240, 360×360, 640×480, 900×240, 900×600, 1440×900, each with the longest status line and an action, asserting the controls row is inside the viewport, the status row is exactly 44px and `scrollHeight <= innerHeight` on Today, Focus and Floating.
 
 ## Calls I made (not reopened above)
 
-- The 360×240 minimum is accepted on the strength of C's arithmetic (188px fixed, 52px for digits at the minimum), with the digits floor from must-fix note in C. If phase 3's layout test shows the stacked strip cannot hold the longest spec store line beside the chip at 360 wide, the status text goes under the chip and the minimum height rises to 280. The 900×600 default does not change.
+- The 360×240 minimum is accepted on the strength of C's arithmetic (188px fixed, 52px for digits at the minimum), with the digits floor from must-fix note in C. The 900×600 default does not change.
 - The A vs A2 decision was made from the 360×360 idle windows as the brief asked. At that size the 127px disc fills the ring's inner disc and the "No session" word disappears; the pill below the ring keeps the ring whole. A wins at the size where the two were meant to be compared.

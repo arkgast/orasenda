@@ -1,6 +1,5 @@
 import type { TemplateView_Serialize } from "../../ipc/bindings";
 
-// Kept apart from routines.ts (no testing-library import) so the layout scenarios can use it.
 /** The five templates as `routine_templates` answers them on a 24-hour clock. */
 export const TEMPLATES: TemplateView_Serialize[] = [
   {

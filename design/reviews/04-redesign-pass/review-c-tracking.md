@@ -147,7 +147,7 @@ Severity: **blocker** = the design cannot ship as drawn; **major** = fix before 
 
 **Finding:** By the tokens, Firm step 2 is: context 18 + title 28 + breath 96 + label 24 + textarea 72 + hint 36 + Continue 44 + 8 + Back to focus 52 + strength 18 = 396, plus seven `space-5` gaps (168) and `space-5` padding (48) = about 612. Gentle step 2 is about 560. A 1280×720 or 1366×768 second display has a visible frame of about 695–743 after the menu bar, so it fits; a 640-tall "More space" display does not, and `os-dialog` would scroll the pause.
 
-**Fix:** Correct the number on `Proof`. Below 700px of visible height, hide the breathing circle on step 2 and the typed-reason step (IntentPrompt keeps it on step 1), and tighten the panel gap to `space-4`. Add the pause at 1280×720 and 1366×768 visible frames to the layout test.
+**Fix:** Correct the number on `Proof`. Below 700px of visible height, hide the breathing circle on step 2 and the typed-reason step (IntentPrompt keeps it on step 1), and tighten the panel gap to `space-4`.
 
 ### c-tracking-11 (minor) "It is 15:05." is a static clock in body copy
 
@@ -179,7 +179,7 @@ Severity: **blocker** = the design cannot ship as drawn; **major** = fix before 
 
 **Finding:** At 640 wide the page gets 640 − 64 − 32 − 200 − 32 − 32 = 280px. The title and Add apps compete in the header, and a row leaves about 80px for the name beside the icon, tag and menu button. Nothing falls off, but it is not the layout drawn at 900.
 
-**Fix:** Settings and Review use the compact drill-in below 800 wide (a page-level threshold beside the global 640), or the section list narrows to 160px. Add 640×480 and 800×480 to the layout test on `Proof`.
+**Fix:** Settings and Review use the compact drill-in below 800 wide (a page-level threshold beside the global 640), or the section list narrows to 160px.
 
 ### c-tracking-16 (minor) Values that need tokens, and stand-ins that need components
 
@@ -234,18 +234,18 @@ Two small gaps appeared in the compact Apps and sites page as a side effect of c
 | c-tracking-1 | Fixed | `Settings` `S_NO` / `S_HELPER` by `helperOn`; the helper-allowed line names System Settings › General › Login Items; `Overlay` `strong` by `helper`; `STRONG_LINE`; `Apps-Dark` helper-allowed frame and caption; `Main` call. See note N1 below. |
 | c-tracking-2 | Fixed | `Overlay` `failed`: nameless title and description, `context`, `scrim`, `breath`, `hasStrength` all off, Back to focus only; `Overlay-Dark` caption; `States` permissions row; `Controls` pause row. |
 | c-tracking-3 | Fixed | Never record helper (`Settings` line 173), `Main` legend, `Privacy` lede, `Usage-Board` summary caption all say the same thing; `Usage` keeps "Private apps · 0h 20m" and "mostly a private app". |
-| c-tracking-4 | Fixed | Compact Apps: extension line and three long chips under the Distracting list (`cStrength`), drawn on `Apps-Light` at scroll 380. Compact Privacy: Keep usage for, Export usage, Delete recorded usage… (`Settings` lines 287–292), drawn on `Privacy` at scroll 470. Estimates updated; both in the `Proof` layout test. Two side effects: c-tracking-18. |
+| c-tracking-4 | Fixed | Compact Apps: extension line and three long chips under the Distracting list (`cStrength`), drawn on `Apps-Light` at scroll 380. Compact Privacy: Keep usage for, Export usage, Delete recorded usage… (`Settings` lines 287–292), drawn on `Privacy` at scroll 470. Two side effects: c-tracking-18. |
 | c-tracking-5 | Fixed | Safari row with "Browser fallback until the extension is installed"; `hasSiteRow` gates the notice; notice is one sentence + Get the extension; picker shows Safari "Already Distracting"; `States` permissions row; `Apps-Light` "Reading a row". |
 | c-tracking-6 | Fixed | `.ap-tag` is a span, "never a link, never focusable"; no `href` on any tag; ←/→ removed from `Controls`; VoiceOver rows read "Stocks, Not recorded"; `.ap-link` has `min-height: var(--hit-min)`. |
 | c-tracking-7 | Fixed | `.ap-seg label:has(input:focus-visible)` 2px `focus-ring` at 2px offset, `z-index: 1`; fieldset no longer clips (rounded first/last labels); drawn on `Apps-Dark` (`focus="seg"`); `.ap-pick:has(input:focus-visible)` rings the row, drawn on the compact privacy picker. |
 | c-tracking-8 | Fixed | `.ap-seg label { border-inline-start: 1px solid var(--line-strong) }`: 4.79 / 4.99 on `surface-raised`. |
 | c-tracking-9 | Fixed | `.ap-bar-fill { background: var(--ink-muted) }`: 5.36 / 7.52 on `surface` (bars sit on the page `surface`); `Usage-Board` lede corrected. |
-| c-tracking-10 | Fixed | `Proof` says about 636 (Firm step 2) and 560 (Gentle step 2); `tight` below 700 visible drops the breath and uses `space-4` (about 460); drawn on `Overlay-Dark` with `visible="640"`; 1280×720, 1366×768 and 640 in the layout test; frames 960×720. |
+| c-tracking-10 | Fixed | `Proof` says about 636 (Firm step 2) and 560 (Gentle step 2); `tight` below 700 visible drops the breath and uses `space-4` (about 460); drawn on `Overlay-Dark` with `visible="640"`; frames 960×720. |
 | c-tracking-11 | Fixed | "It is 15:05." removed; waiting step keeps the title time and "Discord stays hidden until then." |
 | c-tracking-12 | Fixed | Firm step 1 hint is `role="status"`, changes once to "You can continue now."; `firm1ready` drawn; `Overlay-Light` caption rewritten. |
 | c-tracking-13 | Fixed | Non-destructive Dialog "End the session and the lock?", Keep going primary with initial focus and Esc/Return, End session quiet; drawn light and dark on `States`; written on `Main`, `Overlay-Light`, `Controls`. Gentle and Firm keep no-confirm End. |
 | c-tracking-14 | Fixed | Profile select removed; "Strength for" written for P6; "Add as" and "Keep usage for" are native `<select>` with `<label for>`; Add as defaults to Distracting in regular and the current segment in compact (`as` prop). See c-tracking-19 for the compact label. |
-| c-tracking-15 | Fixed | `compact = w < 800 \|\| h < 480` in both `Settings` and `Usage`; 640×480 drawn on `Proof` with the 280px arithmetic; 640–799 row; 640×480 and 800×480 in the layout test. |
+| c-tracking-15 | Fixed | `compact = w < 800 \|\| h < 480` in both `Settings` and `Usage`; 640×480 drawn on `Proof` with the 280px arithmetic; 640–799 row. |
 | c-tracking-16 | Fixed, with residue | Type shorthands, `control-lg` / `hit-min` rows, `icon-lg` + `radius-sm` icons, `hit-floor` edge, `control-sm` bars, subgrid columns, proposed tokens named (`bar-height`, `picker-height`, `popover-width`, `scrollbar-width`); `Input type=search` and `textarea.os-input`. Residue in note N2. |
 | c-tracking-17 | Fixed | Privacy load error (900 dark + 360 dark), empty Never record (360 light), helper declined (`Apps-Dark`), compact privacy picker (`Picker-Board`, 360 dark), "Delete this day's usage?" (`Usage-Board`). |
 
