@@ -3,6 +3,8 @@ import { cn } from "../../lib/utils";
 
 export interface ScrollRegionProps {
   label: string;
+  /** "content" holds the children in one centred column of `content-width`; the bar stays at the edge. */
+  width?: "full" | "content";
   children?: ReactNode;
 }
 
@@ -16,7 +18,7 @@ const region =
   "relative h-full min-h-0 overflow-y-scroll border-t border-clear p-1 scroll-pt-2 scroll-pb-6 data-[scrolled=true]:border-line outline-focus-ring focus-visible:outline-2 [&::-webkit-scrollbar]:w-scrollbar-size [&::-webkit-scrollbar-track]:bg-clear [&::-webkit-scrollbar-thumb]:min-h-hit-floor [&::-webkit-scrollbar-thumb]:rounded-pill [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-clear [&::-webkit-scrollbar-thumb]:bg-line-strong [&::-webkit-scrollbar-thumb]:bg-clip-padding";
 
 /** The only scrolling box on a list page: a hairline once scrolled, and a "More below" row while content remains. */
-export function ScrollRegion({ label, children }: ScrollRegionProps): JSX.Element {
+export function ScrollRegion({ label, width, children }: ScrollRegionProps): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -57,7 +59,13 @@ export function ScrollRegion({ label, children }: ScrollRegionProps): JSX.Elemen
       onScroll={measure}
       className={cn(region)}
     >
-      {children}
+      {width === "content" ? (
+        <div data-slot="scroll-region-column" className="mx-auto w-full max-w-content-width">
+          {children}
+        </div>
+      ) : (
+        children
+      )}
       {more ? (
         <div
           data-slot="scroll-region-more"

@@ -178,13 +178,14 @@ export function RoutinesPage({ onNavigate, onStart }: Props): ReactElement {
     <div ref={page} className="app-routines-page">
       <PageFrame
         title="Routines"
+        width="content"
         compactPicker={
           compact ? <PagesButton current="routines" onNavigate={onNavigate} /> : undefined
         }
         primary={primary}
         status={status}
       >
-        <ScrollRegion label="Routines">
+        <ScrollRegion label="Routines" width="content">
           {empty ? (
             <EmptyState
               title="No routines yet."
