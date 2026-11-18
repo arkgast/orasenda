@@ -1,6 +1,6 @@
 # UI consistency: button shapes, overflow menus, page width and finished routines — Spec
 
-- **Status:** draft
+- **Status:** approved (owner, 2026-11-17)
 - **Date:** 2026-11-17
 - **Owner:** the product owner (request of 2026-11-17, reviewing the macOS app)
 - **Related:** [Routines and habits](2026-11-14-routines-and-habits.md) (Decision 41 is superseded here); [code-first components](2026-11-10-code-first-components.md); spec B, Board columns (to be written)
