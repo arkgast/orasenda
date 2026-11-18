@@ -8,6 +8,8 @@ export interface PageFrameProps {
   step?: string;
   footer?: ReactNode;
   compactPicker?: ReactNode;
+  /** "content" holds the header and status row in the same centred column as a `ScrollRegion width="content"`. */
+  width?: "full" | "content";
   children?: ReactNode;
 }
 
@@ -33,6 +35,12 @@ export function PageFrame(props: PageFrameProps): ReactElement {
       {props.title}
     </h1>
   );
+  const end =
+    props.primary ||
+    (props.step ? (
+      <span className="whitespace-nowrap text-body-sm text-ink-muted">{props.step}</span>
+    ) : null);
+  const content = props.width === "content";
   return (
     <div
       data-slot="page-frame"
@@ -43,14 +51,29 @@ export function PageFrame(props: PageFrameProps): ReactElement {
         data-slot="page-frame-header"
         className="flex h-hit-min shrink-0 items-center justify-between gap-3"
       >
-        {title}
-        {props.primary ||
-          (props.step ? (
-            <span className="whitespace-nowrap text-body-sm text-ink-muted">{props.step}</span>
-          ) : null)}
+        {content ? (
+          <InsetColumn
+            slot="page-frame-header-column"
+            className="flex h-hit-min items-center justify-between gap-3"
+          >
+            {title}
+            {end}
+          </InsetColumn>
+        ) : (
+          <>
+            {title}
+            {end}
+          </>
+        )}
       </header>
       <div data-slot="page-frame-status" className="h-hit-min shrink-0">
-        {props.status}
+        {content ? (
+          <InsetColumn slot="page-frame-status-column" className="h-full">
+            {props.status}
+          </InsetColumn>
+        ) : (
+          props.status
+        )}
       </div>
       <div
         data-slot="page-frame-body"
@@ -66,6 +89,27 @@ export function PageFrame(props: PageFrameProps): ReactElement {
           {props.footer}
         </footer>
       ) : null}
+    </div>
+  );
+}
+
+// The body's p-1 plus the region's p-1 (space-2) at each side, and the scrollbar at the end, so the column
+// lines up with a ScrollRegion width="content" column to the pixel.
+function InsetColumn(props: {
+  slot: string;
+  className: string;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <div className="ps-2 pe-2 min-w-0 flex-1 h-full">
+      <div className="pe-scrollbar-size h-full">
+        <div
+          data-slot={props.slot}
+          className={`mx-auto w-full max-w-content-width ${props.className}`}
+        >
+          {props.children}
+        </div>
+      </div>
     </div>
   );
 }

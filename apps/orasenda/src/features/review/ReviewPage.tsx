@@ -93,6 +93,7 @@ export function ReviewPage({ onNavigate, onStart, asked }: Props): ReactElement 
     <div ref={page} className="app-review-page">
       <PageFrame
         title="Review"
+        width="content"
         compactPicker={
           compact ? <PagesButton current="review" onNavigate={onNavigate} /> : undefined
         }
@@ -105,7 +106,7 @@ export function ReviewPage({ onNavigate, onStart, asked }: Props): ReactElement 
         }
         status={status}
       >
-        <ScrollRegion label="Review">
+        <ScrollRegion label="Review" width="content">
           {view ? <Overview view={view} onStart={start} /> : null}
         </ScrollRegion>
       </PageFrame>

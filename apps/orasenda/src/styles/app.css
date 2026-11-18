@@ -137,6 +137,7 @@ body {
 
 .settings-content {
   max-inline-size: var(--content-width);
+  margin-inline: auto;
 }
 
 /* The pane title stays at the top of the region while the rows scroll under it. */

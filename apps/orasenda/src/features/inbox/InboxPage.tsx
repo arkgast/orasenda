@@ -60,12 +60,13 @@ export function InboxPage({ onNavigate }: { onNavigate(page: NavPage): void }) {
     <div ref={root} className="app-inbox-page">
       <PageFrame
         title="Inbox"
+        width="content"
         compactPicker={
           compact ? <PagesButton current="inbox" onNavigate={onNavigate} /> : undefined
         }
         status={status}
       >
-        <ScrollRegion label="Inbox">
+        <ScrollRegion label="Inbox" width="content">
           {inbox.status === "ok" && notes.length === 0 ? (
             keys === undefined ? null : (
               <EmptyState

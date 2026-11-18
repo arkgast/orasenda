@@ -7,12 +7,10 @@
   min-block-size: 0;
 }
 
-/* The list keeps a readable measure and leaves space-1 at the inline end for the Remove focus ring. */
+/* The column (ScrollRegion width="content") sets the readable measure. */
 .app-inbox-list {
-  max-inline-size: var(--content-width);
   margin: 0;
   padding: 0;
-  padding-inline-end: var(--space-1);
 }
 
 /* The status row: with a second action beside the notice (Moved to Board), the notice may grow. */

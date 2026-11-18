@@ -7,13 +7,11 @@
   min-block-size: 0;
 }
 
-/* The cards and habits keep a readable measure; space-1 at the inline end keeps focus rings clear. */
+/* The cards and habits sit in the ScrollRegion width="content" column. */
 .app-routines-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  max-inline-size: var(--content-width);
-  padding-inline-end: var(--space-1);
 }
 
 .app-routines-list,
