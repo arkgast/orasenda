@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests the ORASENDA_LAYOUT=skip branch of `just layout`. Needs only bash and just.
+# Tests the ORASENDA_LAYOUT=skip branch of `just layout` and the `just ci` default. Needs only bash and just.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 failures=0
@@ -18,7 +18,13 @@ cd "$root"
 rc=0
 out="$(PATH="$stubs:$PATH" ORASENDA_LAYOUT=skip just layout 2>&1)" || rc=$?
 expect "skip exits 0" 0 "$rc"
-expect "skip prints the line" "layout: skipped (ORASENDA_LAYOUT=skip; the layout job runs it)" "$out"
+expect "skip prints the line" "layout: skipped (ORASENDA_LAYOUT=skip; run just ci-full or just layout)" "$out"
+
+# `just ci` skips layout unless the caller sets ORASENDA_LAYOUT; `just ci-full` sets it to run (#743).
+ci_skips="$(just --dry-run ci 2>&1 | grep -cF 'ORASENDA_LAYOUT="${ORASENDA_LAYOUT:-skip}"' || true)"
+expect "just ci defaults layout to skip" 1 "$ci_skips"
+full_runs="$(just --dry-run ci-full 2>&1 | grep -cF 'ORASENDA_LAYOUT=run' || true)"
+expect "just ci-full runs layout" 1 "$full_runs"
 
 # Args pass through to Playwright (Darwin only: other hosts skip before pnpm).
 if [ "$(uname -s)" = Darwin ]; then

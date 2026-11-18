@@ -80,7 +80,9 @@ design-system-check:
     "{{ just_executable() }}" design-system --out "$dir"
     DS_OUT="$dir" pnpm --filter @orasenda/ui exec vitest run designSystem.test.ts
 
-# Every check, fastest first. Stops at the first failure.
+# Every check except the WebKit layout run, fastest first. Stops at the first failure. Layout runs
+# only when ORASENDA_LAYOUT is set to something other than skip: `just ci-full` does that, and
+# GitHub runs layout only on the release PR and on a manual run (#743).
 ci:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
@@ -133,8 +135,8 @@ ci:
     cargo clippy --workspace --all-targets --locked -- -D warnings
     @echo "==> test (cargo)"
     cargo test --workspace --locked
-    @echo "==> layout (real-engine WebKit checks, macOS only; skipped when ORASENDA_LAYOUT=skip)"
-    "{{ just_executable() }}" layout
+    @echo "==> layout (real-engine WebKit checks, macOS only; skipped unless ORASENDA_LAYOUT=run, see ci-full)"
+    ORASENDA_LAYOUT="${ORASENDA_LAYOUT:-skip}" "{{ just_executable() }}" layout
     @echo "==> bindings (committed and current)"
     git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
     git diff --exit-code -- apps/orasenda/src/shared/ipc/bindings.ts
@@ -143,6 +145,11 @@ ci:
     @echo "==> app build (debug, no bundle)"
     pnpm --filter orasenda tauri build --debug --no-bundle --ci
 
+# Every check, including the WebKit layout run (it takes minutes). Run it before a release, or
+# whenever you want the full picture; `just layout <spec>` runs one spec.
+ci-full:
+    ORASENDA_LAYOUT=run "{{ just_executable() }}" ci
+
 # Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=TimerRing&theme=dark
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
@@ -150,11 +157,11 @@ specimens:
 # Real-engine layout checks: runs every spec in verification/layout with Playwright WebKit. macOS only
 # (other hosts skip); fails with the install command when WebKit is missing. Extra args go to
 # Playwright (the GitHub layout job passes --shard=i/4). ORASENDA_LAYOUT=skip skips the run when no
-# args are given: the GitHub checks job sets it because the layout job runs the specs.
+# args are given: `just ci` sets it by default, and the GitHub checks job sets it (#743).
 [script]
 layout *args:
     if [ "${ORASENDA_LAYOUT:-}" = skip ] && [ -z "{{ args }}" ]; then
-        echo "layout: skipped (ORASENDA_LAYOUT=skip; the layout job runs it)"
+        echo "layout: skipped (ORASENDA_LAYOUT=skip; run just ci-full or just layout)"
         exit 0
     fi
     host="$(uname -s)"

@@ -74,7 +74,9 @@ macOS-only features are unavailable there.
 ### Commands
 - `just dev` runs the desktop app with hot reload.
 - `just build` builds the release app (a .app and .dmg on macOS).
-- `just ci` runs every check that CI runs.
+- `just ci` runs every check that a PR's CI runs. It skips the WebKit layout checks, which run on the
+  release PR or by hand (#743).
+- `just ci-full` runs every check, layout included. `just layout board.spec.ts` runs one layout spec.
 - `pnpm --filter orasenda tauri ios dev` runs the app in the iOS Simulator. Add a device name to
   pick one, for example `pnpm --filter orasenda tauri ios dev "iPhone 16"`.
 - `pnpm --filter orasenda tauri android dev` runs the app on an Android emulator.

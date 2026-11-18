@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Runs everything on any branch, layout included: gh workflow run ci.yml --ref <branch> (#743).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -116,8 +118,11 @@ jobs:
 
   # The real-engine WebKit checks, split four ways. On CI the shards split by test (fullyParallel
   # under CI, #616), so they are even: if one goes over 20 minutes, raise the shard count, not the timeout.
+  # Runs only on the release-please PR and on a manual run (owner decision, #743); PRs and pushes to
+  # main skip it. Keep this condition identical to LAYOUT_WANTED in the `ci` job below.
   layout:
     name: layout (${{ matrix.shard }}/4)
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--'))
     runs-on: macos-26
     timeout-minutes: 25
     strategy:
@@ -191,21 +196,28 @@ jobs:
 
   # Required check: branch protection expects the context `ci`, so keep this id and name.
   # `if: always()` is required: never `!cancelled()` or no `if`, because a skipped required job
-  # counts as passing. A matrix result is `success` only when every shard passed.
+  # counts as passing. A matrix result is `success` only when every shard passed. Fails closed:
+  # when layout is wanted it must be `success`; when it isn't, it must be `skipped` (#743).
   ci:
     name: ci
     runs-on: ubuntu-latest
     needs: [checks, layout]
     if: always()
     steps:
-      - name: Require checks and every layout shard
+      - name: Require checks, and every layout shard when layout is wanted
         env:
           CHECKS: ${{ needs.checks.result }}
           LAYOUT: ${{ needs.layout.result }}
+          LAYOUT_WANTED: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--')) }}
         run: |
           echo "checks: ${CHECKS}"
-          echo "layout: ${LAYOUT}"
-          [ "${CHECKS}" = success ] && [ "${LAYOUT}" = success ]
+          echo "layout: ${LAYOUT} (wanted: ${LAYOUT_WANTED})"
+          [ "${CHECKS}" = success ] || exit 1
+          if [ "${LAYOUT_WANTED}" = true ]; then
+            [ "${LAYOUT}" = success ]
+          else
+            [ "${LAYOUT}" = skipped ]
+          fi
 
   # Advisory: not a required check. A red result is the signal; no continue-on-error.
   windows:
