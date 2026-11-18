@@ -9,8 +9,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 // Hit targets (min-h-hit-min, min-w-hit-min) and the 1px border are the only fixed sizes; padding
 // follows the fluid tokens, which scale with the container the button sits in.
+// shrink-0 and wrap-normal keep every word on one line even inside a card that sets wrap-anywhere.
 const base =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-line-strong bg-surface-raised px-fluid-stack py-2 font-semibold text-body text-ink transition-colors duration-quick ease-calm min-h-hit-min min-w-hit-min outline-focus-ring outline-offset-2 focus-visible:outline-2 motion-reduce:transition-none";
+  "inline-flex shrink-0 wrap-normal cursor-pointer items-center justify-center gap-2 rounded-md border border-line-strong bg-surface-raised px-fluid-stack py-2 font-semibold text-body text-ink transition-colors duration-quick ease-calm min-h-hit-min min-w-hit-min outline-focus-ring outline-offset-2 focus-visible:outline-2 motion-reduce:transition-none";
 
 const variants = {
   primary:
