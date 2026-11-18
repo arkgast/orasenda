@@ -2,8 +2,8 @@ import type { ButtonHTMLAttributes, JSX, MouseEvent } from "react";
 import { cn } from "../../lib/utils";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "break" | "quiet" | "ghost" | "critical";
-  size?: "md" | "lg";
+  variant?: "primary" | "break" | "quiet" | "ghost" | "inline" | "critical";
+  size?: "md" | "lg" | "row";
   loading?: boolean;
 }
 
@@ -20,6 +20,8 @@ const variants = {
   quiet: "hover:bg-surface-sunken active:bg-selection",
   ghost:
     "border-clear bg-clear text-ink-muted hover:bg-surface-sunken hover:text-ink active:bg-selection active:text-ink",
+  inline:
+    "border-clear bg-clear text-focus hover:bg-surface-sunken hover:text-ink active:bg-selection active:text-ink",
   critical:
     "border-critical bg-critical text-on-critical hover:bg-critical-soft hover:text-critical active:bg-critical-soft active:text-critical",
 } as const;
@@ -52,7 +54,8 @@ export function Button({
       className={cn(
         base,
         variants[variant],
-        size === "lg" && "min-h-control-lg px-fluid-gutter text-heading",
+        size === "lg" && "min-h-control-lg text-heading",
+        size === "row" && "flex-none",
         unavailable,
         className,
       )}

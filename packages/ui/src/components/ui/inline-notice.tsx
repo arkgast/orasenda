@@ -14,7 +14,7 @@ export type InlineNoticeProps = {
   | {
       variant?: "default";
       tone?: "neutral" | "warning";
-      /** Defaults to 'ghost'; 'quiet' gives the first action a border (for an optional suggestion's accept). */
+      /** Defaults to 'ghost' (the default variant's action stays a ghost Button); 'quiet' gives the first action a border (for an optional suggestion's accept). */
       actionVariant?: "quiet" | "ghost";
       /** A second, quiet action after the first (for "Keep as is"). `name` is the accessible name when it differs from `label`. */
       secondaryAction?: { label: string; name?: string; onAction: () => void };
@@ -22,7 +22,7 @@ export type InlineNoticeProps = {
   | {
       variant: "row";
       tone?: "neutral" | "attention" | "rest" | "warning";
-      /** Defaults to 'ghost'. */
+      /** Defaults to 'ghost', which renders the row action as an inline/row Button; 'quiet' renders quiet/row. */
       actionVariant?: "quiet" | "ghost";
       /** The row takes no height while it is empty (no message and no action); the live region stays mounted. */
       collapseEmpty?: boolean;
@@ -69,10 +69,10 @@ export function InlineNotice(props: InlineNoticeProps): JSX.Element {
         </p>
         {hasAction ? (
           <Button
-            variant={props.actionVariant === "quiet" ? "quiet" : "ghost"}
+            variant={props.actionVariant === "quiet" ? "quiet" : "inline"}
+            size="row"
             aria-label={props.actionName || undefined}
             onClick={props.onAction}
-            className={cn("flex-none px-3", props.actionVariant !== "quiet" && "text-focus")}
           >
             {props.actionLabel}
           </Button>

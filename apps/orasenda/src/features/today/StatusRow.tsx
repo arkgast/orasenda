@@ -41,9 +41,9 @@ export function StatusRow({ line, onAction }: Props): ReactElement {
       </InlineNotice>
       {second ? (
         <Button
-          variant={second.variant}
+          variant={second.variant === "ghost" ? "inline" : second.variant}
+          size="row"
           aria-label={second.name || undefined}
-          className={second.variant === "ghost" ? "flex-none px-3 text-focus" : "flex-none px-3"}
           onClick={() => onAction(second.id)}
         >
           {second.label}

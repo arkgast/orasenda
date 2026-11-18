@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { BarRowSpecimen } from "../src/components/ui/bar-row.specimen.tsx";
+import { ButtonSpecimen } from "../src/components/ui/button.specimen.tsx";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
 import { ChecklistSpecimen } from "../src/components/ui/checklist.specimen.tsx";
 import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
@@ -70,6 +71,7 @@ export const specimens: Record<string, () => ReactElement> = {
   HabitDots: HabitDotsSpecimen,
   BarRow: BarRowSpecimen,
   RoutineItem: RoutineItemSpecimen,
+  Button: ButtonSpecimen,
   RoutineStep: RoutineStepSpecimen,
   DayPicker: DayPickerSpecimen,
   KanbanColumn: KanbanColumnSpecimen,
