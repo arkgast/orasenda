@@ -36,14 +36,14 @@ lint:
 
 # Frontend layer rules: every lint fixture must be reported (or stay clean) as its header says.
 lint-layers:
-    ./scripts/lint-layers.sh
+    node tools/lint-layers.ts
 
 # Run every test suite.
 test:
     cargo test --workspace --locked
     pnpm --filter orasenda test
     pnpm --filter @orasenda/tokens test
-    node --test tools/tailwind-strict.test.ts
+    pnpm exec vitest run
     pnpm --filter @orasenda/ui test
 
 # Regenerate packages/tokens/tokens.css and theme.css from packages/tokens/tokens.json.
@@ -83,10 +83,6 @@ ci: ci-shared ci-web ci-rust
 ci-shared:
     @# Scan commits after CI_BASE_REF (CI passes the PR base or the pushed range); empty means origin/main.
     @base="${CI_BASE_REF:-origin/main}"; echo "==> secrets (gitleaks, commits ${base}..HEAD)"; gitleaks git --no-banner --redact --log-opts="${base}..HEAD"
-    @echo "==> docs-only classifier (tests)"
-    ./scripts/docs-only.test.sh
-    @echo "==> file size guard (tests)"
-    ./scripts/file-size.test.sh
     @echo "==> file size (500-line ceiling)"
     "{{ just_executable() }}" file-size
 
@@ -96,6 +92,8 @@ ci-web:
     pnpm install --frozen-lockfile --prefer-offline
     @echo "==> format, lint, imports (biome)"
     pnpm exec biome ci .
+    @echo "==> tools (vitest: docs-only, file-size, lint-layers, tailwind-strict)"
+    pnpm exec vitest run
     @echo "==> frontend layers (lint fixtures)"
     "{{ just_executable() }}" lint-layers
     @echo "==> tokens (tests, including contrast in both themes)"
@@ -136,9 +134,9 @@ ci-rust:
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
 
-# Fail on a tracked source file over 500 lines that is not on the allowlist.
+# Fail on a tracked source file over 500 lines.
 file-size:
-    ./scripts/file-size.sh
+    node tools/file-size.ts
 
 # Fails when orasenda-core source branches on the target OS (ADR-001).
 [private]

@@ -40,7 +40,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/shared/test/setup.ts"],
-    // lint-fixtures/ hold forbidden imports on purpose; scripts/lint-layers.sh feeds them to Biome.
+    // lint-fixtures/ hold forbidden imports on purpose; tools/lint-layers.ts feeds them to Biome.
     exclude: [...configDefaults.exclude, "lint-fixtures/**"],
   },
 });

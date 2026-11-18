@@ -88,10 +88,7 @@ below it. The table runs top to bottom.
 Rules from the [structure refactor spec](specs/2026-11-10-structure-refactor.md).
 1. **Size.** A tracked source file (`.rs`, `.ts`, `.tsx`, `.js`, `.css`) is at most 500 lines,
    tests included. Generated files are exempt (`apps/orasenda/src/shared/ipc/bindings.ts`,
-   `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`) and the archived `design/reviews/`. `just file-size` runs in `ci`.
-   Files that predate the rule sit in `scripts/file-size-allowlist.txt` with their line count.
-   The guard fails when a listed file grows, when a listed file is back under 500 (remove its
-   entry), or when an unlisted file passes 500. The list only shrinks.
+   `packages/tokens/{tokens,theme}.css`, `dist/`, `gen/`) and the archived `design/reviews/`. `just file-size` (`tools/file-size.ts`) runs in `ci`.
 2. **Layering.** `core` has no I/O. `store` is the only crate with SQLite. `service` never
    depends on `tauri`, `tao` or `wry`. Adapters hold no business rules: a command parses, calls
    the service, and maps the result.
