@@ -85,7 +85,7 @@ test("row_empty_message_stays_mounted", () => {
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
-test("row_action_defaults_to_ghost_and_can_be_quiet", () => {
+test("row_action_defaults_to_inline_and_can_be_quiet", () => {
   const { rerender } = render(
     <InlineNotice variant="row" actionLabel="Got it" onAction={() => {}}>
       Tip

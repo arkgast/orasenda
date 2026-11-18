@@ -54,8 +54,8 @@ export function Button({
       className={cn(
         base,
         variants[variant],
-        size === "lg" && "min-h-control-lg px-fluid-gutter text-heading",
-        size === "row" && "flex-none px-3",
+        size === "lg" && "min-h-control-lg text-heading",
+        size === "row" && "flex-none",
         unavailable,
         className,
       )}

@@ -12,7 +12,7 @@ test("exposes_button_role_with_name", () => {
 test("renders_quiet_by_default_and_each_variant_by_data_attribute", () => {
   const { rerender } = render(<Button>Pause</Button>);
   expect(screen.getByRole("button").getAttribute("data-variant")).toBe("quiet");
-  for (const variant of ["primary", "break", "quiet", "ghost", "critical"] as const) {
+  for (const variant of ["primary", "break", "quiet", "ghost", "inline", "critical"] as const) {
     rerender(<Button variant={variant}>Label</Button>);
     expect(screen.getByRole("button", { name: "Label" }).getAttribute("data-variant")).toBe(
       variant,
@@ -133,7 +133,7 @@ test("has_dashed_disabled_look", () => {
 });
 
 test("every_variant_is_rounded_md", () => {
-  for (const variant of ["primary", "break", "quiet", "ghost", "critical"] as const) {
+  for (const variant of ["primary", "break", "quiet", "ghost", "inline", "critical"] as const) {
     const { unmount } = render(<Button variant={variant}>Go</Button>);
     const { className } = screen.getByRole("button");
     expect(className).toContain("rounded-md");
@@ -159,11 +159,25 @@ test("inline_variant_has_focus_text_and_ghost_ground", () => {
   }
 });
 
-test("row_size_is_flex_none_px_3", () => {
+test("row_size_is_flex_none_and_keeps_base_padding", () => {
   render(<Button size="row">Later</Button>);
   const button = screen.getByRole("button", { name: "Later" });
   expect(button.getAttribute("data-size")).toBe("row");
   expect(button.classList.contains("flex-none")).toBe(true);
-  expect(button.classList.contains("px-3")).toBe(true);
-  expect(button.classList.contains("px-fluid-stack")).toBe(false);
+  expect(button.classList.contains("px-fluid-stack")).toBe(true);
+  expect(button.classList.contains("px-3")).toBe(false);
+});
+
+test("lg_keeps_px_fluid_stack", () => {
+  render(<Button size="lg">Start</Button>);
+  const cls = screen.getByRole("button", { name: "Start" }).classList;
+  expect(cls.contains("px-fluid-stack")).toBe(true);
+  expect(cls.contains("px-fluid-gutter")).toBe(false);
+});
+
+test("disabled_inline_has_the_shared_dashed_look", () => {
+  render(<Button variant="inline">Open Board</Button>);
+  const cls = screen.getByRole("button").classList;
+  expect(cls.contains("disabled:border-dashed")).toBe(true);
+  expect(cls.contains("disabled:text-ink-muted")).toBe(true);
 });
