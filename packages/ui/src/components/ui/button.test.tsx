@@ -141,3 +141,29 @@ test("every_variant_is_rounded_md", () => {
     unmount();
   }
 });
+
+test("inline_variant_has_focus_text_and_ghost_ground", () => {
+  render(<Button variant="inline">Open Board</Button>);
+  const button = screen.getByRole("button", { name: "Open Board" });
+  expect(button.getAttribute("data-variant")).toBe("inline");
+  for (const name of [
+    "border-clear",
+    "bg-clear",
+    "text-focus",
+    "hover:bg-surface-sunken",
+    "hover:text-ink",
+    "active:bg-selection",
+    "active:text-ink",
+  ]) {
+    expect(button.classList.contains(name)).toBe(true);
+  }
+});
+
+test("row_size_is_flex_none_px_3", () => {
+  render(<Button size="row">Later</Button>);
+  const button = screen.getByRole("button", { name: "Later" });
+  expect(button.getAttribute("data-size")).toBe("row");
+  expect(button.classList.contains("flex-none")).toBe(true);
+  expect(button.classList.contains("px-3")).toBe(true);
+  expect(button.classList.contains("px-fluid-stack")).toBe(false);
+});
