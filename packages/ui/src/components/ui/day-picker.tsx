@@ -28,11 +28,11 @@ const ALL = 0b1111111;
 const LAST_DAY = "At least one day stays on.";
 const DEFAULT_HELPER = "Pick the days it runs.";
 
-// Off is a hollow ring with a regular letter; on is a filled focus disc with a bold letter. Shape and
+// Off is a line-strong outline with a regular letter; on is a filled focus rounded rectangle with a bold letter. Shape and
 // weight carry the state, so it never rests on colour alone; aria-pressed carries it for VoiceOver.
 // Hover only changes a day that can be pressed: the locked last day keeps its fill.
 const DAY =
-  "inline-grid size-hit-min flex-none cursor-pointer place-items-center rounded-pill border-2 border-line-strong bg-surface-raised text-body text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm not-aria-disabled:hover:bg-surface-sunken focus-visible:outline-2 aria-pressed:border-focus aria-pressed:bg-focus aria-pressed:font-semibold aria-pressed:text-on-focus aria-pressed:not-aria-disabled:hover:border-focus-hover aria-pressed:not-aria-disabled:hover:bg-focus-hover aria-disabled:cursor-default disabled:cursor-default disabled:border-dashed motion-reduce:transition-none forced-colors:aria-pressed:border-4";
+  "inline-grid size-hit-min flex-none cursor-pointer place-items-center rounded-md border-2 border-line-strong bg-surface-raised text-body text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm not-aria-disabled:hover:bg-surface-sunken focus-visible:outline-2 aria-pressed:border-focus aria-pressed:bg-focus aria-pressed:font-semibold aria-pressed:text-on-focus aria-pressed:not-aria-disabled:hover:border-focus-hover aria-pressed:not-aria-disabled:hover:bg-focus-hover aria-disabled:cursor-default disabled:cursor-default disabled:border-dashed motion-reduce:transition-none forced-colors:aria-pressed:border-4";
 
 const bits = (value: number) => value & ALL;
 const count = (mask: number) => DAYS.filter((_, i) => mask & (1 << i)).length;

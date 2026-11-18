@@ -41,13 +41,13 @@ export interface FullScreenFocusProps extends Omit<TimerRingProps, "size" | "str
   /**
    * Zero to two quiet actions in the controls row, after End. Two for the keep-going offer
    * ("Keep going", "Stop here") or for a break ("+10 min", "Skip break"). Only the first two render; a third is dropped, so the host passes at most two.
-   * Pause or Resume stays the only round primary.
+   * Pause or Resume stays the only ring primary.
    */
   secondaryActions?: ReadonlyArray<SecondaryAction>;
   /**
    * The host's phase, which a break's last 2:00 (`mode="warning"`) and a paused break (`mode="paused"`) cannot
    * say. Defaults to "break" when `mode` is "break", else "focus". In a break, End reads "End break" and the
-   * round button "Pause break" or "Resume break".
+   * ring button "Pause break" or "Resume break".
    */
   phase?: "focus" | "break";
   /**
@@ -261,7 +261,7 @@ export function FullScreenFocus({
             ) : (
               <div className={cn("flex items-center", roomy ? "gap-8" : gapClass)}>
                 <IconButton
-                  size="round"
+                  size="ring"
                   label={paused ? `Resume ${noun}` : `Pause ${noun}`}
                   icon={paused ? <Icon name="play" /> : <Icon name="pause" />}
                   shortcut={singleKeys ? "Space" : undefined}

@@ -10,13 +10,13 @@ const SMALL_CONTROLS = ["IconButton", "Tooltip", "Kbd"];
 
 test("icon_button_hit_boxes_md_44_round_52", async ({ page }, info) => {
   await openSpecimen(page, "IconButton");
-  const round = page.locator('[data-frame][data-state="icon-button-round"]');
-  const rest = page.locator("[data-frame]:not([data-state='icon-button-round'])");
+  const ring = page.locator('[data-frame][data-state="icon-button-ring"]');
+  const rest = page.locator("[data-frame]:not([data-state='icon-button-ring'])");
   expect(await smallTargets(rest.first())).toEqual([]);
   for (let i = 0; i < (await rest.count()); i++) {
     expect(await smallTargets(rest.nth(i))).toEqual([]);
   }
-  expect(await smallTargets(round, { width: 52, height: 52 })).toEqual([]);
+  expect(await smallTargets(ring, { width: 52, height: 52 })).toEqual([]);
   await shoot(page, info, "icon-button");
 });
 
@@ -45,7 +45,7 @@ test("small_controls_aria_snapshot", async ({ page }) => {
     - button "Pause session"
     - paragraph: icon-button-md-shortcut
     - button "End session"
-    - paragraph: icon-button-round
+    - paragraph: icon-button-ring
     - button "Resume session"
     - paragraph: icon-button-menu-trigger
     - button "Pages"
@@ -68,7 +68,7 @@ test("small_controls_aria_snapshot", async ({ page }) => {
     "aria-keyshortcuts",
     "Meta+1 Meta+2 Meta+3 Meta+4 Meta+5 Meta+6 Meta+7",
   );
-  await expect(page.locator('[data-state="icon-button-round"] button')).not.toHaveAttribute(
+  await expect(page.locator('[data-state="icon-button-ring"] button')).not.toHaveAttribute(
     "aria-keyshortcuts",
   );
   await expect(page.locator('[data-state="icon-button-disabled"] button')).toHaveAttribute(
@@ -130,7 +130,7 @@ for (const viewport of [
       }),
     );
     for (const box of boxes) {
-      // md is 44, round is 52: a range, never below the hit target.
+      // md is 44, ring is 52: a range, never below the hit target.
       expect(box.w).toBeGreaterThanOrEqual(44);
       expect(box.w).toBeLessThanOrEqual(52);
       expect(box.h).toBeGreaterThanOrEqual(44);

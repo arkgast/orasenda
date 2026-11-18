@@ -87,7 +87,7 @@
     "fg": "line-strong",
     "bg": "surface",
     "kind": "mark",
-    "where": "changeset 9.2: strip track, scrollbar thumb, BarRow fill, IconButton round edge, tooltip and popover edges against the page"
+    "where": "changeset 9.2: strip track, scrollbar thumb, BarRow fill, IconButton ring edge, tooltip and popover edges against the page"
   },
   {
     "fg": "line-strong",
@@ -197,7 +197,7 @@
     "fg": "ink",
     "bg": "surface-raised",
     "kind": "mark",
-    "where": "T2: IconButton round glyph, rest"
+    "where": "T2: IconButton ring glyph, rest"
   },
   {
     "fg": "ink",
@@ -215,7 +215,7 @@
     "fg": "line-strong",
     "bg": "surface",
     "kind": "mark",
-    "where": "T2: IconButton round edge and disabled dashed edge"
+    "where": "T2: IconButton ring edge and disabled dashed edge"
   },
   {
     "fg": "ink-muted",
@@ -233,7 +233,7 @@
     "fg": "focus-ring",
     "bg": "surface-raised",
     "kind": "mark",
-    "where": "T2: IconButton round focus ring"
+    "where": "T2: IconButton ring focus ring"
   },
   {
     "fg": "break",
@@ -455,7 +455,7 @@
     "fg": "on-focus",
     "bg": "focus",
     "kind": "text",
-    "where": "T5: FloatingTimer Start pill"
+    "where": "T5: FloatingTimer Start button"
   },
   {
     "fg": "line-strong",

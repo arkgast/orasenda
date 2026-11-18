@@ -14,9 +14,9 @@ const base =
 
 const variants = {
   primary:
-    "rounded-pill border-focus bg-focus text-on-focus hover:border-focus-hover hover:bg-focus-hover active:border-focus-pressed active:bg-focus-pressed",
+    "border-focus bg-focus text-on-focus hover:border-focus-hover hover:bg-focus-hover active:border-focus-pressed active:bg-focus-pressed",
   break:
-    "rounded-pill border-break bg-break text-on-break hover:border-break-hover hover:bg-break-hover active:border-break-pressed active:bg-break-pressed",
+    "border-break bg-break text-on-break hover:border-break-hover hover:bg-break-hover active:border-break-pressed active:bg-break-pressed",
   quiet: "hover:bg-surface-sunken active:bg-selection",
   ghost:
     "border-clear bg-clear text-ink-muted hover:bg-surface-sunken hover:text-ink active:bg-selection active:text-ink",

@@ -25,14 +25,14 @@ test("full_screen_focus_secondary_action_slot", () => {
   expect(add).toHaveTextContent("+10 min");
   fireEvent.click(add);
   expect(onSelect).toHaveBeenCalledTimes(1);
-  // Pause stays the only round primary; the action is a quiet Button, last in Tab order.
+  // Pause stays the only ring primary; the action is a quiet Button, last in Tab order.
   const buttons = within(controls).getAllByRole("button");
   expect(buttons.map((b) => b.getAttribute("data-slot"))).toEqual([
     "icon-button",
     "icon-button",
     "button",
   ]);
-  expect(controls.querySelectorAll("[data-size=round]")).toHaveLength(1);
+  expect(controls.querySelectorAll("[data-size=ring]")).toHaveLength(1);
   expect(add.getAttribute("data-variant")).toBe("quiet");
 });
 
@@ -127,5 +127,5 @@ test("full_screen_focus_two_actions_in_break", () => {
   expect(buttons[2]?.getAttribute("data-variant")).toBe("quiet");
   expect(buttons[3]?.getAttribute("data-variant")).toBe("ghost");
   expect(controls.className).toContain("gap-2");
-  expect(controls.querySelectorAll("[data-size=round]")).toHaveLength(1);
+  expect(controls.querySelectorAll("[data-size=ring]")).toHaveLength(1);
 });
