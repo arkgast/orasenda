@@ -85,8 +85,8 @@ test("more_and_plus_glyphs_exist", () => {
   expect(more.getAttribute("stroke")).toBe("currentColor");
   expect(more.getAttribute("stroke-linecap")).toBe("round");
   expect(more.getAttribute("stroke-width")).toBe("1.5");
-  // Three dots on the horizontal centre line (y = 10) of the 20-unit grid.
-  expect(more.querySelector("path")?.getAttribute("d")).toBe("M4 10h.01M10 10h.01M16 10h.01");
+  // Three dots on the vertical centre line (x = 10) of the 20-unit grid: ⋮ (owner, 2026-11-18).
+  expect(more.querySelector("path")?.getAttribute("d")).toBe("M10 4h.01M10 10h.01M10 16h.01");
   const plus = svgOf("plus");
   expect(plus.getAttribute("aria-hidden")).toBe("true");
   expect(plus.getAttribute("stroke")).toBe("currentColor");

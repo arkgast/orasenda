@@ -127,7 +127,7 @@ function Dots({
   );
 }
 
-/** The ⋯ button and its menu. A sibling of the card, never inside its button. */
+/** The ⋮ button and its menu. A sibling of the card, never inside its button. */
 function CardMenu(props: {
   title: string;
   menu: TaskCardMenu;

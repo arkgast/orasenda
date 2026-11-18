@@ -8,7 +8,7 @@
 
 ## TL;DR
 - Text buttons are never pills. Every `Button` variant, primary and break included, uses `radius-md`. Pills are for information only: chips, tags, dots, tracks (owner).
-- An overflow menu is a ⋯ `IconButton` everywhere, never the word "More". A page's create action is one pattern: a primary `Button` with a + glyph and a label.
+- An overflow menu is a ⋮ `IconButton` everywhere, never the word "More". A page's create action is one pattern: a primary `Button` with a + glyph and a label.
 - Routines, Inbox and Review centre their 720px column, and the page header lines up with it. Settings centres its content column in its pane. Board stays left-aligned at its column widths.
 - A finished routine reads as done: its done steps are ticked, any step not done is marked "Skipped", its edge is `break` green, and the words "Done today, N of M" stay.
 - Small cleanups: one primary per Routines screen, a named `inline` Button variant and `row` size for status-row actions, and a "Reading context" rule in `docs/conventions.md`.
@@ -18,7 +18,7 @@ On the Routines page at 1440 × 900 today, the cards sit at the left in a 720px 
 
 After this change:
 - The header, status row and cards share one centred 720px column. The header ends in **+ Add**, the page's only primary. It is a rounded rectangle and opens the same menu as before (New routine, From a template…, New habit).
-- Every card's **Start** is a quiet rounded rectangle. Every "More" is a 44px ⋯ icon button with the tooltip and spoken name "More actions for Morning Light".
+- Every card's **Start** is a quiet rounded rectangle. Every "More" is a 44px ⋮ icon button with the tooltip and spoken name "More actions for Morning Light".
 - A finished routine has a green start edge, a ticked box on every step done today, a dash and the word "Skipped" on any step it finished without, and the line "Done today, 5 of 5". A routine still in progress ticks only its done steps, leaves the others hollow, and keeps the sand edge.
 
 The general rule: **a control's shape says what it is.** A rounded rectangle (`radius-md`) is something you press. A pill (`radius-pill`) is information. A circle is a mode or a mark, plus one exception: the Pause/Resume button beside the timer ring.
@@ -51,7 +51,7 @@ The owner asked us to look at how Linear handles space, to apply what makes sens
 11. `./scripts/ci.sh` passes, and the owner's visual checklist (Testing strategy) passes in both themes.
 
 ## Non-goals
-- **Board columns (spec B).** Renaming a column in the UI, custom columns, sideways scroll, and the per-column + and ⋯ header actions all belong to spec B.
+- **Board columns (spec B).** Renaming a column in the UI, custom columns, sideways scroll, and the per-column + and ⋮ header actions all belong to spec B.
 - **Moving the Board's status line into its header row.** The vertical gap above the columns is mostly the reserved status row (Decision 6). Changing that is a `PageFrame` change for spec B, if the owner still wants it.
 - **Flows.** `FlowStep` (shutdown, weekly review, routine run) and Today keep their current width and alignment. A centred flow can follow once the owner has seen the centred pages.
 - **Calendar.** It doesn't use `PageFrame`; its tray and day grid fill the window by design.
@@ -68,14 +68,14 @@ The owner asked us to look at how Linear handles space, to apply what makes sens
   - The word reads as a button among buttons.
   - ≡ means navigation on macOS and the web.
   - ⋯ is what Linear, macOS toolbars and most apps use for "more actions on this thing".
-  - **Picked: ⋯ (author's call).**
+  - **Picked: ⋮, vertical three dots (owner, 2026-11-18).** The first draft picked ⋯ as the author's call; the owner overruled it.
 - **Button shape: all pills, all rounded rectangles, or pills for primary only (today).**
   - **Picked: all rounded rectangles (owner).**
 
 What we took from Linear:
 - Content pages and settings use a centred, readable column, and the header aligns with it.
 - The board's columns have fixed widths and are left-aligned. Empty space to their right is normal.
-- Overflow is a ⋯ icon button with a tooltip.
+- Overflow is a ⋮ icon button with a tooltip.
 - Create actions carry a +.
 - Every button is a rounded rectangle, and pills mark labels.
 
@@ -105,7 +105,7 @@ All changes are props on design-system components plus one app component.
   - `size: "md" | "ring"`. `ring` replaces `round` with the same look (52px `control-lg` circle, `surface-raised`, `line-strong` edge).
   - It is allowed only for Pause/Resume beside a `TimerRing` or in `FullScreenFocus`, where it echoes the ring.
 - **`Icon`** gains two glyphs on the 20-unit grid at a 1.5 stroke:
-  - `more`: three dots in a row (⋯), drawn as round-capped zero-length strokes like `jump`'s dots. It means "more actions for this item".
+  - `more`: three dots stacked vertically (⋮, owner 2026-11-18), drawn as round-capped zero-length strokes like `jump`'s dots. It means "more actions for this item".
   - `plus`: a cross. It means "add or create", always beside a word.
 - **`DayPicker`** toggles use `rounded-md`.
   - On: a filled `focus` rounded rectangle.
@@ -160,20 +160,20 @@ None.
 - **Owner's visual checklist** (no screenshots in PRs). Check light and dark, at 900 × 600 and 1440 × 900:
   - [ ] Today: Start focus is a rounded rectangle. Pause/Resume beside the ring is still a circle.
   - [ ] Focus window: the same as Today. The floater's Start is a rounded rectangle.
-  - [ ] Board: **+ Add task** is a rounded rectangle with a plus. Task cards' ⋯ menus work. The gap above the columns looks right.
-  - [ ] Routines: **+ Add** in the header lines up with the cards' right edge. Every Start is quiet. Routines, steps and habits each have a ⋯ with a tooltip.
+  - [ ] Board: **+ Add task** is a rounded rectangle with a plus. Task cards' ⋮ menus work. The gap above the columns looks right.
+  - [ ] Routines: **+ Add** in the header lines up with the cards' right edge. Every Start is quiet. Routines, steps and habits each have a ⋮ with a tooltip.
   - [ ] A finished routine: a green edge, every done step ticked, and "Done today, N of N".
   - [ ] A finished routine with a skipped step: the green edge, a dash and "Skipped" on that step.
   - [ ] A routine in progress: done steps ticked, the others hollow, a sand edge.
   - [ ] Steps fill the card's width.
   - [ ] Routine editor: the day toggles are rounded rectangles, on and off.
-  - [ ] Inbox and Review: the column is centred and the header aligns with it; the scrollbar stays at the window's edge. Inbox rows have ⋯.
+  - [ ] Inbox and Review: the column is centred and the header aligns with it; the scrollbar stays at the window's edge. Inbox rows have ⋮.
   - [ ] Settings: the content column is centred in its pane; the title and the save line stay at the left.
   - [ ] A routine's run view stays left-aligned.
   - [ ] Status-row actions ("Open Board", "Got it") look as before.
   - [ ] Chips, tags, habit dots and progress bars are still pills.
   - [ ] Keyboard focus rings are visible on every changed control.
-  - [ ] VoiceOver: each ⋯ reads "More actions for …". A done step reads "Done today: …" and then its detail. A skipped step reads its name and "Skipped".
+  - [ ] VoiceOver: each ⋮ reads "More actions for …". A done step reads "Done today: …" and then its detail. A skipped step reads its name and "Skipped".
 
 ## Decisions
 1. **Text buttons are never pills (owner).**
@@ -189,7 +189,7 @@ None.
      - `nav-rail` has no radius.
      - `tag-field`'s round remove button stays round, because it is a mark inside an information chip.
      - Only `day-picker` changes.
-3. **Overflow menus are a ⋯ `IconButton` (author's call, from Linear).**
+3. **Overflow menus are a ⋮ `IconButton` (owner, 2026-11-18; the first draft's ⋯ was the author's call, from Linear).**
    - A new `more` glyph is added, because no existing glyph fits: `menu` is ≡.
    - The spoken name and tooltip is "More actions for <item>", the wording `InboxRow` and `TaskCard` already use. This deviates from "More for <item>" (see FAQ).
    - It applies to routine cards, routine steps, habits, Inbox rows and task cards.
@@ -209,7 +209,7 @@ None.
 6. **The Board keeps its width and alignment (author's call, from Linear).**
    - Columns keep the 280 / 440 caps, stay left-aligned, and leave empty space to the right.
    - Only the header-to-columns gap is checked against the token contract, and any extra is removed. The reserved status row stays (see Behavior).
-   - Per-column + and ⋯ belong to spec B.
+   - Per-column + and ⋮ belong to spec B.
 7. **A finished routine reads as done (owner, with author's details).**
    - Steps done today render ticked: read-only, no tab stop, no checkbox role. A visually hidden "Done today: " precedes the visible text, which stays exposed with its detail and "Optional".
    - In a finished routine, a step not done shows a dash and the visible word "Skipped", never a hollow box (author's call, pending owner confirmation). In a routine not yet finished, steps not done stay hollow.
@@ -260,7 +260,7 @@ Updated by the PRs that implement this spec.
 - [x] U2a (#735) Shapes: Button and IconButton radius, `ring`, DayPicker
 - [x] U2b (#737) Status-row actions: `inline` variant, `row` size and their call sites
 - [x] U3 (#738) Glyphs and read-only steps: `more`, `plus`, done and Skipped steps
-- [x] U4 (#739) Routines: ⋯ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
+- [x] U4 (#739) Routines: ⋮ menus, + Add, quiet Start, ticked and Skipped steps, finished edge
 - [x] U5 (#740) Board: + Add task and the header gap
 - [x] U6 (#742) Content width: `PageFrame` and `ScrollRegion` `width="content"` on Routines, Inbox and Review; Settings centred
 - [x] Controller: republish the design-system artifact after U3 and after U6 merge (service Versions 73 and 75)

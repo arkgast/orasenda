@@ -116,7 +116,7 @@ const GLYPHS: Record<IconName, ReactElement> = {
   delete: <path d="M3.5 5.5h13M7.5 5.5v-2h5v2M5 5.5l.7 11h8.6l.7-11M8.5 9v4.5M11.5 9v4.5" />,
   restore: <path d="M3.5 3.5v4h4M3.8 7.5A6.5 6.5 0 1 1 3.5 10" />,
   check: <path d="M4 10.5l4 4 8-9" />,
-  more: <path d="M4 10h.01M10 10h.01M16 10h.01" />,
+  more: <path d="M10 4h.01M10 10h.01M10 16h.01" />,
   plus: <path d="M3.5 10h13M10 3.5v13" />,
 };
 
