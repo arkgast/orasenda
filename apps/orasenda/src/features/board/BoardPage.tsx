@@ -4,6 +4,7 @@ import { PagesButton } from "@domain/navigation/PagesButton";
 import {
   Button,
   EmptyState,
+  Icon,
   InlineNotice,
   type NavPage,
   PageFrame,
@@ -235,6 +236,7 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
         primary={
           ok && !empty ? (
             <Button variant="primary" onClick={addTask}>
+              <Icon name="plus" />
               Add task
             </Button>
           ) : undefined
