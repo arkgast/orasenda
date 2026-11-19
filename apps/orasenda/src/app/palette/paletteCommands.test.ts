@@ -234,3 +234,21 @@ test("start_weekly_review_is_listed_with_the_main_commands_and_not_in_the_sub_mo
     expect(paletteCommands({ ...base, ...sub }).map((c) => c.id)).not.toContain("startWeekly");
   }
 });
+
+test("palette_task_order_matches_picker", () => {
+  const tasks = [
+    { id: "b", title: "Backlog task", order: 4, laneLabel: "Backlog" },
+    { id: "w", title: "Waiting task", order: 3, laneLabel: "Waiting" },
+    { id: "d", title: "Doing task", order: 0, laneLabel: "Doing" },
+    { id: "t", title: "Today task", order: 1, laneLabel: "Today", frog: true },
+    { id: "i", title: "Ideas task", order: 2, laneLabel: "Ideas" },
+  ];
+  const rows = paletteCommands({ ...base, tasks, tasksOnly: true });
+  expect(rows.map((r) => [r.label, r.hint])).toEqual([
+    ["Doing task", "Doing"],
+    ["Today task", "Today · Frog"],
+    ["Ideas task", "Ideas"],
+    ["Waiting task", "Waiting"],
+    ["Backlog task", "Backlog"],
+  ]);
+});

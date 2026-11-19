@@ -220,3 +220,26 @@ test("task_picker_failed_clear_does_not_leak_into_a_later_removal", () => {
   view.rerender(tree());
   expect(other).toHaveFocus();
 });
+
+test("picker_sorts_by_order", () => {
+  const custom: TaskPickerOption[] = [
+    { id: "z", title: "Last one", order: 9, laneLabel: "Backlog" },
+    { id: "c", title: "Custom after", order: 3, laneLabel: "Review" },
+    { id: "a", title: "First one", order: 0, laneLabel: "Doing" },
+    { id: "b", title: "Custom before", order: 1, laneLabel: "Waiting" },
+    { id: "d", title: "Also custom", order: 3, laneLabel: "Review" },
+  ];
+  setup({ options: custom });
+  fireEvent.click(quiet());
+  press("ArrowDown");
+  const names = within(screen.getByRole("listbox"))
+    .getAllByRole("option")
+    .map((o) => o.textContent?.replace("Selected", ""));
+  expect(names).toEqual([
+    "First oneDoing",
+    "Custom beforeWaiting",
+    "Custom afterReview",
+    "Also customReview",
+    "Last oneBacklog",
+  ]);
+});
