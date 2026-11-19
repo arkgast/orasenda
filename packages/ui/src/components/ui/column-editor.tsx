@@ -81,7 +81,7 @@ export function ColumnEditor({
   const shown = problem ?? (name === errorFor ? error : undefined);
 
   const save = () => {
-    if (problem || settled.current) return;
+    if (problem || settled.current || cancelled.current) return;
     settled.current = true;
     setErrorFor(name);
     const none = limit === null || (value === 0 && limit.zeroLabel !== undefined);
@@ -151,7 +151,10 @@ export function ColumnEditor({
           min={limit.min}
           max={limit.max}
           zeroLabel={limit.zeroLabel}
-          onChange={setValue}
+          onChange={(next) => {
+            settled.current = false;
+            setValue(next);
+          }}
         />
       ) : null}
       <div className="flex min-w-0 flex-col gap-2">

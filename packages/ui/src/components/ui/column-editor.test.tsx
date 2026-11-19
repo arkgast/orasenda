@@ -215,3 +215,24 @@ test("editor_a_repeated_refusal_text_still_shows_and_cancel_works", () => {
   fireEvent.keyDown(field, { key: "Escape" });
   expect(fns.onCancel).toHaveBeenCalledTimes(1);
 });
+
+test("editor_no_save_after_cancel_then_blur", () => {
+  const a = setup();
+  fireEvent.keyDown(a.field, { key: "Escape" });
+  fireEvent.blur(a.field);
+  expect(a.onCancel).toHaveBeenCalledTimes(1);
+  expect(a.onSave).not.toHaveBeenCalled();
+  a.view.unmount();
+  const b = setup();
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  fireEvent.blur(b.field);
+  expect(b.onSave).not.toHaveBeenCalled();
+});
+
+test("editor_stepper_change_rearms_save", () => {
+  const { field, onSave } = setup({ limit: stepperLimit });
+  fireEvent.keyDown(field, { key: "Enter" });
+  fireEvent.click(screen.getByRole("button", { name: "Increase Limit" }));
+  fireEvent.keyDown(field, { key: "Enter" });
+  expect(onSave).toHaveBeenCalledTimes(2);
+});
