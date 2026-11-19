@@ -11,6 +11,7 @@ mod migration_0007;
 mod migration_0008;
 mod migration_0009;
 mod migration_0010;
+mod migration_0011;
 
 const DEVICE: &str = "device-a";
 

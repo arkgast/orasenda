@@ -43,7 +43,6 @@ fn migration_0010_keeps_data() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
     assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(SCHEMA_VERSION, 10);
     assert_eq!(count(&conn, "SELECT count(*) FROM task"), 1);
     assert_eq!(count(&conn, "SELECT count(*) FROM inbox_note"), 1);
     assert_eq!(count(&conn, "SELECT count(*) FROM change_log"), 1);
