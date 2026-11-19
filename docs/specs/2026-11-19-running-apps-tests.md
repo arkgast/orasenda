@@ -1,6 +1,6 @@
 # Deterministic running_apps tests on macOS — Spec
 
-- **Status:** approved (2026-11-19)
+- **Status:** implemented (2026-11-19)
 - **Date:** 2026-11-19
 - **Owner:** the product owner (approach picked 2026-11-19)
 - **Related:** `crates/platform-macos/src/control.rs`; precedent `crates/platform-macos/src/foreground.rs:113`
@@ -101,4 +101,4 @@ The verify result would still depend on launchservicesd state, which is the prob
 None.
 
 ## Implementation status
-- [ ] [Plan](../plans/2026-11-19-running-apps-tests.md), task #800
+- [x] [Plan](../plans/2026-11-19-running-apps-tests.md), task #800 (PR #801)

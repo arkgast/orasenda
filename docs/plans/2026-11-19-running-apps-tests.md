@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-19-running-apps-tests.md](../specs/2026-11-19-running-apps-tests.md)
 - Date: 2026-11-19
-- Status: in backlog
+- Status: done (2026-11-19)
 
 ## Overview
 One task. The whole change is in one file plus one justfile recipe, so splitting it would only add coordination.
