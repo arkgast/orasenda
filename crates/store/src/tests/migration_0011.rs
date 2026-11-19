@@ -101,19 +101,33 @@ fn migration_0011_keeps_rows_and_indexes() {
 fn migration_0011_lane_check() {
     let (_dir, conn) = migrated("m11lane");
     for lane in ["backlog", "today", "doing", "done", "c_ab12cd34"] {
-        conn.execute("DELETE FROM task WHERE id = 'x'", []).ok();
+        conn.execute("DELETE FROM task WHERE id = 'x'", [])
+            .expect("clears x");
         insert(&conn, lane, None).unwrap_or_else(|e| panic!("{lane} accepted: {e}"));
     }
     for lane in ["c_AB", "custom", "c_ab12cd3!", "c_ab12cd345", "c_", ""] {
-        conn.execute("DELETE FROM task WHERE id = 'x'", []).ok();
-        assert!(insert(&conn, lane, None).is_err(), "{lane} refused");
+        conn.execute("DELETE FROM task WHERE id = 'x'", [])
+            .expect("clears x");
+        assert_check_refused(insert(&conn, lane, None), lane);
     }
 }
 
 #[test]
 fn migration_0011_origin_check_kept() {
     let (_dir, conn) = migrated("m11origin");
-    assert!(insert(&conn, "today", Some("x")).is_err());
-    conn.execute("DELETE FROM task WHERE id = 'x'", []).ok();
+    assert_check_refused(insert(&conn, "today", Some("x")), "origin x");
+    conn.execute("DELETE FROM task WHERE id = 'x'", [])
+        .expect("clears x");
     insert(&conn, "today", Some("github:2")).expect("valid origin accepted");
+}
+
+fn assert_check_refused<T: std::fmt::Debug>(res: rusqlite::Result<T>, what: &str) {
+    match res {
+        Err(rusqlite::Error::SqliteFailure(e, _)) => assert_eq!(
+            e.extended_code,
+            rusqlite::ffi::SQLITE_CONSTRAINT_CHECK,
+            "{what} refused by CHECK"
+        ),
+        other => panic!("{what}: expected CHECK failure, got {other:?}"),
+    }
 }
