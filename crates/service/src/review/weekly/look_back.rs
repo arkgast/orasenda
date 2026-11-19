@@ -128,7 +128,7 @@ fn task_bars(
 fn habit_line(habit: &HabitDays, from: LocalDate, to: LocalDate) -> String {
     let done: Vec<LocalDate> = habit.done.iter().copied().collect();
     let (days, since) = days_done(habit.created, from, to, &done);
-    words::look_back_habit_line(days, since)
+    words::look_back_habit_line(&habit.name, days, since)
 }
 
 /// The shutdown answers saved for the range, by day, as the person wrote them. A day with no

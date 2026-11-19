@@ -31,50 +31,73 @@ fn focus_line_counts_sessions() {
 }
 
 #[test]
-fn habit_line_since_creation() {
+fn habit_line_names_the_habit() {
+    let n = "Drink a glass of water";
     let since = Some(date(2026, 11, 3));
-    assert_eq!(
-        habit_line(9, since, StatsRange::Week),
-        "Done on 9 days since 3 November."
-    );
-    assert_eq!(
-        habit_line(1, since, StatsRange::Weeks8),
-        "Done on 1 day since 3 November."
-    );
-    assert_eq!(
-        habit_line(0, since, StatsRange::Week),
-        "No check-ins since 3 November."
-    );
+    let table = [
+        (5, None, StatsRange::Week, "done on 5 days this week."),
+        (
+            31,
+            None,
+            StatsRange::Weeks8,
+            "done on 31 days in these 8 weeks.",
+        ),
+        (
+            30,
+            None,
+            StatsRange::Months6,
+            "done on 30 days in these 6 months.",
+        ),
+        (
+            1,
+            since,
+            StatsRange::Week,
+            "done on 1 day since 3 November.",
+        ),
+        (
+            1,
+            since,
+            StatsRange::Months6,
+            "done on 1 day since 3 November.",
+        ),
+        (
+            9,
+            since,
+            StatsRange::Weeks8,
+            "done on 9 days since 3 November.",
+        ),
+        (0, None, StatsRange::Week, "no check-ins this week."),
+        (0, since, StatsRange::Week, "no check-ins since 3 November."),
+    ];
+    for (days, since, range, tail) in table {
+        assert_eq!(habit_line(n, days, since, range), format!("{n}: {tail}"));
+    }
 }
 
 #[test]
-fn look_back_habit_line_names_that_week() {
-    assert_eq!(look_back_habit_line(4, None), "Done on 4 days that week.");
-    assert_eq!(look_back_habit_line(0, None), "No check-ins that week.");
+fn look_back_habit_line_names_the_habit() {
+    let n = "Drink a glass of water";
     let since = Some(date(2026, 11, 3));
-    assert_eq!(
-        look_back_habit_line(1, since),
-        "Done on 1 day since 3 November."
-    );
+    let table = [
+        (4, None, "done on 4 days that week."),
+        (0, None, "no check-ins that week."),
+        (1, since, "done on 1 day since 3 November."),
+        (0, since, "no check-ins since 3 November."),
+    ];
+    for (days, since, tail) in table {
+        assert_eq!(look_back_habit_line(n, days, since), format!("{n}: {tail}"));
+    }
 }
 
 #[test]
-fn habit_line_no_denominator() {
-    assert_eq!(
-        habit_line(9, None, StatsRange::Week),
-        "Done on 9 days this week."
+fn habit_lines_differ_by_name() {
+    assert_ne!(
+        habit_line("Walk", 4, None, StatsRange::Week),
+        habit_line("Stretch", 4, None, StatsRange::Week)
     );
-    assert_eq!(
-        habit_line(14, None, StatsRange::Weeks8),
-        "Done on 14 days in these 8 weeks."
-    );
-    assert_eq!(
-        habit_line(30, None, StatsRange::Months6),
-        "Done on 30 days in these 6 months."
-    );
-    assert_eq!(
-        habit_line(0, None, StatsRange::Week),
-        "No check-ins this week."
+    assert_ne!(
+        look_back_habit_line("Walk", 4, None),
+        look_back_habit_line("Stretch", 4, None)
     );
 }
 
