@@ -14,16 +14,18 @@ mod service;
 mod tests;
 pub(crate) mod view;
 
+pub use columns::{
+    run_board_column_add, run_board_column_edit, run_board_column_fold, run_board_column_remove,
+};
 pub(crate) use doing::move_to_doing;
 pub use inbox_move::{run_inbox_to_task, run_task_restore_note};
 
-use orasenda_store::Txn;
 use orasenda_store::tasks::{self, NewTask, TaskPatch};
+use orasenda_store::{StoreError, Txn};
 use uuid::Uuid;
 
 use crate::api::{
-    BoardError, BoardView, ColumnSettings, Lane, TaskDraft, TaskKind, TaskPatchView, TaskPriority,
-    TaskView,
+    BoardError, BoardView, Lane, TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
 };
 use crate::scheduler::Host;
 use crate::session::lock;
@@ -42,9 +44,10 @@ pub fn run_board_get<H: Host>(host: &H) -> Result<BoardView, BoardError> {
     })
 }
 
-/// Until the column commands land (B2a), the only columns are the four built-ins.
-fn only_builtin(lane: &Lane) -> Result<(), BoardError> {
-    lane.builtin().map(|_| ()).ok_or(BoardError::BadColumns)
+/// Whether `lane` is a column on this board. A lane that isn't is refused as `BadColumns`
+/// until B2b makes it `ColumnNotFound` everywhere.
+fn on_board(txn: &Txn, lane: &Lane) -> Result<bool, StoreError> {
+    Ok(columns::read(txn)?.iter().any(|c| c.lane == *lane))
 }
 
 /// `task_add`: trims, checks and saves a task at the end of its column (Backlog unless said).
@@ -55,8 +58,10 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
     let estimate = draft.estimate.map(check::estimate).transpose()?;
     let due = draft.due.as_deref().map(check::due).transpose()?;
     let lane = draft.lane.unwrap_or(Lane::BACKLOG);
-    only_builtin(&lane)?;
     write(host, |txn, cx| {
+        if !on_board(txn, &lane)? {
+            return Ok(Err(BoardError::BadColumns));
+        }
         let id = Uuid::now_v7().to_string();
         let stored = stored_lane(&lane)?;
         let new = NewTask {
@@ -134,8 +139,10 @@ pub fn run_task_move<H: Host>(
     lane: Lane,
     index: u32,
 ) -> Result<(), BoardError> {
-    only_builtin(&lane)?;
     write(host, |txn, _| {
+        if !on_board(txn, &lane)? {
+            return Ok(Err(BoardError::BadColumns));
+        }
         if live(txn, id)?.is_none() {
             return Ok(Err(BoardError::NotFound));
         }
@@ -191,18 +198,6 @@ fn set_removed<H: Host>(host: &H, id: &str, remove: bool) -> Result<(), BoardErr
         } else {
             Err(BoardError::NotFound)
         })
-    })
-}
-
-/// `board_columns_set`: saves the columns' names and limits.
-pub fn run_board_columns_set<H: Host>(
-    host: &H,
-    columns: Vec<ColumnSettings>,
-) -> Result<(), BoardError> {
-    let columns = columns::checked(&columns)?;
-    write(host, |txn, _| {
-        columns::write(txn, &columns)?;
-        Ok(Ok(()))
     })
 }
 

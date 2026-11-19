@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-board-column-edit"
+description = "Enables the board_column_edit command without any pre-configured scope."
+commands.allow = ["board_column_edit"]
+
+[[permission]]
+identifier = "deny-board-column-edit"
+description = "Denies the board_column_edit command without any pre-configured scope."
+commands.deny = ["board_column_edit"]

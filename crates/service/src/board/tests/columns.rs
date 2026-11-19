@@ -1,75 +1,172 @@
-use super::*;
-use crate::api::{BoardError, ColumnSettings};
+//! How the `board.columns` setting row reads: the old shape, a missing built-in, extra custom
+//! entries and the saved folds.
 
-fn cols(today: u8, doing: u8) -> Vec<ColumnSettings> {
-    let c = |lane, name: &str, limit| ColumnSettings {
-        lane,
-        name: name.into(),
-        limit,
-    };
-    vec![
-        c(Lane::BACKLOG, "Later", None),
-        c(Lane::TODAY, " Now ", Some(today)),
-        c(Lane::DOING, "Busy", Some(doing)),
-        c(Lane::DONE, "Finished", None),
-    ]
+use super::*;
+use crate::api::BoardError;
+use crate::session::lock;
+use crate::session::test_support::relaunch;
+use serde_json::{Value, json};
+
+/// Writes `row` as the setting row, as another device or an older app would have left it.
+fn put_row(host: &TestHost, row: Value) {
+    let service = lock(&host.0.service);
+    service
+        .store()
+        .expect("store")
+        .write(T0, |txn| {
+            orasenda_store::settings::set(txn, super::super::columns::KEY, &row)
+        })
+        .expect("written");
+}
+
+fn shown(host: &TestHost) -> Vec<(String, String, Option<u8>, bool, bool)> {
+    run_board_get(host)
+        .expect("reads")
+        .columns
+        .into_iter()
+        .map(|c| {
+            (
+                c.lane.as_str().to_owned(),
+                c.name,
+                c.limit,
+                c.custom,
+                c.folded,
+            )
+        })
+        .collect()
+}
+
+fn names(host: &TestHost) -> Vec<String> {
+    shown(host).into_iter().map(|c| c.1).collect()
 }
 
 #[test]
-fn columns_are_saved_trimmed_and_shown() {
+fn old_row_shape_reads() {
     let host = host();
-    run_board_columns_set(&host, cols(5, 2)).expect("saves");
-    let board = run_board_get(&host).expect("reads");
-    let shown: Vec<_> = board
-        .columns
-        .iter()
-        .map(|c| (c.name.as_str(), c.limit))
-        .collect();
+    put_row(
+        &host,
+        json!([
+            { "lane": "backlog", "name": "Later", "limit": null },
+            { "lane": "today", "name": "Now", "limit": 5 },
+            { "lane": "doing", "name": "Busy", "limit": 2 },
+            { "lane": "done", "name": "Finished", "limit": null },
+        ]),
+    );
     assert_eq!(
-        shown,
+        shown(&host),
         [
-            ("Later", None),
-            ("Now", Some(5)),
-            ("Busy", Some(2)),
-            ("Finished", None)
+            ("backlog".into(), "Later".into(), None, false, false),
+            ("today".into(), "Now".into(), Some(5), false, false),
+            ("doing".into(), "Busy".into(), Some(2), false, false),
+            ("done".into(), "Finished".into(), None, false, true),
+        ],
+        "array position orders them, and Done is folded by default"
+    );
+}
+
+#[test]
+fn missing_builtin_restored() {
+    let host = host();
+    put_row(
+        &host,
+        json!([
+            { "lane": "backlog", "name": "Later", "limit": null, "order": 0, "folded": false },
+            { "lane": "today", "name": "Now", "limit": 5, "order": 1, "folded": false },
+            { "lane": "done", "name": "Finished", "limit": null, "order": 2, "folded": false },
+        ]),
+    );
+    assert_eq!(names(&host), ["Later", "Now", "Doing", "Finished"]);
+    let doing = &shown(&host)[2];
+    assert_eq!(
+        (doing.2, doing.4),
+        (Some(1), false),
+        "its default limit and fold"
+    );
+    assert!(!shown(&host)[3].4, "a saved open Done stays open");
+}
+
+#[test]
+fn extra_custom_trimmed() {
+    let host = host();
+    let mut row = vec![json!({ "lane": "backlog", "name": "Backlog", "limit": null, "order": 0 })];
+    for n in 1..=6 {
+        row.push(json!({
+            "lane": format!("c_aaaaaaa{n}"), "name": format!("Extra {n}"), "limit": null, "order": n,
+        }));
+    }
+    row.push(json!({ "lane": "today", "name": "Today", "limit": 3, "order": 7 }));
+    row.push(json!({ "lane": "doing", "name": "Doing", "limit": 1, "order": 8 }));
+    row.push(json!({ "lane": "done", "name": "Done", "limit": null, "order": 9 }));
+    put_row(&host, Value::Array(row));
+    let lanes: Vec<String> = shown(&host).into_iter().map(|c| c.0).collect();
+    assert_eq!(
+        lanes,
+        [
+            "backlog",
+            "c_aaaaaaa1",
+            "c_aaaaaaa2",
+            "c_aaaaaaa3",
+            "c_aaaaaaa4",
+            "today",
+            "doing",
+            "done"
         ]
     );
-    assert_eq!(changed(&host).len(), 1);
+    assert!(shown(&host)[1].3, "custom columns say so");
 }
 
 #[test]
-fn columns_refuse_bad_input() {
+fn bad_custom_entries_are_dropped_and_builtins_keep_their_order() {
     let host = host();
-    for bad in [cols(0, 1), cols(10, 1), cols(3, 0), cols(3, 4)] {
-        assert_eq!(
-            run_board_columns_set(&host, bad),
-            Err(BoardError::BadColumns)
-        );
-    }
-    let mut blank = cols(3, 1);
-    blank[0].name = "  ".into();
-    assert_eq!(
-        run_board_columns_set(&host, blank),
-        Err(BoardError::BadColumns)
+    put_row(
+        &host,
+        json!([
+            { "lane": "done", "name": "Done", "limit": null, "order": 0 },
+            { "lane": "c_aaaaaaa1", "name": "  ", "limit": null, "order": 1 },
+            { "lane": "c_aaaaaaa2", "name": "Review", "limit": 12, "order": 2 },
+            { "lane": "c_aaaaaaa3", "name": "Review", "limit": 2, "order": 3 },
+            { "lane": "backlog", "name": "Backlog", "limit": null, "order": 4 },
+            { "lane": "doing", "name": "Doing", "limit": 1, "order": 5 },
+            { "lane": "today", "name": "Today", "limit": 3, "order": 6 },
+        ]),
     );
-    let mut long = cols(3, 1);
-    long[3].name = "x".repeat(25);
-    assert_eq!(
-        run_board_columns_set(&host, long),
-        Err(BoardError::BadColumns)
+    let lanes: Vec<String> = shown(&host).into_iter().map(|c| c.0).collect();
+    assert_eq!(lanes, ["backlog", "c_aaaaaaa3", "today", "doing", "done"]);
+}
+
+#[test]
+fn a_custom_column_before_backlog_moves_after_it() {
+    let host = host();
+    put_row(
+        &host,
+        json!([
+            { "lane": "c_aaaaaaa1", "name": "Review", "limit": null, "order": 0 },
+            { "lane": "backlog", "name": "Backlog", "limit": null, "order": 1 },
+            { "lane": "today", "name": "Today", "limit": 3, "order": 2 },
+            { "lane": "doing", "name": "Doing", "limit": 1, "order": 3 },
+            { "lane": "done", "name": "Done", "limit": null, "order": 4 },
+        ]),
     );
-    let mut limit = cols(3, 1);
-    limit[0].limit = Some(2);
+    let lanes: Vec<String> = shown(&host).into_iter().map(|c| c.0).collect();
+    assert_eq!(lanes, ["backlog", "c_aaaaaaa1", "today", "doing", "done"]);
+}
+
+#[test]
+fn fold_saved() {
+    let host = host();
+    run_board_column_fold(&host, Lane::DONE, false).expect("opens Done");
+    run_board_column_fold(&host, Lane::TODAY, true).expect("folds Today");
+    let unknown = Lane::parse("c_zzzzzzzz").expect("an id");
     assert_eq!(
-        run_board_columns_set(&host, limit),
-        Err(BoardError::BadColumns)
+        run_board_column_fold(&host, unknown, true),
+        Err(BoardError::ColumnNotFound)
     );
+    let again = relaunch(&mut lock(&host.0.service), T0);
+    let board = again.board_build(T0).expect("reads");
+    let folded: Vec<_> = board.columns.iter().map(|c| c.folded).collect();
     assert_eq!(
-        run_board_columns_set(&host, cols(3, 1)[..3].to_vec()),
-        Err(BoardError::BadColumns)
-    );
-    assert_eq!(
-        lane(&run_board_get(&host).unwrap(), Lane::TODAY).name,
-        "Today"
+        folded,
+        [false, true, false, false],
+        "read back from the store"
     );
 }

@@ -4,7 +4,7 @@
 use orasenda_service::board;
 
 use super::on_blocking;
-use crate::ipc::{BoardError, BoardView, ColumnSettings, Lane, TaskDraft, TaskPatchView, TaskView};
+use crate::ipc::{BoardError, BoardView, Lane, TaskDraft, TaskPatchView, TaskView};
 use crate::runtime::ticker::AppHost;
 
 /// Runs `work` with the app's host on the blocking pool.
@@ -99,12 +99,45 @@ pub async fn task_restore_note(app: tauri::AppHandle, task_id: String) -> Result
     .await
 }
 
-/// Saves the columns' names and limits.
+/// Saves a column's name and limit.
 #[tauri::command]
 #[specta::specta]
-pub async fn board_columns_set(
+pub async fn board_column_edit(
     app: tauri::AppHandle,
-    columns: Vec<ColumnSettings>,
+    lane: Lane,
+    name: String,
+    limit: Option<u8>,
 ) -> Result<(), BoardError> {
-    run(app, move |host| board::run_board_columns_set(host, columns)).await
+    run(app, move |host| {
+        board::run_board_column_edit(host, lane, name, limit)
+    })
+    .await
+}
+
+/// Adds a custom column right after `after`; answers its id.
+#[tauri::command]
+#[specta::specta]
+pub async fn board_column_add(app: tauri::AppHandle, after: Lane) -> Result<Lane, BoardError> {
+    run(app, move |host| board::run_board_column_add(host, after)).await
+}
+
+/// Removes an empty custom column.
+#[tauri::command]
+#[specta::specta]
+pub async fn board_column_remove(app: tauri::AppHandle, lane: Lane) -> Result<(), BoardError> {
+    run(app, move |host| board::run_board_column_remove(host, lane)).await
+}
+
+/// Saves whether a column is folded.
+#[tauri::command]
+#[specta::specta]
+pub async fn board_column_fold(
+    app: tauri::AppHandle,
+    lane: Lane,
+    folded: bool,
+) -> Result<(), BoardError> {
+    run(app, move |host| {
+        board::run_board_column_fold(host, lane, folded)
+    })
+    .await
 }

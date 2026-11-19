@@ -1,5 +1,6 @@
 import { commandFailure } from "@domain/timer/commandFailure";
 import {
+  type BoardError,
   type ColumnView,
   commands,
   type ImportDone,
@@ -8,6 +9,7 @@ import {
   type TimerCommandErrorKind,
 } from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { boardWords } from "./boardWords";
 import { locate } from "./lanes";
 import type { useBoard } from "./useBoard";
 
@@ -21,8 +23,6 @@ export type BoardLine = {
 } | null;
 
 type Api = ReturnType<typeof useBoard>;
-
-const FAILED = "That didn't save. Try again.";
 
 /** What a start says when Rust refuses the task (spec, Session and task). */
 const TASK_REFUSALS: Partial<Record<TimerCommandErrorKind, string>> = {
@@ -58,9 +58,9 @@ export function useBoardActions(
   }, []);
 
   const failed = useCallback(
-    (error: unknown, retry?: () => void): false => {
+    (error: BoardError | "unreachable", retry?: () => void): false => {
       show({
-        text: error === "notFound" ? "That task is gone." : FAILED,
+        text: boardWords(error),
         tone: "attention",
         action:
           retry && error !== "notFound"

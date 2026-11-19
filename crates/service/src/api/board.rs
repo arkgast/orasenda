@@ -44,15 +44,22 @@ pub enum LimitState {
     Over,
 }
 
-/// A column's name and limit as the person set them (`board.columns`).
+/// One column as the person set it (`board.columns`, an ordered list of all columns).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ColumnSettings {
     pub lane: Lane,
     /// 1 to 24 characters after trimming.
     pub name: String,
-    /// Today 1 to 9, Doing 1 to 3; Backlog and Done have none.
+    /// Today 1 to 9, Doing 1 to 3, a custom column none or 1 to 9; Backlog and Done have none.
     pub limit: Option<u8>,
+    /// Its place in the list, 0 to 7. A row from before custom columns has none: array position
+    /// orders it.
+    #[serde(default)]
+    pub order: u8,
+    /// `None` reads as the default: Done folded, the rest open.
+    #[serde(default)]
+    pub folded: Option<bool>,
 }
 
 /// A task as the board shows it.
@@ -104,6 +111,10 @@ pub struct ColumnView {
     pub lane: Lane,
     pub name: String,
     pub limit: Option<u8>,
+    /// A column the person made (`c_…`), not one of the four built-ins.
+    pub custom: bool,
+    /// Folded to its header. Saved with the column.
+    pub folded: bool,
     /// The tasks shown in it (Done counts the last 14 days only).
     pub count: u32,
     pub state: LimitState,
@@ -114,7 +125,7 @@ pub struct ColumnView {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardView {
-    /// Backlog, Today, Doing, Done, in that order.
+    /// Backlog, Today, Doing and Done, with the custom columns between, in board order.
     pub columns: Vec<ColumnView>,
     /// The estimate buffer, whole percent.
     pub buffer: u8,
@@ -203,8 +214,19 @@ pub enum BoardError {
     BadDue,
     /// More than 30 checklist items, or one that is empty, over 200 characters or repeated.
     BadChecklist,
-    /// Column names or limits outside their ranges, or not one entry per column.
+    /// A column that can't be added after, or removed: a built-in, or after Done or an unknown
+    /// column.
     BadColumns,
+    /// Four custom columns already.
+    TooManyColumns,
+    /// A column that still holds a task can't be removed.
+    ColumnNotEmpty,
+    /// No such column on this board.
+    ColumnNotFound,
+    /// A column name that is empty, over 24 characters or already taken.
+    BadColumnName,
+    /// A limit outside the column's range, or one on a column that has none.
+    BadLimit,
     /// A Done task can't be made the Frog.
     DoneCannotBeFrog,
     /// No such task or note, or it is already in the state asked for.

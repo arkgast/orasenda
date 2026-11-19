@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-board-column-remove"
+description = "Enables the board_column_remove command without any pre-configured scope."
+commands.allow = ["board_column_remove"]
+
+[[permission]]
+identifier = "deny-board-column-remove"
+description = "Denies the board_column_remove command without any pre-configured scope."
+commands.deny = ["board_column_remove"]

@@ -2,6 +2,7 @@
 //! Inbox move, the events and the failures.
 
 mod add;
+mod column_edit;
 mod columns;
 mod events;
 mod frog;

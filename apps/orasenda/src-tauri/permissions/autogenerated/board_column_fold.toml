@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-board-column-fold"
+description = "Enables the board_column_fold command without any pre-configured scope."
+commands.allow = ["board_column_fold"]
+
+[[permission]]
+identifier = "deny-board-column-fold"
+description = "Denies the board_column_fold command without any pre-configured scope."
+commands.deny = ["board_column_fold"]

@@ -35,3 +35,20 @@ fn the_board_is_emitted_again_at_the_day_roll() {
     iterate(&host);
     assert!(changed(&host).is_empty(), "once per day");
 }
+
+#[test]
+fn column_commands_emit_after_lock() {
+    let host = host();
+    let custom = run_board_column_add(&host, Lane::TODAY).expect("adds");
+    run_board_column_edit(&host, custom.clone(), "Review".into(), Some(2)).expect("edits");
+    run_board_column_fold(&host, custom.clone(), true).expect("folds");
+    run_board_column_remove(&host, custom).expect("removes");
+    let events = changed(&host);
+    assert_eq!(events.len(), 4, "one per command");
+    let seqs: Vec<u64> = events.iter().map(|(s, _)| *s).collect();
+    assert!(seqs.windows(2).all(|w| w[0] < w[1]), "seq grows: {seqs:?}");
+    assert_eq!(events[1].1.columns[2].name, "Review");
+    assert!(events[2].1.columns[2].folded);
+    assert_eq!(events[3].1.columns.len(), 4);
+    assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
+}

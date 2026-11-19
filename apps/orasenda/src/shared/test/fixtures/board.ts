@@ -21,6 +21,8 @@ export const BOARD: BoardView_Serialize = {
     lane,
     name,
     limit,
+    custom: false,
+    folded: lane === "done",
     count: 0,
     state: "under",
     tasks: [],

@@ -1,5 +1,5 @@
 use super::*;
-use crate::api::{ColumnSettings, Settings, SettingsErrorKind};
+use crate::api::{Settings, SettingsErrorKind};
 use crate::session::{lock, run_set_settings};
 
 fn with_buffer(host: &TestHost, buffer: u8) -> Settings {
@@ -74,23 +74,7 @@ fn a_stored_buffer_outside_the_set_reads_as_25() {
 #[test]
 fn the_settings_loader_tolerates_the_columns_row() {
     let host = host();
-    let named = |lane, name: &str| ColumnSettings {
-        lane,
-        name: name.into(),
-        limit: None,
-    };
-    let columns = vec![
-        named(Lane::BACKLOG, "Later"),
-        ColumnSettings {
-            limit: Some(5),
-            ..named(Lane::TODAY, "Now")
-        },
-        ColumnSettings {
-            limit: Some(2),
-            ..named(Lane::DOING, "Busy")
-        },
-        named(Lane::DONE, "Finished"),
-    ];
-    run_board_columns_set(&host, columns).expect("saves");
+    run_board_column_edit(&host, Lane::TODAY, "Now".into(), Some(5)).expect("saves");
+    run_board_column_add(&host, Lane::TODAY).expect("adds");
     assert_eq!(reloaded(&host), Settings::default(), "read from the store");
 }

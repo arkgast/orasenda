@@ -20,7 +20,9 @@ export function taskOption(
 }
 
 function column(lane: string, name: string, tasks: TaskView_Serialize[]): ColumnView_Serialize {
-  return { lane, name, limit: null, count: tasks.length, state: "under", tasks };
+  const custom = /^c\d/.test(lane) || lane.startsWith("c_");
+  const folded = lane === "done";
+  return { lane, name, limit: null, count: tasks.length, state: "under", tasks, custom, folded };
 }
 
 const task = (id: string, lane: string, over: Partial<TaskView_Serialize> = {}) =>
