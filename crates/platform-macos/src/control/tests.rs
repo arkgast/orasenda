@@ -131,6 +131,11 @@ fn running_apps_holds_only_named_regular_apps() {
             "{} is not a regular app",
             app.name
         );
+        // `snapshot` reads the bundle ID from the app itself, not some other field.
+        assert_eq!(
+            app.bundle_id,
+            running.bundleIdentifier().map(|s| s.to_string())
+        );
     }
 }
 
