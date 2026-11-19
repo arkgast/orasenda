@@ -60,6 +60,7 @@ export function ColumnEditor({
   latest.current = name;
   const field = useRef<HTMLInputElement>(null);
   const settled = useRef(false);
+  const cancelled = useRef(false);
   const addId = useId();
   const removeId = useId();
 
@@ -82,16 +83,19 @@ export function ColumnEditor({
   const save = () => {
     if (problem || settled.current) return;
     settled.current = true;
+    setErrorFor(name);
     const none = limit === null || (value === 0 && limit.zeroLabel !== undefined);
     onSave({ name: name.trim(), limit: none ? null : value });
   };
   const cancel = () => {
-    if (settled.current) return;
-    settled.current = true;
+    if (cancelled.current) return;
+    cancelled.current = true;
     onCancel();
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // Any key but Enter after a refusal re-arms Save, even if the refusal's text repeats.
+    if (event.key !== "Enter") settled.current = false;
     if (event.key === "Escape") {
       event.preventDefault();
       cancel();
@@ -136,6 +140,7 @@ export function ColumnEditor({
         error={shown}
         autoComplete="off"
         onChange={(event) => {
+          settled.current = false;
           setName(event.target.value);
         }}
       />

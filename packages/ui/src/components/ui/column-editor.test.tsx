@@ -189,3 +189,29 @@ test("editor_presses_outside_the_fields_keep_focus", () => {
   expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Decrease Limit" }))).toBe(false);
   expect(fireEvent.mouseDown(screen.getByRole("textbox", { name: "Column name" }))).toBe(true);
 });
+
+test("editor_a_repeated_refusal_text_still_shows_and_cancel_works", () => {
+  const fns = { onSave: vi.fn(), onCancel: vi.fn(), onAdd: vi.fn(), onRemove: vi.fn() };
+  const props: ColumnEditorProps = {
+    name: "Review",
+    limit: null,
+    taken: [],
+    canAdd: true,
+    canRemove: true,
+    ...fns,
+  };
+  const { rerender } = render(<ColumnEditor {...props} />);
+  const field = screen.getByRole("textbox", { name: "Column name" });
+  fireEvent.keyDown(field, { key: "Enter" });
+  rerender(<ColumnEditor {...props} error="X." />);
+  fireEvent.keyDown(field, { key: "Enter" });
+  rerender(<ColumnEditor {...props} error="X." />);
+  expect(screen.getByText("X.")).toBeInTheDocument();
+  fireEvent.change(field, { target: { value: "Other" } });
+  fireEvent.keyDown(field, { key: "Enter" });
+  rerender(<ColumnEditor {...props} error="X." />);
+  expect(screen.getByText("X.")).toBeInTheDocument();
+  expect(fns.onSave).toHaveBeenCalledTimes(3);
+  fireEvent.keyDown(field, { key: "Escape" });
+  expect(fns.onCancel).toHaveBeenCalledTimes(1);
+});
