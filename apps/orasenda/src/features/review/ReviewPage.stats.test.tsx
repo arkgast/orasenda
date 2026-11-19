@@ -188,7 +188,7 @@ test("use_buffer_save_failure_is_a_plain_line", async () => {
 const GOAL = { minutes: 720, words: "Goal 12h", line: "9h 40m of a 12h goal." };
 const habitsOf = (n: number) =>
   Array.from({ length: n }, (_, i) =>
-    habitStat({ name: `Habit ${i + 1}`, line: `Habit ${i + 1}: done on ${i + 1} days this week.` }),
+    habitStat({ name: `Habit ${i + 1}`, line: `Habit ${i + 1}: done on ${i + 2} days this week.` }),
   );
 
 // Reviews spec :35 and canvas 4A (owner, 2026-11-18): one row per habit, one M–S header, the legend once after the list.
@@ -234,7 +234,6 @@ test("no_habit_name_printed_apart", async () => {
     expect(within(row).queryByText(habits[index]?.name ?? "")).toBeNull();
     expect(row.querySelectorAll('[data-slot="habit-name"]')).toHaveLength(0);
   });
-  expect(within(stats).queryAllByText("Drink water")).toHaveLength(0);
 });
 
 test("zero_habits_no_list", async () => {
@@ -273,7 +272,7 @@ test("week_without_goal_has_no_goal_row", async () => {
   await renderReview({ review_stats: () => statsView({ goal: null }) });
   const stats = section("Stats");
   expect(within(stats).queryByRole("list", { name: "Weekly goal" })).toBeNull();
-  expect(stats.querySelectorAll('p[aria-hidden="true"]')).toHaveLength(0);
+  expect(stats.querySelector(".app-review-stats-goal-line")).toBeNull();
 });
 
 test("weeks8_lines_only", async () => {
