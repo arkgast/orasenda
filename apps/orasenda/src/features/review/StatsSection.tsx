@@ -41,16 +41,22 @@ function Shapes({ view }: { view: StatsView_Serialize }): ReactElement {
     return (
       <>
         {goal ? (
-          <BarList aria-label="Weekly goal">
-            <BarRow
-              label="This week"
-              minutes={total}
-              max={goal.minutes}
-              duration={duration(total)}
-              spoken={goal.line}
-              goal={{ minutes: goal.minutes, words: goal.words }}
-            />
-          </BarList>
+          <div className="app-review-stats-goal">
+            <BarList aria-label="Weekly goal">
+              <BarRow
+                label="Focus"
+                minutes={total}
+                max={goal.minutes}
+                duration={duration(total)}
+                spoken={goal.line}
+                goal={{ minutes: goal.minutes, words: goal.words }}
+                goalWords="end"
+              />
+            </BarList>
+            <p className="app-review-stats-goal-line" aria-hidden="true">
+              {goal.line}
+            </p>
+          </div>
         ) : null}
         <TrendBars bars={bars} caption={caption} />
       </>
@@ -80,8 +86,8 @@ function Lines({ lines, label }: { lines: string[]; label: string }): ReactEleme
 
 function Habits({ view }: { view: StatsView_Serialize }): ReactElement | null {
   if (view.habits.length === 0) return null;
-  // Reviews spec :35, canvas 4A: one row per habit, one M–S header over the list and the legend once
-  // after it. Dots only come with the Week range; without them a row is its words alone.
+  // Reviews spec :35, canvas 4A: one sentence per row (it starts with the habit's name),
+  // one M–S header over the list and the legend once after it. Dots only come with the Week range; without them a row is its words alone.
   const dotted = view.habits.some((habit) => habit.dots);
   return (
     <div className="app-review-habit-list">
@@ -94,10 +100,7 @@ function Habits({ view }: { view: StatsView_Serialize }): ReactElement | null {
         {view.habits.map((habit, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: names are not unique; the list is replaced whole
           <li key={`${index}-${habit.name}`} className="app-review-habit">
-            <div className="app-review-habit-text">
-              <p className="app-review-habit-name">{habit.name}</p>
-              <p className="app-review-line">{habit.line}</p>
-            </div>
+            <p className="app-review-habit-line">{habit.line}</p>
             {habit.dots ? (
               <div className="app-review-habit-dots">
                 <HabitDots compact name={habit.name} days={habitDays(habit.dots)} columns="week" />
@@ -163,26 +166,28 @@ export function StatsSection(): ReactElement {
 
   return (
     <section aria-labelledby={titleId} className="app-review-section">
-      <h2 ref={heading} id={titleId} tabIndex={-1} className="app-review-heading">
-        Stats
-      </h2>
       <div className="app-review-stats">
-        <ChoiceGroup variant="segmented" labelledBy={groupId}>
-          <span id={groupId} className="sr-only">
-            Stats range
-          </span>
-          {RANGES.map((r) => (
-            <Choice
-              key={r.range}
-              name="stats-range"
-              value={r.range}
-              checked={range === r.range}
-              onChange={() => setRange(r.range)}
-            >
-              {r.label}
-            </Choice>
-          ))}
-        </ChoiceGroup>
+        <div className="app-review-stats-head">
+          <h2 ref={heading} id={titleId} tabIndex={-1} className="app-review-heading">
+            Stats
+          </h2>
+          <ChoiceGroup variant="segmented" labelledBy={groupId}>
+            <span id={groupId} className="sr-only">
+              Stats range
+            </span>
+            {RANGES.map((r) => (
+              <Choice
+                key={r.range}
+                name="stats-range"
+                value={r.range}
+                checked={range === r.range}
+                onChange={() => setRange(r.range)}
+              >
+                {r.label}
+              </Choice>
+            ))}
+          </ChoiceGroup>
+        </div>
         {stats.status === "error" ? (
           <InlineNotice
             variant="row"
@@ -203,7 +208,7 @@ export function StatsSection(): ReactElement {
             <Shapes view={view} />
             <Lines lines={view.routines} label="Routines" />
             <Habits view={view} />
-            {view.estimateLine ? <p className="app-review-line">{view.estimateLine}</p> : null}
+            {view.estimateLine ? <p className="app-review-stats-estimate">{view.estimateLine}</p> : null}
             {buffer ? (
               <InlineNotice
                 actionLabel={buffer.action}

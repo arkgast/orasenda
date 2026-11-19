@@ -171,13 +171,36 @@
   line-height: var(--type-body-sm-line-height);
 }
 
-/* Stats: the range picker, the shapes and the lines under them, in one column. */
+/* Stats, canvas 4A: heading and range switch on one row, then the parts in one column. */
 .app-review-stats {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-4);
+  gap: var(--space-3);
   inline-size: 100%;
+}
+
+.app-review-stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+}
+
+/* The goal row and its sentence are one part: the sentence sits close under its row. */
+.app-review-stats-goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.app-review-stats-goal-line {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-caption-font-size);
+  line-height: var(--type-caption-line-height);
 }
 
 .app-review-stats-lines {
@@ -187,6 +210,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  color: var(--ink);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+}
+
+.app-review-stats-estimate {
+  margin: 0;
+  color: var(--ink);
   font-size: var(--type-body-sm-font-size);
   line-height: var(--type-body-sm-line-height);
 }
@@ -210,32 +241,29 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
-/* Name and line at the start, the week's dots at the end; the dots wrap under the words when narrow. */
+/* The sentence at the start, the week's dots at the end; the dots wrap under the words when narrow. */
 .app-review-habit {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   column-gap: var(--space-4);
   row-gap: var(--space-1);
 }
 
-.app-review-habit-text {
+.app-review-habit-line {
   flex: 1 1 var(--field-width);
   min-inline-size: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
 }
 
 .app-review-habit-dots {
   flex: none;
   margin-inline-start: auto;
-}
-
-.app-review-habit-name {
-  margin: 0;
-  font-weight: var(--type-heading-font-weight);
 }
