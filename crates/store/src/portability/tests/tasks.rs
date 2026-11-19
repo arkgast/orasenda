@@ -366,3 +366,38 @@ fn v8_file_imports_without_origin() {
     live.write(1, |txn| merge(txn, &file_rows)).expect("merges");
     assert_eq!(read_tasks(&live)[0].origin, None);
 }
+
+#[test]
+fn portability_round_trips_custom_lane() {
+    use crate::tasks::{self, Lane, NewTask, TaskKind};
+    let a = Store::open_in_memory("device-a").expect("opens");
+    let lane = Lane::parse("c_ab12cd34").expect("a custom id");
+    let new = NewTask {
+        id: "t1".into(),
+        title: "Custom".into(),
+        notes: String::new(),
+        tags: Vec::new(),
+        kind: TaskKind::Deep,
+        estimate: None,
+        due: None,
+        priority: None,
+        checklist: Vec::new(),
+        lane,
+        rank: "V".into(),
+        frog_day: None,
+        source_note_id: None,
+        origin: None,
+        created_at: 10,
+    };
+    a.write(20, |txn| tasks::insert(txn, &new)).expect("inserts");
+    let exported = a.read(rows).expect("reads");
+    assert_eq!(exported.tasks[0].lane, "c_ab12cd34");
+    let b = Store::open_in_memory("device-b").expect("opens");
+    merged(&b, &exported);
+    assert_eq!(read_tasks(&b), exported.tasks);
+    let row = b
+        .read(|txn| tasks::get(txn, "t1"))
+        .expect("reads")
+        .expect("there");
+    assert_eq!(row.lane.as_str(), "c_ab12cd34");
+}
