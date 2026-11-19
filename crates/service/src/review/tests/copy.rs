@@ -37,13 +37,21 @@ fn samples() -> Vec<(&'static str, String, bool)> {
         add("bar_spoken", bar_spoken(range, start, 95), false);
         for since in [None, Some(date(2026, 11, 3))] {
             for days in [0, 1, 9] {
-                add("habit_line", habit_line("Drink a glass of water", days, since, range), false);
+                add(
+                    "habit_line",
+                    habit_line("Drink a glass of water", days, since, range),
+                    false,
+                );
             }
         }
     }
     for since in [None, Some(date(2026, 11, 3))] {
         for days in [0, 1, 9] {
-            add("habit_line", look_back_habit_line("Stretch", days, since), false);
+            add(
+                "habit_line",
+                look_back_habit_line("Stretch", days, since),
+                false,
+            );
         }
     }
     for finished in [0, 1, 6] {

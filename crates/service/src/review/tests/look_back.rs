@@ -238,7 +238,10 @@ fn look_back_habit_lines_start_with_their_own_name() {
     let lines = weekly(&host).look_back.habit_lines;
     assert_eq!(lines.len(), 2);
     for name in ["Walk", "Stretch"] {
-        let n = lines.iter().filter(|l| l.starts_with(&format!("{name}: "))).count();
+        let n = lines
+            .iter()
+            .filter(|l| l.starts_with(&format!("{name}: ")))
+            .count();
         assert_eq!(n, 1, "{lines:?}");
     }
 }

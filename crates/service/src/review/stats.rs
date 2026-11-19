@@ -321,7 +321,7 @@ fn habit_stat(ask: &Build, habit: &HabitDays, from: LocalDate) -> HabitStat {
     let (days, since) = days_done(habit.created, from, ask.today, &done);
     HabitStat {
         name: habit.name.clone(),
-        line: words::habit_line(days, since, ask.range.into()),
+        line: words::habit_line(&habit.name, days, since, ask.range.into()),
         dots: (ask.range == StatsRange::Week)
             .then(|| dot_views(habit.created, ask.today, habit.days, &habit.done)),
     }

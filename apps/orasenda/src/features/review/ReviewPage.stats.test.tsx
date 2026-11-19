@@ -29,7 +29,7 @@ const weeks8 = (over: Partial<StatsView_Serialize> = {}) =>
     range: "weeks8",
     summary: ["14h of focus over 8 weeks."],
     bars: [barView({ label: "This week", spoken: "This week, 3 hours" })],
-    habits: [habitStat({ dots: null, line: "Done on 20 days in 8 weeks" })],
+    habits: [habitStat({ dots: null, line: "Drink water: done on 20 days in these 8 weeks" })],
     ...over,
   });
 
@@ -52,7 +52,7 @@ test("stats_default_week", async () => {
   expect(within(stats).getByRole("radio", { name: "6 months" })).not.toBeChecked();
   expect(stats).toHaveTextContent("2h 10m of focus this week.");
   expect(stats).toHaveTextContent("Drink water");
-  expect(stats).toHaveTextContent("Done on 2 days this week");
+  expect(stats).toHaveTextContent("Drink water: done on 2 days this week");
 });
 
 test("dots_week_only", async () => {
@@ -64,7 +64,7 @@ test("dots_week_only", async () => {
   fireEvent.click(within(stats).getByRole("radio", { name: "8 weeks" }));
   await settle();
   expect(stats).toHaveTextContent("14h of focus over 8 weeks.");
-  expect(stats).toHaveTextContent("Done on 20 days in 8 weeks");
+  expect(stats).toHaveTextContent("Drink water: done on 20 days in these 8 weeks");
   expect(records(stats)).toHaveLength(0);
   expect(dots(stats)).toHaveLength(0);
   expect(stats.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
@@ -188,9 +188,9 @@ test("use_buffer_save_failure_is_a_plain_line", async () => {
 // Reviews spec :35 and canvas 4A (owner, 2026-11-18): one row per habit, one M–S header, the legend once after the list.
 test("habit_rows_one_header_one_legend_after_list", async () => {
   const habits = [
-    habitStat({ name: "Drink water", line: "Done on 2 days this week" }),
-    habitStat({ name: "Stretch", line: "Done on 1 day this week" }),
-    habitStat({ name: "Read one page", line: "Done on 2 days this week" }),
+    habitStat({ name: "Drink water", line: "Drink water: done on 2 days this week" }),
+    habitStat({ name: "Stretch", line: "Stretch: done on 1 day this week" }),
+    habitStat({ name: "Read one page", line: "Read one page: done on 2 days this week" }),
   ];
   await renderReview({ review_stats: () => statsView({ habits }) });
   const stats = section("Stats");
@@ -226,10 +226,10 @@ test("habit_rows_one_header_one_legend_after_list", async () => {
 });
 
 test("habit_rows_without_dots_have_no_header_or_legend", async () => {
-  const habits = [habitStat({ dots: null, line: "Done on 20 days in 8 weeks" })];
+  const habits = [habitStat({ dots: null, line: "Drink water: done on 20 days in these 8 weeks" })];
   await renderReview({ review_stats: () => statsView({ habits }) });
   const stats = section("Stats");
-  expect(stats).toHaveTextContent("Done on 20 days in 8 weeks");
+  expect(stats).toHaveTextContent("Drink water: done on 20 days in these 8 weeks");
   expect(stats.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
   expect(stats.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
 });

@@ -59,7 +59,7 @@ test("look_back_shows_the_week_in_words_and_shapes", async () => {
         ...weeklyView().lookBack,
         goal: { minutes: 720, words: "Goal 12h", line: "9h 40m of a 12h goal." },
         routineLines: ["Wind-down: finished 6 times."],
-        habitLines: ["Drink water: done on 5 days."],
+        habitLines: ["Drink water: done on 5 days that week."],
         estimateLine: "6 finished tasks had an estimate.",
         reflections: [{ dayLabel: "Monday 16 November", lines: ["Went well: a calm day"] }],
       },
@@ -68,7 +68,7 @@ test("look_back_shows_the_week_in_words_and_shapes", async () => {
   expect(screen.getByText("Monday 16 to Friday 20 November")).toBeInTheDocument();
   expect(screen.getByText("9h 40m of a 12h goal.")).toBeInTheDocument();
   expect(screen.getByText("Wind-down: finished 6 times.")).toBeInTheDocument();
-  expect(screen.getByText("Drink water: done on 5 days.")).toBeInTheDocument();
+  expect(screen.getByText("Drink water: done on 5 days that week.")).toBeInTheDocument();
   expect(screen.getByText("6 finished tasks had an estimate.")).toBeInTheDocument();
   expect(screen.getByText("Monday 16 November")).toBeInTheDocument();
   expect(screen.getByText("Went well: a calm day")).toBeInTheDocument();

@@ -36,11 +36,36 @@ fn habit_line_names_the_habit() {
     let since = Some(date(2026, 11, 3));
     let table = [
         (5, None, StatsRange::Week, "done on 5 days this week."),
-        (31, None, StatsRange::Weeks8, "done on 31 days in these 8 weeks."),
-        (30, None, StatsRange::Months6, "done on 30 days in these 6 months."),
-        (1, since, StatsRange::Week, "done on 1 day since 3 November."),
-        (1, since, StatsRange::Months6, "done on 1 day since 3 November."),
-        (9, since, StatsRange::Weeks8, "done on 9 days since 3 November."),
+        (
+            31,
+            None,
+            StatsRange::Weeks8,
+            "done on 31 days in these 8 weeks.",
+        ),
+        (
+            30,
+            None,
+            StatsRange::Months6,
+            "done on 30 days in these 6 months.",
+        ),
+        (
+            1,
+            since,
+            StatsRange::Week,
+            "done on 1 day since 3 November.",
+        ),
+        (
+            1,
+            since,
+            StatsRange::Months6,
+            "done on 1 day since 3 November.",
+        ),
+        (
+            9,
+            since,
+            StatsRange::Weeks8,
+            "done on 9 days since 3 November.",
+        ),
         (0, None, StatsRange::Week, "no check-ins this week."),
         (0, since, StatsRange::Week, "no check-ins since 3 November."),
     ];

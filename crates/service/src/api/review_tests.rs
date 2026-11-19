@@ -127,7 +127,7 @@ fn review_types_serialise_camel_case() {
         routines: vec![],
         habits: vec![HabitStat {
             name: "Water".into(),
-            line: "Done on 9 days this week".into(),
+            line: "Water: done on 9 days this week".into(),
             dots: None,
         }],
         estimate_line: None,

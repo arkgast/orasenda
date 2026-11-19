@@ -96,7 +96,7 @@ export function weeklyView(over: Partial<WeeklyView_Serialize> = {}): WeeklyView
 export function habitStat(over: Partial<HabitStat_Serialize> = {}): HabitStat_Serialize {
   return {
     name: "Drink water",
-    line: "Done on 2 days this week",
+    line: "Drink water: done on 2 days this week",
     dots: habitDots(["done", "notDone", "done"]),
     ...over,
   };

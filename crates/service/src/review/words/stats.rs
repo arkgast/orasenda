@@ -111,33 +111,38 @@ pub(crate) fn month_label(date: LocalDate) -> String {
     month_name(date).to_owned()
 }
 
-/// "Done on 9 days this week.", or "Done on 9 days since 3 November." for a habit created
-/// inside the range. Counts days done and never says "of N".
-pub(crate) fn habit_line(days: u32, since: Option<LocalDate>, range: StatsRange) -> String {
+/// "Drink a glass of water: done on 9 days this week.", or "...: done on 9 days since 3
+/// November." for a habit created inside the range. Counts days done and never says "of N".
+pub(crate) fn habit_line(
+    name: &str,
+    days: u32,
+    since: Option<LocalDate>,
+    range: StatsRange,
+) -> String {
     let span = match (since, range) {
         (Some(created), _) => format!("since {}", day_month(created)),
         (None, StatsRange::Week) => "this week".to_owned(),
         (None, StatsRange::Weeks8) => "in these 8 weeks".to_owned(),
         (None, StatsRange::Months6) => "in these 6 months".to_owned(),
     };
-    habit_sentence(days, &span)
+    habit_sentence(name, days, &span)
 }
 
-/// Like [`habit_line`] for the weekly look-back, which is not always the current week: "Done
-/// on 4 days that week." or "No check-ins that week."
-pub(crate) fn look_back_habit_line(days: u32, since: Option<LocalDate>) -> String {
+/// Like [`habit_line`] for the weekly look-back, which is not always the current week:
+/// "Stretch: done on 4 days that week." or "Stretch: no check-ins that week."
+pub(crate) fn look_back_habit_line(name: &str, days: u32, since: Option<LocalDate>) -> String {
     let span = since.map_or_else(
         || "that week".to_owned(),
         |created| format!("since {}", day_month(created)),
     );
-    habit_sentence(days, &span)
+    habit_sentence(name, days, &span)
 }
 
-fn habit_sentence(days: u32, span: &str) -> String {
+fn habit_sentence(name: &str, days: u32, span: &str) -> String {
     if days == 0 {
-        return format!("No check-ins {span}.");
+        return format!("{name}: no check-ins {span}.");
     }
-    format!("Done on {} {span}.", count(days, "day", "days"))
+    format!("{name}: done on {} {span}.", count(days, "day", "days"))
 }
 
 /// "Wind-down: finished 6 times." Finished runs only.
