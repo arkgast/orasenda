@@ -266,6 +266,7 @@ test("editor_save_calls_edit", async () => {
   ]);
   expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
   expect(nameButton("Today")).toBeInTheDocument();
+  expect(nameButton("Today")).toHaveFocus();
 });
 
 test("editor_unchanged_save_writes_nothing", async () => {
@@ -320,6 +321,8 @@ test("add_column_opens_new_editor", async () => {
   );
   expect(field()).toHaveValue("New column");
   expect(field()).toHaveFocus();
+  const input = field() as HTMLInputElement;
+  expect([input.selectionStart, input.selectionEnd]).toEqual([0, "New column".length]);
 });
 
 test("add_column_dimmed_at_cap", async () => {
@@ -345,7 +348,8 @@ test("add_column_refused_says_why", async () => {
   openEditor("Today");
   fireEvent.click(inEditor("Add column after"));
   await settle();
-  expect(screen.getAllByText("Up to 4 extra columns.").length).toBeGreaterThan(0);
+  const toast = screen.getAllByRole("status").find((n) => n.textContent?.includes("Up to 4"));
+  expect(toast).toBeDefined();
 });
 
 test("remove_dimmed_while_tasks", async () => {
@@ -376,20 +380,47 @@ test("remove_empty_column_toasts_and_focuses", async () => {
 test("add_task_quiet_while_editing", async () => {
   await renderBoard({ replies: edits });
   const add = () => screen.getByRole("button", { name: "Add task" });
-  expect(add().className).not.toBe("");
-  const before = add().className;
+  expect(add()).toHaveAttribute("data-variant", "primary");
   openEditor("Today");
-  expect(add().className).not.toBe(before);
+  expect(add()).toHaveAttribute("data-variant", "quiet");
+  // Save is then the one primary action on screen.
+  const primaries = document.querySelectorAll('[data-variant="primary"]');
+  expect(primaries).toHaveLength(1);
+  expect(primaries[0]).toBe(inEditor("Save"));
 });
 
 test("page_keys_ignored_in_editor", async () => {
-  await renderBoard({ replies: edits });
+  const backend = await renderBoard({ replies: edits });
   openEditor("Today");
-  const stop = fireEvent.keyDown(field(), { key: "ArrowRight" });
-  expect(stop).toBe(true);
-  expect(field()).toHaveFocus();
-  fireEvent.keyDown(inEditor("Save"), { key: "ArrowLeft" });
-  expect(inEditor("Save")).toBeInTheDocument();
+  for (const from of [field(), inEditor("Save")]) {
+    from.focus();
+    fireEvent.keyDown(from, { key: "ArrowDown" });
+    fireEvent.keyDown(from, { key: "f" });
+    fireEvent.keyDown(from, { key: "Backspace", metaKey: true });
+    expect(from).toHaveFocus();
+  }
+  await settle();
+  expect(argsOf(backend.calls, "task_remove")).toEqual([]);
+  expect(argsOf(backend.calls, "task_set_frog")).toEqual([]);
+});
+
+test("refusal_after_another_editor_opened_is_toasted", async () => {
+  await renderBoard({
+    replies: {
+      board_column_edit: () => {
+        throw "badColumnName";
+      },
+    },
+  });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: "Focus" } });
+  // Leaving the editor saves it; the other column's editor opens before the answer lands.
+  fireEvent.blur(field());
+  openEditor("Doing");
+  await settle();
+  const words = screen.getAllByRole("status").filter((n) => n.textContent?.includes("name"));
+  expect(words.length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Another column has that name.").length).toBeGreaterThan(0);
 });
 
 test("editor_closes_when_column_removed_elsewhere", async () => {
@@ -398,4 +429,27 @@ test("editor_closes_when_column_removed_elsewhere", async () => {
   await emitBoardChanged(1, boardOf(TASKS));
   expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
   expect(screen.getByText("That column is gone. Pick another.")).toBeInTheDocument();
+  expect(nameButton("Doing")).toHaveFocus();
+});
+
+test("remove_does_not_say_gone_first", async () => {
+  let announced: Promise<unknown> = Promise.resolve();
+  await renderBoard({
+    board: withCustom(boardOf(TASKS), LATER),
+    replies: {
+      ...edits,
+      board_column_remove: () => {
+        // The service announces the new board before the reply lands.
+        announced = Promise.resolve().then(() => emitBoardChanged(1, boardOf(TASKS)));
+        return null;
+      },
+    },
+  });
+  openEditor("Later");
+  fireEvent.click(inEditor("Remove column"));
+  await settle();
+  await announced;
+  await settle();
+  expect(screen.queryByText("That column is gone. Pick another.")).toBeNull();
+  expect(screen.getByText("Removed Later.")).toBeInTheDocument();
 });

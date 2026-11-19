@@ -58,7 +58,13 @@ export function useColumnEditor(
     [show],
   );
 
+  // Set while the person's own Remove is in flight: the board may change before the reply lands.
+  const leaving = useRef<Lane | null>(null);
+  const prior = useRef(columns);
+
   useEffect(() => {
+    const before = prior.current;
+    prior.current = columns;
     if (!open) {
       seen.current = false;
       return;
@@ -67,7 +73,10 @@ export function useColumnEditor(
     else if (seen.current) {
       seen.current = false;
       setOpen(null);
+      if (leaving.current === open.lane) return;
       fail("columnNotFound");
+      // Focus was in the editor that has just gone: land on its neighbour, else Backlog.
+      setBack({ lane: neighbour(before, open.lane, -1) ?? "backlog" });
     }
   }, [open, columns, fail]);
 
@@ -91,7 +100,9 @@ export function useColumnEditor(
     if (column && column.name === edit.name && (column.limit ?? null) === edit.limit) return true;
     const result = await latest.current.api.editColumn(lane, edit.name, edit.limit);
     if (result.status === "ok") return true;
+    // Another editor may have opened meanwhile: the words still reach the person, as a toast.
     if (current(lane)) setOpen({ lane, error: boardWords(result.error) });
+    else fail(result.error);
     return false;
   };
 
@@ -123,11 +134,16 @@ export function useColumnEditor(
       const before = neighbour(latest.current.columns, lane, -1);
       const name = view(lane)?.name ?? "";
       void (async () => {
-        const result = await latest.current.api.removeColumn(lane);
-        if (result.status !== "ok") return fail(result.error);
-        show({ text: `Removed ${name}.`, tone: "neutral" });
-        setOpen(null);
-        if (before) setBack({ lane: before });
+        leaving.current = lane;
+        try {
+          const result = await latest.current.api.removeColumn(lane);
+          if (result.status !== "ok") return fail(result.error);
+          show({ text: `Removed ${name}.`, tone: "neutral" });
+          setOpen(null);
+          if (before) setBack({ lane: before });
+        } finally {
+          leaving.current = null;
+        }
       })();
     },
   };

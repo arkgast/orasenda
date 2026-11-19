@@ -61,6 +61,11 @@ export function ColumnEditorSpecimen(): ReactElement {
         height={420}
       />
       <Case
+        state="column-editor-done"
+        over={{ name: "Done", limit: null, canAdd: null, canRemove: null }}
+        height={260}
+      />
+      <Case
         state="column-editor-name-taken"
         over={{ name: "today", canRemove: null }}
         height={340}
