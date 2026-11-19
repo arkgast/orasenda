@@ -145,6 +145,23 @@ test("editor_enabled_buttons_call_their_handlers", () => {
   expect(onRemove).toHaveBeenCalledTimes(1);
 });
 
+test("editor_add_carries_the_pending_edit", () => {
+  const { onAdd } = setup();
+  fireEvent.change(screen.getByRole("textbox", { name: "Column name" }), {
+    target: { value: "  Review " },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Add column after" }));
+  expect(onAdd).toHaveBeenLastCalledWith({ name: "Review", limit: null });
+  fireEvent.change(screen.getByRole("textbox", { name: "Column name" }), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add column after" }));
+  expect(onAdd).toHaveBeenLastCalledWith(null);
+});
+
+test("editor_hides_add_when_null", () => {
+  setup({ canAdd: null });
+  expect(screen.queryByRole("button", { name: "Add column after" })).toBeNull();
+});
+
 test("editor_hides_remove_when_null", () => {
   setup({ canRemove: null });
   expect(screen.queryByRole("button", { name: "Remove column" })).toBeNull();

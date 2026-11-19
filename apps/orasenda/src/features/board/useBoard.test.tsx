@@ -77,7 +77,7 @@ test("the column commands reach Rust and answer typed", async () => {
   });
   const { result } = renderHook(() => useBoard());
   await settle();
-  expect(await result.current.addColumn("today")).toBe("c_ab12cd34");
+  expect(await result.current.addColumn("today")).toEqual({ status: "ok", data: "c_ab12cd34" });
   expect((await result.current.editColumn("c_ab12cd34", "Review", 2)).status).toBe("ok");
   expect((await result.current.foldColumn("done", false)).status).toBe("ok");
   expect((await result.current.removeColumn("c_ab12cd34")).status).toBe("ok");
@@ -89,7 +89,7 @@ test("the column commands reach Rust and answer typed", async () => {
   ]);
 });
 
-test("addColumn answers null when Rust refuses", async () => {
+test("addColumn answers the refusal when Rust refuses", async () => {
   mockBackend({
     board_get: () => BOARD,
     board_column_add: () => {
@@ -98,5 +98,8 @@ test("addColumn answers null when Rust refuses", async () => {
   });
   const { result } = renderHook(() => useBoard());
   await settle();
-  expect(await result.current.addColumn("today")).toBeNull();
+  expect(await result.current.addColumn("today")).toEqual({
+    status: "error",
+    error: "tooManyColumns",
+  });
 });

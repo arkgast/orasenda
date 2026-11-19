@@ -20,12 +20,14 @@ export interface ColumnEditorProps {
   error?: string;
   /** The other columns' names; a name already here (any case) is refused. */
   taken: readonly string[];
-  canAdd: true | { reason: string };
+  /** `null` hides Add column after (Done). */
+  canAdd: true | { reason: string } | null;
   /** `null` hides Remove (built-in columns). */
   canRemove: true | { reason: string } | null;
   onSave: (value: { name: string; limit: number | null }) => void;
   onCancel: () => void;
-  onAdd: () => void;
+  /** `pending` is the edit as it stands (name trimmed), or null while the name is invalid. */
+  onAdd: (pending: { name: string; limit: number | null } | null) => void;
   onRemove: () => void;
 }
 
@@ -80,12 +82,15 @@ export function ColumnEditor({
   const problem = check(name, taken);
   const shown = problem ?? (name === errorFor ? error : undefined);
 
+  const current = () => {
+    const none = limit === null || (value === 0 && limit.zeroLabel !== undefined);
+    return { name: name.trim(), limit: none ? null : value };
+  };
   const save = () => {
     if (problem || settled.current || cancelled.current) return;
     settled.current = true;
     setErrorFor(name);
-    const none = limit === null || (value === 0 && limit.zeroLabel !== undefined);
-    onSave({ name: name.trim(), limit: none ? null : value });
+    onSave(current());
   };
   const cancel = () => {
     if (cancelled.current) return;
@@ -158,10 +163,16 @@ export function ColumnEditor({
         />
       ) : null}
       <div className="flex min-w-0 flex-col gap-2">
-        <Button variant="quiet" onClick={onAdd} {...dimmed(canAdd, addId)}>
-          Add column after
-        </Button>
-        {canAdd === true ? null : (
+        {canAdd === null ? null : (
+          <Button
+            variant="quiet"
+            onClick={() => onAdd(problem ? null : current())}
+            {...dimmed(canAdd, addId)}
+          >
+            Add column after
+          </Button>
+        )}
+        {canAdd === true || canAdd === null ? null : (
           <p
             id={addId}
             data-slot="column-editor-reason"
