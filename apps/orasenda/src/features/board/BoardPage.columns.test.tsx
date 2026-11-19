@@ -75,7 +75,8 @@ test("fold_write_failure_toasts", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Done, 1 task" }));
   await settle();
   expect(screen.getByText("That didn't save. Try again.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Done, 1 task" })).toBeInTheDocument();
+  // The fold stays as shown.
+  expect(screen.getByRole("region", { name: "Done" })).toBeInTheDocument();
 });
 
 test("compact_keeps_vertical_stack", async () => {
@@ -90,6 +91,12 @@ test("compact_keeps_vertical_stack", async () => {
   }
 });
 
+/** jsdom has no scrollIntoView: define it, then spy so the restore removes the spy. */
+function scrollSpy() {
+  if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = () => {};
+  return vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+}
+
 const later = withCustom(boardOf(TASKS), LATER);
 const press = (title: string, init: KeyboardEventInit) => {
   card(title).focus();
@@ -101,7 +108,11 @@ test("arrows_reach_empty_custom_column", async () => {
   await renderBoard({ board: later });
   press("Fix sync bug", { key: "ArrowRight" });
   expect(heading("Later")).toHaveFocus();
-  // And on past it to Done's strip, then back.
+  // On past it to Done's strip, then back.
+  fireEvent.keyDown(heading("Later"), { key: "ArrowRight" });
+  expect(screen.getByRole("button", { name: "Done, 1 task" })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole("button", { name: "Done, 1 task" }), { key: "ArrowLeft" });
+  expect(heading("Later")).toHaveFocus();
   fireEvent.keyDown(heading("Later"), { key: "ArrowLeft" });
   expect(card("Fix sync bug")).toHaveFocus();
 });
@@ -115,8 +126,7 @@ test("arrows_reach_strip", async () => {
 });
 
 test("focus_scrolls_column_into_view", async () => {
-  const spy = vi.fn();
-  Element.prototype.scrollIntoView = spy;
+  const spy = scrollSpy();
   await renderBoard({ board: later });
   press("Fix sync bug", { key: "ArrowRight" });
   expect(spy).toHaveBeenLastCalledWith(
@@ -126,8 +136,7 @@ test("focus_scrolls_column_into_view", async () => {
 });
 
 test("scroll_into_view_respects_reduce_motion", async () => {
-  const spy = vi.fn();
-  Element.prototype.scrollIntoView = spy;
+  const spy = scrollSpy();
   const original = window.matchMedia;
   window.matchMedia = ((q: string) => ({
     matches: q.includes("reduce"),

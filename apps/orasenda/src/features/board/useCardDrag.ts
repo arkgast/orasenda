@@ -95,8 +95,10 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
   const edge = () => {
     cancelAnimationFrame(frame.current);
     const m = measured.current;
-    const zone = px("--hit-min");
-    if (!live.current || !m || !zone) return;
+    const list = px("--hit-min");
+    const strip = px("--column-strip-width");
+    if (!live.current || !m || !list || !strip) return;
+    const zone = { list, strip };
     const found = edgeScroller(m, point.current, zone);
     if (!found) return;
     const tick = () => {

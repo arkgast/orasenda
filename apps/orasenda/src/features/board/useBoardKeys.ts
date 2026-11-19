@@ -9,6 +9,7 @@ import {
 } from "react";
 import { columnId, locate, neighbour } from "./lanes";
 
+const NO_SCROLL = { preventScroll: true } as const;
 const CARD = 'button[data-slot="task-card"]';
 const STRIP = '[data-slot="kanban-column-strip"]';
 /** What holds focus in a column with no card: its strip, its name button or its heading. */
@@ -81,13 +82,13 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     if (to === null) return;
     const cards = lane(to);
     const column = document.getElementById(columnId(to));
-    if (cards.length) return void cards[Math.min(index, cards.length - 1)]?.focus();
+    if (cards.length) return void cards[Math.min(index, cards.length - 1)]?.focus(NO_SCROLL);
     if (!column) return;
-    if (column.matches(STRIP)) return void column.focus();
+    if (column.matches(STRIP)) return void column.focus(NO_SCROLL);
     const name = column.querySelector<HTMLElement>('[data-slot="kanban-column-name"]');
     const heading = column.querySelector<HTMLElement>("h2");
     heading?.setAttribute("tabindex", "-1");
-    (name ?? heading)?.focus();
+    (name ?? heading)?.focus(NO_SCROLL);
   };
 
   /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
@@ -170,11 +171,10 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     // A column out of view comes into view: slowly, unless the person asked for less motion.
     const reduced =
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    (event.target as HTMLElement).closest<HTMLElement>("[id^='board-col-']")?.scrollIntoView?.({
-      inline: "nearest",
-      block: "nearest",
-      behavior: reduced ? "auto" : "smooth",
-    });
+    const column = (event.target as HTMLElement).closest<HTMLElement>("[id^='board-col-']");
+    if (column?.closest("[data-axis='x']")) {
+      column.scrollIntoView?.({ inline: "nearest", behavior: reduced ? "auto" : "smooth" });
+    }
     const id = (event.target as HTMLElement).closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
     if (id) setSelected(id);
   };
@@ -188,7 +188,7 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     focusColumn: (l: Lane) => {
       const heading = document.getElementById(columnId(l))?.querySelector<HTMLElement>("h2");
       heading?.setAttribute("tabindex", "-1");
-      (lane(l)[0] ?? heading)?.focus();
+      (lane(l)[0] ?? heading)?.focus(NO_SCROLL);
     },
     focusBeside,
     moveTo,

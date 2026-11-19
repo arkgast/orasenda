@@ -11,7 +11,7 @@ import {
   ScrollRegion,
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
-import type { Lane } from "@shared/ipc/bindings";
+import type { ColumnView, Lane } from "@shared/ipc/bindings";
 import { useEffect, useRef, useState } from "react";
 import { BoardColumns } from "./BoardColumns";
 import { boardWords } from "./boardWords";
@@ -40,12 +40,14 @@ type Props = {
   onImportOpened?: () => void;
 };
 
+const NO_COLUMNS: readonly ColumnView[] = [];
+
 /** Board page: Backlog, Today, Doing and Done, kept by keyboard and by menu (spec "Board page"). */
 export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened }: Props) {
   const { compact } = useWindowLayout();
   const api = useBoard();
   const ok = api.board.status === "ok" ? api.board.board : null;
-  const columns = ok?.columns ?? [];
+  const columns = ok?.columns ?? NO_COLUMNS;
   const name = (lane: Lane) => columns.find((c) => c.lane === lane)?.name ?? lane;
   const actions = useBoardActions(api, columns, name);
   const singleKeys = useSingleKeySetting().on;
@@ -58,8 +60,11 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
   const box = useRef<HTMLDivElement | null>(null);
   const folds = useFolds({
     columns,
-    save: async (lane, folded) => (await api.foldColumn(lane, folded)).status === "ok",
-    failed: () => actions.show({ text: boardWords("unreachable"), tone: "attention" }),
+    save: async (lane, folded) => {
+      const outcome = await api.foldColumn(lane, folded);
+      return outcome.status === "ok" ? null : boardWords(outcome.error);
+    },
+    failed: (words) => actions.show({ text: words, tone: "attention" }),
   });
   const keys = useBoardKeys({ root: box, columns, open: folds.open, singleKeys, actions });
 

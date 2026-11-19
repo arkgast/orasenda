@@ -100,12 +100,12 @@ const canScroll = (el: HTMLElement, dir: -1 | 1) =>
 export function edgeScroller(
   m: Measured,
   point: Point,
-  zone: number,
+  zone: { list: number; strip: number },
 ): { el: HTMLElement; dir: -1 | 1; x: boolean } | null {
   const candidates = [...Object.values(m.lists), ...(m.region ? [m.region] : [])];
   for (const el of candidates) {
     const x = sideways(el);
-    const dir = (x ? edgeZoneX : edgeZone)(rectOf(el), point, zone);
+    const dir = (x ? edgeZoneX : edgeZone)(rectOf(el), point, x ? zone.strip : zone.list);
     if (dir !== 0 && canScroll(el, dir)) return { el, dir, x };
   }
   return null;

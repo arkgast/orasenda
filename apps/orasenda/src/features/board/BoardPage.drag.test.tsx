@@ -235,30 +235,52 @@ test("drag_into_custom_column", async () => {
   expect(moves(backend)).toEqual([{ id: "t1", lane: "c_later", index: 0 }]);
 });
 
-test("drag_edge_scrolls_region", async () => {
-  const queue: FrameRequestCallback[] = [];
-  vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => queue.push(f));
-  vi.stubGlobal("cancelAnimationFrame", () => {});
-  // jsdom loads no stylesheet: the edge zone is the hit-min token.
-  document.documentElement.style.setProperty("--hit-min", "44px");
-  await renderBoard();
-  const region = screen.getByRole("region", { name: "Board columns" });
-  let left = 0;
+function stubRegion(region: HTMLElement, start: number) {
+  const box = { left: start };
   Object.defineProperties(region, {
     scrollWidth: { value: 2000 },
     clientWidth: { value: 900 },
     scrollLeft: {
-      get: () => left,
+      get: () => box.left,
       set: (v: number) => {
-        left = v;
+        box.left = v;
       },
     },
   });
-  // Near the region's right edge (stubRects: the region is 900 wide).
-  const el = lift("Write intro", T1, [895, 300]);
-  queue.shift()?.(0);
-  expect(left).toBeGreaterThan(0);
-  pointer("pointerup", el, 895, 300);
-  document.documentElement.style.removeProperty("--hit-min");
-  vi.unstubAllGlobals();
+  return box;
+}
+
+test("drag_edge_scrolls_region", async () => {
+  const queue: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => queue.push(f));
+  vi.stubGlobal("cancelAnimationFrame", () => {});
+  // jsdom loads no stylesheet: the sideways edge zone is the column-strip-width token.
+  document.documentElement.style.setProperty("--hit-min", "44px");
+  document.documentElement.style.setProperty("--column-strip-width", "64px");
+  try {
+    await renderBoard();
+    const box = stubRegion(screen.getByRole("region", { name: "Board columns" }), 0);
+    // Inside 64px of the region's right edge, outside hit-min (stubRects: the region is 900 wide).
+    const el = lift("Write intro", T1, [850, 300]);
+    queue.shift()?.(0);
+    expect(box.left).toBeGreaterThan(0);
+    pointer("pointerup", el, 850, 300);
+  } finally {
+    document.documentElement.style.removeProperty("--hit-min");
+    document.documentElement.style.removeProperty("--column-strip-width");
+    vi.unstubAllGlobals();
+  }
+});
+
+test("drag_drop_follows_region_scroll", async () => {
+  const board = withCustom(boardOf(TASKS), [{ lane: "c_later", name: "Later" }]);
+  const backend = await renderBoard({ board });
+  const box = stubRegion(screen.getByRole("region", { name: "Board columns" }), 300);
+  const el = lift("Write intro", T1, [700, 200]);
+  // The region scrolls back 300 after the lift: the pointer is now over Today (210-410).
+  box.left = 0;
+  pointer("pointermove", el, 701, 200);
+  pointer("pointerup", el, 701, 200);
+  await settle();
+  expect(moves(backend)).toEqual([{ id: "t1", lane: "today", index: expect.any(Number) }]);
 });
