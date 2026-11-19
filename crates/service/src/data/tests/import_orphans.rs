@@ -54,5 +54,8 @@ fn orphans_repaired_after_import() {
         .expect("Backlog");
     assert_eq!(backlog.tasks.len(), 1);
     let board = run_board_get(&host).expect("reads");
-    assert_eq!(board.columns.iter().map(|c| c.tasks.len()).sum::<usize>(), 1);
+    assert_eq!(
+        board.columns.iter().map(|c| c.tasks.len()).sum::<usize>(),
+        1
+    );
 }

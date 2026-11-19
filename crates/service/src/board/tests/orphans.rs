@@ -44,14 +44,17 @@ fn orphans_repaired_at_start() {
     let store = memory_store();
     orphan(&store, "o1", "a");
     orphan(&store, "o2", "b");
-    let before = store.change_log_ids().len();
+    let seen = store.change_log_ids();
     let (host, log) = host_on(store);
     let board = run_board_get(&host).expect("reads");
     assert_eq!(titles(&board, Lane::BACKLOG), ["Orphan o1", "Orphan o2"]);
     assert!(log.take().is_empty(), "the start repair emits nothing");
     let guard = lock(host.service().expect("service"));
     let ids = guard.store().expect("store").change_log_ids();
-    assert_eq!(ids.len(), before + 2, "each move is logged: {ids:?}");
+    let logged = |ids: &[String], id: &str| ids.iter().filter(|i| *i == id).count();
+    for id in ["o1", "o2"] {
+        assert!(logged(&ids, id) > logged(&seen, id), "{id} move is logged");
+    }
 }
 
 #[test]

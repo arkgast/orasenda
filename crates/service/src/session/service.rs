@@ -224,6 +224,10 @@ impl SessionService {
             link_view_owed: false,
         };
         service.load_stored(now_ms);
+        // Before the first view: it emits nothing.
+        if let Some(store) = &service.store {
+            crate::board::orphans::repair_at_start(store, now_ms);
+        }
         service.load_hint();
         service.log_unknown_selection();
         if let Some(read) = service

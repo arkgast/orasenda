@@ -46,6 +46,10 @@ pub fn run_import<H: Host>(host: &H, dir: &Path, source: &Path) -> Result<Import
                 // merge made between bindings. `register_saved` follows in the caller.
                 fold::run_after_import(txn, &incoming)?;
                 repair(txn)?;
+                // Tasks in a column this board doesn't have go to Backlog; the board-changed
+                // below covers them.
+                let columns = crate::board::columns::read(txn)?;
+                crate::board::orphans::repair(txn, &columns)?;
                 Ok(counts)
             })
             .map_err(|error| {

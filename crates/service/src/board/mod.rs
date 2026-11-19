@@ -9,6 +9,7 @@ pub(crate) mod check;
 pub(crate) mod columns;
 mod doing;
 mod inbox_move;
+pub(crate) mod orphans;
 mod service;
 #[cfg(test)]
 mod tests;
@@ -44,8 +45,7 @@ pub fn run_board_get<H: Host>(host: &H) -> Result<BoardView, BoardError> {
     })
 }
 
-/// Whether `lane` is a column on this board. A lane that isn't is refused as `BadColumns`
-/// until B2b makes it `ColumnNotFound` everywhere.
+/// Whether `lane` is a column on this board. A lane that isn't is refused as `ColumnNotFound`.
 fn on_board(txn: &Txn, lane: &Lane) -> Result<bool, StoreError> {
     Ok(columns::read(txn)?.iter().any(|c| c.lane == *lane))
 }
@@ -60,7 +60,7 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
     let lane = draft.lane.unwrap_or(Lane::BACKLOG);
     write(host, |txn, cx| {
         if !on_board(txn, &lane)? {
-            return Ok(Err(BoardError::BadColumns));
+            return Ok(Err(BoardError::ColumnNotFound));
         }
         let id = Uuid::now_v7().to_string();
         let stored = stored_lane(&lane)?;
@@ -141,7 +141,7 @@ pub fn run_task_move<H: Host>(
 ) -> Result<(), BoardError> {
     write(host, |txn, _| {
         if !on_board(txn, &lane)? {
-            return Ok(Err(BoardError::BadColumns));
+            return Ok(Err(BoardError::ColumnNotFound));
         }
         if live(txn, id)?.is_none() {
             return Ok(Err(BoardError::NotFound));
@@ -193,11 +193,20 @@ fn set_removed<H: Host>(host: &H, id: &str, remove: bool) -> Result<(), BoardErr
         } else {
             tasks::restore(txn, id)?
         };
-        Ok(if changed {
-            Ok(())
-        } else {
-            Err(BoardError::NotFound)
-        })
+        if !changed {
+            return Ok(Err(BoardError::NotFound));
+        }
+        if !remove {
+            // Undo into a column that is gone: the task lands at the end of Backlog.
+            if let Some(task) = live(txn, id)?
+                && !columns::read(txn)?
+                    .iter()
+                    .any(|c| c.lane.as_str() == task.lane.as_str())
+            {
+                tasks::move_to_backlog_end(txn, &[id.to_owned()])?;
+            }
+        }
+        Ok(Ok(()))
     })
 }
 
