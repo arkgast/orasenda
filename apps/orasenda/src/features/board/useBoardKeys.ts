@@ -12,8 +12,27 @@ import { columnId, locate, neighbour } from "./lanes";
 const NO_SCROLL = { preventScroll: true } as const;
 const CARD = 'button[data-slot="task-card"]';
 const STRIP = '[data-slot="kanban-column-strip"]';
-/** What holds focus in a column with no card: its strip, its name button or its heading. */
-const STOP = `${STRIP}, [data-slot="kanban-column-name"], h2[tabindex]`;
+const HEADER_BUTTONS =
+  '[data-slot="kanban-column-name"], [data-slot="kanban-column-fold"] button, [data-slot="kanban-column-add"] button';
+/** What holds focus in a column header or a strip: its name (button or heading), Fold, + or strip. */
+const STOP = `${STRIP}, ${HEADER_BUTTONS}, h2[tabindex]`;
+
+/** A column's header stops in order: the name (a button, else the heading), Fold, then +. */
+function headerStops(column: HTMLElement): HTMLElement[] {
+  const name =
+    column.querySelector<HTMLElement>('[data-slot="kanban-column-name"]') ??
+    column.querySelector<HTMLElement>("h2");
+  const part = (slot: string) => column.querySelector<HTMLElement>(`[data-slot="${slot}"] button`);
+  return [name, part("kanban-column-fold"), part("kanban-column-add")].filter(
+    (el): el is HTMLElement => el !== null && el !== undefined,
+  );
+}
+
+/** Focuses a header stop; a heading takes focus only once it has a tabindex. */
+function focusStop(el: HTMLElement | undefined) {
+  if (el?.tagName === "H2") el.setAttribute("tabindex", "-1");
+  el?.focus(NO_SCROLL);
+}
 
 type Actions = {
   moveToColumn(task: TaskView, lane: Lane): Promise<boolean>;
@@ -57,6 +76,10 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     const idOf = (b: HTMLElement) => b.closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
     const stop = buttons.find((b) => idOf(b) === selected) ?? buttons[0];
     for (const b of buttons) b.tabIndex = b === stop ? 0 : -1;
+    // The header's buttons are reached by arrows, not Tab (owner decision 14).
+    for (const h of root.current?.querySelectorAll<HTMLElement>(HEADER_BUTTONS) ?? []) {
+      h.tabIndex = -1;
+    }
     const want = pending.current;
     if (!want) return;
     const wrap = root.current?.querySelector<HTMLElement>(
@@ -91,6 +114,9 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     (name ?? heading)?.focus(NO_SCROLL);
   };
 
+  /** ↓ from a header: the column's first card. */
+  const firstCard = (l: Lane) => lane(l)[0]?.focus(NO_SCROLL);
+
   /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
   const moveTo = async (task: TaskView, to: Lane) => {
     if (!(await actions.moveToColumn(task, to))) return;
@@ -117,10 +143,27 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
       const lane = columns.find((c) => columnId(c.lane) === from?.id)?.lane;
       const plain = !(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
       if (!lane || !plain || event.nativeEvent.isComposing) return;
-      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      const horizontal = event.key === "ArrowLeft" || event.key === "ArrowRight";
+      if (!horizontal && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
       event.preventDefault();
       event.stopPropagation();
-      return stepColumn(lane, 0, event.key === "ArrowLeft" ? -1 : 1);
+      if (event.key === "ArrowUp") return; // a header is the top: nothing above, and no page scroll
+      if (event.key === "ArrowDown") {
+        if (!target.matches(STRIP)) firstCard(lane);
+        return;
+      }
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      if (target.matches(STRIP)) return stepColumn(lane, 0, direction);
+      const stops = from ? headerStops(from) : [];
+      const next = stops[stops.indexOf(target) + direction];
+      if (next) return focusStop(next);
+      // Past the last (or before the first) stop: on to the next column's header.
+      const over = neighbour(columns, lane, direction);
+      const there = over ? document.getElementById(columnId(over)) : null;
+      if (!there) return;
+      if (there.matches(STRIP)) return there.focus(NO_SCROLL);
+      const across = headerStops(there);
+      return focusStop(direction === 1 ? across[0] : across[across.length - 1]);
     }
     if (!target.matches(CARD)) return;
     const id = target.closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
@@ -153,7 +196,13 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
       return;
     }
     if (event.altKey) return;
-    if (key === "ArrowUp") return handle(() => mine[at.index - 1]?.focus());
+    if (key === "ArrowUp") {
+      return handle(() => {
+        const column = document.getElementById(columnId(task.lane));
+        if (at.index > 0) mine[at.index - 1]?.focus();
+        else if (column) focusStop(headerStops(column)[0]);
+      });
+    }
     if (key === "ArrowDown") return handle(() => mine[at.index + 1]?.focus());
     if (key === "Home") return handle(() => mine[0]?.focus());
     if (key === "End") return handle(() => mine[mine.length - 1]?.focus());

@@ -59,7 +59,7 @@ export function measureBoard(root: HTMLElement, columns: readonly ColumnView[]):
       lane: column.lane,
       rect: rectOf(el),
       folded,
-      lead: list?.querySelector(`#${NEW_TASK_ID}`) ? 1 : 0,
+      lead: list?.querySelector(`[id^="${NEW_TASK_ID}"]`) ? 1 : 0,
       count: column.tasks.length,
       cards,
     });

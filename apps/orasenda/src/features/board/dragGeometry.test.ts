@@ -47,6 +47,12 @@ describe("targetAt", () => {
     });
   });
 
+  test("drop_index_skips_field in any column", () => {
+    const today = column({ lane: "today", lead: 1, cards: [card("t1", 100)] });
+    expect(targetAt([today], NONE, { x: 50, y: 110 }, "x")).toEqual({ lane: "today", index: 1 });
+    expect(moveIndex([today], { lane: "today", index: 1 }, "x")).toBe(0);
+  });
+
   test("target_done_is_top", () => {
     const done = column({ lane: "done", cards: [card("x1", 40), card("x2", 100)] });
     expect(targetAt([done], NONE, { x: 50, y: 500 }, "x")).toEqual({ lane: "done", index: 0 });
