@@ -24,12 +24,12 @@ pub struct MacAppControl;
 
 impl AppControl for MacAppControl {
     fn running_apps(&self) -> Vec<AppRef> {
-        NSWorkspace::sharedWorkspace()
-            .runningApplications()
-            .iter()
-            .filter(|app| is_regular(app))
-            .map(|app| app_ref(&app))
-            .collect()
+        regular_apps(
+            NSWorkspace::sharedWorkspace()
+                .runningApplications()
+                .iter()
+                .map(|app| snapshot(&app)),
+        )
     }
 
     /// `Refused` when `-[NSRunningApplication hide]` returns NO. On macOS 27 it returns NO
@@ -134,20 +134,49 @@ fn hide_again(app: &impl Hideable, poll: Duration, timeout: Duration) -> bool {
     hidden
 }
 
+/// What [`regular_apps`] and [`to_app_ref`] need from a running app, read once so the
+/// filtering and naming can be tested without launchservicesd.
+struct AppSnapshot {
+    pid: i32,
+    name: Option<String>,
+    bundle_id: Option<String>,
+    policy: NSApplicationActivationPolicy,
+}
+
+fn snapshot(app: &NSRunningApplication) -> AppSnapshot {
+    AppSnapshot {
+        pid: app.processIdentifier(),
+        name: app.localizedName().map(|s| s.to_string()),
+        bundle_id: app.bundleIdentifier().map(|s| s.to_string()),
+        policy: app.activationPolicy(),
+    }
+}
+
+/// The regular apps among `apps`, in order. Empty when none is regular, which launchservicesd
+/// sometimes reports to a new process.
+fn regular_apps(apps: impl IntoIterator<Item = AppSnapshot>) -> Vec<AppRef> {
+    apps.into_iter()
+        .filter(|app| app.policy == NSApplicationActivationPolicy::Regular)
+        .map(to_app_ref)
+        .collect()
+}
+
 /// Converts a running app into the core's [`AppRef`]; the name falls back to the bundle ID.
 pub(crate) fn app_ref(app: &NSRunningApplication) -> AppRef {
-    let pid = app.processIdentifier();
-    let bundle_id = app.bundleIdentifier().map(|s| s.to_string());
+    to_app_ref(snapshot(app))
+}
+
+/// The name is the localized name, else the bundle ID, else `pid <n>`.
+fn to_app_ref(app: AppSnapshot) -> AppRef {
     let name = app
-        .localizedName()
-        .map(|s| s.to_string())
+        .name
         .filter(|s| !s.is_empty())
-        .or_else(|| bundle_id.clone())
-        .unwrap_or_else(|| format!("pid {pid}"));
+        .or_else(|| app.bundle_id.clone())
+        .unwrap_or_else(|| format!("pid {}", app.pid));
     AppRef {
-        bundle_id,
+        bundle_id: app.bundle_id,
         name,
-        pid,
+        pid: app.pid,
     }
 }
 
@@ -221,6 +250,111 @@ fn read_bundle_id(path: &Path) -> Result<Option<String>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn fake(
+        pid: i32,
+        name: Option<&str>,
+        bundle_id: Option<&str>,
+        policy: NSApplicationActivationPolicy,
+    ) -> AppSnapshot {
+        AppSnapshot {
+            pid,
+            name: name.map(Into::into),
+            bundle_id: bundle_id.map(Into::into),
+            policy,
+        }
+    }
+
+    #[test]
+    fn regular_apps_without_regular_entries_is_empty() {
+        // launchservicesd can report only Accessory and Prohibited apps to a new process.
+        let apps = [
+            fake(
+                1,
+                Some("Dock"),
+                Some("com.apple.dock"),
+                NSApplicationActivationPolicy::Accessory,
+            ),
+            fake(
+                2,
+                Some("loginwindow"),
+                None,
+                NSApplicationActivationPolicy::Prohibited,
+            ),
+        ];
+        assert_eq!(regular_apps(apps), []);
+    }
+
+    #[test]
+    fn regular_apps_keeps_only_regular_in_order() {
+        let apps = [
+            fake(
+                3,
+                Some("Notes"),
+                Some("com.apple.Notes"),
+                NSApplicationActivationPolicy::Regular,
+            ),
+            fake(
+                1,
+                Some("Dock"),
+                Some("com.apple.dock"),
+                NSApplicationActivationPolicy::Accessory,
+            ),
+            fake(
+                2,
+                Some("Safari"),
+                Some("com.apple.Safari"),
+                NSApplicationActivationPolicy::Regular,
+            ),
+            fake(4, None, None, NSApplicationActivationPolicy::Prohibited),
+        ];
+        let pids: Vec<i32> = regular_apps(apps).iter().map(|app| app.pid).collect();
+        assert_eq!(pids, [3, 2]);
+    }
+
+    #[test]
+    fn app_name_prefers_localized_name() {
+        let app = fake(
+            7,
+            Some("Safari"),
+            Some("com.apple.Safari"),
+            NSApplicationActivationPolicy::Regular,
+        );
+        assert_eq!(
+            to_app_ref(app),
+            AppRef {
+                bundle_id: Some("com.apple.Safari".into()),
+                name: "Safari".into(),
+                pid: 7,
+            }
+        );
+    }
+
+    #[test]
+    fn app_name_falls_back_to_bundle_id_when_name_missing_or_empty() {
+        for name in [None, Some("")] {
+            let app = fake(
+                7,
+                name,
+                Some("com.example.App"),
+                NSApplicationActivationPolicy::Regular,
+            );
+            assert_eq!(to_app_ref(app).name, "com.example.App");
+        }
+    }
+
+    #[test]
+    fn app_name_falls_back_to_pid() {
+        let app = fake(42, None, None, NSApplicationActivationPolicy::Regular);
+        assert_eq!(
+            to_app_ref(app),
+            AppRef {
+                bundle_id: None,
+                name: "pid 42".into(),
+                pid: 42,
+            }
+        );
+    }
 
     #[test]
     fn running_apps_contains_regular_apps() {
