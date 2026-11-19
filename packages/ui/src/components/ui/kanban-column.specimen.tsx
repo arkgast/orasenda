@@ -37,6 +37,38 @@ export function KanbanColumnSpecimen(): ReactElement {
           </KanbanColumn>
         </div>
       </Frame>
+      <Frame state="kanban-column-header-min-width-200" width={200} height={300}>
+        <div className="flex h-full">
+          <KanbanColumn
+            title="Today"
+            count={4}
+            limit={3}
+            onToggle={() => {}}
+            onAdd={() => {}}
+            onEdit={() => {}}
+          >
+            <Cards n={2} />
+          </KanbanColumn>
+        </div>
+      </Frame>
+      <Frame state="kanban-column-header-long-name-200" width={200} height={200}>
+        <KanbanColumn
+          title="Waiting on others"
+          count={1}
+          onToggle={() => {}}
+          onAdd={() => {}}
+          onEdit={() => {}}
+        />
+      </Frame>
+      <Frame state="kanban-column-editor-slot-280" width={280} height={300}>
+        <KanbanColumn
+          title="Waiting"
+          count={1}
+          editor={<p className="m-0 text-body-sm text-ink">Editor goes here.</p>}
+        >
+          <Cards n={1} />
+        </KanbanColumn>
+      </Frame>
       <Frame state="kanban-column-at-limit-280" width={280} height={300}>
         <KanbanColumn title="Doing" count={1} limit={1}>
           <Cards n={1} />

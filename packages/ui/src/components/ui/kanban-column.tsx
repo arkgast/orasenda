@@ -1,8 +1,7 @@
 import { Children, type ReactElement, type ReactNode, useEffect, useId, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
-import { IconButton } from "./icon-button";
-import { ModeChip } from "./mode-chip";
+import { KanbanColumnHeader } from "./kanban-column-header";
 
 interface KanbanColumnBase {
   title: string;
@@ -12,8 +11,14 @@ interface KanbanColumnBase {
   emptyMessage?: string;
   /** Sits under the cards, inside the column (an "Add task" control). */
   footer?: ReactNode;
-  /** The header's action slot (a column menu). */
-  action?: ReactNode;
+  /** The + in the header's second row, named "Add task to <title>"; absent without it. */
+  onAdd?: () => void;
+  /** Overrides the + button's name. */
+  addLabel?: string;
+  /** Makes the name a quiet button: a double-click or Return calls it. Without it the name is plain text. */
+  onEdit?: () => void;
+  /** While set, replaces both header rows (the Fold button too); the cards stay. */
+  editor?: ReactNode;
   /** "wide" grows to column-wide-width (Today and Doing in the Today-first board). */
   width?: "standard" | "wide";
   /** On the region, so the board can move focus between columns. */
@@ -119,7 +124,8 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
     <section
       data-slot="kanban-column"
       id={props.id}
-      aria-labelledby={headingId}
+      aria-labelledby={props.editor ? undefined : headingId}
+      aria-label={props.editor ? props.title : undefined}
       className={cn(
         "flex min-h-0 min-w-column-min-width flex-col gap-3 rounded-lg bg-surface-sunken p-3",
         props.width === "wide"
@@ -127,30 +133,25 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
           : "max-w-column-width grow basis-column-min-width",
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={headingId} className="m-0 text-heading">
-          {props.title}
-        </h2>
-        <span className="flex items-center gap-2">
-          {over ? (
-            <ModeChip mode="warning">{text}</ModeChip>
-          ) : (
-            <span className="font-mono text-caption text-ink-muted tabular-nums">{text}</span>
-          )}
-          {props.action}
-          {props.onToggle ? (
-            <IconButton
-              label={`Fold ${props.title}`}
-              icon={<Icon name="collapse" />}
-              aria-expanded={true}
-              onClick={() => {
-                foldedByUs.current = true;
-                props.onToggle?.();
-              }}
-            />
-          ) : null}
-        </span>
-      </header>
+      {props.editor ?? (
+        <KanbanColumnHeader
+          headingId={headingId}
+          title={props.title}
+          text={text}
+          over={over}
+          onEdit={props.onEdit}
+          onAdd={props.onAdd}
+          addLabel={props.addLabel}
+          onFold={
+            props.onToggle
+              ? () => {
+                  foldedByUs.current = true;
+                  props.onToggle?.();
+                }
+              : undefined
+          }
+        />
+      )}
       <div
         data-slot="kanban-column-cards"
         className="flex min-h-0 flex-1 flex-col gap-2 scroll-py-1 overflow-y-auto p-1"

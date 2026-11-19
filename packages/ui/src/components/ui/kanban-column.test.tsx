@@ -106,11 +106,89 @@ test("wide_width_uses_the_wide_token", () => {
   expect(section?.className).not.toContain("max-w-column-width");
 });
 
-test("action_slot_renders_in_header", () => {
-  render(
-    <KanbanColumn title="Today" count={0} action={<button type="button">Column menu</button>} />,
+test("header_two_rows_with_fold_top_right", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={4} limit={3} onToggle={() => {}} onAdd={() => {}} />,
   );
-  expect(screen.getByRole("button", { name: "Column menu" })).toBeTruthy();
+  const rows = container.querySelectorAll("[data-slot=kanban-column-header-row]");
+  expect(rows).toHaveLength(2);
+  expect(rows[0]?.contains(screen.getByRole("heading", { level: 2 }))).toBe(true);
+  expect(rows[0]?.querySelector("[data-slot=kanban-column-fold]")).toBeTruthy();
+  expect(rows[1]?.textContent).toContain("4 of 3");
+  expect(rows[1]?.querySelector("[data-slot=kanban-column-add]")).toBeTruthy();
+  expect(rows[1]?.querySelector("[data-slot=kanban-column-fold]")).toBeNull();
+  expect(screen.getByRole("button", { name: "Fold Today" })).toBeTruthy();
+});
+
+test("name_double_click_calls_on_edit", () => {
+  const onEdit = vi.fn();
+  render(<KanbanColumn title="Today" count={0} onEdit={onEdit} />);
+  fireEvent.doubleClick(screen.getByRole("button", { name: "Today" }));
+  expect(onEdit).toHaveBeenCalledTimes(1);
+});
+
+test("name_single_click_does_nothing", () => {
+  const onEdit = vi.fn();
+  render(<KanbanColumn title="Today" count={0} onEdit={onEdit} />);
+  fireEvent.click(screen.getByRole("button", { name: "Today" }), { detail: 1 });
+  expect(onEdit).not.toHaveBeenCalled();
+});
+
+// A click with detail 0 stands in for Return, Space and VoiceOver's activate.
+test("name_return_calls_on_edit", () => {
+  const onEdit = vi.fn();
+  render(<KanbanColumn title="Today" count={0} onEdit={onEdit} />);
+  const name = screen.getByRole("button", { name: "Today" });
+  fireEvent.click(name, { detail: 0 });
+  expect(onEdit).toHaveBeenCalledTimes(1);
+  expect(name.getAttribute("data-slot")).toBe("kanban-column-name");
+  const hint = document.getElementById(name.getAttribute("aria-describedby") ?? "");
+  expect(hint?.textContent).toBe("Double-click or press Return to edit the column.");
+});
+
+test("name_hint_does_not_rename_region_or_heading", () => {
+  render(<KanbanColumn title="Today" count={0} onEdit={() => {}} />);
+  expect(screen.getByRole("region", { name: "Today" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 2, name: "Today" })).toBeTruthy();
+});
+
+test("name_plain_without_on_edit", () => {
+  render(<KanbanColumn title="Today" count={0} />);
+  expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  expect(screen.getByRole("heading", { level: 2, name: "Today" })).toBeTruthy();
+});
+
+test("add_button_named_for_column", () => {
+  const onAdd = vi.fn();
+  const { rerender } = render(<KanbanColumn title="Today" count={0} onAdd={onAdd} />);
+  fireEvent.click(screen.getByRole("button", { name: "Add task to Today" }));
+  expect(onAdd).toHaveBeenCalledTimes(1);
+  rerender(<KanbanColumn title="Today" count={0} onAdd={onAdd} addLabel="Add to Today" />);
+  expect(screen.getByRole("button", { name: "Add to Today" })).toBeTruthy();
+  rerender(<KanbanColumn title="Today" count={0} />);
+  expect(screen.queryByRole("button", { name: /Add/ })).toBeNull();
+});
+
+test("editor_replaces_header", () => {
+  render(
+    <KanbanColumn
+      title="Today"
+      count={1}
+      limit={3}
+      onToggle={() => {}}
+      onAdd={() => {}}
+      onEdit={() => {}}
+      editor={<div>Editor here</div>}
+    >
+      <TaskCard title="Outline" onOpen={() => {}} />
+    </KanbanColumn>,
+  );
+  expect(screen.getByText("Editor here")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Fold Today" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Add task to Today" })).toBeNull();
+  expect(screen.queryByText("1 of 3")).toBeNull();
+  expect(screen.getByText("Outline")).toBeTruthy();
+  expect(screen.getByRole("region", { name: "Today" })).toBeTruthy();
 });
 
 test("collapsed_is_a_strip_button_with_aria_expanded", () => {
