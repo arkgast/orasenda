@@ -185,37 +185,37 @@ test("use_buffer_save_failure_is_a_plain_line", async () => {
   expect(within(stats).getByRole("button", { name: "Use 40%" })).toBeVisible();
 });
 
+const GOAL = { minutes: 720, words: "Goal 12h", line: "9h 40m of a 12h goal." };
+const habitsOf = (n: number) =>
+  Array.from({ length: n }, (_, i) =>
+    habitStat({ name: `Habit ${i + 1}`, line: `Habit ${i + 1}: done on ${i + 1} days this week.` }),
+  );
+
 // Reviews spec :35 and canvas 4A (owner, 2026-11-18): one row per habit, one M–S header, the legend once after the list.
-test("habit_rows_one_header_one_legend_after_list", async () => {
-  const habits = [
-    habitStat({ name: "Drink water", line: "Drink water: done on 2 days this week" }),
-    habitStat({ name: "Stretch", line: "Stretch: done on 1 day this week" }),
-    habitStat({ name: "Read one page", line: "Read one page: done on 2 days this week" }),
-  ];
+test.each([1, 8])("week_%i_habits_one_header_one_legend", async (count) => {
+  const habits = habitsOf(count);
   await renderReview({ review_stats: () => statsView({ habits }) });
   const stats = section("Stats");
   const list = within(stats).getByRole("list", { name: "Habits" });
   const rows = within(list).getAllByRole("listitem");
-  expect(rows).toHaveLength(3);
+  expect(rows).toHaveLength(count);
   rows.forEach((row, index) => {
     const habit = habits[index];
     if (!habit) throw new Error("missing habit");
-    // Each row holds its name, Rust's line and one daily record, and no header or legend of its own.
-    expect(row).toHaveTextContent(habit.name);
-    expect(row).toHaveTextContent(habit.line);
+    // One line of text (Rust's sentence, which starts with the name) and one daily record.
+    const paragraphs = row.querySelectorAll("p");
+    expect(paragraphs).toHaveLength(1);
+    expect(paragraphs[0]?.textContent).toBe(habit.line);
     expect(within(row).getAllByRole("group", { name: `${habit.name}, daily record` })).toHaveLength(
       1,
     );
     expect(row.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
-    expect(row.querySelectorAll('[data-slot="habit-name"]')).toHaveLength(0);
     expect(row.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
   });
-  // One M–S header for the whole list, above the first row.
   const letters = stats.querySelectorAll('[data-slot="habit-weekday"]');
   expect(Array.from(letters, (l) => l.textContent).join("")).toBe("MTWTFSS");
   const first = rows[0] as HTMLElement;
   expect(letters[0]?.compareDocumentPosition(first)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-  // The legend prints once, after the last habit, with words beside each shape.
   const legends = stats.querySelectorAll('[data-slot="habit-legend"]');
   expect(legends).toHaveLength(1);
   const legend = legends[0] as HTMLElement;
@@ -223,6 +223,82 @@ test("habit_rows_one_header_one_legend_after_list", async () => {
   expect(list.contains(legend)).toBe(false);
   expect(legend).toHaveTextContent("Done");
   expect(legend).toHaveTextContent("Not done");
+});
+
+test("no_habit_name_printed_apart", async () => {
+  const habits = habitsOf(3);
+  await renderReview({ review_stats: () => statsView({ habits }) });
+  const stats = section("Stats");
+  const rows = within(within(stats).getByRole("list", { name: "Habits" })).getAllByRole("listitem");
+  rows.forEach((row, index) => {
+    expect(within(row).queryByText(habits[index]?.name ?? "")).toBeNull();
+    expect(row.querySelectorAll('[data-slot="habit-name"]')).toHaveLength(0);
+  });
+  expect(within(stats).queryAllByText("Drink water")).toHaveLength(0);
+});
+
+test("zero_habits_no_list", async () => {
+  await renderReview({ review_stats: () => statsView({ habits: [] }) });
+  const stats = section("Stats");
+  expect(within(stats).queryByRole("list", { name: "Habits" })).toBeNull();
+  expect(stats.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
+  expect(stats.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
+});
+
+test("range_switch_shares_the_heading_row", async () => {
+  await renderReview({ review_stats: () => statsView() });
+  const stats = section("Stats");
+  const heading = within(stats).getByRole("heading", { name: "Stats", level: 2 });
+  const head = heading.parentElement as HTMLElement;
+  expect(within(head).getByRole("radiogroup", { name: "Stats range" })).toBeInTheDocument();
+  expect(head).not.toBe(stats);
+});
+
+test("week_goal_row_is_focus_with_words_at_end", async () => {
+  await renderReview({ review_stats: () => statsView({ goal: GOAL }) });
+  const stats = section("Stats");
+  const list = within(stats).getByRole("list", { name: "Weekly goal" });
+  const row = within(list).getByRole("listitem", { name: GOAL.line });
+  expect(row).toHaveTextContent("Focus");
+  expect(row).toHaveTextContent("Goal 12h");
+  expect(row).not.toHaveTextContent("This week");
+  // The li's aria-label is not text, so the caption is the only text match.
+  const cap = within(stats).getByText(GOAL.line);
+  expect(cap).toHaveAttribute("aria-hidden", "true");
+  expect(list.contains(cap)).toBe(false);
+  expect(list.compareDocumentPosition(cap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("week_without_goal_has_no_goal_row", async () => {
+  await renderReview({ review_stats: () => statsView({ goal: null }) });
+  const stats = section("Stats");
+  expect(within(stats).queryByRole("list", { name: "Weekly goal" })).toBeNull();
+  expect(stats.querySelectorAll('p[aria-hidden="true"]')).toHaveLength(0);
+});
+
+test("weeks8_lines_only", async () => {
+  const habits = [
+    habitStat({ dots: null, line: "Drink water: done on 20 days in these 8 weeks." }),
+    habitStat({ name: "Stretch", dots: null, line: "Stretch: done on 9 days in these 8 weeks." }),
+  ];
+  await renderReview({
+    review_stats: (a) =>
+      rangeOf(a) === "week" ? statsView({ goal: GOAL }) : weeks8({ goal: GOAL, habits }),
+  });
+  const stats = section("Stats");
+  fireEvent.click(within(stats).getByRole("radio", { name: "8 weeks" }));
+  await settle();
+  expect(within(stats).queryByRole("list", { name: "Weekly goal" })).toBeNull();
+  const rows = within(within(stats).getByRole("list", { name: "Habits" })).getAllByRole("listitem");
+  expect(rows).toHaveLength(2);
+  rows.forEach((row, index) => {
+    const paragraphs = row.querySelectorAll("p");
+    expect(paragraphs).toHaveLength(1);
+    expect(paragraphs[0]?.textContent).toBe(habits[index]?.line);
+  });
+  expect(records(stats)).toHaveLength(0);
+  expect(stats.querySelectorAll('[data-slot="habit-weekday"]')).toHaveLength(0);
+  expect(stats.querySelectorAll('[data-slot="habit-legend"]')).toHaveLength(0);
 });
 
 test("habit_rows_without_dots_have_no_header_or_legend", async () => {
