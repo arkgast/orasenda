@@ -343,3 +343,14 @@ test("drop_slot_instant_reduce_motion", () => {
     "motion-reduce:transition-none",
   );
 });
+
+test("editor_slot_is_the_scroll_container", () => {
+  const { container } = render(
+    <KanbanColumn title="Today" count={0} editor={<button type="button">Save</button>} />,
+  );
+  const slot = container.querySelector('[data-slot="kanban-column-editor"]');
+  expect(slot).not.toBeNull();
+  expect(slot?.contains(screen.getByRole("button", { name: "Save" }))).toBe(true);
+  expect(slot?.classList.contains("overflow-y-auto")).toBe(true);
+  expect(slot?.classList.contains("min-h-0")).toBe(true);
+});

@@ -432,15 +432,29 @@ test("editor_closes_when_column_removed_elsewhere", async () => {
   expect(nameButton("Doing")).toHaveFocus();
 });
 
+test("gone_elsewhere_leaves_focus_outside_the_editor", async () => {
+  await renderBoard({ board: withCustom(boardOf(TASKS), LATER), replies: edits });
+  openEditor("Later");
+  const elsewhere = nameButton("Backlog");
+  const spy = vi.spyOn(document, "activeElement", "get").mockReturnValue(elsewhere);
+  await emitBoardChanged(1, boardOf(TASKS));
+  spy.mockRestore();
+  expect(nameButton("Doing")).not.toHaveFocus();
+});
+
 test("remove_does_not_say_gone_first", async () => {
-  let announced: Promise<unknown> = Promise.resolve();
+  const lines: string[] = [];
+  const seen = new MutationObserver(() => lines.push(document.body.textContent ?? ""));
+  seen.observe(document.body, { childList: true, subtree: true, characterData: true });
   await renderBoard({
     board: withCustom(boardOf(TASKS), LATER),
     replies: {
       ...edits,
-      board_column_remove: () => {
+      board_column_remove: async () => {
         // The service announces the new board before the reply lands.
-        announced = Promise.resolve().then(() => emitBoardChanged(1, boardOf(TASKS)));
+        await emitBoardChanged(1, boardOf(TASKS));
+        await Promise.resolve();
+        lines.push(document.body.textContent ?? "");
         return null;
       },
     },
@@ -448,8 +462,8 @@ test("remove_does_not_say_gone_first", async () => {
   openEditor("Later");
   fireEvent.click(inEditor("Remove column"));
   await settle();
-  await announced;
-  await settle();
-  expect(screen.queryByText("That column is gone. Pick another.")).toBeNull();
+  seen.disconnect();
+  expect(lines.length).toBeGreaterThan(0);
+  expect(lines.some((t) => t.includes("That column is gone. Pick another."))).toBe(false);
   expect(screen.getByText("Removed Later.")).toBeInTheDocument();
 });

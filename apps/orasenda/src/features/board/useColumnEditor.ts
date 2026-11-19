@@ -75,8 +75,12 @@ export function useColumnEditor(
       setOpen(null);
       if (leaving.current === open.lane) return;
       fail("columnNotFound");
-      // Focus was in the editor that has just gone: land on its neighbour, else Backlog.
-      setBack({ lane: neighbour(before, open.lane, -1) ?? "backlog" });
+      // Only if focus was in the editor that has just gone (it is on body once removed): land on
+      // its neighbour, else Backlog. Focus anywhere else stays where it is.
+      const at = document.activeElement;
+      if (!at || at === document.body || at.closest(EDITOR)) {
+        setBack({ lane: neighbour(before, open.lane, -1) ?? "backlog" });
+      }
     }
   }, [open, columns, fail]);
 
