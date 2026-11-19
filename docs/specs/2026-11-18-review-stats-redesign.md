@@ -73,11 +73,11 @@ Each row: what the canvas shows, what ships on main (a91b88b8), and the fix. "DS
 - Reused unchanged: `ChoiceGroup` segmented, `InlineNotice`, `HabitLegend`, `Button` (`secondary`, `quiet`), `PageFrame`, `ScrollRegion`.
 
 ## Tasks (stack order; each branches from the one before)
-1. **D1 Design system: TrendBars as canvas 4A** — S5–S8, the token, README, tests.
-2. **D2 Design system: BarRow goal words at the end; compact habit dots at 10px** — S4's DS part, S10's DS part, READMEs, tests.
-3. **R1 Service: habit sentences name the habit** — R1, words tests, look-back and stats tests.
-4. **S Screen: Review Stats as canvas 4A** — S1–S4, S9–S12 in `StatsSection.tsx` and `review.css`; tests in `ReviewPage.stats.test.tsx`.
-5. **O Screen: Review overview and flows as canvas 1A, 2A, 3A** — O1–O3, F2, F4; tests in the overview, shutdown and weekly test files.
+1. **#777 C1 Design system: TrendBars as canvas 4A** — S5–S8, the token, README, tests.
+2. **#780 C2 Design system: BarRow goal words at the end; compact habit dots at 10px** — S4's DS part, S10's DS part, READMEs, tests.
+3. **#778 C3 Service: habit sentences name the habit** — R1, words tests, look-back and stats tests.
+4. **#781 C4 Screen: Review Stats as canvas 4A** — S1–S4, S9–S12 in `StatsSection.tsx` and `review.css`; tests in `ReviewPage.stats.test.tsx`.
+5. **#779 C5 Screen: Review overview and flows as canvas 1A, 2A, 3A** — O1–O3, F2, F4; tests in the overview, shutdown and weekly test files.
 
 Every task: tokens only, both themes, focus ring, `hit-min`, vitest only (no browser tests), `./scripts/ci.sh` green, files under 500 lines.
 
