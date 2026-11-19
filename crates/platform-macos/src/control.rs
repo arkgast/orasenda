@@ -24,12 +24,12 @@ pub struct MacAppControl;
 
 impl AppControl for MacAppControl {
     fn running_apps(&self) -> Vec<AppRef> {
-        NSWorkspace::sharedWorkspace()
-            .runningApplications()
-            .iter()
-            .filter(|app| is_regular(app))
-            .map(|app| app_ref(&app))
-            .collect()
+        regular_apps(
+            NSWorkspace::sharedWorkspace()
+                .runningApplications()
+                .iter()
+                .map(|app| snapshot(&app)),
+        )
     }
 
     /// `Refused` when `-[NSRunningApplication hide]` returns NO. On macOS 27 it returns NO
@@ -134,20 +134,49 @@ fn hide_again(app: &impl Hideable, poll: Duration, timeout: Duration) -> bool {
     hidden
 }
 
+/// What [`regular_apps`] and [`to_app_ref`] need from a running app, read once so the
+/// filtering and naming can be tested without launchservicesd.
+struct AppSnapshot {
+    pid: i32,
+    name: Option<String>,
+    bundle_id: Option<String>,
+    policy: NSApplicationActivationPolicy,
+}
+
+fn snapshot(app: &NSRunningApplication) -> AppSnapshot {
+    AppSnapshot {
+        pid: app.processIdentifier(),
+        name: app.localizedName().map(|s| s.to_string()),
+        bundle_id: app.bundleIdentifier().map(|s| s.to_string()),
+        policy: app.activationPolicy(),
+    }
+}
+
+/// The regular apps among `apps`, in order. Empty when none is regular, which launchservicesd
+/// sometimes reports to a new process.
+fn regular_apps(apps: impl IntoIterator<Item = AppSnapshot>) -> Vec<AppRef> {
+    apps.into_iter()
+        .filter(|app| app.policy == NSApplicationActivationPolicy::Regular)
+        .map(to_app_ref)
+        .collect()
+}
+
 /// Converts a running app into the core's [`AppRef`]; the name falls back to the bundle ID.
 pub(crate) fn app_ref(app: &NSRunningApplication) -> AppRef {
-    let pid = app.processIdentifier();
-    let bundle_id = app.bundleIdentifier().map(|s| s.to_string());
+    to_app_ref(snapshot(app))
+}
+
+/// The name is the localized name, else the bundle ID, else `pid <n>`.
+fn to_app_ref(app: AppSnapshot) -> AppRef {
     let name = app
-        .localizedName()
-        .map(|s| s.to_string())
+        .name
         .filter(|s| !s.is_empty())
-        .or_else(|| bundle_id.clone())
-        .unwrap_or_else(|| format!("pid {pid}"));
+        .or_else(|| app.bundle_id.clone())
+        .unwrap_or_else(|| format!("pid {}", app.pid));
     AppRef {
-        bundle_id,
+        bundle_id: app.bundle_id,
         name,
-        pid,
+        pid: app.pid,
     }
 }
 
@@ -219,187 +248,4 @@ fn read_bundle_id(path: &Path) -> Result<Option<String>, String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn running_apps_contains_regular_apps() {
-        let apps = MacAppControl.running_apps();
-        assert!(!apps.is_empty());
-        for app in &apps {
-            assert!(!app.name.is_empty());
-            assert_ne!(app.bundle_id.as_deref(), Some("com.apple.dock"));
-            // An app that quit since the listing is skipped rather than failing the test.
-            let Some(running) =
-                NSRunningApplication::runningApplicationWithProcessIdentifier(app.pid)
-            else {
-                continue;
-            };
-            assert_eq!(
-                running.activationPolicy(),
-                NSApplicationActivationPolicy::Regular,
-                "{} is not a regular app",
-                app.name
-            );
-        }
-    }
-
-    #[test]
-    fn hide_non_regular_app_is_not_a_regular_app() {
-        let pid = NSWorkspace::sharedWorkspace()
-            .runningApplications()
-            .iter()
-            .find(|app| !app.isTerminated() && !is_regular(app))
-            .map(|app| app.processIdentifier())
-            .expect("a running non-regular app");
-        // The guard refuses before any AppKit action is attempted, with its own error, so it
-        // is never confused with hide's unreliable NO (`Refused`).
-        let not_regular = PlatformError::Other(NOT_REGULAR.into());
-        assert_eq!(regular_app(pid).err(), Some(not_regular.clone()));
-        assert_eq!(MacAppControl.hide(pid), Err(not_regular.clone()));
-        assert_eq!(MacAppControl.terminate(pid), Err(not_regular));
-    }
-
-    /// Records the calls [`hide_again`] makes. It stops reporting hidden after `unhide`
-    /// once `hidden_checks_after_unhide` more checks have run (never when `None`).
-    struct FakeApp {
-        hidden_checks_after_unhide: Option<usize>,
-        calls: std::cell::RefCell<Vec<&'static str>>,
-    }
-
-    impl FakeApp {
-        fn new(hidden_checks_after_unhide: Option<usize>) -> FakeApp {
-            FakeApp {
-                hidden_checks_after_unhide,
-                calls: Default::default(),
-            }
-        }
-        fn calls(&self) -> Vec<&'static str> {
-            self.calls.borrow().clone()
-        }
-    }
-
-    impl Hideable for FakeApp {
-        fn is_hidden(&self) -> bool {
-            let mut calls = self.calls.borrow_mut();
-            let checks = calls.iter().filter(|call| **call == "is_hidden").count();
-            calls.push("is_hidden");
-            match self.hidden_checks_after_unhide {
-                Some(limit) if calls.contains(&"unhide") => checks < limit,
-                _ => true,
-            }
-        }
-        fn unhide(&self) -> bool {
-            self.calls.borrow_mut().push("unhide");
-            false
-        }
-        fn hide(&self) -> bool {
-            self.calls.borrow_mut().push("hide");
-            false
-        }
-    }
-
-    #[test]
-    fn hide_again_hides_only_once_the_unhide_landed() {
-        // Mission Control can show and activate a hidden full-screen app without unhiding
-        // it; a plain `hide` is then a no-op and you stay on its Space (#56). A `hide` sent
-        // right after `unhide` is dropped too, so it waits for the unhide.
-        let app = FakeApp::new(Some(2));
-        assert!(!hide_again(&app, Duration::ZERO, Duration::from_secs(5)));
-        assert_eq!(
-            app.calls(),
-            ["unhide", "is_hidden", "is_hidden", "is_hidden", "hide"]
-        );
-    }
-
-    #[test]
-    fn hide_again_hides_anyway_after_the_timeout() {
-        let app = FakeApp::new(None);
-        assert!(hide_again(
-            &app,
-            Duration::from_millis(1),
-            Duration::from_millis(20)
-        ));
-        let calls = app.calls();
-        assert_eq!(calls.first(), Some(&"unhide"));
-        assert_eq!(calls.last(), Some(&"hide"));
-        assert!(calls.iter().filter(|call| **call == "is_hidden").count() >= 2);
-    }
-
-    #[test]
-    fn running_apps_runs_off_main_thread() {
-        let apps = std::thread::spawn(|| MacAppControl.running_apps())
-            .join()
-            .unwrap();
-        assert!(!apps.is_empty());
-    }
-
-    #[test]
-    fn hide_unknown_pid_is_not_found() {
-        assert_eq!(MacAppControl.hide(i32::MAX), Err(PlatformError::NotFound));
-        assert_eq!(
-            MacAppControl.terminate(i32::MAX),
-            Err(PlatformError::NotFound)
-        );
-        assert_eq!(
-            MacAppControl.activate(i32::MAX),
-            Err(PlatformError::NotFound)
-        );
-    }
-
-    #[test]
-    fn phone_bundle_id_missing_file_is_none() {
-        assert_eq!(
-            bundle_id_from_info_plist(Path::new("/nonexistent/Phone.app/Contents/Info.plist")),
-            None
-        );
-    }
-
-    #[test]
-    fn bundle_id_is_read_from_an_existing_info_plist() {
-        assert_eq!(
-            bundle_id_from_info_plist(Path::new(
-                "/System/Applications/Calculator.app/Contents/Info.plist"
-            ))
-            .as_deref(),
-            Some("com.apple.calculator")
-        );
-    }
-
-    fn temp_plist(name: &str, contents: &str) -> std::path::PathBuf {
-        let path = std::env::temp_dir().join(format!(
-            "orasenda-platform-macos-{}-{name}.plist",
-            std::process::id()
-        ));
-        std::fs::write(&path, contents).unwrap();
-        path
-    }
-
-    #[test]
-    fn read_bundle_id_missing_file_is_ok_none() {
-        assert_eq!(
-            read_bundle_id(Path::new("/nonexistent/Phone.app/Contents/Info.plist")),
-            Ok(None)
-        );
-    }
-
-    #[test]
-    fn read_bundle_id_unparsable_file_is_an_error() {
-        let path = temp_plist("garbage", "this is not a plist");
-        let result = read_bundle_id(&path);
-        std::fs::remove_file(&path).unwrap();
-        assert!(result.is_err(), "{result:?}");
-    }
-
-    #[test]
-    fn read_bundle_id_non_string_value_is_an_error() {
-        let path = temp_plist(
-            "integer",
-            r#"<?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0"><dict><key>CFBundleIdentifier</key><integer>42</integer></dict></plist>"#,
-        );
-        let result = read_bundle_id(&path);
-        std::fs::remove_file(&path).unwrap();
-        assert!(result.is_err(), "{result:?}");
-    }
-}
+mod tests;
