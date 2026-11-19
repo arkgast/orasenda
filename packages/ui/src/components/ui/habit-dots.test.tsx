@@ -213,9 +213,7 @@ test("non_compact_dots_stay_icon_md", () => {
 });
 
 test("compact_today_ring_fits_the_gap", () => {
-  const a = render(
-    <HabitDots compact columns="week" days={[{ state: "done", today: true }]} />,
-  );
+  const a = render(<HabitDots compact columns="week" days={[{ state: "done", today: true }]} />);
   const dot = a.container.querySelector('[data-slot="habit-dot"]') as Element;
   expect(classes(dot)).toContain("outline-focus-ring");
   expect(classes(dot)).toContain("outline-offset-1");

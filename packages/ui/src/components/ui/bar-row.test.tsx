@@ -124,9 +124,7 @@ test("bar_row_goal_words_default_under_the_track", () => {
 });
 
 test("bar_row_goal_words_end_without_goal_draws_duration", () => {
-  const { container } = render(
-    <BarRow {...base} minutes={30} max={60} goalWords="end" />,
-  );
+  const { container } = render(<BarRow {...base} minutes={30} max={60} goalWords="end" />);
   expect(screen.getByText("2h 10m")).toBeTruthy();
   expect(container.querySelector("[data-slot='bar-goal-words']")).toBeNull();
 });

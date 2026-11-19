@@ -53,16 +53,23 @@ const SHAPES: Record<HabitState, string> = {
   future: "rounded-sm border-2 border-dotted border-line-strong",
 };
 
+// Compact cells share one source, so the weekday header lines up over the grids.
+const DOT_COMPACT = "size-icon-sm";
+const CELL_COMPACT = "w-icon-sm";
+const GAP_COMPACT = "gap-1";
+
 function Dot({
   state,
   today,
   label,
   decorative,
+  compact,
 }: {
   state: HabitState;
   today?: boolean;
   label?: string;
   decorative?: boolean;
+  compact?: boolean;
 }) {
   const text = `${label ? `${label}, ` : ""}${today ? "Today, " : ""}${WORDS[state]}`;
   const a11y = decorative
@@ -75,9 +82,13 @@ function Dot({
       data-today={today ? "" : undefined}
       {...a11y}
       className={cn(
-        "inline-flex size-icon-md flex-none items-center justify-center rounded-pill",
+        "inline-flex flex-none items-center justify-center rounded-pill",
+        compact ? DOT_COMPACT : "size-icon-md",
         SHAPES[state],
-        today && "outline-2 outline-focus-ring outline-offset-3",
+        today &&
+          (compact
+            ? "outline-2 outline-focus-ring outline-offset-1"
+            : "outline-2 outline-focus-ring outline-offset-3"),
       )}
     >
       {state === "done" ? (
@@ -89,9 +100,11 @@ function Dot({
   );
 }
 
-// Every week cell is one icon-md wide, so a header printed on its own lines up with the grids under it.
+// Every week cell is one icon-md wide (icon-sm when compact), so a header printed on its own lines up with the grids under it.
 const WEEK_GRID = "grid w-max grid-cols-7 justify-items-center";
-const LETTER = "w-icon-md text-center text-label text-ink-muted";
+const LETTER_BASE = "text-center text-label text-ink-muted";
+const LETTER = `w-icon-md ${LETTER_BASE}`;
+const LETTER_COMPACT = `${CELL_COMPACT} ${LETTER_BASE}`;
 
 /** The M–S weekday header on its own, for a list of compact week grids. Hidden from assistive tech. */
 export function HabitWeekdays(): ReactElement {
@@ -99,10 +112,15 @@ export function HabitWeekdays(): ReactElement {
     <div
       data-slot="habit-weekdays"
       aria-hidden="true"
-      className={cn(WEEK_GRID, "gap-fluid-stack p-1")}
+      className={cn(WEEK_GRID, GAP_COMPACT, "p-1")}
     >
       {WEEKDAY_LETTERS.map(([key, letter]) => (
-        <span key={`head-${key}`} data-slot="habit-weekday" aria-hidden="true" className={LETTER}>
+        <span
+          key={`head-${key}`}
+          data-slot="habit-weekday"
+          aria-hidden="true"
+          className={LETTER_COMPACT}
+        >
           {letter}
         </span>
       ))}
@@ -168,7 +186,11 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
         role="group"
         aria-label={`${props.name || "Habit"}, daily record`}
         data-columns={week ? "week" : undefined}
-        className={cn("gap-fluid-stack p-1", week ? WEEK_GRID : "flex flex-wrap")}
+        className={cn(
+          "p-1",
+          compact ? GAP_COMPACT : "gap-fluid-stack",
+          week ? WEEK_GRID : "flex flex-wrap",
+        )}
       >
         {/* Each letter is hidden itself: a display: contents wrapper can lose aria-hidden in WebKit. */}
         {week && !compact
@@ -188,12 +210,12 @@ export function HabitDots(props: HabitDotsProps): ReactElement {
             key={`gap-${key}`}
             data-slot="habit-gap"
             aria-hidden="true"
-            className="size-icon-md"
+            className={compact ? DOT_COMPACT : "size-icon-md"}
           />
         ))}
         {days.map((d, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: days have no id; the record is positional and static
-          <Dot key={i} {...d} />
+          <Dot key={i} {...d} compact={compact} />
         ))}
       </div>
       {props.runLine && !compact ? (
