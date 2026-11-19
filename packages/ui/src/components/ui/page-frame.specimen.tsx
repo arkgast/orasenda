@@ -42,6 +42,20 @@ export function PageFrameSpecimen(): ReactElement {
           </ScrollRegion>
         </PageFrame>
       </Frame>
+      <Frame state="page-frame-scroll-x-900x600" width={900} height={600}>
+        <PageFrame title="Board">
+          <ScrollRegion label="Board columns" axis="x">
+            <div className="flex w-max gap-2">
+              {Array.from({ length: 6 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static specimen columns
+                <div key={i} className="w-column-width shrink-0 rounded-md bg-surface-raised p-2">
+                  {rows(3)}
+                </div>
+              ))}
+            </div>
+          </ScrollRegion>
+        </PageFrame>
+      </Frame>
       <Frame state="page-frame-flow-900x600" width={900} height={600}>
         <PageFrame
           title="Weekly review"

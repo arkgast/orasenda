@@ -3,6 +3,8 @@ import { cn } from "../../lib/utils";
 
 export interface ScrollRegionProps {
   label: string;
+  /** "y" (default) scrolls down with a hairline and a "More below" row; "x" scrolls sideways (Board columns), with neither, and is not a tab stop. */
+  axis?: "y" | "x";
   /** "content" holds the children in one centred column of `content-width`; the bar stays at the edge. */
   width?: "full" | "content";
   children?: ReactNode;
@@ -17,8 +19,17 @@ const FOCUSABLE =
 const region =
   "relative h-full min-h-0 overflow-y-scroll border-t border-clear p-1 scroll-pt-2 scroll-pb-6 data-[scrolled=true]:border-line outline-focus-ring focus-visible:outline-2 [&::-webkit-scrollbar]:w-scrollbar-size [&::-webkit-scrollbar-track]:bg-clear [&::-webkit-scrollbar-thumb]:min-h-hit-floor [&::-webkit-scrollbar-thumb]:rounded-pill [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-clear [&::-webkit-scrollbar-thumb]:bg-line-strong [&::-webkit-scrollbar-thumb]:bg-clip-padding";
 
+// Sideways: the same always-drawn bar along the bottom (scrollbar-size high, hit-floor-long thumb); the content roves, so no tab stop, hairline or edge row.
+const regionX =
+  "relative h-full min-h-0 overflow-x-scroll overflow-y-hidden p-1 outline-focus-ring focus-visible:outline-2 [&::-webkit-scrollbar]:h-scrollbar-size [&::-webkit-scrollbar-track]:bg-clear [&::-webkit-scrollbar-thumb]:min-w-hit-floor [&::-webkit-scrollbar-thumb]:rounded-pill [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-clear [&::-webkit-scrollbar-thumb]:bg-line-strong [&::-webkit-scrollbar-thumb]:bg-clip-padding";
+
 /** The only scrolling box on a list page: a hairline once scrolled, and a "More below" row while content remains. */
-export function ScrollRegion({ label, width, children }: ScrollRegionProps): JSX.Element {
+export function ScrollRegion({
+  label,
+  axis = "y",
+  width,
+  children,
+}: ScrollRegionProps): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -26,11 +37,11 @@ export function ScrollRegion({ label, width, children }: ScrollRegionProps): JSX
 
   const measure = useCallback(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || axis === "x") return;
     setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
     setScrolled(el.scrollTop > 0);
     setFocusable(!!el.querySelector(FOCUSABLE));
-  }, []);
+  }, [axis]);
 
   useEffect(() => {
     const el = ref.current;
@@ -53,11 +64,12 @@ export function ScrollRegion({ label, width, children }: ScrollRegionProps): JSX
       ref={ref}
       data-slot="scroll-region"
       aria-label={label}
+      data-axis={axis === "x" ? "x" : undefined}
       data-scrolled={scrolled ? "true" : "false"}
-      // Focusable only when it holds no focusable item, so the keyboard can still scroll it.
-      tabIndex={focusable === false ? 0 : undefined}
+      // Focusable only when it holds no focusable item, so the keyboard can still scroll it (never sideways).
+      tabIndex={axis !== "x" && focusable === false ? 0 : undefined}
       onScroll={measure}
-      className={cn(region)}
+      className={cn(axis === "x" ? regionX : region)}
     >
       {width === "content" ? (
         <div data-slot="scroll-region-column" className="mx-auto w-full max-w-content-width">
