@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-19-running-apps-tests.md](../specs/2026-11-19-running-apps-tests.md)
 - Date: 2026-11-19
-- Status: approved
+- Status: in backlog
 
 ## Overview
 One task. The whole change is in one file plus one justfile recipe, so splitting it would only add coordination.
@@ -28,7 +28,7 @@ T1 (independent)
 
 ## Tasks
 
-### T1: Deterministic running_apps tests: pure filter, invariant tests, ignored live test
+### T1: Deterministic running_apps tests: pure filter, invariant tests, ignored live test (#800)
 - Priority: 1
 - Depends on: none
 - Owns: `crates/platform-macos/src/control.rs`, `justfile` (new `live-macos` recipe only)

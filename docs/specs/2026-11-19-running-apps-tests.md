@@ -101,4 +101,4 @@ The verify result would still depend on launchservicesd state, which is the prob
 None.
 
 ## Implementation status
-- [ ] Plan and issue (to be linked)
+- [ ] [Plan](../plans/2026-11-19-running-apps-tests.md), task #800
