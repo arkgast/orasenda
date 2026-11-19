@@ -112,3 +112,79 @@ test("default_width_unchanged", () => {
   );
   expect(region.firstElementChild?.tagName).toBe("P");
 });
+
+test("axis_x_has_region_role_and_name", () => {
+  render(
+    <ScrollRegion label="Board columns" axis="x">
+      <button type="button">Card</button>
+    </ScrollRegion>,
+  );
+  const region = screen.getByRole("region", { name: "Board columns" });
+  expect(region).toHaveAttribute("data-slot", "scroll-region");
+  expect(region).toHaveAttribute("data-axis", "x");
+  expect(region.className).toContain("overflow-x-scroll");
+  expect(region.className).toContain("overflow-y-hidden");
+  expect(region.className).toContain("[&::-webkit-scrollbar]:h-scrollbar-size");
+  expect(region.className).toContain("[&::-webkit-scrollbar-thumb]:min-w-hit-floor");
+  expect(region.className).toContain("[&::-webkit-scrollbar-thumb]:bg-line-strong");
+  expect(region.className).not.toContain("overflow-y-scroll");
+});
+
+test("axis_x_no_more_below_row", () => {
+  const restore = stubLayout(500, 100);
+  try {
+    const { container } = render(
+      <ScrollRegion label="Board columns" axis="x">
+        <p>wide</p>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).toBeNull();
+    const region = screen.getByRole("region", { name: "Board columns" });
+    expect(region.className).not.toContain("border-t");
+    expect(region).toHaveAttribute("data-scrolled", "false");
+  } finally {
+    restore();
+  }
+});
+
+test("axis_x_not_tab_stop", () => {
+  render(
+    <ScrollRegion label="Board columns" axis="x">
+      <p>no focusable item here</p>
+    </ScrollRegion>,
+  );
+  expect(screen.getByRole("region", { name: "Board columns" })).not.toHaveAttribute("tabindex");
+});
+
+test("axis_y_default_unchanged", () => {
+  render(
+    <ScrollRegion label="Board">
+      <p>row</p>
+    </ScrollRegion>,
+  );
+  const region = screen.getByRole("region", { name: "Board" });
+  expect(region).not.toHaveAttribute("data-axis", "x");
+  expect(region.className).toContain("overflow-y-scroll");
+  expect(region.className).not.toContain("overflow-x-scroll");
+});
+
+test("axis_y_to_x_on_same_instance_clears_more_below", () => {
+  const restore = stubLayout(500, 100);
+  try {
+    const { container, rerender } = render(
+      <ScrollRegion label="Board">
+        <p>tall</p>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).not.toBeNull();
+    rerender(
+      <ScrollRegion label="Board" axis="x">
+        <p>tall</p>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).toBeNull();
+    expect(screen.getByRole("region", { name: "Board" })).toHaveAttribute("data-scrolled", "false");
+  } finally {
+    restore();
+  }
+});

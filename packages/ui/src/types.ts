@@ -52,7 +52,11 @@ declare global {
       CommandPalette: typeof import("./components/ui/command-palette").CommandPalette;
       StartButton: typeof import("./components/ui/start-button").StartButton;
       NowLine: (props: { time: string }) => React.ReactElement;
-      ScrollRegion: (props: { label: string; children?: React.ReactNode }) => React.ReactElement;
+      ScrollRegion: (props: {
+        label: string;
+        axis?: "y" | "x";
+        children?: React.ReactNode;
+      }) => React.ReactElement;
       SettingsRow: typeof import("./components/ui/settings-row").SettingsRow;
       IconButton: typeof import("./components/ui/icon-button").IconButton;
       Tooltip: typeof import("./components/ui/tooltip").Tooltip;
