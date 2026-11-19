@@ -53,3 +53,50 @@ test("an answer asked for before an event is not shown over it", async () => {
   await settle();
   expect(result.current.board).toEqual({ status: "ok", board: named("event") });
 });
+
+test("the column commands reach Rust and answer typed", async () => {
+  const calls: unknown[] = [];
+  mockBackend({
+    board_get: () => BOARD,
+    board_column_add: (args: unknown) => {
+      calls.push(["add", args]);
+      return "c_ab12cd34";
+    },
+    board_column_edit: (args: unknown) => {
+      calls.push(["edit", args]);
+      return null;
+    },
+    board_column_remove: (args: unknown) => {
+      calls.push(["remove", args]);
+      return null;
+    },
+    board_column_fold: (args: unknown) => {
+      calls.push(["fold", args]);
+      return null;
+    },
+  });
+  const { result } = renderHook(() => useBoard());
+  await settle();
+  expect(await result.current.addColumn("today")).toBe("c_ab12cd34");
+  expect((await result.current.editColumn("c_ab12cd34", "Review", 2)).status).toBe("ok");
+  expect((await result.current.foldColumn("done", false)).status).toBe("ok");
+  expect((await result.current.removeColumn("c_ab12cd34")).status).toBe("ok");
+  expect(calls).toEqual([
+    ["add", { after: "today" }],
+    ["edit", { lane: "c_ab12cd34", name: "Review", limit: 2 }],
+    ["fold", { lane: "done", folded: false }],
+    ["remove", { lane: "c_ab12cd34" }],
+  ]);
+});
+
+test("addColumn answers null when Rust refuses", async () => {
+  mockBackend({
+    board_get: () => BOARD,
+    board_column_add: () => {
+      throw "tooManyColumns";
+    },
+  });
+  const { result } = renderHook(() => useBoard());
+  await settle();
+  expect(await result.current.addColumn("today")).toBeNull();
+});
