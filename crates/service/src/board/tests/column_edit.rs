@@ -217,7 +217,7 @@ fn tasks_go_to_and_from_an_existing_custom_column() {
     let gone = Lane::parse("c_zzzzzzzz").expect("an id");
     assert_eq!(
         run_task_move(&host, &b.id, gone, 0),
-        Err(BoardError::BadColumns),
+        Err(BoardError::ColumnNotFound),
         "an unknown column is still refused"
     );
 }
