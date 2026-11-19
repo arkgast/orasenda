@@ -138,6 +138,8 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
+    // An open column editor takes its own keys.
+    if (target.closest('[data-slot="column-editor"]')) return;
     if (target.matches(STOP)) {
       const from = target.closest<HTMLElement>("[id^='board-col-']");
       const lane = columns.find((c) => columnId(c.lane) === from?.id)?.lane;

@@ -1,9 +1,11 @@
-import { Button, KanbanColumn } from "@orasenda/ui";
-import type { BoardView, Lane, TaskView } from "@shared/ipc/bindings";
+import { Button, ColumnEditor, KanbanColumn } from "@orasenda/ui";
+import type { BoardView, ColumnView, Lane, TaskView } from "@shared/ipc/bindings";
 import { BoardCard } from "./BoardCard";
+import { boardWords } from "./boardWords";
 import { columnId, sessions } from "./lanes";
 import { NewTaskField, newTaskId } from "./NewTaskField";
 import type { DragView } from "./useCardDrag";
+import type { EditorHandlers } from "./useColumnEditor";
 
 export type ColumnHandlers = {
   selected: string | null;
@@ -24,7 +26,45 @@ export type ColumnHandlers = {
   closeField(lane: Lane, back: boolean, now?: boolean): void;
   /** Opens the import sheet. */
   import(): void;
+  /** The column editor: which column has it open and what it does. */
+  editor: EditorHandlers;
 };
+
+const MOST_CUSTOM = 4;
+/** The limit stepper per kind (spec "Column editor"): none for Backlog and Done. */
+function limitOf(column: ColumnView) {
+  const value = column.limit ?? null;
+  if (column.custom) return { value: value ?? 0, min: 0, max: 9, zeroLabel: "No limit" };
+  if (column.lane === "today") return { value: value ?? 3, min: 1, max: 9 };
+  if (column.lane === "doing") return { value: value ?? 1, min: 1, max: 3 };
+  return null;
+}
+
+function editorOf(column: ColumnView, board: BoardView, on: ColumnHandlers) {
+  const { editor } = on;
+  const full = board.columns.filter((c) => c.custom).length >= MOST_CUSTOM;
+  const canRemove = !column.custom
+    ? null
+    : column.tasks.length > 0
+      ? { reason: boardWords("columnNotEmpty") }
+      : (true as const);
+  return (
+    <ColumnEditor
+      name={column.name}
+      limit={limitOf(column)}
+      error={editor.error}
+      taken={board.columns.filter((c) => c.lane !== column.lane).map((c) => c.name)}
+      canAdd={
+        column.lane === "done" ? null : full ? { reason: boardWords("tooManyColumns") } : true
+      }
+      canRemove={canRemove}
+      onSave={(edit) => editor.save(column.lane, edit)}
+      onCancel={() => editor.cancel(column.lane)}
+      onAdd={(pending) => editor.add(column.lane, pending)}
+      onRemove={() => editor.remove(column.lane)}
+    />
+  );
+}
 
 function footerOf(lane: Lane, board: BoardView, on: ColumnHandlers) {
   if (lane === "backlog")
@@ -84,6 +124,8 @@ export function BoardColumns({
         key={column.lane}
         {...shared}
         onToggle={() => on.toggle(column.lane)}
+        onEdit={() => on.editor.open(column.lane)}
+        editor={on.editor.lane === column.lane ? editorOf(column, board, on) : undefined}
         onAdd={column.lane === "done" ? undefined : () => on.plus(column.lane)}
         footer={footerOf(column.lane, board, on)}
       >

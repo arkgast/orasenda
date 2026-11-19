@@ -24,6 +24,7 @@ import { useBoard } from "./useBoard";
 import { useBoardActions } from "./useBoardActions";
 import { useBoardKeys } from "./useBoardKeys";
 import { useCardDrag } from "./useCardDrag";
+import { useColumnEditor } from "./useColumnEditor";
 import { useFolds } from "./useFolds";
 import "./board.css";
 
@@ -68,6 +69,7 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
     },
     failed: (words) => actions.show({ text: words, tone: "attention" }),
   });
+  const editor = useColumnEditor(api, columns, actions.show);
   const keys = useBoardKeys({ root: box, columns, open: folds.open, singleKeys, actions });
 
   // The field is in Backlog; an empty board shows the empty state until Add task asks for it.
@@ -257,6 +259,7 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
           plus,
           closeField,
           import: askImport,
+          editor,
         }}
       />
     </div>
@@ -271,7 +274,7 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
         }
         primary={
           ok && !empty ? (
-            <Button variant="primary" onClick={addTask}>
+            <Button variant={editor.lane ? "quiet" : "primary"} onClick={addTask}>
               <Icon name="plus" />
               Add task
             </Button>

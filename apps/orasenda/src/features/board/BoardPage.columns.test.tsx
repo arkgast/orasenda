@@ -109,7 +109,8 @@ const press = (title: string, init: KeyboardEventInit) => {
   card(title).focus();
   fireEvent.keyDown(card(title), init);
 };
-const heading = (name: string) => screen.getByRole("heading", { name });
+// The name is a button inside the heading once a column can be edited.
+const heading = (name: string) => screen.getByRole("button", { name });
 
 test("arrows_reach_empty_custom_column", async () => {
   await renderBoard({ board: later });
@@ -212,7 +213,7 @@ const edits = {
 
 test("editor_opens_on_double_click", async () => {
   await renderBoard({ replies: edits });
-  fireEvent.click(nameButton("Today"));
+  fireEvent.click(nameButton("Today"), { detail: 1 });
   expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
   openEditor("Today");
   expect(editor()).toBeInTheDocument();
