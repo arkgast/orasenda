@@ -175,3 +175,92 @@ test("legend_alone_names_every_shape_in_words", () => {
   }
   expect(screen.queryAllByRole("img")).toHaveLength(0);
 });
+
+const sevenDays = (extra: Record<string, unknown> = {}) =>
+  Array.from({ length: 7 }, () => ({ state: "done" as const, ...extra }));
+const classes = (el: Element) => Array.from(el.classList);
+
+test("compact_dots_are_icon_sm_with_space_1_gaps", () => {
+  const { container } = render(
+    <HabitDots compact name="Stretch" columns="week" days={sevenDays()} />,
+  );
+  const dots = container.querySelectorAll('[data-slot="habit-dot"]');
+  expect(dots).toHaveLength(7);
+  for (const d of dots) {
+    expect(d.className).toContain("size-icon-sm");
+    expect(classes(d)).not.toContain("size-icon-md");
+  }
+  const grid = screen.getByRole("group", { name: "Stretch, daily record" });
+  expect(classes(grid)).toContain("gap-1");
+  expect(classes(grid)).not.toContain("gap-fluid-stack");
+  expect(within(grid).getAllByRole("img")).toHaveLength(7);
+});
+
+test("non_compact_dots_stay_icon_md", () => {
+  const { container } = render(
+    <>
+      <HabitDots name="Stretch" columns="week" days={sevenDays()} legend />
+    </>,
+  );
+  for (const d of container.querySelectorAll(
+    '[data-slot="habit-grid"] [data-slot="habit-dot"], [data-slot="habit-legend"] [data-slot="habit-dot"]',
+  )) {
+    expect(classes(d)).toContain("size-icon-md");
+    expect(classes(d)).not.toContain("size-icon-sm");
+  }
+  const grid = screen.getByRole("group", { name: "Stretch, daily record" });
+  expect(classes(grid)).toContain("gap-fluid-stack");
+});
+
+test("compact_today_ring_fits_the_gap", () => {
+  const a = render(
+    <HabitDots compact columns="week" days={[{ state: "done", today: true }]} />,
+  );
+  const dot = a.container.querySelector('[data-slot="habit-dot"]') as Element;
+  expect(classes(dot)).toContain("outline-focus-ring");
+  expect(classes(dot)).toContain("outline-offset-1");
+  const b = render(<HabitDots columns="week" days={[{ state: "done", today: true }]} />);
+  expect(classes(b.container.querySelector('[data-slot="habit-dot"]') as Element)).toContain(
+    "outline-offset-3",
+  );
+});
+
+test("compact_leading_gap_cells_are_icon_sm", () => {
+  const { container } = render(
+    <HabitDots compact columns="week" days={[{ state: "done", weekday: 2 }]} />,
+  );
+  const gaps = container.querySelectorAll('[data-slot="habit-gap"]');
+  expect(gaps).toHaveLength(2);
+  for (const g of gaps) expect(classes(g)).toContain("size-icon-sm");
+});
+
+test("weekday_header_cells_match_the_compact_cell", () => {
+  const head = render(<HabitWeekdays />);
+  for (const l of head.container.querySelectorAll('[data-slot="habit-weekday"]')) {
+    expect(classes(l)).toContain("w-icon-sm");
+  }
+  const header = head.container.querySelector('[data-slot="habit-weekdays"]') as Element;
+  const grid = render(<HabitDots compact name="Zed" columns="week" days={sevenDays()} />);
+  const gridEl = grid.getByRole("group", { name: "Zed, daily record" });
+  const gap = (el: Element) => classes(el).filter((c) => /^gap-/.test(c));
+  expect(gap(header)).toEqual(["gap-1"]);
+  expect(gap(gridEl)).toEqual(gap(header));
+});
+
+test("compact_shapes_differ_by_more_than_colour", () => {
+  const { container } = render(
+    <HabitDots
+      compact
+      columns="week"
+      days={[{ state: "done" }, { state: "skipped" }, { state: "rest" }, { state: "future" }]}
+    />,
+  );
+  const [done, skipped, rest, future] = Array.from(
+    container.querySelectorAll('[data-slot="habit-dot"]'),
+  );
+  expect(classes(done as Element)).toContain("bg-break");
+  expect((done as Element).textContent).toBe("✓");
+  expect(classes(skipped as Element)).toContain("border-2");
+  expect(classes(rest as Element)).toContain("border-dashed");
+  expect(classes(future as Element)).toContain("border-dotted");
+});
