@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-18-board-columns.md](../specs/2026-11-18-board-columns.md)
 - Date: 2026-11-18
-- Status: approved (owner, 2026-11-19)
+- Status: in backlog (2026-11-19)
 
 ## Overview
 Twelve tasks, each one PR. Tests come first in every task. Every file stays at 500 lines or fewer, and every task passes `./scripts/ci.sh`. UI tasks get the opus design review. The owner reviews visuals, so PRs carry no screenshots.
@@ -14,18 +14,18 @@ Twelve tasks, each one PR. Tests come first in every task. Every file stays at 5
 
 | Task | What | Depends on | Wave |
 |---|---|---|---|
-| **B1a** | Migration 0011: rebuild `task` with the relaxed lane CHECK; `SCHEMA_VERSION` 11 | none | 1 |
-| **B3** | `ScrollRegion` `axis="x"`; README's Board scroll rule | none | 1 |
-| **B4a** | `KanbanColumn` two-row header, + and the name button | none | 1 |
-| **B4b** | New `ColumnEditor` component | none | 1 |
-| **B1b** | `Lane` as a string id in store, service, bindings; built-ins only still | B1a | 2 |
-| **B2a** | Setting row shape, four column commands, saved folds, IPC, `useBoard`, `boardWords.ts` | B1b | 3 |
-| **B5** | TaskPicker order by a sort key; custom columns in the picker and palette | B1b | 3 |
-| **B2b** | Lane checks, orphan repair, restore into a removed column | B2a | 4 |
-| **B6** | Board page: sideways scroll, saved folds, custom lanes in keys and drag | B2a, B3 | 4 |
-| **B7a** | Board page: header +, new-task field per column, arrows into the header | B4a, B6 | 5 |
-| **B7b** | Board page: column editor, add and remove | B4b, B7a | 6 |
-| **B8** | Close-out | B2b, B5, B7b | 7 |
+| **B1a** (#762) | Migration 0011: rebuild `task` with the relaxed lane CHECK; `SCHEMA_VERSION` 11 | none | 1 |
+| **B3** (#763) | `ScrollRegion` `axis="x"`; README's Board scroll rule | none | 1 |
+| **B4a** (#764) | `KanbanColumn` two-row header, + and the name button | none | 1 |
+| **B4b** (#765) | New `ColumnEditor` component | none | 1 |
+| **B1b** (#766) | `Lane` as a string id in store, service, bindings; built-ins only still | B1a | 2 |
+| **B2a** (#767) | Setting row shape, four column commands, saved folds, IPC, `useBoard`, `boardWords.ts` | B1b | 3 |
+| **B5** (#768) | TaskPicker order by a sort key; custom columns in the picker and palette | B1b | 3 |
+| **B2b** (#769) | Lane checks, orphan repair, restore into a removed column | B2a | 4 |
+| **B6** (#770) | Board page: sideways scroll, saved folds, custom lanes in keys and drag | B2a, B3 | 4 |
+| **B7a** (#771) | Board page: header +, new-task field per column, arrows into the header | B4a, B6 | 5 |
+| **B7b** (#772) | Board page: column editor, add and remove | B4b, B7a | 6 |
+| **B8** (#773) | Close-out | B2b, B5, B7b | 7 |
 
 **Controller steps** (not sonnet tasks):
 - After B7b merges, the controller (or an opus agent, never sonnet) runs `just design-system` from `main` and republishes the live artifact with `"editing": "code"`. Follow the memory note "Design system publish". B3, B4a and B4b change components; one publish after B7b covers all three.
@@ -117,7 +117,7 @@ B4b ─────────────────────────�
 
 ## Tasks
 
-### B1a: Migration 0011
+### B1a (#762): Migration 0011
 - Priority: 1
 - Depends on: none
 - Owns: `crates/store/migrations/0011_custom_lanes.sql` (new), `crates/store/src/migrate.rs`, `crates/store/src/tests/migration_0011.rs` (new) and the test module list it joins, the fresh-schema test if it names the version
@@ -135,7 +135,7 @@ B4b ─────────────────────────�
   - Copy the column definitions from 0008 and 0009 exactly.
   - Recheck that 0010 is still the latest migration on main before numbering.
 
-### B1b: `Lane` as a string id
+### B1b (#766): `Lane` as a string id
 - Priority: 1
 - Depends on: B1a
 - Owns:
@@ -159,7 +159,7 @@ B4b ─────────────────────────�
   - Don't add any custom-column behaviour.
   - Read `docs/common-issues.md` first.
 
-### B2a: Setting row, column commands, saved folds, IPC
+### B2a (#767): Setting row, column commands, saved folds, IPC
 - Priority: 1
 - Depends on: B1b
 - Owns:
@@ -193,7 +193,7 @@ B4b ─────────────────────────�
   - Split `columns.rs` into `columns/read.rs` and `columns/edit.rs` to stay under 500 lines.
   - Generate ids as 8 characters of `[0-9a-z]` from the random source the service already uses for UUIDv7, and retry on a collision.
 
-### B2b: Lane checks, orphan repair, restore into a removed column
+### B2b (#769): Lane checks, orphan repair, restore into a removed column
 - Priority: 2
 - Depends on: B2a
 - Owns:
@@ -214,7 +214,7 @@ B4b ─────────────────────────�
 - Tests first: `move_to_unknown_lane_refused`, `add_to_unknown_lane_refused`, `orphans_repaired_at_start`, `orphans_repaired_after_import`, `restore_into_removed_lane_goes_to_backlog`, `start_from_custom_moves_to_doing`.
 - Notes: no API or bindings change.
 
-### B3: `ScrollRegion` `axis="x"` and the README's Board scroll rule
+### B3 (#763): `ScrollRegion` `axis="x"` and the README's Board scroll rule
 - Priority: 2
 - Depends on: none
 - Owns: `packages/ui/src/components/ui/scroll-region.{tsx,md,test.tsx}`, `packages/ui/src/components/ui/page-frame.specimen.tsx`, `packages/ui/src/types.ts`, `packages/ui/design-system/README.md`, `packages/tokens/contrast-pairs.json`
@@ -233,7 +233,7 @@ B4b ─────────────────────────�
 - Tests first: `axis_x_has_region_role_and_name`, `axis_x_no_more_below_row`, `axis_x_not_tab_stop`, `axis_y_default_unchanged`.
 - Notes: tokens only, no arbitrary values. Reuse the vertical bar's styles.
 
-### B4a: `KanbanColumn` header
+### B4a (#764): `KanbanColumn` header
 - Priority: 1
 - Depends on: none
 - Owns: `packages/ui/src/components/ui/kanban-column.{tsx,md,test.tsx,specimen.tsx}`; a new `kanban-column-header.tsx` if the file passes about 300 lines
@@ -253,7 +253,7 @@ B4b ─────────────────────────�
 - Tests first: `header_two_rows_with_fold_top_right`, `name_double_click_calls_on_edit`, `name_single_click_does_nothing`, `name_return_calls_on_edit`, `name_plain_without_on_edit`, `add_button_named_for_column`, `editor_replaces_header`.
 - Notes: no new export, so `index.ts` and the registries are untouched.
 
-### B4b: `ColumnEditor`
+### B4b (#765): `ColumnEditor`
 - Priority: 1
 - Depends on: none
 - Owns: `packages/ui/src/components/ui/column-editor.{tsx,md,test.tsx,specimen.tsx}` (new), `packages/ui/src/index.ts`, `packages/ui/specimens/registry.ts`, `packages/ui/designSystem.test.ts` (count 55 → 56 and its `MINIMAL` entry), `packages/ui/design-system/cards.json`
@@ -273,7 +273,7 @@ B4b ─────────────────────────�
   - [ ] `column-editor.md` is written. The specimen shows both themes, and `designSystem.test.ts` passes.
 - Tests first: `editor_focuses_name_selected`, `editor_enter_saves_trimmed`, `editor_escape_cancels`, `editor_blur_saves_valid_cancels_invalid`, `editor_duplicate_name_inline_error`, `editor_no_limit_saves_null`, `editor_dimmed_buttons_describe_reason`, `editor_hides_remove_when_null`.
 
-### B5: TaskPicker order and custom columns in the picker and palette
+### B5 (#768): TaskPicker order and custom columns in the picker and palette
 - Priority: 3
 - Depends on: B1b
 - Owns: `packages/ui/src/components/ui/task-picker.{tsx,md,test.tsx,specimen.tsx}`, `apps/orasenda/src/domain/board/useTaskOptions.ts` (and its test), `apps/orasenda/src/app/palette/paletteCommands.ts` (and its test), `apps/orasenda/src/shared/test/fixtures/taskOptions.ts`
@@ -290,7 +290,7 @@ B4b ─────────────────────────�
   - Until B2a lands, no board holds a custom column, so the tests build their own `ColumnView`s.
   - Leave `index.ts` alone; the type is already exported.
 
-### B6: Board page: sideways scroll, saved folds, custom lanes in keys and drag
+### B6 (#770): Board page: sideways scroll, saved folds, custom lanes in keys and drag
 - Priority: 1
 - Depends on: B2a, B3
 - Owns:
@@ -319,7 +319,7 @@ B4b ─────────────────────────�
   - `BoardPage.tsx` is 278 lines; keep it under 500 by moving the column wiring into `BoardColumns.tsx` or a hook.
   - Read `docs/common-issues.md` (focus after a re-render) first.
 
-### B7a: Board page: header + and arrows into the header
+### B7a (#771): Board page: header + and arrows into the header
 - Priority: 1
 - Depends on: B4a, B6
 - Owns: `apps/orasenda/src/features/board/{BoardColumns.tsx,BoardPage.tsx,NewTaskField.tsx,useBoardActions.ts,useBoardKeys.ts,dragGeometry.ts,dragGeometry.test.ts,BoardPage.support.tsx,BoardPage.add.test.tsx}`, new `BoardPage.header.test.tsx`
@@ -335,7 +335,7 @@ B4b ─────────────────────────�
   - [ ] The page's *Add task* (⌘N) still focuses Backlog's field.
 - Tests first: `plus_opens_field_in_column`, `plus_on_backlog_focuses_field`, `no_plus_on_done`, `one_new_task_field_at_a_time`, `field_adds_at_end_of_column`, `drop_index_skips_field`, `arrow_up_into_header`, `header_arrows_cross_columns`.
 
-### B7b: Board page: column editor, add and remove
+### B7b (#772): Board page: column editor, add and remove
 - Priority: 1
 - Depends on: B4b, B7a
 - Owns: `apps/orasenda/src/features/board/{BoardColumns.tsx,BoardPage.tsx,useBoardKeys.ts,useBoardActions.ts}`, new `useColumnEditor.ts` and `BoardPage.columns.test.tsx`
@@ -354,7 +354,7 @@ B4b ─────────────────────────�
   - [ ] A column removed elsewhere closes its open editor with "That column is gone. Pick another."
 - Tests first: `editor_opens_on_double_click`, `editor_opens_on_return`, `editor_controls_per_column_kind`, `editor_save_calls_edit`, `editor_service_refusal_inline`, `add_column_opens_new_editor`, `add_column_dimmed_at_cap`, `remove_dimmed_while_tasks`, `remove_empty_column_toasts_and_focuses`, `add_task_quiet_while_editing`, `page_keys_ignored_in_editor`, `editor_closes_when_column_removed_elsewhere`.
 
-### B8: Close-out
+### B8 (#773): Close-out
 - Priority: 3
 - Depends on: B2b, B5, B7b
 - Owns: `docs/specs/2026-11-18-board-columns.md` (Status and Implementation status), `docs/plans/2026-11-18-board-columns.md` (Status)
