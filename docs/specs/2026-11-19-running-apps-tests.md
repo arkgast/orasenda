@@ -1,6 +1,6 @@
 # Deterministic running_apps tests on macOS — Spec
 
-- **Status:** draft
+- **Status:** approved (2026-11-19)
 - **Date:** 2026-11-19
 - **Owner:** the product owner (approach picked 2026-11-19)
 - **Related:** `crates/platform-macos/src/control.rs`; precedent `crates/platform-macos/src/foreground.rs:113`
