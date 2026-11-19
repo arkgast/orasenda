@@ -167,3 +167,24 @@ test("axis_y_default_unchanged", () => {
   expect(region.className).toContain("overflow-y-scroll");
   expect(region.className).not.toContain("overflow-x-scroll");
 });
+
+test("axis_y_to_x_on_same_instance_clears_more_below", () => {
+  const restore = stubLayout(500, 100);
+  try {
+    const { container, rerender } = render(
+      <ScrollRegion label="Board">
+        <p>tall</p>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).not.toBeNull();
+    rerender(
+      <ScrollRegion label="Board" axis="x">
+        <p>tall</p>
+      </ScrollRegion>,
+    );
+    expect(container.querySelector("[data-slot=scroll-region-more]")).toBeNull();
+    expect(screen.getByRole("region", { name: "Board" })).toHaveAttribute("data-scrolled", "false");
+  } finally {
+    restore();
+  }
+});
