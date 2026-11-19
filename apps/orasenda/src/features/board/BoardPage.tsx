@@ -41,6 +41,7 @@ type Props = {
   onImportOpened?: () => void;
 };
 
+const NO_SCROLL = { preventScroll: true } as const;
 const NO_COLUMNS: readonly ColumnView[] = [];
 
 /** Board page: Backlog, Today, Doing and Done, kept by keyboard and by menu (spec "Board page"). */
@@ -112,19 +113,29 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
   // A header + on a column but Backlog opens a field there; one at a time.
   const [field, setField] = useState<Lane | null>(null);
   useEffect(() => {
-    if (field) document.getElementById(newTaskId(field))?.focus();
+    if (field) document.getElementById(newTaskId(field))?.focus(NO_SCROLL);
   }, [field]);
   const plus = (lane: Lane) => {
     if (lane === "backlog") {
       setField(null);
-      document.getElementById(NEW_TASK_ID)?.focus();
-    } else setField(lane);
+      document.getElementById(NEW_TASK_ID)?.focus(NO_SCROLL);
+    } else if (field === lane) document.getElementById(newTaskId(lane))?.focus(NO_SCROLL);
+    else setField(lane);
   };
-  const closeField = (lane: Lane, back: boolean) => {
-    if (back) {
+  const closeField = (lane: Lane, back: boolean, now = false) => {
+    const home = () => {
       document
         .querySelector<HTMLElement>(`#${columnId(lane)} [data-slot="kanban-column-add"] button`)
-        ?.focus();
+        ?.focus(NO_SCROLL);
+    };
+    if (back && now) home();
+    else if (back) {
+      // A blur to nowhere may be a click that took focus elsewhere (WebKit buttons) or the window
+      // losing focus: bring focus home to + only when nothing else has it once the dust settles.
+      window.setTimeout(() => {
+        if (document.activeElement !== document.body || !document.hasFocus()) return;
+        home();
+      }, 0);
     }
     setField((now) => (now === lane ? null : now));
   };

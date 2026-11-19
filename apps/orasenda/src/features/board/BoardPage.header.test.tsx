@@ -77,7 +77,24 @@ test("an empty field closes when focus leaves it", async () => {
   fireEvent.click(plus("Doing"));
   fireEvent.blur(fieldIn("Doing"));
   expect(screen.queryByRole("textbox", { name: "New task in Doing" })).toBeNull();
+  await new Promise((r) => setTimeout(r, 5));
   expect(plus("Doing")).toHaveFocus();
+});
+
+test("plus_refocuses_an_open_field", async () => {
+  await renderBoard();
+  fireEvent.click(plus("Doing"));
+  fireEvent.change(fieldIn("Doing"), { target: { value: "Half a thought" } });
+  plus("Doing").focus();
+  fireEvent.click(plus("Doing"));
+  expect(fieldIn("Doing")).toHaveFocus();
+  expect(fieldIn("Doing")).toHaveValue("Half a thought");
+});
+
+test("header_stops_are_not_tab_stops", async () => {
+  await renderBoard();
+  for (const b of [plus("Today"), screen.getByRole("button", { name: "Fold Today" })])
+    expect(b).toHaveAttribute("tabindex", "-1");
 });
 
 test("a field with text stays when focus leaves it", async () => {
@@ -94,9 +111,12 @@ test("drop_index_skips_field", async () => {
   fireEvent.click(plus("Today"));
   // Backlog: field then b1 at y 100. Today: field 40-90, t1 100-150, t2 160-210.
   const el = card("Draft outline");
+  const lead = fieldIn("Today");
   pointer("pointerdown", el, 50, 120);
   pointer("pointermove", el, 50, 130);
   pointer("pointermove", el, 300, 105);
+  const slot = screen.getByText("Moving Draft outline here");
+  expect(lead.compareDocumentPosition(slot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   pointer("pointerup", el, 300, 105);
   await settle();
   expect(argsOf(backend.calls, "task_move")).toEqual([{ id: "b1", lane: "today", index: 0 }]);
@@ -111,8 +131,8 @@ test("arrow_up_into_header", async () => {
 
 test("header_arrows_cross_columns", async () => {
   await renderBoard();
-  heading("Today").setAttribute("tabindex", "-1");
-  heading("Today").focus();
+  card("Write intro").focus();
+  key(card("Write intro"), "ArrowUp");
   key(heading("Today"), "ArrowRight");
   expect(screen.getByRole("button", { name: "Fold Today" })).toHaveFocus();
   key(document.activeElement as Element, "ArrowRight");

@@ -115,7 +115,7 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
   };
 
   /** ↓ from a header: the column's first card. */
-  const firstCard = (l: Lane) => lane(l)[0]?.focus();
+  const firstCard = (l: Lane) => lane(l)[0]?.focus(NO_SCROLL);
 
   /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
   const moveTo = async (task: TaskView, to: Lane) => {
@@ -144,9 +144,10 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
       const plain = !(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
       if (!lane || !plain || event.nativeEvent.isComposing) return;
       const horizontal = event.key === "ArrowLeft" || event.key === "ArrowRight";
-      if (!horizontal && event.key !== "ArrowDown") return;
+      if (!horizontal && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
       event.preventDefault();
       event.stopPropagation();
+      if (event.key === "ArrowUp") return; // a header is the top: nothing above, and no page scroll
       if (event.key === "ArrowDown") {
         if (!target.matches(STRIP)) firstCard(lane);
         return;

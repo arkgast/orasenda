@@ -20,7 +20,8 @@ export type ColumnHandlers = {
   /** A header +: Backlog's focuses its field, another column opens one. */
   plus(lane: Lane): void;
   /** Closes that column's field; `back` returns focus to its +. */
-  closeField(lane: Lane, back: boolean): void;
+  /** `now`: Esc, focus goes to + at once; else only if the blur left it nowhere. */
+  closeField(lane: Lane, back: boolean, now?: boolean): void;
   /** Opens the import sheet. */
   import(): void;
 };
@@ -93,7 +94,7 @@ export function BoardColumns({
             id={newTaskId(column.lane)}
             label={`New task in ${column.name}`}
             add={(title) => on.add(title, column.lane)}
-            leave={() => on.closeField(column.lane, true)}
+            leave={() => on.closeField(column.lane, true, true)}
             onBlurEmpty={(lost) => on.closeField(column.lane, lost)}
           />
         ) : null}
