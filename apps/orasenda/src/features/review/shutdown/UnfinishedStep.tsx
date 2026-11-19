@@ -32,6 +32,8 @@ function Row({
         <span className="app-shutdown-task-where">{where}</span>
       </div>
       {task.active ? null : (
+        // Quiet is the system's secondary button. Pressed adds the focus border, selection ground
+        // and tick, and the row says "Goes to Backlog" in words.
         <Button
           variant="quiet"
           aria-pressed={on}

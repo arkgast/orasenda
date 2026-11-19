@@ -38,29 +38,37 @@ export function LookBackStep({ view }: Props): ReactElement {
           </>
         ) : null}
         {lookBack.tasks.length > 0 ? (
-          <BarList aria-label="Focus time by task">
-            {lookBack.tasks.map((task) => (
-              <BarRow
-                key={`${task.label}-${task.spoken}`}
-                label={task.label}
-                minutes={task.minutes}
-                max={longest}
-                duration={task.duration}
-                spoken={task.spoken}
-              />
-            ))}
-          </BarList>
+          <>
+            <h2 className="app-review-heading">Focus by task</h2>
+            <BarList aria-label="Focus time by task">
+              {lookBack.tasks.map((task) => (
+                <BarRow
+                  key={`${task.label}-${task.spoken}`}
+                  label={task.label}
+                  minutes={task.minutes}
+                  max={longest}
+                  duration={task.duration}
+                  spoken={task.spoken}
+                />
+              ))}
+            </BarList>
+          </>
         ) : null}
         <p className="app-review-line">{lookBack.tasksLine}</p>
         <Lines lines={lookBack.routineLines} />
         <Lines lines={lookBack.habitLines} />
         {lookBack.estimateLine ? <p className="app-review-line">{lookBack.estimateLine}</p> : null}
-        {lookBack.reflections.map((echo) => (
-          <div key={echo.dayLabel} className="app-weekly-echo">
-            <p className="app-review-label">{echo.dayLabel}</p>
-            <Lines lines={echo.lines} />
-          </div>
-        ))}
+        {lookBack.reflections.length > 0 ? (
+          <>
+            <h2 className="app-review-heading">Your shutdown notes</h2>
+            {lookBack.reflections.map((echo) => (
+              <div key={echo.dayLabel} className="app-weekly-echo">
+                <p className="app-review-label">{echo.dayLabel}</p>
+                <Lines lines={echo.lines} />
+              </div>
+            ))}
+          </>
+        ) : null}
       </div>
     </ScrollRegion>
   );

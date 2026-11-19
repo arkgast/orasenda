@@ -69,8 +69,29 @@
   inline-size: var(--icon-md);
 }
 
-.app-review-actions {
-  margin-block-start: var(--space-1);
+/* Overview, canvas 1A: the line and its flow button share a row; the button wraps under when narrow. */
+.app-review-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+}
+
+.app-review-today-line,
+.app-review-week-line {
+  margin: 0;
+  flex: 1 1 var(--field-width);
+  min-inline-size: 0;
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+  color: var(--ink);
+}
+
+.app-review-week-line {
+  color: var(--ink-muted);
 }
 
 /* The flow fills the page; FlowStep is its frame (it sets its own padding and h-full). */
@@ -152,6 +173,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  padding-block-end: var(--space-2);
+  border-block-end: thin solid var(--line);
 }
 
 .app-shutdown-task > button {
