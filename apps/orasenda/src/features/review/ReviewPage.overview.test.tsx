@@ -5,6 +5,9 @@ import { afterEach, expect, test, vi } from "vitest";
 import { emitReviewChanged, primaries, renderReview, section } from "./ReviewPage.support";
 import { TWO } from "./shutdown/ShutdownFlow.support";
 
+const TODAY = "Today · Tuesday 17 November";
+const WEEK = "This week · Planning the week of 16 November";
+
 afterEach(async () => {
   cleanup();
   await settle();
@@ -14,11 +17,14 @@ afterEach(async () => {
 test("overview_is_a_page_frame_titled_review_with_today_and_this_week", async () => {
   await renderReview();
   expect(screen.getByRole("heading", { level: 1, name: "Review" })).toBeInTheDocument();
-  const today = section("Today");
-  expect(today).toHaveTextContent("Tuesday 17 November");
+  const today = section(TODAY);
+  expect(screen.getByRole("heading", { level: 2, name: TODAY })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 2, name: WEEK })).toBeInTheDocument();
+  // The separate label line is gone: the day is only in the heading.
+  expect(screen.queryByText("Tuesday 17 November")).toBeNull();
   expect(today).toHaveTextContent("Ready when you are.");
-  const week = section("This week");
-  expect(week).toHaveTextContent("Planning the week of 16 November");
+  const week = section(WEEK);
+  expect(screen.queryByText("Planning the week of 16 November")).toBeNull();
   expect(week).toHaveTextContent("One priority so far.");
   expect(screen.getByRole("region", { name: "Review" })).toBeInTheDocument();
 });
@@ -33,8 +39,9 @@ test("primary_follows_view", async () => {
   expect(main).toHaveLength(1);
   expect(main[0]).toHaveTextContent("Start shutdown");
   // The other flow is a secondary button inside its own section, not a primary.
-  const other = within(section("This week")).getByRole("button", { name: "Start weekly review" });
+  const other = within(section(WEEK)).getByRole("button", { name: "Start weekly review" });
   expect(other).toHaveAttribute("data-variant", "quiet");
+  expect(other.parentElement).toBe(screen.getByText("One priority so far.").parentElement);
   // Each button reports its start and opens its own flow.
   fireEvent.click(other);
   await settle();
@@ -53,7 +60,7 @@ test("primary_follows_view", async () => {
   main = primaries(container);
   expect(main).toHaveLength(1);
   expect(main[0]).toHaveTextContent("Start weekly review");
-  const shutdown = within(section("Today")).getByRole("button", { name: "Start shutdown" });
+  const shutdown = within(section(TODAY)).getByRole("button", { name: "Start shutdown" });
   expect(shutdown).toHaveAttribute("data-variant", "quiet");
 });
 
@@ -84,15 +91,48 @@ test("look_again_after_completion", async () => {
     },
   });
   await renderReview({ review_get: () => done, shutdown_get: () => shutdownView() }, { onStart });
-  const today = section("Today");
+  const today = section(TODAY);
   expect(today).toHaveTextContent("Shutdown complete at 17:42.");
   fireEvent.click(within(today).getByRole("button", { name: /^Look again/ }));
   expect(onStart).toHaveBeenCalledWith("shutdown");
 });
 
+test("look_again_is_quiet_with_its_label", async () => {
+  const done = reviewView({
+    primary: "none",
+    today: { ...reviewView().today, done: true, line: "Shutdown complete at 17:42." },
+  });
+  await renderReview({ review_get: () => done });
+  const button = within(section(TODAY)).getByRole("button", { name: /^Look again/ });
+  // quiet is the system's secondary button (button.md)
+  expect(button).toHaveAttribute("data-variant", "quiet");
+  expect(button).toHaveAttribute("aria-label", "Look again at the shutdown");
+});
+
+test("other_flow_is_a_secondary_button_on_the_line_row", async () => {
+  const { container } = await renderReview();
+  await emitReviewChanged(reviewView({ primary: "weekly" }));
+  const button = within(section(TODAY)).getByRole("button", { name: "Start shutdown" });
+  // quiet is the system's secondary button (button.md)
+  expect(button).toHaveAttribute("data-variant", "quiet");
+  expect(button.parentElement).toBe(screen.getByText("Ready when you are.").parentElement);
+  const main = primaries(container);
+  expect(main).toHaveLength(1);
+  expect(main[0]).toHaveTextContent("Start weekly review");
+  expect(within(section(WEEK)).queryAllByRole("button")).toHaveLength(0);
+});
+
+test("no_second_start_shutdown_when_shutdown_leads", async () => {
+  await renderReview();
+  const starts = screen.getAllByRole("button", { name: "Start shutdown" });
+  expect(starts).toHaveLength(1);
+  expect(starts[0]).toHaveAttribute("data-variant", "primary");
+  expect(within(section(TODAY)).queryAllByRole("button")).toHaveLength(0);
+});
+
 test("look_again_is_absent_before_completion", async () => {
   await renderReview();
-  expect(within(section("Today")).queryByRole("button", { name: /^Look again/ })).toBeNull();
+  expect(within(section(TODAY)).queryByRole("button", { name: /^Look again/ })).toBeNull();
 });
 
 test("priorities_done_in_words", async () => {
@@ -106,7 +146,7 @@ test("priorities_done_in_words", async () => {
     },
   });
   await renderReview({ review_get: () => view });
-  const items = within(within(section("This week")).getByRole("list")).getAllByRole("listitem");
+  const items = within(within(section(WEEK)).getByRole("list")).getAllByRole("listitem");
   expect(items).toHaveLength(2);
   expect(items[0]).toHaveTextContent("Fix sync bug · Doing");
   expect(items[0]?.querySelector("svg")).toBeNull();
@@ -118,7 +158,7 @@ test("priorities_done_in_words", async () => {
 test("no_priorities_shows_no_list", async () => {
   const view = reviewView({ week: { ...reviewView().week, priorities: [] } });
   await renderReview({ review_get: () => view });
-  expect(within(section("This week")).queryByRole("list")).toBeNull();
+  expect(within(section(WEEK)).queryByRole("list")).toBeNull();
 });
 
 test("review_changed_replaces_the_view", async () => {
@@ -128,7 +168,7 @@ test("review_changed_replaces_the_view", async () => {
       today: { ...reviewView().today, line: "Shutdown complete at 17:42.", done: true },
     }),
   );
-  expect(section("Today")).toHaveTextContent("Shutdown complete at 17:42.");
+  expect(section(TODAY)).toHaveTextContent("Shutdown complete at 17:42.");
 });
 
 test("end_after_a_move_takes_the_toast_with_the_flow", async () => {

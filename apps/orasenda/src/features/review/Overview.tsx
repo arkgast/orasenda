@@ -21,7 +21,10 @@ export function primaryFlow(primary: ReviewPrimary): Flow | null {
   return primary === "none" ? null : primary;
 }
 
-/** The button in a section for its own flow: Look again once complete, else a quiet Start. */
+/**
+ * The button in a section for its own flow: Look again once complete, else Start. Quiet is the
+ * system's secondary button (button.md), on the line's row at its end.
+ */
 function FlowButton({
   flow,
   complete,
@@ -34,6 +37,7 @@ function FlowButton({
   return (
     <Button
       variant="quiet"
+      size="row"
       aria-label={complete ? LOOK_AGAIN[flow] : undefined}
       onClick={() => onStart(flow)}
     >
@@ -79,29 +83,27 @@ export function Overview({ view, onStart }: Props): ReactElement {
   const { today, week } = view;
   return (
     <div className="app-review-body">
-      <Section title="Today">
-        <p className="app-review-label">{today.dayLabel}</p>
-        <p className="app-review-line">{today.line}</p>
-        {today.done || lead !== "shutdown" ? (
-          <div className="app-review-actions">
+      <Section title={`Today · ${today.dayLabel}`}>
+        <div className="app-review-row">
+          <p className="app-review-today-line">{today.line}</p>
+          {today.done || lead !== "shutdown" ? (
             <FlowButton flow="shutdown" complete={today.done} onStart={onStart} />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </Section>
-      <Section title="This week">
-        <p className="app-review-label">{week.label}</p>
-        <p className="app-review-line">{week.line}</p>
+      <Section title={`This week · ${week.label}`}>
+        <div className="app-review-row">
+          <p className="app-review-week-line">{week.line}</p>
+          {week.planned || lead !== "weekly" ? (
+            <FlowButton flow="weekly" complete={week.planned} onStart={onStart} />
+          ) : null}
+        </div>
         {week.priorities.length > 0 ? (
           <ul className="app-review-priorities">
             {week.priorities.map((p) => (
               <Priority key={p.taskId} priority={p} />
             ))}
           </ul>
-        ) : null}
-        {week.planned || lead !== "weekly" ? (
-          <div className="app-review-actions">
-            <FlowButton flow="weekly" complete={week.planned} onStart={onStart} />
-          </div>
         ) : null}
       </Section>
       <StatsSection />

@@ -14,8 +14,16 @@ test("toggle_aria_pressed", async () => {
   await openShutdown();
   const write = screen.getByRole("button", { name: "Back to Backlog Write notes" });
   expect(write).toHaveAttribute("aria-pressed", "false");
+  // quiet is the system's secondary button (button.md)
+  expect(write).toHaveAttribute("data-variant", "quiet");
+  expect(write.querySelector("svg")).toBeNull();
+  // F4: pressed keeps the selection ground, not the quiet hover ground.
+  expect(write.className).toContain("aria-pressed:bg-selection");
   fireEvent.click(write);
   expect(write).toHaveAttribute("aria-pressed", "true");
+  expect(write).toHaveAttribute("data-variant", "quiet");
+  expect(write.querySelector("svg")).not.toBeNull();
+  expect(write.closest("li")).toHaveTextContent(/Goes to Backlog/);
   fireEvent.click(write);
   expect(write).toHaveAttribute("aria-pressed", "false");
   // A task with a running session says so in words and has no toggle.

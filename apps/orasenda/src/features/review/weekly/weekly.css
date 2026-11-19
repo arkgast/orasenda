@@ -34,8 +34,45 @@
   min-inline-size: 0;
 }
 
+.app-weekly-line,
+.app-weekly-line-sm,
+.app-weekly-range {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--type-body-font-size);
+  line-height: var(--type-body-line-height);
+}
+
+.app-weekly-line-sm {
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+}
+
+.app-weekly-range {
+  color: var(--ink-muted);
+}
+
+/* One shutdown note: a sunken block, the day in a quiet caption above its lines. */
 .app-weekly-echo {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: var(--type-body-sm-font-size);
+  line-height: var(--type-body-sm-line-height);
+}
+
+.app-weekly-echo .app-shutdown-lines {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.app-weekly-echo-day {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-caption-font-size);
+  font-weight: var(--type-caption-font-weight);
+  line-height: var(--type-caption-line-height);
 }
