@@ -47,12 +47,21 @@ fn random_id() -> String {
 /// A fresh id that no column, and no live task's lane, already holds.
 fn new_id(txn: &Txn, list: &[ColumnSettings]) -> Result<Lane, StoreError> {
     let in_use = tasks::lanes_live(txn)?;
+    Ok(new_id_from(list, &in_use, random_id))
+}
+
+/// The first id from `next` that no column and no live task's lane holds.
+fn new_id_from(
+    list: &[ColumnSettings],
+    in_use: &[tasks::Lane],
+    mut next: impl FnMut() -> String,
+) -> Lane {
     loop {
-        let id = random_id();
+        let id = next();
         let taken = list.iter().any(|c| c.lane.as_str() == id)
             || in_use.iter().any(|lane| lane.as_str() == id);
         if let (false, Some(lane)) = (taken, Lane::parse(&id)) {
-            return Ok(lane);
+            return lane;
         }
     }
 }
@@ -166,4 +175,42 @@ pub fn run_board_column_fold<H: Host>(
         store(txn, list)?;
         Ok(Ok(()))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn random_ids_have_the_shape() {
+        for _ in 0..300 {
+            let id = random_id();
+            assert!(
+                id.len() == 10
+                    && id.starts_with("c_")
+                    && id[2..]
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || b.is_ascii_lowercase()),
+                "{id}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_taken_id_is_drawn_again() {
+        let list = vec![ColumnSettings {
+            lane: Lane::parse("c_aaaaaaa1").expect("an id"),
+            name: "Review".to_owned(),
+            limit: None,
+            order: 0,
+            folded: None,
+        }];
+        let in_use = vec![tasks::Lane::parse("c_aaaaaaa2").expect("an id")];
+        let mut scripted = ["c_aaaaaaa1", "c_aaaaaaa2", "c_aaaaaaa3"].into_iter();
+        let got = new_id_from(&list, &in_use, || {
+            scripted.next().expect("drawn").to_owned()
+        });
+        assert_eq!(got.as_str(), "c_aaaaaaa3");
+        assert!(scripted.next().is_none(), "stops at the free id");
+    }
 }

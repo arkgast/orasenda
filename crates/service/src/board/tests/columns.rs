@@ -135,6 +135,23 @@ fn bad_custom_entries_are_dropped_and_builtins_keep_their_order() {
 }
 
 #[test]
+fn a_custom_column_before_backlog_moves_after_it() {
+    let host = host();
+    put_row(
+        &host,
+        json!([
+            { "lane": "c_aaaaaaa1", "name": "Review", "limit": null, "order": 0 },
+            { "lane": "backlog", "name": "Backlog", "limit": null, "order": 1 },
+            { "lane": "today", "name": "Today", "limit": 3, "order": 2 },
+            { "lane": "doing", "name": "Doing", "limit": 1, "order": 3 },
+            { "lane": "done", "name": "Done", "limit": null, "order": 4 },
+        ]),
+    );
+    let lanes: Vec<String> = shown(&host).into_iter().map(|c| c.0).collect();
+    assert_eq!(lanes, ["backlog", "c_aaaaaaa1", "today", "doing", "done"]);
+}
+
+#[test]
 fn fold_saved() {
     let host = host();
     run_board_column_fold(&host, Lane::DONE, false).expect("opens Done");

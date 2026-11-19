@@ -55,6 +55,11 @@ pub(super) fn clean(mut entries: Vec<ColumnSettings>) -> Vec<ColumnSettings> {
         if !valid(&column) {
             if custom {
                 eprintln!("board: the column {:?} in {KEY} was dropped", column.name);
+            } else {
+                eprintln!(
+                    "board: the column {:?} in {KEY} is invalid; using its default",
+                    column.lane
+                );
             }
             continue;
         }
@@ -108,6 +113,17 @@ fn fix_builtins(list: &mut Vec<ColumnSettings>) {
             })
             .map_or(0, |i| i + 1);
         list.insert(at, default_for(builtin));
+    }
+    if let Some(backlog) = list.iter().position(|c| c.lane == Lane::BACKLOG) {
+        let head: Vec<ColumnSettings> = list.drain(..backlog).collect();
+        let (customs, builtins): (Vec<_>, Vec<_>) =
+            head.into_iter().partition(|c| c.lane.builtin().is_none());
+        list.splice(0..0, builtins);
+        let at = list
+            .iter()
+            .position(|c| c.lane == Lane::BACKLOG)
+            .map_or(0, |i| i + 1);
+        list.splice(at..at, customs);
     }
     if let Some(done) = list.iter().position(|c| c.lane == Lane::DONE) {
         let after: Vec<ColumnSettings> = list.split_off(done + 1);
