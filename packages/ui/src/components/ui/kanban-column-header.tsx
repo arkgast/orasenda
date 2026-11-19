@@ -25,9 +25,12 @@ function Name(
   const hintId = useId();
   const { onEdit } = props;
   return (
-    <h2 id={props.headingId} className="m-0 min-w-0 flex-1 text-heading wrap-anywhere">
-      {onEdit ? (
-        <>
+    <>
+      <h2
+        id={props.headingId}
+        className="m-0 flex min-h-hit-min min-w-0 flex-1 items-center text-heading wrap-anywhere"
+      >
+        {onEdit ? (
           <button
             type="button"
             data-slot="kanban-column-name"
@@ -38,18 +41,21 @@ function Name(
               if (e.detail === 0) onEdit();
             }}
             onDoubleClick={onEdit}
-            className="m-0 -ms-2 min-h-hit-min w-full cursor-text rounded-md border-0 bg-clear px-2 text-start text-heading text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm hover:bg-surface-sunken focus-visible:outline-2 motion-reduce:transition-none"
+            className="m-0 -ms-2 block min-h-hit-min min-w-0 cursor-text rounded-md border-0 bg-clear px-2 text-start text-heading text-ink outline-focus-ring outline-offset-2 transition-colors duration-quick ease-calm hover:inset-ring-1 hover:inset-ring-line-strong focus-visible:outline-2 motion-reduce:transition-none"
           >
             {props.title}
           </button>
-          <span id={hintId} className="sr-only">
-            Double-click or press Return to edit the column.
-          </span>
-        </>
-      ) : (
-        props.title
-      )}
-    </h2>
+        ) : (
+          props.title
+        )}
+      </h2>
+      {onEdit ? (
+        // Hidden, outside the heading, so it names neither the heading nor the region.
+        <span id={hintId} hidden>
+          Double-click or press Return to edit the column.
+        </span>
+      ) : null}
+    </>
   );
 }
 

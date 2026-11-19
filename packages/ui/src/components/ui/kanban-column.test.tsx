@@ -134,6 +134,7 @@ test("name_single_click_does_nothing", () => {
   expect(onEdit).not.toHaveBeenCalled();
 });
 
+// A click with detail 0 stands in for Return, Space and VoiceOver's activate.
 test("name_return_calls_on_edit", () => {
   const onEdit = vi.fn();
   render(<KanbanColumn title="Today" count={0} onEdit={onEdit} />);
@@ -143,6 +144,12 @@ test("name_return_calls_on_edit", () => {
   expect(name.getAttribute("data-slot")).toBe("kanban-column-name");
   const hint = document.getElementById(name.getAttribute("aria-describedby") ?? "");
   expect(hint?.textContent).toBe("Double-click or press Return to edit the column.");
+});
+
+test("name_hint_does_not_rename_region_or_heading", () => {
+  render(<KanbanColumn title="Today" count={0} onEdit={() => {}} />);
+  expect(screen.getByRole("region", { name: "Today" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 2, name: "Today" })).toBeTruthy();
 });
 
 test("name_plain_without_on_edit", () => {
