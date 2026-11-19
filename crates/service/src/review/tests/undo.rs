@@ -8,8 +8,8 @@ use crate::session::test_support::{Event, MINUTE, T0, TestHost};
 use crate::session::{Action, run_action_on};
 
 fn setup(host: &TestHost) -> (String, String) {
-    let a = add(host, "Write", Lane::Today);
-    let b = add(host, "Read", Lane::Doing);
+    let a = add(host, "Write", Lane::TODAY);
+    let b = add(host, "Read", Lane::DOING);
     host.set_now(T0 + 12 * 60 * MINUTE);
     (a, b)
 }
@@ -20,12 +20,12 @@ fn move_and_undo_restore() {
     let (a, b) = setup(&host);
     let undo = run_shutdown_move(&host, vec![a.clone(), b.clone()]).expect("moves");
     assert_eq!(undo.line, "Moved 2 tasks to Backlog.");
-    assert_eq!(lane_of(&host, &a), Lane::Backlog);
-    assert_eq!(lane_of(&host, &b), Lane::Backlog);
+    assert_eq!(lane_of(&host, &a), Lane::BACKLOG);
+    assert_eq!(lane_of(&host, &b), Lane::BACKLOG);
     let line = run_shutdown_move_undo(&host, &undo.token).expect("undoes");
     assert_eq!(line, "Put 2 tasks back.");
-    assert_eq!(lane_of(&host, &a), Lane::Today);
-    assert_eq!(lane_of(&host, &b), Lane::Doing);
+    assert_eq!(lane_of(&host, &a), Lane::TODAY);
+    assert_eq!(lane_of(&host, &b), Lane::DOING);
     // The token is spent.
     assert_eq!(
         run_shutdown_move_undo(&host, &undo.token),
@@ -43,7 +43,7 @@ fn undo_expired_not_found() {
         run_shutdown_move_undo(&host, &undo.token),
         Err(ReviewError::NotFound)
     );
-    assert_eq!(lane_of(&host, &a), Lane::Backlog);
+    assert_eq!(lane_of(&host, &a), Lane::BACKLOG);
 }
 
 #[test]
@@ -73,9 +73,9 @@ fn undo_replaced_not_found() {
         run_shutdown_move_undo(&host, "made-up"),
         Err(ReviewError::NotFound)
     );
-    assert_eq!(lane_of(&host, &a), Lane::Backlog);
+    assert_eq!(lane_of(&host, &a), Lane::BACKLOG);
     run_shutdown_move_undo(&host, &second.token).expect("the latest works");
-    assert_eq!(lane_of(&host, &b), Lane::Doing);
+    assert_eq!(lane_of(&host, &b), Lane::DOING);
 }
 
 #[test]
@@ -97,8 +97,8 @@ fn move_skips_task_with_running_session() {
     assert!(active.contains(&(a.as_str(), true)));
     let undo = run_shutdown_move(&host, vec![a.clone(), b.clone()]).expect("moves");
     assert_eq!(undo.line, "Moved 1 task to Backlog.");
-    assert_ne!(lane_of(&host, &a), Lane::Backlog);
-    assert_eq!(lane_of(&host, &b), Lane::Backlog);
+    assert_ne!(lane_of(&host, &a), Lane::BACKLOG);
+    assert_eq!(lane_of(&host, &b), Lane::BACKLOG);
     // Only the running task: nothing to move.
     assert_eq!(
         run_shutdown_move(&host, vec![a]),
@@ -157,5 +157,5 @@ fn undo_leaves_removed_task_removed() {
     crate::board::run_task_remove(&host, &a).expect("removed");
     let line = run_shutdown_move_undo(&host, &undo.token).expect("undoes");
     assert_eq!(line, "Put 1 task back.");
-    assert_eq!(lane_of(&host, &b), Lane::Doing);
+    assert_eq!(lane_of(&host, &b), Lane::DOING);
 }

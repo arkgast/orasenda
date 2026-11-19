@@ -42,6 +42,11 @@ pub fn run_board_get<H: Host>(host: &H) -> Result<BoardView, BoardError> {
     })
 }
 
+/// Until the column commands land (B2a), the only columns are the four built-ins.
+fn only_builtin(lane: &Lane) -> Result<(), BoardError> {
+    lane.builtin().map(|_| ()).ok_or(BoardError::BadColumns)
+}
+
 /// `task_add`: trims, checks and saves a task at the end of its column (Backlog unless said).
 pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, BoardError> {
     let title = check::title(&draft.title)?;
@@ -49,9 +54,11 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
     let tags = check::tags(draft.tags.as_deref().unwrap_or_default())?;
     let estimate = draft.estimate.map(check::estimate).transpose()?;
     let due = draft.due.as_deref().map(check::due).transpose()?;
-    let lane = draft.lane.unwrap_or(Lane::Backlog);
+    let lane = draft.lane.unwrap_or(Lane::BACKLOG);
+    only_builtin(&lane)?;
     write(host, |txn, cx| {
         let id = Uuid::now_v7().to_string();
+        let stored = stored_lane(&lane)?;
         let new = NewTask {
             id: id.clone(),
             title,
@@ -65,8 +72,8 @@ pub fn run_task_add<H: Host>(host: &H, draft: TaskDraft) -> Result<TaskView, Boa
             due,
             priority: draft.priority.map(stored_priority),
             checklist: Vec::new(),
-            lane: stored_lane(lane),
-            rank: rank_at(txn, lane, usize::MAX, None)?,
+            rank: rank_at(txn, &stored, usize::MAX, None)?,
+            lane: stored,
             frog_day: None,
             source_note_id: None,
             origin: None,
@@ -127,13 +134,15 @@ pub fn run_task_move<H: Host>(
     lane: Lane,
     index: u32,
 ) -> Result<(), BoardError> {
+    only_builtin(&lane)?;
     write(host, |txn, _| {
         if live(txn, id)?.is_none() {
             return Ok(Err(BoardError::NotFound));
         }
         let index = usize::try_from(index).unwrap_or(usize::MAX);
-        let rank = rank_at(txn, lane, index, Some(id))?;
-        tasks::move_to(txn, id, stored_lane(lane), &rank)?;
+        let stored = stored_lane(&lane)?;
+        let rank = rank_at(txn, &stored, index, Some(id))?;
+        tasks::move_to(txn, id, stored, &rank)?;
         Ok(Ok(()))
     })
 }
@@ -153,7 +162,7 @@ pub fn run_task_set_frog<H: Host>(
             tasks::clear_frog(txn, id)?;
             return Ok(Ok(None));
         }
-        if task.lane == tasks::Lane::Done {
+        if task.lane == tasks::Lane::DONE {
             return Ok(Err(BoardError::DoneCannotBeFrog));
         }
         Ok(Ok(tasks::set_frog(txn, id, &cx.today.to_iso())?.flatten()))

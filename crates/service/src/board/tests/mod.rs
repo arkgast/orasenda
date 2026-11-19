@@ -6,6 +6,7 @@ mod columns;
 mod events;
 mod frog;
 mod inbox_move;
+mod lane_id;
 mod settings;
 mod task_link;
 mod view;

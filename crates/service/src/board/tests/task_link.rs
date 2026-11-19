@@ -58,7 +58,7 @@ fn notices(host: &TestHost) -> Vec<(BoardNoticeKind, String)> {
 #[test]
 fn space_start_links_chosen_task() {
     let host = host();
-    let a = add(&host, "Fix sync bug", Lane::Backlog);
+    let a = add(&host, "Fix sync bug", Lane::BACKLOG);
     let chosen = choose(&host, Some(&a.id)).expect("chooses while idle");
     assert_eq!(linked(&chosen), Some((a.id.as_str(), "Fix sync bug")));
     let last_tick = host
@@ -76,30 +76,30 @@ fn space_start_links_chosen_task() {
     let started = run_action_on(&host, Action::StartPauseToggle).expect("starts");
     assert_eq!(linked(&started), Some((a.id.as_str(), "Fix sync bug")));
     let task = task_of(&host, &a.id);
-    assert_eq!(task.lane, Lane::Doing, "starting moves it to Doing");
+    assert_eq!(task.lane, Lane::DOING, "starting moves it to Doing");
     assert!(task.active, "the running task is active");
 }
 
 #[test]
 fn start_without_choice_links_nothing() {
     let host = host();
-    let doing = add(&host, "In Doing", Lane::Doing);
-    let frog = add(&host, "The Frog", Lane::Today);
+    let doing = add(&host, "In Doing", Lane::DOING);
+    let frog = add(&host, "The Frog", Lane::TODAY);
     run_task_set_frog(&host, &frog.id, true).expect("flags");
     let started = start_on(&host, None).expect("starts");
     assert_eq!(started.task, None, "nothing is chosen automatically");
-    assert_eq!(task_of(&host, &doing.id).lane, Lane::Doing);
-    assert_eq!(task_of(&host, &frog.id).lane, Lane::Today);
+    assert_eq!(task_of(&host, &doing.id).lane, Lane::DOING);
+    assert_eq!(task_of(&host, &frog.id).lane, Lane::TODAY);
     assert!(!task_of(&host, &doing.id).active);
 }
 
 #[test]
 fn choice_clears_when_task_moves_to_done() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     choose(&host, Some(&a.id)).expect("chooses");
     host.log().take();
-    run_task_move(&host, &a.id, Lane::Done, 0).expect("moves");
+    run_task_move(&host, &a.id, Lane::DONE, 0).expect("moves");
     assert_eq!(crate::session::run_view(&host).task, None);
     assert!(
         host.log()
@@ -114,8 +114,8 @@ fn choice_clears_when_task_moves_to_done() {
 #[test]
 fn choice_clears_when_task_is_removed_and_choosing_none_clears_it() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
-    let b = add(&host, "B", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
+    let b = add(&host, "B", Lane::TODAY);
     choose(&host, Some(&a.id)).expect("chooses");
     run_task_remove(&host, &a.id).expect("removes");
     assert_eq!(crate::session::run_view(&host).task, None);
@@ -128,11 +128,11 @@ fn choice_clears_when_task_is_removed_and_choosing_none_clears_it() {
 #[test]
 fn start_with_task_moves_it_to_doing() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     host.log().take();
     let started = start_on(&host, Some(&a.id)).expect("starts");
     assert_eq!(linked(&started), Some((a.id.as_str(), "A")));
-    assert_eq!(task_of(&host, &a.id).lane, Lane::Doing);
+    assert_eq!(task_of(&host, &a.id).lane, Lane::DOING);
     assert!(!changed(&host).is_empty(), "the board is re-emitted");
     assert!(notices(&host).is_empty(), "no toast under the limit");
 }
@@ -140,8 +140,8 @@ fn start_with_task_moves_it_to_doing() {
 #[test]
 fn an_explicit_task_overrides_the_choice() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
-    let b = add(&host, "B", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
+    let b = add(&host, "B", Lane::TODAY);
     choose(&host, Some(&a.id)).expect("chooses");
     let started = start_on(&host, Some(&b.id)).expect("starts");
     assert_eq!(linked(&started), Some((b.id.as_str(), "B")));
@@ -150,20 +150,20 @@ fn an_explicit_task_overrides_the_choice() {
 #[test]
 fn start_over_limit_moves_longest_back_to_today() {
     let host = host();
-    let first = add(&host, "Longest", Lane::Doing);
-    let today = add(&host, "Already today", Lane::Today);
-    let next = add(&host, "Next", Lane::Backlog);
+    let first = add(&host, "Longest", Lane::DOING);
+    let today = add(&host, "Already today", Lane::TODAY);
+    let next = add(&host, "Next", Lane::BACKLOG);
     host.log().take();
     start_on(&host, Some(&next.id)).expect("starts");
     let board = run_board_get(&host).expect("reads");
-    assert_eq!(titles(&board, Lane::Doing), ["Next"]);
+    assert_eq!(titles(&board, Lane::DOING), ["Next"]);
     assert_eq!(
-        titles(&board, Lane::Today),
+        titles(&board, Lane::TODAY),
         ["Longest", "Already today"],
         "the longest in Doing goes to the top of Today"
     );
-    assert_eq!(task_of(&host, &first.id).lane, Lane::Today);
-    assert_eq!(task_of(&host, &today.id).lane, Lane::Today);
+    assert_eq!(task_of(&host, &first.id).lane, Lane::TODAY);
+    assert_eq!(task_of(&host, &today.id).lane, Lane::TODAY);
     assert_eq!(
         notices(&host),
         [(
@@ -176,7 +176,7 @@ fn start_over_limit_moves_longest_back_to_today() {
 #[test]
 fn start_with_done_task_is_refused() {
     let host = host();
-    let done = add(&host, "Done one", Lane::Done);
+    let done = add(&host, "Done one", Lane::DONE);
     let result = start_on(&host, Some(&done.id));
     let error = result.expect_err("refused");
     assert_eq!(error.kind, TimerCommandErrorKind::TaskDone);
@@ -194,7 +194,7 @@ fn start_with_done_task_is_refused() {
 #[test]
 fn start_with_a_missing_or_removed_task_is_refused() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     run_task_remove(&host, &a.id).expect("removes");
     for id in [a.id.as_str(), "nope"] {
         let error = start_on(&host, Some(id)).expect_err("refused");
@@ -213,8 +213,8 @@ fn start_with_a_missing_or_removed_task_is_refused() {
 #[test]
 fn set_task_during_break_changes_open_focus() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
-    let b = add(&host, "B", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
+    let b = add(&host, "B", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
     host.set_now(T0 + CLASSIC_MS);
     let in_break = run_state(&host).view;
@@ -231,8 +231,8 @@ fn set_task_during_break_changes_open_focus() {
 #[test]
 fn set_task_during_a_focus_changes_the_live_session() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
-    let b = add(&host, "B", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
+    let b = add(&host, "B", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
     let swapped = choose(&host, Some(&b.id)).expect("changes");
     assert_eq!(linked(&swapped), Some((b.id.as_str(), "B")));
@@ -245,7 +245,7 @@ fn set_task_during_a_focus_changes_the_live_session() {
 #[test]
 fn row_written_grows_tracked_time() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
     host.set_now(T0 + CLASSIC_MS);
     run_state(&host);
@@ -268,7 +268,7 @@ fn row_written_grows_tracked_time() {
 #[test]
 fn removing_linked_task_clears_link() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
     host.log().take();
     run_task_remove(&host, &a.id).expect("removes");
@@ -291,9 +291,9 @@ fn removing_linked_task_clears_link() {
 #[test]
 fn moving_the_running_task_out_of_doing_keeps_the_link() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
-    run_task_move(&host, &a.id, Lane::Done, 0).expect("moves");
+    run_task_move(&host, &a.id, Lane::DONE, 0).expect("moves");
     assert_eq!(
         linked(&crate::session::run_view(&host)),
         Some((a.id.as_str(), "A"))
@@ -303,7 +303,7 @@ fn moving_the_running_task_out_of_doing_keeps_the_link() {
 #[test]
 fn renaming_the_linked_task_refreshes_the_cache() {
     let host = host();
-    let a = add(&host, "Old", Lane::Today);
+    let a = add(&host, "Old", Lane::TODAY);
     start_on(&host, Some(&a.id)).expect("starts");
     let patch = crate::api::TaskPatchView {
         title: Some("New".into()),
@@ -319,7 +319,7 @@ fn renaming_the_linked_task_refreshes_the_cache() {
 #[test]
 fn a_failed_board_write_still_starts_and_reports() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     host.log().take();
     db(&lock(host.service().expect("service"))).fail_writes(true);
     let started = start_on(&host, Some(&a.id)).expect("the session starts anyway");
@@ -336,7 +336,7 @@ fn a_failed_board_write_still_starts_and_reports() {
 #[test]
 fn roll_on_keeps_the_previous_sessions_task() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     let settings = Settings {
         auto_continue: true,
         ..current_settings(&host)
@@ -356,7 +356,7 @@ fn roll_on_keeps_the_previous_sessions_task() {
 #[test]
 fn keep_going_keeps_the_previous_sessions_task() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     let quick = StartRequest {
         quick: true,
         task_id: Some(a.id.clone()),
@@ -410,9 +410,9 @@ fn offer_on(host: &TestHost, task: &TaskView) {
 #[test]
 fn board_write_during_keep_going_offer_keeps_carried_title() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     offer_on(&host, &a);
-    add(&host, "B", Lane::Today);
+    add(&host, "B", Lane::TODAY);
     assert_eq!(
         linked(&crate::session::run_view(&host)),
         Some((a.id.as_str(), "A"))
@@ -424,7 +424,7 @@ fn board_write_during_keep_going_offer_keeps_carried_title() {
 #[test]
 fn carried_task_removed_clears_carry() {
     let host = host();
-    let a = add(&host, "A", Lane::Today);
+    let a = add(&host, "A", Lane::TODAY);
     offer_on(&host, &a);
     run_task_remove(&host, &a.id).expect("removes");
     assert_eq!(crate::session::run_view(&host).task, None);
@@ -435,7 +435,7 @@ fn carried_task_removed_clears_carry() {
 #[test]
 fn task_view_week_priority_defaults_false() {
     let host = host();
-    let task = add(&host, "Plan the week", Lane::Backlog);
+    let task = add(&host, "Plan the week", Lane::BACKLOG);
     assert!(!task.week_priority);
     assert!(!task_of(&host, &task.id).week_priority);
 }

@@ -93,11 +93,11 @@ fn focus_session_insert_writes_task_id() {
 fn list_done_since_is_newest_first() {
     let store = store();
     for (id, rank) in [("a", "V"), ("b", "W"), ("c", "X"), ("d", "Y")] {
-        insert_one(&store, &new_task(id, Lane::Doing, rank));
+        insert_one(&store, &new_task(id, Lane::DOING, rank));
     }
     for (id, at) in [("a", 100), ("b", 300), ("c", 200)] {
         store
-            .write(at, |txn| move_to(txn, id, Lane::Done, "V"))
+            .write(at, |txn| move_to(txn, id, Lane::DONE, "V"))
             .expect("moves");
     }
     store

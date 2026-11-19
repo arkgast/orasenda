@@ -6,10 +6,10 @@ fn ids(list: &[&str]) -> Vec<String> {
 
 fn seeded() -> Store {
     let store = store();
-    insert_one(&store, &new_task("b1", Lane::Backlog, "M"));
-    insert_one(&store, &new_task("t1", Lane::Today, "A"));
-    insert_one(&store, &new_task("t2", Lane::Doing, "B"));
-    insert_one(&store, &new_task("t3", Lane::Today, "C"));
+    insert_one(&store, &new_task("b1", Lane::BACKLOG, "M"));
+    insert_one(&store, &new_task("t1", Lane::TODAY, "A"));
+    insert_one(&store, &new_task("t2", Lane::DOING, "B"));
+    insert_one(&store, &new_task("t3", Lane::TODAY, "C"));
     store
 }
 
@@ -17,7 +17,7 @@ fn backlog_order(store: &Store) -> Vec<String> {
     let mut rows: Vec<TaskRow> = ["b1", "t1", "t2", "t3"]
         .iter()
         .map(|id| get_row(store, id))
-        .filter(|r| r.lane == Lane::Backlog)
+        .filter(|r| r.lane == Lane::BACKLOG)
         .collect();
     rows.sort_by(|a, b| a.rank.cmp(&b.rank));
     rows.into_iter().map(|r| r.id).collect()
@@ -55,12 +55,12 @@ fn move_returns_lanes_before() {
         [
             LaneBefore {
                 id: "t2".into(),
-                lane: Lane::Doing,
+                lane: Lane::DOING,
                 rank: "B".into()
             },
             LaneBefore {
                 id: "t1".into(),
-                lane: Lane::Today,
+                lane: Lane::TODAY,
                 rank: "A".into()
             },
         ]
@@ -80,7 +80,7 @@ fn move_skips_removed() {
         .expect("moves");
     assert_eq!(before.len(), 1);
     assert_eq!(before[0].id, "t2");
-    assert_eq!(get_row(&store, "t1").lane, Lane::Today);
+    assert_eq!(get_row(&store, "t1").lane, Lane::TODAY);
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn restore_lanes_restores_rank() {
     store
         .write(3_000, |txn| restore_lanes(txn, &before))
         .expect("restores");
-    for (id, lane, rank) in [("t1", Lane::Today, "A"), ("t2", Lane::Doing, "B")] {
+    for (id, lane, rank) in [("t1", Lane::TODAY, "A"), ("t2", Lane::DOING, "B")] {
         let row = get_row(&store, id);
         assert_eq!((row.lane, row.rank.as_str()), (lane, rank));
     }
@@ -117,6 +117,6 @@ fn restore_leaves_removed_task_removed() {
         .expect("restores");
     let gone = get_row(&store, "t1");
     assert!(gone.deleted_at.is_some());
-    assert_eq!(gone.lane, Lane::Backlog);
-    assert_eq!(get_row(&store, "t2").lane, Lane::Doing);
+    assert_eq!(gone.lane, Lane::BACKLOG);
+    assert_eq!(get_row(&store, "t2").lane, Lane::DOING);
 }

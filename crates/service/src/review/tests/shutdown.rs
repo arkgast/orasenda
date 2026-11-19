@@ -56,9 +56,9 @@ fn view_at(host: &TestHost, now_ms: u64) -> ShutdownView {
 #[test]
 fn shutdown_get_lists_today_and_doing_and_freezes_the_day() {
     let host = host();
-    let a = add(&host, "Write", Lane::Today);
-    let b = add(&host, "Read", Lane::Doing);
-    add(&host, "Later", Lane::Backlog);
+    let a = add(&host, "Write", Lane::TODAY);
+    let b = add(&host, "Read", Lane::DOING);
+    add(&host, "Later", Lane::BACKLOG);
     let view = view_at(&host, NOON);
     assert_eq!(view.day, DAY);
     assert_eq!(view.day_label, "Saturday 7 November");

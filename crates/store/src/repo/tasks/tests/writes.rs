@@ -7,7 +7,7 @@ fn pair(field: &str, value: &str) -> (String, String) {
 #[test]
 fn insert_logs_every_field() {
     let store = store();
-    let mut task = new_task("t1", Lane::Today, "V");
+    let mut task = new_task("t1", Lane::TODAY, "V");
     task.notes = "n".into();
     task.tags = vec!["a".into(), "b".into()];
     task.estimate = Some(3);
@@ -54,7 +54,7 @@ fn insert_logs_every_field() {
     assert_eq!(row.tags, ["a", "b"]);
     assert_eq!(row.estimate, Some(3));
     assert_eq!(row.priority, Some(Priority::High));
-    assert_eq!(row.lane, Lane::Today);
+    assert_eq!(row.lane, Lane::TODAY);
     assert_eq!((row.created_at, row.updated_at), (500, 1_000));
     assert_eq!((row.done_at, row.deleted_at), (None, None));
 }
@@ -62,7 +62,7 @@ fn insert_logs_every_field() {
 #[test]
 fn update_logs_only_changed_fields() {
     let store = store();
-    insert_one(&store, &new_task("t1", Lane::Backlog, "V"));
+    insert_one(&store, &new_task("t1", Lane::BACKLOG, "V"));
     let before = log_len(&store);
     let patch = TaskPatch {
         title: Some("Renamed".into()),
@@ -91,7 +91,7 @@ fn update_logs_only_changed_fields() {
 #[test]
 fn update_with_no_change_writes_nothing() {
     let store = store();
-    insert_one(&store, &new_task("t1", Lane::Backlog, "V"));
+    insert_one(&store, &new_task("t1", Lane::BACKLOG, "V"));
     let before = log_len(&store);
     let patch = TaskPatch {
         title: Some("Task t1".into()),
@@ -112,16 +112,16 @@ fn update_with_no_change_writes_nothing() {
 #[test]
 fn move_to_done_sets_done_at_and_leaving_clears_it() {
     let store = store();
-    insert_one(&store, &new_task("t1", Lane::Doing, "V"));
+    insert_one(&store, &new_task("t1", Lane::DOING, "V"));
     assert!(
         store
-            .write(3_000, |txn| move_to(txn, "t1", Lane::Done, "W"))
+            .write(3_000, |txn| move_to(txn, "t1", Lane::DONE, "W"))
             .expect("moves")
     );
     let row = get_row(&store, "t1");
     assert_eq!(
         (row.lane, row.rank.as_str(), row.done_at),
-        (Lane::Done, "W", Some(3_000))
+        (Lane::DONE, "W", Some(3_000))
     );
     let log = log_of(&store, "t1");
     assert_eq!(
@@ -135,25 +135,25 @@ fn move_to_done_sets_done_at_and_leaving_clears_it() {
     // Reordering inside Done keeps the first done_at.
     assert!(
         store
-            .write(4_000, |txn| move_to(txn, "t1", Lane::Done, "X"))
+            .write(4_000, |txn| move_to(txn, "t1", Lane::DONE, "X"))
             .expect("moves")
     );
     assert_eq!(get_row(&store, "t1").done_at, Some(3_000));
     // Leaving Done clears it.
     assert!(
         store
-            .write(5_000, |txn| move_to(txn, "t1", Lane::Today, "X"))
+            .write(5_000, |txn| move_to(txn, "t1", Lane::TODAY, "X"))
             .expect("moves")
     );
     let row = get_row(&store, "t1");
-    assert_eq!((row.lane, row.done_at), (Lane::Today, None));
+    assert_eq!((row.lane, row.done_at), (Lane::TODAY, None));
     let log = log_of(&store, "t1");
     assert_eq!(log.last(), Some(&pair("done_at", "null")));
     // Same place again: nothing.
     let before = log_len(&store);
     assert!(
         !store
-            .write(6_000, |txn| move_to(txn, "t1", Lane::Today, "X"))
+            .write(6_000, |txn| move_to(txn, "t1", Lane::TODAY, "X"))
             .expect("moves")
     );
     assert_eq!(log_len(&store), before);
@@ -162,8 +162,8 @@ fn move_to_done_sets_done_at_and_leaving_clears_it() {
 #[test]
 fn set_frog_moves_the_flag() {
     let store = store();
-    insert_one(&store, &new_task("a", Lane::Today, "V"));
-    insert_one(&store, &new_task("b", Lane::Today, "W"));
+    insert_one(&store, &new_task("a", Lane::TODAY, "V"));
+    insert_one(&store, &new_task("b", Lane::TODAY, "W"));
     let day = "2026-11-14";
     let first = store
         .write(2_000, |txn| set_frog(txn, "a", day))
@@ -198,8 +198,8 @@ fn set_frog_moves_the_flag() {
 #[test]
 fn remove_and_restore() {
     let store = store();
-    insert_one(&store, &new_task("t1", Lane::Today, "V"));
-    insert_one(&store, &new_task("t2", Lane::Today, "W"));
+    insert_one(&store, &new_task("t1", Lane::TODAY, "V"));
+    insert_one(&store, &new_task("t2", Lane::TODAY, "W"));
     assert!(
         store
             .write(2_000, |txn| remove(txn, "t1", 2_000))
@@ -251,7 +251,7 @@ fn set_frog_clears_every_other_frog_and_returns_the_newest() {
     let store = store();
     let day = "2026-11-14";
     for (id, rank) in [("a", "V"), ("b", "W"), ("c", "X")] {
-        insert_one(&store, &new_task(id, Lane::Today, rank));
+        insert_one(&store, &new_task(id, Lane::TODAY, rank));
     }
     // A merge can leave two Frogs on one day: seed them with different updated_at.
     store
@@ -276,7 +276,7 @@ fn set_frog_clears_every_other_frog_and_returns_the_newest() {
 #[test]
 fn insert_into_done_sets_and_logs_done_at() {
     let store = store();
-    insert_one(&store, &new_task("d", Lane::Done, "V"));
+    insert_one(&store, &new_task("d", Lane::DONE, "V"));
     assert_eq!(get_row(&store, "d").done_at, Some(1_000));
     assert!(log_of(&store, "d").iter().any(|(f, _)| f == "done_at"));
     let since = store.read(|txn| list_done_since(txn, 0)).expect("lists");
@@ -286,7 +286,7 @@ fn insert_into_done_sets_and_logs_done_at() {
 #[test]
 fn clear_frog_clears_a_frog_and_logs_it() {
     let store = store();
-    insert_one(&store, &new_task("a", Lane::Today, "V"));
+    insert_one(&store, &new_task("a", Lane::TODAY, "V"));
     store
         .write(2_000, |txn| set_frog(txn, "a", "2026-11-14"))
         .expect("sets");

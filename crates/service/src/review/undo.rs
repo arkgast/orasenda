@@ -1,7 +1,7 @@
 //! Moving the shutdown's unfinished tasks to the Backlog, and the one Undo for it. The lanes
 //! before the move live in memory behind an opaque token (ADR-013): one at a time, ten minutes.
 
-use orasenda_store::tasks::{self, Lane as Stored, LaneBefore};
+use orasenda_store::tasks::{self, LaneBefore};
 use uuid::Uuid;
 
 use super::state::UndoSlot;
@@ -29,7 +29,10 @@ pub fn run_shutdown_move<H: Host>(host: &H, ids: Vec<String>) -> Result<MoveUndo
                 for id in &ids {
                     let ok = tasks::get(txn, id)?.is_some_and(|row| {
                         row.deleted_at.is_none()
-                            && matches!(row.lane, Stored::Today | Stored::Doing)
+                            && matches!(
+                                row.lane.builtin(),
+                                Some(tasks::Builtin::Today | tasks::Builtin::Doing)
+                            )
                     });
                     if ok && running.as_deref() != Some(id.as_str()) {
                         movable.push(id.clone());

@@ -159,10 +159,10 @@ pub fn move_to(txn: &mut Txn, id: &str, lane: Lane, rank: &str) -> Result<bool, 
         );
     }
     changes.text("rank", rank, &old.rank);
-    if lane == Lane::Done && old.done_at.is_none() {
+    if lane == Lane::DONE && old.done_at.is_none() {
         let now = txn.now_ms();
         changes.push("done_at", Sql::Integer(sql_int(now)?), Value::from(now));
-    } else if lane != Lane::Done && old.done_at.is_some() {
+    } else if lane != Lane::DONE && old.done_at.is_some() {
         changes.push("done_at", Sql::Null, Value::Null);
     }
     changes.write(txn, id)

@@ -14,18 +14,18 @@ pub(crate) fn move_to_doing(txn: &mut Txn, id: &str) -> Result<Option<String>, S
     let Some(task) = live(txn, id)? else {
         return Ok(None);
     };
-    if task.lane == Stored::Doing {
+    if task.lane == Stored::DOING {
         return Ok(None);
     }
-    let rank = rank_at(txn, Lane::Doing, usize::MAX, Some(id))?;
-    tasks::move_to(txn, id, Stored::Doing, &rank)?;
+    let rank = rank_at(txn, &Stored::DOING, usize::MAX, Some(id))?;
+    tasks::move_to(txn, id, Stored::DOING, &rank)?;
     let limit = columns::read(txn)?
         .into_iter()
-        .find(|c| c.lane == Lane::Doing)
+        .find(|c| c.lane == Lane::DOING)
         .and_then(|c| c.limit);
     let doing: Vec<_> = tasks::list_live(txn)?
         .into_iter()
-        .filter(|t| t.lane == Stored::Doing)
+        .filter(|t| t.lane == Stored::DOING)
         .collect();
     if !limit.is_some_and(|l| doing.len() > usize::from(l)) {
         return Ok(None);
@@ -33,7 +33,7 @@ pub(crate) fn move_to_doing(txn: &mut Txn, id: &str) -> Result<Option<String>, S
     let Some(longest) = doing.iter().find(|t| t.id != id) else {
         return Ok(None);
     };
-    let top = rank_at(txn, Lane::Today, 0, None)?;
-    tasks::move_to(txn, &longest.id, Stored::Today, &top)?;
+    let top = rank_at(txn, &Stored::TODAY, 0, None)?;
+    tasks::move_to(txn, &longest.id, Stored::TODAY, &top)?;
     Ok(Some(longest.title.clone()))
 }

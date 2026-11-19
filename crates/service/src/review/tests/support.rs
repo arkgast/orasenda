@@ -72,7 +72,7 @@ pub(super) fn done_task(
         due: None,
         priority: None,
         checklist: Vec::new(),
-        lane: StoredLane::Done,
+        lane: StoredLane::DONE,
         rank: "a".to_owned(),
         frog_day: None,
         source_note_id: None,

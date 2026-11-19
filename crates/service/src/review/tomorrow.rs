@@ -52,12 +52,12 @@ fn read(
     let live = tasks::list_live(txn)?;
     let due = live
         .iter()
-        .filter(|task| lane(task.lane) != Lane::Done && task.due.as_deref() == Some(iso.as_str()))
+        .filter(|task| lane(&task.lane) != Lane::DONE && task.due.as_deref() == Some(iso.as_str()))
         .map(|task| task.title.clone())
         .collect();
     let planned_sessions = live
         .iter()
-        .filter(|task| lane(task.lane) == Lane::Today)
+        .filter(|task| lane(&task.lane) == Lane::TODAY)
         .filter_map(|task| task.estimate.map(|estimate| planned(estimate, buffer)))
         .sum();
 

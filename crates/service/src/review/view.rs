@@ -160,8 +160,8 @@ pub(super) fn priorities(txn: &Txn, ids: &[String]) -> Result<Vec<PriorityView>,
         else {
             continue;
         };
-        let lane_id = crate::board::view::lane(task.lane);
-        let done = lane_id == Lane::Done;
+        let lane_id = crate::board::view::lane(&task.lane);
+        let done = lane_id == Lane::DONE;
         let lane = names
             .iter()
             .find(|column| column.lane == lane_id)

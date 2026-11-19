@@ -5,15 +5,15 @@ use std::sync::atomic::Ordering;
 #[test]
 fn events_emitted_after_lock() {
     let host = host();
-    let a = add(&host, "A", Lane::Backlog);
-    run_task_move(&host, &a.id, Lane::Today, 0).expect("moves");
+    let a = add(&host, "A", Lane::BACKLOG);
+    run_task_move(&host, &a.id, Lane::TODAY, 0).expect("moves");
     run_task_remove(&host, &a.id).expect("removes");
     let events = changed(&host);
     assert_eq!(events.len(), 3, "one per write");
     let seqs: Vec<u64> = events.iter().map(|(s, _)| *s).collect();
     assert!(seqs.windows(2).all(|w| w[0] < w[1]), "seq grows: {seqs:?}");
     assert_eq!(host.0.under_lock.load(Ordering::SeqCst), 0);
-    run_task_add(&host, draft(" ", Lane::Backlog)).expect_err("refused");
+    run_task_add(&host, draft(" ", Lane::BACKLOG)).expect_err("refused");
     assert!(changed(&host).is_empty(), "a refused write emits nothing");
 }
 

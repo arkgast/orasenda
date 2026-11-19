@@ -7,7 +7,7 @@ use orasenda_store::tasks::{self, NewTask, TaskKind, TaskRow};
 use orasenda_store::{StoreError, Txn};
 
 use super::view::{self, Ctx};
-use crate::api::{BoardError, BoardView, Lane};
+use crate::api::{BoardError, BoardView};
 use crate::session::SessionService;
 
 /// A write's answer: the value, or why it was refused before anything was written.
@@ -141,14 +141,13 @@ pub(super) fn live(txn: &Txn, id: &str) -> Result<Option<TaskRow>, StoreError> {
 /// task `except` itself.
 pub(super) fn rank_at(
     txn: &Txn,
-    lane: Lane,
+    lane: &tasks::Lane,
     index: usize,
     except: Option<&str>,
 ) -> Result<String, StoreError> {
-    let stored = view::stored_lane(lane);
     let ranks: Vec<String> = tasks::list_live(txn)?
         .into_iter()
-        .filter(|t| t.lane == stored && Some(t.id.as_str()) != except)
+        .filter(|t| t.lane == *lane && Some(t.id.as_str()) != except)
         .map(|t| t.rank)
         .collect();
     let index = index.min(ranks.len());
@@ -173,8 +172,8 @@ pub(crate) fn append_backlog(txn: &mut Txn, title: String) -> Result<String, Sto
         due: None,
         priority: None,
         checklist: Vec::new(),
-        lane: tasks::Lane::Backlog,
-        rank: rank_at(txn, Lane::Backlog, usize::MAX, None)?,
+        lane: tasks::Lane::BACKLOG,
+        rank: rank_at(txn, &tasks::Lane::BACKLOG, usize::MAX, None)?,
         frog_day: None,
         source_note_id: None,
         origin: None,

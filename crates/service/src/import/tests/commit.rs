@@ -19,7 +19,7 @@ fn pending_id(host: &TestHost) -> Option<u64> {
 #[test]
 fn import_appends_in_source_order() {
     let host = host();
-    seed(&host, "tomb", "x:1", Lane::Backlog, false);
+    seed(&host, "tomb", "x:1", Lane::BACKLOG, false);
     let p = preview_reminders(&host, 3);
     let done = run_task_import(&host, p.id, vec![2, 0, 1]).unwrap();
     assert_eq!(done.count, 3);
@@ -32,7 +32,7 @@ fn import_appends_in_source_order() {
         rows.iter().map(|r| r.rank.clone()).collect::<Vec<_>>(),
         rank::spread(Some("tomb"), 3)
     );
-    assert!(rows.iter().all(|r| r.lane == Lane::Backlog));
+    assert!(rows.iter().all(|r| r.lane == Lane::BACKLOG));
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn failed_write_keeps_preview() {
 fn import_after_board_change_uses_current_last_rank() {
     let host = host();
     let p = preview_reminders(&host, 1);
-    seed(&host, "zzz", "x:1", Lane::Backlog, true);
+    seed(&host, "zzz", "x:1", Lane::BACKLOG, true);
     run_task_import(&host, p.id, vec![0]).unwrap();
     let rows = live_tasks(&host);
     let imported = rows.iter().find(|r| r.title == "T0").unwrap();
