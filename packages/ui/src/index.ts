@@ -7,6 +7,7 @@ export { CapturePad } from "./components/ui/capture-pad";
 export { Checklist } from "./components/ui/checklist";
 export { Choice } from "./components/ui/choice";
 export { ChoiceGroup } from "./components/ui/choice";
+export { ColumnEditor } from "./components/ui/column-editor";
 export { CommandPalette } from "./components/ui/command-palette";
 export { DataTable } from "./components/ui/data-table";
 export { DayPicker } from "./components/ui/day-picker";
@@ -64,6 +65,7 @@ export type { CapturePadProps, InterruptionKind } from "./components/ui/capture-
 export type { ChecklistItem, ChecklistProps } from "./components/ui/checklist";
 export type { SelectOption, SelectProps } from "./components/ui/select";
 export type { StepperProps } from "./components/ui/stepper";
+export type { ColumnEditorProps } from "./components/ui/column-editor";
 export type { TagFieldProps } from "./components/ui/tag-field";
 export type { ChoiceGroupProps, ChoiceProps } from "./components/ui/choice";
 export type { CommandPaletteProps } from "./components/ui/command-palette";

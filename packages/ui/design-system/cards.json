@@ -35,6 +35,10 @@
     "group": "Routines",
     "height": 260
   },
+  "ColumnEditor": {
+    "group": "Tasks",
+    "height": 520
+  },
   "Dialog": {
     "group": "Overlays",
     "height": 380

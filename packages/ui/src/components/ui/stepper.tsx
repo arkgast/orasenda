@@ -70,7 +70,7 @@ export function Stepper({
           data-slot="stepper-value"
           onKeyDown={onKeyDown}
           className={cn(
-            "flex min-h-hit-min max-w-field-width min-w-0 flex-1 items-center justify-center rounded-md border border-line-strong bg-surface-sunken px-3 py-2 text-body text-ink",
+            "flex min-h-hit-min max-w-field-width min-w-0 flex-1 items-center justify-center rounded-md border border-line-strong bg-surface-sunken px-2 py-2 text-body text-ink",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
             disabled && "border-dashed text-ink-muted",
           )}
