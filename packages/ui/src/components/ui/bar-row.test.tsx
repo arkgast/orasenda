@@ -84,3 +84,48 @@ test("bar_list_owns_the_columns", () => {
   expect(ul.style.gridTemplateColumns).toBe("fit-content(40%) minmax(0px, 1fr) auto");
   expect(ul.className).toContain("grid");
 });
+
+const goalProps = {
+  label: "Focus",
+  minutes: 580,
+  max: 720,
+  duration: "9h 40m",
+  spoken: "Focus, 9 hours 40 minutes, goal 12 hours",
+  goal: { minutes: 720, words: "Goal 12h" },
+};
+
+test("bar_row_goal_words_at_end_take_the_third_column", () => {
+  const { container } = render(
+    <BarList>
+      <BarRow {...goalProps} goalWords="end" />
+    </BarList>,
+  );
+  const li = screen.getByRole("listitem", { name: goalProps.spoken });
+  const words = screen.getByText("Goal 12h");
+  expect(words.getAttribute("data-slot")).toBe("bar-goal-words");
+  expect(words.className).toContain("text-body-sm");
+  expect(words.className).not.toContain("text-ink-muted");
+  expect(li.className).toContain("text-body-sm");
+  expect(li.children[2]).toBe(words);
+  expect(screen.queryByText("9h 40m")).toBeNull();
+  expect(li.children[1]?.querySelector("[data-slot='bar-goal-words']")).toBeNull();
+  expect(container.querySelector("[data-slot='bar-track-line']")).not.toBeNull();
+  expect(container.querySelectorAll("[data-slot='bar-goal-stub']")).toHaveLength(2);
+});
+
+test("bar_row_goal_words_default_under_the_track", () => {
+  render(
+    <BarList>
+      <BarRow {...goalProps} />
+    </BarList>,
+  );
+  const li = screen.getByRole("listitem", { name: goalProps.spoken });
+  expect(li.children[1]?.querySelector("[data-slot='bar-goal-words']")).not.toBeNull();
+  expect(li.children[2]?.textContent).toBe("9h 40m");
+});
+
+test("bar_row_goal_words_end_without_goal_draws_duration", () => {
+  const { container } = render(<BarRow {...base} minutes={30} max={60} goalWords="end" />);
+  expect(screen.getByText("2h 10m")).toBeTruthy();
+  expect(container.querySelector("[data-slot='bar-goal-words']")).toBeNull();
+});

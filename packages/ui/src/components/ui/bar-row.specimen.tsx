@@ -72,6 +72,32 @@ export function BarRowSpecimen(): ReactElement {
           />
         </BarList>
       </Frame>
+      <Frame state="bar-row-goal-end-420" width={420} height={80}>
+        <BarList>
+          <BarRow
+            label="Focus"
+            minutes={580}
+            max={720}
+            duration="9h 40m"
+            spoken="Focus, 9 hours 40 minutes, goal 12 hours"
+            goal={{ minutes: 720, words: "Goal 12h" }}
+            goalWords="end"
+          />
+        </BarList>
+      </Frame>
+      <Frame state="bar-row-goal-end-360" width={360} height={80}>
+        <BarList>
+          <BarRow
+            label="Focus"
+            minutes={580}
+            max={720}
+            duration="9h 40m"
+            spoken="Focus, 9 hours 40 minutes, goal 12 hours"
+            goal={{ minutes: 720, words: "Goal 12h" }}
+            goalWords="end"
+          />
+        </BarList>
+      </Frame>
     </>
   );
 }

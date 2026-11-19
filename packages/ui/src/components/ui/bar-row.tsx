@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { cn } from "../../lib/utils";
 import type { BarRowProps } from "../../types";
 
 // A share of the scale, 0 to 100. A bad scale reads as empty, never as a wide bar.
@@ -27,20 +28,28 @@ export function BarList(props: { children: ReactNode; "aria-label"?: string }): 
 /**
  * A duration as a bar, one list item. Three subgrid columns: label, bar, duration.
  * Put rows in a BarList, which supplies the three columns. Read as `spoken`; never focused.
+ * With `goalWords="end"` the third column shows the goal words, not the duration, so `spoken` must carry both.
  */
 export function BarRow(props: BarRowProps): ReactElement {
   const { goal } = props;
+  const end = !!goal && props.goalWords === "end";
   const width = `${share(props.minutes, goal ? goal.minutes : props.max)}%`;
   return (
     <li
       data-slot="bar-row"
       aria-label={props.spoken}
-      className="col-span-3 grid min-h-control-sm grid-cols-subgrid items-center gap-x-3 text-body text-ink"
+      className={cn(
+        "col-span-3 grid min-h-control-sm grid-cols-subgrid items-center gap-x-3 text-ink",
+        end ? "text-body-sm" : "text-body",
+      )}
     >
       <span aria-hidden="true" data-slot="bar-label" className="min-w-0">
         {props.label}
       </span>
-      <span aria-hidden="true" className="flex min-w-0 flex-col pt-2 pb-1">
+      <span
+        aria-hidden="true"
+        className={end ? "flex min-w-0 flex-col py-2" : "flex min-w-0 flex-col pt-2 pb-1"}
+      >
         {goal ? (
           <>
             <span data-slot="bar-track" className="relative flex h-bar-height min-w-0 items-center">
@@ -59,9 +68,11 @@ export function BarRow(props: BarRowProps): ReactElement {
                 className="absolute end-0 top-full h-1-5 border-s-2 border-ink"
               />
             </span>
-            <span data-slot="bar-goal-words" className="mt-2 text-caption text-ink-muted">
-              {goal.words}
-            </span>
+            {end ? null : (
+              <span data-slot="bar-goal-words" className="mt-2 text-caption text-ink-muted">
+                {goal.words}
+              </span>
+            )}
           </>
         ) : (
           <span
@@ -71,9 +82,19 @@ export function BarRow(props: BarRowProps): ReactElement {
           />
         )}
       </span>
-      <span aria-hidden="true" className="whitespace-nowrap text-end text-timer-sm">
-        {props.duration}
-      </span>
+      {end ? (
+        <span
+          aria-hidden="true"
+          data-slot="bar-goal-words"
+          className="whitespace-nowrap text-end text-body-sm text-ink"
+        >
+          {goal.words}
+        </span>
+      ) : (
+        <span aria-hidden="true" className="whitespace-nowrap text-end text-timer-sm">
+          {props.duration}
+        </span>
+      )}
     </li>
   );
 }

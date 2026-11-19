@@ -18,6 +18,10 @@ function day(i: number, startWeekday: number, state: HabitState, today = false):
 }
 
 /** `count` days ending today, the first on `startWeekday` (0 = Monday). */
+function doneDays(n: number): string {
+  return `${n} ${n === 1 ? "day" : "days"}`;
+}
+
 function record(count: number, startWeekday: number): HabitDay[] {
   return Array.from({ length: count }, (_, i) => {
     const today = i === count - 1;
@@ -63,10 +67,23 @@ export function HabitDotsSpecimen(): ReactElement {
           {["Drink a glass of water", "Stretch", "Read one page"].map((name, i) => (
             <div key={name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
               <div className="text-body">
-                <div className="font-semibold">{name}</div>
-                <div className="text-body-sm text-ink-muted">
-                  Done on {2 - (i % 2)} days this week
-                </div>
+                {name}: done on {doneDays(2 - (i % 2))} this week.
+              </div>
+              <HabitDots compact name={name} columns="week" days={record(7 - i, i)} />
+            </div>
+          ))}
+          <HabitLegend />
+        </div>
+      </Frame>
+      <Frame state="habit-dots-compact-rows-360" width={360} height={260}>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-end">
+            <HabitWeekdays />
+          </div>
+          {["Drink a glass of water", "Stretch", "Read one page"].map((name, i) => (
+            <div key={name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <div className="text-body">
+                {name}: done on {doneDays(2 - (i % 2))} this week.
               </div>
               <HabitDots compact name={name} columns="week" days={record(7 - i, i)} />
             </div>

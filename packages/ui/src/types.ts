@@ -132,5 +132,7 @@ export interface BarRowProps {
   duration: string;
   spoken: string;
   goal?: { minutes: number; words: string };
+  /** Where the goal words sit: "under" the track (default) or "end", in the third column in place of the duration. Ignored without `goal`. */
+  goalWords?: "under" | "end";
 }
 export type NavPage = "today" | "inbox" | "board" | "calendar" | "routines" | "review" | "settings";
