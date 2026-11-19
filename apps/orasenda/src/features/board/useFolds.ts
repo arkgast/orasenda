@@ -1,50 +1,45 @@
-import type { Lane } from "@shared/ipc/bindings";
-import { useState } from "react";
-import { LANES } from "./lanes";
+import type { ColumnView, Lane } from "@shared/ipc/bindings";
+import { useRef, useState } from "react";
+
+type Props = {
+  columns: readonly ColumnView[];
+  /** Saves a fold; null when it was saved, else the words for the refusal. */
+  save(lane: Lane, folded: boolean): Promise<string | null>;
+  /** The save failed: say so. The shown fold stays. */
+  failed(words: string): void;
+};
 
 /**
- * Which columns are open (Today-first board, ADR in the spec). The order list holds the lanes the
- * person has open, least recently opened first; the board folds from its front when the window is
- * too narrow, which gives the README's order (Backlog, Doing, Today) from the start and the
- * "opening a strip folds the least recently opened" rule afterwards. The column holding the
- * running task is never the one folded for room. Done starts folded.
+ * Which columns are open. The fold is saved with the column (`ColumnView.folded`), so it
+ * survives a remount; nothing folds for room. A toggle shows at once and is written behind. A
+ * write that fails keeps the shown fold and says so; only the newest toggle of a lane may speak.
  */
-const START: readonly Lane[] = ["backlog", "doing", "today"];
+export function useFolds({ columns, save, failed }: Props) {
+  const [pending, setPending] = useState<Partial<Record<Lane, boolean>>>({});
+  const [seen, setSeen] = useState(columns);
+  const tickets = useRef<Partial<Record<Lane, number>>>({});
 
-/** How many open columns fit in `width`; with no measure yet, the three the default window holds. */
-export function capacity(
-  width: number | null,
-  sizes: { min: number; strip: number; gap: number } | null,
-): number {
-  if (width === null || width <= 0 || sizes === null) return 3;
-  for (let open = LANES.length; open > 1; open--) {
-    const folded = LANES.length - open;
-    const needed = open * sizes.min + folded * sizes.strip + (LANES.length - 1) * sizes.gap;
-    if (needed <= width) return open;
+  // A pending fold ends once the board shows it (adjusted while rendering, not in an effect).
+  if (seen !== columns) {
+    setSeen(columns);
+    const left = Object.entries(pending).filter(
+      ([lane, folded]) => columns.find((c) => c.lane === lane)?.folded !== folded,
+    );
+    if (left.length !== Object.keys(pending).length) setPending(Object.fromEntries(left));
   }
-  return 1;
-}
 
-/** The lanes shown open: the most recent `room` of `order`, sparing `keep`. */
-export function openLanes(order: readonly Lane[], room: number, keep: Lane | null): Lane[] {
-  const shown = [...order];
-  // With room for one column only, the most recently opened lane wins: a strip or Add task that
-  // opens nothing would be a silent failure. The running column is spared only beside another.
-  const spare = room >= 2 ? keep : null;
-  while (shown.length > room) {
-    const drop = shown.findIndex((lane) => lane !== spare);
-    shown.splice(Math.max(drop, 0), 1);
-  }
-  return LANES.filter((lane) => shown.includes(lane));
-}
+  const open = columns.filter((c) => !(pending[c.lane] ?? c.folded)).map((c) => c.lane);
 
-export function useFolds(room: number, keep: Lane | null) {
-  const [order, setOrder] = useState<readonly Lane[]>(START);
-  const open = openLanes(order, room, keep);
-  const toggle = (lane: Lane) =>
-    setOrder((current) => {
-      const without = current.filter((l) => l !== lane);
-      return open.includes(lane) ? without : [...without, lane];
+  const toggle = (lane: Lane) => {
+    const folded = open.includes(lane);
+    const ticket = (tickets.current[lane] ?? 0) + 1;
+    tickets.current[lane] = ticket;
+    setPending((current) => ({ ...current, [lane]: folded }));
+    void save(lane, folded).then((words) => {
+      if (words === null || tickets.current[lane] !== ticket) return;
+      failed(words);
     });
+  };
+
   return { open, toggle };
 }

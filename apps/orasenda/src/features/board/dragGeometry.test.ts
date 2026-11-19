@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { edgeZone, type LaneRects, moveIndex, targetAt } from "./dragGeometry";
+import { edgeZone, edgeZoneX, type LaneRects, moveIndex, targetAt } from "./dragGeometry";
 
 const card = (id: string, top: number) => ({
   id,
@@ -18,7 +18,7 @@ const today = column({
   lane: "today",
   cards: [card("t1", 40), card("t2", 100), card("t3", 160)],
 });
-const NONE = { region: 0, lanes: {} };
+const NONE = { region: 0, x: 0, lanes: {} };
 
 describe("targetAt", () => {
   test("target_between_midpoints", () => {
@@ -61,10 +61,10 @@ describe("targetAt", () => {
 
   test("target_with_scroll_offset", () => {
     // Scrolled 50 down inside the column: t1's midpoint is at 15, t2's at 75.
-    const scroll = { region: 0, lanes: { today: 50 } };
+    const scroll = { region: 0, x: 0, lanes: { today: 50 } };
     expect(targetAt([today], scroll, { x: 50, y: 60 }, "x")).toEqual({ lane: "today", index: 1 });
     // The page region scrolling moves the column and its cards together.
-    const region = { region: 100, lanes: {} };
+    const region = { region: 100, x: 0, lanes: {} };
     expect(targetAt([today], region, { x: 50, y: 700 }, "x")).toBeNull();
     expect(targetAt([today], region, { x: 50, y: 100 }, "x")).toEqual({ lane: "today", index: 3 });
   });
@@ -99,4 +99,22 @@ test("edge_zone_top_and_bottom", () => {
   // A short list never gives more than half to either edge.
   expect(edgeZone({ left: 0, top: 0, right: 10, bottom: 40 }, { x: 5, y: 19 }, 44)).toBe(-1);
   expect(edgeZone({ left: 0, top: 0, right: 10, bottom: 40 }, { x: 5, y: 21 }, 44)).toBe(1);
+});
+
+test("drag_geometry_with_scroll_left", () => {
+  const far = column({ lane: "today", rect: { left: 600, top: 0, right: 800, bottom: 600 } });
+  const at = (x: number, scrolled: number) =>
+    targetAt([far], { region: 0, x: scrolled, lanes: {} }, { x, y: 300 }, "z");
+  expect(at(710, 0)?.lane).toBe("today");
+  // Scrolled 100 to the right, the column now sits at 500-700.
+  expect(at(710, 100)).toBeNull();
+  expect(at(550, 100)?.lane).toBe("today");
+});
+
+test("edgeZoneX reads the left and right zones of the region", () => {
+  const rect = { left: 0, top: 0, right: 900, bottom: 600 };
+  expect(edgeZoneX(rect, { x: 10, y: 300 }, 44)).toBe(-1);
+  expect(edgeZoneX(rect, { x: 890, y: 300 }, 44)).toBe(1);
+  expect(edgeZoneX(rect, { x: 450, y: 300 }, 44)).toBe(0);
+  expect(edgeZoneX(rect, { x: 890, y: 700 }, 44)).toBe(0);
 });

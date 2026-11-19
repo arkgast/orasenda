@@ -8,9 +8,8 @@ import {
   useState,
 } from "react";
 import { moveIndex, type Point, type Target, targetAt } from "./dragGeometry";
-import { edgeScroller, type Measured, measureBoard, scrollSince } from "./dragMeasure";
+import { edgeScroller, type Measured, measureBoard, px, scrollSince } from "./dragMeasure";
 import { locate } from "./lanes";
-import { px } from "./useRoom";
 
 /**
  * How far the pointer must travel before a press becomes a drag. A behaviour constant, not a
@@ -96,14 +95,17 @@ export function useCardDrag({ root, columns, enabled, name, say, drop }: Args) {
   const edge = () => {
     cancelAnimationFrame(frame.current);
     const m = measured.current;
-    const zone = px("--hit-min");
-    if (!live.current || !m || !zone) return;
+    const list = px("--hit-min");
+    const strip = px("--column-strip-width");
+    if (!live.current || !m || !list || !strip) return;
+    const zone = { list, strip };
     const found = edgeScroller(m, point.current, zone);
     if (!found) return;
     const tick = () => {
       const again = measured.current && edgeScroller(measured.current, point.current, zone);
       if (!live.current || !again) return;
-      again.el.scrollTop += again.dir * EDGE_STEP_PX;
+      if (again.x) again.el.scrollLeft += again.dir * EDGE_STEP_PX;
+      else again.el.scrollTop += again.dir * EDGE_STEP_PX;
       refresh();
       frame.current = requestAnimationFrame(tick);
     };

@@ -1,17 +1,32 @@
 import type { ColumnView, Lane } from "@shared/ipc/bindings";
-import { edgeZone, type LaneRects, type Point, type Rect, type Scroll } from "./dragGeometry";
+import {
+  edgeZone,
+  edgeZoneX,
+  type LaneRects,
+  type Point,
+  type Rect,
+  type Scroll,
+} from "./dragGeometry";
 import { columnId } from "./lanes";
 import { NEW_TASK_ID } from "./NewTaskField";
+
+/** A px token (`--hit-min`) as a number, or null when the token CSS is not loaded. */
+export function px(name: string): number | null {
+  const value = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(name),
+  );
+  return Number.isFinite(value) ? value : null;
+}
 
 /** The board as it stood at drag start: rects, plus the scrollers whose offsets move them. */
 export type Measured = {
   lanes: LaneRects[];
   /** Each open column's scrolling list. */
   lists: Record<Lane, HTMLElement>;
-  /** The page's ScrollRegion in a compact window. */
+  /** The page's ScrollRegion: sideways in a regular window, down in a compact one. */
   region: HTMLElement | null;
   /** Scroll offsets at the time of measuring. */
-  start: { region: number; lanes: Partial<Record<Lane, number>> };
+  start: { region: number; x: number; lanes: Partial<Record<Lane, number>> };
 };
 
 const rectOf = (el: Element): Rect => {
@@ -49,7 +64,12 @@ export function measureBoard(root: HTMLElement, columns: readonly ColumnView[]):
       cards,
     });
   }
-  return { lanes, lists, region, start: { region: region?.scrollTop ?? 0, lanes: startLanes } };
+  return {
+    lanes,
+    lists,
+    region,
+    start: { region: region?.scrollTop ?? 0, x: region?.scrollLeft ?? 0, lanes: startLanes },
+  };
 }
 
 /** How far each scroller has moved since the measure (a list or the page scrolls up, rects go up). */
@@ -58,22 +78,35 @@ export function scrollSince(m: Measured): Scroll {
   for (const [lane, list] of Object.entries(m.lists) as [Lane, HTMLElement][]) {
     lanes[lane] = list.scrollTop - (m.start.lanes[lane] ?? 0);
   }
-  return { region: (m.region?.scrollTop ?? 0) - m.start.region, lanes };
+  return {
+    region: (m.region?.scrollTop ?? 0) - m.start.region,
+    x: (m.region?.scrollLeft ?? 0) - m.start.x,
+    lanes,
+  };
 }
 
-const canScroll = (el: HTMLElement, dir: -1 | 1) =>
-  dir < 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight;
+const sideways = (el: HTMLElement) => el.dataset.axis === "x";
 
-/** The scroller whose top or bottom edge zone holds the pointer, and the way to scroll it. */
+const canScroll = (el: HTMLElement, dir: -1 | 1) =>
+  sideways(el)
+    ? dir < 0
+      ? el.scrollLeft > 0
+      : el.scrollLeft + el.clientWidth < el.scrollWidth
+    : dir < 0
+      ? el.scrollTop > 0
+      : el.scrollTop + el.clientHeight < el.scrollHeight;
+
+/** The scroller whose edge zone holds the pointer, and the way to scroll it (sideways for the Board's region). */
 export function edgeScroller(
   m: Measured,
   point: Point,
-  zone: number,
-): { el: HTMLElement; dir: -1 | 1 } | null {
+  zone: { list: number; strip: number },
+): { el: HTMLElement; dir: -1 | 1; x: boolean } | null {
   const candidates = [...Object.values(m.lists), ...(m.region ? [m.region] : [])];
   for (const el of candidates) {
-    const dir = edgeZone(rectOf(el), point, zone);
-    if (dir !== 0 && canScroll(el, dir)) return { el, dir };
+    const x = sideways(el);
+    const dir = (x ? edgeZoneX : edgeZone)(rectOf(el), point, x ? zone.strip : zone.list);
+    if (dir !== 0 && canScroll(el, dir)) return { el, dir, x };
   }
   return null;
 }

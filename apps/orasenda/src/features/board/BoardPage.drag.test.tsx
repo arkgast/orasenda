@@ -1,8 +1,15 @@
-import { argsOf, settle } from "@shared/test/fixtures";
+import { argsOf, boardOf, settle, withCustom } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { card, pointer, renderBoard, stubPointerCapture, stubRects } from "./BoardPage.support";
+import {
+  card,
+  pointer,
+  renderBoard,
+  stubPointerCapture,
+  stubRects,
+  TASKS,
+} from "./BoardPage.support";
 
 // Layout (see stubRects): Backlog 0-200, Today 210-410, Doing 420-620, Done strip 630-670.
 // Today: t1 y 40-90, t2 y 100-150. Doing: d1 y 40-90. Backlog: cards from y 100.
@@ -102,12 +109,12 @@ test("drop_in_done_goes_to_top", async () => {
 
 test("done_to_done_cancels", async () => {
   const backend = await renderBoard();
-  // Opening Done folds Backlog: Done is then 470-670 wide, its card at y 40-90.
+  // Nothing folds for room: Done opens beside Doing at 630-830, its card at y 40-90.
   fireEvent.click(screen.getByRole("button", { name: /^Done/ }));
   await settle();
-  const el = lift("Ship release", { x: 500, y: 60 }, [500, 300]);
+  const el = lift("Ship release", { x: 700, y: 60 }, [700, 300]);
   expect(screen.queryByText("Moving Ship release here")).toBeNull();
-  pointer("pointerup", el, 500, 300);
+  pointer("pointerup", el, 700, 300);
   await settle();
   expect(moves(backend)).toEqual([]);
   expect(screen.getByText("Ship release stayed in Done.")).toBeInTheDocument();
@@ -115,9 +122,9 @@ test("done_to_done_cancels", async () => {
 
 test("drop_on_folded_strip", async () => {
   const backend = await renderBoard();
-  fireEvent.click(screen.getByRole("button", { name: /^Done/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Fold Backlog" }));
   await settle();
-  // Backlog is the strip now (x 0-40): a drop lands at its end, after its two cards.
+  // Backlog is the strip now (x 0-40) and Today 50-250: a drop on the strip lands after its two cards.
   const el = lift("Write intro", { x: 100, y: 60 }, [20, 300]);
   expect(screen.getByRole("button", { name: /^Backlog.*Move here/ })).toBeInTheDocument();
   pointer("pointerup", el, 20, 300);
@@ -215,4 +222,65 @@ test("no_drag_under_open_sheet", async () => {
   pointer("pointerdown", el, 300, 60);
   pointer("pointermove", el, 300, 90);
   expect(screen.queryByText(/Esc puts it back/)).toBeNull();
+});
+
+test("drag_into_custom_column", async () => {
+  // Layout: Backlog 0-200, Today 210-410, Doing 420-620, Later 630-830, Done strip 840-880.
+  const board = withCustom(boardOf(TASKS), [{ lane: "c_later", name: "Later" }]);
+  const backend = await renderBoard({ board });
+  const el = lift("Write intro", T1, [700, 200]);
+  expect(screen.getByText("Moving Write intro here")).toBeInTheDocument();
+  pointer("pointerup", el, 700, 200);
+  await settle();
+  expect(moves(backend)).toEqual([{ id: "t1", lane: "c_later", index: 0 }]);
+});
+
+function stubRegion(region: HTMLElement, start: number) {
+  const box = { left: start };
+  Object.defineProperties(region, {
+    scrollWidth: { value: 2000 },
+    clientWidth: { value: 900 },
+    scrollLeft: {
+      get: () => box.left,
+      set: (v: number) => {
+        box.left = v;
+      },
+    },
+  });
+  return box;
+}
+
+test("drag_edge_scrolls_region", async () => {
+  const queue: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => queue.push(f));
+  vi.stubGlobal("cancelAnimationFrame", () => {});
+  // jsdom loads no stylesheet: the sideways edge zone is the column-strip-width token.
+  document.documentElement.style.setProperty("--hit-min", "44px");
+  document.documentElement.style.setProperty("--column-strip-width", "64px");
+  try {
+    await renderBoard();
+    const box = stubRegion(screen.getByRole("region", { name: "Board columns" }), 0);
+    // Inside 64px of the region's right edge, outside hit-min (stubRects: the region is 900 wide).
+    const el = lift("Write intro", T1, [850, 300]);
+    queue.shift()?.(0);
+    expect(box.left).toBeGreaterThan(0);
+    pointer("pointerup", el, 850, 300);
+  } finally {
+    document.documentElement.style.removeProperty("--hit-min");
+    document.documentElement.style.removeProperty("--column-strip-width");
+    vi.unstubAllGlobals();
+  }
+});
+
+test("drag_drop_follows_region_scroll", async () => {
+  const board = withCustom(boardOf(TASKS), [{ lane: "c_later", name: "Later" }]);
+  const backend = await renderBoard({ board });
+  const box = stubRegion(screen.getByRole("region", { name: "Board columns" }), 300);
+  const el = lift("Write intro", T1, [700, 200]);
+  // The region scrolls back 300 after the lift: the pointer is now over Today (210-410).
+  box.left = 0;
+  pointer("pointermove", el, 701, 200);
+  pointer("pointerup", el, 701, 200);
+  await settle();
+  expect(moves(backend)).toEqual([{ id: "t1", lane: "today", index: expect.any(Number) }]);
 });

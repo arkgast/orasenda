@@ -9,7 +9,11 @@ import {
 } from "react";
 import { columnId, locate, neighbour } from "./lanes";
 
+const NO_SCROLL = { preventScroll: true } as const;
 const CARD = 'button[data-slot="task-card"]';
+const STRIP = '[data-slot="kanban-column-strip"]';
+/** What holds focus in a column with no card: its strip, its name button or its heading. */
+const STOP = `${STRIP}, [data-slot="kanban-column-name"], h2[tabindex]`;
 
 type Actions = {
   moveToColumn(task: TaskView, lane: Lane): Promise<boolean>;
@@ -72,13 +76,19 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     target?.focus();
   };
 
+  /** The next column over: its card at `index` (or the last), else its strip, name or heading. */
   const stepColumn = (from: Lane, index: number, direction: -1 | 1) => {
-    const lanes = open;
-    let at = lanes.indexOf(from) + direction;
-    for (; at >= 0 && at < lanes.length; at += direction) {
-      const cards = lane(lanes[at] as Lane);
-      if (cards.length) return void cards[Math.min(index, cards.length - 1)]?.focus();
-    }
+    const to = neighbour(columns, from, direction);
+    if (to === null) return;
+    const cards = lane(to);
+    const column = document.getElementById(columnId(to));
+    if (cards.length) return void cards[Math.min(index, cards.length - 1)]?.focus(NO_SCROLL);
+    if (!column) return;
+    if (column.matches(STRIP)) return void column.focus(NO_SCROLL);
+    const name = column.querySelector<HTMLElement>('[data-slot="kanban-column-name"]');
+    const heading = column.querySelector<HTMLElement>("h2");
+    heading?.setAttribute("tabindex", "-1");
+    (name ?? heading)?.focus(NO_SCROLL);
   };
 
   /** Moves a card to `to`; focus follows it when that column is open, else lands beside it. */
@@ -96,12 +106,22 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
   };
 
   const moveColumn = async (task: TaskView, direction: -1 | 1) => {
-    const to = neighbour(task.lane, direction);
+    const to = neighbour(columns, task.lane, direction);
     if (to) await moveTo(task, to);
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
+    if (target.matches(STOP)) {
+      const from = target.closest<HTMLElement>("[id^='board-col-']");
+      const lane = columns.find((c) => columnId(c.lane) === from?.id)?.lane;
+      const plain = !(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
+      if (!lane || !plain || event.nativeEvent.isComposing) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      event.stopPropagation();
+      return stepColumn(lane, 0, event.key === "ArrowLeft" ? -1 : 1);
+    }
     if (!target.matches(CARD)) return;
     const id = target.closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
     const at = id ? locate(columns, id) : null;
@@ -148,6 +168,15 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
 
   /** Focus on a card selects it. */
   const onFocusCapture = (event: FocusEvent<HTMLElement>) => {
+    // The focused element comes into view, in either layout and inside a scrolled column:
+    // slowly, unless the person asked for less motion.
+    const reduced =
+      typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    (event.target as HTMLElement).scrollIntoView?.({
+      block: "nearest",
+      inline: "nearest",
+      behavior: reduced ? "auto" : "smooth",
+    });
     const id = (event.target as HTMLElement).closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
     if (id) setSelected(id);
   };
@@ -161,7 +190,7 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
     focusColumn: (l: Lane) => {
       const heading = document.getElementById(columnId(l))?.querySelector<HTMLElement>("h2");
       heading?.setAttribute("tabindex", "-1");
-      (lane(l)[0] ?? heading)?.focus();
+      (lane(l)[0] ?? heading)?.focus(NO_SCROLL);
     },
     focusBeside,
     moveTo,

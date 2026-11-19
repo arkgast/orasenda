@@ -43,6 +43,7 @@ export async function renderBoard(options: Options = {}): Promise<Backend> {
     task_set_frog: () => null,
     task_remove: () => null,
     task_restore: () => null,
+    board_column_fold: () => null,
     ...options.replies,
   });
   render(<BoardPage onNavigate={() => {}} onOpenTask={options.onOpenTask} {...options.page} />);
@@ -98,6 +99,7 @@ export function stubRects() {
       height: b.bottom - b.top,
       toJSON: () => b,
     });
+    if (this.matches("[data-slot=scroll-region]")) return make(boxOf(0, 0, 900, 600));
     if (this.id.startsWith("board-col-")) {
       const { left, width } = columnLeft(this);
       return make(boxOf(left, 0, width, 600));

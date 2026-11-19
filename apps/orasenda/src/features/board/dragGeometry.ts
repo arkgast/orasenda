@@ -17,13 +17,16 @@ export type LaneRects = {
   cards: { id: string; rect: Rect }[];
 };
 
-/** How far the page region and each column's list have scrolled since the rects were measured. */
-export type Scroll = { region: number; lanes: Partial<Record<Lane, number>> };
+/**
+ * How far the page region (down) and each column's list have scrolled since the rects were
+ * measured, and how far the region has scrolled sideways (`x`, the Board's row of columns).
+ */
+export type Scroll = { region: number; x: number; lanes: Partial<Record<Lane, number>> };
 
 export type Target = { lane: Lane; index: number };
 
-const inside = (rect: Rect, p: Point, dy: number) =>
-  p.x >= rect.left && p.x < rect.right && p.y >= rect.top - dy && p.y < rect.bottom - dy;
+const inside = (rect: Rect, p: Point, dx: number, dy: number) =>
+  p.x >= rect.left - dx && p.x < rect.right - dx && p.y >= rect.top - dy && p.y < rect.bottom - dy;
 
 /**
  * Where the pointer would drop: the lane under it and an index into that column's rendered
@@ -37,7 +40,7 @@ export function targetAt(
   point: Point,
   draggedId: string,
 ): Target | null {
-  const hit = lanes.find((l) => inside(l.rect, point, scroll.region));
+  const hit = lanes.find((l) => inside(l.rect, point, scroll.x, scroll.region));
   if (!hit) return null;
   if (hit.lane === "done") return { lane: "done", index: 0 };
   if (hit.folded) return { lane: hit.lane, index: hit.lead + hit.count };
@@ -65,5 +68,14 @@ export function edgeZone(rect: Rect, point: Point, zone: number): -1 | 0 | 1 {
   const reach = Math.min(zone, (rect.bottom - rect.top) / 2);
   if (point.y >= rect.top && point.y < rect.top + reach) return -1;
   if (point.y <= rect.bottom && point.y > rect.bottom - reach) return 1;
+  return 0;
+}
+
+/** -1 in the left `zone` of `rect`, 1 in the right `zone`, else 0 (never more than half each). */
+export function edgeZoneX(rect: Rect, point: Point, zone: number): -1 | 0 | 1 {
+  if (point.y < rect.top || point.y >= rect.bottom) return 0;
+  const reach = Math.min(zone, (rect.right - rect.left) / 2);
+  if (point.x >= rect.left && point.x < rect.left + reach) return -1;
+  if (point.x <= rect.right && point.x > rect.right - reach) return 1;
   return 0;
 }
