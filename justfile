@@ -113,6 +113,11 @@ ci-rust:
     git ls-files --error-unmatch apps/orasenda/src/shared/ipc/bindings.ts
     git diff --exit-code -- apps/orasenda/src/shared/ipc/bindings.ts
 
+# macOS checks against the live desktop, kept out of ci because launchservicesd sometimes reports
+# no Regular apps to a new process. Run by hand on a Mac in use when touching platform-macos.
+live-macos:
+    cargo test -p orasenda-platform-macos --lib -- --ignored
+
 # Serve the specimens for a person (VoiceOver pass, screenshots): http://localhost:4179/?c=TimerRing&theme=dark
 specimens:
     pnpm --filter @orasenda/ui specimens --port 4179 --strictPort
