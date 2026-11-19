@@ -61,13 +61,20 @@ const NONE: TrendBar[] = DAYS.map((d, i) => ({
 export function TrendBarsSpecimen(): ReactElement {
   return (
     <>
-      <Frame state="trend-bars-week-240" width={240} height={220}>
+      <Frame state="trend-bars-week-328" width={328} height={220}>
         <TrendBars bars={WEEK} caption="Focus time, this week" />
       </Frame>
-      <Frame state="trend-bars-weeks-goal-240" width={240} height={220}>
+      <Frame state="trend-bars-weeks-goal-328" width={328} height={220}>
         <TrendBars
           bars={WEEKS_8}
           goal={{ minutes: 600, words: "Goal 10h" }}
+          caption="Focus time, last 8 weeks"
+        />
+      </Frame>
+      <Frame state="trend-bars-weeks-goal-low-360" width={360} height={220}>
+        <TrendBars
+          bars={WEEKS_8}
+          goal={{ minutes: 300, words: "Goal 5h" }}
           caption="Focus time, last 8 weeks"
         />
       </Frame>
@@ -89,6 +96,16 @@ export function TrendBarsSpecimen(): ReactElement {
         />
       </Frame>
       <Frame state="trend-bars-week-1440" width={1440} height={220}>
+        <TrendBars bars={WEEK} caption="Focus time, this week" />
+      </Frame>
+      <Frame state="trend-bars-weeks-goal-1920" width={1920} height={220}>
+        <TrendBars
+          bars={WEEKS_8}
+          goal={{ minutes: 600, words: "Goal 10h" }}
+          caption="Focus time, last 8 weeks"
+        />
+      </Frame>
+      <Frame state="trend-bars-week-1920" width={1920} height={220}>
         <TrendBars bars={WEEK} caption="Focus time, this week" />
       </Frame>
       <Frame state="trend-bars-months-1440" width={1440} height={220}>

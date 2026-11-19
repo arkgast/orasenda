@@ -125,6 +125,7 @@
   --spacing-scrollbar-size: var(--scrollbar-size);
   --spacing-bar-height: var(--bar-height);
   --spacing-chart-height: var(--chart-height);
+  --spacing-chart-column-width: var(--chart-column-width);
   --spacing-fluid-gutter: var(--fluid-gutter);
   --spacing-fluid-section: var(--fluid-section);
   --spacing-fluid-stack: var(--fluid-stack);
