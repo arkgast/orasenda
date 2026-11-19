@@ -77,6 +77,7 @@ test("an empty field closes when focus leaves it", async () => {
   fireEvent.click(plus("Doing"));
   fireEvent.blur(fieldIn("Doing"));
   expect(screen.queryByRole("textbox", { name: "New task in Doing" })).toBeNull();
+  expect(plus("Doing")).toHaveFocus();
 });
 
 test("a field with text stays when focus leaves it", async () => {

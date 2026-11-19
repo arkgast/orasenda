@@ -18,7 +18,8 @@ import { boardWords } from "./boardWords";
 import { TaskSheet } from "./detail/TaskSheet";
 import { ImportSheet } from "./import/ImportSheet";
 import { takeImportAsk } from "./import/importAsk";
-import { NEW_TASK_ID } from "./NewTaskField";
+import { columnId } from "./lanes";
+import { NEW_TASK_ID, newTaskId } from "./NewTaskField";
 import { useBoard } from "./useBoard";
 import { useBoardActions } from "./useBoardActions";
 import { useBoardKeys } from "./useBoardKeys";
@@ -107,6 +108,26 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // A header + on a column but Backlog opens a field there; one at a time.
+  const [field, setField] = useState<Lane | null>(null);
+  useEffect(() => {
+    if (field) document.getElementById(newTaskId(field))?.focus();
+  }, [field]);
+  const plus = (lane: Lane) => {
+    if (lane === "backlog") {
+      setField(null);
+      document.getElementById(NEW_TASK_ID)?.focus();
+    } else setField(lane);
+  };
+  const closeField = (lane: Lane, back: boolean) => {
+    if (back) {
+      document
+        .querySelector<HTMLElement>(`#${columnId(lane)} [data-slot="kanban-column-add"] button`)
+        ?.focus();
+    }
+    setField((now) => (now === lane ? null : now));
+  };
 
   const leaveField = () => {
     const stop = box.current?.querySelector<HTMLElement>(
@@ -216,10 +237,14 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
           toggle: (lane) => {
             const opening = !folds.open.includes(lane);
             folds.toggle(lane);
+            if (!opening) closeField(lane, false);
             if (opening) queueMicrotask(() => keys.focusColumn(lane));
           },
           add: actions.add,
           leaveField,
+          field,
+          plus,
+          closeField,
           import: askImport,
         }}
       />

@@ -108,13 +108,18 @@ test("arrows_reach_empty_custom_column", async () => {
   await renderBoard({ board: later });
   press("Fix sync bug", { key: "ArrowRight" });
   expect(heading("Later")).toHaveFocus();
-  // On past it to Done's strip, then back.
+  // On through its Fold and + to Done's strip, then back to its name.
   fireEvent.keyDown(heading("Later"), { key: "ArrowRight" });
+  fireEvent.keyDown(screen.getByRole("button", { name: "Fold Later" }), { key: "ArrowRight" });
+  fireEvent.keyDown(screen.getByRole("button", { name: "Add task to Later" }), {
+    key: "ArrowRight",
+  });
   expect(screen.getByRole("button", { name: "Done, 1 task" })).toHaveFocus();
   fireEvent.keyDown(screen.getByRole("button", { name: "Done, 1 task" }), { key: "ArrowLeft" });
   expect(heading("Later")).toHaveFocus();
+  // Before the name: the last stop of the column before.
   fireEvent.keyDown(heading("Later"), { key: "ArrowLeft" });
-  expect(card("Fix sync bug")).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Add task to Doing" })).toHaveFocus();
 });
 
 test("arrows_reach_strip", async () => {

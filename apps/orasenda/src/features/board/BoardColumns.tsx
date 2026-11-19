@@ -2,7 +2,7 @@ import { Button, KanbanColumn } from "@orasenda/ui";
 import type { BoardView, Lane, TaskView } from "@shared/ipc/bindings";
 import { BoardCard } from "./BoardCard";
 import { columnId, sessions } from "./lanes";
-import { NewTaskField } from "./NewTaskField";
+import { NewTaskField, newTaskId } from "./NewTaskField";
 import type { DragView } from "./useCardDrag";
 
 export type ColumnHandlers = {
@@ -13,8 +13,14 @@ export type ColumnHandlers = {
   frog(task: TaskView): void;
   remove(task: TaskView): void;
   toggle(lane: Lane): void;
-  add(title: string): Promise<boolean>;
+  add(title: string, lane: Lane): Promise<boolean>;
   leaveField(): void;
+  /** The column whose header + opened a field (never Backlog, whose field is always there). */
+  field: Lane | null;
+  /** A header +: Backlog's focuses its field, another column opens one. */
+  plus(lane: Lane): void;
+  /** Closes that column's field; `back` returns focus to its +. */
+  closeField(lane: Lane, back: boolean): void;
   /** Opens the import sheet. */
   import(): void;
 };
@@ -77,9 +83,20 @@ export function BoardColumns({
         key={column.lane}
         {...shared}
         onToggle={() => on.toggle(column.lane)}
+        onAdd={column.lane === "done" ? undefined : () => on.plus(column.lane)}
         footer={footerOf(column.lane, board, on)}
       >
-        {column.lane === "backlog" ? <NewTaskField add={on.add} leave={on.leaveField} /> : null}
+        {column.lane === "backlog" ? (
+          <NewTaskField add={(title) => on.add(title, "backlog")} leave={on.leaveField} />
+        ) : on.field === column.lane ? (
+          <NewTaskField
+            id={newTaskId(column.lane)}
+            label={`New task in ${column.name}`}
+            add={(title) => on.add(title, column.lane)}
+            leave={() => on.closeField(column.lane, true)}
+            onBlurEmpty={(lost) => on.closeField(column.lane, lost)}
+          />
+        ) : null}
         {column.tasks.map((task) => (
           <BoardCard
             key={task.id}

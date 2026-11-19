@@ -73,8 +73,8 @@ export function useBoardActions(
   );
 
   const add = useCallback(
-    async (title: string): Promise<boolean> => {
-      const result = await latest.current.api.add({ title, lane: "backlog" });
+    async (title: string, lane: Lane = "backlog"): Promise<boolean> => {
+      const result = await latest.current.api.add({ title, lane });
       if (result.status === "ok") {
         show(null);
         return true;

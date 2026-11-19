@@ -110,7 +110,7 @@ export function stubRects() {
     if (this.matches("[data-slot=kanban-column-cards]")) return make(boxOf(left, 30, width, 560));
     if (this.hasAttribute("data-task-id")) {
       const cards = [...(this.parentElement?.querySelectorAll(":scope > [data-task-id]") ?? [])];
-      const lead = this.parentElement?.querySelector("#board-new-task") ? 1 : 0;
+      const lead = this.parentElement?.querySelector("[id^=board-new-task]") ? 1 : 0;
       const top = 40 + (lead + cards.indexOf(this)) * CARD_STEP;
       return make(boxOf(left, top, width, CARD_HEIGHT));
     }
