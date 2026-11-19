@@ -249,6 +249,6 @@ Each line is ticked by the PR that implements its plan task.
 - [x] B6: Board page: sideways scroll, saved folds, custom lanes in keys and drag (#793)
 - [x] B7a: Board page: header + and arrows into the header (#795)
 - [x] B7b: Board page: column editor, add and remove (#796)
-- [x] B8: Close-out (this PR)
+- [x] B8: Close-out (#798)
 
 Design-system artifact republished from `main` ad84e988 as service Version 78.
