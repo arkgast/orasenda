@@ -168,13 +168,15 @@ export function useBoardKeys({ root, columns, open, singleKeys, actions }: Args)
 
   /** Focus on a card selects it. */
   const onFocusCapture = (event: FocusEvent<HTMLElement>) => {
-    // A column out of view comes into view: slowly, unless the person asked for less motion.
+    // The focused element comes into view, in either layout and inside a scrolled column:
+    // slowly, unless the person asked for less motion.
     const reduced =
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const column = (event.target as HTMLElement).closest<HTMLElement>("[id^='board-col-']");
-    if (column?.closest("[data-axis='x']")) {
-      column.scrollIntoView?.({ inline: "nearest", behavior: reduced ? "auto" : "smooth" });
-    }
+    (event.target as HTMLElement).scrollIntoView?.({
+      block: "nearest",
+      inline: "nearest",
+      behavior: reduced ? "auto" : "smooth",
+    });
     const id = (event.target as HTMLElement).closest<HTMLElement>("[data-task-id]")?.dataset.taskId;
     if (id) setSelected(id);
   };

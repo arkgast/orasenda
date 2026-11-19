@@ -130,9 +130,24 @@ test("focus_scrolls_column_into_view", async () => {
   await renderBoard({ board: later });
   press("Fix sync bug", { key: "ArrowRight" });
   expect(spy).toHaveBeenLastCalledWith(
-    expect.objectContaining({ inline: "nearest", behavior: "smooth" }),
+    expect.objectContaining({ block: "nearest", inline: "nearest", behavior: "smooth" }),
   );
-  expect(spy.mock.contexts.at(-1)).toBe(document.getElementById("board-col-c_later"));
+  expect(spy.mock.contexts.at(-1)).toBe(heading("Later"));
+});
+
+test("compact_arrow_scrolls_focused_card_into_view", async () => {
+  const spy = scrollSpy();
+  const { innerWidth, innerHeight } = window;
+  Object.assign(window, { innerWidth: 360, innerHeight: 600 });
+  try {
+    await renderBoard();
+    expect(screen.getByRole("region", { name: "Board" })).not.toHaveAttribute("data-axis");
+    press("Fix sync bug", { key: "ArrowRight" });
+    expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ block: "nearest" }));
+    expect(spy.mock.contexts.at(-1)).toBe(document.activeElement);
+  } finally {
+    Object.assign(window, { innerWidth, innerHeight });
+  }
 });
 
 test("scroll_into_view_respects_reduce_motion", async () => {
