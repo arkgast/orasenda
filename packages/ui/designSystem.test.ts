@@ -66,6 +66,7 @@ const PREVIOUS_SURFACE = [
   "Checklist",
   "TagField",
   "Stepper",
+  "ColumnEditor",
   "ImportSourcePicker",
   "ImportPreviewList",
 ];
@@ -94,7 +95,7 @@ test("design_system_bundle_header_lists_runtime_exports", () => {
   const index = readFileSync(resolve(import.meta.dirname, "src/index.ts"), "utf8");
   const names = [...index.matchAll(/^export \{ (\w+) \} from /gm)].map((m) => m[1]);
   const components = names.filter((n) => /^[A-Z]/.test(n));
-  expect(components).toHaveLength(57);
+  expect(components).toHaveLength(58);
   const first = file("components", "bundle.js").split("\n")[0] as string;
   expect(first).toBe(
     `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: "Orasenda", components: components.map((name) => ({ name })) })} */`,
@@ -257,6 +258,17 @@ const MINIMAL: Record<string, Record<string, unknown>> = {
     onSetAll: noop,
   },
   Stepper: { label: "Estimate", value: 2, min: 0, max: 12, onChange: noop },
+  ColumnEditor: {
+    name: "Review",
+    limit: null,
+    taken: [],
+    canAdd: true,
+    canRemove: null,
+    onSave: noop,
+    onCancel: noop,
+    onAdd: noop,
+    onRemove: noop,
+  },
 };
 
 /** Loads the built classic scripts into a fresh jsdom window, as a page of the artifact would. */

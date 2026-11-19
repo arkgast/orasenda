@@ -4,6 +4,7 @@ import { ButtonSpecimen } from "../src/components/ui/button.specimen.tsx";
 import { CapturePadSpecimen } from "../src/components/ui/capture-pad.specimen.tsx";
 import { ChecklistSpecimen } from "../src/components/ui/checklist.specimen.tsx";
 import { ChoiceSpecimen } from "../src/components/ui/choice.specimen.tsx";
+import { ColumnEditorSpecimen } from "../src/components/ui/column-editor.specimen.tsx";
 import { CommandPaletteSpecimen } from "../src/components/ui/command-palette.specimen.tsx";
 import { DataTableSpecimen } from "../src/components/ui/data-table.specimen.tsx";
 import { DayPickerSpecimen } from "../src/components/ui/day-picker.specimen.tsx";
@@ -80,6 +81,7 @@ export const specimens: Record<string, () => ReactElement> = {
   Checklist: ChecklistSpecimen,
   TagField: TagFieldSpecimen,
   Stepper: StepperSpecimen,
+  ColumnEditor: ColumnEditorSpecimen,
   EmptyState: EmptyStateSpecimen,
   ImportSourcePicker: ImportSourcePickerSpecimen,
   ImportPreviewList: ImportPreviewListSpecimen,
