@@ -150,8 +150,12 @@ pub(crate) fn lane(lane: &tasks::Lane) -> Lane {
 /// The store's form of `lane`. Both crates apply one rule, so a refusal here is a bug, not
 /// input: it surfaces as a store error and is never swallowed.
 pub(crate) fn stored_lane(lane: &Lane) -> Result<tasks::Lane, StoreError> {
-    tasks::Lane::parse(lane.as_str())
-        .ok_or_else(|| StoreError::Sqlite(format!("not a column id: {:?}", lane.as_str())))
+    tasks::Lane::parse(lane.as_str()).ok_or_else(|| {
+        StoreError::Sqlite(format!(
+            "lane rule mismatch: {:?} is not a column id",
+            lane.as_str()
+        ))
+    })
 }
 
 /// "Due today", "Due yesterday", "Due tomorrow" or "Due Fri 20 Nov" (the year when it is not

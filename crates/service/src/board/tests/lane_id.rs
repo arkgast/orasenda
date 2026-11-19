@@ -24,9 +24,12 @@ fn service_refuses_custom_lane_for_now() {
         run_task_add(&host, draft("A", custom.clone())),
         Err(BoardError::BadColumns)
     );
+    assert!(changed(&host).is_empty());
     let a = add(&host, "A", Lane::BACKLOG);
+    changed(&host);
     assert_eq!(
         run_task_move(&host, &a.id, custom, 0),
         Err(BoardError::BadColumns)
     );
+    assert!(changed(&host).is_empty());
 }

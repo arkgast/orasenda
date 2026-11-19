@@ -8,14 +8,15 @@ use crate::api::{BoardError, Builtin, ColumnSettings, Lane, LimitState};
 pub(super) const KEY: &str = "board.columns";
 
 /// The four built-in columns, in board order.
+const BUILTINS: [Builtin; 4] = [
+    Builtin::Backlog,
+    Builtin::Today,
+    Builtin::Doing,
+    Builtin::Done,
+];
+
 pub(super) fn builtins() -> [Lane; 4] {
-    [
-        Builtin::Backlog,
-        Builtin::Today,
-        Builtin::Doing,
-        Builtin::Done,
-    ]
-    .map(Lane::from)
+    BUILTINS.map(Lane::from)
 }
 
 fn default_for(builtin: Builtin) -> ColumnSettings {
@@ -43,22 +44,17 @@ pub(crate) fn read(txn: &Txn) -> Result<Vec<ColumnSettings>, StoreError> {
         }
         Err(error) => return Err(error),
     };
-    Ok([
-        Builtin::Backlog,
-        Builtin::Today,
-        Builtin::Doing,
-        Builtin::Done,
-    ]
-    .into_iter()
-    .map(|builtin| {
-        let lane = Lane::from(builtin);
-        stored
-            .iter()
-            .find(|c| c.lane == lane && valid(c))
-            .cloned()
-            .unwrap_or_else(|| default_for(builtin))
-    })
-    .collect())
+    Ok(BUILTINS
+        .into_iter()
+        .map(|builtin| {
+            let lane = Lane::from(builtin);
+            stored
+                .iter()
+                .find(|c| c.lane == lane && valid(c))
+                .cloned()
+                .unwrap_or_else(|| default_for(builtin))
+        })
+        .collect())
 }
 
 fn valid(column: &ColumnSettings) -> bool {
