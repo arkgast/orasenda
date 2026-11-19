@@ -41,6 +41,7 @@ test("primary_follows_view", async () => {
   // The other flow is a secondary button inside its own section, not a primary.
   const other = within(section(WEEK)).getByRole("button", { name: "Start weekly review" });
   expect(other).toHaveAttribute("data-variant", "quiet");
+  expect(other.parentElement).toBe(screen.getByText("One priority so far.").parentElement);
   // Each button reports its start and opens its own flow.
   fireEvent.click(other);
   await settle();

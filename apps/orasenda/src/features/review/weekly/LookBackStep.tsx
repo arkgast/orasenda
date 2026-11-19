@@ -17,8 +17,8 @@ export function LookBackStep({ view }: Props): ReactElement {
     <ScrollRegion label="Look back">
       <div className="app-shutdown-body">
         {view.lastImprovement ? <p className="app-review-label">{view.lastImprovement}</p> : null}
-        <p className="app-review-label">{lookBack.heading}</p>
-        <p className="app-review-line">{lookBack.focusLine}</p>
+        <p className="app-weekly-range">{lookBack.heading}</p>
+        <p className="app-weekly-line">{lookBack.focusLine}</p>
         <TrendBars bars={lookBack.days} caption="Focus time by day" />
         {goal ? (
           <>
@@ -32,7 +32,7 @@ export function LookBackStep({ view }: Props): ReactElement {
                 goal={{ minutes: goal.minutes, words: goal.words }}
               />
             </BarList>
-            <p className="app-review-line" aria-hidden="true">
+            <p className="app-weekly-line" aria-hidden="true">
               {goal.line}
             </p>
           </>
@@ -54,16 +54,18 @@ export function LookBackStep({ view }: Props): ReactElement {
             </BarList>
           </>
         ) : null}
-        <p className="app-review-line">{lookBack.tasksLine}</p>
+        <p className="app-weekly-line">{lookBack.tasksLine}</p>
         <Lines lines={lookBack.routineLines} />
         <Lines lines={lookBack.habitLines} />
-        {lookBack.estimateLine ? <p className="app-review-line">{lookBack.estimateLine}</p> : null}
+        {lookBack.estimateLine ? (
+          <p className="app-weekly-line-sm">{lookBack.estimateLine}</p>
+        ) : null}
         {lookBack.reflections.length > 0 ? (
           <>
             <h2 className="app-review-heading">Your shutdown notes</h2>
             {lookBack.reflections.map((echo) => (
               <div key={echo.dayLabel} className="app-weekly-echo">
-                <p className="app-review-label">{echo.dayLabel}</p>
+                <p className="app-weekly-echo-day">{echo.dayLabel}</p>
                 <Lines lines={echo.lines} />
               </div>
             ))}
