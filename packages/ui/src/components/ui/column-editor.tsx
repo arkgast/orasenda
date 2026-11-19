@@ -1,13 +1,13 @@
 import {
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactElement,
   useEffect,
   useId,
   useRef,
   useState,
 } from "react";
-import { cn } from "../../lib/utils";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Stepper } from "./stepper";
@@ -33,7 +33,8 @@ const MAX_NAME = 24;
 
 function check(name: string, taken: readonly string[]): string | undefined {
   const text = name.trim();
-  if (text.length < 1 || text.length > MAX_NAME) return `Use 1 to ${MAX_NAME} characters.`;
+  if ([...text].length < 1 || [...text].length > MAX_NAME)
+    return `Use 1 to ${MAX_NAME} characters.`;
   if (taken.some((other) => other.trim().toLowerCase() === text.toLowerCase()))
     return "Another column has that name.";
   return undefined;
@@ -54,7 +55,9 @@ export function ColumnEditor({
 }: ColumnEditorProps): ReactElement {
   const [name, setName] = useState(initialName);
   const [value, setValue] = useState(limit?.value ?? 0);
-  const [edited, setEdited] = useState(false);
+  const [errorFor, setErrorFor] = useState(initialName);
+  const latest = useRef(initialName);
+  latest.current = name;
   const field = useRef<HTMLInputElement>(null);
   const settled = useRef(false);
   const addId = useId();
@@ -65,8 +68,16 @@ export function ColumnEditor({
     field.current?.select();
   }, []);
 
+  // A new `error` is the host's answer to the last save: the editor listens again, and the
+  // refusal belongs to the name it was given for.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when `error` changes only
+  useEffect(() => {
+    settled.current = false;
+    setErrorFor(latest.current);
+  }, [error]);
+
   const problem = check(name, taken);
-  const shown = problem ?? (edited ? undefined : error);
+  const shown = problem ?? (name === errorFor ? error : undefined);
 
   const save = () => {
     if (problem || settled.current) return;
@@ -98,28 +109,34 @@ export function ColumnEditor({
 
   const dimmed = (reason: { reason: string } | true, id: string) =>
     reason === true ? {} : { "aria-disabled": true as const, "aria-describedby": id };
-  // A press on a button must not move focus out of the editor first, or WebKit would save on blur.
-  const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
+  // A press on anything but the text fields must not move focus out of the editor first, or WebKit
+  // would save on blur.
+  const keepFocus = (event: MouseEvent<HTMLDivElement>) => {
+    if (!(event.target as HTMLElement).closest("input, [role=spinbutton]")) event.preventDefault();
+  };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: a named group; Enter, Esc and focus leaving bubble up from the controls inside, and a form would submit
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: a named group; Enter, Esc and focus leaving bubble up from the controls inside, and a form would submit
+    // biome-ignore lint/a11y/useSemanticElements: a form would submit
     <div
       role="group"
       aria-label="Edit column"
       data-slot="column-editor"
       onKeyDown={onKeyDown}
       onBlur={onBlur}
-      className="flex min-w-0 flex-col gap-4"
+      onMouseDown={keepFocus}
+      className="flex min-w-0 flex-col gap-2"
     >
       <Input
         ref={field}
-        label="Name"
+        label="Column name"
+        maxLength={MAX_NAME}
+        helper={shown ? undefined : `1 to ${MAX_NAME} characters.`}
         value={name}
         error={shown}
         autoComplete="off"
         onChange={(event) => {
           setName(event.target.value);
-          setEdited(true);
         }}
       />
       {limit ? (
@@ -132,16 +149,8 @@ export function ColumnEditor({
           onChange={setValue}
         />
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="primary" onMouseDown={keepFocus} onClick={save}>
-          Save
-        </Button>
-        <Button variant="quiet" onMouseDown={keepFocus} onClick={cancel}>
-          Cancel
-        </Button>
-      </div>
       <div className="flex min-w-0 flex-col gap-2">
-        <Button variant="quiet" onMouseDown={keepFocus} onClick={onAdd} {...dimmed(canAdd, addId)}>
+        <Button variant="quiet" onClick={onAdd} {...dimmed(canAdd, addId)}>
           Add column after
         </Button>
         {canAdd === true ? null : (
@@ -155,25 +164,28 @@ export function ColumnEditor({
         )}
         {canRemove === null ? null : (
           <>
-            <Button
-              variant="quiet"
-              onMouseDown={keepFocus}
-              onClick={onRemove}
-              {...dimmed(canRemove, removeId)}
-            >
+            <Button variant="quiet" onClick={onRemove} {...dimmed(canRemove, removeId)}>
               Remove column
             </Button>
             {canRemove === true ? null : (
               <p
                 id={removeId}
                 data-slot="column-editor-reason"
-                className={cn("m-0 text-caption text-ink-muted")}
+                className="m-0 text-caption text-ink-muted"
               >
                 {canRemove.reason}
               </p>
             )}
           </>
         )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" onClick={save}>
+          Save
+        </Button>
+        <Button variant="quiet" onClick={cancel}>
+          Cancel
+        </Button>
       </div>
     </div>
   );

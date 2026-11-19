@@ -15,9 +15,14 @@ const base: ColumnEditorProps = {
   onRemove: noop,
 };
 
-function Case(props: { state: string; over: Partial<ColumnEditorProps>; height?: number }) {
+function Case(props: {
+  state: string;
+  over: Partial<ColumnEditorProps>;
+  height?: number;
+  width?: number;
+}) {
   return (
-    <Frame state={props.state} width={280} height={props.height ?? 400}>
+    <Frame state={props.state} width={props.width ?? 280} height={props.height ?? 400}>
       <ColumnEditor {...base} {...props.over} />
     </Frame>
   );
@@ -39,6 +44,16 @@ export function ColumnEditorSpecimen(): ReactElement {
           canRemove: { reason: "Move its tasks out first." },
         }}
         height={520}
+      />
+      <Case
+        state="column-editor-narrow"
+        width={200}
+        over={{
+          limit: { value: 0, min: 0, max: 9, zeroLabel: "No limit" },
+          canAdd: { reason: "Up to 4 extra columns." },
+          canRemove: { reason: "Move its tasks out first." },
+        }}
+        height={620}
       />
       <Case
         state="column-editor-built-in"

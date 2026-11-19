@@ -19,7 +19,11 @@ function setup(over: Partial<ColumnEditorProps> = {}) {
       <button type="button">outside</button>
     </div>,
   );
-  return { ...fns, view, field: screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement };
+  return {
+    ...fns,
+    view,
+    field: screen.getByRole("textbox", { name: "Column name" }) as HTMLInputElement,
+  };
 }
 
 const stepperLimit = { value: 2, min: 0, max: 9, zeroLabel: "No limit" };
@@ -154,4 +158,34 @@ test("editor_save_is_primary_and_cancel_quiet", () => {
   expect(cancel).toHaveAttribute("data-variant", "quiet");
   fireEvent.click(cancel);
   expect(onCancel).toHaveBeenCalledTimes(1);
+});
+
+test("editor_listens_again_after_a_refused_save", () => {
+  const fns = { onSave: vi.fn(), onCancel: vi.fn(), onAdd: vi.fn(), onRemove: vi.fn() };
+  const props: ColumnEditorProps = {
+    name: "Review",
+    limit: null,
+    taken: [],
+    canAdd: true,
+    canRemove: true,
+    ...fns,
+  };
+  const { rerender } = render(<ColumnEditor {...props} />);
+  const field = screen.getByRole("textbox", { name: "Column name" });
+  fireEvent.change(field, { target: { value: "Waiting" } });
+  fireEvent.keyDown(field, { key: "Enter" });
+  expect(fns.onSave).toHaveBeenCalledTimes(1);
+  rerender(<ColumnEditor {...props} error="That name is in use." />);
+  expect(screen.getByText("That name is in use.")).toBeInTheDocument();
+  fireEvent.keyDown(field, { key: "Enter" });
+  expect(fns.onSave).toHaveBeenCalledTimes(2);
+  rerender(<ColumnEditor {...props} error="Still in use." />);
+  fireEvent.keyDown(field, { key: "Escape" });
+  expect(fns.onCancel).toHaveBeenCalledTimes(1);
+});
+
+test("editor_presses_outside_the_fields_keep_focus", () => {
+  setup({ limit: stepperLimit });
+  expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Decrease Limit" }))).toBe(false);
+  expect(fireEvent.mouseDown(screen.getByRole("textbox", { name: "Column name" }))).toBe(true);
 });
