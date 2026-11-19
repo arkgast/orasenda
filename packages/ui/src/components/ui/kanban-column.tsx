@@ -133,7 +133,14 @@ export function KanbanColumn(props: KanbanColumnProps): ReactElement {
           : "max-w-column-width grow basis-column-min-width",
       )}
     >
-      {props.editor ?? (
+      {props.editor ? (
+        <div
+          data-slot="kanban-column-editor"
+          className="flex min-h-0 shrink flex-col overflow-y-auto scroll-py-1 p-1"
+        >
+          {props.editor}
+        </div>
+      ) : (
         <KanbanColumnHeader
           headingId={headingId}
           title={props.title}

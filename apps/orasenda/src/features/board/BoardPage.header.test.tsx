@@ -16,7 +16,8 @@ afterEach(async () => {
 });
 
 const plus = (name: string) => screen.getByRole("button", { name: `Add task to ${name}` });
-const heading = (name: string) => screen.getByRole("heading", { name });
+// The name is a button inside the heading once a column can be edited.
+const heading = (name: string) => screen.getByRole("button", { name });
 const fieldIn = (name: string) => screen.getByRole("textbox", { name: `New task in ${name}` });
 const key = (target: Element, k: string) => fireEvent.keyDown(target, { key: k });
 

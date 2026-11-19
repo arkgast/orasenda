@@ -1,7 +1,14 @@
 import type { BoardView_Serialize } from "@shared/ipc/bindings";
-import { argsOf, boardOf, boardTask, settle, withCustom } from "@shared/test/fixtures";
+import {
+  argsOf,
+  boardOf,
+  boardTask,
+  emitBoardChanged,
+  settle,
+  withCustom,
+} from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { card, renderBoard, TASKS } from "./BoardPage.support";
 
@@ -102,7 +109,8 @@ const press = (title: string, init: KeyboardEventInit) => {
   card(title).focus();
   fireEvent.keyDown(card(title), init);
 };
-const heading = (name: string) => screen.getByRole("heading", { name });
+// The name is a button inside the heading once a column can be edited.
+const heading = (name: string) => screen.getByRole("button", { name });
 
 test("arrows_reach_empty_custom_column", async () => {
   await renderBoard({ board: later });
@@ -182,4 +190,283 @@ test("alt_cmd_arrow_moves_through_custom_column", async () => {
   expect(argsOf(backend.calls, "task_move")).toEqual([{ id: "d1", lane: "c_later", index: 1 }]);
   fireEvent.click(screen.getByRole("button", { name: "More actions for Write intro" }));
   expect(screen.getByRole("menuitem", { name: "Move to Later" })).toBeInTheDocument();
+});
+
+// Column editor (B7b)
+const nameButton = (name: string) =>
+  within(screen.getByRole("region", { name })).getByRole("button", { name });
+const openEditor = (name: string) => fireEvent.doubleClick(nameButton(name));
+const editor = () => screen.getByRole("group", { name: "Edit column" });
+const field = () => screen.getByRole("textbox", { name: "Column name" });
+const inEditor = (name: string) => within(editor()).getByRole("button", { name });
+const FOUR = [
+  { lane: "c_one", name: "One" },
+  { lane: "c_two", name: "Two" },
+  { lane: "c_three", name: "Three" },
+  { lane: "c_four", name: "Four" },
+];
+const edits = {
+  board_column_edit: () => null,
+  board_column_add: () => "c_new00001",
+  board_column_remove: () => null,
+};
+
+test("editor_opens_on_double_click", async () => {
+  await renderBoard({ replies: edits });
+  fireEvent.click(nameButton("Today"), { detail: 1 });
+  expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
+  openEditor("Today");
+  expect(editor()).toBeInTheDocument();
+  expect(field()).toHaveValue("Today");
+  expect(field()).toHaveFocus();
+});
+
+test("editor_opens_on_return", async () => {
+  await renderBoard({ replies: edits });
+  nameButton("Doing").focus();
+  fireEvent.click(nameButton("Doing"), { detail: 0 });
+  expect(field()).toHaveValue("Doing");
+});
+
+test("editor_controls_per_column_kind", async () => {
+  await renderBoard({ board: withCustom(boardOf(TASKS), LATER), replies: edits });
+  const kinds: [string, { limit: boolean; add: boolean; remove: boolean }][] = [
+    ["Backlog", { limit: false, add: true, remove: false }],
+    ["Today", { limit: true, add: true, remove: false }],
+    ["Doing", { limit: true, add: true, remove: false }],
+    ["Later", { limit: true, add: true, remove: true }],
+  ];
+  for (const [name, want] of kinds) {
+    openEditor(name);
+    const has = (label: string) => within(editor()).queryByRole("button", { name: label }) !== null;
+    expect(within(editor()).queryByRole("spinbutton", { name: /Limit/ }) !== null).toBe(want.limit);
+    expect(has("Add column after")).toBe(want.add);
+    expect(has("Remove column")).toBe(want.remove);
+    fireEvent.keyDown(field(), { key: "Escape" });
+    await settle();
+  }
+  // Done is folded at start: open it, then it has a name, no limit, no Add.
+  fireEvent.click(screen.getByRole("button", { name: "Done, 1 task" }));
+  openEditor("Done");
+  expect(within(editor()).queryByRole("button", { name: "Add column after" })).toBeNull();
+  expect(within(editor()).queryByRole("spinbutton", { name: /Limit/ })).toBeNull();
+  // Another column's name is taken, this one's is not.
+  fireEvent.change(field(), { target: { value: "today" } });
+  expect(screen.getByText("Another column has that name.")).toBeInTheDocument();
+});
+
+test("editor_save_calls_edit", async () => {
+  const backend = await renderBoard({ replies: edits });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: " Focus " } });
+  fireEvent.keyDown(field(), { key: "Enter" });
+  await settle();
+  expect(argsOf(backend.calls, "board_column_edit")).toEqual([
+    { lane: "today", name: "Focus", limit: 3 },
+  ]);
+  expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
+  expect(nameButton("Today")).toBeInTheDocument();
+  expect(nameButton("Today")).toHaveFocus();
+});
+
+test("editor_unchanged_save_writes_nothing", async () => {
+  const backend = await renderBoard({ replies: edits });
+  openEditor("Today");
+  fireEvent.keyDown(field(), { key: "Enter" });
+  await settle();
+  expect(argsOf(backend.calls, "board_column_edit")).toEqual([]);
+  expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
+});
+
+test("editor_esc_writes_nothing_and_returns_focus", async () => {
+  const backend = await renderBoard({ replies: edits });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: "Other" } });
+  fireEvent.keyDown(field(), { key: "Escape" });
+  await settle();
+  expect(argsOf(backend.calls, "board_column_edit")).toEqual([]);
+  expect(nameButton("Today")).toHaveFocus();
+});
+
+test("editor_service_refusal_inline", async () => {
+  await renderBoard({
+    replies: {
+      board_column_edit: () => {
+        throw "badColumnName";
+      },
+    },
+  });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: "Focus" } });
+  fireEvent.keyDown(field(), { key: "Enter" });
+  await settle();
+  expect(editor()).toBeInTheDocument();
+  expect(screen.getByText("Another column has that name.")).toBeInTheDocument();
+});
+
+test("add_column_opens_new_editor", async () => {
+  const backend = await renderBoard({ replies: edits });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: "Focus" } });
+  fireEvent.click(inEditor("Add column after"));
+  await settle();
+  expect(argsOf(backend.calls, "board_column_edit")).toEqual([
+    { lane: "today", name: "Focus", limit: 3 },
+  ]);
+  expect(argsOf(backend.calls, "board_column_add")).toEqual([{ after: "today" }]);
+  // The board answers with the new column; its editor is open with the name selected.
+  await emitBoardChanged(
+    1,
+    withCustom(boardOf(TASKS), [{ lane: "c_new00001", name: "New column" }]),
+  );
+  expect(field()).toHaveValue("New column");
+  expect(field()).toHaveFocus();
+  const input = field() as HTMLInputElement;
+  expect([input.selectionStart, input.selectionEnd]).toEqual([0, "New column".length]);
+});
+
+test("add_column_dimmed_at_cap", async () => {
+  const backend = await renderBoard({ board: withCustom(boardOf(TASKS), FOUR), replies: edits });
+  openEditor("Today");
+  const add = inEditor("Add column after");
+  expect(add).toHaveAttribute("aria-disabled", "true");
+  expect(within(editor()).getByText("Up to 4 extra columns.")).toBeInTheDocument();
+  fireEvent.click(add);
+  await settle();
+  expect(argsOf(backend.calls, "board_column_add")).toEqual([]);
+});
+
+test("add_column_refused_says_why", async () => {
+  await renderBoard({
+    replies: {
+      ...edits,
+      board_column_add: () => {
+        throw "tooManyColumns";
+      },
+    },
+  });
+  openEditor("Today");
+  fireEvent.click(inEditor("Add column after"));
+  await settle();
+  const toast = screen.getAllByRole("status").find((n) => n.textContent?.includes("Up to 4"));
+  expect(toast).toBeDefined();
+});
+
+test("remove_dimmed_while_tasks", async () => {
+  const board = withCustom(boardOf(TASKS), [
+    { lane: "c_later", name: "Later", tasks: [boardTask("l1", "Plan trip", "c_later")] },
+  ]);
+  const backend = await renderBoard({ board, replies: edits });
+  openEditor("Later");
+  expect(inEditor("Remove column")).toHaveAttribute("aria-disabled", "true");
+  expect(within(editor()).getByText("Move its tasks out first.")).toBeInTheDocument();
+  fireEvent.click(inEditor("Remove column"));
+  await settle();
+  expect(argsOf(backend.calls, "board_column_remove")).toEqual([]);
+});
+
+test("remove_empty_column_toasts_and_focuses", async () => {
+  const backend = await renderBoard({ board: withCustom(boardOf(TASKS), LATER), replies: edits });
+  openEditor("Later");
+  fireEvent.click(inEditor("Remove column"));
+  await settle();
+  expect(argsOf(backend.calls, "board_column_remove")).toEqual([{ lane: "c_later" }]);
+  expect(screen.getByText("Removed Later.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+  expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
+  expect(nameButton("Doing")).toHaveFocus();
+});
+
+test("add_task_quiet_while_editing", async () => {
+  await renderBoard({ replies: edits });
+  const add = () => screen.getByRole("button", { name: "Add task" });
+  expect(add()).toHaveAttribute("data-variant", "primary");
+  openEditor("Today");
+  expect(add()).toHaveAttribute("data-variant", "quiet");
+  // Save is then the one primary action on screen.
+  const primaries = document.querySelectorAll('[data-variant="primary"]');
+  expect(primaries).toHaveLength(1);
+  expect(primaries[0]).toBe(inEditor("Save"));
+});
+
+test("page_keys_ignored_in_editor", async () => {
+  const backend = await renderBoard({ replies: edits });
+  openEditor("Today");
+  for (const from of [field(), inEditor("Save")]) {
+    from.focus();
+    fireEvent.keyDown(from, { key: "ArrowDown" });
+    fireEvent.keyDown(from, { key: "f" });
+    fireEvent.keyDown(from, { key: "Backspace", metaKey: true });
+    expect(from).toHaveFocus();
+  }
+  await settle();
+  expect(argsOf(backend.calls, "task_remove")).toEqual([]);
+  expect(argsOf(backend.calls, "task_set_frog")).toEqual([]);
+});
+
+test("refusal_after_another_editor_opened_is_toasted", async () => {
+  await renderBoard({
+    replies: {
+      board_column_edit: () => {
+        throw "badColumnName";
+      },
+    },
+  });
+  openEditor("Today");
+  fireEvent.change(field(), { target: { value: "Focus" } });
+  // Leaving the editor saves it; the other column's editor opens before the answer lands.
+  fireEvent.blur(field());
+  openEditor("Doing");
+  await settle();
+  const words = screen.getAllByRole("status").filter((n) => n.textContent?.includes("name"));
+  expect(words.length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Another column has that name.").length).toBeGreaterThan(0);
+});
+
+test("editor_closes_when_column_removed_elsewhere", async () => {
+  await renderBoard({ board: withCustom(boardOf(TASKS), LATER), replies: edits });
+  openEditor("Later");
+  await emitBoardChanged(1, boardOf(TASKS));
+  expect(screen.queryByRole("group", { name: "Edit column" })).toBeNull();
+  expect(screen.getByText("That column is gone. Pick another.")).toBeInTheDocument();
+  expect(nameButton("Doing")).toHaveFocus();
+});
+
+test("gone_elsewhere_leaves_focus_outside_the_editor", async () => {
+  await renderBoard({ board: withCustom(boardOf(TASKS), LATER), replies: edits });
+  openEditor("Later");
+  const elsewhere = nameButton("Backlog");
+  const spy = vi.spyOn(document, "activeElement", "get").mockReturnValue(elsewhere);
+  await emitBoardChanged(1, boardOf(TASKS));
+  spy.mockRestore();
+  expect(nameButton("Doing")).not.toHaveFocus();
+});
+
+test("remove_does_not_say_gone_first", async () => {
+  const lines: string[] = [];
+  const seen = new MutationObserver(() => lines.push(document.body.textContent ?? ""));
+  // The remove reply is held until the board change has been announced, as in the service.
+  let reply: (v: null) => void = () => {};
+  const held = new Promise<null>((resolve) => {
+    reply = resolve;
+  });
+  try {
+    await renderBoard({
+      board: withCustom(boardOf(TASKS), LATER),
+      replies: { ...edits, board_column_remove: () => held },
+    });
+    openEditor("Later");
+    seen.observe(document.body, { childList: true, subtree: true, characterData: true });
+    fireEvent.click(inEditor("Remove column"));
+    await emitBoardChanged(1, boardOf(TASKS));
+    lines.push(document.body.textContent ?? "");
+    reply(null);
+    await settle();
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some((t) => t.includes("That column is gone. Pick another."))).toBe(false);
+    expect(screen.getByText("Removed Later.")).toBeInTheDocument();
+  } finally {
+    seen.disconnect();
+    reply(null);
+  }
 });

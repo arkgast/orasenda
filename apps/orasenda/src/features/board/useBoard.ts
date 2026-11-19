@@ -115,12 +115,9 @@ export function useBoard() {
         write("board_column_edit", commands.boardColumnEdit(lane, name, limit)),
       [write],
     ),
-    /** The new column's id, or `null` when it was refused or could not be reached. */
+    /** The new column's id, or the typed refusal. */
     addColumn: useCallback(
-      async (after: Lane): Promise<Lane | null> => {
-        const outcome = await write("board_column_add", commands.boardColumnAdd(after));
-        return outcome.status === "ok" ? outcome.data : null;
-      },
+      (after: Lane) => write("board_column_add", commands.boardColumnAdd(after)),
       [write],
     ),
     removeColumn: useCallback(
