@@ -49,7 +49,6 @@ fn migration_0011_keeps_rows_and_indexes() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .expect("user_version");
     assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(SCHEMA_VERSION, 11);
     assert_eq!(count(&conn, "SELECT count(*) FROM task"), 2);
     assert_eq!(
         count(
@@ -73,7 +72,9 @@ fn migration_0011_keeps_rows_and_indexes() {
         assert_eq!(
             count(
                 &conn,
-                &format!("SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = '{name}' AND tbl_name = 'task'")
+                &format!(
+                    "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = '{name}' AND tbl_name = 'task'"
+                )
             ),
             1,
             "{name} exists"

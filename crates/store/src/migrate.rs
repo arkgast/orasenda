@@ -17,6 +17,7 @@ pub(crate) const MIGRATIONS: &[(u32, &str)] = &[
     (8, include_str!("../migrations/0008_board.sql")),
     (9, include_str!("../migrations/0009_task_origin.sql")),
     (10, include_str!("../migrations/0010_reflection.sql")),
+    (11, include_str!("../migrations/0011_custom_lanes.sql")),
 ];
 
 const _: () = assert!(
