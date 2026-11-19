@@ -3,10 +3,10 @@ import { Frame } from "../../../specimens/Frame.tsx";
 import { TaskPicker, type TaskPickerOption } from "./task-picker.tsx";
 
 const OPTIONS: TaskPickerOption[] = [
-  { id: "d1", title: "Draft the chapter 3 outline", lane: "doing", laneLabel: "Doing", frog: true },
-  { id: "d2", title: "Review the budget", lane: "doing", laneLabel: "Doing", week: true },
-  { id: "t1", title: "Write the weekly report", lane: "today", laneLabel: "Today" },
-  { id: "b1", title: "Plan the offsite", lane: "backlog", laneLabel: "Backlog" },
+  { id: "d1", title: "Draft the chapter 3 outline", order: 0, laneLabel: "Doing", frog: true },
+  { id: "d2", title: "Review the budget", order: 0, laneLabel: "Doing", week: true },
+  { id: "t1", title: "Write the weekly report", order: 1, laneLabel: "Today" },
+  { id: "b1", title: "Plan the offsite", order: 2, laneLabel: "Backlog" },
 ];
 const LONG_TITLE = "Prepare the quarterly planning notes for the whole team and send them round";
 

@@ -1,5 +1,7 @@
+import { taskOptions } from "@domain/board/useTaskOptions";
 import type { TaskPickerOption } from "@orasenda/ui";
 import {
+  BOARD_WITH_CUSTOM,
   DISPLAYS,
   IDLE,
   KEYBOARD,
@@ -233,4 +235,16 @@ test("start_weekly_review_is_listed_with_the_main_commands_and_not_in_the_sub_mo
   for (const sub of [{ tasksOnly: true }, { displaysOnly: true }]) {
     expect(paletteCommands({ ...base, ...sub }).map((c) => c.id)).not.toContain("startWeekly");
   }
+});
+
+test("palette_task_order_matches_picker", () => {
+  const tasks = [...taskOptions(BOARD_WITH_CUSTOM)].reverse();
+  const rows = paletteCommands({ ...base, tasks, tasksOnly: true });
+  expect(rows.map((r) => [r.label, r.hint])).toEqual([
+    ["d", "Doing"],
+    ["t", "Today · Frog"],
+    ["c1a", "Ideas"],
+    ["c2a", "Waiting"],
+    ["b", "Backlog"],
+  ]);
 });

@@ -3,22 +3,35 @@ import { type BoardView, commands, events } from "@shared/ipc/bindings";
 import { subscribe } from "@shared/ipc/subscribe";
 import { useEffect, useState } from "react";
 
-const LANES = ["doing", "today", "backlog"] as const;
+/** Where each live column sorts: Doing first, the columns before it nearest first, then those after it, Backlog last. */
+function columnOrder(columns: BoardView["columns"]): Map<string, number> {
+  const open = columns.filter((c) => c.lane !== "done");
+  const at = open.findIndex((c) => c.lane === "doing");
+  const middle = (cs: typeof open) => cs.filter((c) => c.lane !== "backlog" && c.lane !== "doing");
+  const backlog = open.filter((c) => c.lane === "backlog");
+  const doing = open[at];
+  // The service guarantees Doing; if it ever is missing, keep board order with Backlog still last.
+  const sequence = doing
+    ? [doing, ...middle(open.slice(0, at)).reverse(), ...middle(open.slice(at + 1)), ...backlog]
+    : [...open.filter((c) => c.lane !== "backlog"), ...backlog];
+  return new Map(sequence.map((column, index) => [column.lane, index]));
+}
 
-/** The live tasks that are not Done, each with its column in words. Pure, for tests. */
+/** The live tasks that are not Done, each with its column in words and its sort key. Pure, for tests. */
 export function taskOptions(board: BoardView): TaskPickerOption[] {
-  return board.columns
-    .filter((column) => (LANES as readonly string[]).includes(column.lane))
-    .flatMap((column) =>
-      column.tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        lane: column.lane as TaskPickerOption["lane"],
-        laneLabel: column.name,
-        frog: task.isFrog || undefined,
-        week: task.weekPriority || undefined,
-      })),
-    );
+  const order = columnOrder(board.columns);
+  return board.columns.flatMap((column) => {
+    const at = order.get(column.lane);
+    if (at === undefined) return [];
+    return column.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      order: at,
+      laneLabel: column.name,
+      frog: task.isFrog || undefined,
+      week: task.weekPriority || undefined,
+    }));
+  });
 }
 
 /**

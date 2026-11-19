@@ -3,10 +3,10 @@ import { afterEach, expect, test, vi } from "vitest";
 import { TaskPicker, type TaskPickerOption, type TaskPickerProps } from "./task-picker";
 
 const OPTIONS: TaskPickerOption[] = [
-  { id: "b1", title: "Plan the offsite", lane: "backlog", laneLabel: "Backlog" },
-  { id: "t1", title: "Write the report", lane: "today", laneLabel: "Today" },
-  { id: "d1", title: "Draft the Outline", lane: "doing", laneLabel: "Doing", frog: true },
-  { id: "d2", title: "Review the budget", lane: "doing", laneLabel: "Doing" },
+  { id: "b1", title: "Plan the offsite", order: 2, laneLabel: "Backlog" },
+  { id: "t1", title: "Write the report", order: 1, laneLabel: "Today" },
+  { id: "d1", title: "Draft the Outline", order: 0, laneLabel: "Doing", frog: true },
+  { id: "d2", title: "Review the budget", order: 0, laneLabel: "Doing" },
 ];
 
 function setup(over: Partial<TaskPickerProps> = {}) {
@@ -36,7 +36,7 @@ test("task_picker_rests_as_quiet_text", () => {
   expect(screen.queryByRole("combobox")).toBeNull();
 });
 
-test("task_picker_opens_a_combobox_with_options_in_lane_order", () => {
+test("task_picker_opens_a_combobox_with_options_in_order", () => {
   setup();
   fireEvent.click(quiet());
   const box = screen.getByRole("combobox");
@@ -219,4 +219,27 @@ test("task_picker_failed_clear_does_not_leak_into_a_later_removal", () => {
   other.focus();
   view.rerender(tree());
   expect(other).toHaveFocus();
+});
+
+test("picker_sorts_by_order", () => {
+  const custom: TaskPickerOption[] = [
+    { id: "z", title: "Last one", order: 9, laneLabel: "Backlog" },
+    { id: "c", title: "Custom after", order: 3, laneLabel: "Review" },
+    { id: "a", title: "First one", order: 0, laneLabel: "Doing" },
+    { id: "b", title: "Custom before", order: 1, laneLabel: "Waiting" },
+    { id: "d", title: "Also custom", order: 3, laneLabel: "Review" },
+  ];
+  setup({ options: custom });
+  fireEvent.click(quiet());
+  press("ArrowDown");
+  const names = within(screen.getByRole("listbox"))
+    .getAllByRole("option")
+    .map((o) => o.textContent?.replace("Selected", ""));
+  expect(names).toEqual([
+    "First oneDoing",
+    "Custom beforeWaiting",
+    "Custom afterReview",
+    "Also customReview",
+    "Last oneBacklog",
+  ]);
 });

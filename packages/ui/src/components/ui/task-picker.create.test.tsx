@@ -3,16 +3,16 @@ import { expect, test, vi } from "vitest";
 import { TaskPicker, type TaskPickerOption, type TaskPickerProps } from "./task-picker";
 
 const OPTIONS: TaskPickerOption[] = [
-  { id: "b1", title: "Plan the offsite", lane: "backlog", laneLabel: "Backlog", week: true },
+  { id: "b1", title: "Plan the offsite", order: 2, laneLabel: "Backlog", week: true },
   {
     id: "d1",
     title: "Draft the outline",
-    lane: "doing",
+    order: 0,
     laneLabel: "Doing",
     frog: true,
     week: true,
   },
-  { id: "t1", title: "Write the report", lane: "today", laneLabel: "Today" },
+  { id: "t1", title: "Write the report", order: 1, laneLabel: "Today" },
 ];
 
 function setup(over: Partial<TaskPickerProps> = {}) {
