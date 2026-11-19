@@ -23,12 +23,12 @@ test("load_failure_line_try_again", async () => {
   expect(screen.getByText("Orasenda can't load your review right now.")).toBeInTheDocument();
   expect(screen.getByText("It's kept on this Mac.")).toBeInTheDocument();
   expect(primaries(container)).toHaveLength(0);
-  expect(screen.queryByRole("region", { name: "Today" })).toBeNull();
+  expect(screen.queryByRole("region", { name: /^Today · / })).toBeNull();
   fail = false;
   screen.getByRole("button", { name: /^Try again/ }).focus();
   fireEvent.click(screen.getByRole("button", { name: /^Try again/ }));
   await settle();
-  expect(screen.getByRole("region", { name: "Today" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: /^Today · / })).toBeInTheDocument();
   expect(screen.queryByText("Orasenda can't load your review right now.")).toBeNull();
   expect(backend.calls.filter((c) => c.cmd === "review_get")).toHaveLength(2);
   // The button that had focus is gone: focus lands on the page heading, not on the body.
@@ -47,7 +47,7 @@ test("a_stale_reply_after_a_newer_event_is_dropped", async () => {
   await emitReviewChanged(
     reviewView({ today: { ...reviewView().today, dayLabel: "Wednesday 18 November" } }),
   );
-  expect(screen.getByRole("region", { name: "Today" })).toHaveTextContent("Wednesday 18 November");
+  expect(screen.getByRole("region", { name: "Today · Wednesday 18 November" })).toBeInTheDocument();
   await act(async () => slow.resolve(reviewView()));
-  expect(screen.getByRole("region", { name: "Today" })).toHaveTextContent("Wednesday 18 November");
+  expect(screen.getByRole("region", { name: "Today · Wednesday 18 November" })).toBeInTheDocument();
 });
