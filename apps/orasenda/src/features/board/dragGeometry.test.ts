@@ -105,11 +105,10 @@ test("drag_geometry_with_scroll_left", () => {
   const far = column({ lane: "today", rect: { left: 600, top: 0, right: 800, bottom: 600 } });
   const at = (x: number, scrolled: number) =>
     targetAt([far], { region: 0, x: scrolled, lanes: {} }, { x, y: 300 }, "z");
-  expect(at(650, 0)?.lane).toBe("today");
-  expect(at(650, 100)).toBeNull();
+  expect(at(710, 0)?.lane).toBe("today");
   // Scrolled 100 to the right, the column now sits at 500-700.
+  expect(at(710, 100)).toBeNull();
   expect(at(550, 100)?.lane).toBe("today");
-  expect(at(750, 100)).toBeNull();
 });
 
 test("edgeZoneX reads the left and right zones of the region", () => {

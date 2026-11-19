@@ -43,6 +43,7 @@ export async function renderBoard(options: Options = {}): Promise<Backend> {
     task_set_frog: () => null,
     task_remove: () => null,
     task_restore: () => null,
+    board_column_fold: () => null,
     ...options.replies,
   });
   render(<BoardPage onNavigate={() => {}} onOpenTask={options.onOpenTask} {...options.page} />);

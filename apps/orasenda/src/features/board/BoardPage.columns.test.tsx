@@ -1,11 +1,5 @@
-import {
-  argsOf,
-  type BoardView_Serialize,
-  boardOf,
-  boardTask,
-  settle,
-  withCustom,
-} from "@shared/test/fixtures";
+import type { BoardView_Serialize } from "@shared/ipc/bindings";
+import { argsOf, boardOf, boardTask, settle, withCustom } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
@@ -134,10 +128,19 @@ test("focus_scrolls_column_into_view", async () => {
 test("scroll_into_view_respects_reduce_motion", async () => {
   const spy = vi.fn();
   Element.prototype.scrollIntoView = spy;
-  window.matchMedia = ((q: string) => ({ matches: q.includes("reduce") })) as never;
-  await renderBoard({ board: later });
-  press("Fix sync bug", { key: "ArrowRight" });
-  expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: "auto" }));
+  const original = window.matchMedia;
+  window.matchMedia = ((q: string) => ({
+    matches: q.includes("reduce"),
+    addEventListener() {},
+    removeEventListener() {},
+  })) as never;
+  try {
+    await renderBoard({ board: later });
+    press("Fix sync bug", { key: "ArrowRight" });
+    expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: "auto" }));
+  } finally {
+    window.matchMedia = original;
+  }
 });
 
 test("alt_cmd_arrow_moves_through_custom_column", async () => {

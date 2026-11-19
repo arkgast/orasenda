@@ -12,8 +12,9 @@ import {
 } from "@orasenda/ui";
 import { useWindowLayout } from "@shared/hooks/useWindowLayout";
 import type { Lane } from "@shared/ipc/bindings";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BoardColumns } from "./BoardColumns";
+import { boardWords } from "./boardWords";
 import { TaskSheet } from "./detail/TaskSheet";
 import { ImportSheet } from "./import/ImportSheet";
 import { takeImportAsk } from "./import/importAsk";
@@ -23,7 +24,6 @@ import { useBoardActions } from "./useBoardActions";
 import { useBoardKeys } from "./useBoardKeys";
 import { useCardDrag } from "./useCardDrag";
 import { useFolds } from "./useFolds";
-import { useRoom } from "./useRoom";
 import "./board.css";
 
 /** Anything that takes keys for itself: the palette, a dialog, an open menu or list. */
@@ -55,17 +55,12 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
     show({ text: notice.message, tone: notice.kind === "notSaved" ? "attention" : "neutral" }),
   );
 
-  // A callback ref: the board div mounts and unmounts (empty board, first run), and the room
-  // measure must follow it.
   const box = useRef<HTMLDivElement | null>(null);
-  const [boxEl, setBoxEl] = useState<HTMLDivElement | null>(null);
-  const setBox = useCallback((el: HTMLDivElement | null) => {
-    box.current = el;
-    setBoxEl(el);
-  }, []);
-  const room = useRoom(boxEl, ok !== null && !compact);
-  const running = columns.find((c) => c.tasks.some((t) => t.active))?.lane ?? null;
-  const folds = useFolds(compact ? 4 : room, running);
+  const folds = useFolds({
+    columns,
+    save: async (lane, folded) => (await api.foldColumn(lane, folded)).status === "ok",
+    failed: () => actions.show({ text: boardWords("unreachable"), tone: "attention" }),
+  });
   const keys = useBoardKeys({ root: box, columns, open: folds.open, singleKeys, actions });
 
   // The field is in Backlog; an empty board shows the empty state until Add task asks for it.
@@ -195,7 +190,7 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
 
   const board = ok ? (
     <div
-      ref={setBox}
+      ref={box}
       className={`${compact ? "app-board-stack" : "app-board"}${cardDrag.drag ? " app-board-dragging" : ""}`}
       onPointerDown={cardDrag.pointerDown}
       onKeyDownCapture={keys.onKeyDownCapture}
@@ -252,9 +247,13 @@ export function BoardPage({ onNavigate, onOpenTask, importAsked, onImportOpened 
             secondaryAction={{ label: "Import tasks…", onAction: askImport }}
           />
         ) : compact ? (
-          <ScrollRegion label="Board">{board}</ScrollRegion>
+          <ScrollRegion key="stack" label="Board">
+            {board}
+          </ScrollRegion>
         ) : (
-          board
+          <ScrollRegion key="row" axis="x" label="Board columns">
+            {board}
+          </ScrollRegion>
         )}
       </PageFrame>
       {importing ? (

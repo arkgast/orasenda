@@ -2,7 +2,14 @@ import { argsOf, boardOf, settle, withCustom } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { card, pointer, renderBoard, stubPointerCapture, stubRects } from "./BoardPage.support";
+import {
+  card,
+  pointer,
+  renderBoard,
+  stubPointerCapture,
+  stubRects,
+  TASKS,
+} from "./BoardPage.support";
 
 // Layout (see stubRects): Backlog 0-200, Today 210-410, Doing 420-620, Done strip 630-670.
 // Today: t1 y 40-90, t2 y 100-150. Doing: d1 y 40-90. Backlog: cards from y 100.
@@ -102,12 +109,12 @@ test("drop_in_done_goes_to_top", async () => {
 
 test("done_to_done_cancels", async () => {
   const backend = await renderBoard();
-  // Opening Done folds Backlog: Done is then 470-670 wide, its card at y 40-90.
+  // Nothing folds for room: Done opens beside Doing at 630-830, its card at y 40-90.
   fireEvent.click(screen.getByRole("button", { name: /^Done/ }));
   await settle();
-  const el = lift("Ship release", { x: 500, y: 60 }, [500, 300]);
+  const el = lift("Ship release", { x: 700, y: 60 }, [700, 300]);
   expect(screen.queryByText("Moving Ship release here")).toBeNull();
-  pointer("pointerup", el, 500, 300);
+  pointer("pointerup", el, 700, 300);
   await settle();
   expect(moves(backend)).toEqual([]);
   expect(screen.getByText("Ship release stayed in Done.")).toBeInTheDocument();
@@ -115,9 +122,9 @@ test("done_to_done_cancels", async () => {
 
 test("drop_on_folded_strip", async () => {
   const backend = await renderBoard();
-  fireEvent.click(screen.getByRole("button", { name: /^Done/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Fold Backlog" }));
   await settle();
-  // Backlog is the strip now (x 0-40): a drop lands at its end, after its two cards.
+  // Backlog is the strip now (x 0-40) and Today 50-250: a drop on the strip lands after its two cards.
   const el = lift("Write intro", { x: 100, y: 60 }, [20, 300]);
   expect(screen.getByRole("button", { name: /^Backlog.*Move here/ })).toBeInTheDocument();
   pointer("pointerup", el, 20, 300);
@@ -232,18 +239,26 @@ test("drag_edge_scrolls_region", async () => {
   const queue: FrameRequestCallback[] = [];
   vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => queue.push(f));
   vi.stubGlobal("cancelAnimationFrame", () => {});
+  // jsdom loads no stylesheet: the edge zone is the hit-min token.
+  document.documentElement.style.setProperty("--hit-min", "44px");
   await renderBoard();
   const region = screen.getByRole("region", { name: "Board columns" });
   let left = 0;
   Object.defineProperties(region, {
     scrollWidth: { value: 2000 },
     clientWidth: { value: 900 },
-    scrollLeft: { get: () => left, set: (v: number) => void (left = v) },
+    scrollLeft: {
+      get: () => left,
+      set: (v: number) => {
+        left = v;
+      },
+    },
   });
   // Near the region's right edge (stubRects: the region is 900 wide).
   const el = lift("Write intro", T1, [895, 300]);
   queue.shift()?.(0);
   expect(left).toBeGreaterThan(0);
   pointer("pointerup", el, 895, 300);
+  document.documentElement.style.removeProperty("--hit-min");
   vi.unstubAllGlobals();
 });

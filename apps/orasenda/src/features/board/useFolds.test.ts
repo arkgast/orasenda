@@ -1,37 +1,41 @@
-import { expect, test } from "vitest";
-import { capacity, openLanes } from "./useFolds";
+import { BOARD } from "@shared/test/fixtures";
+import { act, renderHook } from "@testing-library/react";
+import { expect, test, vi } from "vitest";
+import { useFolds } from "./useFolds";
 
-const SIZES = { min: 200, strip: 64, gap: 8 };
+const columns = BOARD.columns;
 
-test("the default window holds three open columns beside the Done strip", () => {
-  // 900 less the rail and the page's padding.
-  expect(capacity(788, SIZES)).toBe(3);
-  expect(capacity(1400, SIZES)).toBe(4);
-  expect(capacity(null, SIZES)).toBe(3);
-  expect(capacity(500, SIZES)).toBe(1);
+test("folds come from the columns: Done starts folded", () => {
+  const { result } = renderHook(() =>
+    useFolds({ columns, save: async () => true, failed: () => {} }),
+  );
+  expect(result.current.open).toEqual(["backlog", "today", "doing"]);
 });
 
-test("Backlog folds first, then Doing, and Today stays open longest", () => {
-  const order = ["backlog", "doing", "today"] as const;
-  expect(openLanes(order, 3, null)).toEqual(["backlog", "today", "doing"]);
-  expect(openLanes(order, 2, null)).toEqual(["today", "doing"]);
-  expect(openLanes(order, 1, null)).toEqual(["today"]);
+test("a toggle shows at once and is saved", async () => {
+  const save = vi.fn(async () => true);
+  const { result } = renderHook(() => useFolds({ columns, save, failed: () => {} }));
+  act(() => result.current.toggle("done"));
+  expect(result.current.open).toContain("done");
+  expect(save).toHaveBeenCalledWith("done", false);
 });
 
-test("the column holding the running task is spared", () => {
-  const order = ["backlog", "doing", "today"] as const;
-  expect(openLanes(order, 2, "backlog")).toEqual(["backlog", "today"]);
+test("a failed save drops the pending fold and says so", async () => {
+  const failed = vi.fn();
+  const { result } = renderHook(() => useFolds({ columns, save: async () => false, failed }));
+  await act(async () => result.current.toggle("today"));
+  expect(failed).toHaveBeenCalledOnce();
+  expect(result.current.open).toContain("today");
 });
 
-test("opening a strip folds the least recently opened column", () => {
-  expect(openLanes(["backlog", "doing", "today", "done"], 3, null)).toEqual([
-    "today",
-    "doing",
-    "done",
-  ]);
-});
-
-test("with room for one column the newest lane wins, even over the running one", () => {
-  expect(openLanes(["doing", "backlog"], 1, "doing")).toEqual(["backlog"]);
-  expect(openLanes(["backlog", "doing", "today"], 1, "doing")).toEqual(["today"]);
+test("a pending fold ends once the board shows it", () => {
+  const folded = columns.map((c) => (c.lane === "today" ? { ...c, folded: true } : c));
+  const { result, rerender } = renderHook(
+    ({ cols }) => useFolds({ columns: cols, save: async () => true, failed: () => {} }),
+    { initialProps: { cols: columns } },
+  );
+  act(() => result.current.toggle("today"));
+  expect(result.current.open).not.toContain("today");
+  rerender({ cols: folded });
+  expect(result.current.open).not.toContain("today");
 });
