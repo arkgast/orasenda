@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-18-board-columns.md](../specs/2026-11-18-board-columns.md)
 - Date: 2026-11-18
-- Status: in backlog (2026-11-19)
+- Status: done (2026-11-19)
 
 ## Overview
 Twelve tasks, each one PR. Tests come first in every task. Every file stays at 500 lines or fewer, and every task passes `./scripts/ci.sh`. UI tasks get the opus design review. The owner reviews visuals, so PRs carry no screenshots.
@@ -85,10 +85,10 @@ No two tasks in the same wave share a file.
   - `limit: { value: number; min: number; max: number; zeroLabel?: string } | null`
   - `error?: string`
   - `taken: readonly string[]` (the other columns' names)
-  - `canAdd: true | { reason: string }`
+  - `canAdd: true | { reason: string } | null`
   - `canRemove: true | { reason: string } | null`
   - `onSave(v: { name: string; limit: number | null }): void`
-  - `onCancel(): void`, `onAdd(): void`, `onRemove(): void`
+  - `onCancel(): void`, `onAdd(pending: { name: string; limit: number | null } | null): void`, `onRemove(): void`
 - **B5: TaskPicker.** `TaskPickerOption.order: number` replaces the fixed `lane: "doing" | "today" | "backlog"`. `hint` stays the column's name.
 
 ## Impact

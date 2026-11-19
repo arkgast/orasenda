@@ -1,6 +1,6 @@
 # Board columns: rename, custom columns, sideways scroll and the column editor — Spec
 
-- **Status:** approved (owner, 2026-11-18)
+- **Status:** implemented (2026-11-19)
 - **Date:** 2026-11-18
 - **Owner:** the product owner (decisions approved 2026-11-18; owner calls answered the same day)
 - **Related:** [Board](2026-11-14-board.md) (Decisions 1 and 18 are superseded here; closes #584); [Board polish](2026-11-15-board-polish.md); [UI consistency](2026-11-17-ui-consistency.md)
@@ -57,7 +57,7 @@ The Board's four columns are fixed (Board Decision 1), their names can't be chan
 
 ## Non-goals
 - A ⋯ menu on the column header (owner, 2026-11-18: "if something comes up later we can migrate to a dotted menu").
-- Reordering columns, or moving a custom column after it is made. #584's "reorder" part becomes a follow-up issue.
+- Reordering columns, or moving a custom column after it is made. #584's "reorder" part becomes a follow-up issue: #797.
 - Removing, reordering or renaming the meaning of a built-in column.
 - A column with its own behaviour (auto-move, timers, Done-like semantics). A custom column is a plain stage.
 - **The shutdown.** `review/tomorrow.rs` is not touched; how custom columns count toward tomorrow is a later spec (owner, 2026-11-18).
@@ -126,14 +126,14 @@ Four thin commands in `commands/board.rs`, capability entries, regenerated bindi
 ### KanbanColumn (`packages/ui`)
 - **Header, two rows:** row one is the name, wrapping as it does today (`kanban-column.tsx:130`), with the existing Fold icon button (`kanban-column.tsx:141`) in the top-right corner; row two is the count (or chip) at the start and + at the end. Each button is `hit-min`. At `column-min-width` (200px, `space-3` padding) row two holds the longest count ("4 of 3" chip) and the 44px +.
 - **+**: `onAdd` adds an `IconButton` (the `plus` glyph) named "Add task to <name>".
-- **The name opens the editor:** with `onEdit`, the name is a quiet text button inside the `h2` (it reads as the heading, no button chrome at rest; hover shows the `surface-sunken` ground and the focus ring shows on focus). A **double-click** calls `onEdit`; a single pointer click does nothing, so a stray click never opens the editor. **Return or Space** from the keyboard, and VoiceOver's activate, call `onEdit` (a click with `detail === 0`). Its name is the column's name, with the description "Double-click or press Return to edit the column."
+- **The name opens the editor:** with `onEdit`, the name is a quiet text button inside the `h2` (it reads as the heading, no button chrome at rest; hover shows an inset 1px line-strong edge, and the focus ring shows on focus). A **double-click** calls `onEdit`; a single pointer click does nothing, so a stray click never opens the editor. **Return or Space** from the keyboard, and VoiceOver's activate, call `onEdit` (a click with `detail === 0`). Its name is the column's name, with the description "Double-click or press Return to edit the column."
 - **`editor` slot:** while set, it replaces both header rows (the Fold button included); the cards stay below.
 - **Fold:** unchanged: `collapsed` and `onToggle`, the Fold icon in the open header and the strip, `foldedByUs` focus handling (`kanban-column.tsx:64-68`). A folded strip opens with a click, Return or Space; to edit a folded column (Done at start), open it first.
 - **Arrow targets for the board:** the column marks its name button, + and Fold with data slots, so the board's roving can step into the header (below).
 
 ### ColumnEditor (`packages/ui`, new)
-- **Anatomy, top to bottom:** an `Input` labelled "Column name" (the `heading` type size, `maxLength` 24) with its helper "1 to 24 characters." or the error; a `Stepper` "Limit" (only when a limit applies); *Add column after* (`Button`, quiet) with its helper when dimmed; *Remove column* (`Button`, quiet; custom columns only) with its helper when dimmed; *Save* (primary within the editor) and *Cancel* (quiet). Gaps are `space-2`; it fills the column's width on `surface-sunken`, like the header it replaces.
-- **Props:** `name`, `limit` (`{ value, min, max, zeroLabel? } | null`), `error?`, `canAdd: true | { reason }`, `canRemove: true | { reason } | null` (null hides it), `onSave({ name, limit })`, `onCancel()`, `onAdd()`, `onRemove()`.
+- **Anatomy, top to bottom:** an `Input` labelled "Column name" (at body size, not heading size, `maxLength` 24) with its helper "1 to 24 characters." or the error; a `Stepper` "Limit" (only when a limit applies); *Add column after* (`Button`, quiet) with its helper when dimmed; *Remove column* (`Button`, quiet; custom columns only) with its helper when dimmed; *Save* (primary within the editor) and *Cancel* (quiet). Gaps are `space-2`; it fills the column's width on `surface-sunken`, like the header it replaces.
+- **Props:** `name`, `limit` (`{ value, min, max, zeroLabel? } | null`), `error?`, `canAdd: true | { reason } | null` (null hides it), `canRemove: true | { reason } | null` (null hides it), `onSave({ name, limit })`, `onCancel()`, `onAdd(pending: { name, limit } | null)`, `onRemove()`.
 - **Keys:** the name field is focused with its text selected on open. Enter (in the name field or the stepper) saves; Esc anywhere in the editor cancels. Tab moves through the field, stepper and buttons in order. Focus leaving the editor saves a valid edit and cancels an invalid one (owner decision 3).
 - **Dimmed buttons** use `aria-disabled` (not `disabled`), stay focusable, and carry their helper as `aria-describedby`, so VoiceOver says "Remove column, dimmed, Move its tasks out first." Their helper shows under them in `caption` `ink-muted`.
 - **One primary per screen:** the editor's *Save* is `variant="primary"` only while the editor is open, and the page's *Add task* is quiet then (author's call), so there is still one primary action on screen.
@@ -237,10 +237,18 @@ The name sits where people click to focus a column; opening an editor there by a
 None.
 
 ## Implementation status
-Updated by the PRs that implement this spec (plan and issues to follow).
-- [ ] Store: migration 0011 and lane strings
-- [ ] Service and IPC: column commands, lane checks, folds and orphan repair
-- [ ] ScrollRegion `axis="x"`
-- [ ] KanbanColumn header and ColumnEditor
-- [ ] Board page: sideways scroll, column editor, add, remove, saved folds, keyboard
-- [ ] Docs: design-system README and close-out
+Each line is ticked by the PR that implements its plan task.
+- [x] B1a: migration 0011 (#784)
+- [x] B1b: `Lane` as a string id (#790)
+- [x] B2a: setting row, column commands, saved folds, IPC (#792)
+- [x] B2b: lane checks, orphan repair, restore into a removed column (#794)
+- [x] B3: `ScrollRegion` `axis="x"` (#776)
+- [x] B4a: `KanbanColumn` header (#782)
+- [x] B4b: `ColumnEditor` (#783)
+- [x] B5: TaskPicker order and custom columns in the picker and palette (#791)
+- [x] B6: Board page: sideways scroll, saved folds, custom lanes in keys and drag (#793)
+- [x] B7a: Board page: header + and arrows into the header (#795)
+- [x] B7b: Board page: column editor, add and remove (#796)
+- [x] B8: Close-out (#798)
+
+Design-system artifact republished from `main` ad84e988 as service Version 78.
