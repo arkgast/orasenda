@@ -6,18 +6,15 @@ import { useEffect, useState } from "react";
 /** Where each live column sorts: Doing first, the columns before it nearest first, then those after it, Backlog last. */
 function columnOrder(columns: BoardView["columns"]): Map<string, number> {
   const open = columns.filter((c) => c.lane !== "done");
-  const doing = open.findIndex((c) => c.lane === "doing");
+  const at = open.findIndex((c) => c.lane === "doing");
   const middle = (cs: typeof open) => cs.filter((c) => c.lane !== "backlog" && c.lane !== "doing");
-  const sequence =
-    doing < 0
-      ? open
-      : [
-          open[doing],
-          ...middle(open.slice(0, doing)).reverse(),
-          ...middle(open.slice(doing + 1)),
-          ...open.filter((c) => c.lane === "backlog"),
-        ];
-  return new Map(sequence.map((column, index) => [column?.lane ?? "", index]));
+  const backlog = open.filter((c) => c.lane === "backlog");
+  const doing = open[at];
+  // The service guarantees Doing; if it ever is missing, keep board order with Backlog still last.
+  const sequence = doing
+    ? [doing, ...middle(open.slice(0, at)).reverse(), ...middle(open.slice(at + 1)), ...backlog]
+    : [...open.filter((c) => c.lane !== "backlog"), ...backlog];
+  return new Map(sequence.map((column, index) => [column.lane, index]));
 }
 
 /** The live tasks that are not Done, each with its column in words and its sort key. Pure, for tests. */

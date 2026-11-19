@@ -1,26 +1,6 @@
-import type { ColumnView_Serialize, TaskView_Serialize } from "@shared/ipc/bindings";
-import { BOARD, boardTask } from "@shared/test/fixtures";
+import { BOARD_WITH_CUSTOM } from "@shared/test/fixtures";
 import { expect, test } from "vitest";
 import { taskOptions } from "./useTaskOptions";
-
-function column(lane: string, name: string, tasks: TaskView_Serialize[]): ColumnView_Serialize {
-  return { lane, name, limit: null, count: tasks.length, state: "under", tasks };
-}
-
-const task = (id: string, lane: string, over: Partial<TaskView_Serialize> = {}) =>
-  boardTask(id, id, lane, over);
-
-const BOARD_WITH_CUSTOM = {
-  ...BOARD,
-  columns: [
-    column("backlog", "Backlog", [task("b", "backlog")]),
-    column("c1", "Ideas", [task("c1a", "c1")]),
-    column("today", "Today", [task("t", "today", { isFrog: true })]),
-    column("doing", "Doing", [task("d", "doing")]),
-    column("c2", "Waiting", [task("c2a", "c2")]),
-    column("done", "Done", [task("x", "done")]),
-  ],
-};
 
 test("task_options_include_custom_columns", () => {
   const options = taskOptions(BOARD_WITH_CUSTOM);
