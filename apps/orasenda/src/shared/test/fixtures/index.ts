@@ -183,4 +183,5 @@ export * from "./fullScreen";
 export * from "./keyboard";
 export * from "./review";
 export * from "./routines";
+export * from "./taskOptions";
 export * from "./timer";

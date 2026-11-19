@@ -10,6 +10,7 @@ mod hint;
 mod import;
 mod inbox;
 mod keyboard;
+mod lane;
 mod presets;
 mod review;
 #[cfg(test)]
@@ -23,7 +24,7 @@ mod tips;
 
 pub use board::{
     BoardError, BoardNotice, BoardNoticeKind, BoardView, ChecklistItemView, ColumnSettings,
-    ColumnView, Lane, LimitState, TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
+    ColumnView, LimitState, TaskDraft, TaskKind, TaskPatchView, TaskPriority, TaskView,
 };
 pub use data::{
     BackupEntry, BackupFrequency, BackupKind, BackupPolicy, DataCounts, DataError, DataErrorKind,
@@ -44,6 +45,7 @@ pub use keyboard::{
     ActionView, BindingView, FixedKeyView, GlobalBindingView, KeyboardError, KeyboardView,
     ShortcutStatus,
 };
+pub use lane::{Builtin, Lane};
 pub use presets::{PresetEntry, PresetError, PresetErrorKind, PresetPatch, entries};
 pub use review::{
     BarView, BufferSuggestionView, GoalView, HabitStat, LookBack, MoveUndo, PriorityPick,

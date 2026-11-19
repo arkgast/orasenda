@@ -104,7 +104,7 @@ fn new_task(id: &str, task: &FittedTask, rank: String, now_ms: u64) -> NewTask {
                 done: false,
             })
             .collect(),
-        lane: Lane::Backlog,
+        lane: Lane::BACKLOG,
         rank,
         frog_day: None,
         source_note_id: None,

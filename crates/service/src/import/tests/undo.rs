@@ -7,7 +7,7 @@ use crate::session::test_support::Event;
 #[test]
 fn undo_tombstones_last_import() {
     let host = host();
-    seed(&host, "mine", "x:1", Lane::Backlog, true);
+    seed(&host, "mine", "x:1", Lane::BACKLOG, true);
     let p = preview_reminders(&host, 3);
     let done = run_task_import(&host, p.id, vec![0, 1, 2]).unwrap();
     let before = host.log().count(|e| matches!(e, Event::BoardChanged(..)));

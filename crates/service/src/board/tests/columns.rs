@@ -8,10 +8,10 @@ fn cols(today: u8, doing: u8) -> Vec<ColumnSettings> {
         limit,
     };
     vec![
-        c(Lane::Backlog, "Later", None),
-        c(Lane::Today, " Now ", Some(today)),
-        c(Lane::Doing, "Busy", Some(doing)),
-        c(Lane::Done, "Finished", None),
+        c(Lane::BACKLOG, "Later", None),
+        c(Lane::TODAY, " Now ", Some(today)),
+        c(Lane::DOING, "Busy", Some(doing)),
+        c(Lane::DONE, "Finished", None),
     ]
 }
 
@@ -69,7 +69,7 @@ fn columns_refuse_bad_input() {
         Err(BoardError::BadColumns)
     );
     assert_eq!(
-        lane(&run_board_get(&host).unwrap(), Lane::Today).name,
+        lane(&run_board_get(&host).unwrap(), Lane::TODAY).name,
         "Today"
     );
 }

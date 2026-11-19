@@ -29,7 +29,7 @@ fn typed(title: &str) -> PriorityPick {
 fn add(host: &TestHost, title: &str) -> String {
     let draft = TaskDraft {
         title: title.into(),
-        lane: Some(Lane::Backlog),
+        lane: Some(Lane::BACKLOG),
         ..TaskDraft::default()
     };
     run_task_add(host, draft).expect("task added").id
@@ -41,7 +41,7 @@ fn board(host: &TestHost) -> BoardView {
 
 fn backlog_titles(host: &TestHost) -> Vec<String> {
     let board = board(host);
-    let column = board.columns.iter().find(|c| c.lane == Lane::Backlog);
+    let column = board.columns.iter().find(|c| c.lane == Lane::BACKLOG);
     column.map_or_else(Vec::new, |c| {
         c.tasks.iter().map(|t| t.title.clone()).collect()
     })

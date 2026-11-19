@@ -126,8 +126,8 @@ fn read(txn: &Txn, day: LocalDate, running: Option<&str>) -> Result<Read, StoreE
     let names = columns::read(txn)?;
     let live = tasks::list_live(txn)?;
     let mut unfinished = Vec::new();
-    for lane in [Stored::Today, Stored::Doing] {
-        let lane_id = crate::board::view::lane(lane);
+    for lane in [Stored::TODAY, Stored::DOING] {
+        let lane_id = crate::board::view::lane(&lane);
         let label = names
             .iter()
             .find(|column| column.lane == lane_id)

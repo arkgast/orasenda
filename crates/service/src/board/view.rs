@@ -54,12 +54,12 @@ pub(super) fn build(rows: &Rows, cx: &Ctx) -> BoardView {
         .columns
         .iter()
         .map(|column| {
-            let shown: Vec<&TaskRow> = if column.lane == Lane::Done {
+            let shown: Vec<&TaskRow> = if column.lane == Lane::DONE {
                 rows.done.iter().collect()
             } else {
                 rows.live
                     .iter()
-                    .filter(|t| lane(t.lane) == column.lane)
+                    .filter(|t| lane(&t.lane) == column.lane)
                     .collect()
             };
             let tasks: Vec<TaskView> = shown
@@ -67,7 +67,7 @@ pub(super) fn build(rows: &Rows, cx: &Ctx) -> BoardView {
                 .map(|row| task_view(row, cx, find(&rows.tracked, &row.id)))
                 .collect();
             ColumnView {
-                lane: column.lane,
+                lane: column.lane.clone(),
                 name: column.name.clone(),
                 limit: column.limit,
                 count: u32::try_from(tasks.len()).unwrap_or(u32::MAX),
@@ -78,7 +78,7 @@ pub(super) fn build(rows: &Rows, cx: &Ctx) -> BoardView {
         .collect();
     let today_planned = columns
         .iter()
-        .filter(|c| c.lane == Lane::Today)
+        .filter(|c| c.lane == Lane::TODAY)
         .flat_map(|c| &c.tasks)
         .filter_map(|t| t.planned)
         .sum();
@@ -129,7 +129,7 @@ pub(crate) fn task_view(row: &TaskRow, cx: &Ctx, tracked: Option<&Tracked>) -> T
                 done: i.done,
             })
             .collect(),
-        lane: lane(row.lane),
+        lane: lane(&row.lane),
         is_frog: row.frog_day.as_deref() == Some(cx.today.to_iso().as_str()),
         breakdown_dismissed: row.breakdown_dismissed,
         source_note_id: row.source_note_id.clone(),
@@ -143,22 +143,15 @@ pub(crate) fn task_view(row: &TaskRow, cx: &Ctx, tracked: Option<&Tracked>) -> T
     }
 }
 
-pub(crate) fn lane(lane: tasks::Lane) -> Lane {
-    match lane {
-        tasks::Lane::Backlog => Lane::Backlog,
-        tasks::Lane::Today => Lane::Today,
-        tasks::Lane::Doing => Lane::Doing,
-        tasks::Lane::Done => Lane::Done,
-    }
+pub(crate) fn lane(lane: &tasks::Lane) -> Lane {
+    Lane::from_stored(lane)
 }
 
-pub(crate) fn stored_lane(lane: Lane) -> tasks::Lane {
-    match lane {
-        Lane::Backlog => tasks::Lane::Backlog,
-        Lane::Today => tasks::Lane::Today,
-        Lane::Doing => tasks::Lane::Doing,
-        Lane::Done => tasks::Lane::Done,
-    }
+/// The store's form of `lane`. Both crates apply one rule, so a refusal here is a bug, not
+/// input: it surfaces as a store error and is never swallowed.
+pub(crate) fn stored_lane(lane: &Lane) -> Result<tasks::Lane, StoreError> {
+    tasks::Lane::parse(lane.as_str())
+        .ok_or_else(|| StoreError::Sqlite(format!("not a column id: {:?}", lane.as_str())))
 }
 
 /// "Due today", "Due yesterday", "Due tomorrow" or "Due Fri 20 Nov" (the year when it is not

@@ -21,7 +21,7 @@ fn inbox_to_task_moves_note_in_one_txn() {
     host.log().take();
     let task = run_inbox_to_task(&host, &id).expect("moves");
     assert_eq!(task.title, "Call the dentist about the crown");
-    assert_eq!(task.lane, Lane::Backlog);
+    assert_eq!(task.lane, Lane::BACKLOG);
     assert_eq!(task.source_note_id.as_deref(), Some(id.as_str()));
     assert!(
         run_inbox_list(&host).unwrap().is_empty(),
@@ -46,7 +46,7 @@ fn inbox_to_task_moves_note_in_one_txn() {
         "no second task"
     );
     assert_eq!(
-        titles(&run_board_get(&host).unwrap(), Lane::Backlog).len(),
+        titles(&run_board_get(&host).unwrap(), Lane::BACKLOG).len(),
         1
     );
 }
@@ -74,13 +74,13 @@ fn restore_note_reverses_move() {
     host.log().take();
     run_task_restore_note(&host, &task.id).expect("reverses");
     assert_eq!(run_inbox_list(&host).unwrap().len(), 1, "the note is back");
-    assert!(titles(&run_board_get(&host).unwrap(), Lane::Backlog).is_empty());
+    assert!(titles(&run_board_get(&host).unwrap(), Lane::BACKLOG).is_empty());
     assert_eq!(inbox_events(&host), 1);
     assert_eq!(
         run_task_restore_note(&host, &task.id),
         Err(BoardError::NotFound)
     );
-    let plain = add(&host, "Plain", Lane::Backlog);
+    let plain = add(&host, "Plain", Lane::BACKLOG);
     assert_eq!(
         run_task_restore_note(&host, &plain.id),
         Err(BoardError::NotFound)

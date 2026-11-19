@@ -7,7 +7,7 @@ import { NEW_TASK_ID } from "./NewTaskField";
 export type Measured = {
   lanes: LaneRects[];
   /** Each open column's scrolling list. */
-  lists: Partial<Record<Lane, HTMLElement>>;
+  lists: Record<Lane, HTMLElement>;
   /** The page's ScrollRegion in a compact window. */
   region: HTMLElement | null;
   /** Scroll offsets at the time of measuring. */
@@ -22,7 +22,7 @@ const rectOf = (el: Element): Rect => {
 /** Measures the board; call it after the render that marked the card Moving. */
 export function measureBoard(root: HTMLElement, columns: readonly ColumnView[]): Measured {
   const lanes: LaneRects[] = [];
-  const lists: Partial<Record<Lane, HTMLElement>> = {};
+  const lists: Record<Lane, HTMLElement> = {};
   const startLanes: Partial<Record<Lane, number>> = {};
   const region = root.closest<HTMLElement>('[data-slot="scroll-region"]');
   for (const column of columns) {

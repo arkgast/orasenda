@@ -34,7 +34,7 @@ pub fn move_to_backlog_end(txn: &mut Txn, ids: &[String]) -> Result<Vec<LaneBefo
     let last = last_backlog_rank(txn)?;
     let ranks = rank::spread(last.as_deref(), live.len());
     for (before, rank) in live.iter().zip(&ranks) {
-        move_to(txn, &before.id, Lane::Backlog, rank)?;
+        move_to(txn, &before.id, Lane::BACKLOG, rank)?;
     }
     Ok(live)
 }
@@ -42,7 +42,7 @@ pub fn move_to_backlog_end(txn: &mut Txn, ids: &[String]) -> Result<Vec<LaneBefo
 /// Puts each live task back in its lane at its rank. A removed or missing task is left alone.
 pub fn restore_lanes(txn: &mut Txn, before: &[LaneBefore]) -> Result<(), StoreError> {
     for b in before {
-        move_to(txn, &b.id, b.lane, &b.rank)?;
+        move_to(txn, &b.id, b.lane.clone(), &b.rank)?;
     }
     Ok(())
 }

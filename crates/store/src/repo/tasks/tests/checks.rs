@@ -6,7 +6,7 @@ fn refused(task: &NewTask) -> bool {
 
 #[test]
 fn checks_refuse_bad_values() {
-    let ok = new_task("t", Lane::Backlog, "V");
+    let ok = new_task("t", Lane::BACKLOG, "V");
     assert!(!refused(&ok));
     let mut t = ok.clone();
     t.title = String::new();
@@ -33,10 +33,10 @@ fn checks_refuse_bad_values() {
 #[test]
 fn rank_holds_only_alphanumerics_and_is_not_empty() {
     for bad in ["", "a b", "a-b", "é", "a\n"] {
-        assert!(refused(&new_task("t", Lane::Backlog, bad)), "{bad:?}");
+        assert!(refused(&new_task("t", Lane::BACKLOG, bad)), "{bad:?}");
     }
     for good in ["0", "Az9", "V"] {
-        assert!(!refused(&new_task("t", Lane::Backlog, good)), "{good:?}");
+        assert!(!refused(&new_task("t", Lane::BACKLOG, good)), "{good:?}");
     }
 }
 

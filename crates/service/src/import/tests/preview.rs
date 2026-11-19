@@ -126,7 +126,7 @@ fn preview_caps_at_500_new_first() {
             &host,
             &format!("t{i}"),
             &format!("reminders:r{i}"),
-            Lane::Backlog,
+            Lane::BACKLOG,
             true,
         );
     }

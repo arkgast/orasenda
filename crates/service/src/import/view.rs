@@ -28,7 +28,7 @@ pub(crate) fn live_lane(found: &[(String, tasks::Lane, bool)], origin: &str) -> 
     found
         .iter()
         .find(|(o, _, live)| *live && o == origin)
-        .map(|(_, l, _)| lane(*l))
+        .map(|(_, l, _)| lane(l))
 }
 
 /// The row for `task`: unselected with a why line when a live task holds its origin, selected
@@ -40,10 +40,10 @@ pub(crate) fn item(
     columns: &[ColumnSettings],
     cx: &Ctx,
 ) -> ImportItemView {
-    let why = on_board.map(|l| {
+    let why = on_board.as_ref().map(|l| {
         let name = columns
             .iter()
-            .find(|c| c.lane == l)
+            .find(|c| c.lane == *l)
             .map_or("the Board", |c| c.name.as_str());
         format!("Already on the Board, in {name}")
     });

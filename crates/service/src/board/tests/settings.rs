@@ -19,7 +19,7 @@ fn reloaded(host: &TestHost) -> Settings {
 #[test]
 fn a_new_buffer_emits_the_board_once_after_the_lock() {
     let host = host();
-    let mut task = draft("A", Lane::Today);
+    let mut task = draft("A", Lane::TODAY);
     task.estimate = Some(4);
     run_task_add(&host, task).expect("adds");
     changed(&host);
@@ -80,16 +80,16 @@ fn the_settings_loader_tolerates_the_columns_row() {
         limit: None,
     };
     let columns = vec![
-        named(Lane::Backlog, "Later"),
+        named(Lane::BACKLOG, "Later"),
         ColumnSettings {
             limit: Some(5),
-            ..named(Lane::Today, "Now")
+            ..named(Lane::TODAY, "Now")
         },
         ColumnSettings {
             limit: Some(2),
-            ..named(Lane::Doing, "Busy")
+            ..named(Lane::DOING, "Busy")
         },
-        named(Lane::Done, "Finished"),
+        named(Lane::DONE, "Finished"),
     ];
     run_board_columns_set(&host, columns).expect("saves");
     assert_eq!(reloaded(&host), Settings::default(), "read from the store");

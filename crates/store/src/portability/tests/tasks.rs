@@ -389,7 +389,8 @@ fn portability_round_trips_custom_lane() {
         origin: None,
         created_at: 10,
     };
-    a.write(20, |txn| tasks::insert(txn, &new)).expect("inserts");
+    a.write(20, |txn| tasks::insert(txn, &new))
+        .expect("inserts");
     let exported = a.read(rows).expect("reads");
     assert_eq!(exported.tasks[0].lane, "c_ab12cd34");
     let b = Store::open_in_memory("device-b").expect("opens");

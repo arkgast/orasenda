@@ -22,11 +22,11 @@ fn preview(host: &TestHost, ids: &[&str]) -> ImportPreview {
 #[test]
 fn match_live_in_any_lane_unselected() {
     let host = host();
-    seed(&host, "t1", "reminders:a", Lane::Today, true);
+    seed(&host, "t1", "reminders:a", Lane::TODAY, true);
     let p = preview(&host, &["a", "b"]);
     let a = &p.items[0];
     assert!(!a.selected);
-    assert_eq!(a.on_board, Some(ApiLane::Today));
+    assert_eq!(a.on_board, Some(ApiLane::TODAY));
     assert_eq!(a.why.as_deref(), Some("Already on the Board, in Today"));
     assert!(p.items[1].selected);
     assert_eq!(p.items[1].why, None);
@@ -35,7 +35,7 @@ fn match_live_in_any_lane_unselected() {
 #[test]
 fn match_removed_only_selected() {
     let host = host();
-    seed(&host, "t1", "reminders:a", Lane::Backlog, false);
+    seed(&host, "t1", "reminders:a", Lane::BACKLOG, false);
     let item = &preview(&host, &["a"]).items[0];
     assert!(item.selected);
     assert_eq!(item.on_board, None);
@@ -44,11 +44,11 @@ fn match_removed_only_selected() {
 #[test]
 fn match_names_first_by_lane_order() {
     let host = host();
-    seed(&host, "t1", "reminders:a", Lane::Done, true);
-    seed(&host, "t2", "reminders:a", Lane::Doing, true);
-    seed(&host, "t3", "reminders:a", Lane::Backlog, false);
+    seed(&host, "t1", "reminders:a", Lane::DONE, true);
+    seed(&host, "t2", "reminders:a", Lane::DOING, true);
+    seed(&host, "t3", "reminders:a", Lane::BACKLOG, false);
     let item = &preview(&host, &["a"]).items[0];
-    assert_eq!(item.on_board, Some(ApiLane::Doing));
+    assert_eq!(item.on_board, Some(ApiLane::DOING));
     assert_eq!(item.why.as_deref(), Some("Already on the Board, in Doing"));
 }
 

@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use super::service::{Answer, Changed, live, rank_at};
 use super::view::{self, Ctx};
-use crate::api::{BoardError, Lane as ApiLane, NoteView, TaskView};
+use crate::api::{BoardError, NoteView, TaskView};
 use crate::scheduler::Host;
 use crate::session::lock;
 
@@ -40,8 +40,8 @@ pub fn run_inbox_to_task<H: Host>(host: &H, note_id: &str) -> Result<TaskView, B
             due: None,
             priority: None,
             checklist: Vec::new(),
-            lane: Lane::Backlog,
-            rank: rank_at(txn, ApiLane::Backlog, usize::MAX, None)?,
+            lane: Lane::BACKLOG,
+            rank: rank_at(txn, &Lane::BACKLOG, usize::MAX, None)?,
             frog_day: None,
             source_note_id: Some(note.id.clone()),
             origin: None,

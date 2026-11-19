@@ -87,12 +87,12 @@ fn tomorrow_tasks_due() {
     task(
         &host,
         "Send invoice",
-        Lane::Backlog,
+        Lane::BACKLOG,
         None,
         Some("2026-11-08"),
     );
-    task(&host, "Later one", Lane::Backlog, None, Some("2026-11-09"));
-    task(&host, "Already done", Lane::Done, None, Some("2026-11-08"));
+    task(&host, "Later one", Lane::BACKLOG, None, Some("2026-11-09"));
+    task(&host, "Already done", Lane::DONE, None, Some("2026-11-08"));
     let got = lines(&host);
     assert!(got.contains(&"Due: Send invoice.".to_owned()), "{got:?}");
 }
@@ -100,9 +100,9 @@ fn tomorrow_tasks_due() {
 #[test]
 fn tomorrow_planned_with_buffer() {
     let host = host();
-    task(&host, "One", Lane::Today, Some(1), None);
-    task(&host, "Two", Lane::Today, Some(1), None);
-    task(&host, "Elsewhere", Lane::Doing, Some(5), None);
+    task(&host, "One", Lane::TODAY, Some(1), None);
+    task(&host, "Two", Lane::TODAY, Some(1), None);
+    task(&host, "Elsewhere", Lane::DOING, Some(5), None);
     let got = lines(&host);
     // Each task rounds up on its own (1 at 25% is 2), so two give 4, not 3.
     let buffer = lock(&host.0.service).settings().board_estimate_buffer;
@@ -116,8 +116,8 @@ fn tomorrow_planned_with_buffer() {
 #[test]
 fn tomorrow_uses_current_week_priorities() {
     let host = host();
-    let this = task(&host, "This week", Lane::Doing, None, None);
-    let next = task(&host, "Next week", Lane::Doing, None, None);
+    let this = task(&host, "This week", Lane::DOING, None, None);
+    let next = task(&host, "Next week", Lane::DOING, None, None);
     let write = |period: &str, id: &str| ReflectionWrite {
         kind: ReflectionKind::Week,
         period: period.into(),

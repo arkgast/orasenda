@@ -25,7 +25,14 @@ fn lane_parse_accepts_builtins_and_custom_ids() {
 
 #[test]
 fn lane_parse_refuses_bad_ids() {
-    for bad in ["C_AB12CD34", "c_ab12cd3", "c_ab12cd345", "", "c_ab12cd3!", "Backlog"] {
+    for bad in [
+        "C_AB12CD34",
+        "c_ab12cd3",
+        "c_ab12cd345",
+        "",
+        "c_ab12cd3!",
+        "Backlog",
+    ] {
         assert_eq!(Lane::parse(bad), None, "{bad:?}");
     }
 }

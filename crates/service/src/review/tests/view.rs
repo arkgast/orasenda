@@ -124,8 +124,8 @@ fn today_before_four_shows_previous_day() {
 #[test]
 fn removed_priority_dropped() {
     let host = host();
-    let keep = add(&host, "Fix sync bug", Lane::Doing);
-    let gone = add(&host, "Old plan", Lane::Backlog);
+    let keep = add(&host, "Fix sync bug", Lane::DOING);
+    let gone = add(&host, "Old plan", Lane::BACKLOG);
     reflect(
         &host,
         ReflectionKind::Week,
@@ -148,7 +148,7 @@ fn removed_priority_dropped() {
 #[test]
 fn done_priority_reads_done() {
     let host = host();
-    let task = add(&host, "Fix sync bug", Lane::Done);
+    let task = add(&host, "Fix sync bug", Lane::DONE);
     reflect(
         &host,
         ReflectionKind::Week,

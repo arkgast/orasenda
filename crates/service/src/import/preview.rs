@@ -129,7 +129,7 @@ pub fn run_import_preview<H: Host>(
         items.push(view::item(
             key,
             &task,
-            on_board[index],
+            on_board[index].clone(),
             &matches.columns,
             &matches.cx,
         ));

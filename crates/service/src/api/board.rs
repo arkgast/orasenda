@@ -4,15 +4,7 @@
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-/// The four fixed board columns. The UI says "column"; SQL says `lane`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum Lane {
-    Backlog,
-    Today,
-    Doing,
-    Done,
-}
+use super::Lane;
 
 /// Whether a task needs deep focus or is light work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]

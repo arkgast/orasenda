@@ -50,7 +50,7 @@ impl SessionService {
             return Err(refused(TimerCommandErrorKind::Store, NO_BOARD));
         };
         match store.read(|txn| tasks::get(txn, id)) {
-            Ok(Some(row)) if row.deleted_at.is_none() && row.lane == Lane::Done => {
+            Ok(Some(row)) if row.deleted_at.is_none() && row.lane == Lane::DONE => {
                 Err(refused(TimerCommandErrorKind::TaskDone, IN_DONE))
             }
             Ok(Some(row)) if row.deleted_at.is_none() => Ok(row),
@@ -179,12 +179,12 @@ impl SessionService {
         };
         let live = |id: &str| rows.get(id).and_then(|r| r.as_ref());
         if let Some(id) = self.chosen_task.clone()
-            && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::Done)
+            && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::DONE)
         {
             self.chosen_task = None;
         }
         if let Some(id) = self.carry_task.clone()
-            && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::Done)
+            && !live(&id).is_some_and(|r| r.deleted_at.is_none() && r.lane != Lane::DONE)
         {
             self.carry_task = None;
         }

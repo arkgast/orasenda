@@ -13,17 +13,76 @@ mod update;
 pub use lanes::{LaneBefore, move_to_backlog_end, restore_lanes};
 pub use update::{TaskPatch, clear_frog, move_to, set_frog, update};
 
+use std::borrow::Cow;
+
 use crate::{Entity, StoreError, Txn, sql_int};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// The four fixed board columns. Named `lane` in SQL, beside `ADD COLUMN`.
+/// A board column's id. Named `lane` in SQL, beside `ADD COLUMN`. One of the four built-ins
+/// (`backlog`, `today`, `doing`, `done`) or a custom id: `c_` and 8 characters of `[0-9a-z]`.
+/// Whether a lane exists on this board is the service's check, not this type's.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Lane(Cow<'static, str>);
+
+/// The four built-in columns, for `match` on [`Lane::builtin`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Lane {
+pub enum Builtin {
     Backlog,
     Today,
     Doing,
     Done,
+}
+
+impl Lane {
+    pub const BACKLOG: Lane = Lane(Cow::Borrowed("backlog"));
+    pub const TODAY: Lane = Lane(Cow::Borrowed("today"));
+    pub const DOING: Lane = Lane(Cow::Borrowed("doing"));
+    pub const DONE: Lane = Lane(Cow::Borrowed("done"));
+
+    /// A built-in, or `c_` followed by 8 of `[0-9a-z]`; anything else is `None`.
+    pub fn parse(text: &str) -> Option<Lane> {
+        match text {
+            "backlog" => Some(Lane::BACKLOG),
+            "today" => Some(Lane::TODAY),
+            "doing" => Some(Lane::DOING),
+            "done" => Some(Lane::DONE),
+            _ => {
+                let id = text.strip_prefix("c_")?;
+                let ok = id.len() == 8
+                    && id
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || b.is_ascii_lowercase());
+                ok.then(|| Lane(Cow::Owned(text.to_owned())))
+            }
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Which built-in this is, or `None` for a custom column.
+    pub fn builtin(&self) -> Option<Builtin> {
+        match self.as_str() {
+            "backlog" => Some(Builtin::Backlog),
+            "today" => Some(Builtin::Today),
+            "doing" => Some(Builtin::Doing),
+            "done" => Some(Builtin::Done),
+            _ => None,
+        }
+    }
+}
+
+impl From<Builtin> for Lane {
+    fn from(builtin: Builtin) -> Lane {
+        match builtin {
+            Builtin::Backlog => Lane::BACKLOG,
+            Builtin::Today => Lane::TODAY,
+            Builtin::Doing => Lane::DOING,
+            Builtin::Done => Lane::DONE,
+        }
+    }
 }
 
 /// Whether a task needs deep focus or is light work.
@@ -55,7 +114,6 @@ macro_rules! text_enum {
     };
 }
 
-text_enum!(Lane { Backlog => "backlog", Today => "today", Doing => "doing", Done => "done" });
 text_enum!(TaskKind { Deep => "deep", Shallow => "shallow" });
 text_enum!(Priority { High => "high", Medium => "medium", Low => "low" });
 
@@ -133,7 +191,7 @@ pub fn insert(txn: &mut Txn, task: &NewTask) -> Result<(), StoreError> {
     let tags = serde_json::to_string(&task.tags)?;
     let checklist = serde_json::to_string(&task.checklist)?;
     let now = txn.now_ms();
-    let done_at = (task.lane == Lane::Done).then_some(now);
+    let done_at = (task.lane == Lane::DONE).then_some(now);
     txn.conn().execute(
         "INSERT INTO task (id, title, notes, tags, kind, estimate, due, priority, checklist,
              lane, rank, frog_day, breakdown_dismissed, source_note_id, done_at, created_at,
@@ -231,7 +289,7 @@ pub fn origins(txn: &Txn, asked: &[String]) -> Result<Vec<(String, Lane, bool)>,
     let mut stmt = txn.conn().prepare(
         "SELECT lane, deleted_at IS NULL FROM task WHERE origin = ?1
          ORDER BY CASE lane WHEN 'backlog' THEN 0 WHEN 'today' THEN 1 WHEN 'doing' THEN 2
-                  ELSE 3 END, id",
+                  WHEN 'done' THEN 4 ELSE 3 END, id",
     )?;
     let mut found = Vec::new();
     let mut sorted: Vec<&String> = asked.iter().collect();
@@ -247,6 +305,24 @@ pub fn origins(txn: &Txn, asked: &[String]) -> Result<Vec<(String, Lane, bool)>,
         }
     }
     Ok(found)
+}
+
+/// How many live tasks sit in `lane`.
+pub fn count_live_in(txn: &Txn, lane: &Lane) -> Result<u32, StoreError> {
+    Ok(txn.conn().query_row(
+        "SELECT count(*) FROM task WHERE deleted_at IS NULL AND lane = ?1",
+        [lane.as_str()],
+        |row| row.get(0),
+    )?)
+}
+
+/// Every lane that holds at least one live task, each once, in no set order.
+pub fn lanes_live(txn: &Txn) -> Result<Vec<Lane>, StoreError> {
+    let mut stmt = txn
+        .conn()
+        .prepare("SELECT DISTINCT lane FROM task WHERE deleted_at IS NULL")?;
+    let rows = stmt.query_map([], |row| parsed(row, 0, Lane::parse))?;
+    Ok(rows.collect::<Result<_, _>>()?)
 }
 
 /// The greatest rank in the Backlog, removed tasks included (as the merge's `end_of_lane`), so

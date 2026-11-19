@@ -1085,8 +1085,13 @@ export type KeyboardView_Serialize = {
 	voiceOver: boolean,
 };
 
-/**  The four fixed board columns. The UI says "column"; SQL says `lane`. */
-export type Lane = "backlog" | "today" | "doing" | "done";
+/**
+ *  A board column's id: one of the four built-ins (`backlog`, `today`, `doing`, `done`) or a
+ *  custom id, `c_` and 8 characters of `[0-9a-z]`. The UI says "column"; SQL says `lane`.
+ *  Deserializing refuses a malformed id; whether a column exists on this board is the
+ *  service's check.
+ */
+export type Lane = string;
 
 /**
  *  Where a column stands against its limit. Drawn as a word and a shape, never as colour
