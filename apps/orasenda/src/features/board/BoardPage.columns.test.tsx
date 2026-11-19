@@ -445,25 +445,28 @@ test("gone_elsewhere_leaves_focus_outside_the_editor", async () => {
 test("remove_does_not_say_gone_first", async () => {
   const lines: string[] = [];
   const seen = new MutationObserver(() => lines.push(document.body.textContent ?? ""));
-  seen.observe(document.body, { childList: true, subtree: true, characterData: true });
-  await renderBoard({
-    board: withCustom(boardOf(TASKS), LATER),
-    replies: {
-      ...edits,
-      board_column_remove: async () => {
-        // The service announces the new board before the reply lands.
-        await emitBoardChanged(1, boardOf(TASKS));
-        await Promise.resolve();
-        lines.push(document.body.textContent ?? "");
-        return null;
-      },
-    },
+  // The remove reply is held until the board change has been announced, as in the service.
+  let reply: (v: null) => void = () => {};
+  const held = new Promise<null>((resolve) => {
+    reply = resolve;
   });
-  openEditor("Later");
-  fireEvent.click(inEditor("Remove column"));
-  await settle();
-  seen.disconnect();
-  expect(lines.length).toBeGreaterThan(0);
-  expect(lines.some((t) => t.includes("That column is gone. Pick another."))).toBe(false);
-  expect(screen.getByText("Removed Later.")).toBeInTheDocument();
+  try {
+    await renderBoard({
+      board: withCustom(boardOf(TASKS), LATER),
+      replies: { ...edits, board_column_remove: () => held },
+    });
+    openEditor("Later");
+    seen.observe(document.body, { childList: true, subtree: true, characterData: true });
+    fireEvent.click(inEditor("Remove column"));
+    await emitBoardChanged(1, boardOf(TASKS));
+    lines.push(document.body.textContent ?? "");
+    reply(null);
+    await settle();
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some((t) => t.includes("That column is gone. Pick another."))).toBe(false);
+    expect(screen.getByText("Removed Later.")).toBeInTheDocument();
+  } finally {
+    seen.disconnect();
+    reply(null);
+  }
 });
