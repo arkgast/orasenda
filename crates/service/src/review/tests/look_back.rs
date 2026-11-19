@@ -215,8 +215,32 @@ fn routine_and_habit_lines_cover_the_look_back() {
     );
     assert_eq!(
         view.look_back.habit_lines,
-        ["Done on 1 day since 7 November."]
+        ["Walk: done on 1 day since 7 November."]
     );
+}
+
+#[test]
+fn look_back_habit_lines_start_with_their_own_name() {
+    let host = host();
+    for name in ["Walk", "Stretch"] {
+        let draft = HabitDraft {
+            name: name.into(),
+            when_text: None,
+            where_text: None,
+            anchor: None,
+            two_minute: None,
+            identity: None,
+            optional: false,
+            days: None,
+        };
+        run_habit_create(&host, None, &draft).unwrap();
+    }
+    let lines = weekly(&host).look_back.habit_lines;
+    assert_eq!(lines.len(), 2);
+    for name in ["Walk", "Stretch"] {
+        let n = lines.iter().filter(|l| l.starts_with(&format!("{name}: "))).count();
+        assert_eq!(n, 1, "{lines:?}");
+    }
 }
 
 #[test]

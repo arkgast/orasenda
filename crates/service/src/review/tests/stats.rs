@@ -122,7 +122,11 @@ fn stats_mid_range_habit_says_since() {
     run_habit_check(&host, &id, true).unwrap();
     let view = stats(&host, StatsRange::Week);
     assert_eq!(view.habits[0].name, "Walk");
-    assert_eq!(view.habits[0].line, "Done on 1 day since 7 November.");
+    assert_eq!(view.habits[0].line, "Walk: done on 1 day since 7 November.");
+    for range in [StatsRange::Weeks8, StatsRange::Months6] {
+        let line = &stats(&host, range).habits[0].line;
+        assert!(line.starts_with("Walk: "), "{line}");
+    }
 }
 
 #[test]
