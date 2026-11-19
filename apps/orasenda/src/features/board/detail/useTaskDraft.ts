@@ -1,5 +1,4 @@
 import type {
-  BoardError,
   ChecklistItemView,
   TaskKind,
   TaskPatchView_Deserialize,
@@ -7,6 +6,7 @@ import type {
   TaskView,
 } from "@shared/ipc/bindings";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { boardWords } from "../boardWords";
 import type { Outcome } from "../useBoard";
 
 /** How long a text field waits after the last keystroke before it saves. */
@@ -40,9 +40,6 @@ const fromTask = (task: TaskView): Draft => ({
   checklist: task.checklist,
 });
 
-const wording = (error: BoardError | "unreachable") =>
-  error === "notFound" ? "That task is gone." : "That didn't save. Try again.";
-
 /**
  * The sheet's fields as the person has them, and how they reach Rust. The draft is the truth for the
  * fields it holds, so a failed save never changes what is typed; discrete fields save at once, text
@@ -73,7 +70,7 @@ export function useTaskDraft(
       return true;
     }
     failed.current = { ...failed.current, ...patch };
-    const text = wording(outcome.error);
+    const text = boardWords(outcome.error);
     if (gone.current) live.current.onSaveFailed?.(text);
     else
       setLine({

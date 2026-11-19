@@ -42,7 +42,14 @@ fn add_inserts_after_and_names() {
     assert_ne!(second, first);
     assert_eq!(
         names(&host),
-        ["Backlog", "Today", "New column", "New column 2", "Doing", "Done"]
+        [
+            "Backlog",
+            "Today",
+            "New column",
+            "New column 2",
+            "Doing",
+            "Done"
+        ]
     );
 }
 

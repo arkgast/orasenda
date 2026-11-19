@@ -70,6 +70,8 @@ pub(super) fn build(rows: &Rows, cx: &Ctx) -> BoardView {
                 lane: column.lane.clone(),
                 name: column.name.clone(),
                 limit: column.limit,
+                custom: column.lane.builtin().is_none(),
+                folded: columns::is_folded(column),
                 count: u32::try_from(tasks.len()).unwrap_or(u32::MAX),
                 state: columns::state(tasks.len(), column.limit),
                 tasks,

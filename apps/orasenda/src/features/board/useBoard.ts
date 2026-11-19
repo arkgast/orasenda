@@ -1,4 +1,4 @@
-import { type BoardError, type BoardView, commands, events } from "@shared/ipc/bindings";
+import { type BoardError, type BoardView, commands, events, type Lane } from "@shared/ipc/bindings";
 import { subscribe } from "@shared/ipc/subscribe";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -110,9 +110,26 @@ export function useBoard() {
       (taskId: string) => write("task_restore_note", commands.taskRestoreNote(taskId)),
       [write],
     ),
-    setColumns: useCallback(
-      (columns: Parameters<typeof commands.boardColumnsSet>[0]) =>
-        write("board_columns_set", commands.boardColumnsSet(columns)),
+    editColumn: useCallback(
+      (lane: Lane, name: string, limit: number | null) =>
+        write("board_column_edit", commands.boardColumnEdit(lane, name, limit)),
+      [write],
+    ),
+    /** The new column's id, or `null` when it was refused or could not be reached. */
+    addColumn: useCallback(
+      async (after: Lane): Promise<Lane | null> => {
+        const outcome = await write("board_column_add", commands.boardColumnAdd(after));
+        return outcome.status === "ok" ? outcome.data : null;
+      },
+      [write],
+    ),
+    removeColumn: useCallback(
+      (lane: Lane) => write("board_column_remove", commands.boardColumnRemove(lane)),
+      [write],
+    ),
+    foldColumn: useCallback(
+      (lane: Lane, folded: boolean) =>
+        write("board_column_fold", commands.boardColumnFold(lane, folded)),
       [write],
     ),
   };

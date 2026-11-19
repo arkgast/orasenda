@@ -3,7 +3,8 @@
 
 use super::*;
 use crate::api::BoardError;
-use crate::session::{lock, relaunch};
+use crate::session::lock;
+use crate::session::test_support::relaunch;
 use serde_json::{Value, json};
 
 /// Writes `row` as the setting row, as another device or an older app would have left it.
@@ -23,7 +24,15 @@ fn shown(host: &TestHost) -> Vec<(String, String, Option<u8>, bool, bool)> {
         .expect("reads")
         .columns
         .into_iter()
-        .map(|c| (c.lane.as_str().to_owned(), c.name, c.limit, c.custom, c.folded))
+        .map(|c| {
+            (
+                c.lane.as_str().to_owned(),
+                c.name,
+                c.limit,
+                c.custom,
+                c.folded,
+            )
+        })
         .collect()
 }
 
@@ -68,12 +77,12 @@ fn missing_builtin_restored() {
     );
     assert_eq!(names(&host), ["Later", "Now", "Doing", "Finished"]);
     let doing = &shown(&host)[2];
-    assert_eq!((doing.2, doing.4), (Some(1), false), "its default limit and fold");
     assert_eq!(
-        shown(&host)[3].4,
-        false,
-        "a saved open Done stays open"
+        (doing.2, doing.4),
+        (Some(1), false),
+        "its default limit and fold"
     );
+    assert!(!shown(&host)[3].4, "a saved open Done stays open");
 }
 
 #[test]
@@ -130,13 +139,17 @@ fn fold_saved() {
     let host = host();
     run_board_column_fold(&host, Lane::DONE, false).expect("opens Done");
     run_board_column_fold(&host, Lane::TODAY, true).expect("folds Today");
-    let again = relaunch(&mut lock(&host.0.service), T0);
-    let board = again.board_build(T0).expect("reads");
-    let folded: Vec<_> = board.columns.iter().map(|c| c.folded).collect();
-    assert_eq!(folded, [false, true, false, false], "read back from the store");
     let unknown = Lane::parse("c_zzzzzzzz").expect("an id");
     assert_eq!(
         run_board_column_fold(&host, unknown, true),
         Err(BoardError::ColumnNotFound)
+    );
+    let again = relaunch(&mut lock(&host.0.service), T0);
+    let board = again.board_build(T0).expect("reads");
+    let folded: Vec<_> = board.columns.iter().map(|c| c.folded).collect();
+    assert_eq!(
+        folded,
+        [false, true, false, false],
+        "read back from the store"
     );
 }

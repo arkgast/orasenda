@@ -182,8 +182,14 @@ export const commands = {
 	inboxToTask: (noteId: string) => typedError<TaskView_Serialize, BoardError>(__TAURI_INVOKE("inbox_to_task", { noteId })),
 	/**  Undoes a move from the Inbox: the task goes, the note comes back. */
 	taskRestoreNote: (taskId: string) => typedError<null, BoardError>(__TAURI_INVOKE("task_restore_note", { taskId })),
-	/**  Saves the columns' names and limits. */
-	boardColumnsSet: (columns: ColumnSettings_Deserialize[]) => typedError<null, BoardError>(__TAURI_INVOKE("board_columns_set", { columns })),
+	/**  Saves a column's name and limit. */
+	boardColumnEdit: (lane: Lane, name: string, limit: number | null) => typedError<null, BoardError>(__TAURI_INVOKE("board_column_edit", { lane, name, limit })),
+	/**  Adds a custom column right after `after`; answers its id. */
+	boardColumnAdd: (after: Lane) => typedError<Lane, BoardError>(__TAURI_INVOKE("board_column_add", { after })),
+	/**  Removes an empty custom column. */
+	boardColumnRemove: (lane: Lane) => typedError<null, BoardError>(__TAURI_INVOKE("board_column_remove", { lane })),
+	/**  Saves whether a column is folded. */
+	boardColumnFold: (lane: Lane, folded: boolean) => typedError<null, BoardError>(__TAURI_INVOKE("board_column_fold", { lane, folded })),
 	/**
 	 *  Chooses the task for the next start while idle, or changes the running session's task.
 	 *  `None` clears it. Picking a task is always optional.
@@ -463,8 +469,21 @@ export type BoardError =
 "badDue" | 
 /**  More than 30 checklist items, or one that is empty, over 200 characters or repeated. */
 "badChecklist" | 
-/**  Column names or limits outside their ranges, or not one entry per column. */
+/**
+ *  A column that can't be added after, or removed: a built-in, or after Done or an unknown
+ *  column.
+ */
 "badColumns" | 
+/**  Four custom columns already. */
+"tooManyColumns" | 
+/**  A column that still holds a task can't be removed. */
+"columnNotEmpty" | 
+/**  No such column on this board. */
+"columnNotFound" | 
+/**  A column name that is empty, over 24 characters or already taken. */
+"badColumnName" | 
+/**  A limit outside the column's range, or one on a column that has none. */
+"badLimit" | 
 /**  A Done task can't be made the Frog. */
 "doneCannotBeFrog" | 
 /**  No such task or note, or it is already in the state asked for. */
@@ -490,7 +509,7 @@ export type BoardView = BoardView_Serialize | BoardView_Deserialize;
 
 /**  Everything the Board page shows. */
 export type BoardView_Deserialize = {
-	/**  Backlog, Today, Doing, Done, in that order. */
+	/**  Backlog, Today, Doing and Done, with the custom columns between, in board order. */
 	columns: ColumnView_Deserialize[],
 	/**  The estimate buffer, whole percent. */
 	buffer: number,
@@ -502,7 +521,7 @@ export type BoardView_Deserialize = {
 
 /**  Everything the Board page shows. */
 export type BoardView_Serialize = {
-	/**  Backlog, Today, Doing, Done, in that order. */
+	/**  Backlog, Today, Doing and Done, with the custom columns between, in board order. */
 	columns: ColumnView_Serialize[],
 	/**  The estimate buffer, whole percent. */
 	buffer: number,
@@ -568,27 +587,6 @@ export type ClockTick_Serialize = {
 	idleFinish: string | null,
 };
 
-/**  A column's name and limit as the person set them (`board.columns`). */
-export type ColumnSettings = ColumnSettings_Serialize | ColumnSettings_Deserialize;
-
-/**  A column's name and limit as the person set them (`board.columns`). */
-export type ColumnSettings_Deserialize = {
-	lane: Lane,
-	/**  1 to 24 characters after trimming. */
-	name: string,
-	/**  Today 1 to 9, Doing 1 to 3; Backlog and Done have none. */
-	limit?: number | null,
-};
-
-/**  A column's name and limit as the person set them (`board.columns`). */
-export type ColumnSettings_Serialize = {
-	lane: Lane,
-	/**  1 to 24 characters after trimming. */
-	name: string,
-	/**  Today 1 to 9, Doing 1 to 3; Backlog and Done have none. */
-	limit: number | null,
-};
-
 /**  One column with its tasks in order. */
 export type ColumnView = ColumnView_Serialize | ColumnView_Deserialize;
 
@@ -597,6 +595,10 @@ export type ColumnView_Deserialize = {
 	lane: Lane,
 	name: string,
 	limit?: number | null,
+	/**  A column the person made (`c_…`), not one of the four built-ins. */
+	custom: boolean,
+	/**  Folded to its header. Saved with the column. */
+	folded: boolean,
 	/**  The tasks shown in it (Done counts the last 14 days only). */
 	count: number,
 	state: LimitState,
@@ -608,6 +610,10 @@ export type ColumnView_Serialize = {
 	lane: Lane,
 	name: string,
 	limit: number | null,
+	/**  A column the person made (`c_…`), not one of the four built-ins. */
+	custom: boolean,
+	/**  Folded to its header. Saved with the column. */
+	folded: boolean,
 	/**  The tasks shown in it (Done counts the last 14 days only). */
 	count: number,
 	state: LimitState,
