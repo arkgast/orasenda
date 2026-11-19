@@ -2,7 +2,7 @@
 
 - Spec: [docs/specs/2026-11-18-board-columns.md](../specs/2026-11-18-board-columns.md)
 - Date: 2026-11-18
-- Status: draft
+- Status: approved (owner, 2026-11-19)
 
 ## Overview
 Twelve tasks, each one PR. Tests come first in every task. Every file stays at 500 lines or fewer, and every task passes `./scripts/ci.sh`. UI tasks get the opus design review. The owner reviews visuals, so PRs carry no screenshots.
