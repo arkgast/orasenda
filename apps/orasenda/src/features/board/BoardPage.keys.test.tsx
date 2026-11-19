@@ -26,9 +26,7 @@ test("arrow_keys_move_selection_between_columns", async () => {
   expect(card("Reply to Ana")).toHaveFocus();
   fireEvent.keyDown(card("Reply to Ana"), { key: "ArrowRight" });
   expect(card("Fix sync bug")).toHaveFocus();
-  // Done is a folded strip: there is nothing to rove into.
-  fireEvent.keyDown(card("Fix sync bug"), { key: "ArrowRight" });
-  expect(card("Fix sync bug")).toHaveFocus();
+  // Done is a folded strip: the arrow stops on it (see BoardPage.columns.test).
   fireEvent.keyDown(card("Fix sync bug"), { key: "ArrowLeft" });
   expect(card("Write intro")).toHaveFocus();
   fireEvent.keyDown(card("Write intro"), { key: "End" });

@@ -98,6 +98,7 @@ export function stubRects() {
       height: b.bottom - b.top,
       toJSON: () => b,
     });
+    if (this.matches("[data-slot=scroll-region]")) return make(boxOf(0, 0, 900, 600));
     if (this.id.startsWith("board-col-")) {
       const { left, width } = columnLeft(this);
       return make(boxOf(left, 0, width, 600));

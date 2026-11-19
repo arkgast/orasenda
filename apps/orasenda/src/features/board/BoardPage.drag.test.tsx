@@ -1,4 +1,4 @@
-import { argsOf, settle } from "@shared/test/fixtures";
+import { argsOf, boardOf, settle, withCustom } from "@shared/test/fixtures";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -215,4 +215,35 @@ test("no_drag_under_open_sheet", async () => {
   pointer("pointerdown", el, 300, 60);
   pointer("pointermove", el, 300, 90);
   expect(screen.queryByText(/Esc puts it back/)).toBeNull();
+});
+
+test("drag_into_custom_column", async () => {
+  // Layout: Backlog 0-200, Today 210-410, Doing 420-620, Later 630-830, Done strip 840-880.
+  const board = withCustom(boardOf(TASKS), [{ lane: "c_later", name: "Later" }]);
+  const backend = await renderBoard({ board });
+  const el = lift("Write intro", T1, [700, 200]);
+  expect(screen.getByText("Moving Write intro here")).toBeInTheDocument();
+  pointer("pointerup", el, 700, 200);
+  await settle();
+  expect(moves(backend)).toEqual([{ id: "t1", lane: "c_later", index: 0 }]);
+});
+
+test("drag_edge_scrolls_region", async () => {
+  const queue: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => queue.push(f));
+  vi.stubGlobal("cancelAnimationFrame", () => {});
+  await renderBoard();
+  const region = screen.getByRole("region", { name: "Board columns" });
+  let left = 0;
+  Object.defineProperties(region, {
+    scrollWidth: { value: 2000 },
+    clientWidth: { value: 900 },
+    scrollLeft: { get: () => left, set: (v: number) => void (left = v) },
+  });
+  // Near the region's right edge (stubRects: the region is 900 wide).
+  const el = lift("Write intro", T1, [895, 300]);
+  queue.shift()?.(0);
+  expect(left).toBeGreaterThan(0);
+  pointer("pointerup", el, 895, 300);
+  vi.unstubAllGlobals();
 });

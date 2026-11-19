@@ -91,3 +91,28 @@ export async function emitBoardNotice(kind: BoardNoticeKind, message: string): P
     await events.boardNotice.emit({ kind, message });
   });
 }
+
+/**
+ * `board` with custom columns put before Done, in the order given. Each holds the tasks of
+ * `tasks` that sit in its lane (add them to the board's own tasks by passing `tasks` here).
+ */
+export function withCustom(
+  board: BoardView_Serialize,
+  customs: { lane: Lane; name: string; tasks?: TaskView_Serialize[]; folded?: boolean }[],
+): BoardView_Serialize {
+  const extra: ColumnView_Serialize[] = customs.map((c) => ({
+    lane: c.lane,
+    name: c.name,
+    limit: null,
+    custom: true,
+    folded: c.folded ?? false,
+    count: c.tasks?.length ?? 0,
+    state: "under",
+    tasks: c.tasks ?? [],
+  }));
+  const done = board.columns.length - 1;
+  return {
+    ...board,
+    columns: [...board.columns.slice(0, done), ...extra, ...board.columns.slice(done)],
+  };
+}
