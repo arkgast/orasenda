@@ -46,6 +46,11 @@ export function TrendBars({ bars, goal, caption }: TrendBarsProps): ReactElement
           <li key={`${b.label}-${b.spoken}`}>{b.spoken}</li>
         ))}
       </ul>
+      {goal && goalMinutes > 0 ? (
+        <p data-slot="trend-bars-goal-spoken" className="sr-only m-0">
+          {goal.words}
+        </p>
+      ) : null}
       <div
         data-slot="trend-bars-plot"
         aria-hidden="true"

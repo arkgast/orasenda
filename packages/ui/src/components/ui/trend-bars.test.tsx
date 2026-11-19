@@ -67,7 +67,7 @@ test("trend_bars_scale_to_goal", () => {
   );
   expect([...marks(container)].map((m) => m.style.height)).toEqual(["25%", "50%", "12.5%"]);
   expect([...lines(container)].every((s) => s.style.bottom === "100%")).toBe(true);
-  expect(screen.getAllByText("Goal 4h")).toHaveLength(1);
+  expect(document.querySelectorAll("[data-slot='trend-bars-goal']")).toHaveLength(1);
 });
 
 test("trend_bars_goal_below_top_bar_keeps_stubs_inside_plot", () => {
@@ -108,7 +108,8 @@ test("trend_bars_no_animation", () => {
 
 const plotOf = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-slot='trend-bars-plot']");
 const cols = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>("[data-slot='trend-bar']")];
-const wordsOf = (t: string) => screen.getAllByText(t)[0] as HTMLElement;
+const wordsOf = (t: string) =>
+  screen.getAllByText(t).find((e) => e.closest("[aria-hidden='true']")) as HTMLElement;
 
 test("caption_under_plot_names_figure", () => {
   const { container } = render(<TrendBars bars={week} caption="Focus time by week" />);
@@ -154,7 +155,7 @@ test("goal_words_once_at_goal_height", () => {
     const { container, unmount } = render(
       <TrendBars bars={week} goal={{ minutes, words: "Goal 4h" }} caption="c" />,
     );
-    expect(screen.getAllByText("Goal 4h")).toHaveLength(1);
+    expect(document.querySelectorAll("[data-slot='trend-bars-goal']")).toHaveLength(1);
     const w = wordsOf("Goal 4h");
     expect(w.style.bottom).toBe(bottom);
     const plot = plotOf(container) as HTMLElement;
@@ -198,7 +199,7 @@ test("goal_without_bars", () => {
   );
   expect(marks(container)).toHaveLength(0);
   expect(stubs(container)).toHaveLength(0);
-  expect(screen.getAllByText("Goal 2h")).toHaveLength(1);
+  expect(document.querySelectorAll("[data-slot='trend-bars-goal']")).toHaveLength(1);
 });
 
 test("one_bar", () => {
@@ -214,4 +215,10 @@ test("eight_bars", () => {
   expect(marks(container)).toHaveLength(6);
   expect(cols(container)).toHaveLength(8);
   expect(within(screen.getByRole("list")).getAllByRole("listitem")).toHaveLength(8);
+});
+
+test("goal_words_readable_outside_hidden_plot", () => {
+  render(<TrendBars bars={week} goal={{ minutes: 240, words: "Goal 4h" }} caption="c" />);
+  const spoken = screen.getAllByText("Goal 4h").filter((e) => !e.closest("[aria-hidden='true']"));
+  expect(spoken).toHaveLength(1);
 });
