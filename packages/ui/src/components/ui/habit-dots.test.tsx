@@ -236,6 +236,7 @@ test("weekday_header_cells_match_the_compact_cell", () => {
   const head = render(<HabitWeekdays />);
   for (const l of head.container.querySelectorAll('[data-slot="habit-weekday"]')) {
     expect(classes(l)).toContain("w-icon-sm");
+    expect(classes(l)).toContain("justify-center");
   }
   const header = head.container.querySelector('[data-slot="habit-weekdays"]') as Element;
   const grid = render(<HabitDots compact name="Zed" columns="week" days={sevenDays()} />);
@@ -261,4 +262,21 @@ test("compact_shapes_differ_by_more_than_colour", () => {
   expect(classes(skipped as Element)).toContain("border-2");
   expect(classes(rest as Element)).toContain("border-dashed");
   expect(classes(future as Element)).toContain("border-dotted");
+  expect(classes(future as Element)).toContain("rounded-none");
+  expect(classes(future as Element)).not.toContain("rounded-sm");
+  expect(classes(done as Element)).toContain("rounded-pill");
+});
+
+test("compact_tick_is_sized_to_fit_the_dot", () => {
+  const { container } = render(<HabitDots compact columns="week" days={["done"]} />);
+  const tick = container.querySelector('[data-slot="habit-dot"] span') as Element;
+  expect(classes(tick)).toContain("text-caption");
+  expect(classes(tick)).toContain("leading-none");
+});
+
+test("full_size_future_dot_keeps_its_rounded_square", () => {
+  const { container } = render(<HabitDots days={["future"]} />);
+  expect(classes(container.querySelector('[data-slot="habit-dot"]') as Element)).toContain(
+    "rounded-sm",
+  );
 });

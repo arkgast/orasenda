@@ -85,6 +85,8 @@ function Dot({
         "inline-flex flex-none items-center justify-center rounded-pill",
         compact ? DOT_COMPACT : "size-icon-md",
         SHAPES[state],
+        // At 10px the 6px radius would clamp to a circle; keep the upcoming dot a square.
+        compact && state === "future" && "rounded-none",
         today &&
           (compact
             ? "outline-2 outline-focus-ring outline-offset-1"
@@ -92,7 +94,10 @@ function Dot({
       )}
     >
       {state === "done" ? (
-        <span aria-hidden="true" className="hidden forced-colors:inline">
+        <span
+          aria-hidden="true"
+          className={cn("hidden forced-colors:inline", compact && "text-caption", "leading-none")}
+        >
           ✓
         </span>
       ) : null}
@@ -102,7 +107,8 @@ function Dot({
 
 // Every week cell is one icon-md wide (icon-sm when compact), so a header printed on its own lines up with the grids under it.
 const WEEK_GRID = "grid w-max grid-cols-7 justify-items-center";
-const LETTER_BASE = "text-center text-label text-ink-muted";
+// A letter wider than its 10px cell overflows both sides evenly (flex centring), so it stays over its dot.
+const LETTER_BASE = "flex justify-center text-label text-ink-muted";
 const LETTER = `w-icon-md ${LETTER_BASE}`;
 const LETTER_COMPACT = `${CELL_COMPACT} ${LETTER_BASE}`;
 

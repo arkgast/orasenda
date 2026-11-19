@@ -103,8 +103,9 @@ test("bar_row_goal_words_at_end_take_the_third_column", () => {
   const li = screen.getByRole("listitem", { name: goalProps.spoken });
   const words = screen.getByText("Goal 12h");
   expect(words.getAttribute("data-slot")).toBe("bar-goal-words");
-  expect(words.className).toContain("text-caption");
-  expect(words.className).toContain("text-ink-muted");
+  expect(words.className).toContain("text-body-sm");
+  expect(words.className).not.toContain("text-ink-muted");
+  expect(li.className).toContain("text-body-sm");
   expect(li.children[2]).toBe(words);
   expect(screen.queryByText("9h 40m")).toBeNull();
   expect(li.children[1]?.querySelector("[data-slot='bar-goal-words']")).toBeNull();

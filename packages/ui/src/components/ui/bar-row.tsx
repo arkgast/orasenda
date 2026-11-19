@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { cn } from "../../lib/utils";
 import type { BarRowProps } from "../../types";
 
 // A share of the scale, 0 to 100. A bad scale reads as empty, never as a wide bar.
@@ -37,7 +38,10 @@ export function BarRow(props: BarRowProps): ReactElement {
     <li
       data-slot="bar-row"
       aria-label={props.spoken}
-      className="col-span-3 grid min-h-control-sm grid-cols-subgrid items-center gap-x-3 text-body text-ink"
+      className={cn(
+        "col-span-3 grid min-h-control-sm grid-cols-subgrid items-center gap-x-3 text-ink",
+        end ? "text-body-sm" : "text-body",
+      )}
     >
       <span aria-hidden="true" data-slot="bar-label" className="min-w-0">
         {props.label}
@@ -82,7 +86,7 @@ export function BarRow(props: BarRowProps): ReactElement {
         <span
           aria-hidden="true"
           data-slot="bar-goal-words"
-          className="whitespace-nowrap text-end text-caption text-ink-muted"
+          className="whitespace-nowrap text-end text-body-sm text-ink"
         >
           {goal.words}
         </span>
