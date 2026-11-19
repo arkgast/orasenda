@@ -208,7 +208,9 @@ export function StatsSection(): ReactElement {
             <Shapes view={view} />
             <Lines lines={view.routines} label="Routines" />
             <Habits view={view} />
-            {view.estimateLine ? <p className="app-review-stats-estimate">{view.estimateLine}</p> : null}
+            {view.estimateLine ? (
+              <p className="app-review-stats-estimate">{view.estimateLine}</p>
+            ) : null}
             {buffer ? (
               <InlineNotice
                 actionLabel={buffer.action}
