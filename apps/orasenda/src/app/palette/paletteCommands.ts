@@ -27,11 +27,9 @@ export type PaletteInput = {
   displaysOnly?: boolean;
   /** Only the tasks that aren't Done: *Choose a task…* opened it. */
   tasksOnly?: boolean;
-  /** The tasks that aren't Done, in board order (`useTaskOptions`). */
+  /** The tasks that aren't Done, in picker order (`useTaskOptions`). */
   tasks: TaskPickerOption[];
 };
-
-const LANE_ORDER: ReadonlyArray<TaskPickerOption["lane"]> = ["doing", "today", "backlog"];
 
 const THEMES: ReadonlyArray<{ theme: Theme; label: string }> = [
   { theme: "system", label: "Match system" },
@@ -134,13 +132,15 @@ function preferenceCommands(input: PaletteInput): Command[] {
   return rows;
 }
 
-/** One row per task that isn't Done: Doing, then Today, then Backlog, each in board order. */
+/** One row per task that isn't Done, in the picker's order (`order`, then board order). */
 function taskRows(tasks: TaskPickerOption[]): Command[] {
-  return LANE_ORDER.flatMap((lane) => tasks.filter((task) => task.lane === lane)).map((task) => ({
-    id: `task:${task.id}`,
-    label: task.title,
-    hint: `${task.laneLabel}${task.frog ? " · Frog" : ""}`,
-  }));
+  return [...tasks]
+    .sort((a, b) => a.order - b.order)
+    .map((task) => ({
+      id: `task:${task.id}`,
+      label: task.title,
+      hint: `${task.laneLabel}${task.frog ? " · Frog" : ""}`,
+    }));
 }
 
 /** *Choose a task…* when some task isn't Done, then *Clear task* when one is linked. */

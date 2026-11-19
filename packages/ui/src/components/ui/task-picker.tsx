@@ -16,8 +16,9 @@ import { ACTIVE, ROW, SelectedWord } from "./task-picker-row";
 export interface TaskPickerOption {
   id: string;
   title: string;
-  lane: "doing" | "today" | "backlog";
-  /** The column in words ("Doing", "Today", "Backlog"). */
+  /** Sort key, ascending: lower rows come first; ties keep the host's order. */
+  order: number;
+  /** The column in words ("Doing", "Today", "Backlog", or a custom name). */
   laneLabel: string;
   frog?: boolean;
   /** Planned for this week: reads " · This week" after the column word. */
@@ -36,7 +37,6 @@ export interface TaskPickerProps {
   onCreate?: (title: string) => void;
 }
 
-const ORDER = { doing: 0, today: 1, backlog: 2 } as const;
 const CREATE_ID = "create";
 const QUIET =
   "min-h-hit-min min-w-hit-min max-w-full cursor-pointer truncate rounded-sm border-0 bg-clear px-1 py-3 text-start text-body-sm text-ink-muted outline-focus-ring outline-offset-2 hover:text-ink focus-visible:outline-2 motion-reduce:transition-none";
@@ -51,7 +51,7 @@ function matches(options: TaskPickerOption[], query: string): TaskPickerOption[]
   return options
     .map((option, index) => ({ option, index }))
     .filter(({ option }) => option.title.toLowerCase().includes(q))
-    .sort((a, b) => ORDER[a.option.lane] - ORDER[b.option.lane] || a.index - b.index)
+    .sort((a, b) => a.option.order - b.option.order || a.index - b.index)
     .map(({ option }) => option);
 }
 

@@ -1,13 +1,18 @@
 import type { TaskPickerOption } from "@orasenda/ui";
 
-const LANE_NAMES = { doing: "Doing", today: "Today", backlog: "Backlog" } as const;
+const LANES = {
+  doing: { name: "Doing", order: 0 },
+  today: { name: "Today", order: 1 },
+  backlog: { name: "Backlog", order: 2 },
+} as const;
 
-/** A task option as `taskOptions` builds it for a palette or picker. */
+/** A task option as `taskOptions` builds it for the default columns. */
 export function taskOption(
   id: string,
   title: string,
-  lane: keyof typeof LANE_NAMES,
+  lane: keyof typeof LANES,
   frog = false,
 ): TaskPickerOption {
-  return { id, title, lane, laneLabel: LANE_NAMES[lane], frog: frog || undefined };
+  const { name, order } = LANES[lane];
+  return { id, title, order, laneLabel: name, frog: frog || undefined };
 }

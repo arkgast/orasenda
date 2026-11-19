@@ -7,18 +7,18 @@ function column(lane: string, name: string, tasks: TaskView_Serialize[]): Column
   return { lane, name, limit: null, count: tasks.length, state: "under", tasks };
 }
 
-const task = (id: string, over: Partial<TaskView_Serialize> = {}) =>
-  boardTask({ id, title: id, ...over });
+const task = (id: string, lane: string, over: Partial<TaskView_Serialize> = {}) =>
+  boardTask(id, id, lane, over);
 
 const BOARD_WITH_CUSTOM = {
   ...BOARD,
   columns: [
-    column("backlog", "Backlog", [task("b")]),
-    column("c1", "Ideas", [task("c1a")]),
-    column("today", "Today", [task("t", { isFrog: true })]),
-    column("doing", "Doing", [task("d")]),
-    column("c2", "Waiting", [task("c2a")]),
-    column("done", "Done", [task("x")]),
+    column("backlog", "Backlog", [task("b", "backlog")]),
+    column("c1", "Ideas", [task("c1a", "c1")]),
+    column("today", "Today", [task("t", "today", { isFrog: true })]),
+    column("doing", "Doing", [task("d", "doing")]),
+    column("c2", "Waiting", [task("c2a", "c2")]),
+    column("done", "Done", [task("x", "done")]),
   ],
 };
 
