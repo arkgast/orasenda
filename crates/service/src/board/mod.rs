@@ -199,9 +199,7 @@ fn set_removed<H: Host>(host: &H, id: &str, remove: bool) -> Result<(), BoardErr
         if !remove {
             // Undo into a column that is gone: the task lands at the end of Backlog.
             if let Some(task) = live(txn, id)?
-                && !columns::read(txn)?
-                    .iter()
-                    .any(|c| c.lane.as_str() == task.lane.as_str())
+                && !on_board(txn, &Lane::from_stored(&task.lane))?
             {
                 tasks::move_to_backlog_end(txn, &[id.to_owned()])?;
             }

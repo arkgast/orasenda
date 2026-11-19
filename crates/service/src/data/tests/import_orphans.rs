@@ -5,8 +5,11 @@ use orasenda_store::tasks::{self, NewTask, TaskKind};
 use super::TempDir;
 use super::import::{host_in, source};
 use crate::api::Lane;
-use crate::board::run_board_get;
+use crate::api::TaskDraft;
+use crate::board::{run_board_get, run_task_add};
 use crate::data::import::run_import;
+use crate::scheduler::Host;
+use crate::session::lock;
 use crate::session::test_support::Event;
 
 #[test]
@@ -35,6 +38,14 @@ fn orphans_repaired_after_import() {
             .write(5, |txn| tasks::insert(txn, &new))
             .expect("task written");
     });
+    run_task_add(
+        &host,
+        TaskDraft {
+            title: "Local".into(),
+            ..TaskDraft::default()
+        },
+    )
+    .expect("local task added");
     host.log().take();
     run_import(&host, dir.path(), &path).expect("imports");
     let boards: Vec<_> = host
@@ -52,10 +63,18 @@ fn orphans_repaired_after_import() {
         .iter()
         .find(|c| c.lane == Lane::BACKLOG)
         .expect("Backlog");
-    assert_eq!(backlog.tasks.len(), 1);
+    let titles: Vec<_> = backlog.tasks.iter().map(|t| t.title.as_str()).collect();
+    assert_eq!(titles, ["Local", "Strayed"]);
+    let guard = lock(host.service().expect("service"));
+    let ids = guard.store().expect("store").change_log_ids();
+    assert!(
+        ids.iter().filter(|i| *i == "o1").count() >= 2,
+        "the merge insert and the repair move are logged"
+    );
+    drop(guard);
     let board = run_board_get(&host).expect("reads");
     assert_eq!(
         board.columns.iter().map(|c| c.tasks.len()).sum::<usize>(),
-        1
+        2
     );
 }
