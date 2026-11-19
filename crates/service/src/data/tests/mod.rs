@@ -4,6 +4,7 @@ mod backups;
 mod files;
 mod import;
 mod import_keys;
+mod import_orphans;
 mod import_review;
 mod names;
 mod pending;
